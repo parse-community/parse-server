@@ -1,0 +1,29 @@
+{
+  "name": "parse-server",
+  "version": "2.0.0",
+  "description": "An express module providing a Parse-compatible API server",
+  "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ParsePlatform/parse-server"
+  },
+  "license": "BSD",
+  "dependencies": {
+    "bcrypt": "~0.8",
+    "body-parser": "~1.12.4",
+    "deepcopy": "^0.5.0",
+    "express": "~4.2.x",
+    "hat": "~0.0.3",
+    "mime": "^1.3.4",
+    "mongodb": "~2.0.33",
+    "multer": "~0.1.8",
+    "parse": "~1.6.12",
+    "request": "^2.65.0"
+  },
+  "devDependencies": {
+    "jasmine": "^2.3.2"
+  },
+  "scripts": {
+    "test": "TESTING=1 jasmine"
+  }
+}
