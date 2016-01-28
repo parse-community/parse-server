@@ -2,6 +2,10 @@
 
 A Parse.com API compatible router package for Express
 
+Read the announcement blog post here:  http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/
+
+Read the migration guide here: https://parse.com/docs/server/guide#migrating
+
 ---
 
 #### Basic options:
