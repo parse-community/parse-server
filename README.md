@@ -36,7 +36,7 @@ The client keys used with Parse are no longer necessary with parse-server.  If y
 
 You can create an instance of ParseServer, and mount it on a new or existing Express website:
 
-```
+```js
 var express = require('express');
 var ParseServer = require('parse-server').ParseServer;
 
