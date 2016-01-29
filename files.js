@@ -80,7 +80,7 @@ router.post('/files', function(req, res, next) {
 
 // TODO: do we need to allow crossdomain and method override?
 router.post('/files/:filename',
-            bodyParser.raw({type: '*/*'}),
+            bodyParser.raw({type: '*/*', limit: '20mb'}),
             middlewares.handleParseHeaders,
             processCreate);
 
