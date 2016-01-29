@@ -33,6 +33,7 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
+// "sentryDSN": optional Sentry DSN for logging errors
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -98,6 +99,10 @@ function ParseServer(args) {
 
   router.mountOnto(api);
 
+  if (args.sentryDSN) {
+    var raven = require('raven')
+    api.use(raven.middleware.express.errorHandler(args.sentryDSN));
+  }
   api.use(middlewares.handleParseErrors);
 
   return api;
