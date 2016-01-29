@@ -7,7 +7,7 @@
     "type": "git",
     "url": "https://github.com/ParsePlatform/parse-server"
   },
-  "license": "BSD",
+  "license": "BSD-3-Clause",
   "dependencies": {
     "bcrypt": "~0.8",
     "body-parser": "~1.12.4",
