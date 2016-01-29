@@ -6,6 +6,8 @@ Read the announcement blog post here:  http://blog.parse.com/announcements/intro
 
 Read the migration guide here: https://parse.com/docs/server/guide#migrating
 
+There is a development wiki here on GitHub: https://github.com/ParsePlatform/parse-server/wiki
+
 ---
 
 #### Basic options:
