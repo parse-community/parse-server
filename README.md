@@ -1,5 +1,7 @@
 ## parse-server
 
+[![Build Status](https://api.travis-ci.org/ParsePlatform/parse-server.svg)](https://travis-ci.org/ParsePlatform/parse-server)
+
 A Parse.com API compatible router package for Express
 
 Read the announcement blog post here:  http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/
