@@ -25,5 +25,8 @@
   },
   "scripts": {
     "test": "TESTING=1 jasmine"
+  },
+  "engines": {
+    "node": ">=4.1"
   }
 }
