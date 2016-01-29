@@ -628,6 +628,7 @@ function untransformObject(schema, className, mongoObject) {
         restObject['password'] = mongoObject[key];
         break;
       case '_acl':
+      case '_email_verify_token':
       case '_perishable_token':
         break;
       case '_session_token':
