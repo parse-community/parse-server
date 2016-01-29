@@ -44,14 +44,16 @@ ExportAdapter.prototype.connect = function() {
 
 // Returns a promise for a Mongo collection.
 // Generally just for internal use.
+var joinRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
+var otherRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 ExportAdapter.prototype.collection = function(className) {
   if (className !== '_User' &&
       className !== '_Installation' &&
       className !== '_Session' &&
       className !== '_SCHEMA' &&
       className !== '_Role' &&
-      !className.match(/^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/) &&
-      !className.match(/^[A-Za-z][A-Za-z0-9_]*$/)) {
+      !joinRegex.test(className) &&
+      !otherRegex.test(className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
   }
