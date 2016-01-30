@@ -26,6 +26,8 @@ addParseCloud();
 // "cloud": relative location to cloud code to require
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
+// "facebookAppIds": an array of valid Facebook Application IDs, required
+//                   if using Facebook login
 // "collectionPrefix": optional prefix for database collection names
 // "fileKey": optional key from Parse dashboard for supporting older files
 //            hosted by Parse
@@ -59,8 +61,14 @@ function ParseServer(args) {
     javascriptKey: args.javascriptKey || '',
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
-    fileKey: args.fileKey || 'invalid-file-key'
+    fileKey: args.fileKey || 'invalid-file-key',
+    facebookAppIds: args.facebookAppIds || []
   };
+
+  // To maintain compatibility. TODO: Remove in v2.1
+  if (process.env.FACEBOOK_APP_ID) {
+    cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+  }
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
