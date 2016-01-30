@@ -282,6 +282,7 @@ function getType(obj) {
   case 'string':
   case 'number':
     return type;
+  case 'map':
   case 'object':
     if (!obj) {
       return undefined;

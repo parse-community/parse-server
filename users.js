@@ -55,6 +55,9 @@ function handleLogIn(req) {
       user.sessionToken = token;
       delete user.password;
 
+      var expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+
       var sessionData = {
         sessionToken: token,
         user: {
@@ -67,7 +70,7 @@ function handleLogIn(req) {
           'authProvider': 'password'
         },
         restricted: false,
-        expiresAt: 0,
+        expiresAt: Parse._encode(expiresAt).iso,
         installationId: req.info.installationId
       };
       var create = new RestWrite(req.config, Auth.master(req.config),
