@@ -20,6 +20,7 @@ function Config(applicationId, mount) {
   this.dotNetKey = cacheInfo.dotNetKey;
   this.restAPIKey = cacheInfo.restAPIKey;
   this.fileKey = cacheInfo.fileKey;
+  this.facebookAppIds = cacheInfo.facebookAppIds;
   this.mount = mount;
 }
 

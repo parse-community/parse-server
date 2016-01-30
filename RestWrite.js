@@ -219,7 +219,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
   return facebook.validateUserId(facebookData.id,
                                  facebookData.access_token)
     .then(() => {
-      return facebook.validateAppId(process.env.FACEBOOK_APP_ID,
+      return facebook.validateAppId(this.config.facebookAppIds,
                                     facebookData.access_token);
     }).then(() => {
       // Check if this user already exists
