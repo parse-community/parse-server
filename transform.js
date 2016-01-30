@@ -46,6 +46,11 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
   case '_session_token':
     key = '_session_token';
     break;
+  case 'expiresAt':
+  case '_expiresAt':
+    key = '_expiresAt';
+    timeField = true;
+    break;
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
@@ -641,6 +646,10 @@ function untransformObject(schema, className, mongoObject) {
       case 'createdAt':
       case '_created_at':
         restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'expiresAt':
+      case '_expiresAt':
+        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
       case '_auth_data_anonymous':
         restObject['authData'] = restObject['authData'] || {};

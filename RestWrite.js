@@ -283,8 +283,7 @@ RestWrite.prototype.transformUser = function() {
           'action': 'login',
           'authProvider': 'password'
         },
-        restricted: false,
-        expiresAt: 0
+        restricted: false
       };
       var create = new RestWrite(this.config, Auth.master(this.config),
                                  '_Session', null, sessionData);
