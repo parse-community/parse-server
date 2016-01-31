@@ -150,6 +150,9 @@ function addParseCloud() {
       options.uri = options.url;
       delete options.url;
     }
+    if (typeof options.body === 'object') {
+      options.body = JSON.stringify(options.body);
+    }
     request(options, (error, response, body) => {
       if (error) {
         if (callbacks.error) {
@@ -178,4 +181,3 @@ function getClassName(parseClass) {
 module.exports = {
   ParseServer: ParseServer
 };
-
