@@ -9,6 +9,7 @@ var router = new PromiseRouter();
 
 function handleCloudFunction(req) {
   if (Parse.Cloud.Functions[req.params.functionName]) {
+    // Run the validator for this function first
     if (Parse.Cloud.Validators[req.params.functionName]) {
       var result = Parse.Cloud.Validators[req.params.functionName](req.body);
       if (!result) {
