@@ -127,14 +127,17 @@ function ParseServer(args) {
 
 function addParseCloud() {
   Parse.Cloud.Functions = {};
+  Parse.Cloud.Validators = {};
   Parse.Cloud.Triggers = {
     beforeSave: {},
     beforeDelete: {},
     afterSave: {},
     afterDelete: {}
   };
-  Parse.Cloud.define = function(functionName, handler) {
+  
+  Parse.Cloud.define = function(functionName, handler, validationHandler) {
     Parse.Cloud.Functions[functionName] = handler;
+    Parse.Cloud.Validators[functionName] = validationHandler;
   };
   Parse.Cloud.beforeSave = function(parseClass, handler) {
     var className = getClassName(parseClass);
