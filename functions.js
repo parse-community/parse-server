@@ -13,7 +13,10 @@ function handleCloudFunction(req) {
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
       var request = {
-        params: req.body || {}
+        params: req.body || {},
+        master : req.auth ? req.auth.isMaster : false,
+        user :  req.auth && req.auth.user ? req.auth.user : undefined,
+        installationId : req.auth && req.auth.installationId ? req.auth.installationId : undefined
       };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
@@ -34,10 +37,10 @@ function createResponseObject(resolve, reject) {
     error: function(error) {
       reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
     }
-  }
+  };
 }
 
-router.route('POST', '/functions/:functionName', handleCloudFunction);
+router.route('POST', '/functions/:functionName+', handleCloudFunction);
 
 
 module.exports = router;
