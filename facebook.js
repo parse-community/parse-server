@@ -24,7 +24,7 @@ function validateAppId(appIds, access_token) {
   }
   return graphRequest('app?access_token=' + access_token)
     .then((data) => {
-      if (data && appIds.contains(data.id)) {
+      if (data && appIds.indexOf(data.id) != -1) {
         return;
       }
       throw new Parse.Error(
