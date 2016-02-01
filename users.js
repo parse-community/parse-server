@@ -70,9 +70,13 @@ function handleLogIn(req) {
           'authProvider': 'password'
         },
         restricted: false,
-        expiresAt: Parse._encode(expiresAt).iso,
-        installationId: req.info.installationId
+        expiresAt: Parse._encode(expiresAt).iso
       };
+      
+      if (req.info.installationId) {
+        sessionData.installationId = req.info.installationId
+      }
+      
       var create = new RestWrite(req.config, Auth.master(req.config),
                                  '_Session', null, sessionData);
       return create.execute();
