@@ -9,6 +9,7 @@
   },
   "license": "BSD-3-Clause",
   "dependencies": {
+    "aws-sdk": "~2.2.33",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "~1.12.4",
     "deepcopy": "^0.5.0",
