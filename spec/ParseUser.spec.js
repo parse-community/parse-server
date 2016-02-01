@@ -1574,7 +1574,7 @@ describe('Parse.User testing', () => {
     var sessionToken = null;
 
     Parse.Promise.as().then(function() {
-      return Parse.User.signUp("fosco", "parse");      
+      return Parse.User.signUp("fosco", "parse");
     }).then(function(newUser) {
       equal(Parse.User.current(), newUser);
       sessionToken = newUser.getSessionToken();
