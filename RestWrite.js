@@ -9,7 +9,7 @@ var rack = require('hat').rack();
 var Auth = require('./Auth');
 var cache = require('./cache');
 var Config = require('./Config');
-var crypto = require('./crypto');
+var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
@@ -300,7 +300,7 @@ RestWrite.prototype.transformUser = function() {
     if (this.query) {
       this.storage['clearSessions'] = true;
     }
-    return crypto.hash(this.data.password).then((hashedPassword) => {
+    return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
       this.data._hashed_password = hashedPassword;
       delete this.data.password;
     });
