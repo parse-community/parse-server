@@ -47,7 +47,7 @@ function ParseServer(args) {
     FilesAdapter.setAdapter(args.filesAdapter);
   }
   if (args.databaseURI) {
-    DatabaseAdapter.setDatabaseURI(args.databaseURI);
+    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
   if (args.cloud) {
     addParseCloud();
