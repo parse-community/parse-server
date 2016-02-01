@@ -33,6 +33,10 @@ function handleFind(req) {
     options.redirectClassNameForKey = String(req.body.redirectClassNameForKey);
   }
 
+  if(typeof req.body.where === 'string') {
+    req.body.where = JSON.parse(req.body.where);
+  }
+
   return rest.find(req.config, req.auth,
                    req.params.className, req.body.where, options)
     .then((response) => {
