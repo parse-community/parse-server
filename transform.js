@@ -696,7 +696,7 @@ function untransformObject(schema, className, mongoObject) {
           //break;
         } else {
           var expected = schema.getExpectedType(className, key);
-          if (expected == 'file') {
+          if (expected == 'file' && mongoObject[key]) {
             restObject[key] = {
               __type: 'File',
               name: mongoObject[key]
