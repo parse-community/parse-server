@@ -114,13 +114,6 @@ describe('untransformObject', () => {
     done();
   });
 
-  it('null file', (done) => {
-    var input = {picture: null};
-    var output = transform.untransformObject(dummySchema, null, input);
-    expect(output.picture).toBeUndefined();
-    done();
-  });
-
   it('geopoint', (done) => {
     var input = {location: [180, -180]};
     var output = transform.untransformObject(dummySchema, null, input);
@@ -131,12 +124,6 @@ describe('untransformObject', () => {
     done();
   });
 
-  it('null geopoint', (done) => {
-    var input = {location: null};
-    var output = transform.untransformObject(dummySchema, null, input);
-    expect(output.location).toBeUndefined();
-    done();
-  });
 });
 
 describe('transformKey', () => {

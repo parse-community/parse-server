@@ -692,8 +692,8 @@ function untransformObject(schema, className, mongoObject) {
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
-        } else if (mongoObject[key] === null) {
-          break;
+        //} else if (mongoObject[key] === null) {
+          //break;
         } else {
           var expected = schema.getExpectedType(className, key);
           if (expected == 'file') {
