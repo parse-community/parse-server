@@ -31,17 +31,16 @@ function S3Adapter(accessKey, secretKey, options) {
 // For a given config object, filename, and data, store a file in S3
 // Returns a promise containing the S3 object creation response
 S3Adapter.prototype.create = function(config, filename, data) {
-  var self = this;
   var params = {
-    Key: self.bucketPrefix + filename,
+    Key: this.bucketPrefix + filename,
     Body: data,
   };
-  if (self.directAccess) {
+  if (this.directAccess) {
     params.ACL = "public-read"
   }
-  
-  return new Promise(function(resolve, reject) {
-    self.s3.upload(params, function(err, data) {
+
+  return new Promise((resolve, reject) => {
+    this.s3.upload(params, function(err, data) {
       if (err !== null) return reject(err);
       resolve(data);
     });
@@ -51,11 +50,10 @@ S3Adapter.prototype.create = function(config, filename, data) {
 // Search for and return a file if found by filename
 // Returns a promise that succeeds with the buffer result from S3
 S3Adapter.prototype.get = function(config, filename) {
-  var self = this;
-  var params = {Key: self.bucketPrefix + filename};
+  var params = {Key: this.bucketPrefix + filename};
 
-  return new Promise(function(resolve, reject) {
-    self.s3.getObject(params, function(err, data) {
+  return new Promise((resolve, reject) => {
+    this.s3.getObject(params, (err, data) => {
       if (err !== null) return reject(err);
       resolve(data.Body);
     });
