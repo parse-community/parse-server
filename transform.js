@@ -691,7 +691,7 @@ function untransformObject(schema, className, mongoObject) {
           throw ('bad key in untransform: ' + key);
         } else {
           var expected = schema.getExpectedType(className, key);
-          if (expected == 'file') {
+          if (expected == 'file' && mongoObject[key]) {
             restObject[key] = {
               __type: 'File',
               name: mongoObject[key]
