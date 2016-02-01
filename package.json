@@ -9,7 +9,7 @@
   },
   "license": "BSD-3-Clause",
   "dependencies": {
-    "bcrypt": "~0.8",
+    "bcrypt-nodejs": "0.0.3",
     "body-parser": "~1.12.4",
     "deepcopy": "^0.5.0",
     "express": "~4.2.x",
