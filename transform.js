@@ -676,6 +676,9 @@ function untransformObject(schema, className, mongoObject) {
             console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
+          if (mongoObject[key] === null) {
+            break;
+          }
           var objData = mongoObject[key].split('$');
           var newClass = (expected ? expected.substring(1) : objData[0]);
           if (objData[0] !== newClass) {
@@ -689,6 +692,8 @@ function untransformObject(schema, className, mongoObject) {
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
+        } else if (mongoObject[key] === null) {
+          break;
         } else {
           var expected = schema.getExpectedType(className, key);
           if (expected == 'file') {
