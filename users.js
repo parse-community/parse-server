@@ -70,7 +70,7 @@ function handleLogIn(req) {
           'authProvider': 'password'
         },
         restricted: false,
-        expiresAt: Parse._encode(expiresAt).iso,
+        expiresAt: Parse._encode(expiresAt),
         installationId: req.info.installationId
       };
       var create = new RestWrite(req.config, Auth.master(req.config),
