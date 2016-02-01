@@ -86,7 +86,7 @@ function ParseServer(args) {
     api.use('/', require('./testing-routes').router);
   }
 
-  api.use(bodyParser.json({ 'type': '*/*' }));
+  api.use(bodyParser.urlencoded({extended: true, type: '*/*'}));
   api.use(middlewares.allowCrossDomain);
   api.use(middlewares.allowMethodOverride);
   api.use(middlewares.handleParseHeaders);
