@@ -10,7 +10,7 @@ var router = new PromiseRouter();
 
 // Returns a promise that resolves to a {response} object.
 function handleFind(req) {
-  var body = req.method === 'GET' ? req.query : req.body;
+  var body = Object.assign(req.body, req.query);
   var options = {};
   if (body.skip) {
     options.skip = Number(body.skip);
