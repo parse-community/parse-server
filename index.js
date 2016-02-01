@@ -51,7 +51,14 @@ function ParseServer(args) {
   }
   if (args.cloud) {
     addParseCloud();
-    require(args.cloud);
+    if (typeof args.cloud === 'function') {
+      args.cloud(Parse)
+    } else if (typeof args.cloud === 'string') {
+      require(args.cloud);
+    } else {
+      throw "argument 'cloud' must either be a string or a function";
+    }
+
   }
 
   cache.apps[args.appId] = {
