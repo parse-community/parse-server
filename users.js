@@ -70,7 +70,7 @@ function handleLogIn(req) {
           'authProvider': 'password'
         },
         restricted: false,
-        expiresAt: Parse._encode(expiresAt).iso
+        expiresAt: Parse._encode(expiresAt)
       };
       
       if (req.info.installationId) {
