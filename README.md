@@ -18,6 +18,7 @@ There is a development wiki here on GitHub: https://github.com/ParsePlatform/par
 * cloud - The absolute path to your cloud code main.js file
 * fileKey - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * facebookAppIds - An array of valid Facebook application IDs.
+* serverURL - URL which will be used by Cloud Code functions to make requests against.
 
 #### Client key options:
 
@@ -45,6 +46,8 @@ var ParseServer = require('parse-server').ParseServer;
 
 var app = express();
 
+var port = process.env.PORT || 1337;
+
 // Specify the connection string for your mongodb database
 // and the location to your Parse cloud code
 var api = new ParseServer({
@@ -52,7 +55,8 @@ var api = new ParseServer({
   cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
   appId: 'myAppId',
   masterKey: 'mySecretMasterKey',
-  fileKey: 'optionalFileKey'
+  fileKey: 'optionalFileKey',
+  serverURL: 'http://localhost:' + port + '/parse' // Don't forget to change to https if needed
 });
 
 // Serve the Parse API on the /parse URL prefix
@@ -63,7 +67,6 @@ app.get('/', function(req, res) {
   res.status(200).send('Express is running here.');
 });
 
-var port = process.env.PORT || 1337;
 app.listen(port, function() {
   console.log('parse-server-example running on port ' + port + '.');
 });
