@@ -232,7 +232,7 @@ ExportAdapter.prototype.handleRelationUpdates = function(className,
     }
 
     if (op.__op == 'Batch') {
-      for (x of op.ops) {
+      for (var x of op.ops) {
         process(x, key);
       }
     }
