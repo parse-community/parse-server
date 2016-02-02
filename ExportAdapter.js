@@ -34,12 +34,14 @@ ExportAdapter.prototype.connect = function() {
     return this.connectionPromise;
   }
 
+  //http://regexr.com/3cn6m
+  if (!this.mongoURI.match(/^mongodb:\/\/((.+):(.+)@)?([^:@]+):([^:]+)\/(.+?)$/gm)) {
+    throw new Error("Invalid mongoURI: " + this.mongoURI)
+  }
   var usernameStart = this.mongoURI.indexOf('://') + 3;
   var lastAtIndex = this.mongoURI.lastIndexOf('@');
   var encodedMongoURI = this.mongoURI;
-  var username = null;
-  var password = null;
-  var split = null
+  var split = null;
   if (lastAtIndex > 0) {
     split = this.mongoURI.slice(usernameStart, lastAtIndex).split(':');
     encodedMongoURI = this.mongoURI.slice(0, usernameStart) + encodeURIComponent(split[0]) + ':' + encodeURIComponent(split[1]) + this.mongoURI.slice(lastAtIndex);
