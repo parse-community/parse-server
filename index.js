@@ -6,6 +6,7 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
+    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
@@ -47,7 +48,7 @@ function ParseServer(args) {
     FilesAdapter.setAdapter(args.filesAdapter);
   }
   if (args.databaseURI) {
-    DatabaseAdapter.setDatabaseURI(args.databaseURI);
+    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
   if (args.cloud) {
     addParseCloud();
@@ -150,6 +151,9 @@ function addParseCloud() {
       options.uri = options.url;
       delete options.url;
     }
+    if (typeof options.body === 'object') {
+      options.body = JSON.stringify(options.body);
+    }
     request(options, (error, response, body) => {
       if (error) {
         if (callbacks.error) {
@@ -176,6 +180,6 @@ function getClassName(parseClass) {
 }
 
 module.exports = {
-  ParseServer: ParseServer
+  ParseServer: ParseServer,
+  S3Adapter: S3Adapter
 };
-

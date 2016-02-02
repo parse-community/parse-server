@@ -2,13 +2,14 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
+var crypto = require('crypto');
 var deepcopy = require('deepcopy');
 var rack = require('hat').rack();
 
 var Auth = require('./Auth');
 var cache = require('./cache');
 var Config = require('./Config');
-var crypto = require('./crypto');
+var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
@@ -299,7 +300,7 @@ RestWrite.prototype.transformUser = function() {
     if (this.query) {
       this.storage['clearSessions'] = true;
     }
-    return crypto.hash(this.data.password).then((hashedPassword) => {
+    return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
       this.data._hashed_password = hashedPassword;
       delete this.data.password;
     });
@@ -701,15 +702,18 @@ RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
 
-// Returns a string that's usable as an object id.
-// Probably unique. Good enough? Probably!
+// Returns a unique string that's usable as an object id.
 function newObjectId() {
   var chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
                'abcdefghijklmnopqrstuvwxyz' +
                '0123456789');
   var objectId = '';
-  for (var i = 0; i < 10; ++i) {
-    objectId += chars[Math.floor(Math.random() * chars.length)];
+  var bytes = crypto.randomBytes(10);
+  for (var i = 0; i < bytes.length; ++i) {
+    // Note: there is a slight modulo bias, because chars length
+    // of 62 doesn't divide the number of all bytes (256) evenly.
+    // It is acceptable for our purposes.
+    objectId += chars[bytes.readUInt8(i) % chars.length];
   }
   return objectId;
 }

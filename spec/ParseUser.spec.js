@@ -6,7 +6,7 @@
 // Tests that involve sending password reset emails.
 
 var request = require('request');
-var crypto = require('../crypto');
+var passwordCrypto = require('../password');
 
 describe('Parse.User testing', () => {
   it("user sign up class method", (done) => {
@@ -1560,7 +1560,7 @@ describe('Parse.User testing', () => {
 
   it('password format matches hosted parse', (done) => {
     var hashed = '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie';
-    crypto.compare('test', hashed)
+    passwordCrypto.compare('test', hashed)
     .then((pass) => {
       expect(pass).toBe(true);
       done();
@@ -1574,7 +1574,7 @@ describe('Parse.User testing', () => {
     var sessionToken = null;
 
     Parse.Promise.as().then(function() {
-      return Parse.User.signUp("fosco", "parse");      
+      return Parse.User.signUp("fosco", "parse");
     }).then(function(newUser) {
       equal(Parse.User.current(), newUser);
       sessionToken = newUser.getSessionToken();
