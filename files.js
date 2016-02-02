@@ -7,7 +7,6 @@ var bodyParser = require('body-parser'),
     middlewares = require('./middlewares.js'),
     mime = require('mime'),
     Parse = require('parse/node').Parse,
-    path = require('path'),
     rack = require('hat').rack();
 
 var router = express.Router();
@@ -44,10 +43,7 @@ var processCreate = function(req, res, next) {
   FilesAdapter.getAdapter().create(req.config, filename, req.body)
   .then(() => {
     res.status(201);
-    var location = (req.protocol + '://' + req.get('host') +
-                    path.dirname(req.originalUrl) + '/' +
-                    req.config.applicationId + '/' +
-                    encodeURIComponent(filename));
+    var location = FilesAdapter.getAdapter().location(req.config, req, filename);
     res.set('Location', location);
     res.json({ url: location, name: filename });
   }).catch((error) => {
@@ -80,7 +76,7 @@ router.post('/files', function(req, res, next) {
 
 // TODO: do we need to allow crossdomain and method override?
 router.post('/files/:filename',
-            bodyParser.raw({type: '*/*'}),
+            bodyParser.raw({type: '*/*', limit: '20mb'}),
             middlewares.handleParseHeaders,
             processCreate);
 

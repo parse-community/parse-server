@@ -5,6 +5,7 @@
 // Adapter classes must implement the following functions:
 // * create(config, filename, data)
 // * get(config, filename)
+// * location(config, req, filename)
 //
 // Default is GridStoreAdapter, which requires mongo
 // and for the API server to be using the ExportAdapter

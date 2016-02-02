@@ -1,15 +1,16 @@
 {
   "name": "parse-server",
-  "version": "2.0.0",
+  "version": "2.0.4",
   "description": "An express module providing a Parse-compatible API server",
   "main": "index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/ParsePlatform/parse-server"
   },
-  "license": "BSD",
+  "license": "BSD-3-Clause",
   "dependencies": {
-    "bcrypt": "~0.8",
+    "aws-sdk": "~2.2.33",
+    "bcrypt-nodejs": "0.0.3",
     "body-parser": "~1.12.4",
     "deepcopy": "^0.5.0",
     "express": "~4.2.x",
@@ -25,5 +26,8 @@
   },
   "scripts": {
     "test": "TESTING=1 jasmine"
+  },
+  "engines": {
+    "node": ">=4.1"
   }
 }

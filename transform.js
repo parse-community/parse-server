@@ -46,6 +46,11 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
   case '_session_token':
     key = '_session_token';
     break;
+  case 'expiresAt':
+  case '_expiresAt':
+    key = '_expiresAt';
+    timeField = true;
+    break;
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
@@ -628,6 +633,7 @@ function untransformObject(schema, className, mongoObject) {
         restObject['password'] = mongoObject[key];
         break;
       case '_acl':
+      case '_email_verify_token':
       case '_perishable_token':
         break;
       case '_session_token':
@@ -640,6 +646,10 @@ function untransformObject(schema, className, mongoObject) {
       case 'createdAt':
       case '_created_at':
         restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'expiresAt':
+      case '_expiresAt':
+        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
       case '_auth_data_anonymous':
         restObject['authData'] = restObject['authData'] || {};
@@ -666,6 +676,9 @@ function untransformObject(schema, className, mongoObject) {
             console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
+          if (mongoObject[key] === null) {
+            break;
+          }
           var objData = mongoObject[key].split('$');
           var newClass = (expected ? expected.substring(1) : objData[0]);
           if (objData[0] !== newClass) {
@@ -679,9 +692,11 @@ function untransformObject(schema, className, mongoObject) {
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
+        //} else if (mongoObject[key] === null) {
+          //break;
         } else {
           var expected = schema.getExpectedType(className, key);
-          if (expected == 'file') {
+          if (expected == 'file' && mongoObject[key]) {
             restObject[key] = {
               __type: 'File',
               name: mongoObject[key]

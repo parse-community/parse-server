@@ -6,6 +6,7 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
+    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
@@ -26,6 +27,8 @@ addParseCloud();
 // "cloud": relative location to cloud code to require
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
+// "facebookAppIds": an array of valid Facebook Application IDs, required
+//                   if using Facebook login
 // "collectionPrefix": optional prefix for database collection names
 // "fileKey": optional key from Parse dashboard for supporting older files
 //            hosted by Parse
@@ -45,7 +48,7 @@ function ParseServer(args) {
     FilesAdapter.setAdapter(args.filesAdapter);
   }
   if (args.databaseURI) {
-    DatabaseAdapter.setDatabaseURI(args.databaseURI);
+    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
   if (args.cloud) {
     addParseCloud();
@@ -59,8 +62,14 @@ function ParseServer(args) {
     javascriptKey: args.javascriptKey || '',
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
-    fileKey: args.fileKey || 'invalid-file-key'
+    fileKey: args.fileKey || 'invalid-file-key',
+    facebookAppIds: args.facebookAppIds || []
   };
+
+  // To maintain compatibility. TODO: Remove in v2.1
+  if (process.env.FACEBOOK_APP_ID) {
+    cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+  }
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
@@ -142,6 +151,9 @@ function addParseCloud() {
       options.uri = options.url;
       delete options.url;
     }
+    if (typeof options.body === 'object') {
+      options.body = JSON.stringify(options.body);
+    }
     request(options, (error, response, body) => {
       if (error) {
         if (callbacks.error) {
@@ -168,6 +180,6 @@ function getClassName(parseClass) {
 }
 
 module.exports = {
-  ParseServer: ParseServer
+  ParseServer: ParseServer,
+  S3Adapter: S3Adapter
 };
-

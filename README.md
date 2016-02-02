@@ -19,6 +19,7 @@ There is a development wiki here on GitHub: https://github.com/ParsePlatform/par
 * masterKey (required) - The master key to use for overriding ACL security
 * cloud - The absolute path to your cloud code main.js file
 * fileKey - For migrated apps, this is necessary to provide access to files already hosted on Parse.
+* facebookAppIds - An array of valid Facebook application IDs.
 
 #### Client key options:
 

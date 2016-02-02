@@ -138,6 +138,7 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
 
   var expected = this.data[className][key];
   if (expected) {
+    expected = (expected === 'map' ? 'object' : expected);
     if (expected === type) {
       return Promise.resolve(this);
     } else {
@@ -282,6 +283,7 @@ function getType(obj) {
   case 'string':
   case 'number':
     return type;
+  case 'map':
   case 'object':
     if (!obj) {
       return undefined;
