@@ -13,13 +13,9 @@ function handleCloudFunction(req) {
       var response = createResponseObject(resolve, reject);
       var request = {
         params: req.body || {},
-<<<<<<< HEAD
         master : req.auth ? req.auth.isMaster : false,
-        user :  req.auth && req.auth.user ? req.auth.user : undefined,
-        installationId : req.auth && req.auth.installationId ? req.auth.installationId : undefined
-=======
+        installationId : req.auth && req.auth.installationId ? req.auth.installationId : undefined,
         user: req.auth && req.auth.user || {}
->>>>>>> upstream/master
       };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
