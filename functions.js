@@ -8,7 +8,6 @@ var express = require('express'),
 var router = new PromiseRouter();
 
 function handleCloudFunction(req) {
-  // TODO: set user from req.auth
   if (Parse.Cloud.Functions[req.params.functionName]) {
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
