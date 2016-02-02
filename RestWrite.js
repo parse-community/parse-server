@@ -13,6 +13,7 @@ var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+var VERIFY_EMAIL = require('./Constants').VERIFY_EMAIL;
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -340,13 +341,16 @@ RestWrite.prototype.transformUser = function() {
         email: this.data.email,
         objectId: {'$ne': this.objectId()}
       }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
-                                'Account already exists for this email ' +
-                                'address');
-        }
-        return Promise.resolve();
-      });
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email ' +
+          'address');
+      }
+      this.data.emailVerified = false;
+      this.data.perishableToken = rack();
+      this.data.emailVerifyToken = rack();
+      return Promise.resolve();
+    });
   });
 };
 
@@ -642,16 +646,27 @@ RestWrite.prototype.runDatabaseOperation = function() {
     }
   }
 
+  function sendEmailVerification () {
+    if (typeof this.data.email !== 'undefined' && this.className === "_User" && this.config.emailSender) {
+      var link = this.config.mount + "/verify_email?token=" + encodeURIComponent(this.data.emailVerifyToken) + "&username=" + encodeURIComponent(this.data.email);
+      this.config.emailSender(VERIFY_EMAIL, link, this.data.email);
+    }
+  }
+
   if (this.query) {
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, options).then((resp) => {
-        this.response = resp;
-        this.response.updatedAt = this.updatedAt;
-      });
+      sendEmailVerification.call(this);
+      this.response = resp;
+      this.response.updatedAt = this.updatedAt;
+    });
   } else {
     // Run a create
     return this.config.database.create(this.className, this.data, options)
+      .then(()=> {
+        sendEmailVerification.call(this);
+      })
       .then(() => {
         var resp = {
           objectId: this.data.objectId,

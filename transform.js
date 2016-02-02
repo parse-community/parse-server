@@ -42,6 +42,14 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
     key = '_updated_at';
     timeField = true;
     break;
+  case 'perishableToken':
+  case '_perishable_token':
+      key = "_perishable_token";
+      break;
+  case 'emailVerifyToken':
+  case '_email_verify_token':
+      key = "_email_verify_token";
+      break;
   case 'sessionToken':
   case '_session_token':
     key = '_session_token';
@@ -633,8 +641,11 @@ function untransformObject(schema, className, mongoObject) {
         restObject['password'] = mongoObject[key];
         break;
       case '_acl':
+          break;
       case '_email_verify_token':
+        restObject['emailVerifyToken'] = mongoObject[key];
       case '_perishable_token':
+        restObject['perishableSessionToken'] = mongoObject[key];
         break;
       case '_session_token':
         restObject['sessionToken'] = mongoObject[key];

@@ -22,6 +22,7 @@ function Config(applicationId, mount) {
   this.fileKey = cacheInfo.fileKey;
   this.facebookAppIds = cacheInfo.facebookAppIds;
   this.mount = mount;
+  this.emailSender = cacheInfo.emailSender;
 }
 
 

@@ -11,7 +11,8 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    request = require('request');
+    request = require('request'),
+    path = require('path');
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -38,6 +39,7 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
+// "emailSender": optional function to be called with the parameters required to send a password reset or confirmation email
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -72,7 +74,8 @@ function ParseServer(args) {
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || []
+    facebookAppIds: args.facebookAppIds || [],
+    emailSender: args.emailSender
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -89,6 +92,10 @@ function ParseServer(args) {
 
   // File handling needs to be before default middlewares are applied
   api.use('/', require('./files').router);
+  api.set('views', path.join(__dirname, 'views'));
+  api.use("/request_password_reset", require('./passwordReset').reset(args.appName, args.appId));
+  api.get("/password_reset_success", require('./passwordReset').success);
+  api.get("/verify_email", require('./verifyEmail')(args.appId));
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -100,6 +107,7 @@ function ParseServer(args) {
   api.use(middlewares.allowCrossDomain);
   api.use(middlewares.allowMethodOverride);
   api.use(middlewares.handleParseHeaders);
+  api.set('view engine', 'jade');
 
   var router = new PromiseRouter();
 
@@ -190,5 +198,6 @@ function getClassName(parseClass) {
 
 module.exports = {
   ParseServer: ParseServer,
+  Constants: require('./Constants'),
   S3Adapter: S3Adapter
 };
