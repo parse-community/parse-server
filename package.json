@@ -25,7 +25,7 @@
     "jasmine": "^2.3.2"
   },
   "scripts": {
-    "test": "TESTING=1 jasmine"
+    "test": "TESTING=1 ./node_modules/.bin/jasmine"
   },
   "engines": {
     "node": ">=4.1"
