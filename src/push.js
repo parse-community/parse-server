@@ -9,7 +9,7 @@ var router = new PromiseRouter();
 
 
 function notImplementedYet(req) {
-  throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
+    throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
                         'This path is not implemented yet.');
 }
 

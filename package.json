@@ -2,7 +2,7 @@
   "name": "parse-server",
   "version": "2.0.4",
   "description": "An express module providing a Parse-compatible API server",
-  "main": "index.js",
+  "main": "src/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/ParsePlatform/parse-server"
@@ -22,10 +22,12 @@
     "request": "^2.65.0"
   },
   "devDependencies": {
+    "eslint": "^1.10.3",
     "jasmine": "^2.3.2"
   },
   "scripts": {
-    "test": "TESTING=1 jasmine"
+    "test": "TESTING=1 ./node_modules/.bin/jasmine",
+    "lint": "./node_modules/.bin/eslint src"
   },
   "engines": {
     "node": ">=4.1"

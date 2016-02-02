@@ -16,14 +16,14 @@ var GridStoreAdapter = require('./GridStoreAdapter');
 var adapter = GridStoreAdapter;
 
 function setAdapter(filesAdapter) {
-  adapter = filesAdapter;
+    adapter = filesAdapter;
 }
 
 function getAdapter() {
-  return adapter;
+    return adapter;
 }
 
 module.exports = {
-  getAdapter: getAdapter,
-  setAdapter: setAdapter
+    getAdapter: getAdapter,
+    setAdapter: setAdapter
 };

@@ -7,36 +7,36 @@ var Parse = require('parse/node').Parse,
 var router = new PromiseRouter();
 
 function handleCreate(req) {
-  return rest.create(req.config, req.auth,
+    return rest.create(req.config, req.auth,
                      '_Role', req.body);
 }
 
 function handleUpdate(req) {
-  return rest.update(req.config, req.auth, '_Role',
+    return rest.update(req.config, req.auth, '_Role',
                      req.params.objectId, req.body)
   .then((response) => {
-    return {response: response};
+      return {response: response};
   });
 }
 
 function handleDelete(req) {
-  return rest.del(req.config, req.auth,
+    return rest.del(req.config, req.auth,
                   '_Role', req.params.objectId)
   .then(() => {
-    return {response: {}};
+      return {response: {}};
   });
 }
 
 function handleGet(req) {
-  return rest.find(req.config, req.auth, '_Role',
+    return rest.find(req.config, req.auth, '_Role',
                    {objectId: req.params.objectId})
   .then((response) => {
-    if (!response.results || response.results.length == 0) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+      if (!response.results || response.results.length == 0) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                             'Object not found.');
-    } else {
-      return {response: response.results[0]};
-    }
+      } else {
+          return {response: response.results[0]};
+      }
   });
 }
 
