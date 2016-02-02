@@ -23,34 +23,34 @@ var databaseURI = 'mongodb://localhost:27017/parse';
 var appDatabaseURIs = {};
 
 function setAdapter(databaseAdapter) {
-  adapter = databaseAdapter;
+    adapter = databaseAdapter;
 }
 
 function setDatabaseURI(uri) {
-  databaseURI = uri;
+    databaseURI = uri;
 }
 
 function setAppDatabaseURI(appId, uri) {
-  appDatabaseURIs[appId] = uri;
+    appDatabaseURIs[appId] = uri;
 }
 
 function getDatabaseConnection(appId) {
-  if (dbConnections[appId]) {
-    return dbConnections[appId];
-  }
+    if (dbConnections[appId]) {
+        return dbConnections[appId];
+    }
 
-  var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
-  dbConnections[appId] = new adapter(dbURI, {
-    collectionPrefix: cache.apps[appId]['collectionPrefix']
-  });
-  dbConnections[appId].connect();
-  return dbConnections[appId];
+    var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
+    dbConnections[appId] = new adapter(dbURI, {
+        collectionPrefix: cache.apps[appId]['collectionPrefix']
+    });
+    dbConnections[appId].connect();
+    return dbConnections[appId];
 }
 
 module.exports = {
-  dbConnections: dbConnections,
-  getDatabaseConnection: getDatabaseConnection,
-  setAdapter: setAdapter,
-  setDatabaseURI: setDatabaseURI,
-  setAppDatabaseURI: setAppDatabaseURI
+    dbConnections: dbConnections,
+    getDatabaseConnection: getDatabaseConnection,
+    setAdapter: setAdapter,
+    setDatabaseURI: setDatabaseURI,
+    setAppDatabaseURI: setAppDatabaseURI
 };

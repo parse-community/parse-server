@@ -9,47 +9,47 @@ var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
-  var appId = rack();
-  cache.apps[appId] = {
-    'collectionPrefix': appId + '_',
-    'masterKey': 'master'
-  };
-  var keys = {
-    'application_id': appId,
-    'client_key': 'unused',
-    'windows_key': 'unused',
-    'javascript_key': 'unused',
-    'webhook_key': 'unused',
-    'rest_api_key': 'unused',
-    'master_key': 'master'
-  };
-  res.status(200).send(keys);
+    var appId = rack();
+    cache.apps[appId] = {
+        'collectionPrefix': appId + '_',
+        'masterKey': 'master'
+    };
+    var keys = {
+        'application_id': appId,
+        'client_key': 'unused',
+        'windows_key': 'unused',
+        'javascript_key': 'unused',
+        'webhook_key': 'unused',
+        'rest_api_key': 'unused',
+        'master_key': 'master'
+    };
+    res.status(200).send(keys);
 }
 
 // deletes all collections with the collectionPrefix of the app
 function clearApp(req, res) {
-  if (!req.auth.isMaster) {
-    return res.status(401).send({"error": "unauthorized"});
-  }
-  req.database.deleteEverything().then(() => {
-    res.status(200).send({});
-  });
+    if (!req.auth.isMaster) {
+        return res.status(401).send({'error': 'unauthorized'});
+    }
+    req.database.deleteEverything().then(() => {
+        res.status(200).send({});
+    });
 }
 
 // deletes all collections and drops the app from cache
 function dropApp(req, res) {
-  if (!req.auth.isMaster) {
-    return res.status(401).send({"error": "unauthorized"});
-  }
-  req.database.deleteEverything().then(() => {
-    delete cache.apps[req.config.applicationId];
-    res.status(200).send({});
-  });
+    if (!req.auth.isMaster) {
+        return res.status(401).send({'error': 'unauthorized'});
+    }
+    req.database.deleteEverything().then(() => {
+        delete cache.apps[req.config.applicationId];
+        res.status(200).send({});
+    });
 }
 
 // Lets just return a success response and see what happens.
 function notImplementedYet(req, res) {
-  res.status(200).send({});
+    res.status(200).send({});
 }
 
 router.post('/rest_clear_app',
@@ -69,5 +69,5 @@ router.post('/rest_configure_app',
              middlewares.handleParseHeaders, notImplementedYet);
 
 module.exports = {
-  router: router
+    router: router
 };
