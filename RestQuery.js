@@ -434,7 +434,7 @@ function includePath(config, auth, response, path) {
 function findPointers(object, path) {
   if (object instanceof Array) {
     var answer = [];
-    for (x of object) {
+    for (var x of object) {
       answer = answer.concat(findPointers(x, path));
     }
     return answer;

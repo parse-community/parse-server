@@ -363,7 +363,7 @@ RestWrite.prototype.handleFollowup = function() {
     };
     delete this.storage['clearSessions'];
     return this.config.database.destroy('_Session', sessionQuery)
-    .then(this.handleFollowup);
+    .then(this.handleFollowup.bind(this));
   }
 };
 
