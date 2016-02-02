@@ -10,13 +10,16 @@ var facebook = require('./facebook');
 var PromiseRouter = require('./PromiseRouter');
 var rest = require('./rest');
 var RestWrite = require('./RestWrite');
+var deepcopy = require('deepcopy');
 
 var router = new PromiseRouter();
 
 // Returns a promise for a {status, response, location} object.
 function handleCreate(req) {
+  var data = deepcopy(req.body);
+  data.installationId = req.info.installationId;
   return rest.create(req.config, req.auth,
-                     '_User', req.body);
+                     '_User', data);
 }
 
 // Returns a promise for a {response} object.

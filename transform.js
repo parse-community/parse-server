@@ -48,7 +48,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
     break;
   case 'expiresAt':
   case '_expiresAt':
-    key = '_expiresAt';
+    key = 'expiresAt';
     timeField = true;
     break;
   case '_rperm':

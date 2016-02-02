@@ -237,6 +237,8 @@ RestWrite.prototype.handleFacebookAuthData = function() {
             response: results[0],
             location: this.location()
           };
+          this.data.objectId = results[0].objectId;
+          this.data.createdWith = "facebook";
           return;
         }
 
@@ -262,7 +264,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function() {
-  if (this.response || this.className !== '_User') {
+  if (this.className !== '_User') {
     return;
   }
 
@@ -273,6 +275,8 @@ RestWrite.prototype.transformUser = function() {
     this.storage['token'] = token;
     promise = promise.then(() => {
       // TODO: Proper createdWith options, pass installationId
+      var expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
       var sessionData = {
         sessionToken: token,
         user: {
@@ -282,10 +286,15 @@ RestWrite.prototype.transformUser = function() {
         },
         createdWith: {
           'action': 'login',
-          'authProvider': 'password'
+          'authProvider': this.data.createdWith || 'password'
         },
-        restricted: false
+        restricted: false,
+        installationId: this.data.installationId,
+        expiresAt: Parse._encode(expiresAt)
       };
+      if (this.response && this.response.response) {
+        this.response.response.sessionToken = token;
+      }
       var create = new RestWrite(this.config, Auth.master(this.config),
                                  '_Session', null, sessionData);
       return create.execute();
