@@ -5,7 +5,7 @@ var Parse = require('parse/node').Parse;
 var rack = require('hat').rack();
 
 var Auth = require('./Auth');
-var crypto = require('./crypto');
+var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var PromiseRouter = require('./PromiseRouter');
 var rest = require('./rest');
@@ -45,7 +45,7 @@ function handleLogIn(req) {
                               'Invalid username/password.');
       }
       user = results[0];
-      return crypto.compare(req.body.password, user.password);
+      return passwordCrypto.compare(req.body.password, user.password);
     }).then((correct) => {
       if (!correct) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
@@ -70,7 +70,7 @@ function handleLogIn(req) {
           'authProvider': 'password'
         },
         restricted: false,
-        expiresAt: Parse._encode(expiresAt).iso
+        expiresAt: Parse._encode(expiresAt)
       };
       
       if (req.info.installationId) {

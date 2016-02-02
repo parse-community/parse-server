@@ -4,6 +4,7 @@
 // Requires the database adapter to be based on mongoclient
 
 var GridStore = require('mongodb').GridStore;
+var path = require('path');
 
 // For a given config object, filename, and data, store a file
 // Returns a promise
@@ -32,7 +33,16 @@ function get(config, filename) {
   });
 }
 
+// Generates and returns the location of a file stored in GridStore for the
+// given request and filename
+function location(config, req, filename) {
+  return (req.protocol + '://' + req.get('host') +
+    path.dirname(req.originalUrl) + '/' + req.config.applicationId +
+    '/' + encodeURIComponent(filename));
+}
+
 module.exports = {
   create: create,
-  get: get
+  get: get,
+  location: location
 };

@@ -6,6 +6,7 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
+    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
@@ -23,7 +24,9 @@ addParseCloud();
 //                 and delete
 // "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
 //          what database this Parse API connects to.
-// "cloud": relative location to cloud code to require
+// "cloud": relative location to cloud code to require, or a function
+//          that is given an instance of Parse as a parameter.  Use this instance of Parse
+//          to register your cloud code hooks and functions.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -51,7 +54,14 @@ function ParseServer(args) {
   }
   if (args.cloud) {
     addParseCloud();
-    require(args.cloud);
+    if (typeof args.cloud === 'function') {
+      args.cloud(Parse)
+    } else if (typeof args.cloud === 'string') {
+      require(args.cloud);
+    } else {
+      throw "argument 'cloud' must either be a string or a function";
+    }
+
   }
 
   cache.apps[args.appId] = {
@@ -179,5 +189,6 @@ function getClassName(parseClass) {
 }
 
 module.exports = {
-  ParseServer: ParseServer
+  ParseServer: ParseServer,
+  S3Adapter: S3Adapter
 };
