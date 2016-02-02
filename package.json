@@ -27,7 +27,7 @@
   },
   "scripts": {
     "test": "TESTING=1 ./node_modules/.bin/jasmine",
-    "lint": "./node_modules/.bin/eslint ."
+    "lint": "./node_modules/.bin/eslint src"
   },
   "engines": {
     "node": ">=4.1"
