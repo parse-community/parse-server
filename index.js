@@ -6,6 +6,7 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
+    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
@@ -179,5 +180,6 @@ function getClassName(parseClass) {
 }
 
 module.exports = {
-  ParseServer: ParseServer
+  ParseServer: ParseServer,
+  S3Adapter: S3Adapter
 };
