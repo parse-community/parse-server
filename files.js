@@ -42,6 +42,9 @@ var processCreate = function(req, res, next) {
   var filename = rack() + '_' + req.params.filename + extension;
   FilesAdapter.getAdapter().create(req.config, filename, req.body)
   .then(() => {
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header("Access-Control-Allow-Methods", "*");
+    res.header("Access-Control-Allow-Headers", "*");
     res.status(201);
     var location = FilesAdapter.getAdapter().location(req.config, req, filename);
     res.set('Location', location);
@@ -74,7 +77,6 @@ router.post('/files', function(req, res, next) {
                        'Filename not provided.'));
 });
 
-// TODO: do we need to allow crossdomain and method override?
 router.post('/files/:filename',
             bodyParser.raw({type: '*/*', limit: '20mb'}),
             middlewares.handleParseHeaders,
