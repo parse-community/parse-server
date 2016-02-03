@@ -22,10 +22,11 @@
     "request": "^2.65.0"
   },
   "devDependencies": {
+    "istanbul": "^0.4.2",
     "jasmine": "^2.3.2"
   },
   "scripts": {
-    "test": "TESTING=1 ./node_modules/.bin/jasmine"
+    "test": "TESTING=1 ./node_modules/.bin/istanbul cover --include-all-sources ./node_modules/.bin/jasmine"
   },
   "engines": {
     "node": ">=4.1"
