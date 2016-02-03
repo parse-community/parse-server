@@ -2,8 +2,7 @@
 
 var Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    rest = require('./rest'),
-    moment = require('moment');
+    rest = require('./rest');
 
 var validPushTypes = ['ios', 'android'];
 
