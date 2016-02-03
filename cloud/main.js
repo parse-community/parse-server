@@ -78,3 +78,9 @@ Parse.Cloud.define('foo', function(req, res) {
 Parse.Cloud.define('bar', function(req, res) {
   res.error('baz');
 });
+
+Parse.Cloud.define('requiredParameterCheck', function(req, res) {
+  res.success();
+}, function(params) {
+  return params.name;
+});

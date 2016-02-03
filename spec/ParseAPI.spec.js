@@ -544,6 +544,42 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test cloud function parameter validation success', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
+      res.success('works');
+    }, (params) => {
+      return params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+      delete Parse.Cloud.Functions['functionWithParameterValidation'];
+      done();
+    }, (e) => {
+      fail('Validation should not have failed.');
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidationFailure', (req, res) => {
+      res.success('noway');
+    }, (params) => {
+      return params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
+      fail('Validation should not have succeeded');
+      delete Parse.Cloud.Functions['functionWithParameterValidationFailure'];
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(141);
+      expect(e.message).toEqual('Validation failed.');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
