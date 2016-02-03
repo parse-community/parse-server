@@ -1336,7 +1336,7 @@ describe('Parse.User testing', () => {
         var b = JSON.parse(body);
         expect(b.results.length).toEqual(1);
         var user = b.results[0];
-        expect(Object.keys(user).length).toEqual(5);
+        expect(Object.keys(user).length).toEqual(6);
         done();
       });
     });

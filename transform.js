@@ -335,6 +335,7 @@ function transformAtom(atom, force, options) {
     return atom;
 
   case 'undefined':
+    return atom;
   case 'symbol':
   case 'function':
     throw new Parse.Error(Parse.Error.INVALID_JSON,
