@@ -78,7 +78,8 @@ describe('Parse.User testing', () => {
       sessionToken = newUser.getSessionToken();
       ok(sessionToken);
 
-      Parse.User.logOut();
+      return Parse.User.logOut();
+    }).then(() => {
       ok(!Parse.User.current());
 
       return Parse.User.become(sessionToken);
@@ -91,7 +92,8 @@ describe('Parse.User testing', () => {
       equal(newUser.get("username"), "Jason");
       equal(newUser.get("code"), "red");
 
-      Parse.User.logOut();
+      return Parse.User.logOut();
+    }).then(() => {
       ok(!Parse.User.current());
 
       return Parse.User.become("somegarbage");
@@ -236,22 +238,20 @@ describe('Parse.User testing', () => {
     user.set("password", "asdf");
     user.set("email", "asdf@example.com");
     user.set("username", "zxcv");
-    user.signUp(null, {
-      success: function() {
-        var currentUser = Parse.User.current();
-        equal(user.id, currentUser.id);
-        ok(user.getSessionToken());
+    user.signUp().then(() => {
+      var currentUser = Parse.User.current();
+      equal(user.id, currentUser.id);
+      ok(user.getSessionToken());
 
-        var currentUserAgain = Parse.User.current();
-        // should be the same object
-        equal(currentUser, currentUserAgain);
+      var currentUserAgain = Parse.User.current();
+      // should be the same object
+      equal(currentUser, currentUserAgain);
 
-        // test logging out the current user
-        Parse.User.logOut();
-
-        equal(Parse.User.current(), null);
-        done();
-      }
+      // test logging out the current user
+      return Parse.User.logOut();
+    }).then(() => {
+      equal(Parse.User.current(), null);
+      done();
     });
   });
 
@@ -578,28 +578,24 @@ describe('Parse.User testing', () => {
 
 
   it("user loaded from localStorage from login", (done) => {
+    var id;
+    Parse.User.signUp("alice", "password").then((alice) => {
+      id = alice.id;
+      return Parse.User.logOut();
+    }).then(() => {
+      return Parse.User.logIn("alice", "password");
+    }).then((user) => {
+      // Force the current user to read from disk
+      delete Parse.User._currentUser;
+      delete Parse.User._currentUserMatchesDisk;
 
-    Parse.User.signUp("alice", "password", null, {
-      success: function(alice) {
-        var id = alice.id;
-        Parse.User.logOut();
-
-        Parse.User.logIn("alice", "password", {
-          success: function(user) {
-            // Force the current user to read from disk
-            delete Parse.User._currentUser;
-            delete Parse.User._currentUserMatchesDisk;
-
-            var userFromDisk = Parse.User.current();
-            equal(userFromDisk.get("password"), undefined,
-                  "password should not be in attributes");
-            equal(userFromDisk.id, id, "id should be set");
-            ok(userFromDisk.getSessionToken(),
-               "currentUser should have a sessionToken");
-            done();
-          }
-        });
-      }
+      var userFromDisk = Parse.User.current();
+      equal(userFromDisk.get("password"), undefined,
+            "password should not be in attributes");
+      equal(userFromDisk.id, id, "id should be set");
+      ok(userFromDisk.getSessionToken(),
+         "currentUser should have a sessionToken");
+      done();
     });
   });
 
@@ -609,8 +605,8 @@ describe('Parse.User testing', () => {
 
     Parse.User.signUp("alice", "password", null).then(function(alice) {
       id = alice.id;
-      Parse.User.logOut();
-
+      return Parse.User.logOut();
+    }).then(() => {
       return Parse.User.logIn("alice", "password");
     }).then(function() {
       // Simulate browser refresh by force-reloading user from localStorage
@@ -1300,8 +1296,8 @@ describe('Parse.User testing', () => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
 
     }).then(function() {
-      Parse.User.logOut();
-
+      return Parse.User.logOut();
+    }).then(() => {
       var user = new Parse.User();
       user.set("username", "jake");
       user.set("password", "dog");
@@ -1309,8 +1305,8 @@ describe('Parse.User testing', () => {
       return user.signUp();
 
     }).then(function() {
-      Parse.User.logOut();
-
+      return Parse.User.logOut();
+    }).then(() => {
       var query = new Parse.Query(Parse.User);
       return query.find();
 

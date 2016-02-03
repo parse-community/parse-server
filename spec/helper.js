@@ -46,8 +46,7 @@ beforeEach(function(done) {
 });
 
 afterEach(function(done) {
-  Parse.User.logOut();
-  Parse.Promise.as().then(() => {
+  Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
     done();
