@@ -229,6 +229,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         this.className,
         {'authData.facebook.id': facebookData.id}, {});
     }).then((results) => {
+      this.storage['authProvider'] = "facebook";
       if (results.length > 0) {
         if (!this.query) {
           // We're signing up, but this user already exists. Short-circuit
@@ -237,6 +238,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
             response: results[0],
             location: this.location()
           };
+          this.data.objectId = results[0].objectId;
           return;
         }
 
@@ -249,6 +251,8 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         // We're trying to create a duplicate FB auth. Forbid it
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
+      } else {
+        this.data.username = rack();
       }
 
       // This FB auth does not already exist, so transform it to a
@@ -262,7 +266,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function() {
-  if (this.response || this.className !== '_User') {
+  if (this.className !== '_User') {
     return;
   }
 
@@ -272,7 +276,8 @@ RestWrite.prototype.transformUser = function() {
     var token = 'r:' + rack();
     this.storage['token'] = token;
     promise = promise.then(() => {
-      // TODO: Proper createdWith options, pass installationId
+      var expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
       var sessionData = {
         sessionToken: token,
         user: {
@@ -282,10 +287,15 @@ RestWrite.prototype.transformUser = function() {
         },
         createdWith: {
           'action': 'login',
-          'authProvider': 'password'
+          'authProvider': this.storage['authProvider'] || 'password'
         },
-        restricted: false
+        restricted: false,
+        installationId: this.data.installationId,
+        expiresAt: Parse._encode(expiresAt)
       };
+      if (this.response && this.response.response) {
+        this.response.response.sessionToken = token;
+      }
       var create = new RestWrite(this.config, Auth.master(this.config),
                                  '_Session', null, sessionData);
       return create.execute();
@@ -404,6 +414,8 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.query && !this.auth.isMaster) {
     var token = 'r:' + rack();
+    var expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     var sessionData = {
       sessionToken: token,
       user: {
@@ -415,7 +427,7 @@ RestWrite.prototype.handleSession = function() {
         'action': 'create'
       },
       restricted: true,
-      expiresAt: 0
+      expiresAt: Parse._encode(expiresAt)
     };
     for (var key in this.data) {
       if (key == 'objectId') {
