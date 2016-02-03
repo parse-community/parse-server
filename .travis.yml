@@ -1,0 +1,10 @@
+branches:
+  only:
+    - master
+language: node_js
+node_js:
+  - "4.1"
+  - "4.2"
+env:
+  - MONGODB_VERSION=3.0.8
+after_script: cat ./coverage/coverage-final.json
