@@ -48,7 +48,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
     break;
   case 'expiresAt':
   case '_expiresAt':
-    key = '_expiresAt';
+    key = 'expiresAt';
     timeField = true;
     break;
   case '_rperm':
@@ -335,6 +335,7 @@ function transformAtom(atom, force, options) {
     return atom;
 
   case 'undefined':
+    return atom;
   case 'symbol':
   case 'function':
     throw new Parse.Error(Parse.Error.INVALID_JSON,
@@ -676,6 +677,9 @@ function untransformObject(schema, className, mongoObject) {
             console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
+          if (mongoObject[key] === null) {
+            break;
+          }
           var objData = mongoObject[key].split('$');
           var newClass = (expected ? expected.substring(1) : objData[0]);
           if (objData[0] !== newClass) {
@@ -689,9 +693,11 @@ function untransformObject(schema, className, mongoObject) {
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
+        //} else if (mongoObject[key] === null) {
+          //break;
         } else {
           var expected = schema.getExpectedType(className, key);
-          if (expected == 'file') {
+          if (expected == 'file' && mongoObject[key]) {
             restObject[key] = {
               __type: 'File',
               name: mongoObject[key]

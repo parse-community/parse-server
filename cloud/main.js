@@ -4,8 +4,17 @@ Parse.Cloud.define('hello', function(req, res) {
   res.success('Hello world!');
 });
 
-Parse.Cloud.beforeSave('BeforeSaveFailure', function(req, res) {
+Parse.Cloud.beforeSave('BeforeSaveFail', function(req, res) {
   res.error('You shall not pass!');
+});
+
+Parse.Cloud.beforeSave('BeforeSaveFailWithPromise', function (req, res) {
+  var query = new Parse.Query('Yolo');
+  query.find().then(() => {
+   res.error('Nope');
+  }, () => {
+    res.success();
+  });
 });
 
 Parse.Cloud.beforeSave('BeforeSaveUnchanged', function(req, res) {
@@ -25,6 +34,15 @@ Parse.Cloud.afterSave('AfterSaveTest', function(req) {
 
 Parse.Cloud.beforeDelete('BeforeDeleteFail', function(req, res) {
   res.error('Nope');
+});
+
+Parse.Cloud.beforeSave('BeforeDeleteFailWithPromise', function (req, res) {
+  var query = new Parse.Query('Yolo');
+  query.find().then(() => {
+    res.error('Nope');
+  }, () => {
+    res.success();
+  });
 });
 
 Parse.Cloud.beforeDelete('BeforeDeleteTest', function(req, res) {
