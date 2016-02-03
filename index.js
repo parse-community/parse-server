@@ -111,6 +111,7 @@ function ParseServer(args) {
   router.merge(require('./push'));
   router.merge(require('./installations'));
   router.merge(require('./functions'));
+  router.merge(require('./schemas'));
 
   batch.mountOnto(router);
 
