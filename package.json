@@ -20,6 +20,7 @@
     "mongodb": "~2.1.0",
     "multer": "^1.1.0",
     "parse": "^1.7.0",
+    "moment": "^2.11.1",
     "request": "^2.65.0"
   },
   "devDependencies": {
