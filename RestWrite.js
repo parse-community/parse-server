@@ -229,6 +229,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         this.className,
         {'authData.facebook.id': facebookData.id}, {});
     }).then((results) => {
+      this.storage['authProvider'] = "facebook";
       if (results.length > 0) {
         if (!this.query) {
           // We're signing up, but this user already exists. Short-circuit
@@ -238,7 +239,6 @@ RestWrite.prototype.handleFacebookAuthData = function() {
             location: this.location()
           };
           this.data.objectId = results[0].objectId;
-          this.data.createdWith = "facebook";
           return;
         }
 
@@ -251,6 +251,8 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         // We're trying to create a duplicate FB auth. Forbid it
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
+      } else {
+        this.data.username = rack();
       }
 
       // This FB auth does not already exist, so transform it to a
@@ -274,7 +276,6 @@ RestWrite.prototype.transformUser = function() {
     var token = 'r:' + rack();
     this.storage['token'] = token;
     promise = promise.then(() => {
-      // TODO: Proper createdWith options, pass installationId
       var expiresAt = new Date();
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
       var sessionData = {
@@ -286,7 +287,7 @@ RestWrite.prototype.transformUser = function() {
         },
         createdWith: {
           'action': 'login',
-          'authProvider': this.data.createdWith || 'password'
+          'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
         installationId: this.data.installationId,
@@ -413,6 +414,8 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.query && !this.auth.isMaster) {
     var token = 'r:' + rack();
+    var expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     var sessionData = {
       sessionToken: token,
       user: {
@@ -424,7 +427,7 @@ RestWrite.prototype.handleSession = function() {
         'action': 'create'
       },
       restricted: true,
-      expiresAt: 0
+      expiresAt: Parse._encode(expiresAt)
     };
     for (var key in this.data) {
       if (key == 'objectId') {
