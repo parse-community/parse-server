@@ -7,4 +7,4 @@ node_js:
   - "4.2"
 env:
   - MONGODB_VERSION=3.0.8
-after_script: cat ./coverage/coverage-final.json
+after_success: ./node_modules/.bin/codecov
