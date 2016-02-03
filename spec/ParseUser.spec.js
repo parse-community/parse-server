@@ -268,50 +268,39 @@ describe('Parse.User testing', () => {
     user2.set("password", "password");
     user3.set("password", "password");
 
-    user1.signUp(null, {
-      success: function () {
-        equal(user1.isCurrent(), true);
-        equal(user2.isCurrent(), false);
-        equal(user3.isCurrent(), false);
-        user2.signUp(null, {
-          success: function() {
-            equal(user1.isCurrent(), false);
-            equal(user2.isCurrent(), true);
-            equal(user3.isCurrent(), false);
-            user3.signUp(null, {
-              success: function() {
-                equal(user1.isCurrent(), false);
-                equal(user2.isCurrent(), false);
-                equal(user3.isCurrent(), true);
-                Parse.User.logIn("a", "password", {
-                  success: function(user1) {
-                    equal(user1.isCurrent(), true);
-                    equal(user2.isCurrent(), false);
-                    equal(user3.isCurrent(), false);
-                    Parse.User.logIn("b", "password", {
-                      success: function(user2) {
-                        equal(user1.isCurrent(), false);
-                        equal(user2.isCurrent(), true);
-                        equal(user3.isCurrent(), false);
-                        Parse.User.logIn("b", "password", {
-                          success: function(user3) {
-                            equal(user1.isCurrent(), false);
-                            equal(user2.isCurrent(), true);
-                            equal(user3.isCurrent(), true);
-                            Parse.User.logOut();
-                            equal(user3.isCurrent(), false);
-                            done();
-                          }
-                        });
-                      }
-                    });
-                  }
-                });
-              }
-            });
-          }
-        });
-      }
+    user1.signUp().then(() => {
+      equal(user1.isCurrent(), true);
+      equal(user2.isCurrent(), false);
+      equal(user3.isCurrent(), false);
+      return user2.signUp();
+    }).then(() => {
+      equal(user1.isCurrent(), false);
+      equal(user2.isCurrent(), true);
+      equal(user3.isCurrent(), false);
+      return user3.signUp();
+    }).then(() => {
+      equal(user1.isCurrent(), false);
+      equal(user2.isCurrent(), false);
+      equal(user3.isCurrent(), true);
+      return Parse.User.logIn("a", "password");
+    }).then(() => {
+      equal(user1.isCurrent(), true);
+      equal(user2.isCurrent(), false);
+      equal(user3.isCurrent(), false);
+      return Parse.User.logIn("b", "password");
+    }).then(() => {
+      equal(user1.isCurrent(), false);
+      equal(user2.isCurrent(), true);
+      equal(user3.isCurrent(), false);
+      return Parse.User.logIn("b", "password");
+    }).then(() => {
+      equal(user1.isCurrent(), false);
+      equal(user2.isCurrent(), true);
+      equal(user3.isCurrent(), false);
+      return Parse.User.logOut();
+    }).then(() => {
+      equal(user2.isCurrent(), false);
+      done();
     });
   });
 
