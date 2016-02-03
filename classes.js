@@ -41,6 +41,14 @@ function handleFind(req) {
   return rest.find(req.config, req.auth,
                    req.params.className, body.where, options)
     .then((response) => {
+      if (response && response.results) {
+        for (result of response.results) {
+          if (result.sessionToken) {
+            result.sessionToken = req.info.sessionToken || result.sessionToken;
+          }
+        }
+        response.results.sessionToken
+      }
       return {response: response};
     });
 }

@@ -212,6 +212,9 @@ Schema.prototype.validateObject = function(className, object, freeze) {
   var geocount = 0;
   var promise = this.validateClassName(className, freeze);
   for (var key in object) {
+    if (object[key] === undefined) {
+      continue;
+    }
     var expected = getType(object[key]);
     if (expected === 'geopoint') {
       geocount++;

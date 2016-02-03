@@ -48,7 +48,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
     break;
   case 'expiresAt':
   case '_expiresAt':
-    key = '_expiresAt';
+    key = 'expiresAt';
     timeField = true;
     break;
   case '_rperm':
@@ -335,6 +335,7 @@ function transformAtom(atom, force, options) {
     return atom;
 
   case 'undefined':
+    return atom;
   case 'symbol':
   case 'function':
     throw new Parse.Error(Parse.Error.INVALID_JSON,

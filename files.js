@@ -74,8 +74,8 @@ router.post('/files', function(req, res, next) {
                        'Filename not provided.'));
 });
 
-// TODO: do we need to allow crossdomain and method override?
 router.post('/files/:filename',
+            middlewares.allowCrossDomain,
             bodyParser.raw({type: '*/*', limit: '20mb'}),
             middlewares.handleParseHeaders,
             processCreate);
