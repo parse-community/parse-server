@@ -676,4 +676,15 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('fails on invalid function', done => {
+    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then((s) => {
+      fail('This should have never suceeded');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toEqual('Invalid function.');
+      done();
+    });
+  });
+
 });
