@@ -57,7 +57,8 @@ var getResponseObject = function(request, resolve, reject) {
       return resolve(response);
     },
     error: function(error) {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
+      var scriptError = new Parse.Error(Parse.Error.SCRIPT_FAILED, error);
+      return reject(scriptError);
     }
   }
 };
