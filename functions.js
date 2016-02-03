@@ -13,7 +13,8 @@ function handleCloudFunction(req) {
       var response = createResponseObject(resolve, reject);
       var request = {
         params: req.body || {},
-        user: req.auth && req.auth.user || {}
+        master: req.auth && req.auth.isMaster,
+        user: req.auth && req.auth.user,
       };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
