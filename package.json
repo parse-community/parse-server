@@ -15,6 +15,7 @@
     "deepcopy": "^0.5.0",
     "express": "~4.2.x",
     "hat": "~0.0.3",
+    "mailgun-js": "^0.7.7",
     "mime": "^1.3.4",
     "mongodb": "~2.0.33",
     "multer": "~0.1.8",
