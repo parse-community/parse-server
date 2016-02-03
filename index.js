@@ -134,7 +134,7 @@ function addParseCloud() {
     afterSave: {},
     afterDelete: {}
   };
-  
+
   Parse.Cloud.define = function(functionName, handler, validationHandler) {
     Parse.Cloud.Functions[functionName] = handler;
     Parse.Cloud.Validators[functionName] = validationHandler;
