@@ -6,11 +6,12 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
+    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    request = require('request');
+    httpRequest = require('./httpRequest');
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -23,7 +24,9 @@ addParseCloud();
 //                 and delete
 // "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
 //          what database this Parse API connects to.
-// "cloud": relative location to cloud code to require
+// "cloud": relative location to cloud code to require, or a function
+//          that is given an instance of Parse as a parameter.  Use this instance of Parse
+//          to register your cloud code hooks and functions.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -47,11 +50,18 @@ function ParseServer(args) {
     FilesAdapter.setAdapter(args.filesAdapter);
   }
   if (args.databaseURI) {
-    DatabaseAdapter.setDatabaseURI(args.databaseURI);
+    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
   if (args.cloud) {
     addParseCloud();
-    require(args.cloud);
+    if (typeof args.cloud === 'function') {
+      args.cloud(Parse)
+    } else if (typeof args.cloud === 'string') {
+      require(args.cloud);
+    } else {
+      throw "argument 'cloud' must either be a string or a function";
+    }
+
   }
 
   cache.apps[args.appId] = {
@@ -101,6 +111,7 @@ function ParseServer(args) {
   router.merge(require('./push'));
   router.merge(require('./installations'));
   router.merge(require('./functions'));
+  router.merge(require('./schemas'));
 
   batch.mountOnto(router);
 
@@ -141,33 +152,7 @@ function addParseCloud() {
     var className = getClassName(parseClass);
     Parse.Cloud.Triggers.afterDelete[className] = handler;
   };
-  Parse.Cloud.httpRequest = function(options) {
-    var promise = new Parse.Promise();
-    var callbacks = {
-      success: options.success,
-      error: options.error
-    };
-    delete options.success;
-    delete options.error;
-    if (options.uri && !options.url) {
-      options.uri = options.url;
-      delete options.url;
-    }
-    request(options, (error, response, body) => {
-      if (error) {
-        if (callbacks.error) {
-          return callbacks.error(error);
-        }
-        return promise.reject(error);
-      } else {
-        if (callbacks.success) {
-          return callbacks.success(body);
-        }
-        return promise.resolve(body);
-      }
-    });
-    return promise;
-  };
+  Parse.Cloud.httpRequest = httpRequest;
   global.Parse = Parse;
 }
 
@@ -179,6 +164,6 @@ function getClassName(parseClass) {
 }
 
 module.exports = {
-  ParseServer: ParseServer
+  ParseServer: ParseServer,
+  S3Adapter: S3Adapter
 };
-

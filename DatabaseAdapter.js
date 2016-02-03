@@ -20,6 +20,7 @@ var adapter = ExportAdapter;
 var cache = require('./cache');
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
+var appDatabaseURIs = {};
 
 function setAdapter(databaseAdapter) {
   adapter = databaseAdapter;
@@ -29,11 +30,17 @@ function setDatabaseURI(uri) {
   databaseURI = uri;
 }
 
+function setAppDatabaseURI(appId, uri) {
+  appDatabaseURIs[appId] = uri;
+}
+
 function getDatabaseConnection(appId) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }
-  dbConnections[appId] = new adapter(databaseURI, {
+
+  var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
+  dbConnections[appId] = new adapter(dbURI, {
     collectionPrefix: cache.apps[appId]['collectionPrefix']
   });
   dbConnections[appId].connect();
@@ -44,5 +51,6 @@ module.exports = {
   dbConnections: dbConnections,
   getDatabaseConnection: getDatabaseConnection,
   setAdapter: setAdapter,
-  setDatabaseURI: setDatabaseURI
+  setDatabaseURI: setDatabaseURI,
+  setAppDatabaseURI: setAppDatabaseURI
 };

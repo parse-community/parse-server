@@ -2,13 +2,14 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
+var crypto = require('crypto');
 var deepcopy = require('deepcopy');
 var rack = require('hat').rack();
 
 var Auth = require('./Auth');
 var cache = require('./cache');
 var Config = require('./Config');
-var crypto = require('./crypto');
+var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
@@ -228,6 +229,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         this.className,
         {'authData.facebook.id': facebookData.id}, {});
     }).then((results) => {
+      this.storage['authProvider'] = "facebook";
       if (results.length > 0) {
         if (!this.query) {
           // We're signing up, but this user already exists. Short-circuit
@@ -236,6 +238,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
             response: results[0],
             location: this.location()
           };
+          this.data.objectId = results[0].objectId;
           return;
         }
 
@@ -248,6 +251,8 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         // We're trying to create a duplicate FB auth. Forbid it
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
+      } else {
+        this.data.username = rack();
       }
 
       // This FB auth does not already exist, so transform it to a
@@ -261,7 +266,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function() {
-  if (this.response || this.className !== '_User') {
+  if (this.className !== '_User') {
     return;
   }
 
@@ -271,7 +276,8 @@ RestWrite.prototype.transformUser = function() {
     var token = 'r:' + rack();
     this.storage['token'] = token;
     promise = promise.then(() => {
-      // TODO: Proper createdWith options, pass installationId
+      var expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
       var sessionData = {
         sessionToken: token,
         user: {
@@ -281,10 +287,15 @@ RestWrite.prototype.transformUser = function() {
         },
         createdWith: {
           'action': 'login',
-          'authProvider': 'password'
+          'authProvider': this.storage['authProvider'] || 'password'
         },
-        restricted: false
+        restricted: false,
+        installationId: this.data.installationId,
+        expiresAt: Parse._encode(expiresAt)
       };
+      if (this.response && this.response.response) {
+        this.response.response.sessionToken = token;
+      }
       var create = new RestWrite(this.config, Auth.master(this.config),
                                  '_Session', null, sessionData);
       return create.execute();
@@ -299,7 +310,7 @@ RestWrite.prototype.transformUser = function() {
     if (this.query) {
       this.storage['clearSessions'] = true;
     }
-    return crypto.hash(this.data.password).then((hashedPassword) => {
+    return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
       this.data._hashed_password = hashedPassword;
       delete this.data.password;
     });
@@ -361,7 +372,7 @@ RestWrite.prototype.handleFollowup = function() {
     };
     delete this.storage['clearSessions'];
     return this.config.database.destroy('_Session', sessionQuery)
-    .then(this.handleFollowup);
+    .then(this.handleFollowup.bind(this));
   }
 };
 
@@ -403,6 +414,8 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.query && !this.auth.isMaster) {
     var token = 'r:' + rack();
+    var expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     var sessionData = {
       sessionToken: token,
       user: {
@@ -414,7 +427,7 @@ RestWrite.prototype.handleSession = function() {
         'action': 'create'
       },
       restricted: true,
-      expiresAt: 0
+      expiresAt: Parse._encode(expiresAt)
     };
     for (var key in this.data) {
       if (key == 'objectId') {
@@ -701,15 +714,18 @@ RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
 
-// Returns a string that's usable as an object id.
-// Probably unique. Good enough? Probably!
+// Returns a unique string that's usable as an object id.
 function newObjectId() {
   var chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
                'abcdefghijklmnopqrstuvwxyz' +
                '0123456789');
   var objectId = '';
-  for (var i = 0; i < 10; ++i) {
-    objectId += chars[Math.floor(Math.random() * chars.length)];
+  var bytes = crypto.randomBytes(10);
+  for (var i = 0; i < bytes.length; ++i) {
+    // Note: there is a slight modulo bias, because chars length
+    // of 62 doesn't divide the number of all bytes (256) evenly.
+    // It is acceptable for our purposes.
+    objectId += chars[bytes.readUInt8(i) % chars.length];
   }
   return objectId;
 }
