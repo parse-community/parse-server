@@ -61,6 +61,29 @@ describe('transformCreate', () => {
     // This just checks that it doesn't crash, but it should check format.
     done();
   });
+
+  describe('GeoPoints', () => {
+    it('plain', (done) => {
+      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+      var out = transform.transformCreate(dummySchema, null, {location: geoPoint});
+      expect(out.location).toEqual([180, -180]);
+      done();
+    });
+
+    it('in array', (done) => {
+      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+      var out = transform.transformCreate(dummySchema, null, {locations: [geoPoint, geoPoint]});
+      expect(out.locations).toEqual([geoPoint, geoPoint]);
+      done();
+    });
+
+    it('in sub-object', (done) => {
+      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+      var out = transform.transformCreate(dummySchema, null, { locations: { start: geoPoint }});
+      expect(out).toEqual({ locations: { start: geoPoint } });
+      done();
+    });
+  });
 });
 
 describe('transformWhere', () => {

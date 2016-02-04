@@ -11,7 +11,7 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    request = require('request');
+    httpRequest = require('./httpRequest');
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -111,6 +111,7 @@ function ParseServer(args) {
   router.merge(require('./push'));
   router.merge(require('./installations'));
   router.merge(require('./functions'));
+  router.merge(require('./schemas'));
 
   batch.mountOnto(router);
 
@@ -148,36 +149,7 @@ function addParseCloud() {
     var className = getClassName(parseClass);
     Parse.Cloud.Triggers.afterDelete[className] = handler;
   };
-  Parse.Cloud.httpRequest = function(options) {
-    var promise = new Parse.Promise();
-    var callbacks = {
-      success: options.success,
-      error: options.error
-    };
-    delete options.success;
-    delete options.error;
-    if (options.uri && !options.url) {
-      options.uri = options.url;
-      delete options.url;
-    }
-    if (typeof options.body === 'object') {
-      options.body = JSON.stringify(options.body);
-    }
-    request(options, (error, response, body) => {
-      if (error) {
-        if (callbacks.error) {
-          return callbacks.error(error);
-        }
-        return promise.reject(error);
-      } else {
-        if (callbacks.success) {
-          return callbacks.success(body);
-        }
-        return promise.resolve(body);
-      }
-    });
-    return promise;
-  };
+  Parse.Cloud.httpRequest = httpRequest;
   global.Parse = Parse;
 }
 

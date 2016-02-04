@@ -287,4 +287,47 @@ describe('Parse.GeoPoint testing', () => {
       done();
     });
   });
+
+  it('supports a sub-object with a geo point', done => {
+    var point = new Parse.GeoPoint(44.0, -11.0);
+    var obj = new TestObject();
+    obj.set('subobject', { location: point });
+    obj.save(null, {
+      success: function() {
+        var query = new Parse.Query(TestObject);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            var pointAgain = results[0].get('subobject')['location'];
+            ok(pointAgain);
+            equal(pointAgain.latitude, 44.0);
+            equal(pointAgain.longitude, -11.0);
+            done();
+          }
+        });
+      }
+    });
+  });
+
+  it('supports array of geo points', done => {
+    var point1 = new Parse.GeoPoint(44.0, -11.0);
+    var point2 = new Parse.GeoPoint(22.0, -55.0);
+    var obj = new TestObject();
+    obj.set('locations', [ point1, point2 ]);
+    obj.save(null, {
+      success: function() {
+        var query = new Parse.Query(TestObject);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            var locations = results[0].get('locations');
+            expect(locations.length).toEqual(2);
+            expect(locations[0]).toEqual(point1);
+            expect(locations[1]).toEqual(point2);
+            done();
+          }
+        });
+      }
+    });
+  });
 });
