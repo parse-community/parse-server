@@ -1,5 +1,9 @@
 ## parse-server
 
+[![Build Status](https://img.shields.io/travis/ParsePlatform/parse-server/master.svg?style=flat)](https://travis-ci.org/ParsePlatform/parse-server)
+[![Coverage Status](https://img.shields.io/codecov/c/github/ParsePlatform/parse-server/master.svg)](https://codecov.io/github/ParsePlatform/parse-server?branch=master)
+[![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
+
 A Parse.com API compatible router package for Express
 
 Read the announcement blog post here:  http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/
@@ -18,6 +22,7 @@ There is a development wiki here on GitHub: https://github.com/ParsePlatform/par
 * cloud - The absolute path to your cloud code main.js file
 * fileKey - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * facebookAppIds - An array of valid Facebook application IDs.
+* serverURL - URL which will be used by Cloud Code functions to make requests against.
 
 #### Client key options:
 
@@ -45,6 +50,8 @@ var ParseServer = require('parse-server').ParseServer;
 
 var app = express();
 
+var port = process.env.PORT || 1337;
+
 // Specify the connection string for your mongodb database
 // and the location to your Parse cloud code
 var api = new ParseServer({
@@ -52,7 +59,8 @@ var api = new ParseServer({
   cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
   appId: 'myAppId',
   masterKey: 'mySecretMasterKey',
-  fileKey: 'optionalFileKey'
+  fileKey: 'optionalFileKey',
+  serverURL: 'http://localhost:' + port + '/parse' // Don't forget to change to https if needed
 });
 
 // Serve the Parse API on the /parse URL prefix
@@ -63,12 +71,47 @@ app.get('/', function(req, res) {
   res.status(200).send('Express is running here.');
 });
 
-var port = process.env.PORT || 1337;
 app.listen(port, function() {
   console.log('parse-server-example running on port ' + port + '.');
 });
 
 ```
+
+
+#### Standalone usage
+
+You can configure the Parse Server with environment variables:
+
+```js 
+PARSE_SERVER_DATABASE_URI
+PARSE_SERVER_CLOUD_CODE_MAIN
+PARSE_SERVER_COLLECTION_PREFIX
+PARSE_SERVER_APPLICATION_ID // required
+PARSE_SERVER_CLIENT_KEY 
+PARSE_SERVER_REST_API_KEY
+PARSE_SERVER_DOTNET_KEY
+PARSE_SERVER_JAVASCRIPT_KEY
+PARSE_SERVER_DOTNET_KEY
+PARSE_SERVER_MASTER_KEY // required
+PARSE_SERVER_FILE_KEY
+PARSE_SERVER_FACEBOOK_APP_IDS // string of comma separated list
+
+```
+
+
+
+Alernatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to the JSON of your configuration (see Usage).
+
+To start the server, just run `npm start`.
+
+##### Global installation
+
+You can install parse-server globally
+
+`$ npm install -g parse-server`
+
+Now you can just run `$ parse-server` from your command line.
+
 
 ### Supported
 

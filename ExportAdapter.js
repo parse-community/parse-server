@@ -34,8 +34,8 @@ ExportAdapter.prototype.connect = function() {
     return this.connectionPromise;
   }
 
-  //http://regexr.com/3cn6m
-  if (!this.mongoURI.match(/^mongodb:\/\/((.+):(.+)@)?([^:@]+):([^:]+)\/(.+?)$/gm)) {
+  //http://regexr.com/3cncm
+  if (!this.mongoURI.match(/^mongodb:\/\/((.+):(.+)@)?([^:@]+):{0,1}([^:]+)\/(.+?)$/gm)) {
     throw new Error("Invalid mongoURI: " + this.mongoURI)
   }
   var usernameStart = this.mongoURI.indexOf('://') + 3;
