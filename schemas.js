@@ -23,6 +23,7 @@ function mongoFieldTypeToApiResponseType(type) {
     case 'string':   return {type: 'String'};
     case 'boolean':  return {type: 'Boolean'};
     case 'date':     return {type: 'Date'};
+    case 'map':
     case 'object':   return {type: 'Object'};
     case 'array':    return {type: 'Array'};
     case 'geopoint': return {type: 'GeoPoint'};
@@ -31,7 +32,7 @@ function mongoFieldTypeToApiResponseType(type) {
 }
 
 function mongoSchemaAPIResponseFields(schema) {
-  fieldNames = Object.keys(schema).filter(key => key !== '_id');
+  fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
   response = {};
   fieldNames.forEach(fieldName => {
     response[fieldName] = mongoFieldTypeToApiResponseType(schema[fieldName]);
