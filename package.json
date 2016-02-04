@@ -9,6 +9,7 @@
   },
   "license": "BSD-3-Clause",
   "dependencies": {
+    "apn": "^1.7.5",
     "aws-sdk": "~2.2.33",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.14.2",
@@ -30,7 +31,7 @@
   },
   "scripts": {
     "pretest": "MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} mongodb-runner start",
-    "test": "TESTING=1 ./node_modules/.bin/istanbul cover --include-all-sources -x **/spec/** ./node_modules/.bin/jasmine",
+    "test": "NODE_ENV=test TESTING=1 ./node_modules/.bin/istanbul cover --include-all-sources -x **/spec/** ./node_modules/.bin/jasmine",
     "posttest": "mongodb-runner stop",
     "start": "./bin/parse-server"
   },
