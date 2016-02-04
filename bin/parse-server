@@ -35,7 +35,7 @@ if (process.env.PARSE_SERVER_OPTIONS) {
 
 var mountPath = process.env.PARSE_SERVER_MOUNT_PATH || "/";
 var api = new ParseServer(options);
-app.use('/', api);
+app.use(mountPath, api);
 
 var port = process.env.PORT || 1337;
 app.listen(port, function() {
