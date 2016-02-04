@@ -30,7 +30,7 @@
   },
   "scripts": {
     "pretest": "MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} mongodb-runner start",
-    "test": "TESTING=1 ./node_modules/.bin/istanbul cover --include-all-sources -x **/spec/** ./node_modules/.bin/jasmine",
+    "test": "NODE_ENV=test ./node_modules/.bin/istanbul cover --include-all-sources -x **/spec/** ./node_modules/.bin/jasmine",
     "posttest": "mongodb-runner stop",
     "start": "./bin/parse-server"
   },
