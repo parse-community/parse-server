@@ -28,7 +28,6 @@ function handleParseHeaders(req, res, next) {
 
   var fileViaJSON = false;
 
-  if (!info.appId || !cache.apps[info.appId]) {
     // See if we can find the app id on the body.
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
@@ -44,7 +43,11 @@ function handleParseHeaders(req, res, next) {
       ||
       cache.apps[req.body._ApplicationId]['masterKey'] === info.masterKey)
     ) {
-      info.appId = req.body._ApplicationId;
+      if ((info.appId) && (info.appId !== req.body._ApplicationId))
+        return invalidRequest(req, res);
+      else if (!info.appId)
+        info.appId = req.body._ApplicationId;
+
       info.javascriptKey = req.body._JavaScriptKey || '';
       delete req.body._ApplicationId;
       delete req.body._JavaScriptKey;
@@ -69,7 +72,6 @@ function handleParseHeaders(req, res, next) {
     } else {
       return invalidRequest(req, res);
     }
-  }
 
   if (fileViaJSON) {
     // We need to repopulate req.body with a buffer
