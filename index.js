@@ -7,6 +7,7 @@ var batch = require('./batch'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
     S3Adapter = require('./S3Adapter'),
+    MailAdapter = require('./MailAdapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
@@ -28,6 +29,11 @@ addParseCloud();
 // "cloud": relative location to cloud code to require, or a function
 //          that is given an instance of Parse as a parameter.  Use this instance of Parse
 //          to register your cloud code hooks and functions.
+// "mailConfig": a dictionary of 3rd party mail service settings (such as API keys etc)
+//          currently only Mailgun is supported. So service, apiKey, domain and fromAddress
+//          are all required. Setup like mailgun: { service: 'mailgun', apiKey: 'MG_APIKEY', 
+//          domain:'MG_DOMAIN', fromAddress:'Your App <yourapp@domain.com>' }. If you do not
+//          define mailConfig, no mail service will be setup.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -54,6 +60,10 @@ function ParseServer(args) {
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
+  if(args.mailConfig) {
+    MailAdapter.setMailServiceConfig(args.appId, args.mailConfig);
+  }
+
   if (args.cloud) {
     addParseCloud();
     if (typeof args.cloud === 'function') {
