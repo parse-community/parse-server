@@ -367,7 +367,10 @@ function transformAtom(atom, force, options) {
       return new Date(atom.iso);
     }
     if (atom.__type == 'GeoPoint') {
-      return [atom.longitude, atom.latitude];
+      if (!inArray && !inObject) {
+        return [atom.longitude, atom.latitude];
+      }
+      return atom;
     }
     if (atom.__type == 'Bytes') {
       return new mongodb.Binary(new Buffer(atom.base64, 'base64'));
