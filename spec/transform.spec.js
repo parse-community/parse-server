@@ -147,6 +147,26 @@ describe('untransformObject', () => {
     done();
   });
 
+  it('array', (done) => {
+    var object = { number: 1 };
+    var input = { values: [object, object] };
+    var output = transform.untransformObject(dummySchema, null, input);
+    expect(typeof output.values).toEqual('object');
+    expect(output.values).toEqual(
+      [ { number : 1 },
+        { number : 1 } ]
+    );
+    done();
+  });
+
+  it('array with nested underscore', (done) => {
+    var object = { _number: 1, __number: 2 };
+    var input = { values: [object, object] };
+    var output = transform.untransformObject(dummySchema, null, input);
+    expect(typeof output.values).toEqual('object');
+    expect(output.values).toEqual([ object,  object ]);
+    done();
+  });
 });
 
 describe('transformKey', () => {
