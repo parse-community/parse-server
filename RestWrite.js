@@ -8,12 +8,11 @@ var rack = require('hat').rack();
 
 var Auth = require('./Auth');
 var cache = require('./cache');
-var Config = require('./Config');
 var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
-var VERIFY_EMAIL = require('./Constants').VERIFY_EMAIL;
+var MailAdapter = require('./MailAdapter')
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -659,9 +658,11 @@ RestWrite.prototype.runDatabaseOperation = function() {
   }
 
   function sendEmailVerification () {
-    if (typeof this.data.email !== 'undefined' && this.className === "_User" && this.config.emailSender) {
+    var emailSender = MailAdapter.getMailService(this.config.applicationId);
+    if (typeof this.data.email !== 'undefined' && this.className === "_User" && emailSender) {
       var link = this.config.mount + "/verify_email?token=" + encodeURIComponent(this.data.emailVerifyToken) + "&username=" + encodeURIComponent(this.data.email);
-      this.config.emailSender(VERIFY_EMAIL, link, this.data.email);
+      var email = emailSender.getVerificationEmail(this.data.email, link);
+      emailSender.sendMail(this.data.email, email.subject, email.text);
     }
   }
 

@@ -16,14 +16,13 @@ var adapter = MailgunAdapter;
 var mailConfigs = {};
 var mailServices = {};
 
-function setMailServiceConfig(appId, mailApiConfig) {
+function configureDefaultAdapter(appId, mailApiConfig) {
 
   // Perform a type check on mailApiConfig to ensure it's a dictionary/object
   if(typeof mailApiConfig === 'object') {
 
-    // Ensure mailApiConfig has a least a service defined, not not — default to mailgun
+    // Ensure mailApiConfig has a least a service defined, if not — default to mailgun
     if(typeof mailApiConfig.service === 'undefined' || mailApiConfig.service === '') {
-      console.error('Error: You need to define a `service` when configuring `mailConfig` in ParseServer.');
       mailApiConfig.service = 'mailgun'; // use mailgun as the default adapter
     }
 
@@ -46,6 +45,10 @@ function setMailServiceConfig(appId, mailApiConfig) {
   return true;
 }
 
+function setAdapter(appId, mailAdapter) {
+  mailServices[appId] = new mailAdapter();
+}
+
 function clearMailService(appId) {
   delete mailConfigs[appId];
   delete mailServices[appId];
@@ -56,7 +59,7 @@ function getMailService(appId) {
     return mailServices[appId];
   }
 
-  if(mailConfigs[appId] != null) {
+  if(mailConfigs[appId]) {
     mailServices[appId] = new adapter(appId, mailConfigs[appId]);
     return mailServices[appId];
   } else {
@@ -67,7 +70,8 @@ function getMailService(appId) {
 module.exports = {
   mailConfigs: mailConfigs,
   mailServices: mailServices,
-  setMailServiceConfig: setMailServiceConfig,
+  configureDefaultAdapter: configureDefaultAdapter,
+  setAdapter: setAdapter,
   getMailService: getMailService,
   clearMailService: clearMailService
 };

@@ -34,6 +34,9 @@ addParseCloud();
 //          are all required. Setup like mailgun: { service: 'mailgun', apiKey: 'MG_APIKEY', 
 //          domain:'MG_DOMAIN', fromAddress:'Your App <yourapp@domain.com>' }. If you do not
 //          define mailConfig, no mail service will be setup.
+// "mailAdapter": A replacement mail adapter for sending custom emails, or emails
+//                from a service other than MailGun.  See the implementation of MailgunAdapter for
+//                expected prototype.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -45,7 +48,7 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
-// "emailSender": optional function to be called with the parameters required to send a password reset or confirmation email
+
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -60,8 +63,10 @@ function ParseServer(args) {
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
-  if(args.mailConfig) {
-    MailAdapter.setMailServiceConfig(args.appId, args.mailConfig);
+  if(args.mailAdapter) {
+    MailAdapter.setAdapter(args.appId, args.mailAdapter);
+  } else if (args.mailConfig) {
+    MailAdapter.configureDefaultAdapter(args.appId, args.mailConfig)
   }
 
   if (args.cloud) {
@@ -85,7 +90,6 @@ function ParseServer(args) {
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
     facebookAppIds: args.facebookAppIds || [],
-    emailSender: args.emailSender
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -183,6 +187,5 @@ function getClassName(parseClass) {
 
 module.exports = {
   ParseServer: ParseServer,
-  Constants: require('./Constants'),
   S3Adapter: S3Adapter
 };
