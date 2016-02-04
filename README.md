@@ -74,6 +74,42 @@ app.listen(port, function() {
 
 ```
 
+
+#### Standalone usage
+
+You can configure the Parse Server with environment variables:
+
+```js 
+PARSE_SERVER_DATABASE_URI
+PARSE_SERVER_CLOUD_CODE_MAIN
+PARSE_SERVER_COLLECTION_PREFIX
+PARSE_SERVER_APPLICATION_ID // required
+PARSE_SERVER_CLIENT_KEY 
+PARSE_SERVER_REST_API_KEY
+PARSE_SERVER_DOTNET_KEY
+PARSE_SERVER_JAVASCRIPT_KEY
+PARSE_SERVER_DOTNET_KEY
+PARSE_SERVER_MASTER_KEY // required
+PARSE_SERVER_FILE_KEY
+PARSE_SERVER_FACEBOOK_APP_IDS // string of comma separated list
+
+```
+
+
+
+Alernatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to the JSON of your configuration (see Usage).
+
+To start the server, just run `npm start`.
+
+##### Global installation
+
+You can install parse-server globally
+
+`$ npm install -g parse-server`
+
+Now you can just run `$ parse-server` from your command line.
+
+
 ### Supported
 
 * CRUD operations
