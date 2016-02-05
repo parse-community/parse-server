@@ -64,6 +64,26 @@ function getAllSchemas(req) {
   }}));
 }
 
+function getOneSchema(req) {
+  if (!req.auth.isMaster) {
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'unauthorized'},
+    });
+  }
+  return req.config.database.collection('_SCHEMA')
+  .then(coll => coll.findOne({'_id': req.params.className}))
+  .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
+  .catch(() => ({
+    status: 400,
+    response: {
+      code: 103,
+      error: 'class ' + req.params.className + ' does not exist',
+    }
+  }));
+}
+
 router.route('GET', '/schemas', getAllSchemas);
+router.route('GET', '/schemas/:className', getOneSchema);
 
 module.exports = router;
