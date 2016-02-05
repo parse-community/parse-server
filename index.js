@@ -111,7 +111,7 @@ function ParseServer(args) {
   router.merge(require('./sessions'));
   router.merge(require('./roles'));
   router.merge(require('./analytics'));
-  router.merge(require('./push'));
+  router.merge(require('./push').router);
   router.merge(require('./installations'));
   router.merge(require('./functions'));
   router.merge(require('./schemas'));
