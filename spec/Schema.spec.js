@@ -155,9 +155,11 @@ describe('Schema', () => {
     .then(schema => {
       schema.validateObject('NewClass', {foo: 7})
       .then(() => {
-        schema.addClassIfNotExists('NewClass', {
+        schema.reload()
+        .then(schema => schema.addClassIfNotExists('NewClass', {
           foo: {type: 'String'}
-        }).catch(error => {
+        }))
+        .catch(error => {
           expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME)
           expect(error.error).toEqual('class NewClass already exists');
           done();
@@ -223,7 +225,17 @@ describe('Schema', () => {
     });
   });
 
-  it('refuses to explicitly create the default fields', done => {
+  it('refuses to explicitly create the default fields for custom classes', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {objectId: {type: 'String'}}))
+    .catch(error => {
+      expect(error.code).toEqual(136);
+      expect(error.error).toEqual('field objectId cannot be added');
+      done();
+    });
+  });
+
+  it('refuses to explicitly create the default fields for non-custom classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Installation', {localeIdentifier: {type: 'String'}}))
     .catch(error => {
@@ -317,6 +329,18 @@ describe('Schema', () => {
     });
   });
 
+  it('refuses to add fields with unknown types', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Unknown'},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      expect(error.error).toEqual('invalid field type: Unknown');
+      done();
+    });
+  });
+
   it('will create classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
@@ -347,6 +371,32 @@ describe('Schema', () => {
         aFile: 'file',
         aPointer: '*ThisClassDoesNotExistYet',
         aRelation: 'relation<NewClass>',
+      });
+      done();
+    });
+  });
+
+  it('creates the default fields for non-custom classes', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('_Installation', {
+      foo: {type: 'Number'},
+    }))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: '_Installation',
+        createdAt: 'string',
+        updatedAt: 'string',
+        objectId: 'string',
+        foo: 'number',
+        installationId: 'string',
+        deviceToken: 'string',
+        channels: 'array',
+        deviceType: 'string',
+        pushType: 'string',
+        GCMSenderId: 'string',
+        timeZone: 'string',
+        localeIdentifier: 'string',
+        badge: 'number',
       });
       done();
     });
