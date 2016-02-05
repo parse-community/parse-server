@@ -100,9 +100,6 @@ function fieldNameIsValidForClass(fieldName, className) {
 }
 
 function invalidClassNameMessage(className) {
-  if (!className) {
-    className = '';
-  }
   return 'Invalid classname: ' + className + ', classnames can only have alphanumeric characters and _, and must start with an alpha character ';
 }
 
@@ -137,7 +134,7 @@ function schemaAPITypeToMongoFieldType(type) {
     return { error: "invalid JSON", code: Parse.Error.INVALID_JSON };
   }
   switch (type.type) {
-    default:         return { error: 'invalid field type: ' + type.type };
+    default:         return { error: 'invalid field type: ' + type.type, code: Parse.Error.INCORRECT_TYPE };
     case 'Number':   return { result: 'number' };
     case 'String':   return { result: 'string' };
     case 'Boolean':  return { result: 'boolean' };
@@ -211,19 +208,16 @@ Schema.prototype.reload = function() {
 // enabled) before calling this function.
 Schema.prototype.addClassIfNotExists = function(className, fields) {
   if (this.data[className]) {
-    return Promise.reject(new Parse.Error(
-      Parse.Error.DUPLICATE_VALUE,
-      'class ' + className + ' already exists'
-    ));
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: 'class ' + className + ' already exists',
+    });
   }
 
   if (!classNameIsValid(className)) {
     return Promise.reject({
       code: Parse.Error.INVALID_CLASS_NAME,
       error: invalidClassNameMessage(className),
-    });
-    return Promise.reject({
-      code: Parse.Error.INVALID_CLASS_NAME,
     });
   }
   for (fieldName in fields) {
