@@ -94,7 +94,7 @@ function ParseServer(args) {
   api.use('/', require('./files').router);
 
   // TODO: separate this from the regular ParseServer object
-  if (process.env.TESTING == 1) {
+  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
     console.log('enabling integration testing-routes');
     api.use('/', require('./testing-routes').router);
   }
