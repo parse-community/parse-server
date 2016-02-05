@@ -1,4 +1,3 @@
-import PromiseRouter from '../PromiseRouter';
 import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';

@@ -9,8 +9,7 @@ var batch = require('./batch'),
     express = require('express'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
-    Parse = require('parse/node').Parse,
-    httpRequest = require('./httpRequest');
+    Parse = require('parse/node').Parse;
 
 import PromiseRouter           from './PromiseRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
@@ -32,10 +31,12 @@ import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { LogsRouter }          from './Routers/LogsRouter';
+import { HooksRouter }         from './Routers/HooksRouter';
 
 import { loadAdapter }         from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
+import { HooksController }     from './Controllers/HooksController';
 
 import requiredParameter       from './requiredParameter';
 // Mutate the Parse object to add the Cloud Code handlers
@@ -88,6 +89,11 @@ function ParseServer({
   serverURL = requiredParameter('You must provide a serverURL!'),
   maxUploadSize = '20mb'
 }) {
+  
+  // Initialize the node client SDK automatically
+  Parse.initialize(appId, javascriptKey || '', masterKey);
+  Parse.serverURL = serverURL || '';
+  
   if (databaseAdapter) {
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
@@ -95,6 +101,7 @@ function ParseServer({
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
   }
+  
   if (cloud) {
     addParseCloud();
     if (typeof cloud === 'function') {
@@ -106,7 +113,6 @@ function ParseServer({
     }
   }
 
-
   const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
   const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
@@ -116,7 +122,8 @@ function ParseServer({
   const filesController = new FilesController(filesControllerAdapter);
   const pushController = new PushController(pushControllerAdapter);
   const loggerController = new LoggerController(loggerControllerAdapter);
-
+  const hooksController = new HooksController(appId);
+  
   cache.apps[appId] = {
     masterKey: masterKey,
     collectionPrefix: collectionPrefix,
@@ -129,18 +136,15 @@ function ParseServer({
     filesController: filesController,
     pushController: pushController,
     loggerController: loggerController,
+    hooksController: hooksController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
-};
+  };
 
   // To maintain compatibility. TODO: Remove in v2.1
   if (process.env.FACEBOOK_APP_ID) {
     cache.apps[appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
-
-  // Initialize the node client SDK automatically
-  Parse.initialize(appId, javascriptKey, masterKey);
-  Parse.serverURL = serverURL;
 
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
@@ -178,6 +182,10 @@ function ParseServer({
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
   }
+  
+  if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
+    routers.push(new HooksRouter());
+  }
 
   let appRouter = new PromiseRouter();
   routers.forEach((router) => {
@@ -189,7 +197,6 @@ function ParseServer({
 
   api.use(middlewares.handleParseErrors);
 
-
   process.on('uncaughtException', (err) => {
     if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
       console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
@@ -199,52 +206,14 @@ function ParseServer({
       throw err;
     }
   });
+  hooksController.load();
 
   return api;
 }
 
 function addParseCloud() {
-  Parse.Cloud.Functions = {};
-  Parse.Cloud.Validators = {};
-  Parse.Cloud.Triggers = {
-    beforeSave: {},
-    beforeDelete: {},
-    afterSave: {},
-    afterDelete: {}
-  };
-
-  function validateClassNameForTriggers(className) {
-    const restrictedClassNames = [ '_Session' ];
-    if (restrictedClassNames.indexOf(className) != -1) {
-      throw `Triggers are not supported for ${className} class.`;
-    }
-  }
-
-  Parse.Cloud.define = function(functionName, handler, validationHandler) {
-    Parse.Cloud.Functions[functionName] = handler;
-    Parse.Cloud.Validators[functionName] = validationHandler;
-  };
-  Parse.Cloud.beforeSave = function(parseClass, handler) {
-    let className = getClassName(parseClass);
-    validateClassNameForTriggers(className);
-    Parse.Cloud.Triggers.beforeSave[className] = handler;
-  };
-  Parse.Cloud.beforeDelete = function(parseClass, handler) {
-    let className = getClassName(parseClass);
-    validateClassNameForTriggers(className);
-    Parse.Cloud.Triggers.beforeDelete[className] = handler;
-  };
-  Parse.Cloud.afterSave = function(parseClass, handler) {
-    let className = getClassName(parseClass);
-    validateClassNameForTriggers(className);
-    Parse.Cloud.Triggers.afterSave[className] = handler;
-  };
-  Parse.Cloud.afterDelete = function(parseClass, handler) {
-    let className = getClassName(parseClass);
-    validateClassNameForTriggers(className);
-    Parse.Cloud.Triggers.afterDelete[className] = handler;
-  };
-  Parse.Cloud.httpRequest = httpRequest;
+  const ParseCloud = require("./cloud-code/Parse.Cloud");
+  Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
 }
 

@@ -134,7 +134,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(
-      'beforeSave', this.auth, updatedObject, originalObject);
+      'beforeSave', this.auth, updatedObject, originalObject, this.config.applicationId);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
@@ -294,7 +294,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
   if (!validateAuthData || !validateAppId) {
     return false;
   };
-
+	
   return validateAuthData(authData, oauthOptions)
     .then(() => {
       if (appIds && typeof validateAppId === "function") {
@@ -789,7 +789,7 @@ RestWrite.prototype.runAfterTrigger = function() {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject);
+  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.

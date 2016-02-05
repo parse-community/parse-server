@@ -39,8 +39,8 @@ function del(config, auth, className, objectId) {
   var inflatedObject;
 
   return Promise.resolve().then(() => {
-    if (triggers.getTrigger(className, 'beforeDelete') ||
-        triggers.getTrigger(className, 'afterDelete') ||
+    if (triggers.getTrigger(className, 'beforeDelete', config.applicationId) ||
+        triggers.getTrigger(className, 'afterDelete', config.applicationId) ||
         className == '_Session') {
       return find(config, auth, className, {objectId: objectId})
       .then((response) => {
@@ -49,7 +49,7 @@ function del(config, auth, className, objectId) {
           cache.clearUser(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           return triggers.maybeRunTrigger('beforeDelete',
-                                          auth, inflatedObject);
+                                          auth, inflatedObject, null,  config.applicationId);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -76,7 +76,7 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger('afterDelete', auth, inflatedObject);
+    triggers.maybeRunTrigger('afterDelete', auth, inflatedObject, null, config.applicationId);
     return Promise.resolve();
   });
 }
@@ -96,8 +96,8 @@ function update(config, auth, className, objectId, restObject) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve().then(() => {
-    if (triggers.getTrigger(className, 'beforeSave') ||
-        triggers.getTrigger(className, 'afterSave')) {
+    if (triggers.getTrigger(className, 'beforeSave', config.applicationId) ||
+        triggers.getTrigger(className, 'afterSave', config.applicationId)) {
       return find(config, auth, className, {objectId: objectId});
     }
     return Promise.resolve({});
