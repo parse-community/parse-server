@@ -170,19 +170,13 @@ describe('Schema', () => {
 
   it('will resolve class creation races appropriately', done => {
     // If two callers race to create the same schema, the response to the
-    // loser should be the same as if they hadn't been racing. Furthermore,
-    // The caller that wins the race should resolve it's promise before the
-    // caller that loses the race.
+    // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema()
     .then(schema => {
       var p1 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
       var p2 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
-      var raceWinnerHasSucceeded = false;
-      var raceLoserHasFailed = false;
       Promise.race([p1, p2]) //Use race because we expect the first completed promise to be the successful one
       .then(response => {
-        raceWinnerHasSucceeded = true;
-        expect(raceLoserHasFailed).toEqual(false);
         expect(response).toEqual({
           _id: 'NewClass',
           objectId: 'string',
@@ -193,11 +187,9 @@ describe('Schema', () => {
       });
       Promise.all([p1,p2])
       .catch(error => {
-        expect(raceWinnerHasSucceeded).toEqual(true);
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
         expect(error.error).toEqual('class NewClass already exists');
         done();
-        raceLoserHasFailed = true;
       });
     });
   });
