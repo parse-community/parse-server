@@ -12,6 +12,8 @@ Read the migration guide here: https://parse.com/docs/server/guide#migrating
 
 There is a development wiki here on GitHub: https://github.com/ParsePlatform/parse-server/wiki
 
+We also have an [example project](https://github.com/ParsePlatform/parse-server-example) using the parse-server module on Express.
+
 ---
 
 #### Basic options:
