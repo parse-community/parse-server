@@ -1,30 +1,18 @@
-// A mail adapter for the Mailgun API
-
-var defaultResetEmail =
-  "Hi,\n\n" +
-  "You requested a password reset.\n\n" +
-  "" +
-  "Click here to reset it:\n" +
-  "<%LINK_GOES_HERE%>";
-
-var defaultVerify =
-  "Hi,\n\n" +
-  "You are being asked to confirm the e-mail address <%EMAIL_GOES_HERE%>\n\n" +
-  "" +
-  "Click here to confirm it:\n" +
-  "<%LINK_GOES_HERE%>";
-
+var MailAdapter = require('./MailAdapter');
 // options can contain:
 function MailgunAdapter(appId, mailApiConfig) {
   this.appId = appId;
   this.apiConfig = mailApiConfig;
+  MailAdapter.call(this);
 }
+
+MailgunAdapter.prototype = Object.create(MailAdapter);
 
 // Connects to the database. Returns a promise that resolves when the
 // connection is successful.
 // this.db will be populated with a Mongo "Db" object when the
 // promise resolves successfully.
-MailgunAdapter.prototype.sendMail = function(to, subject, text) {
+MailgunAdapter.sendMail = function(to, subject, text, html) {
 
   var mailgun = require('mailgun-js')({apiKey: this.apiConfig.apiKey, domain: this.apiConfig.domain});
 
@@ -32,7 +20,8 @@ MailgunAdapter.prototype.sendMail = function(to, subject, text) {
     from: this.apiConfig.fromAddress,
     to: to,
     subject: subject,
-    text: text
+    text: text,
+    html: html
   };
 
   return new Promise((resolve, reject) => {
@@ -45,20 +34,6 @@ MailgunAdapter.prototype.sendMail = function(to, subject, text) {
       resolve(body);
     });
   });
-};
-
-MailgunAdapter.prototype.getResetPasswordEmail = function(to, resetLink) {
-  return {
-    subject: 'Password Reset Request',
-    text: defaultResetEmail.replace("<%LINK_GOES_HERE%>", resetLink)
-  }
-};
-
-MailgunAdapter.prototype.getVerificationEmail = function(to, verifyLink) {
-  return {
-    subject: 'Please verify your e-mail',
-    text: defaultVerify.replace("<%EMAIL_GOES_HERE%>", to).replace("<%LINK_GOES_HERE%>", verifyLink)
-  }
 };
 
 MailgunAdapter.validateConfig = function(config) {

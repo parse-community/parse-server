@@ -7,12 +7,14 @@ var batch = require('./batch'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
     S3Adapter = require('./S3Adapter'),
-    MailAdapter = require('./MailAdapter'),
+    MailAdapterStore = require('./mail/MailAdapterStore'),
+    MailAdapter = require('./mail/MailAdapter'),
+    MailgunAdapter = require('./mail/MailgunAdapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    path = require('path');
+    path = require('path'),
     httpRequest = require('./httpRequest');
 
 // Mutate the Parse object to add the Cloud Code handlers
@@ -37,6 +39,8 @@ addParseCloud();
 // "mailAdapter": A replacement mail adapter for sending custom emails, or emails
 //                from a service other than MailGun.  See the implementation of MailgunAdapter for
 //                expected prototype.
+// "verifyEmails": A boolean value indicating that parse-server should send a verification
+//                 email whenever a users email is changed.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -64,9 +68,9 @@ function ParseServer(args) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
   if(args.mailAdapter) {
-    MailAdapter.setAdapter(args.appId, args.mailAdapter);
+    MailAdapterStore.setAdapter(args.appId, args.mailAdapter);
   } else if (args.mailConfig) {
-    MailAdapter.configureDefaultAdapter(args.appId, args.mailConfig)
+    MailAdapterStore.configureDefaultAdapter(args.appId, args.mailConfig)
   }
 
   if (args.cloud) {
@@ -90,6 +94,7 @@ function ParseServer(args) {
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
     facebookAppIds: args.facebookAppIds || [],
+    verifyEmails: args.verifyEmails || false
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -187,5 +192,7 @@ function getClassName(parseClass) {
 
 module.exports = {
   ParseServer: ParseServer,
-  S3Adapter: S3Adapter
+  S3Adapter: S3Adapter,
+  MailAdapter: MailAdapter,
+  MailgunAdapter: MailgunAdapter
 };

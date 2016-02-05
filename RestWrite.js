@@ -12,7 +12,7 @@ var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
-var MailAdapter = require('./MailAdapter')
+var MailAdapterStore = require('./mail/MailAdapterStore')
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -658,11 +658,16 @@ RestWrite.prototype.runDatabaseOperation = function() {
   }
 
   function sendEmailVerification () {
-    var emailSender = MailAdapter.getMailService(this.config.applicationId);
-    if (typeof this.data.email !== 'undefined' && this.className === "_User" && emailSender) {
+    var emailSender = MailAdapterStore.getMailService(this.config.applicationId);
+    if (!emailSender && this.config.verifyEmails) {
+      throw new Error("Verify emails option was set, but not email sending configuration was sent to parse");
+    }
+    var hasUserEmail = typeof this.data.email !== 'undefined' && this.className === "_User"
+    var canSendEmail = emailSender && this.config.verifyEmails;
+    if ( hasUserEmail && canSendEmail) {
       var link = this.config.mount + "/verify_email?token=" + encodeURIComponent(this.data.emailVerifyToken) + "&username=" + encodeURIComponent(this.data.email);
       var email = emailSender.getVerificationEmail(this.data.email, link);
-      emailSender.sendMail(this.data.email, email.subject, email.text);
+      emailSender.sendMail(this.data.email, email.subject, email.text, email.html);
     }
   }
 

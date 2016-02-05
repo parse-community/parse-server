@@ -11,7 +11,7 @@ var PromiseRouter = require('./PromiseRouter');
 var rest = require('./rest');
 var RestWrite = require('./RestWrite');
 var deepcopy = require('deepcopy');
-var MailAdapter = require('./MailAdapter');
+var MailAdapterStore = require('./mail/MailAdapterStore');
 var router = new PromiseRouter();
 
 // Returns a promise for a {status, response, location} object.
@@ -204,7 +204,7 @@ function handleReset(req) {
                 throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND,
                   'Email not found.');
               }
-              var emailSender = MailAdapter.getMailService(req.info.appId);
+              var emailSender = MailAdapterStore.getMailService(req.info.appId);
               if (!emailSender) {
                 throw new Error("No email service function specified");
               }
@@ -212,7 +212,7 @@ function handleReset(req) {
               var encodedEmail = encodeURIComponent(req.body.email);
               var endpoint = req.config.mount + "/request_password_reset?token=" +  perishableSessionToken + "&username=" + encodedEmail;
               var email = emailSender.getResetPasswordEmail(req.body.email, endpoint);
-              return emailSender.sendMail(req.body.email, email.subject, email.text);
+              return emailSender.sendMail(req.body.email, email.subject, email.text, email.html);
             })
             .then(()=>{
               return {response:{}};

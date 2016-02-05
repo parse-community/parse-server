@@ -46,7 +46,7 @@ function configureDefaultAdapter(appId, mailApiConfig) {
 }
 
 function setAdapter(appId, mailAdapter) {
-  mailServices[appId] = new mailAdapter();
+  mailServices[appId] = mailAdapter;
 }
 
 function clearMailService(appId) {
