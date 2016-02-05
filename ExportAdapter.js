@@ -60,13 +60,7 @@ ExportAdapter.prototype.connect = function() {
 var joinRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 var otherRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 ExportAdapter.prototype.collection = function(className) {
-  if (className !== '_User' &&
-      className !== '_Installation' &&
-      className !== '_Session' &&
-      className !== '_SCHEMA' &&
-      className !== '_Role' &&
-      !joinRegex.test(className) &&
-      !otherRegex.test(className)) {
+  if (!Schema.classNameIsValid(className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
   }
