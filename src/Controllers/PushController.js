@@ -31,11 +31,11 @@ export class PushController {
         }
     });
   }
-
-  getExpressRouter() {
+  
+  static getExpressRouter() {
     var router = new PromiseRouter();
     router.route('POST','/push', (req) => {
-      return this.handlePOST(req);
+      return req.config.pushController.handlePOST(req);
     });
     return router;
   }

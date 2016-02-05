@@ -23,7 +23,7 @@ function handleParseHeaders(req, res, next) {
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
-    restAPIKey: req.get('X-Parse-REST-API-Key')
+    restAPIKey: req.get('X-Parse-REST-API-Key'),
   };
 
   if (req.body && req.body._noBody) {
@@ -89,7 +89,6 @@ function handleParseHeaders(req, res, next) {
   req.info = info;
 
   var isMaster = (info.masterKey === req.config.masterKey);
-
   if (isMaster) {
     req.auth = new auth.Auth(req.config, true);
     next();

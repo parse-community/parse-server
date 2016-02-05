@@ -10,7 +10,8 @@ var ParseServer = require('../src/index').ParseServer;
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
-
+var port = 8378;
+var serverURL =  'http://localhost:' + port + '/1';
 // Set up an API server for testing
 var api = new ParseServer({
   databaseURI: databaseURI,
@@ -33,12 +34,11 @@ var api = new ParseServer({
 
 var app = express();
 app.use('/1', api);
-var port = 8378;
+
 var server = app.listen(port);
 
 // Set up a Parse client to talk to our test API server
 var Parse = require('parse/node');
-Parse.serverURL = 'http://localhost:' + port + '/1';
 
 // This is needed because we ported a bunch of tests from the non-A+ way.
 // TODO: update tests to work in an A+ way
@@ -46,6 +46,8 @@ Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
+  Parse.serverURL = serverURL;
+  mockFacebook();
   Parse.User.enableUnsafeCurrentUser();
   done();
 });
@@ -221,3 +223,4 @@ global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
+global.mockFacebook = mockFacebook;

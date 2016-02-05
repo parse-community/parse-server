@@ -1,0 +1,15 @@
+#!/usr/bin/env node
+var rack = require('hat').rack();
+
+var newApp = {
+	"appId": rack(),
+	"masterKey": rack(),
+	"clientKey": rack(),
+	"javascriptKey": rack(),
+	"dotNetKey": rack(),
+    "restAPIKey": rack(),
+    "collectionPrefix": "",
+    "databaseURI": ""
+};
+
+process.stdout.write(JSON.stringify(newApp, null, 4)+"\n");

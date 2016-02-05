@@ -786,7 +786,11 @@ describe('Parse.ACL', () => {
                         equal(results.length, 1);
                         var result = results[0];
                         ok(result);
-                        equal(result.id, object.id);
+                        if (!result) {
+                          fail("should have result");
+                        } else {
+                          equal(result.id, object.id);
+                        }
                         done();
                       }
                     });

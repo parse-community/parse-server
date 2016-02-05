@@ -1,0 +1,24 @@
+{
+  "applications": [
+    {
+      "appId": "test2",
+      "javascriptKey": "test2",
+      "dotNetKey": "windows",
+      "clientKey": "client",
+      "restAPIKey": "rest",
+      "masterKey": "test2",
+      "collectionPrefix": "test_",
+      "fileKey": "test",
+      "databaseURI": "mongodb://localhost:27017/test2",
+      "cloud" : "./src/cloud/main.js"
+    },
+    {
+      "appId": "multi-server-test",
+      "javascriptKey": "1234",
+      "masterKey": "testMasterKey",
+      "cloud" : "./src/cloud/main-2.js",
+      "databaseURI": "mongodb://localhost:27017/test-altername",
+      "fileKey": "multi-test"
+    }
+  ]
+}

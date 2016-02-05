@@ -1,43 +1,13 @@
 #!/usr/bin/env node
+var path = require("path");
 var express = require('express');
 var ParseServer = require("../lib/index").ParseServer;
 
+var options = require("./config")();
 var app = express();
 
-var options = {};
-if (process.env.PARSE_SERVER_OPTIONS) {
-
-	options = JSON.parse(process.env.PARSE_SERVER_OPTIONS);
-
-} else {
-
-	options.databaseURI = process.env.PARSE_SERVER_DATABASE_URI;
-	options.cloud = process.env.PARSE_SERVER_CLOUD_CODE_MAIN;
-	options.collectionPrefix = process.env.PARSE_SERVER_COLLECTION_PREFIX;
-
-	// Keys and App ID
-	options.appId = process.env.PARSE_SERVER_APPLICATION_ID;
-	options.clientKey = process.env.PARSE_SERVER_CLIENT_KEY;
-	options.restAPIKey = process.env.PARSE_SERVER_REST_API_KEY;
-	options.dotNetKey = process.env.PARSE_SERVER_DOTNET_KEY;
-	options.javascriptKey = process.env.PARSE_SERVER_JAVASCRIPT_KEY;
-	options.masterKey = process.env.PARSE_SERVER_MASTER_KEY;
-	options.fileKey = process.env.PARSE_SERVER_FILE_KEY;
-	// Comma separated list of facebook app ids
-	var facebookAppIds = process.env.PARSE_SERVER_FACEBOOK_APP_IDS;
-
-	if (facebookAppIds) {
-		facebookAppIds = facebookAppIds.split(",");
-		options.facebookAppIds = facebookAppIds;
-	}
-
-	var oauth = process.env.PARSE_SERVER_OAUTH_PROVIDERS;
-	if (oauth) {
-		options.oauth = JSON.parse(oauth);
-	};
-}
-
 var mountPath = process.env.PARSE_SERVER_MOUNT_PATH || "/";
+
 var api = new ParseServer(options);
 app.use(mountPath, api);
 
