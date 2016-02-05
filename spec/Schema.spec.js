@@ -1,6 +1,7 @@
 // These tests check that the Schema operates correctly.
 var Config = require('../Config');
 var Schema = require('../Schema');
+var dd = require('deep-diff');
 
 var config = new Config('test');
 
@@ -142,7 +143,8 @@ describe('Schema', () => {
         _id: 'NewClass',
         objectId: 'string',
         updatedAt: 'string',
-        createdAt: 'string'
+        createdAt: 'string',
+        foo: 'string',
       })
       done();
     });
@@ -183,7 +185,8 @@ describe('Schema', () => {
           _id: 'NewClass',
           objectId: 'string',
           updatedAt: 'string',
-          createdAt: 'string'
+          createdAt: 'string',
+          foo: 'string',
         });
       });
       Promise.all([p1,p2])
@@ -226,6 +229,138 @@ describe('Schema', () => {
     .catch(error => {
       expect(error.code).toEqual(136);
       expect(error.error).toEqual('field localeIdentifier cannot be added');
+      done();
+    });
+  });
+
+  it('refuses to add fields with invalid types', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 7}
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+      expect(error.error).toEqual('invalid JSON');
+      done();
+    });
+  });
+
+  it('refuses to add fields with invalid pointer types', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Pointer'},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(135);
+      expect(error.error).toEqual('type Pointer needs a class name');
+      done();
+    });
+  });
+
+  it('refuses to add fields with invalid pointer target', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Pointer', targetClass: 7},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+      expect(error.error).toEqual('invalid JSON');
+      done();
+    });
+  });
+
+  it('refuses to add fields with invalid Relation type', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Relation', uselessKey: 7},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(135);
+      expect(error.error).toEqual('type Relation needs a class name');
+      done();
+    });
+  });
+
+  it('refuses to add fields with invalid relation target', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Relation', targetClass: 7},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_JSON);
+      expect(error.error).toEqual('invalid JSON');
+      done();
+    });
+  });
+
+  it('refuses to add fields with uncreatable pointer target class', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Pointer', targetClass: 'not a valid class name'},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(error.error).toEqual('Invalid classname: not a valid class name, classnames can only have alphanumeric characters and _, and must start with an alpha character ');
+      done();
+    });
+  });
+
+  it('refuses to add fields with uncreatable relation target class', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      foo: {type: 'Relation', targetClass: 'not a valid class name'},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(error.error).toEqual('Invalid classname: not a valid class name, classnames can only have alphanumeric characters and _, and must start with an alpha character ');
+      done();
+    });
+  });
+
+  it('will create classes', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      aNumber: {type: 'Number'},
+      aString: {type: 'String'},
+      aBool: {type: 'Boolean'},
+      aDate: {type: 'Date'},
+      aObject: {type: 'Object'},
+      aArray: {type: 'Array'},
+      aGeoPoint: {type: 'GeoPoint'},
+      aFile: {type: 'File'},
+      aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
+      aRelation: {type: 'Relation', targetClass: 'NewClass'},
+    }))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: 'NewClass',
+        objectId: 'string',
+        createdAt: 'string',
+        updatedAt: 'string',
+        aNumber: 'number',
+        aString: 'string',
+        aBool: 'boolean',
+        aDate: 'date',
+        aObject: 'object',
+        aArray: 'array',
+        aGeoPoint: 'geopoint',
+        aFile: 'file',
+        aPointer: '*ThisClassDoesNotExistYet',
+        aRelation: 'relation<NewClass>',
+      });
+      done();
+    });
+  });
+
+  it('refuses to create two geopoints', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('NewClass', {
+      geo1: {type: 'GeoPoint'},
+      geo2: {type: 'GeoPoint'},
+    }))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      expect(error.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding geo2 when geo1 already exists.');
       done();
     });
   });

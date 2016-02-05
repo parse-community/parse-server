@@ -137,7 +137,7 @@ function schemaAPITypeToMongoFieldType(type) {
     return { error: "invalid JSON", code: Parse.Error.INVALID_JSON };
   }
   switch (type.type) {
-    default :        return { error: 'invalid field type: ' + type.type };
+    default:         return { error: 'invalid field type: ' + type.type };
     case 'Number':   return { result: 'number' };
     case 'String':   return { result: 'string' };
     case 'Boolean':  return { result: 'boolean' };
@@ -241,14 +241,38 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
     }
   }
 
-
-
-  return this.collection.insertOne({
+  var mongoObject = {
     _id: className,
     objectId: 'string',
     updatedAt: 'string',
     createdAt: 'string',
-  })
+  };
+  for (fieldName in defaultColumns[className]) {
+    validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
+    if (validatedField.code) {
+      return Promise.reject(validatedField);
+    }
+    mongoObject[fieldName] = validatedField.result;
+  }
+
+  for (fieldName in fields) {
+    validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
+    if (validatedField.code) {
+      return Promise.reject(validatedField);
+    }
+    mongoObject[fieldName] = validatedField.result;
+  }
+
+  var geoPoints = Object.keys(mongoObject).filter(key => mongoObject[key] === 'geopoint');
+
+  if (geoPoints.length > 1) {
+    return Promise.reject({
+      code: Parse.Error.INCORRECT_TYPE,
+      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
+    });
+  }
+
+  return this.collection.insertOne(mongoObject)
   .then(result => result.ops[0])
   .catch(error => {
     if (error.code === 11000) { //Mongo's duplicate key error
