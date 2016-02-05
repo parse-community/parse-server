@@ -494,6 +494,7 @@ ExportAdapter.prototype.smartFind = function(coll, where, options) {
 
       var index = {};
       index[key] = '2d';
+      //TODO: condiser moving index creation logic into Schema.js
       return coll.createIndex(index).then(() => {
         // Retry, but just once.
         return coll.find(where, options).toArray();
