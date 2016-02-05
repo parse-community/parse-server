@@ -115,7 +115,8 @@ function ParseServer(args) {
   // File handling needs to be before default middlewares are applied
   api.use('/', require('./files').router);
   api.set('views', path.join(__dirname, 'views'));
-  api.use("/request_password_reset", require('./passwordReset').reset(args.appName, args.appId));
+  api.use('/img', express.static(path.resolve(__dirname, 'img')));
+    api.use("/request_password_reset", require('./passwordReset').reset(args.appName, args.appId));
   api.get("/password_reset_success", require('./passwordReset').success);
   api.get("/verify_email", require('./verifyEmail')(args.appId));
 

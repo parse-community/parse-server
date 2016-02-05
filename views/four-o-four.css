@@ -74,7 +74,7 @@ body,
 .four_oh_four #emoji {
     position: relative;
     top: 40px;
-    background-image: url('https://www.parse.com/images/404/sprite.png');
+    background-image: url('img/404-sprite.png');
     display: inline-block;
     width: 200px;
     height: 230px;
