@@ -7,12 +7,15 @@ function BaseProvider(adapter) {
 
 util.inherits(BaseProvider, ServiceProviderInterface);
 
-BaseProvider.prototype.getAdapter = function getAdapter() {
+function getAdapter() {
     return this.adapter;
 }
 
-BaseProvider.prototype.setAdapter = function setAdapter(adapter) {
+function setAdapter(adapter) {
     this.adapter = adapter;
 }
+
+BaseProvider.prototype.getAdapter = getAdapter;
+BaseProvider.prototype.setAdapter = setAdapter;
 
 module.exports = BaseProvider;

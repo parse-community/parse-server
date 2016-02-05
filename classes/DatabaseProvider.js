@@ -25,19 +25,19 @@ function DatabaseProvider(adapter) {
 
 util.inherits(DatabaseProvider, BaseProvider);
 
-DatabaseProvider.prototype.setDatabaseURI = function setDatabaseURI(uri) {
+function setDatabaseURI(uri) {
   databaseURI = uri;
 };
 
-DatabaseProvider.prototype.setAppDatabaseURI = function setAppDatabaseURI(appId, uri) {
+function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
 }
 
-DatabaseProvider.prototype.getDatabaseConnections = function getDatabaseConnections() {
+function getDatabaseConnections() {
     return dbConnections;
 }
 
-DatabaseProvider.prototype.getDatabaseConnection = function getDatabaseConnection(appId) {
+function getDatabaseConnection(appId) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }
@@ -53,5 +53,9 @@ DatabaseProvider.prototype.getDatabaseConnection = function getDatabaseConnectio
   return dbConnections[appId];
 }
 
+DatabaseProvider.prototype.setDatabaseURI = setDatabaseURI;
+DatabaseProvider.prototype.setAppDatabaseURI = setAppDatabaseURI;
+DatabaseProvider.prototype.getDatabaseConnections = getDatabaseConnections;
+DatabaseProvider.prototype.getDatabaseConnection = getDatabaseConnection;
 
 module.exports = DatabaseProvider;
