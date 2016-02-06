@@ -5,7 +5,7 @@ var express = require('express'),
 
 var router = new PromiseRouter();
 
-function mongoFieldTypeToApiResponseType(type) {
+function mongoFieldTypeToSchemaAPIType(type) {
   if (type[0] === '*') {
     return {
       type: 'Pointer',
@@ -32,10 +32,10 @@ function mongoFieldTypeToApiResponseType(type) {
 
 function mongoSchemaAPIResponseFields(schema) {
   fieldNames = Object.keys(schema).filter(key => key !== '_id');
-  response = {};
-  fieldNames.forEach(fieldName => {
-    response[fieldName] = mongoFieldTypeToApiResponseType(schema[fieldName]);
-  });
+  response = fieldNames.reduce((obj, fieldName) => {
+    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
+    return obj;
+  }, {});
   response.ACL = {type: 'ACL'};
   response.createdAt = {type: 'Date'};
   response.updatedAt = {type: 'Date'};
