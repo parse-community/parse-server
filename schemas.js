@@ -113,18 +113,13 @@ function createSchema(req) {
       },
     });
   }
-  return req.config.database.collection('_SCHEMA')
-  .then(coll => Schema.load(coll))
-  .then(schema => schema.validateClassName(req.body.className))
-  .catch(error => {
-    console.log(arguments);
-    return {response: error};
-  })
-  .then(newSchema => {
-    for (key in newSchema.data) {
-    }
-    return {response: {}};
-  });
+  return req.config.database.loadSchema()
+  .then(schema => schema.addClassIfNotExists(className, req.body.fields))
+  .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
+  .catch(error => ({
+    status: 400,
+    response: error,
+  }));
 }
 
 router.route('GET', '/schemas', getAllSchemas);
