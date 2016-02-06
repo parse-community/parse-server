@@ -5,7 +5,7 @@ var express = require('express'),
 
 var router = new PromiseRouter();
 
-function mongoFieldTypeToApiResponseType(type) {
+function mongoFieldTypeToSchemaAPIType(type) {
   if (type[0] === '*') {
     return {
       type: 'Pointer',
@@ -32,10 +32,10 @@ function mongoFieldTypeToApiResponseType(type) {
 
 function mongoSchemaAPIResponseFields(schema) {
   fieldNames = Object.keys(schema).filter(key => key !== '_id');
-  response = {};
-  fieldNames.forEach(fieldName => {
-    response[fieldName] = mongoFieldTypeToApiResponseType(schema[fieldName]);
-  });
+  response = fieldNames.reduce((obj, fieldName) => {
+    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
+    return obj;
+  }, {});
   response.ACL = {type: 'ACL'};
   response.createdAt = {type: 'Date'};
   response.updatedAt = {type: 'Date'};
@@ -64,6 +64,26 @@ function getAllSchemas(req) {
   }}));
 }
 
+function getOneSchema(req) {
+  if (!req.auth.isMaster) {
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'unauthorized'},
+    });
+  }
+  return req.config.database.collection('_SCHEMA')
+  .then(coll => coll.findOne({'_id': req.params.className}))
+  .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
+  .catch(() => ({
+    status: 400,
+    response: {
+      code: 103,
+      error: 'class ' + req.params.className + ' does not exist',
+    }
+  }));
+}
+
 router.route('GET', '/schemas', getAllSchemas);
+router.route('GET', '/schemas/:className', getOneSchema);
 
 module.exports = router;

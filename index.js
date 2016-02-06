@@ -82,6 +82,9 @@ function ParseServer(args) {
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
+  if(args.serverURL) {
+    Parse.serverURL = args.serverURL;
+  }
 
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
@@ -108,7 +111,7 @@ function ParseServer(args) {
   router.merge(require('./sessions'));
   router.merge(require('./roles'));
   router.merge(require('./analytics'));
-  router.merge(require('./push'));
+  router.merge(require('./push').router);
   router.merge(require('./installations'));
   router.merge(require('./functions'));
   router.merge(require('./schemas'));

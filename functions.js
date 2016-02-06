@@ -35,7 +35,7 @@ function createResponseObject(resolve, reject) {
     success: function(result) {
       resolve({
         response: {
-          result: result
+          result: Parse._encode(result)
         }
       });
     },
