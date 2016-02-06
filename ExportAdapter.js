@@ -118,9 +118,9 @@ ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
 // Returns a promise that resolves to the new schema.
 // This does not update this.schema, because in a situation like a
 // batch request, that could confuse other users of the schema.
-ExportAdapter.prototype.validateObject = function(className, object) {
+ExportAdapter.prototype.validateObject = function(className, object, freeze) {
   return this.loadSchema().then((schema) => {
-    return schema.validateObject(className, object);
+    return schema.validateObject(className, object, freeze);
   });
 };
 

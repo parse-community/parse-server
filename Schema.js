@@ -412,18 +412,18 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
 
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
-function thenValidateField(schemaPromise, className, key, type) {
+function thenValidateField(schemaPromise, className, key, type, freeze) {
   return schemaPromise.then((schema) => {
-    return schema.validateField(className, key, type);
+    return schema.validateField(className, key, type, freeze);
   });
 }
 
 // Validates an object provided in REST format.
 // Returns a promise that resolves to the new schema if this object is
 // valid.
-Schema.prototype.validateObject = function(className, object) {
+Schema.prototype.validateObject = function(className, object, freeze) {
   var geocount = 0;
-  var promise = this.validateClassName(className);
+  var promise = this.validateClassName(className, freeze);
   for (var key in object) {
     if (object[key] === undefined) {
       continue;
@@ -440,7 +440,7 @@ Schema.prototype.validateObject = function(className, object) {
     if (!expected) {
       continue;
     }
-    promise = thenValidateField(promise, className, key, expected);
+    promise = thenValidateField(promise, className, key, expected, freeze);
   }
   return promise;
 };
