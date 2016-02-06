@@ -18,7 +18,7 @@ var hasAllPODobject = () => {
   return obj;
 }
 
-var expectedResponseForHasAllPOD = {
+var plainOldDataSchema = {
   className: 'HasAllPOD',
   fields: {
     //Default fields
@@ -38,7 +38,7 @@ var expectedResponseForHasAllPOD = {
   },
 };
 
-var expectedResponseforHasPointersAndRelations = {
+var pointersAndRelationsSchema = {
   className: 'HasPointersAndRelations',
   fields: {
     //Default fields
@@ -91,10 +91,7 @@ describe('schemas', () => {
     request.get({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
       json: true,
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      },
+      headers: restKeyHeaders,
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(401);
       expect(body.error).toEqual('unauthorized');
@@ -140,7 +137,7 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
       }, (error, response, body) => {
         var expected = {
-          results: [expectedResponseForHasAllPOD,expectedResponseforHasPointersAndRelations]
+          results: [plainOldDataSchema,pointersAndRelationsSchema]
         };
         expect(body).toEqual(expected);
         done();
@@ -154,12 +151,9 @@ describe('schemas', () => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HasAllPOD',
         json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
+        headers: masterKeyHeaders,
       }, (error, response, body) => {
-        expect(body).toEqual(expectedResponseForHasAllPOD);
+        expect(body).toEqual(plainOldDataSchema);
         done();
       });
     });
@@ -171,10 +165,7 @@ describe('schemas', () => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HASALLPOD',
         json: true,
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Master-Key': 'test',
-        },
+        headers: masterKeyHeaders,
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
@@ -281,6 +272,34 @@ describe('schemas', () => {
   it('responds with all fields when you create a class', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: "NewClass",
+        fields: {
+          foo: {type: 'Number'},
+          ptr: {type: 'Pointer', targetClass: 'SomeClass'}
+        }
+      }
+    }, (error, response, body) => {
+      expect(body).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: {type: 'ACL'},
+          createdAt: {type: 'Date'},
+          updatedAt: {type: 'Date'},
+          objectId: {type: 'String'},
+          foo: {type: 'Number'},
+          ptr: {type: 'Pointer', targetClass: 'SomeClass'},
+        }
+      });
+      done();
+    });
+  });
+
+  it('lets you specify class name in both places', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
