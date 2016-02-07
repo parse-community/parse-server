@@ -10,6 +10,7 @@ var batch = require('./batch'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
+    BaseProvider = require('./classes/BaseProvider'),
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
 
@@ -38,10 +39,15 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
+
+var DefaultCacheAdapter = require('./classes/MemoryCache');
+
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
   }
+
+  this.cacheProvider = new BaseProvider(args.cacheAdapter || DefaultCacheAdapter);
 
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
