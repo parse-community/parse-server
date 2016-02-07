@@ -8,6 +8,10 @@ var router = new PromiseRouter();
 
 // Returns a promise for a {response} object.
 function handleUpdateGlobalConfig(req) {
+  if (!req.auth.isMaster) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Config updates requires valid masterKey.');
+  }
+
   return rest.update(req.config, req.auth,
                      '_GlobalConfig', 1, req.body)
   .then((response) => {
