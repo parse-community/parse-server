@@ -1,8 +1,7 @@
 // These tests check the "create" functionality of the REST API.
-var auth = require('../src/Auth');
-var cache = require('../src/cache');
-var Config = require('../src/Config');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
+var auth = require('../Auth');
+var Config = require('../Config');
+var DatabaseAdapter = require('../DatabaseAdapter');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');

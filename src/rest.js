@@ -8,8 +8,6 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-
-var cache = require('./cache');
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
@@ -37,6 +35,8 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;
+  var cacheProvider = new (require('./classes/CacheProvider'));
+  var cache = cacheProvider.getAdapter();
 
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, 'beforeDelete') ||
@@ -46,7 +46,7 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.clearUser(response.results[0].sessionToken);
+          cache.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           return triggers.maybeRunTrigger('beforeDelete',
                                           auth, inflatedObject);

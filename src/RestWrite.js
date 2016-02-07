@@ -7,7 +7,6 @@ var deepcopy = require('deepcopy');
 var rack = require('hat').rack();
 
 var Auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 var passwordCrypto = require('./password');
 var facebook = require('./facebook');
