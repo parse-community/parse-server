@@ -58,5 +58,19 @@ describe('Parse Role testing', () => {
 
   });
 
+  it('user role subscribers', (done)=> {
+      var role = new Parse.Role();
+      role.set('name','subscribers');
+      role.save({}, {useMasterKey : true})
+          .then((x)=>{
+            var query = role.relation('users').query();
+            query.find({useMasterKey : true})
+                .then((users)=>{
+                    done();
+                }, (e)=>{
+                    fail('should not have errors');
+                });
+        });
+  })
 });
 
