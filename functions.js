@@ -42,10 +42,10 @@ function createResponseObject(resolve, reject) {
     error: function(error) {
       reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
     }
-  };
+  }
 }
 
-router.route('POST', '/functions/:functionName+', handleCloudFunction);
+router.route('POST', '/functions/:functionName', handleCloudFunction);
 
 
 module.exports = router;

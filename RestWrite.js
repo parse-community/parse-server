@@ -91,8 +91,7 @@ RestWrite.prototype.execute = function() {
 
 // Validates this operation against the schema.
 RestWrite.prototype.validateSchema = function() {
-  var schemaFrozen = (process.env.NODE_ENV !== 'development') ? !(this.auth && this.auth.isMaster) : false;
-  return this.config.database.validateObject(this.className, this.data, schemaFrozen);
+  return this.config.database.validateObject(this.className, this.data);
 };
 
 // Runs any beforeSave triggers against this operation.
