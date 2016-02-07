@@ -126,7 +126,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
 
   if (inArray && options.query && !(restValue instanceof Array)) {
     return {
-      key: key, value: [restValue]
+      key: key, value: { '$all' : [restValue] }
     };
   }
 
