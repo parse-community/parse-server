@@ -25,6 +25,7 @@ function mongoFieldTypeToSchemaAPIType(type) {
     case 'string':   return {type: 'String'};
     case 'boolean':  return {type: 'Boolean'};
     case 'date':     return {type: 'Date'};
+    case 'map':
     case 'object':   return {type: 'Object'};
     case 'array':    return {type: 'Array'};
     case 'geopoint': return {type: 'GeoPoint'};
@@ -33,7 +34,7 @@ function mongoFieldTypeToSchemaAPIType(type) {
 }
 
 function mongoSchemaAPIResponseFields(schema) {
-  fieldNames = Object.keys(schema).filter(key => key !== '_id');
+  fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
   response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
     return obj;
