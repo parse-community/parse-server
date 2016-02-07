@@ -17,7 +17,6 @@
 var ExportAdapter = require('./ExportAdapter');
 
 var adapter = ExportAdapter;
-var cache = require('./cache');
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
 var appDatabaseURIs = {};
@@ -35,13 +34,15 @@ function setAppDatabaseURI(appId, uri) {
 }
 
 function getDatabaseConnection(appId) {
+  var cacheProvider = new (require('./classes/CacheProvider'));
+  var cache = cacheProvider.getAdapter();
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }
 
   var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
   dbConnections[appId] = new adapter(dbURI, {
-    collectionPrefix: cache.apps[appId]['collectionPrefix']
+    collectionPrefix: cache.get(appId)['collectionPrefix']
   });
   dbConnections[appId].connect();
   return dbConnections[appId];

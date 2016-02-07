@@ -2,14 +2,13 @@
 
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
-    cache = require('./cache'),
+    CacheProvider = require('./classes/CacheProvider'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
-    BaseProvider = require('./classes/BaseProvider'),
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
 
@@ -49,7 +48,11 @@ function ParseServer(args) {
     throw 'You must provide an appId and masterKey!';
   }
 
-  this.cacheProvider = new BaseProvider(args.cacheAdapter || DefaultCacheAdapter);
+  this.setupCache(args.cache);
+
+  var cache = this.cacheProvider.getAdapter();
+
+  console.log(cache);
 
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
@@ -74,7 +77,7 @@ function ParseServer(args) {
 
   }
 
-  cache.apps[args.appId] = {
+  var appInfo = {
     masterKey: args.masterKey,
     collectionPrefix: args.collectionPrefix || '',
     clientKey: args.clientKey || '',
@@ -87,8 +90,10 @@ function ParseServer(args) {
 
   // To maintain compatibility. TODO: Remove in v2.1
   if (process.env.FACEBOOK_APP_ID) {
-    cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+    appInfo['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
+
+  cache.put(args.appId, appInfo);
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
@@ -175,6 +180,14 @@ function getClassName(parseClass) {
   }
   return parseClass;
 }
+
+// TODO: Add configurable TTLs for cache entries
+function setupCache(config) {
+  config = config || {};
+  this.cacheProvider = new CacheProvider(config.adapter || DefaultCacheAdapter);
+}
+
+ParseServer.prototype.setupCache = setupCache;
 
 module.exports = {
   ParseServer: ParseServer,

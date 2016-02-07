@@ -1,7 +1,6 @@
 var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 
 // Checks that the request is authorized for this app and checks user
@@ -11,6 +10,8 @@ var Config = require('./Config');
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 function handleParseHeaders(req, res, next) {
+  var cacheProvider = new (require('./classes/CacheProvider'));
+  var cache = cacheProvider.getAdapter();
   var mountPathLength = req.originalUrl.length - req.url.length;
   var mountPath = req.originalUrl.slice(0, mountPathLength);
   var mount = req.protocol + '://' + req.get('host') + mountPath;
@@ -27,8 +28,9 @@ function handleParseHeaders(req, res, next) {
   };
 
   var fileViaJSON = false;
+  var app = cache.get(info.appId);
 
-  if (!info.appId || !cache.apps[info.appId]) {
+  if (!info.appId || !app) {
     // See if we can find the app id on the body.
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
@@ -37,13 +39,10 @@ function handleParseHeaders(req, res, next) {
       fileViaJSON = true;
     }
 
-    if (req.body && req.body._ApplicationId
-    && cache.apps[req.body._ApplicationId]
-    && (
-      !info.masterKey
-      ||
-      cache.apps[req.body._ApplicationId]['masterKey'] === info.masterKey)
-    ) {
+    if (req.body && req.body._ApplicationId)
+        app = cache.get(req.body._ApplicationId)
+
+    if (app && (!info.masterKey || app.masterKey === info.masterKey)) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
       delete req.body._ApplicationId;
@@ -77,7 +76,7 @@ function handleParseHeaders(req, res, next) {
     req.body = new Buffer(base64, 'base64');
   }
 
-  info.app = cache.apps[info.appId];
+  info.app = cache.get(info.appId);
   req.config = new Config(info.appId, mount);
   req.database = req.config.database;
   req.info = info;
