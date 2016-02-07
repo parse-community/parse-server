@@ -105,7 +105,7 @@ ExportAdapter.prototype.loadSchema = function(acceptor) {
 ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
-    var match = t ? t.match(/^relation<(.*)>$/) : false; // if no field exist, undefined.match error thrown
+    var match = t.match(/^relation<(.*)>$/);
     if (match) {
       return match[1];
     } else {
