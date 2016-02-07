@@ -60,6 +60,9 @@ defaultColumns = {
     "expiresAt":      {type:'Date'},
     "createdWith":    {type:'Object'},
   },
+  _GlobalConfig: {
+    "params":     {type:'Object'}
+  },
 }
 
 // Valid classes must:
