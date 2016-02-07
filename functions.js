@@ -9,6 +9,13 @@ var router = new PromiseRouter();
 
 function handleCloudFunction(req) {
   if (Parse.Cloud.Functions[req.params.functionName]) {
+    if (Parse.Cloud.Validators[req.params.functionName]) {
+      var result = Parse.Cloud.Validators[req.params.functionName](req.body || {});
+      if (!result) {
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
+      }
+    }
+
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
       var request = {
@@ -28,7 +35,7 @@ function createResponseObject(resolve, reject) {
     success: function(result) {
       resolve({
         response: {
-          result: result
+          result: Parse._encode(result)
         }
       });
     },

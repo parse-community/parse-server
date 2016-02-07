@@ -12,6 +12,8 @@ Read the migration guide here: https://parse.com/docs/server/guide#migrating
 
 There is a development wiki here on GitHub: https://github.com/ParsePlatform/parse-server/wiki
 
+We also have an [example project](https://github.com/ParsePlatform/parse-server-example) using the parse-server module on Express.
+
 ---
 
 #### Basic options:
@@ -58,7 +60,7 @@ var api = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev',
   cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
   appId: 'myAppId',
-  masterKey: 'mySecretMasterKey',
+  masterKey: '', //Add your master key here. Keep it secret!
   fileKey: 'optionalFileKey',
   serverURL: 'http://localhost:' + port + '/parse' // Don't forget to change to https if needed
 });

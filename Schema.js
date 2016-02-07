@@ -17,6 +17,135 @@
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
 
+defaultColumns = {
+  // Contain the default columns for every parse object type (except _Join collection)
+  _Default: {
+    "objectId":  {type:'String'},
+    "createdAt": {type:'Date'},
+    "updatedAt": {type:'Date'},
+    "ACL":       {type:'ACL'},
+  },
+  // The additional default columns for the _User collection (in addition to DefaultCols)
+  _User: {
+    "username":      {type:'String'},
+    "password":      {type:'String'},
+    "authData":      {type:'Object'},
+    "email":         {type:'String'},
+    "emailVerified": {type:'Boolean'},
+  },
+  // The additional default columns for the _User collection (in addition to DefaultCols)
+  _Installation: {
+    "installationId":   {type:'String'},
+    "deviceToken":      {type:'String'},
+    "channels":         {type:'Array'},
+    "deviceType":       {type:'String'},
+    "pushType":         {type:'String'},
+    "GCMSenderId":      {type:'String'},
+    "timeZone":         {type:'String'},
+    "localeIdentifier": {type:'String'},
+    "badge":            {type:'Number'},
+  },
+  // The additional default columns for the _User collection (in addition to DefaultCols)
+  _Role: {
+    "name":  {type:'String'},
+    "users": {type:'Relation',className:'_User'},
+    "roles": {type:'Relation',className:'_Role'},
+  },
+  // The additional default columns for the _User collection (in addition to DefaultCols)
+  _Session: {
+    "restricted":     {type:'Boolean'},
+    "user":           {type:'Pointer', className:'_User'},
+    "installationId": {type:'String'},
+    "sessionToken":   {type:'String'},
+    "expiresAt":      {type:'Date'},
+    "createdWith":    {type:'Object'},
+  },
+}
+
+// Valid classes must:
+// Be one of _User, _Installation, _Role, _Session OR
+// Be a join table OR
+// Include only alpha-numeric and underscores, and not start with an underscore or number
+var joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
+var classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
+function classNameIsValid(className) {
+  return (
+    className === '_User' ||
+    className === '_Installation' ||
+    className === '_Session' ||
+    className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
+    className === '_Role' ||
+    joinClassRegex.test(className) ||
+    //Class names have the same constraints as field names, but also allow the previous additional names.
+    fieldNameIsValid(className)
+  );
+}
+
+// Valid fields must be alpha-numeric, and not start with an underscore or number
+function fieldNameIsValid(fieldName) {
+  return classAndFieldRegex.test(fieldName);
+}
+
+// Checks that it's not trying to clobber one of the default fields of the class.
+function fieldNameIsValidForClass(fieldName, className) {
+  if (!fieldNameIsValid(fieldName)) {
+    return false;
+  }
+  if (defaultColumns._Default[fieldName]) {
+    return false;
+  }
+  if (defaultColumns[className] && defaultColumns[className][fieldName]) {
+    return false;
+  }
+  return true;
+}
+
+function invalidClassNameMessage(className) {
+  return 'Invalid classname: ' + className + ', classnames can only have alphanumeric characters and _, and must start with an alpha character ';
+}
+
+// Returns { error: "message", code: ### } if the type could not be
+// converted, otherwise returns a returns { result: "mongotype" }
+// where mongotype is suitable for inserting into mongo _SCHEMA collection
+function schemaAPITypeToMongoFieldType(type) {
+  var invalidJsonError = { error: "invalid JSON", code: Parse.Error.INVALID_JSON };
+  if (type.type == 'Pointer') {
+    if (!type.targetClass) {
+      return { error: 'type Pointer needs a class name', code: 135 };
+    } else if (typeof type.targetClass !== 'string') {
+      return invalidJsonError;
+    } else if (!classNameIsValid(type.targetClass)) {
+      return { error: invalidClassNameMessage(type.targetClass), code: Parse.Error.INVALID_CLASS_NAME };
+    } else  {
+      return { result: '*' + type.targetClass };
+    }
+  }
+  if (type.type == 'Relation') {
+    if (!type.targetClass) {
+      return { error: 'type Relation needs a class name', code: 135 };
+    } else if (typeof type.targetClass !== 'string') {
+      return invalidJsonError;
+    } else if (!classNameIsValid(type.targetClass)) {
+      return { error: invalidClassNameMessage(type.targetClass), code: Parse.Error.INVALID_CLASS_NAME };
+    } else {
+      return { result: 'relation<' + type.targetClass + '>' };
+    }
+  }
+  if (typeof type.type !== 'string') {
+    return { error: "invalid JSON", code: Parse.Error.INVALID_JSON };
+  }
+  switch (type.type) {
+    default:         return { error: 'invalid field type: ' + type.type, code: Parse.Error.INCORRECT_TYPE };
+    case 'Number':   return { result: 'number' };
+    case 'String':   return { result: 'string' };
+    case 'Boolean':  return { result: 'boolean' };
+    case 'Date':     return { result: 'date' };
+    case 'Object':   return { result: 'object' };
+    case 'Array':    return { result: 'array' };
+    case 'GeoPoint': return { result: 'geopoint' };
+    case 'File':     return { result: 'file' };
+  }
+}
 
 // Create a schema from a Mongo collection and the exported schema format.
 // mongoSchema should be a list of objects, each with:
@@ -71,9 +200,93 @@ Schema.prototype.reload = function() {
   return load(this.collection);
 };
 
+// Create a new class that includes the three default fields.
+// ACL is an implicit column that does not get an entry in the
+// _SCHEMAS database. Returns a promise that resolves with the
+// created schema, in mongo format.
+// on success, and rejects with an error on fail. Ensure you
+// have authorization (master key, or client class creation
+// enabled) before calling this function.
+Schema.prototype.addClassIfNotExists = function(className, fields) {
+  if (this.data[className]) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: 'class ' + className + ' already exists',
+    });
+  }
+
+  if (!classNameIsValid(className)) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: invalidClassNameMessage(className),
+    });
+  }
+  for (fieldName in fields) {
+    if (!fieldNameIsValid(fieldName)) {
+      return Promise.reject({
+        code: Parse.Error.INVALID_KEY_NAME,
+        error: 'invalid field name: ' + fieldName,
+      });
+    }
+    if (!fieldNameIsValidForClass(fieldName, className)) {
+      return Promise.reject({
+        code: 136,
+        error: 'field ' + fieldName + ' cannot be added',
+      });
+    }
+  }
+
+  var mongoObject = {
+    _id: className,
+    objectId: 'string',
+    updatedAt: 'string',
+    createdAt: 'string',
+  };
+  for (fieldName in defaultColumns[className]) {
+    validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
+    if (validatedField.code) {
+      return Promise.reject(validatedField);
+    }
+    mongoObject[fieldName] = validatedField.result;
+  }
+
+  for (fieldName in fields) {
+    validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
+    if (validatedField.code) {
+      return Promise.reject(validatedField);
+    }
+    mongoObject[fieldName] = validatedField.result;
+  }
+
+  var geoPoints = Object.keys(mongoObject).filter(key => mongoObject[key] === 'geopoint');
+
+  if (geoPoints.length > 1) {
+    return Promise.reject({
+      code: Parse.Error.INCORRECT_TYPE,
+      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
+    });
+  }
+
+  return this.collection.insertOne(mongoObject)
+  .then(result => result.ops[0])
+  .catch(error => {
+    if (error.code === 11000) { //Mongo's duplicate key error
+      return Promise.reject({
+        code: Parse.Error.INVALID_CLASS_NAME,
+        error: 'class ' + className + ' already exists',
+      });
+    }
+    return Promise.reject(error);
+  });
+}
+
 // Returns a promise that resolves successfully to the new schema
-// object.
+// object or fails with a reason.
 // If 'freeze' is true, refuse to update the schema.
+// WARNING: this function has side-effects, and doesn't actually
+// do any validation of the format of the className. You probably
+// should use classNameIsValid or addClassIfNotExists or something
+// like that instead. TODO: rename or remove this function.
 Schema.prototype.validateClassName = function(className, freeze) {
   if (this.data[className]) {
     return Promise.resolve(this);
@@ -348,5 +561,6 @@ function getObjectType(obj) {
 
 
 module.exports = {
-  load: load
+  load: load,
+  classNameIsValid: classNameIsValid,
 };
