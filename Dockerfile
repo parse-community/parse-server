@@ -1,0 +1,32 @@
+FROM node:latest
+
+RUN mkdir parse
+
+ADD . /parse
+WORKDIR /parse
+RUN npm install kerberos
+RUN npm install
+
+ENV PARSE_SERVER_APPLICATION_ID string
+ENV PARSE_SERVER_MOUNT_PATH string
+ENV PARSE_SERVER_DATABASE_URI string
+ENV PARSE_SERVER_CLOUD_CODE_MAIN string
+ENV PARSE_SERVER_MASTER_KEY string
+
+#ENV PARSE_SERVER_COLLECTION_PREFIX
+#ENV PARSE_SERVER_CLIENT_KEY
+#ENV PARSE_SERVER_REST_API_KEY
+#ENV PARSE_SERVER_DOTNET_KEY
+#ENV PARSE_SERVER_JAVASCRIPT_KEY
+#ENV PARSE_SERVER_DOTNET_KEY
+#ENV PARSE_SERVER_FILE_KEY
+#ENV PARSE_SERVER_FACEBOOK_APP_IDS
+
+EXPOSE 1337
+
+# Uncomment if you want to access cloud code outside of your container
+# A main.js file must be present, if not Parse will not start
+
+# VOLUME /parse/cloud
+
+CMD [ "npm", "start" ]
