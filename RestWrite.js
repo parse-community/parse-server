@@ -8,11 +8,11 @@ var rack = require('hat').rack();
 
 var Auth = require('./Auth');
 var cache = require('./cache');
-var Config = require('./Config');
 var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+var MailAdapterStore = require('./mail/MailAdapterStore')
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -350,13 +350,16 @@ RestWrite.prototype.transformUser = function() {
         email: this.data.email,
         objectId: {'$ne': this.objectId()}
       }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
-                                'Account already exists for this email ' +
-                                'address');
-        }
-        return Promise.resolve();
-      });
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
+          'Account already exists for this email ' +
+          'address');
+      }
+      this.data.emailVerified = false;
+      this.data.perishableToken = rack();
+      this.data.emailVerifyToken = rack();
+      return Promise.resolve();
+    });
   });
 };
 
@@ -654,16 +657,34 @@ RestWrite.prototype.runDatabaseOperation = function() {
     }
   }
 
+  function sendEmailVerification () {
+    var emailSender = MailAdapterStore.getMailService(this.config.applicationId);
+    if (!emailSender && this.config.verifyEmails) {
+      throw new Error("Verify emails option was set, but not email sending configuration was sent to parse");
+    }
+    var hasUserEmail = typeof this.data.email !== 'undefined' && this.className === "_User"
+    var canSendEmail = emailSender && this.config.verifyEmails;
+    if ( hasUserEmail && canSendEmail) {
+      var link = this.config.mount + "/verify_email?token=" + encodeURIComponent(this.data.emailVerifyToken) + "&username=" + encodeURIComponent(this.data.email);
+      var email = emailSender.getVerificationEmail(this.data.email, link);
+      emailSender.sendMail(this.data.email, email.subject, email.text, email.html);
+    }
+  }
+
   if (this.query) {
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, options).then((resp) => {
-        this.response = resp;
-        this.response.updatedAt = this.updatedAt;
-      });
+      sendEmailVerification.call(this);
+      this.response = resp;
+      this.response.updatedAt = this.updatedAt;
+    });
   } else {
     // Run a create
     return this.config.database.create(this.className, this.data, options)
+      .then(()=> {
+        sendEmailVerification.call(this);
+      })
       .then(() => {
         var resp = {
           objectId: this.data.objectId,

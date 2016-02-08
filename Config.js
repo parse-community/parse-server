@@ -21,6 +21,7 @@ function Config(applicationId, mount) {
   this.restAPIKey = cacheInfo.restAPIKey;
   this.fileKey = cacheInfo.fileKey;
   this.facebookAppIds = cacheInfo.facebookAppIds;
+  this.verifyEmails = cacheInfo.verifyEmails;
   this.mount = mount;
 }
 

@@ -11,7 +11,7 @@ var PromiseRouter = require('./PromiseRouter');
 var rest = require('./rest');
 var RestWrite = require('./RestWrite');
 var deepcopy = require('deepcopy');
-
+var MailAdapterStore = require('./mail/MailAdapterStore');
 var router = new PromiseRouter();
 
 // Returns a promise for a {status, response, location} object.
@@ -188,9 +188,35 @@ function handleUpdate(req) {
   });
 }
 
-function notImplementedYet(req) {
-  throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
-                        'This path is not implemented yet.');
+function handleReset(req) {
+  if (!req.body.email && req.query.email) {
+    req.body = req.query;
+  }
+
+  if (!req.body.email) {
+    throw new Parse.Error(Parse.Error.EMAIL_MISSING,
+      'email is required.');
+  }
+
+  return req.database.find('_User', {email: req.body.email})
+            .then((results) => {
+              if (!results.length) {
+                throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND,
+                  'Email not found.');
+              }
+              var emailSender = MailAdapterStore.getMailService(req.info.appId);
+              if (!emailSender) {
+                throw new Error("No email service function specified");
+              }
+              var perishableSessionToken = encodeURIComponent(results[0].perishableSessionToken);
+              var encodedEmail = encodeURIComponent(req.body.email);
+              var endpoint = req.config.mount + "/request_password_reset?token=" +  perishableSessionToken + "&username=" + encodedEmail;
+              var email = emailSender.getResetPasswordEmail(req.body.email, endpoint);
+              return emailSender.sendMail(req.body.email, email.subject, email.text, email.html);
+            })
+            .then(()=>{
+              return {response:{}};
+            })
 }
 
 router.route('POST', '/users', handleCreate);
@@ -202,6 +228,6 @@ router.route('PUT', '/users/:objectId', handleUpdate);
 router.route('GET', '/users', handleFind);
 router.route('DELETE', '/users/:objectId', handleDelete);
 
-router.route('POST', '/requestPasswordReset', notImplementedYet);
+router.route('POST', '/requestPasswordReset', handleReset);
 
 module.exports = router;

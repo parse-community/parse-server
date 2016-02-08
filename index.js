@@ -7,10 +7,14 @@ var batch = require('./batch'),
     express = require('express'),
     FilesAdapter = require('./FilesAdapter'),
     S3Adapter = require('./S3Adapter'),
+    MailAdapterStore = require('./mail/MailAdapterStore'),
+    MailAdapter = require('./mail/MailAdapter'),
+    MailgunAdapter = require('./mail/MailgunAdapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
+    path = require('path'),
     httpRequest = require('./httpRequest');
 
 // Mutate the Parse object to add the Cloud Code handlers
@@ -27,6 +31,16 @@ addParseCloud();
 // "cloud": relative location to cloud code to require, or a function
 //          that is given an instance of Parse as a parameter.  Use this instance of Parse
 //          to register your cloud code hooks and functions.
+// "mailConfig": a dictionary of 3rd party mail service settings (such as API keys etc)
+//          currently only Mailgun is supported. So service, apiKey, domain and fromAddress
+//          are all required. Setup like mailgun: { service: 'mailgun', apiKey: 'MG_APIKEY', 
+//          domain:'MG_DOMAIN', fromAddress:'Your App <yourapp@domain.com>' }. If you do not
+//          define mailConfig, no mail service will be setup.
+// "mailAdapter": A replacement mail adapter for sending custom emails, or emails
+//                from a service other than MailGun.  See the implementation of MailgunAdapter for
+//                expected prototype.
+// "verifyEmails": A boolean value indicating that parse-server should send a verification
+//                 email whenever a users email is changed.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
 // "facebookAppIds": an array of valid Facebook Application IDs, required
@@ -38,6 +52,7 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
+
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -52,6 +67,12 @@ function ParseServer(args) {
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
+  if(args.mailAdapter) {
+    MailAdapterStore.setAdapter(args.appId, args.mailAdapter);
+  } else if (args.mailConfig) {
+    MailAdapterStore.configureDefaultAdapter(args.appId, args.mailConfig)
+  }
+
   if (args.cloud) {
     addParseCloud();
     if (typeof args.cloud === 'function') {
@@ -72,7 +93,8 @@ function ParseServer(args) {
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || []
+    facebookAppIds: args.facebookAppIds || [],
+    verifyEmails: args.verifyEmails || false
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -92,6 +114,11 @@ function ParseServer(args) {
 
   // File handling needs to be before default middlewares are applied
   api.use('/', require('./files').router);
+  api.set('views', path.join(__dirname, 'views'));
+  api.use('/img', express.static(path.resolve(__dirname, 'img')));
+    api.use("/request_password_reset", require('./passwordReset').reset(args.appName, args.appId));
+  api.get("/password_reset_success", require('./passwordReset').success);
+  api.get("/verify_email", require('./verifyEmail')(args.appId));
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -103,6 +130,7 @@ function ParseServer(args) {
   api.use(middlewares.allowCrossDomain);
   api.use(middlewares.allowMethodOverride);
   api.use(middlewares.handleParseHeaders);
+  api.set('view engine', 'jade');
 
   var router = new PromiseRouter();
 
@@ -168,5 +196,7 @@ function getClassName(parseClass) {
 
 module.exports = {
   ParseServer: ParseServer,
-  S3Adapter: S3Adapter
+  S3Adapter: S3Adapter,
+  MailAdapter: MailAdapter,
+  MailgunAdapter: MailgunAdapter
 };
