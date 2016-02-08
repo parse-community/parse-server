@@ -3,14 +3,15 @@
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     cache = require('./cache'),
-    DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
-    FilesAdapter = require('./FilesAdapter'),
     S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
+    BaseProvider = require('./classes/BaseProvider'),
+    DatabaseProvider = require('./classes/DatabaseProvider'),
+    FilesProvider = require('./classes/FilesProvider'),
     httpRequest = require('./httpRequest');
 
 // Mutate the Parse object to add the Cloud Code handlers
@@ -38,20 +39,24 @@ addParseCloud();
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
+// 
+
+var DefaultDatabaseAdapter = require('./ExportAdapter');
+var DefaultFilesAdapter = require('./GridStoreAdapter');
+
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
   }
 
-  if (args.databaseAdapter) {
-    DatabaseAdapter.setAdapter(args.databaseAdapter);
-  }
-  if (args.filesAdapter) {
-    FilesAdapter.setAdapter(args.filesAdapter);
-  }
+  this.databaseProvider = new DatabaseProvider(args.databaseAdapter || DefaultDatabaseAdapter);
+  this.filesProvider = new FilesProvider(args.filesAdapter || DefaultFilesAdapter);
+
+  // TODO: Move this into the instantiation
   if (args.databaseURI) {
-    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
+    this.databaseProvider.setAppDatabaseURI(args.appId, args.databaseURI);
   }
+
   if (args.cloud) {
     addParseCloud();
     if (typeof args.cloud === 'function') {

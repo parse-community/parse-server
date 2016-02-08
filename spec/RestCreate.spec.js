@@ -2,13 +2,13 @@
 var auth = require('../Auth');
 var cache = require('../cache');
 var Config = require('../Config');
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseProvider = require('../classes/DatabaseProvider');
 var Parse = require('parse/node').Parse;
 var rest = require('../rest');
 var request = require('request');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+var database = (new DatabaseProvider()).getDatabaseConnection('test');
 
 describe('rest create', () => {
   it('handles _id', (done) => {

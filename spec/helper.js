@@ -3,7 +3,6 @@
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 
 var cache = require('../cache');
-var DatabaseAdapter = require('../DatabaseAdapter');
 var express = require('express');
 var facebook = require('../facebook');
 var ParseServer = require('../index').ParseServer;
@@ -37,6 +36,8 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 // This is needed because we ported a bunch of tests from the non-A+ way.
 // TODO: update tests to work in an A+ way
 Parse.Promise.disableAPlusCompliant();
+
+var DatabaseProvider = require('../classes/DatabaseProvider');
 
 beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
@@ -191,8 +192,9 @@ function mockFacebook() {
 
 function clearData() {
   var promises = [];
-  for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
+  var connections = (new DatabaseProvider()).getDatabaseConnections();
+  for (var conn in connections) {
+    promises.push(connections[conn].deleteEverything());
   }
   return Promise.all(promises);
 }

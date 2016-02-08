@@ -1,8 +1,9 @@
 // A bunch of different tests are in here - it isn't very thematic.
 // It would probably be better to refactor them into different files.
 
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseProvider = require('../classes/DatabaseProvider');
 var request = require('request');
+var dbProvider = new DatabaseProvider();
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -358,7 +359,7 @@ describe('miscellaneous', function() {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId);
+      var db = dbProvider.getDatabaseConnection(appId);
       return db.mongoFind('TestObject', {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
