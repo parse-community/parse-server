@@ -11,18 +11,7 @@ function CacheProvider(adapter) {
     }
 
     instance = this;
-
-    // Support passing in adapter paths
-    if (typeof adapter === 'string') {
-        adapter = require(adapter);
-    }
-
-    // Instantiate the adapter if the class got passed instead of an instance
-    if (typeof adapter === 'function') {
-        this.adapter = new adapter();
-    } else {
-        this.adapter = adapter;
-    }
+    this.adapter = adapter;
 };
 
 util.inherits(CacheProvider, BaseProvider);
