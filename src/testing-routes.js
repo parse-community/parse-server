@@ -14,7 +14,7 @@ function createApp(req, res) {
   cache.put(appId,  {
     'collectionPrefix': appId + '_',
     'masterKey': 'master'
-  });
+  }, Infinity);
 
   var keys = {
     'application_id': appId,

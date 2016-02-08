@@ -1,21 +1,29 @@
 'use strict';
 // Modified from https://github.com/ptarjan/node-cache/blob/master/index.js
-function MemoryCache() {
+function MemoryCache(options) {
+    options = options || {};
+
     this.cache = new Map();
     this.debug = false;
     this.hitCount = 0;
     this.missCount = 0;
+    this.defaultTtl = options.defaultTtl || 10 * 60 * 1000;
 };
 
-function put (key, value, time, timeoutCallback) {
+function put (key, value, ttl, timeoutCallback) {
   if (this.debug) {
-    console.log('caching: %s = %j (@%s)', key, value, time);
+    console.log('caching: %s = %j (@%s)', key, value, ttl);
   }
 
-  if (typeof time !== 'undefined' && (typeof time !== 'number' || isNaN(time) || time <= 0)) {
+  if (typeof ttl !== 'undefined' && (typeof ttl !== 'number' || isNaN(ttl) || ttl <= 0)) {
     throw new Error('Cache timeout must be a positive number');
   } else if (typeof timeoutCallback !== 'undefined' && typeof timeoutCallback !== 'function') {
     throw new Error('Cache timeout callback must be a function');
+  }
+
+  // TTL can still be set to Infinity for never expiring records
+  if (ttl === undefined) {
+    ttl = this.defaultTtl;
   }
 
   var oldRecord = this.cache.get(key);
@@ -25,16 +33,16 @@ function put (key, value, time, timeoutCallback) {
 
   var record = {
     value: value,
-    expire: (time + Date.now())
+    expire: (ttl + Date.now())
   };
 
-  if (!isNaN(record.expire)) {
+  if (!isNaN(record.expire) && ttl !== Infinity) {
     record.timeout = setTimeout(() => {
       this.del(key);
       if (timeoutCallback) {
         timeoutCallback(key);
       }
-    }, time);
+    }, ttl);
   }
 
   this.cache.set(key, record);
@@ -89,7 +97,7 @@ function get (key) {
   } else {
     this.missCount++;
   }
-  return null;
+  return undefined;
 };
 
 function size () {

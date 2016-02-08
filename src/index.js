@@ -52,8 +52,6 @@ function ParseServer(args) {
 
   var cache = this.cacheProvider.getAdapter();
 
-  console.log(cache);
-
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
   }
@@ -93,7 +91,7 @@ function ParseServer(args) {
     appInfo['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
 
-  cache.put(args.appId, appInfo);
+  cache.put(args.appId, appInfo, Infinity);
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
@@ -181,13 +179,31 @@ function getClassName(parseClass) {
   return parseClass;
 }
 
+function resolveAdapter(adapter, options) {
+    // Support passing in adapter paths
+    if (typeof adapter === 'string') {
+        adapter = require(adapter);
+    }
+
+    // Instantiate the adapter if the class got passed instead of an instance
+    if (typeof adapter === 'function') {
+        adapter = new adapter(options);
+    }
+
+    return adapter;
+}
+
 // TODO: Add configurable TTLs for cache entries
 function setupCache(config) {
   config = config || {};
-  this.cacheProvider = new CacheProvider(config.adapter || DefaultCacheAdapter);
+  config.adapter = config.adapter || DefaultCacheAdapter;
+
+  var adapter = this.resolveAdapter(config.adapter, config.options);
+  this.cacheProvider = new CacheProvider(adapter);
 }
 
 ParseServer.prototype.setupCache = setupCache;
+ParseServer.prototype.resolveAdapter = resolveAdapter;
 
 module.exports = {
   ParseServer: ParseServer,
