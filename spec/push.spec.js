@@ -104,10 +104,11 @@ describe('push', () => {
   it('can validate device type when no device type is set', (done) => {
     // Make query condition
     var where = {
-    }
+    };
+    var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validateDeviceType(where);
+      push.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -116,10 +117,11 @@ describe('push', () => {
     // Make query condition
     var where = {
       'deviceType': 'ios'
-    }
+    };
+    var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validateDeviceType(where);
+      push.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -130,10 +132,11 @@ describe('push', () => {
       'deviceType': {
         '$in': ['android', 'ios']
       }
-    }
+    };
+    var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validateDeviceType(where);
+      push.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -142,10 +145,11 @@ describe('push', () => {
     // Make query condition
     var where = {
       'deviceType': 'osx'
-    }
+    };
+    var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validateDeviceType(where);
+      push.validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -154,10 +158,11 @@ describe('push', () => {
     // Make query condition
     var where = {
       'deviceType': 'osx'
-    }
+    };
+    var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validateDeviceType(where)
+      push.validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });

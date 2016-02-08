@@ -43,16 +43,18 @@ describe('APNS', () => {
         'alert': 'alert'
       }
     }
-    // Mock registrationTokens
-    var deviceTokens = ['token'];
+    // Mock devices
+    var devices = [
+      { deviceToken: 'token' }
+    ];
 
-    var promise = apns.send(data, deviceTokens);
+    var promise = apns.send(data, devices);
     expect(sender.pushNotification).toHaveBeenCalled();
     var args = sender.pushNotification.calls.first().args;
     var notification = args[0];
     expect(notification.alert).toEqual(data.data.alert);
     expect(notification.expiry).toEqual(data['expiration_time']);
-    expect(args[1]).toEqual(deviceTokens);
+    expect(args[1]).toEqual(['token']);
     done();
   });
 });

@@ -2,27 +2,34 @@
 
 var Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
+    PushAdapter = require('./Adapters/Push/PushAdapter'),
     rest = require('./rest');
-
-var validPushTypes = ['ios', 'android'];
 
 function handlePushWithoutQueue(req) {
   validateMasterKey(req);
   var where = getQueryCondition(req);
-  validateDeviceType(where);
+  var pushAdapter = PushAdapter.getAdapter();
+  validatePushType(where, pushAdapter.getValidPushTypes());
   // Replace the expiration_time with a valid Unix epoch milliseconds time
   req.body['expiration_time'] = getExpirationTime(req);
-  return rest.find(req.config, req.auth, '_Installation', where).then(function(response) {
-    throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
-                  'This path is not implemented yet.');
+  // TODO: If the req can pass the checking, we return immediately instead of waiting
+  // pushes to be sent. We probably change this behaviour in the future.
+  rest.find(req.config, req.auth, '_Installation', where).then(function(response) {
+    return pushAdapter.send(req.body, response.results);
+  });
+  return Parse.Promise.as({
+      response: {
+        'result': true
+      }
   });
 }
 
 /**
  * Check whether the deviceType parameter in qury condition is valid or not.
  * @param {Object} where A query condition
+ * @param {Array} validPushTypes An array of valid push types(string)
  */
-function validateDeviceType(where) {
+function validatePushType(where, validPushTypes) {
   var where = where || {};
   var deviceTypeField = where.deviceType || {};
   var deviceTypes = [];
@@ -113,12 +120,12 @@ var router = new PromiseRouter();
 router.route('POST','/push', handlePushWithoutQueue);
 
 module.exports = {
-  router: router
+  router: router,
 }
 
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   module.exports.getQueryCondition = getQueryCondition;
   module.exports.validateMasterKey = validateMasterKey;
   module.exports.getExpirationTime = getExpirationTime;
-  module.exports.validateDeviceType = validateDeviceType;
+  module.exports.validatePushType = validatePushType;
 }

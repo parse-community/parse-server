@@ -104,14 +104,18 @@ describe('GCM', () => {
         'alert': 'alert'
       }
     }
-    // Mock registrationTokens
-    var registrationTokens = ['token'];
+    // Mock devices
+    var devices = [
+      {
+        deviceToken: 'token'
+      }
+    ];
 
-    var promise = gcm.send(data, registrationTokens);
+    var promise = gcm.send(data, devices);
     expect(sender.send).toHaveBeenCalled();
     var args = sender.send.calls.first().args;
     // It is too hard to verify message of gcm library, we just verify tokens and retry times
-    expect(args[1].registrationTokens).toEqual(registrationTokens);
+    expect(args[1].registrationTokens).toEqual(['token']);
     expect(args[2]).toEqual(5);
     done();
   });
@@ -123,14 +127,16 @@ describe('GCM', () => {
       send: jasmine.createSpy('send')
     };
     gcm.sender = sender;
-    // Mock registrationTokens
-    var registrationTokens = [];
+    // Mock devices
+    var devices = [];
     for (var i = 0; i <= 2000; i++) {
-      registrationTokens.push(i.toString());
+      devices.push({
+        deviceToken: i.toString()
+      });
     }
 
     expect(function() {
-      gcm.send({}, registrationTokens);
+      gcm.send({}, devices);
     }).toThrow();
     done();
   });

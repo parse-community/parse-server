@@ -1,7 +1,9 @@
-var Parse = require('parse/node').Parse;
+"use strict";
+
+const Parse = require('parse/node').Parse;
 // TODO: apn does not support the new HTTP/2 protocal. It is fine to use it in V1,
 // but probably we will replace it in the future.
-var apn = require('apn');
+const apn = require('apn');
 
 /**
  * Create a new connection to the APN service.
@@ -33,18 +35,26 @@ function APNS(args) {
   });
 
   this.sender.on("socketError", console.error);
+
+  this.sender.on("transmitted", function(notification, device) {
+    console.log("APNS Notification transmitted to:" + device.token.toString("hex"));
+  });
 }
 
 /**
  * Send apns request.
  * @param {Object} data The data we need to send, the format is the same with api request body
- * @param {Array} deviceTokens A array of device tokens
+ * @param {Array} devices A array of devices
  * @returns {Object} A promise which is resolved immediately
  */
-APNS.prototype.send = function(data, deviceTokens) {
-  var coreData = data.data;
-  var expirationTime = data['expiration_time'];
-  var notification = generateNotification(coreData, expirationTime);
+APNS.prototype.send = function(data, devices) {
+  let coreData = data.data;
+  let expirationTime = data['expiration_time'];
+  let notification = generateNotification(coreData, expirationTime);
+  let deviceTokens = [];
+  for (let device of devices) {
+    deviceTokens.push(device.deviceToken);
+  }
   this.sender.pushNotification(notification, deviceTokens);
   // TODO: pushNotification will push the notification to apn's queue.
   // We do not handle error in V1, we just relies apn to auto retry and send the
@@ -57,10 +67,10 @@ APNS.prototype.send = function(data, deviceTokens) {
  * @param {Object} coreData The data field under api request body
  * @returns {Object} A apns notification
  */
-var generateNotification = function(coreData, expirationTime) {
-  var notification = new apn.notification();
-  var payload = {};
-  for (var key in coreData) {
+let generateNotification = function(coreData, expirationTime) {
+  let notification = new apn.notification();
+  let payload = {};
+  for (let key in coreData) {
     switch (key) {
       case 'alert':
         notification.setAlertText(coreData.alert);
@@ -73,7 +83,7 @@ var generateNotification = function(coreData, expirationTime) {
         break;
       case 'content-available':
         notification.setNewsstandAvailable(true);
-        var isAvailable = coreData['content-available'] === 1;
+        let isAvailable = coreData['content-available'] === 1;
         notification.setContentAvailable(isAvailable);
         break;
       case 'category':
