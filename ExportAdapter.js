@@ -34,21 +34,8 @@ ExportAdapter.prototype.connect = function() {
     return this.connectionPromise;
   }
 
-  //http://regexr.com/3cncm
-  if (!this.mongoURI.match(/^mongodb:\/\/((.+):(.+)@)?([^:@]+):{0,1}([^:]+)\/(.+?)$/gm)) {
-    throw new Error("Invalid mongoURI: " + this.mongoURI)
-  }
-  var usernameStart = this.mongoURI.indexOf('://') + 3;
-  var lastAtIndex = this.mongoURI.lastIndexOf('@');
-  var encodedMongoURI = this.mongoURI;
-  var split = null;
-  if (lastAtIndex > 0) {
-    split = this.mongoURI.slice(usernameStart, lastAtIndex).split(':');
-    encodedMongoURI = this.mongoURI.slice(0, usernameStart) + encodeURIComponent(split[0]) + ':' + encodeURIComponent(split[1]) + this.mongoURI.slice(lastAtIndex);
-  }
-
   this.connectionPromise = Promise.resolve().then(() => {
-    return MongoClient.connect(encodedMongoURI, {uri_decode_auth:true});
+    return MongoClient.connect(this.mongoURI);
   }).then((db) => {
     this.db = db;
   });
