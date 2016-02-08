@@ -1,5 +1,3 @@
-// run test when changing related file using
-// $ TESTING=1 node_modules/jasmine/bin/jasmine.js spec/ParseGlobalConfig.spec.js
 
 var auth = require('../Auth');
 var cache = require('../cache');
