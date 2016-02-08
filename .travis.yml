@@ -8,4 +8,7 @@ node_js:
 env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
+cache:
+  directories:
+    - $HOME/.mongodb/versions/downloads
 after_success: ./node_modules/.bin/codecov
