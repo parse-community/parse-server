@@ -1,0 +1,57 @@
+extends layout
+block style
+    include four-o-four.css
+block script
+    script.
+        var emojiCount = 30;
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+        function catchFeelings() {
+            var emoji = getRandomInt(0, emojiCount - 1);
+            if(window.innerWidth > 400){
+                var bgOffset = (emoji * 200 * -1) + "px 0px"
+            } else {
+                var bgOffset = (emoji * 100 * -1) + "px 0px"
+            }
+            document.getElementById('emoji').style.backgroundPosition = bgOffset;
+        }
+
+block content
+    div.four_oh_four
+        img.logo(src="https://www.parse.com/images/parse-logo.png", width="98" height="31")
+        figure.error
+            h1
+                span 4
+                div#emoji
+                span 4
+            h2 Oh no, we can't find that page!
+
+    script.
+        catchFeelings();
+
+        setTimeout(function () {
+            setInterval(function () {
+                catchFeelings()
+            }, 3000)
+        }, 3000)
+
+        document.addEventListener('keydown', function (e) {
+            e = e || window.event;
+            switch (e.which || e.keyCode) {
+                case 32:
+                    for (var i = 0; i < 20; i++) {
+                        setTimeout(function () {
+                            catchFeelings();
+                        }, 50 * i)
+                    }
+                    break;
+
+                default:
+                    return;
+            }
+            e.preventDefault();
+        });
+
+
+

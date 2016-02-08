@@ -1,0 +1,8 @@
+extends layout
+block style
+    include styles.css
+block content
+    if locals.error
+        h1.error #{error}
+    else
+        h1 Successfully verified #{email}!

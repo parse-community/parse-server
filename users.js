@@ -10,6 +10,7 @@ var facebook = require('./facebook');
 var PromiseRouter = require('./PromiseRouter');
 var rest = require('./rest');
 var RestWrite = require('./RestWrite');
+var Constants = require('./Constants');
 var deepcopy = require('deepcopy');
 
 var router = new PromiseRouter();
@@ -188,9 +189,34 @@ function handleUpdate(req) {
   });
 }
 
-function notImplementedYet(req) {
-  throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
-                        'This path is not implemented yet.');
+function handleReset(req) {
+  if (!req.body.email && req.query.email) {
+    req.body = req.query;
+  }
+
+  if (!req.body.email) {
+    throw new Parse.Error(Parse.Error.EMAIL_MISSING,
+      'email is required.');
+  }
+
+  return req.database.find('_User', {email: req.body.email})
+            .then((results) => {
+              if (!results.length) {
+                throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND,
+                  'Email not found.');
+              }
+              var emailSender = req.info.app && req.info.app.emailSender;
+              if (!emailSender) {
+                throw new Error("No email sender function specified");
+              }
+              var perishableSessionToken = encodeURIComponent(results[0].perishableSessionToken);
+              var encodedEmail = encodeURIComponent(req.body.email)
+              var endpoint = req.config.mount + "/request_password_reset?token=" +  perishableSessionToken + "&username=" + encodedEmail;
+              return emailSender(Constants.RESET_PASSWORD, endpoint,req.body.email);
+            })
+            .then(()=>{
+              return {response:{}};
+            })
 }
 
 router.route('POST', '/users', handleCreate);
@@ -202,6 +228,6 @@ router.route('PUT', '/users/:objectId', handleUpdate);
 router.route('GET', '/users', handleFind);
 router.route('DELETE', '/users/:objectId', handleDelete);
 
-router.route('POST', '/requestPasswordReset', notImplementedYet);
+router.route('POST', '/requestPasswordReset', handleReset);
 
 module.exports = router;
