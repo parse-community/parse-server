@@ -487,11 +487,6 @@ RestWrite.prototype.handleInstallation = function() {
     this.data.installationId = this.data.installationId.toLowerCase();
   }
 
-  if (this.data.deviceToken && this.data.deviceType == 'android') {
-    throw new Parse.Error(114,
-                          'deviceToken may not be set for deviceType android');
-  }
-
   var promise = Promise.resolve();
 
   if (this.query && this.query.objectId) {
