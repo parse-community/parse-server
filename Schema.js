@@ -78,7 +78,6 @@ function classNameIsValid(className) {
     className === '_Session' ||
     className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
     className === '_Role' ||
-    className === '_GlobalConfig' ||
     joinClassRegex.test(className) ||
     //Class names have the same constraints as field names, but also allow the previous additional names.
     fieldNameIsValid(className)

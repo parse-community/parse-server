@@ -1,39 +1,46 @@
 // global_config.js
 
 var Parse = require('parse/node').Parse,
-    PromiseRouter = require('./PromiseRouter'),
-    rest = require('./rest');
+    PromiseRouter = require('./PromiseRouter');
 
 var router = new PromiseRouter();
 
-// Returns a promise for a {response} object.
-function handleUpdateGlobalConfig(req) {
+function updateGlobalConfig(req) {
   if (!req.auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Config updates requires valid masterKey.');
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'unauthorized'},
+    });
   }
 
-  return rest.update(req.config, req.auth,
-                     '_GlobalConfig', 1, req.body)
-  .then((response) => {
-    return {response: response};
-  });
+  return req.config.database.rawCollection('_GlobalConfig')
+    .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }, { returnOriginal: false }))
+    .then(response => {
+      return { response: { params: response.value.params } }
+    })
+    .catch(() => ({
+      status: 404,
+      response: {
+        code: 103,
+        error: 'config cannot be updated',
+      }
+    }));
 }
 
-// Returns a promise for a {response} object.
-function handleGetGlobalConfig(req) {
-  return rest.find(req.config, req.auth, '_GlobalConfig', 1)
-  .then((response) => {
-    if (!response.results || response.results.length == 0) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                            'Object not found.');
-    } else {
-    	// only return 'params' attribute of response
-      return {response: { params: response.results[0].params }};
-    }
-  });
+function getGlobalConfig(req) {
+  return req.config.database.rawCollection('_GlobalConfig')
+    .then(coll => coll.findOne({'_id': 1}))
+    .then(globalConfig => ({response: { params: globalConfig.params }}))
+    .catch(() => ({
+      status: 404,
+      response: {
+        code: 103,
+        error: 'config does not exist',
+      }
+    }));
 }
 
-router.route('GET','/config', handleGetGlobalConfig);
-router.route('POST','/config', handleUpdateGlobalConfig);
+router.route('GET', '/config', getGlobalConfig);
+router.route('POST', '/config', updateGlobalConfig);
 
 module.exports = router;

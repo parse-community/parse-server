@@ -64,6 +64,10 @@ ExportAdapter.prototype.collection = function(className) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
   }
+  return this.rawCollection(className);
+};
+
+ExportAdapter.prototype.rawCollection = function(className) {
   return this.connect().then(() => {
     return this.db.collection(this.collectionPrefix + className);
   });

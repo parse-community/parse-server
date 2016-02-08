@@ -192,7 +192,7 @@ function mockFacebook() {
 function clearData() {
   var promises = [];
   for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
+    // promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
   }
   return Promise.all(promises);
 }
