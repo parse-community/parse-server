@@ -7,6 +7,23 @@ var express = require('express'),
 
 var router = new PromiseRouter();
 
+function masterKeyRequiredResponse() {
+  return Promise.resolve({
+    status: 401,
+    response: {error: 'master key not specified'},
+  })
+}
+
+function classNameMismatchResponse(bodyClass, pathClass) {
+  return Promise.resolve({
+    status: 400,
+    response: {
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: 'class name mismatch between ' + bodyClass + ' and ' + pathClass,
+    }
+  });
+}
+
 function mongoFieldTypeToSchemaAPIType(type) {
   if (type[0] === '*') {
     return {
@@ -55,10 +72,7 @@ function mongoSchemaToSchemaAPIResponse(schema) {
 
 function getAllSchemas(req) {
   if (!req.auth.isMaster) {
-    return Promise.resolve({
-      status: 401,
-      response: {error: 'master key not specified'},
-    });
+    return masterKeyRequiredResponse();
   }
   return req.config.database.collection('_SCHEMA')
   .then(coll => coll.find({}).toArray())
@@ -69,10 +83,7 @@ function getAllSchemas(req) {
 
 function getOneSchema(req) {
   if (!req.auth.isMaster) {
-    return Promise.resolve({
-      status: 401,
-      response: {error: 'unauthorized'},
-    });
+    return masterKeyRequiredResponse();
   }
   return req.config.database.collection('_SCHEMA')
   .then(coll => coll.findOne({'_id': req.params.className}))
@@ -88,20 +99,11 @@ function getOneSchema(req) {
 
 function createSchema(req) {
   if (!req.auth.isMaster) {
-    return Promise.resolve({
-      status: 401,
-      response: {error: 'master key not specified'},
-    });
+    return masterKeyRequiredResponse();
   }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
-      return Promise.resolve({
-        status: 400,
-        response: {
-          code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class name mismatch between ' + req.body.className + ' and ' + req.params.className,
-        },
-      });
+      return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
   var className = req.params.className || req.body.className;
@@ -123,9 +125,38 @@ function createSchema(req) {
   }));
 }
 
+function modifySchema(req) {
+  if (!req.auth.isMaster) {
+    return masterKeyRequiredResponse();
+  }
+
+  if (req.body.className && req.body.className != req.params.className) {
+    return classNameMismatchResponse(req.body.className, req.path.className);
+  }
+
+  if (!req.body.fields) {
+    req.body.fields = {};
+  }
+
+  return req.config.database.loadSchema()
+  .then(schema => schema.hasClass(req.params.className))
+  .then(hasClass => {
+    if (!hasClass) {
+      return Promise.resolve({
+        status: 400,
+        response: {
+          code: Parse.Error.INVALID_CLASS_NAME,
+          error: 'class ' + req.params.className + ' does not exist',
+        }
+      });
+    }
+  });
+}
+
 router.route('GET', '/schemas', getAllSchemas);
 router.route('GET', '/schemas/:className', getOneSchema);
 router.route('POST', '/schemas', createSchema);
 router.route('POST', '/schemas/:className', createSchema);
+router.route('PUT', '/schemas/:className', modifySchema);
 
 module.exports = router;

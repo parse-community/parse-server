@@ -94,7 +94,7 @@ describe('schemas', () => {
       headers: restKeyHeaders,
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('unauthorized');
+      expect(body.error).toEqual('master key not specified');
       done();
     });
   });
@@ -317,5 +317,102 @@ describe('schemas', () => {
       });
       done();
     });
+  });
+
+  it('requires the master key to modify schemas', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, (error, response, body) => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: noAuthHeaders,
+        json: true,
+        body: {},
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(403);
+        expect(body.error).toEqual('unauthorized');
+        done();
+      });
+    });
+  });
+
+  it('rejects class name mis-matches', done => {
+    request.put({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {className: 'WrongClassName'}
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(400);
+      expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(body.error).toEqual('class name mismatch between WrongClassName and NewClass');
+    });
+  });
+
+  it('refuses to add fields to non-existent classes', done => {
+    request.put({
+      url: 'http://localhost:8378/1/schemas/NoClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        fields: {
+            newField: {type: 'String'}
+        }
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(400);
+      expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(body.error).toEqual('class NoClass does not exist');
+      done();
+    });
+  });
+
+  it('put with no modifications returns all fields', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD'
+        headers: masterKeyHeaders,
+        json: true,
+        body: {},
+      }, (error, response, body) => {
+        expect(body).toEqual(plainOldDataSchema);
+        done();
+      });
+    });
+  });
+
+  it('lets you add fields', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, (error, response, body) => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newField: {type: 'String'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(body).toEqual('blah');
+        request.get({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(body).toEqual('blah');
+          done();
+        });
+      });
+    })
   });
 });
