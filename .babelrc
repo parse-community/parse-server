@@ -1,5 +1,6 @@
 {
   "presets": [
     "es2015"
-  ]
+  ],
+  "plugins": ["syntax-trailing-function-commas"]
 }
