@@ -7,11 +7,6 @@ import { default as BaseProvider } from './BaseProvider';
 * @extends {BaseProvider}
 * @param {Object} adapter - A cache adapter
 */
-export class CacheProvider extends BaseProvider {
-  constructor() {
-    super(...arguments);
-    this.DEFAULT_ADAPTER = './MemoryCache';
-  }
-}
+export class CacheProvider extends BaseProvider {}
 
 export default new CacheProvider();

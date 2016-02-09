@@ -12,7 +12,7 @@ var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
 
 var config = {
   database: {
-    databaseURI: databaseURI,
+    databaseURI: databaseURI || "mongodb://localhost:27017/parse",
     /** adapter: "../ExportAdapter" */
   },
   cache: {

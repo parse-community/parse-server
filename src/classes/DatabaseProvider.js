@@ -1,20 +1,13 @@
 import { default as BaseProvider } from './BaseProvider';
 import { default as CacheProvider } from './CacheProvider';
 
-const DEFAULT_URI = "mongodb://localhost:27017/parse";
-
 export class DatabaseProvider extends BaseProvider {
-  constructor() {
-    super(...arguments);
-    this.DEFAULT_ADAPTER = '../ExportAdapter';
-  }
 
-  setup(config = {}) {
-    this.dbConnections = config.dbConnections || this.dbConnections || {};
-    this.databaseURI = config.defaultURI || DEFAULT_URI;
-    this.appDatabaseURIs = config.appDatabaseURIs || {};
-
+  setup(config = {}, defaultConfig = {}) {
     super.setup(...arguments);
+    this.dbConnections = this.dbConnections || {};
+    this.appDatabaseURIs = this.appDatabaseURIs || {};
+    this.databaseURI = this.config.databaseURI || this.databaseURI;
   }
 
   // TODO: Reimplement this whenever @Flovilmart finishes running CloudCode in subprocesses

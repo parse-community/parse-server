@@ -8,7 +8,8 @@ var bodyParser = require('body-parser'),
     Parse = require('parse/node').Parse,
     rack = require('hat').rack();
 
-var FilesProvider = require('./classes/FilesProvider').default;
+import { default as FilesProvider } from './classes/FilesProvider';
+
 var router = express.Router();
 
 var processCreate = function(req, res, next) {
@@ -44,12 +45,11 @@ var processCreate = function(req, res, next) {
   if (!hasExtension && contentType && mime.extension(contentType)) {
     extension = '.' + mime.extension(contentType);
   }
-
   var filename = rack() + '_' + req.params.filename + extension;
-  FilesAdapter.create(req.config, filename, req.body)
+  FilesAdapter.createFileAsync(req.config, filename, req.body)
   .then(() => {
     res.status(201);
-    var location = FilesAdapter.location(req.config, req, filename);
+    var location = FilesAdapter.getFileLocation(req.config, req, filename);
     res.set('Location', location);
     res.json({ url: location, name: filename });
   }).catch((error) => {
@@ -62,7 +62,7 @@ var processCreate = function(req, res, next) {
 var processGet = function(req, res) {
   var FilesAdapter = FilesProvider.getAdapter();
   var config = new Config(req.params.appId);
-  FilesAdapter.get(config, req.params.filename)
+  FilesAdapter.getFileDataAsync(config, req.params.filename)
   .then((data) => {
     res.status(200);
     var contentType = mime.lookup(req.params.filename);

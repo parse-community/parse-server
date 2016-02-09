@@ -10,10 +10,14 @@ var batch = require('./batch'),
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
 
-var ParseApp = require('./classes/ParseApp').default;
-var CacheProvider = require('./classes/CacheProvider').default;
-var FilesProvider = require('./classes/FilesProvider').default;
-var DatabaseProvider = require('./classes/DatabaseProvider').default;
+import { default as ParseApp } from './classes/ParseApp';
+import { default as CacheProvider } from './classes/CacheProvider';
+import { default as FilesProvider } from './classes/FilesProvider';
+import { default as DatabaseProvider } from './classes/DatabaseProvider';
+
+import { default as DEFAULT_CACHE_ADAPTER } from './classes/MemoryCache';
+import { default as DEFAULT_FILES_ADAPTER } from './GridStoreAdapter';
+import { default as DEFAULT_DATABASE_ADAPTER } from './ExportAdapter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -41,11 +45,29 @@ addParseCloud();
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
 
+const SERVER_DEFAULT_CONFIG = {
+    "cache": {
+        adapter: DEFAULT_CACHE_ADAPTER,
+        options: {
+            defaultTtl: 10 * 60 * 1000 // 10 min in ms
+        }
+    },
+    "files": {
+        adapter: DEFAULT_FILES_ADAPTER,
+        options: {}
+    },
+    "database": {
+        adapter: DEFAULT_DATABASE_ADAPTER,
+        databaseURI: "mongodb://localhost:27017/parse",
+        options: {}
+    }
+}
+
 function ParseServer(args) {
   // Setup providers
-  CacheProvider.setup(args.cache);
-  FilesProvider.setup(args.files);
-  DatabaseProvider.setup(args.database);
+  CacheProvider.setup(args.cache, SERVER_DEFAULT_CONFIG.cache);
+  FilesProvider.setup(args.files, SERVER_DEFAULT_CONFIG.files);
+  DatabaseProvider.setup(args.database, SERVER_DEFAULT_CONFIG.database);
 
   // Instantiate the app
   var app = new ParseApp(args.app);

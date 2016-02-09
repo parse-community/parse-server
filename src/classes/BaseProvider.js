@@ -56,8 +56,9 @@ export class BaseProvider {
       return adapter;
   }
 
-  setup (config = {}) {
-    const adapter = this.resolveAdapter(config.adapter || this.DEFAULT_ADAPTER, config.options);
+  setup (config = {}, defaultConfig = {}) {
+    this.config = Object.assign(defaultConfig, config);
+    const adapter = this.resolveAdapter(this.config.adapter || this.DEFAULT_ADAPTER, this.config.options);
     this.setAdapter(adapter);
   }
 }
