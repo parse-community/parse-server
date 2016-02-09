@@ -34,8 +34,8 @@ function mongoFieldTypeToSchemaAPIType(type) {
 }
 
 function mongoSchemaAPIResponseFields(schema) {
-  fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
-  response = fieldNames.reduce((obj, fieldName) => {
+  var fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
+  var response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
     return obj;
   }, {});

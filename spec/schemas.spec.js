@@ -16,7 +16,7 @@ var hasAllPODobject = () => {
   objACL.setPublicWriteAccess(false);
   obj.setACL(objACL);
   return obj;
-}
+};
 
 var plainOldDataSchema = {
   className: 'HasAllPOD',
@@ -35,7 +35,7 @@ var plainOldDataSchema = {
     aArray: {type: 'Array'},
     aGeoPoint: {type: 'GeoPoint'},
     aFile: {type: 'File'}
-  },
+  }
 };
 
 var pointersAndRelationsSchema = {

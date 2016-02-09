@@ -42,7 +42,7 @@ function handleFind(req) {
                    req.params.className, body.where, options)
     .then((response) => {
       if (response && response.results) {
-        for (result of response.results) {
+        for (var result of response.results) {
           if (result.sessionToken) {
             result.sessionToken = req.info.sessionToken || result.sessionToken;
           }
