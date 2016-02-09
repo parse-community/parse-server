@@ -17,7 +17,7 @@
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
 
-defaultColumns = {
+var defaultColumns = {
   // Contain the default columns for every parse object type (except _Join collection)
   _Default: {
     "objectId":  {type:'String'},
