@@ -11,6 +11,7 @@ var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+var CacheProvider = require('./classes/CacheProvider');
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions) {
@@ -35,7 +36,7 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;
-  var cache = require('./classes/CacheProvider').getAdapter();
+  var cache = CacheProvider.getAdapter();
 
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, 'beforeDelete') ||

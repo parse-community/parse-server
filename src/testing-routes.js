@@ -4,11 +4,12 @@ var express = require('express'),
     middlewares = require('./middlewares'),
     rack = require('hat').rack();
 
+var CacheProvider = require('./classes/CacheProvider');
 var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
-  var cache = require('./classes/CacheProvider').getAdapter();
+  var cache = CacheProvider.getAdapter();
   var appId = rack();
   cache.put(appId,  {
     'collectionPrefix': appId + '_',
