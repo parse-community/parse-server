@@ -11,16 +11,6 @@
 // and for the API server to be using the ExportAdapter
 // database adapter.
 
-let adapter = null;
-
-export function setAdapter(filesAdapter) {
-  adapter = filesAdapter;
-}
-
-export function getAdapter() {
-  return adapter;
-}
-
 export class FilesAdapter {
   createFileAsync(config, filename, data) { }
 
@@ -28,3 +18,5 @@ export class FilesAdapter {
 
   getFileLocation(config, request, filename) { }
 }
+
+export default FilesAdapter;
