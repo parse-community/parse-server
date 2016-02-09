@@ -10,26 +10,28 @@ if (process.env.PARSE_SERVER_OPTIONS) {
 	options = JSON.parse(process.env.PARSE_SERVER_OPTIONS);
 
 } else {
-
-	options.databaseURI = process.env.PARSE_SERVER_DATABASE_URI;
-	options.cloud = process.env.PARSE_SERVER_CLOUD_CODE_MAIN;
-	options.collectionPrefix = process.env.PARSE_SERVER_COLLECTION_PREFIX;
+  options.app                        = {};
+	options.app.databaseURI            = process.env.PARSE_SERVER_DATABASE_URI;
+	options.app.cloud                  = process.env.PARSE_SERVER_CLOUD_CODE_MAIN;
+	options.app.collectionPrefix       = process.env.PARSE_SERVER_COLLECTION_PREFIX;
 
 	// Keys and App ID
-	options.appId = process.env.PARSE_SERVER_APPLICATION_ID;
-	options.clientKey = process.env.PARSE_SERVER_CLIENT_KEY;
-	options.restAPIKey = process.env.PARSE_SERVER_REST_API_KEY;
-	options.dotNetKey = process.env.PARSE_SERVER_DOTNET_KEY;
-	options.javascriptKey = process.env.PARSE_SERVER_JAVASCRIPT_KEY;
-	options.dotNetKey = process.env.PARSE_SERVER_DOTNET_KEY;
-	options.masterKey = process.env.PARSE_SERVER_MASTER_KEY;
-	options.fileKey = process.env.PARSE_SERVER_FILE_KEY;
+	options.app.appId                  = process.env.PARSE_SERVER_APPLICATION_ID;
+	options.app.clientKey              = process.env.PARSE_SERVER_CLIENT_KEY;
+	options.app.restAPIKey             = process.env.PARSE_SERVER_REST_API_KEY;
+	options.app.dotNetKey              = process.env.PARSE_SERVER_DOTNET_KEY;
+	options.app.javascriptKey          = process.env.PARSE_SERVER_JAVASCRIPT_KEY;
+	options.app.dotNetKey              = process.env.PARSE_SERVER_DOTNET_KEY;
+	options.app.masterKey              = process.env.PARSE_SERVER_MASTER_KEY;
+	options.app.fileKey                = process.env.PARSE_SERVER_FILE_KEY;
+
+
 	// Comma separated list of facebook app ids
 	var facebookAppIds = process.env.PARSE_SERVER_FACEBOOK_APP_IDS;
 
 	if (facebookAppIds) {
 		facebookAppIds = facebookAppIds.split(",");
-		options.facebookAppIds = facebookAppIds;
+		options.app.facebookAppIds = facebookAppIds;
 	}
 }
 
