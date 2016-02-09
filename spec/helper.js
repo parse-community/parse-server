@@ -2,8 +2,7 @@
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 
-var cache = require('../src/cache');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
+var DatabaseProvider = require('../src/classes/DatabaseProvider').default;
 var express = require('express');
 var facebook = require('../src/facebook');
 var ParseServer = require('../src/index').ParseServer;
@@ -11,19 +10,32 @@ var ParseServer = require('../src/index').ParseServer;
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
 
+var config = {
+  database: {
+    databaseURI: databaseURI,
+    /** adapter: "../ExportAdapter" */
+  },
+  cache: {
+  },
+  files: {
+  },
+  cloud: {
+    entry: cloudMain
+  },
+  app: {
+    appId: 'test',
+    javascriptKey: 'test',
+    dotNetKey: 'windows',
+    clientKey: 'client',
+    restAPIKey: 'rest',
+    masterKey: 'test',
+    collectionPrefix: 'test_',
+    fileKey: 'test'
+  }
+};
+
 // Set up an API server for testing
-var api = new ParseServer({
-  databaseURI: databaseURI,
-  cloud: cloudMain,
-  appId: 'test',
-  javascriptKey: 'test',
-  dotNetKey: 'windows',
-  clientKey: 'client',
-  restAPIKey: 'rest',
-  masterKey: 'test',
-  collectionPrefix: 'test_',
-  fileKey: 'test'
-});
+var api = new ParseServer(config);
 
 var app = express();
 app.use('/1', api);
@@ -191,8 +203,9 @@ function mockFacebook() {
 
 function clearData() {
   var promises = [];
-  for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
+  var connections = DatabaseProvider.getDatabaseConnections();
+  for (var conn in connections) {
+    promises.push(connections[conn].deleteEverything());
   }
   return Promise.all(promises);
 }

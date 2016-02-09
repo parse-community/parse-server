@@ -1,11 +1,13 @@
 // A Config object provides information about how a specific app is
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
-function Config(applicationId, mount) {
-  var cache = require('./cache');
-  var DatabaseAdapter = require('./DatabaseAdapter');
 
-  var cacheInfo = cache.apps[applicationId];
+function Config(applicationId, mount) {
+  var DatabaseProvider = require('./classes/DatabaseProvider').default;
+  var CacheProvider = require('./classes/CacheProvider').default;
+  var cache = CacheProvider.getAdapter();
+
+  var cacheInfo = cache.get(applicationId);
   this.valid = !!cacheInfo;
   if (!this.valid) {
     return;
@@ -13,7 +15,7 @@ function Config(applicationId, mount) {
 
   this.applicationId = applicationId;
   this.collectionPrefix = cacheInfo.collectionPrefix || '';
-  this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
+  this.database = DatabaseProvider.getDatabaseConnection(applicationId);
   this.masterKey = cacheInfo.masterKey;
   this.clientKey = cacheInfo.clientKey;
   this.javascriptKey = cacheInfo.javascriptKey;

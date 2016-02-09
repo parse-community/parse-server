@@ -8,11 +8,10 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-
-var cache = require('./cache');
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
+var CacheProvider = require('./classes/CacheProvider').default;
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions) {
@@ -37,6 +36,7 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;
+  var cache = CacheProvider.getAdapter();
 
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, 'beforeDelete') ||
@@ -46,7 +46,7 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.clearUser(response.results[0].sessionToken);
+          cache.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           return triggers.maybeRunTrigger('beforeDelete',
                                           auth, inflatedObject);

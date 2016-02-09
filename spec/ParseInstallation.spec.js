@@ -2,14 +2,13 @@
 // Ported from installation_collection_test.go
 
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
+var DatabaseProvider = require('../src/classes/DatabaseProvider').default;
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+var database = DatabaseProvider.getDatabaseConnection('test');
 
 describe('Installations', () => {
 

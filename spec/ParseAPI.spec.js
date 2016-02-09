@@ -1,7 +1,7 @@
 // A bunch of different tests are in here - it isn't very thematic.
 // It would probably be better to refactor them into different files.
 
-var DatabaseAdapter = require('../src/DatabaseAdapter');
+var DatabaseProvider = require('../src/classes/DatabaseProvider').default;
 var request = require('request');
 
 describe('miscellaneous', function() {
@@ -358,7 +358,7 @@ describe('miscellaneous', function() {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId);
+      var db = DatabaseProvider.getDatabaseConnection(appId);
       return db.mongoFind('TestObject', {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);

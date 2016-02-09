@@ -1,19 +1,21 @@
 // testing-routes.js
 
 var express = require('express'),
-    cache = require('./cache'),
     middlewares = require('./middlewares'),
     rack = require('hat').rack();
 
+var CacheProvider = require('./classes/CacheProvider').default;
 var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
+  var cache = CacheProvider.getAdapter();
   var appId = rack();
-  cache.apps[appId] = {
+  cache.put(appId,  {
     'collectionPrefix': appId + '_',
     'masterKey': 'master'
-  };
+  }, Infinity);
+
   var keys = {
     'application_id': appId,
     'client_key': 'unused',
@@ -42,7 +44,7 @@ function dropApp(req, res) {
     return res.status(401).send({"error": "unauthorized"});
   }
   req.database.deleteEverything().then(() => {
-    delete cache.apps[req.config.applicationId];
+    cache.del(req.config.applicationId);
     res.status(200).send({});
   });
 }
