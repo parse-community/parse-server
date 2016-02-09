@@ -1,6 +1,6 @@
 
 var request = require('request');
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 
 var database = DatabaseAdapter.getDatabaseConnection('test');
 
