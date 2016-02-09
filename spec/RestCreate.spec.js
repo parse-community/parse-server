@@ -57,6 +57,23 @@ describe('rest create', () => {
       });
   });
 
+	it('handles anonymous user signup', (done) => {
+		var data = {
+			authData: {
+				anonymous: {
+					id: '00000000-0000-0000-0000-000000000000'
+				}
+			}
+		};
+		rest.create(config, auth.nobody(config), '_User', data)
+			.then((r) => {
+				expect(typeof r.response.objectId).toEqual('string');
+				expect(typeof r.response.createdAt).toEqual('string');
+				expect(typeof r.response.sessionToken).toEqual('string');
+        done();
+      });
+	});
+
   it('test facebook signup and login', (done) => {
     var data = {
       authData: {
