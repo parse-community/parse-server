@@ -1,4 +1,4 @@
-var push = require('../push');
+var push = require('../src/push');
 
 describe('push', () => {
   it('can check valid master key of request', (done) => {

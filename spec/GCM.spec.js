@@ -1,4 +1,4 @@
-var GCM = require('../GCM');
+var GCM = require('../src/GCM');
 
 describe('GCM', () => {
   it('can generate GCM Payload without expiration time', (done) => {

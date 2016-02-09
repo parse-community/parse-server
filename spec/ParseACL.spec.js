@@ -251,6 +251,9 @@ describe('Parse.ACL', () => {
                     equal(results.length, 1);
                     var result = results[0];
                     ok(result);
+                    if (!result) {
+                      return fail();
+                    }
                     equal(result.id, object.id);
                     equal(result.getACL().getReadAccess(user), true);
                     equal(result.getACL().getWriteAccess(user), true);
