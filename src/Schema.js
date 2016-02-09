@@ -17,7 +17,7 @@
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
 
-defaultColumns = {
+var defaultColumns = {
   // Contain the default columns for every parse object type (except _Join collection)
   _Default: {
     "objectId":  {type:'String'},
@@ -43,13 +43,13 @@ defaultColumns = {
     "GCMSenderId":      {type:'String'},
     "timeZone":         {type:'String'},
     "localeIdentifier": {type:'String'},
-    "badge":            {type:'Number'},
+    "badge":            {type:'Number'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
     "users": {type:'Relation',className:'_User'},
-    "roles": {type:'Relation',className:'_Role'},
+    "roles": {type:'Relation',className:'_Role'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Session: {
@@ -58,12 +58,9 @@ defaultColumns = {
     "installationId": {type:'String'},
     "sessionToken":   {type:'String'},
     "expiresAt":      {type:'Date'},
-    "createdWith":    {type:'Object'},
-  },
-  _GlobalConfig: {
-    "params":     {type:'Object'}
-  },
-}
+    "createdWith":    {type:'Object'}
+  }
+};
 
 // Valid classes must:
 // Be one of _User, _Installation, _Role, _Session OR
@@ -224,7 +221,7 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
       error: invalidClassNameMessage(className),
     });
   }
-  for (fieldName in fields) {
+  for (var fieldName in fields) {
     if (!fieldNameIsValid(fieldName)) {
       return Promise.reject({
         code: Parse.Error.INVALID_KEY_NAME,
@@ -243,18 +240,18 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
     _id: className,
     objectId: 'string',
     updatedAt: 'string',
-    createdAt: 'string',
+    createdAt: 'string'
   };
-  for (fieldName in defaultColumns[className]) {
-    validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
+  for (var fieldName in defaultColumns[className]) {
+    var validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
     if (validatedField.code) {
       return Promise.reject(validatedField);
     }
     mongoObject[fieldName] = validatedField.result;
   }
 
-  for (fieldName in fields) {
-    validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
+  for (var fieldName in fields) {
+    var validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
     if (validatedField.code) {
       return Promise.reject(validatedField);
     }
@@ -262,7 +259,6 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
   }
 
   var geoPoints = Object.keys(mongoObject).filter(key => mongoObject[key] === 'geopoint');
-
   if (geoPoints.length > 1) {
     return Promise.reject({
       code: Parse.Error.INCORRECT_TYPE,
@@ -281,7 +277,7 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
     }
     return Promise.reject(error);
   });
-}
+};
 
 // Returns a promise that resolves successfully to the new schema
 // object or fails with a reason.

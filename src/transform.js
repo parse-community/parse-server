@@ -21,7 +21,7 @@ var Parse = require('parse/node').Parse;
 // validate: true indicates that key names are to be validated.
 //
 // Returns an object with {key: key, value: value}.
-function transformKeyValue(schema, className, restKey, restValue, options) {
+export function transformKeyValue(schema, className, restKey, restValue, options) {
   options = options || {};
 
   // Check if the schema is known since it's a built-in field.
@@ -126,7 +126,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
 
   if (inArray && options.query && !(restValue instanceof Array)) {
     return {
-      key: key, value: [restValue]
+      key: key, value: { '$all' : [restValue] }
     };
   }
 

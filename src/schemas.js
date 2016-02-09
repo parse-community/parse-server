@@ -1,7 +1,9 @@
 // schemas.js
 
 var express = require('express'),
-    PromiseRouter = require('./PromiseRouter');
+    Parse = require('parse/node').Parse,
+    PromiseRouter = require('./PromiseRouter'),
+    Schema = require('./Schema');
 
 var router = new PromiseRouter();
 
@@ -23,6 +25,7 @@ function mongoFieldTypeToSchemaAPIType(type) {
     case 'string':   return {type: 'String'};
     case 'boolean':  return {type: 'Boolean'};
     case 'date':     return {type: 'Date'};
+    case 'map':
     case 'object':   return {type: 'Object'};
     case 'array':    return {type: 'Array'};
     case 'geopoint': return {type: 'GeoPoint'};
@@ -31,8 +34,8 @@ function mongoFieldTypeToSchemaAPIType(type) {
 }
 
 function mongoSchemaAPIResponseFields(schema) {
-  fieldNames = Object.keys(schema).filter(key => key !== '_id');
-  response = fieldNames.reduce((obj, fieldName) => {
+  var fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
+  var response = fieldNames.reduce((obj, fieldName) => {
     obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
     return obj;
   }, {});
@@ -54,7 +57,7 @@ function getAllSchemas(req) {
   if (!req.auth.isMaster) {
     return Promise.resolve({
       status: 401,
-      response: {error: 'unauthorized'},
+      response: {error: 'master key not specified'},
     });
   }
   return req.config.database.collection('_SCHEMA')
@@ -83,7 +86,46 @@ function getOneSchema(req) {
   }));
 }
 
+function createSchema(req) {
+  if (!req.auth.isMaster) {
+    return Promise.resolve({
+      status: 401,
+      response: {error: 'master key not specified'},
+    });
+  }
+  if (req.params.className && req.body.className) {
+    if (req.params.className != req.body.className) {
+      return Promise.resolve({
+        status: 400,
+        response: {
+          code: Parse.Error.INVALID_CLASS_NAME,
+          error: 'class name mismatch between ' + req.body.className + ' and ' + req.params.className,
+        },
+      });
+    }
+  }
+  var className = req.params.className || req.body.className;
+  if (!className) {
+    return Promise.resolve({
+      status: 400,
+      response: {
+        code: 135,
+        error: 'POST ' + req.path + ' needs class name',
+      },
+    });
+  }
+  return req.config.database.loadSchema()
+  .then(schema => schema.addClassIfNotExists(className, req.body.fields))
+  .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
+  .catch(error => ({
+    status: 400,
+    response: error,
+  }));
+}
+
 router.route('GET', '/schemas', getAllSchemas);
 router.route('GET', '/schemas/:className', getOneSchema);
+router.route('POST', '/schemas', createSchema);
+router.route('POST', '/schemas/:className', createSchema);
 
 module.exports = router;

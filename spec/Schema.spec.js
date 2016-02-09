@@ -1,6 +1,6 @@
 // These tests check that the Schema operates correctly.
-var Config = require('../Config');
-var Schema = require('../Schema');
+var Config = require('../src/Config');
+var Schema = require('../src/Schema');
 var dd = require('deep-diff');
 
 var config = new Config('test');
@@ -252,7 +252,7 @@ describe('Schema', () => {
   it('refuses to add fields with invalid pointer types', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Pointer'},
+      foo: {type: 'Pointer'}
     }))
     .catch(error => {
       expect(error.code).toEqual(135);
@@ -398,7 +398,7 @@ describe('Schema', () => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       geo1: {type: 'GeoPoint'},
-      geo2: {type: 'GeoPoint'},
+      geo2: {type: 'GeoPoint'}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);

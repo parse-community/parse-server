@@ -1,4 +1,4 @@
-var APNS = require('../APNS');
+var APNS = require('../src/APNS');
 
 describe('APNS', () => {
   it('can generate APNS notification', (done) => {
