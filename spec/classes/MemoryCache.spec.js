@@ -1,7 +1,7 @@
 /* global describe, it, before, beforeEach, afterEach */
 'use strict';
 
-var cache = new (require('../../classes/MemoryCache'));
+var cache = new (require('../../src/classes/MemoryCache'));
 var _ = require('lodash');
 
 describe('MemoryCache', function() {
