@@ -15,7 +15,7 @@
 // Default is ExportAdapter, which uses mongo.
 
 var ExportAdapter = require('./ExportAdapter');
-
+var CacheProvider = require('./classes/CacheProvider');
 var adapter = ExportAdapter;
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
@@ -34,7 +34,7 @@ function setAppDatabaseURI(appId, uri) {
 }
 
 function getDatabaseConnection(appId) {
-  var cache = require('./classes/CacheProvider').getAdapter();
+  var cache = CacheProvider.getAdapter();
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }
