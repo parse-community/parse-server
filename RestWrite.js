@@ -28,6 +28,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
   this.auth = auth;
   this.className = className;
   this.storage = {};
+  this.writeOptions = {};
 
   if (!query && data.objectId) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
@@ -79,6 +80,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.transformUser();
   }).then(() => {
+    return this.getUserAndRoleACL();
+  }).then(() => {
     return this.runDatabaseOperation();
   }).then(() => {
     return this.handleFollowup();
@@ -86,6 +89,18 @@ RestWrite.prototype.execute = function() {
     return this.runAfterTrigger();
   }).then(() => {
     return this.response;
+  });
+};
+
+// Uses the Auth object to get the list of roles, adds the user id
+RestWrite.prototype.getUserAndRoleACL = function() {
+  if (this.auth.isMaster || !this.auth.user) {
+    return Promise.resolve();
+  }
+  return this.auth.getUserRoles().then((roles) => {
+    roles.push(this.auth.user.id);
+    this.writeOptions.acl = roles;
+    return Promise.resolve();
   });
 };
 
@@ -646,14 +661,8 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.INVALID_ACL, 'Invalid ACL.');
   }
 
-  var options = {};
-  if (!this.auth.isMaster) {
-    options.acl = ['*'];
-    if (this.auth.user) {
-      options.acl.push(this.auth.user.id);
-    }
-  }
-
+  var options = this.writeOptions;
+  
   if (this.query) {
     // Run an update
     return this.config.database.update(
