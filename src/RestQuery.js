@@ -11,13 +11,12 @@ var Parse = require('parse/node').Parse;
 //   include
 //   keys
 //   redirectClassNameForKey
-function RestQuery(config, auth, className, restWhere, restOptions) {
-  restOptions = restOptions || {};
+function RestQuery(config, auth, className, restWhere = {}, restOptions = {}) {
 
   this.config = config;
   this.auth = auth;
   this.className = className;
-  this.restWhere = restWhere || {};
+  this.restWhere = restWhere;
   this.response = null;
 
   this.findOptions = {};

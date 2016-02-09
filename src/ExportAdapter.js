@@ -10,9 +10,8 @@ var transform = require('./transform');
 
 // options can contain:
 //   collectionPrefix: the string to put in front of every collection name.
-function ExportAdapter(mongoURI, options) {
+function ExportAdapter(mongoURI, options = {}) {
   this.mongoURI = mongoURI;
-  options = options || {};
 
   this.collectionPrefix = options.collectionPrefix;
 
@@ -63,8 +62,7 @@ function returnsTrue() {
 // Returns a promise for a schema object.
 // If we are provided a acceptor, then we run it on the schema.
 // If the schema isn't accepted, we reload it at most once.
-ExportAdapter.prototype.loadSchema = function(acceptor) {
-  acceptor = acceptor || returnsTrue;
+ExportAdapter.prototype.loadSchema = function(acceptor = returnsTrue) {
 
   if (!this.schemaPromise) {
     this.schemaPromise = this.collection('_SCHEMA').then((coll) => {
@@ -277,8 +275,7 @@ ExportAdapter.prototype.removeRelation = function(key, fromClassName,
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-ExportAdapter.prototype.destroy = function(className, query, options) {
-  options = options || {};
+ExportAdapter.prototype.destroy = function(className, query, options = {}) {
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
 
@@ -346,8 +343,7 @@ ExportAdapter.prototype.create = function(className, object, options) {
 // This should only be used for testing - use 'find' for normal code
 // to avoid Mongo-format dependencies.
 // Returns a promise that resolves to a list of items.
-ExportAdapter.prototype.mongoFind = function(className, query, options) {
-  options = options || {};
+ExportAdapter.prototype.mongoFind = function(className, query, options = {}) {
   return this.collection(className).then((coll) => {
     return coll.find(query, options).toArray();
   });
@@ -503,8 +499,7 @@ ExportAdapter.prototype.smartFind = function(coll, where, options) {
 // TODO: make userIds not needed here. The db adapter shouldn't know
 // anything about users, ideally. Then, improve the format of the ACL
 // arg to work like the others.
-ExportAdapter.prototype.find = function(className, query, options) {
-  options = options || {};
+ExportAdapter.prototype.find = function(className, query, options = {}) {
   var mongoOptions = {};
   if (options.skip) {
     mongoOptions.skip = options.skip;
