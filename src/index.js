@@ -10,10 +10,10 @@ var batch = require('./batch'),
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
 
-var ParseApp = require('./classes/ParseApp');
-var CacheProvider = require('./classes/CacheProvider');
-var FilesProvider = require('./classes/FilesProvider');
-var DatabaseProvider = require('./classes/DatabaseProvider');
+var ParseApp = require('./classes/ParseApp').default;
+var CacheProvider = require('./classes/CacheProvider').default;
+var FilesProvider = require('./classes/FilesProvider').default;
+var DatabaseProvider = require('./classes/DatabaseProvider').default;
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();

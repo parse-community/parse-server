@@ -1,23 +1,10 @@
-var BaseProvider = require('./BaseProvider');
-var util = require('util');
+import { default as BaseProvider } from './BaseProvider';
 
-var DefaultFilesAdapter = require('../GridStoreAdapter');
-
-function FilesProvider(adapter) {
-    FilesProvider.super_.call(this)
-};
-
-function setup (config) {
-  config = config || {};
-  config.adapter = config.adapter || DefaultFilesAdapter;
-
-  var adapter = this.resolveAdapter(config.adapter, config.options);
-  this.setAdapter(adapter);
+export class FilesProvider extends BaseProvider {
+  constructor() {
+    super(...arguments);
+    this.DEFAULT_ADAPTER = '../GridStoreAdapter'
+  }
 }
 
-util.inherits(FilesProvider, BaseProvider);
-
-FilesProvider.prototype.setup = setup;
-FilesProvider.prototype.FilesProvider = FilesProvider;
-
-exports = module.exports = new FilesProvider();
+export default new FilesProvider();

@@ -1,20 +1,23 @@
-var DatabaseProvider = require('./DatabaseProvider');
+import { default as DatabaseProvider } from './DatabaseProvider';
 
-function ParseApp(args) {
+const defaults = {
+  collectionPrefix: '',
+  clientKey: '',
+  javascriptKey: '',
+  dotNetKey: '',
+  restAPIKey: '',
+  fileKey: '',
+  facebookAppIds: []
+};
+
+export class ParseApp {
+  constructor(args) {
     if (!args.appId || !args.masterKey) {
       throw 'You must provide an appId and masterKey!';
     }
 
-    this.appId = args.appId;
-    this.masterKey = args.masterKey;
-    this.collectionPrefix = args.collectionPrefix || '';
-    this.clientKey = args.clientKey || '';
-    this.javascriptKey = args.javascriptKey || '';
-    this.dotNetKey = args.dotNetKey || '';
-    this.restAPIKey = args.restAPIKey || '';
-    this.fileKey = args.fileKey || 'invalid-file-key';
-    this.facebookAppIds = args.facebookAppIds || [];
-    this.databaseURI = args.databaseURI;
+    // Merge defaults and arguments
+    Object.assign(this, defaults, args);
 
     // To maintain compatibility. TODO: Remove in v2.1
     if (process.env.FACEBOOK_APP_ID) {
@@ -25,6 +28,7 @@ function ParseApp(args) {
     if (this.databaseURI) {
       DatabaseProvider.registerAppDatabaseURI(this.appId, this.databaseURI);
     }
+  }
 }
 
-exports = module.exports = ParseApp;
+export default ParseApp;

@@ -8,7 +8,7 @@ var bodyParser = require('body-parser'),
     Parse = require('parse/node').Parse,
     rack = require('hat').rack();
 
-var FilesProvider = require('./classes/FilesProvider');
+var FilesProvider = require('./classes/FilesProvider').default;
 var router = express.Router();
 
 var processCreate = function(req, res, next) {

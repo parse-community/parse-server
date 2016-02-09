@@ -4,7 +4,7 @@ var express = require('express'),
     middlewares = require('./middlewares'),
     rack = require('hat').rack();
 
-var CacheProvider = require('./classes/CacheProvider');
+var CacheProvider = require('./classes/CacheProvider').default;
 var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix

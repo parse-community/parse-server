@@ -1,7 +1,7 @@
 // These tests check the "create" functionality of the REST API.
 var auth = require('../src/Auth');
 var Config = require('../src/Config');
-var DatabaseProvider = require('../src/classes/DatabaseProvider');
+var DatabaseProvider = require('../src/classes/DatabaseProvider').default;
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');

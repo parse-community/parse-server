@@ -1,7 +1,7 @@
 var deepcopy = require('deepcopy');
 var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
-var CacheProvider = require('./classes/CacheProvider');
+var CacheProvider = require('./classes/CacheProvider').default;
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
