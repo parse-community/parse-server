@@ -33,4 +33,8 @@ ServiceProvider.prototype.resolveAdapter = function() {
     throw new Error('A service provider must implement resolveAdapter!');
 }
 
+ServiceProvider.prototype.setup = function() {
+  throw new Error('A service provider must implement setup!');
+}
+
 exports = module.exports = ServiceProvider;

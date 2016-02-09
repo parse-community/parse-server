@@ -55,8 +55,18 @@ function resolveAdapter(adapter, options) {
     return adapter;
 }
 
+function setup (config) {
+  config = config || {};
+  config.adapter = config.adapter || DefaultFilesAdapter;
+
+  var adapter = this.resolveAdapter(config.adapter, config.options);
+  this.setAdapter(adapter);
+}
+
+
 BaseProvider.prototype.getAdapter = getAdapter;
 BaseProvider.prototype.setAdapter = setAdapter;
 BaseProvider.prototype.resolveAdapter = resolveAdapter;
+BaseProvider.prototype.setup = setup;
 
 exports = module.exports = BaseProvider;

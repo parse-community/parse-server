@@ -3,15 +3,21 @@
 var bodyParser = require('body-parser'),
     Config = require('./Config'),
     express = require('express'),
-    FilesAdapter = require('./FilesAdapter'),
     middlewares = require('./middlewares.js'),
     mime = require('mime'),
     Parse = require('parse/node').Parse,
     rack = require('hat').rack();
 
+var FilesProvider = require('./classes/FilesProvider');
 var router = express.Router();
 
 var processCreate = function(req, res, next) {
+  var FilesAdapter = FilesProvider.getAdapter();
+
+  if (!FilesAdapter) {
+    throw new Error('Unable to get an instance of the FilesAdapter');
+  }
+
   if (!req.body || !req.body.length) {
     next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
          'Invalid file upload.'));
@@ -40,10 +46,10 @@ var processCreate = function(req, res, next) {
   }
 
   var filename = rack() + '_' + req.params.filename + extension;
-  FilesAdapter.getAdapter().create(req.config, filename, req.body)
+  FilesAdapter.create(req.config, filename, req.body)
   .then(() => {
     res.status(201);
-    var location = FilesAdapter.getAdapter().location(req.config, req, filename);
+    var location = FilesAdapter.location(req.config, req, filename);
     res.set('Location', location);
     res.json({ url: location, name: filename });
   }).catch((error) => {
@@ -53,8 +59,10 @@ var processCreate = function(req, res, next) {
 };
 
 var processGet = function(req, res) {
+  var FilesAdapter = FilesProvider.getAdapter();
   var config = new Config(req.params.appId);
-  FilesAdapter.getAdapter().get(config, req.params.filename)
+
+  FilesAdapter.get(config, req.params.filename)
   .then((data) => {
     res.status(200);
     var contentType = mime.lookup(req.params.filename);
