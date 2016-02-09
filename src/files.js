@@ -3,11 +3,12 @@
 var bodyParser = require('body-parser'),
     Config = require('./Config'),
     express = require('express'),
-    FilesAdapter = require('./FilesAdapter'),
     middlewares = require('./middlewares.js'),
     mime = require('mime'),
     Parse = require('parse/node').Parse,
     rack = require('hat').rack();
+
+import { getAdapter as getFilesAdapter } from './FilesAdapter';
 
 var router = express.Router();
 
@@ -40,13 +41,13 @@ var processCreate = function(req, res, next) {
   }
 
   var filename = rack() + '_' + req.params.filename + extension;
-  FilesAdapter.getAdapter().create(req.config, filename, req.body)
-  .then(() => {
+  getFilesAdapter().createFileAsync(req.config, filename, req.body).then(() => {
     res.status(201);
-    var location = FilesAdapter.getAdapter().location(req.config, req, filename);
+    var location = getFilesAdapter().getFileLocation(req.config, req, filename);
     res.set('Location', location);
     res.json({ url: location, name: filename });
   }).catch((error) => {
+    console.log(error);
     next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
                          'Could not store file.'));
   });
@@ -54,8 +55,7 @@ var processCreate = function(req, res, next) {
 
 var processGet = function(req, res) {
   var config = new Config(req.params.appId);
-  FilesAdapter.getAdapter().get(config, req.params.filename)
-  .then((data) => {
+  getFilesAdapter().getFileDataAsync(config, req.params.filename).then((data) => {
     res.status(200);
     var contentType = mime.lookup(req.params.filename);
     res.set('Content-type', contentType);

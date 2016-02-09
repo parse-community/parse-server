@@ -3,27 +3,28 @@
 // Allows you to change the file storage mechanism.
 //
 // Adapter classes must implement the following functions:
-// * create(config, filename, data)
-// * get(config, filename)
-// * location(config, req, filename)
+// * createFileAsync(config, filename, data)
+// * getFileDataAsync(config, filename)
+// * getFileLocation(config, request, filename)
 //
 // Default is GridStoreAdapter, which requires mongo
 // and for the API server to be using the ExportAdapter
 // database adapter.
 
-var GridStoreAdapter = require('./GridStoreAdapter');
+let adapter = null;
 
-var adapter = GridStoreAdapter;
-
-function setAdapter(filesAdapter) {
+export function setAdapter(filesAdapter) {
   adapter = filesAdapter;
 }
 
-function getAdapter() {
+export function getAdapter() {
   return adapter;
 }
 
-module.exports = {
-  getAdapter: getAdapter,
-  setAdapter: setAdapter
-};
+export class FilesAdapter {
+  createFileAsync(config, filename, data) { }
+
+  getFileDataAsync(config, filename) { }
+
+  getFileLocation(config, request, filename) { }
+}
