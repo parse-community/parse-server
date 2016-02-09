@@ -21,7 +21,7 @@ function updateGlobalConfig(req) {
     .catch(() => ({
       status: 404,
       response: {
-        code: 103,
+        code: Parse.Error.INVALID_KEY_NAME,
         error: 'config cannot be updated',
       }
     }));
@@ -34,7 +34,7 @@ function getGlobalConfig(req) {
     .catch(() => ({
       status: 404,
       response: {
-        code: 103,
+        code: Parse.Error.INVALID_KEY_NAME,
         error: 'config does not exist',
       }
     }));
