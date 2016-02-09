@@ -1,9 +1,9 @@
 // These tests check the Installations functionality of the REST API.
 // Ported from installation_collection_test.go
 
-var auth = require('../Auth');
-var Config = require('../Config');
-var DatabaseProvider = require('../classes/DatabaseProvider');
+var auth = require('../src/Auth');
+var Config = require('../src/Config');
+var DatabaseProvider = require('../src/classes/DatabaseProvider');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 
