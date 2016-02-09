@@ -9,9 +9,7 @@ export class MemoryCache {
    * @param {Object} options - An object of default options
    * @param {String} [options.defaultTtl=600000] - The number of milliseconds to use as the default time-to-live of a cache entry
    */
-  constructor(options) {
-    options = options || {};
-
+  constructor(options = {}) {
     this.cache = new Map();
     this.debug = false;
     this.hitCount = 0;

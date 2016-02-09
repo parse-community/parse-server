@@ -11,7 +11,7 @@ const defaults = {
 };
 
 export class ParseApp {
-  constructor(args) {
+  constructor(args = {}) {
     if (!args.appId || !args.masterKey) {
       throw 'You must provide an appId and masterKey!';
     }
