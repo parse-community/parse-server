@@ -1,5 +1,6 @@
 
 var request = require('request');
+var Parse = require('parse/node').Parse;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 
 var database = DatabaseAdapter.getDatabaseConnection('test');
@@ -57,5 +58,44 @@ describe('a GlobalConfig', () => {
       done();
     });
   });  
+
+  it('failed getting config when it is missing', (done) => {
+    database.rawCollection('_GlobalConfig')
+      .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
+      .then(_ => {
+        request.get({
+          url: 'http://localhost:8378/1/config',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(404);
+          expect(body.code).toEqual(Parse.Error.INVALID_KEY_NAME);
+          done();
+        });
+      });
+  });
+
+  it('failed updating config when it is missing', (done) => {
+    database.rawCollection('_GlobalConfig')
+      .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
+      .then(_ => {
+        request.post({
+          url: 'http://localhost:8378/1/config',
+          json: true,
+          body: { params: { companies: ['US', 'DK', 'SE'] } },
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test'
+          },
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(404);
+          expect(body.code).toEqual(Parse.Error.INVALID_KEY_NAME);
+          done();
+        });
+      });
+  });
 
 });
