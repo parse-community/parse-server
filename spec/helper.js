@@ -1,6 +1,6 @@
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 
 var cache = require('../cache');
 var DatabaseAdapter = require('../DatabaseAdapter');
@@ -46,8 +46,7 @@ beforeEach(function(done) {
 });
 
 afterEach(function(done) {
-  Parse.User.logOut();
-  Parse.Promise.as().then(() => {
+  Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
     done();
@@ -153,7 +152,7 @@ function normalize(obj) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
   var answer = '{';
-  for (key of Object.keys(obj).sort()) {
+  for (var key of Object.keys(obj).sort()) {
     answer += key + ': ';
     answer += normalize(obj[key]);
     answer += ', ';
@@ -192,7 +191,7 @@ function mockFacebook() {
 
 function clearData() {
   var promises = [];
-  for (conn in DatabaseAdapter.dbConnections) {
+  for (var conn in DatabaseAdapter.dbConnections) {
     promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
   }
   return Promise.all(promises);

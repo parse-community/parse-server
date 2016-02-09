@@ -8,12 +8,20 @@ var express = require('express'),
 var router = new PromiseRouter();
 
 function handleCloudFunction(req) {
-  // TODO: set user from req.auth
   if (Parse.Cloud.Functions[req.params.functionName]) {
+    if (Parse.Cloud.Validators[req.params.functionName]) {
+      var result = Parse.Cloud.Validators[req.params.functionName](req.body || {});
+      if (!result) {
+        throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
+      }
+    }
+
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
       var request = {
-        params: req.body || {}
+        params: req.body || {},
+        master: req.auth && req.auth.isMaster,
+        user: req.auth && req.auth.user,
       };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
@@ -27,7 +35,7 @@ function createResponseObject(resolve, reject) {
     success: function(result) {
       resolve({
         response: {
-          result: result
+          result: Parse._encode(result)
         }
       });
     },

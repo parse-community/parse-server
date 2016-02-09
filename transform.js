@@ -46,6 +46,11 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
   case '_session_token':
     key = '_session_token';
     break;
+  case 'expiresAt':
+  case '_expiresAt':
+    key = 'expiresAt';
+    timeField = true;
+    break;
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
@@ -121,7 +126,7 @@ function transformKeyValue(schema, className, restKey, restValue, options) {
 
   if (inArray && options.query && !(restValue instanceof Array)) {
     return {
-      key: key, value: [restValue]
+      key: key, value: { '$all' : [restValue] }
     };
   }
 
@@ -330,6 +335,7 @@ function transformAtom(atom, force, options) {
     return atom;
 
   case 'undefined':
+    return atom;
   case 'symbol':
   case 'function':
     throw new Parse.Error(Parse.Error.INVALID_JSON,
@@ -357,20 +363,17 @@ function transformAtom(atom, force, options) {
         objectId: atom.objectId
       };
     }
-    if (atom.__type == 'Date') {
-      return new Date(atom.iso);
+    if (DateCoder.isValidJSON(atom)) {
+      return DateCoder.JSONToDatabase(atom);
     }
-    if (atom.__type == 'GeoPoint') {
-      return [atom.longitude, atom.latitude];
+    if (BytesCoder.isValidJSON(atom)) {
+      return BytesCoder.JSONToDatabase(atom);
     }
-    if (atom.__type == 'Bytes') {
-      return new mongodb.Binary(new Buffer(atom.base64, 'base64'));
+    if (GeoPointCoder.isValidJSON(atom)) {
+      return (inArray || inObject ? atom : GeoPointCoder.JSONToDatabase(atom));
     }
-    if (atom.__type == 'File') {
-      if (!inArray && !inObject) {
-        return atom.name;
-      }
-      return atom;
+    if (FileCoder.isValidJSON(atom)) {
+      return (inArray || inObject ? atom : FileCoder.JSONToDatabase(atom));
     }
 
     if (force) {
@@ -611,11 +614,8 @@ function untransformObject(schema, className, mongoObject) {
       return Parse._encode(mongoObject);
     }
 
-    if (mongoObject instanceof mongodb.Binary) {
-      return {
-        __type: 'Bytes',
-        base64: mongoObject.buffer.toString('base64')
-      };
+    if (BytesCoder.isValidDatabaseObject(mongoObject)) {
+      return BytesCoder.databaseToJSON(mongoObject);
     }
 
     var restObject = untransformACL(mongoObject);
@@ -628,6 +628,7 @@ function untransformObject(schema, className, mongoObject) {
         restObject['password'] = mongoObject[key];
         break;
       case '_acl':
+      case '_email_verify_token':
       case '_perishable_token':
         break;
       case '_session_token':
@@ -640,6 +641,10 @@ function untransformObject(schema, className, mongoObject) {
       case 'createdAt':
       case '_created_at':
         restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'expiresAt':
+      case '_expiresAt':
+        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
       case '_auth_data_anonymous':
         restObject['authData'] = restObject['authData'] || {};
@@ -666,6 +671,9 @@ function untransformObject(schema, className, mongoObject) {
             console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
+          if (mongoObject[key] === null) {
+            break;
+          }
           var objData = mongoObject[key].split('$');
           var newClass = (expected ? expected.substring(1) : objData[0]);
           if (objData[0] !== newClass) {
@@ -679,21 +687,17 @@ function untransformObject(schema, className, mongoObject) {
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
+        //} else if (mongoObject[key] === null) {
+          //break;
         } else {
-          var expected = schema.getExpectedType(className, key);
-          if (expected == 'file') {
-            restObject[key] = {
-              __type: 'File',
-              name: mongoObject[key]
-            };
+          var expectedType = schema.getExpectedType(className, key);
+          var value = mongoObject[key];
+          if (expectedType === 'file' && FileCoder.isValidDatabaseObject(value)) {
+            restObject[key] = FileCoder.databaseToJSON(value);
             break;
           }
-          if (expected == 'geopoint') {
-            restObject[key] = {
-              __type: 'GeoPoint',
-              latitude: mongoObject[key][1],
-              longitude: mongoObject[key][0]
-            };
+          if (expectedType === 'geopoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+            restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
         }
@@ -706,6 +710,94 @@ function untransformObject(schema, className, mongoObject) {
     throw 'unknown js type';
   }
 }
+
+var DateCoder = {
+  JSONToDatabase(json) {
+    return new Date(json.iso);
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Date'
+    );
+  }
+};
+
+var BytesCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'Bytes',
+      base64: object.buffer.toString('base64')
+    };
+  },
+
+  isValidDatabaseObject(object) {
+    return (object instanceof mongodb.Binary);
+  },
+
+  JSONToDatabase(json) {
+    return new mongodb.Binary(new Buffer(json.base64, 'base64'));
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Bytes'
+    );
+  }
+};
+
+var GeoPointCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'GeoPoint',
+      latitude: object[1],
+      longitude: object[0]
+    }
+  },
+
+  isValidDatabaseObject(object) {
+    return (object instanceof Array &&
+      object.length == 2
+    );
+  },
+
+  JSONToDatabase(json) {
+    return [ json.longitude, json.latitude ];
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'GeoPoint'
+    );
+  }
+};
+
+var FileCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'File',
+      name: object
+    }
+  },
+
+  isValidDatabaseObject(object) {
+    return (typeof object === 'string');
+  },
+
+  JSONToDatabase(json) {
+    return json.name;
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'File'
+    );
+  }
+};
 
 module.exports = {
   transformKey: transformKey,

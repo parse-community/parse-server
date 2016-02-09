@@ -10,32 +10,45 @@ var router = new PromiseRouter();
 
 // Returns a promise that resolves to a {response} object.
 function handleFind(req) {
+  var body = Object.assign(req.body, req.query);
   var options = {};
-  if (req.body.skip) {
-    options.skip = Number(req.body.skip);
+  if (body.skip) {
+    options.skip = Number(body.skip);
   }
-  if (req.body.limit) {
-    options.limit = Number(req.body.limit);
+  if (body.limit) {
+    options.limit = Number(body.limit);
   }
-  if (req.body.order) {
-    options.order = String(req.body.order);
+  if (body.order) {
+    options.order = String(body.order);
   }
-  if (req.body.count) {
+  if (body.count) {
     options.count = true;
   }
-  if (typeof req.body.keys == 'string') {
-    options.keys = req.body.keys;
+  if (typeof body.keys == 'string') {
+    options.keys = body.keys;
   }
-  if (req.body.include) {
-    options.include = String(req.body.include);
+  if (body.include) {
+    options.include = String(body.include);
   }
-  if (req.body.redirectClassNameForKey) {
-    options.redirectClassNameForKey = String(req.body.redirectClassNameForKey);
+  if (body.redirectClassNameForKey) {
+    options.redirectClassNameForKey = String(body.redirectClassNameForKey);
+  }
+
+  if(typeof body.where === 'string') {
+    body.where = JSON.parse(body.where);
   }
 
   return rest.find(req.config, req.auth,
-                   req.params.className, req.body.where, options)
+                   req.params.className, body.where, options)
     .then((response) => {
+      if (response && response.results) {
+        for (result of response.results) {
+          if (result.sessionToken) {
+            result.sessionToken = req.info.sessionToken || result.sessionToken;
+          }
+        }
+        response.results.sessionToken
+      }
       return {response: response};
     });
 }

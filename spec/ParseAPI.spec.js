@@ -153,12 +153,26 @@ describe('miscellaneous', function() {
   });
 
   it('basic beforeSave rejection', function(done) {
-    var obj = new Parse.Object('BeforeSaveFailure');
+    var obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
+    obj.save().then(() => {
+      fail('Should not have been able to save BeforeSaveFailure class.');
+      done();
+    }, () => {
+      done();
+    })
+  });
+
+  it('basic beforeSave rejection via promise', function(done) {
+    var obj = new Parse.Object('BeforeSaveFailWithPromise');
     obj.set('foo', 'bar');
     obj.save().then(function() {
       fail('Should not have been able to save BeforeSaveFailure class.');
       done();
     }, function(error) {
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(error.message).toEqual('Nope');
+
       done();
     })
   });
@@ -250,6 +264,20 @@ describe('miscellaneous', function() {
       // We should have been able to fetch the object again
       fail(error);
     });
+  })
+
+  it('basic beforeDelete rejection via promise', function(done) {
+    var obj = new Parse.Object('BeforeDeleteFailWithPromise');
+    obj.set('foo', 'bar');
+    obj.save().then(function() {
+      fail('Should not have been able to save BeforeSaveFailure class.');
+      done();
+    }, function(error) {
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(error.message).toEqual('Nope');
+
+      done();
+    })
   });
 
   it('test beforeDelete success', function(done) {
@@ -540,6 +568,42 @@ describe('miscellaneous', function() {
       expect(e.code).toEqual(141);
       expect(e.message).toEqual('noway');
       delete Parse.Cloud.Functions['willFail'];
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation success', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
+      res.success('works');
+    }, (params) => {
+      return params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+      delete Parse.Cloud.Functions['functionWithParameterValidation'];
+      done();
+    }, (e) => {
+      fail('Validation should not have failed.');
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidationFailure', (req, res) => {
+      res.success('noway');
+    }, (params) => {
+      return params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
+      fail('Validation should not have succeeded');
+      delete Parse.Cloud.Functions['functionWithParameterValidationFailure'];
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(141);
+      expect(e.message).toEqual('Validation failed.');
       done();
     });
   });

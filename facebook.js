@@ -16,10 +16,15 @@ function validateUserId(userId, access_token) {
 }
 
 // Returns a promise that fulfills iff this app id is valid.
-function validateAppId(appId, access_token) {
+function validateAppId(appIds, access_token) {
+  if (!appIds.length) {
+    throw new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Facebook auth is not configured.');
+  }
   return graphRequest('app?access_token=' + access_token)
     .then((data) => {
-      if (data && data.id == appId) {
+      if (data && appIds.indexOf(data.id) != -1) {
         return;
       }
       throw new Parse.Error(
