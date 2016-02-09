@@ -1,19 +1,12 @@
-var BaseProvider = require('./BaseProvider');
+var BaseProvider = require('./BaseProvider').BaseProvider;
 var util = require('util');
 
-// Singleton for the entire server.
-// TODO: Refactor away from singleton paradigm
-var instance = null;
-
 function CacheProvider(adapter) {
-    if (instance) {
-        return instance;
-    }
-
-    instance = this;
-    this.adapter = adapter;
+    CacheProvider.super_.call(this)
 };
 
 util.inherits(CacheProvider, BaseProvider);
 
-module.exports = CacheProvider;
+CacheProvider.prototype.CacheProvider = CacheProvider;
+
+exports = module.exports = new CacheProvider();

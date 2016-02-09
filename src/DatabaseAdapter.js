@@ -34,8 +34,7 @@ function setAppDatabaseURI(appId, uri) {
 }
 
 function getDatabaseConnection(appId) {
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }

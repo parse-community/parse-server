@@ -10,8 +10,7 @@ var Config = require('./Config');
 // req.config - the Config for this app
 // req.auth - the Auth for this request
 function handleParseHeaders(req, res, next) {
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
   var mountPathLength = req.originalUrl.length - req.url.length;
   var mountPath = req.originalUrl.slice(0, mountPathLength);
   var mount = req.protocol + '://' + req.get('host') + mountPath;

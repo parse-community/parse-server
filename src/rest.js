@@ -35,8 +35,7 @@ function del(config, auth, className, objectId) {
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
 
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, 'beforeDelete') ||

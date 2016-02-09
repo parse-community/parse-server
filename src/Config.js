@@ -2,8 +2,7 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 function Config(applicationId, mount) {
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
   var DatabaseAdapter = require('./DatabaseAdapter');
 
   var cacheInfo = cache.get(applicationId);
