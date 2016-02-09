@@ -39,16 +39,13 @@ addParseCloud();
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
 
-var DefaultCacheAdapter = require('./classes/MemoryCache');
-
 function ParseServer(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
   }
 
-  this.setupCache(args.cache);
-
-  var cache = this.cacheProvider.getAdapter();
+  // Setup providers
+  CacheProvider.setup(args.cache);
 
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
@@ -66,7 +63,7 @@ function ParseServer(args) {
     } else if (typeof args.cloud === 'string') {
       require(args.cloud);
     } else {
-      throw "argument 'cloud' must either be a string or a function";
+      throw new Error("argument 'cloud' must either be a string or a function");
     }
 
   }
@@ -87,11 +84,14 @@ function ParseServer(args) {
     appInfo['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
 
+  // Cache the application information indefinitely
+  var cache = CacheProvider.getAdapter();
   cache.put(args.appId, appInfo, Infinity);
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
-  if(args.serverURL) {
+
+  if (args.serverURL) {
     Parse.serverURL = args.serverURL;
   }
 
@@ -174,33 +174,6 @@ function getClassName(parseClass) {
   }
   return parseClass;
 }
-
-function resolveAdapter(adapter, options) {
-    // Support passing in adapter paths
-    if (typeof adapter === 'string') {
-        adapter = require(adapter);
-    }
-
-    // Instantiate the adapter if the class got passed instead of an instance
-    if (typeof adapter === 'function') {
-        adapter = new adapter(options);
-    }
-
-    return adapter;
-}
-
-// TODO: Add configurable TTLs for cache entries
-function setupCache(config) {
-  config = config || {};
-  config.adapter = config.adapter || DefaultCacheAdapter;
-
-  var adapter = this.resolveAdapter(config.adapter, config.options);
-  CacheProvider.setAdapter(adapter);
-  this.cacheProvider = CacheProvider;
-}
-
-ParseServer.prototype.setupCache = setupCache;
-ParseServer.prototype.resolveAdapter = resolveAdapter;
 
 module.exports = {
   ParseServer: ParseServer,

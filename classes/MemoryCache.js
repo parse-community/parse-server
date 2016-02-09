@@ -1,5 +1,13 @@
 'use strict';
 // Modified from https://github.com/ptarjan/node-cache/blob/master/index.js
+
+/**
+* Creates a new in-memory cache using Map for storage
+*
+* @class
+* @param {Object} options - An object of default options
+* @param {String} [options.defaultTtl=600000] - The number of milliseconds to use as the default time-to-live of a cache entry
+*/
 function MemoryCache(options) {
     options = options || {};
 
@@ -10,6 +18,15 @@ function MemoryCache(options) {
     this.defaultTtl = options.defaultTtl || 10 * 60 * 1000;
 };
 
+/**
+ * Puts a key value mapping into the map that will automatically expire given a TTL.
+ * @method put
+ * @param {String} key - A unique key
+ * @param {Any} value - A value to be stored
+ * @param {Number} ttl - The number of milliseconds until the key/value pair is removed from the cache
+ * @param {Function} timeoutCallback - A callback that is fired on expiration (post removal)
+ * @returns {Object} The MemoryCache instance
+ */
 function put (key, value, ttl, timeoutCallback) {
   if (this.debug) {
     console.log('caching: %s = %j (@%s)', key, value, ttl);
@@ -50,6 +67,12 @@ function put (key, value, ttl, timeoutCallback) {
   return value;
 };
 
+/**
+ * Deletes a key/value pair from the cache
+ * @method del
+ * @param {String} key - A unique key
+ * @returns {Boolean} True if a record was removed from the cache (a hit) or false if the record was not found (a miss)
+ */
 function del (key) {
   if (this.debug) {
     console.log('Deleting key ', key);
@@ -67,6 +90,10 @@ function del (key) {
   return false;
 };
 
+/**
+ * Resets the cache to it's original state
+ * @method clear
+ */
 function clear () {
   for (var entry of this.cache) {
     clearTimeout(entry[1].timeout);
@@ -76,6 +103,11 @@ function clear () {
   this.missCount = 0;
 };
 
+/**
+ * Disables a timer (timeout/expiration) for a specifiy key/value pair
+ * @method killTimer
+ * @param {String} key - A unique key
+ */
 function killTimer(key) {
     var obj = this.cache.get(key);
     if (obj && obj.timeout) {
@@ -83,6 +115,12 @@ function killTimer(key) {
     }
 };
 
+/**
+ * Retrieves a value given a key from the cache
+ * @method get
+ * @param {String} key - A unique key
+ * @returns {Any|undefined} Returns the value for the key in the cache or undefined if not found
+ */
 function get (key) {
   var data = this.cache.get(key);
   if (typeof data != "undefined") {
@@ -100,30 +138,61 @@ function get (key) {
   return undefined;
 };
 
+/**
+ * @method size
+ * @returns {Number} The number of key/value pairs in the cache
+ */
 function size () {
   return this.cache.size;
 };
 
+/**
+ * Toggles debug statements
+ * @method setDebug
+ * @param {Boolean} bool - The value to set debug
+ */
 function setDebug (bool) {
   this.debug = bool;
 };
 
+/**
+ * @method hits
+ * @returns {Number} The number of values successfully retrieved via get()
+ */
 function hits () {
   return this.hitCount;
 };
 
+/**
+ * @method misses
+ * @returns {Number} The number of unsuccessfully get attempts
+ */
 function misses () {
   return this.missCount;
 };
 
+/**
+ * @method keys
+ * @returns {Array} An array of all the keys in the map
+ */
 function keys () {
   return Array.from(this.cache.keys());
 };
 
+/**
+ * @method toArray
+ * @returns {Array} An array of all the values in the map
+ */
 function toArray() {
     return Array.from(this.cache.values());
 }
 
+/**
+ * @method map
+ * @param {Function} functor - A function that transforms a value for a given key/value pair
+ * @param {Object} context - The context for the functor call
+ * @returns {Map} A map containing key/value pairs where the original value was transformed by the provided functor
+ */
 function map(functor, context) {
     context = context || this;
     var result = new Map();
@@ -137,6 +206,12 @@ function map(functor, context) {
     return result;
 }
 
+/**
+ * @method filter
+ * @param {Function} predicate - A filter function
+ * @param {Object} context - The context for the predicate call
+ * @returns {Map} A map containing truthy results of a provided filter function
+ */
 function filter(predicate, context) {
     context = context || this;
     var result = new Map();

@@ -1,12 +1,36 @@
-function ServiceProviderInterface() {
+/**
+ * Interface for service providers
+ *
+ * @interface
+ */
+function ServiceProvider() {
 };
 
-ServiceProviderInterface.prototype.getAdapter = function() {
+/**
+ * Get the adapter
+ *
+ * @returns {Object} An adapter instance
+ */
+ServiceProvider.prototype.getAdapter = function() {
     throw new Error('A service provider must implement getAdapter!');
 }
 
-ServiceProviderInterface.prototype.setAdapter = function() {
+/**
+ * Set the adapter
+ *
+ * @param {Object} An adapter
+ */
+ServiceProvider.prototype.setAdapter = function() {
     throw new Error('A service provider must implement setAdapter!');
 }
 
-exports = module.exports = ServiceProviderInterface;
+/**
+ * Resolves the adapter from the first parameter
+ *
+ * @param {Any}
+ */
+ServiceProvider.prototype.resolveAdapter = function() {
+    throw new Error('A service provider must implement resolveAdapter!');
+}
+
+exports = module.exports = ServiceProvider;

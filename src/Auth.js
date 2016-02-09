@@ -1,6 +1,7 @@
 var deepcopy = require('deepcopy');
 var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
+var CacheProvider = require('./classes/CacheProvider');
 
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
@@ -41,7 +42,7 @@ function nobody(config) {
 
 // Returns a promise that resolves to an Auth object
 var getAuthForSessionToken = function(config, sessionToken) {
-  var cache = require('./classes/CacheProvider').getAdapter();
+  var cache = CacheProvider.getAdapter();
 
   var cachedUser = cache.get(sessionToken);
   if (cachedUser) {
