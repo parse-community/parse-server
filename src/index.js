@@ -2,8 +2,6 @@
 
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
-    CacheProvider = require('./classes/CacheProvider'),
-    DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
@@ -12,8 +10,10 @@ var batch = require('./batch'),
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
 
-import { setAdapter as setFilesAdapter } from './FilesAdapter';
-import { default as GridStoreAdapter } from './GridStoreAdapter';
+var ParseApp = require('./classes/ParseApp');
+var CacheProvider = require('./classes/CacheProvider');
+var FilesProvider = require('./classes/FilesProvider');
+var DatabaseProvider = require('./classes/DatabaseProvider');
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -42,55 +42,31 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 
 function ParseServer(args) {
-  if (!args.appId || !args.masterKey) {
-    throw 'You must provide an appId and masterKey!';
-  }
-
   // Setup providers
   CacheProvider.setup(args.cache);
+  FilesProvider.setup(args.files);
+  DatabaseProvider.setup(args.database);
 
-  if (args.databaseAdapter) {
-    DatabaseAdapter.setAdapter(args.databaseAdapter);
-  }
-  if (args.filesAdapter) {
-    setFilesAdapter(args.filesAdapter);
-  } else {
-    setFilesAdapter(new GridStoreAdapter());
-  }
-  if (args.databaseURI) {
-    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
-  }
+  // Instantiate the app
+  var app = new ParseApp(args.app);
+
   if (args.cloud) {
+    // Add the Parse.Cloud global function definitions
     addParseCloud();
-    if (typeof args.cloud === 'function') {
-      args.cloud(Parse)
-    } else if (typeof args.cloud === 'string') {
-      require(args.cloud);
+
+    // Load the cloud code entry point
+    if (typeof args.cloud.entry === 'function') {
+      args.cloud.entry(Parse)
+    } else if (typeof args.cloud.entry === 'string') {
+      require(args.cloud.entry);
     } else {
       throw new Error("argument 'cloud' must either be a string or a function");
     }
-
-  }
-
-  var appInfo = {
-    masterKey: args.masterKey,
-    collectionPrefix: args.collectionPrefix || '',
-    clientKey: args.clientKey || '',
-    javascriptKey: args.javascriptKey || '',
-    dotNetKey: args.dotNetKey || '',
-    restAPIKey: args.restAPIKey || '',
-    fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || []
-  };
-
-  // To maintain compatibility. TODO: Remove in v2.1
-  if (process.env.FACEBOOK_APP_ID) {
-    appInfo['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
 
   // Cache the application information indefinitely
   var cache = CacheProvider.getAdapter();
-  cache.put(args.appId, appInfo, Infinity);
+  cache.put(app.appId, app, Infinity);
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);

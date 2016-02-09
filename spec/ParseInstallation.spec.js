@@ -3,12 +3,12 @@
 
 var auth = require('../Auth');
 var Config = require('../Config');
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseProvider = require('../classes/DatabaseProvider');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+var database = DatabaseProvider.getDatabaseConnection('test');
 
 describe('Installations', () => {
 
