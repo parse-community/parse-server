@@ -1,5 +1,5 @@
 var Parse = require('parse/node').Parse;
-var CacheProvider = require('./classes/CacheProvider');
+var CacheProvider = require('./classes/CacheProvider').default;
 var auth = require('./Auth');
 var Config = require('./Config');
 

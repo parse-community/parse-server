@@ -2,7 +2,7 @@
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 
-var DatabaseProvider = require('../src/classes/DatabaseProvider');
+var DatabaseProvider = require('../src/classes/DatabaseProvider').default;
 var express = require('express');
 var facebook = require('../src/facebook');
 var ParseServer = require('../src/index').ParseServer;

@@ -1,7 +1,4 @@
-var util = require('util');
-
-var BaseProvider = require('./BaseProvider');
-var DefaultCacheAdapter = require('./MemoryCache');
+import { default as BaseProvider } from './BaseProvider';
 
 /**
 * Abstract class the provides a reference to an adapter instance (a caching implementation)
@@ -10,29 +7,11 @@ var DefaultCacheAdapter = require('./MemoryCache');
 * @extends {BaseProvider}
 * @param {Object} adapter - A cache adapter
 */
-function CacheProvider(adapter) {
-    CacheProvider.super_.call(this)
-};
-
-/**
-* Setup the cache provider given a configuration object
-*
-* @method
-* @param {Object} config - A configuration object
-* @param {Any} config.adapter - A string, object, instance, or function that resolves to an adapter implementation
-* @param {Object} config.options - An object passed to the adapter on instantiation (if adapter is not already instantiated)
-*/
-function setup (config) {
-  config = config || {};
-  config.adapter = config.adapter || DefaultCacheAdapter;
-
-  var adapter = this.resolveAdapter(config.adapter, config.options);
-  this.setAdapter(adapter);
+export class CacheProvider extends BaseProvider {
+  constructor() {
+    super(...arguments);
+    this.DEFAULT_ADAPTER = './MemoryCache';
+  }
 }
 
-util.inherits(CacheProvider, BaseProvider);
-
-CacheProvider.prototype.setup = setup;
-CacheProvider.prototype.CacheProvider = CacheProvider;
-
-exports = module.exports = new CacheProvider();
+export default new CacheProvider();

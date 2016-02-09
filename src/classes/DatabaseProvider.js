@@ -1,72 +1,65 @@
-var BaseProvider = require('./BaseProvider');
-var CacheProvider = require('./CacheProvider');
-var util = require('util');
+import { default as BaseProvider } from './BaseProvider';
+import { default as CacheProvider } from './CacheProvider';
 
-var DefaultDatabaseAdapter = require('../ExportAdapter');
-var defaultURI = "mongodb://localhost:27017/parse";
+const DEFAULT_URI = "mongodb://localhost:27017/parse";
 
-function DatabaseProvider(adapter) {
-    DatabaseProvider.super_.call(this)
-};
+export class DatabaseProvider extends BaseProvider {
+  constructor() {
+    super(...arguments);
+    this.DEFAULT_ADAPTER = '../ExportAdapter';
+  }
 
-function setup(config) {
-    config = config || {};
-    config.adapter = config.adapter || DefaultDatabaseAdapter;
+  setup(config = {}) {
     this.dbConnections = config.dbConnections || this.dbConnections || {};
-    this.databaseURI = config.defaultURI || defaultURI;
+    this.databaseURI = config.defaultURI || DEFAULT_URI;
     this.appDatabaseURIs = config.appDatabaseURIs || {};
 
-    var adapter = this.resolveAdapter(config.adapter, config.options);
-    this.setAdapter(adapter);
-}
+    super.setup(...arguments);
+  }
 
-// TODO: Reimplement this whenever @Flovilmart finishes running CloudCode in subprocesses
-function registerAppDatabaseURI(appId, uri) {
-  this.appDatabaseURIs[appId] = uri;
-}
+  // TODO: Reimplement this whenever @Flovilmart finishes running CloudCode in subprocesses
+  registerAppDatabaseURI(appId, uri) {
+    this.appDatabaseURIs[appId] = uri;
+  }
 
-function getDatabaseConnections() {
+  getDatabaseConnections() {
     return this.dbConnections;
-}
+  }
 
-function getDatabaseConnection(appId) {
-  if (this.dbConnections[appId]) {
+  getDatabaseConnection(appId) {
+    if (this.dbConnections[appId]) {
+      return this.dbConnections[appId];
+    }
+
+    const cache = CacheProvider.getAdapter();
+    const app = cache.get(appId);
+
+    if (!app) {
+      throw new Error('Application ID provided is not a registered application.');
+    }
+
+    const adapterClass = this.getAdapter();
+    const dbURI = this.appDatabaseURIs[appId] || this.databaseURI;
+    const options = { collectionPrefix: app.collectionPrefix };
+
+    this.dbConnections[appId] = new adapterClass(dbURI, options);
+    this.dbConnections[appId].connect();
     return this.dbConnections[appId];
   }
 
-  var cache = CacheProvider.getAdapter();
-  var app = cache.get(appId);
+  // Overriding resolveAdapter to prevent instantiation
+  resolveAdapter(adapter, options) {
+      // Support passing in adapter paths
+      if (typeof adapter === 'string') {
+          adapter = require(adapter);
 
-  if (!app) {
-    throw new Error('Application ID provided is not a registered application.');
+          // TODO: Figure out a better way to deal with this
+          if (adapter && adapter.default) 
+            adapter = adapter.default;
+      }
+
+      return adapter;
   }
-
-  var adapterFn = this.getAdapter();
-  var dbURI = this.appDatabaseURIs[appId] || this.databaseURI;
-  var options = { collectionPrefix: app.collectionPrefix };
-
-  this.dbConnections[appId] = new adapterFn(dbURI, options);
-  this.dbConnections[appId].connect();
-  return this.dbConnections[appId];
 }
 
-// Overriding resolveAdapter to return the class, rather than an instance
-function resolveAdapter(adapter, options) {
-    // Support passing in adapter paths
-    if (typeof adapter === 'string') {
-        adapter = require(adapter);
-    }
-
-    return adapter;
-}
-
-util.inherits(DatabaseProvider, BaseProvider);
-
-DatabaseProvider.prototype.setup = setup;
-DatabaseProvider.prototype.registerAppDatabaseURI = registerAppDatabaseURI;
-DatabaseProvider.prototype.getDatabaseConnections = getDatabaseConnections;
-DatabaseProvider.prototype.getDatabaseConnection = getDatabaseConnection;
-DatabaseProvider.prototype.resolveAdapter = resolveAdapter;
-DatabaseProvider.prototype.DatabaseProvider = DatabaseProvider;
-
-exports = module.exports = new DatabaseProvider();
+export default new DatabaseProvider();

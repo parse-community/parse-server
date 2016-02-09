@@ -3,38 +3,35 @@
  *
  * @interface
  */
-function ServiceProvider() {
-};
-
-/**
- * Get the adapter
- *
- * @returns {Object} An adapter instance
- */
-ServiceProvider.prototype.getAdapter = function() {
+export class ServiceProvider {
+  /**
+   * Get the adapter
+   *
+   * @returns {Object} An adapter instance
+   */
+  getAdapter() {
     throw new Error('A service provider must implement getAdapter!');
-}
+  }
 
-/**
- * Set the adapter
- *
- * @param {Object} An adapter
- */
-ServiceProvider.prototype.setAdapter = function() {
+  /**
+   * Set the adapter
+   *
+   * @param {Object} An adapter
+   */
+  setAdapter() {
     throw new Error('A service provider must implement setAdapter!');
-}
-
-/**
- * Resolves the adapter from the first parameter
- *
- * @param {Any}
- */
-ServiceProvider.prototype.resolveAdapter = function() {
+  }
+  /**
+   * Resolves the adapter from the first parameter
+   *
+   * @param {Any}
+   */
+  resolveAdapter() {
     throw new Error('A service provider must implement resolveAdapter!');
+  }
+  setup() {
+    throw new Error('A service provider must implement setup!');
+  }
 }
 
-ServiceProvider.prototype.setup = function() {
-  throw new Error('A service provider must implement setup!');
-}
-
-exports = module.exports = ServiceProvider;
+export default ServiceProvider;
