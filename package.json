@@ -32,14 +32,15 @@
     "babel-preset-es2015": "^6.5.0",
     "babel-register": "^6.5.1",
     "codecov": "^1.0.1",
+    "cross-env": "^1.0.7",
     "deep-diff": "^0.3.3",
     "jasmine": "^2.3.2",
     "mongodb-runner": "^3.1.15"
   },
   "scripts": {
     "build": "./node_modules/.bin/babel src/ -d lib/",
-    "pretest": "MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} mongodb-runner start",
-    "test": "NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node ./node_modules/.bin/babel-istanbul cover -x **/spec/** ./node_modules/.bin/jasmine",
+    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
+    "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node ./node_modules/.bin/babel-istanbul cover -x **/spec/** ./node_modules/.bin/jasmine",
     "posttest": "mongodb-runner stop",
     "start": "./bin/parse-server",
     "prepublish": "npm run build"
