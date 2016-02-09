@@ -60,7 +60,7 @@ APNS.prototype.send = function(data, deviceTokens) {
 var generateNotification = function(coreData, expirationTime) {
   var notification = new apn.notification();
   var payload = {};
-  for (key in coreData) {
+  for (var key in coreData) {
     switch (key) {
       case 'alert':
         notification.setAlertText(coreData.alert);
