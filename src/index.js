@@ -5,13 +5,15 @@ var batch = require('./batch'),
     cache = require('./cache'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
-    FilesAdapter = require('./FilesAdapter'),
     S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
+
+import { setAdapter as setFilesAdapter } from './FilesAdapter';
+import { default as GridStoreAdapter } from './GridStoreAdapter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -47,7 +49,9 @@ function ParseServer(args) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
   }
   if (args.filesAdapter) {
-    FilesAdapter.setAdapter(args.filesAdapter);
+    setFilesAdapter(args.filesAdapter);
+  } else {
+    setFilesAdapter(new GridStoreAdapter());
   }
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
