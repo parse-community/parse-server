@@ -41,8 +41,7 @@ function nobody(config) {
 
 // Returns a promise that resolves to an Auth object
 var getAuthForSessionToken = function(config, sessionToken) {
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
 
   var cachedUser = cache.get(sessionToken);
   if (cachedUser) {

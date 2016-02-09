@@ -9,4 +9,4 @@ ServiceProviderInterface.prototype.setAdapter = function() {
     throw new Error('A service provider must implement setAdapter!');
 }
 
-module.exports = ServiceProviderInterface;
+exports = module.exports = ServiceProviderInterface;

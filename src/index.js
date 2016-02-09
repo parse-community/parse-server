@@ -195,7 +195,8 @@ function setupCache(config) {
   config.adapter = config.adapter || DefaultCacheAdapter;
 
   var adapter = this.resolveAdapter(config.adapter, config.options);
-  this.cacheProvider = new CacheProvider(adapter);
+  CacheProvider.setAdapter(adapter);
+  this.cacheProvider = CacheProvider;
 }
 
 ParseServer.prototype.setupCache = setupCache;

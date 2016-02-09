@@ -2,7 +2,9 @@ var ServiceProviderInterface = require('../interfaces/ServiceProvider');
 var util = require('util');
 
 function BaseProvider(adapter) {
-    this.adapter = adapter;
+    if (adapter) {
+        this.adapter = adapter;
+    }
 };
 
 util.inherits(BaseProvider, ServiceProviderInterface);
@@ -17,5 +19,6 @@ function setAdapter(adapter) {
 
 BaseProvider.prototype.getAdapter = getAdapter;
 BaseProvider.prototype.setAdapter = setAdapter;
+BaseProvider.prototype.BaseProvider = BaseProvider;
 
-module.exports = BaseProvider;
+exports = module.exports = new BaseProvider();

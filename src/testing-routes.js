@@ -8,8 +8,7 @@ var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
-  var cacheProvider = new (require('./classes/CacheProvider'));
-  var cache = cacheProvider.getAdapter();
+  var cache = require('./classes/CacheProvider').getAdapter();
   var appId = rack();
   cache.put(appId,  {
     'collectionPrefix': appId + '_',
