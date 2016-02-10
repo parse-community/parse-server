@@ -19,7 +19,7 @@ export class FilesController {
     return (req, res) => {
       let config = new Config(req.params.appId);
       let filename = req.params.filename;
-      this._filesAdapter.getFileDataAsync(config, filename).then((data) => {
+      this._filesAdapter.getFileData(config, filename).then((data) => {
         res.status(200);
         var contentType = mime.lookup(filename);
         res.set('Content-type', contentType);
@@ -62,7 +62,7 @@ export class FilesController {
       }
 
       let filename = rack() + '_' + req.params.filename + extension;
-      this._filesAdapter.createFileAsync(req.config, filename, req.body).then(() => {
+      this._filesAdapter.createFile(req.config, filename, req.body).then(() => {
         res.status(201);
         var location = this._filesAdapter.getFileLocation(req.config, filename);
         res.set('Location', location);
