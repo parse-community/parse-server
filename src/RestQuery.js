@@ -3,6 +3,8 @@
 
 var Parse = require('parse/node').Parse;
 
+import { default as FilesController } from './Controllers/FilesController';
+
 // restOptions can include:
 //   skip
 //   limit
@@ -316,35 +318,35 @@ RestQuery.prototype.replaceDontSelect = function() {
 RestQuery.prototype.runFind = function() {
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((results) => {
-      if (this.className == '_User') {
-        for (var result of results) {
-          delete result.password;
-        }
+    if (this.className == '_User') {
+      for (var result of results) {
+        delete result.password;
       }
+    }
 
-      updateParseFiles(this.config, results);
+    this.config.filesController.expandFilesInObject(this.config, results);
 
-      if (this.keys) {
-        var keySet = this.keys;
-        results = results.map((object) => {
-          var newObject = {};
-          for (var key in object) {
-            if (keySet.has(key)) {
-              newObject[key] = object[key];
-            }
+    if (this.keys) {
+      var keySet = this.keys;
+      results = results.map((object) => {
+        var newObject = {};
+        for (var key in object) {
+          if (keySet.has(key)) {
+            newObject[key] = object[key];
           }
-          return newObject;
-        });
-      }
-
-      if (this.redirectClassName) {
-        for (var r of results) {
-          r.className = this.redirectClassName;
         }
-      }
+        return newObject;
+      });
+    }
 
-      this.response = {results: results};
-    });
+    if (this.redirectClassName) {
+      for (var r of results) {
+        r.className = this.redirectClassName;
+      }
+    }
+
+    this.response = {results: results};
+  });
 };
 
 // Returns a promise for whether it was successful.
@@ -495,35 +497,6 @@ function replacePointers(object, path, replace) {
     }
   }
   return answer;
-}
-
-// Find file references in REST-format object and adds the url key
-// with the current mount point and app id
-// Object may be a single object or list of REST-format objects
-function updateParseFiles(config, object) {
-  if (object instanceof Array) {
-    object.map((obj) => updateParseFiles(config, obj));
-    return;
-  }
-  if (typeof object !== 'object') {
-    return;
-  }
-  for (var key in object) {
-    if (object[key] &&  object[key]['__type'] &&
-        object[key]['__type'] == 'File') {
-      var filename = object[key]['name'];
-      var encoded = encodeURIComponent(filename);
-      encoded = encoded.replace('%40', '@');
-      if (filename.indexOf('tfss-') === 0) {
-        object[key]['url'] = 'http://files.parsetfss.com/' +
-          config.fileKey + '/' + encoded;
-      } else {
-        object[key]['url'] = config.mount + '/files/' +
-                           config.applicationId + '/' +
-                           encoded;
-      }
-    }
-  }
 }
 
 // Finds a subobject that has the given key, if there is one.

@@ -66,6 +66,8 @@ function ParseServer(args) {
 
   }
 
+  let filesController = new FilesController(filesAdapter);
+
   cache.apps[args.appId] = {
     masterKey: args.masterKey,
     collectionPrefix: args.collectionPrefix || '',
@@ -74,7 +76,8 @@ function ParseServer(args) {
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || []
+    facebookAppIds: args.facebookAppIds || [],
+    filesController: filesController
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -93,7 +96,6 @@ function ParseServer(args) {
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  let filesController = new FilesController(filesAdapter);
   api.use('/', filesController.getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
