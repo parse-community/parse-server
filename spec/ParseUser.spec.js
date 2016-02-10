@@ -64,6 +64,22 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("user login with files", (done) => {
+    "use strict";
+
+    let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
+    file.save().then((file) => {
+      return Parse.User.signUp("asdf", "zxcv", { "file" : file });
+    }).then(() => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      let fileAgain = user.get('file');
+      ok(fileAgain.name());
+      ok(fileAgain.url());
+      done();
+    });
+  });
+
   it("become", (done) => {
     var user = null;
     var sessionToken = null;

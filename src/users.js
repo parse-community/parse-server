@@ -58,6 +58,8 @@ function handleLogIn(req) {
       user.sessionToken = token;
       delete user.password;
 
+      req.config.filesController.expandFilesInObject(req.config, user);
+
       var expiresAt = new Date();
       expiresAt.setFullYear(expiresAt.getFullYear() + 1);
 

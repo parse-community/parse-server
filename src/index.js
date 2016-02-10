@@ -5,13 +5,16 @@ var batch = require('./batch'),
     cache = require('./cache'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
-    FilesAdapter = require('./FilesAdapter'),
-    S3Adapter = require('./S3Adapter'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
+
+import { GridStoreAdapter } from './Adapters/Files/GridStoreAdapter';
+import { S3Adapter } from './Adapters/Files/S3Adapter';
+
+import { FilesController } from './Controllers/FilesController';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -46,9 +49,9 @@ function ParseServer(args) {
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
   }
-  if (args.filesAdapter) {
-    FilesAdapter.setAdapter(args.filesAdapter);
-  }
+
+  let filesAdapter = args.filesAdapter || new GridStoreAdapter();
+
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
@@ -64,6 +67,8 @@ function ParseServer(args) {
 
   }
 
+  let filesController = new FilesController(filesAdapter);
+
   cache.apps[args.appId] = {
     masterKey: args.masterKey,
     collectionPrefix: args.collectionPrefix || '',
@@ -72,7 +77,8 @@ function ParseServer(args) {
     dotNetKey: args.dotNetKey || '',
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || []
+    facebookAppIds: args.facebookAppIds || [],
+    filesController: filesController
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -91,7 +97,7 @@ function ParseServer(args) {
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', require('./files').router);
+  api.use('/', filesController.getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
