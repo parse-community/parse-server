@@ -458,20 +458,32 @@ Schema.prototype.deleteField = function(fieldName, className, database, prefix) 
         });
       }
 
-      let p = null;
       if (schema.data[className][fieldName].startsWith('relation')) {
         //For relations, drop the _Join table
-
-        p = database.dropCollection(prefix + '_Join:' + fieldName + ':' + className);
+        return database.dropCollection(prefix + '_Join:' + fieldName + ':' + className)
+        //Save the _SCHEMA object
+        .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}));
       } else {
         //for non-relations, remove all the data. This is necessary to ensure that the data is still gone
         //if they add the same field.
-        p = Promise.resolve();
+        return new Promise((resolve, reject) => {
+          database.collection(prefix + className, (err, coll) => {
+            if (err) {
+              reject(err);
+            } else {
+              return coll.update({}, {
+                "$unset": { [fieldName] : null },
+              }, {
+                multi: true,
+              })
+              //Save the _SCHEMA object
+              .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}))
+              .then(resolve)
+              .catch(reject);
+            }
+          });
+        });
       }
-      return p.then(() => {
-        //Save the _SCHEMA object
-        return Promise.resolve();
-      });
     });
   });
 }
