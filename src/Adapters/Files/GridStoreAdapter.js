@@ -6,10 +6,10 @@
 import { GridStore } from 'mongodb';
 import { FilesAdapter } from './FilesAdapter';
 
-class GridStoreAdapter extends FilesAdapter {
+export class GridStoreAdapter extends FilesAdapter {
   // For a given config object, filename, and data, store a file
   // Returns a promise
-  createFileAsync(config, filename, data) {
+  createFile(config, filename, data) {
     return config.database.connect().then(() => {
       let gridStore = new GridStore(config.database.db, filename, 'w');
       return gridStore.open();
@@ -20,7 +20,7 @@ class GridStoreAdapter extends FilesAdapter {
     });
   }
 
-  getFileDataAsync(config, filename) {
+  getFileData(config, filename) {
     return config.database.connect().then(() => {
       return GridStore.exist(config.database.db, filename);
     }).then(() => {
