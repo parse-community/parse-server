@@ -4,8 +4,6 @@
 // Requires the database adapter to be based on mongoclient
 
 import { GridStore } from 'mongodb';
-
-import * as Path from 'path';
 import { FilesAdapter } from './FilesAdapter';
 
 class GridStoreAdapter extends FilesAdapter {
@@ -33,10 +31,8 @@ class GridStoreAdapter extends FilesAdapter {
     });
   }
 
-  getFileLocation(config, request, filename) {
-    return (request.protocol + '://' + request.get('host') +
-    Path.dirname(request.originalUrl) + '/' + config.applicationId +
-    '/' + encodeURIComponent(filename));
+  getFileLocation(config, filename) {
+    return (config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename));
   }
 }
 

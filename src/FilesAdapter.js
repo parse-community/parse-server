@@ -16,7 +16,7 @@ export class FilesAdapter {
 
   getFileDataAsync(config, filename) { }
 
-  getFileLocation(config, request, filename) { }
+  getFileLocation(config, filename) { }
 }
 
 export default FilesAdapter;
