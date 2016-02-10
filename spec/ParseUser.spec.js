@@ -1576,5 +1576,27 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('ensure logout works', (done) => {
+    var user = null;
+    var sessionToken = null;
+
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp('log', 'out');
+    }).then((newUser) => {
+      user = newUser;
+      sessionToken = user.getSessionToken();
+      return Parse.User.logOut();
+    }).then(() => {
+      user.set('foo', 'bar');
+      return user.save(null, { sessionToken: sessionToken });
+    }).then(() => {
+      fail('Save should have failed.');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SESSION_MISSING);
+      done();
+    });
+  })
+
 });
 

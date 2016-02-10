@@ -637,7 +637,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.query &&
       !this.auth.couldUpdateUserId(this.query.objectId)) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'cannot modify user ' + this.objectId);
+                          'cannot modify user ' + this.query.objectId);
   }
 
   // TODO: Add better detection for ACL, ensuring a user can't be locked from
