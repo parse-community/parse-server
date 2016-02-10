@@ -56,7 +56,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     this.data.updatedAt = this.updatedAt;
     if (!this.query) {
       this.data.createdAt = this.updatedAt;
-      this.data.objectId = newObjectId();
+      this.data.objectId = newStringId(10);
     }
   }
 }
@@ -319,8 +319,7 @@ RestWrite.prototype.transformUser = function() {
     // Check for username uniqueness
     if (!this.data.username) {
       if (!this.query) {
-        // TODO: what's correct behavior here
-        this.data.username = '';
+        this.data.username = newStringId(25);
       }
       return;
     }
@@ -714,13 +713,13 @@ RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
 
-// Returns a unique string that's usable as an object id.
-function newObjectId() {
+// Returns a unique string that's usable as an object or other id.
+function newStringId(size) {
   var chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
                'abcdefghijklmnopqrstuvwxyz' +
                '0123456789');
   var objectId = '';
-  var bytes = crypto.randomBytes(10);
+  var bytes = crypto.randomBytes(size);
   for (var i = 0; i < bytes.length; ++i) {
     // Note: there is a slight modulo bias, because chars length
     // of 62 doesn't divide the number of all bytes (256) evenly.
