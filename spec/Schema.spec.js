@@ -4,6 +4,22 @@ var dd = require('deep-diff');
 
 var config = new Config('test');
 
+var hasAllPODobject = () => {
+  var obj = new Parse.Object('HasAllPOD');
+  obj.set('aNumber', 5);
+  obj.set('aString', 'string');
+  obj.set('aBool', true);
+  obj.set('aDate', new Date());
+  obj.set('aObject', {k1: 'value', k2: true, k3: 5});
+  obj.set('aArray', ['contents', true, 5]);
+  obj.set('aGeoPoint', new Parse.GeoPoint({latitude: 0, longitude: 0}));
+  obj.set('aFile', new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' }));
+  var objACL = new Parse.ACL();
+  objACL.setPublicWriteAccess(false);
+  obj.setACL(objACL);
+  return obj;
+};
+
 describe('Schema', () => {
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
@@ -411,7 +427,6 @@ describe('Schema', () => {
     .then(schema => {
       return schema.addClassIfNotExists('NewClass', {})
       .then(() => {
-        console.log(Object.getPrototypeOf(schema));
         schema.hasClass('NewClass')
         .then(hasClass => {
           expect(hasClass).toEqual(true);
@@ -460,5 +475,49 @@ describe('Schema', () => {
       expect(error.error).toEqual('field installationId cannot be changed');
       done();
     });
+  });
+
+  it('refuses to delete fields from nonexistant classes', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('field', 'NoClass'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(error.error).toEqual('class NoClass does not exist');
+      done();
+    });
+  });
+
+  it('refuses to delete fields that dont exist', done => {
+    hasAllPODobject().save()
+    .then(() => config.database.loadSchema())
+    .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
+    .fail(error => {
+      expect(error.code).toEqual(255);
+      expect(error.error).toEqual('field missingField does not exist, cannot delete');
+      done();
+    });
+  });
+
+  it('drops related collection when deleting relation field', done => {
+    var obj1 = hasAllPODobject();
+    obj1.save()
+    .then(savedObj1 => {
+      var obj2 = new Parse.Object('HasPointersAndRelations');
+      obj2.set('aPointer', savedObj1);
+      var relation = obj2.relation('aRelation');
+      relation.add(obj1);
+      return obj2.save();
+    })
+    .then(() => {
+      config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+        expect(err).toEqual(null);
+        config.database.loadSchema()
+        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.db, 'test_'))
+        .then(() => config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+          expect(err).not.toEqual(null);
+          done();
+        }))
+      });
+    })
   });
 });

@@ -413,7 +413,11 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
 // to remove unused fields, if other writers are writing objects that include
 // this field, the field may reappear. Returns a Promise that resolves with
 // no object on success, or rejects with { code, error } on failure.
-Schema.prototype.deleteField = function(fieldName, className) {
+
+// Passing the database and prefix is necessary in order to drop relation collections
+// and remove fields from objects. Ideally the database would belong to
+// a database adapter and this fuction would close over it or access it via member.
+Schema.prototype.deleteField = function(fieldName, className, database, prefix) {
   if (!classNameIsValid(className)) {
     return Promise.reject({
       code: Parse.Error.INVALID_CLASS_NAME,
@@ -438,6 +442,37 @@ Schema.prototype.deleteField = function(fieldName, className) {
 
   return this.reload()
   .then(schema => {
+    return schema.hasClass(className)
+    .then(hasClass => {
+      if (!hasClass) {
+        return Promise.reject({
+          code: Parse.Error.INVALID_CLASS_NAME,
+          error: 'class ' + className + ' does not exist',
+        });
+      }
+
+      if (!schema.data[className][fieldName]) {
+        return Promise.reject({
+          code: 255,
+          error: 'field ' + fieldName + ' does not exist, cannot delete',
+        });
+      }
+
+      let p = null;
+      if (schema.data[className][fieldName].startsWith('relation')) {
+        //For relations, drop the _Join table
+
+        p = database.dropCollection(prefix + '_Join:' + fieldName + ':' + className);
+      } else {
+        //for non-relations, remove all the data. This is necessary to ensure that the data is still gone
+        //if they add the same field.
+        p = Promise.resolve();
+      }
+      return p.then(() => {
+        //Save the _SCHEMA object
+        return Promise.resolve();
+      });
+    });
   });
 }
 
@@ -508,6 +543,13 @@ Schema.prototype.getExpectedType = function(className, key) {
   }
   return undefined;
 };
+
+// Checks if a given class is in the schema. Needs to load the
+// schema first, which is kinda janky. Hopefully we can refactor
+// and make this be a regular value. Parse would probably
+Schema.prototype.hasClass = function(className) {
+  return this.reload().then(newSchema => !!newSchema.data[className]);
+}
 
 // Helper function to check if a field is a pointer, returns true or false.
 Schema.prototype.isPointer = function(className, key) {
