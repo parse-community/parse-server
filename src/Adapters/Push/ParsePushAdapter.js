@@ -7,16 +7,10 @@ const Parse = require('parse/node').Parse;
 const GCM = require('../../GCM');
 const APNS = require('../../APNS');
 
-function ParsePushAdapter() {
- this.validPushTypes = ['ios', 'android'];
- this.senders = {};
-}
+function ParsePushAdapter(pushConfig) {
+  this.validPushTypes = ['ios', 'android'];
+  this.senders = {};
 
-/**
- * Register push senders
- * @param {Object} pushConfig The push configuration which is given when parse server is initialized
- */
-ParsePushAdapter.prototype.initialize = function(pushConfig) {
   // Initialize senders
   for (let validPushType of this.validPushTypes) {
     this.senders[validPushType] = [];

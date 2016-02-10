@@ -1,6 +1,6 @@
-var push = require('../src/push');
+var PushController = require('../src/Controllers/PushController').PushController;
 
-describe('push', () => {
+describe('PushController', () => {
   it('can check valid master key of request', (done) => {
     // Make mock request
     var request = {
@@ -13,7 +13,7 @@ describe('push', () => {
     }
 
     expect(() => {
-      push.validateMasterKey(request);
+      PushController.validateMasterKey(request);
     }).not.toThrow();
     done();
   });
@@ -30,7 +30,7 @@ describe('push', () => {
     }
 
     expect(() => {
-      push.validateMasterKey(request);
+      PushController.validateMasterKey(request);
     }).toThrow();
     done();
   });
@@ -43,7 +43,7 @@ describe('push', () => {
       }
     }
 
-    var where = push.getQueryCondition(request);
+    var where = PushController.getQueryCondition(request);
     expect(where).toEqual({
       'channels': {
         '$in': ['Giants', 'Mets']
@@ -62,7 +62,7 @@ describe('push', () => {
       }
     }
 
-    var where = push.getQueryCondition(request);
+    var where = PushController.getQueryCondition(request);
     expect(where).toEqual({
       'injuryReports': true
     });
@@ -77,7 +77,7 @@ describe('push', () => {
     }
 
     expect(function() {
-      push.getQueryCondition(request);
+      PushController.getQueryCondition(request);
     }).toThrow();
     done();
   });
@@ -96,7 +96,7 @@ describe('push', () => {
     }
 
     expect(function() {
-      push.getQueryCondition(request);
+      PushController.getQueryCondition(request);
     }).toThrow();
     done();
   });
@@ -108,7 +108,7 @@ describe('push', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validatePushType(where, validPushTypes);
+      PushController.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -121,7 +121,7 @@ describe('push', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validatePushType(where, validPushTypes);
+      PushController.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -136,7 +136,7 @@ describe('push', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validatePushType(where, validPushTypes);
+      PushController.validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -149,7 +149,7 @@ describe('push', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validatePushType(where, validPushTypes);
+      PushController.validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -162,7 +162,7 @@ describe('push', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      push.validatePushType(where, validPushTypes);
+      PushController.validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -176,7 +176,7 @@ describe('push', () => {
       }
     }
 
-    var time = push.getExpirationTime(request);
+    var time = PushController.getExpirationTime(request);
     expect(time).toEqual(new Date(timeStr).valueOf());
     done();
   });
@@ -190,7 +190,7 @@ describe('push', () => {
       }
     }
 
-    var time = push.getExpirationTime(request);
+    var time = PushController.getExpirationTime(request);
     expect(time).toEqual(timeNumber * 1000);
     done();
   });
@@ -204,7 +204,7 @@ describe('push', () => {
     }
 
     expect(function(){
-      push.getExpirationTime(request);
+      PushController.getExpirationTime(request);
     }).toThrow();
     done();
   });

@@ -2,14 +2,6 @@ var ParsePushAdapter = require('../src/Adapters/Push/ParsePushAdapter');
 
 describe('ParsePushAdapter', () => {
   it('can be initialized', (done) => {
-    var parsePushAdapter = new ParsePushAdapter();
-
-    expect(parsePushAdapter.validPushTypes).toEqual(['ios', 'android']);
-    done();
-  });
-
-  it('can initialize', (done) => {
-    var parsePushAdapter = new ParsePushAdapter();
     // Make mock config
     var pushConfig = {
       android: {
@@ -30,7 +22,7 @@ describe('ParsePushAdapter', () => {
       ]
     };
 
-    parsePushAdapter.initialize(pushConfig);
+    var parsePushAdapter = new ParsePushAdapter(pushConfig);
     // Check ios
     var iosSenders = parsePushAdapter.senders['ios'];
     expect(iosSenders.length).toBe(2);
@@ -53,7 +45,6 @@ describe('ParsePushAdapter', () => {
   });
 
   it('can throw on initializing with unsupported push type', (done) => {
-    var parsePushAdapter = new ParsePushAdapter();
     // Make mock config
     var pushConfig = {
       win: {
@@ -63,20 +54,19 @@ describe('ParsePushAdapter', () => {
     };
 
     expect(function() {
-      parsePushAdapter.initialize(pushConfig)
+      new ParsePushAdapter(pushConfig);
     }).toThrow();
     done();
   });
 
   it('can throw on initializing with invalid pushConfig', (done) => {
-    var parsePushAdapter = new ParsePushAdapter();
     // Make mock config
     var pushConfig = {
       android: 123
     };
 
     expect(function() {
-      parsePushAdapter.initialize(pushConfig)
+      new ParsePushAdapter(pushConfig);
     }).toThrow();
     done();
   });
