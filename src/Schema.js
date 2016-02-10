@@ -409,6 +409,38 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
   });
 };
 
+// Delete a field, and remove that data from all objects. This is intended
+// to remove unused fields, if other writers are writing objects that include
+// this field, the field may reappear. Returns a Promise that resolves with
+// no object on success, or rejects with { code, error } on failure.
+Schema.prototype.deleteField = function(fieldName, className) {
+  if (!classNameIsValid(className)) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: invalidClassNameMessage(className),
+    });
+  }
+
+  if (!fieldNameIsValid(fieldName)) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_KEY_NAME,
+      error: 'invalid field name: ' + fieldName,
+    });
+  }
+
+  //Don't allow deleting the default fields.
+  if (!fieldNameIsValidForClass(fieldName, className)) {
+    return Promise.reject({
+      code: 136,
+      error: 'field ' + fieldName + ' cannot be changed',
+    });
+  }
+
+  return this.reload()
+  .then(schema => {
+  });
+}
+
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
 function thenValidateField(schemaPromise, className, key, type) {

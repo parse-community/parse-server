@@ -1,4 +1,3 @@
-// These tests check that the Schema operates correctly.
 var Config = require('../src/Config');
 var Schema = require('../src/Schema');
 var dd = require('deep-diff');
@@ -403,6 +402,62 @@ describe('Schema', () => {
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
       expect(error.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding geo2 when geo1 already exists.');
+      done();
+    });
+  });
+
+  it('can check if a class exists', done => {
+    config.database.loadSchema()
+    .then(schema => {
+      return schema.addClassIfNotExists('NewClass', {})
+      .then(() => {
+        console.log(Object.getPrototypeOf(schema));
+        schema.hasClass('NewClass')
+        .then(hasClass => {
+          expect(hasClass).toEqual(true);
+          done();
+        })
+        .catch(fail);
+
+        schema.hasClass('NonexistantClass')
+        .then(hasClass => {
+          expect(hasClass).toEqual(false);
+          done();
+        })
+        .catch(fail);
+      })
+      .catch(error => {
+        fail('Couldn\'t create class');
+        fail(error);
+      });
+    })
+    .catch(error => fail('Couldn\'t load schema'));
+  });
+
+  it('refuses to delete fields from invalid class names', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('fieldName', 'invalid class name'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      done();
+    });
+  });
+
+  it('refuses to delete invalid fields', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('invalid field name', 'ValidClassName'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_KEY_NAME);
+      done();
+    });
+  });
+
+  it('refuses to delete the default fields', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('installationId', '_Installation'))
+    .catch(error => {
+      expect(error.code).toEqual(136);
+      expect(error.error).toEqual('field installationId cannot be changed');
       done();
     });
   });
