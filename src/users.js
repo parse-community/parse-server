@@ -91,7 +91,7 @@ function handleLogIn(req) {
 }
 
 // Returns a promise that resolves to a {response} object.
-// TODO: share code with classes.js
+// TODO: share code with ClassesRouter.js
 function handleFind(req) {
   var options = {};
   if (req.body.skip) {
