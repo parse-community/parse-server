@@ -25,6 +25,7 @@ We also have an [example project](https://github.com/ParsePlatform/parse-server-
 * fileKey - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * facebookAppIds - An array of valid Facebook application IDs.
 * serverURL - URL which will be used by Cloud Code functions to make requests against.
+* push - Configuration options for APNS and GCM push.  See the [wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
 
 #### Client key options:
 
@@ -122,6 +123,7 @@ Now you can just run `$ parse-server` from your command line.
 * Pointers
 * Users, including Facebook login and anonymous users
 * Files
+* Push Notifications - See the [wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
 * Installations
 * Sessions
 * Geopoints
@@ -133,5 +135,4 @@ You can also set up an app on Parse, providing the connection string for your mo
 
 ### Not supported
 
-* Push - We did not rebuild a new push delivery system for parse-server, but we are open to working on one together with the community.
 * `Parse.User.current()` or `Parse.Cloud.useMasterKey()` in cloud code. Instead of `Parse.User.current()` use `request.user` and instead of `Parse.Cloud.useMasterKey()` pass `useMasterKey: true` to each query. To make queries and writes as a specific user within Cloud Code, you need the user's session token, which is available in `request.user.getSessionToken()`.
