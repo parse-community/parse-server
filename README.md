@@ -28,7 +28,7 @@ We also have an [example project](https://github.com/ParsePlatform/parse-server-
 
 #### Client key options:
 
-The client keys used with Parse are no longer necessary with parse-server.  If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at intialization time.  Setting any of these keys will require all requests to provide one of the configured keys.
+The client keys used with Parse are no longer necessary with parse-server.  If you wish to still require them, perhaps to be able to refuse access to older clients, you can set the keys at initialization time.  Setting any of these keys will require all requests to provide one of the configured keys.
 
 * clientKey
 * javascriptKey
