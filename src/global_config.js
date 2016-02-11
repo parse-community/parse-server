@@ -5,6 +5,19 @@ var Parse = require('parse/node').Parse,
 
 var router = new PromiseRouter();
 
+function getGlobalConfig(req) {
+  return req.config.database.rawCollection('_GlobalConfig')
+    .then(coll => coll.findOne({'_id': 1}))
+    .then(globalConfig => ({response: { params: globalConfig.params }}))
+    .catch(() => ({
+      status: 404,
+      response: {
+        code: Parse.Error.INVALID_KEY_NAME,
+        error: 'config does not exist',
+      }
+    }));
+}
+
 function updateGlobalConfig(req) {
   if (!req.auth.isMaster) {
     return Promise.resolve({
@@ -23,19 +36,6 @@ function updateGlobalConfig(req) {
       response: {
         code: Parse.Error.INVALID_KEY_NAME,
         error: 'config cannot be updated',
-      }
-    }));
-}
-
-function getGlobalConfig(req) {
-  return req.config.database.rawCollection('_GlobalConfig')
-    .then(coll => coll.findOne({'_id': 1}))
-    .then(globalConfig => ({response: { params: globalConfig.params }}))
-    .catch(() => ({
-      status: 404,
-      response: {
-        code: Parse.Error.INVALID_KEY_NAME,
-        error: 'config does not exist',
       }
     }));
 }
