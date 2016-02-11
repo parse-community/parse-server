@@ -29,7 +29,7 @@ function updateGlobalConfig(req) {
   return req.config.database.rawCollection('_GlobalConfig')
     .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }, { returnOriginal: false }))
     .then(response => {
-      return { response: { params: response.value.params } }
+      return { response: { result: true } }
     })
     .catch(() => ({
       status: 404,
