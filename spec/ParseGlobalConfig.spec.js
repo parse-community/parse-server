@@ -28,7 +28,7 @@ describe('a GlobalConfig', () => {
   });
 
   it('can be updated when a master key exists', (done) => {
-    request.post({
+    request.put({
       url: 'http://localhost:8378/1/config',
       json: true,
       body: { params: { companies: ['US', 'DK', 'SE'] } },
@@ -38,13 +38,13 @@ describe('a GlobalConfig', () => {
       },
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(200);
-      expect(body.params.companies).toEqual(['US', 'DK', 'SE']);
+      expect(body.result).toEqual(true);
       done();
     });
   });
 
   it('fail to update if master key is missing', (done) => {
-    request.post({
+    request.put({
       url: 'http://localhost:8378/1/config',
       json: true,
       body: { params: { companies: [] } },
@@ -69,26 +69,6 @@ describe('a GlobalConfig', () => {
           headers: {
             'X-Parse-Application-Id': 'test',
             'X-Parse-Master-Key': 'test',
-          },
-        }, (error, response, body) => {
-          expect(response.statusCode).toEqual(404);
-          expect(body.code).toEqual(Parse.Error.INVALID_KEY_NAME);
-          done();
-        });
-      });
-  });
-
-  it('failed updating config when it is missing', (done) => {
-    database.rawCollection('_GlobalConfig')
-      .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
-      .then(_ => {
-        request.post({
-          url: 'http://localhost:8378/1/config',
-          json: true,
-          body: { params: { companies: ['US', 'DK', 'SE'] } },
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test'
           },
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(404);

@@ -27,7 +27,7 @@ function updateGlobalConfig(req) {
   }
 
   return req.config.database.rawCollection('_GlobalConfig')
-    .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }, { returnOriginal: false }))
+    .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }))
     .then(response => {
       return { response: { result: true } }
     })
