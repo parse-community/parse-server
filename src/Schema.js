@@ -561,7 +561,7 @@ Schema.prototype.getExpectedType = function(className, key) {
 
 // Checks if a given class is in the schema. Needs to load the
 // schema first, which is kinda janky. Hopefully we can refactor
-// and make this be a regular value. Parse would probably
+// and make this be a regular value.
 Schema.prototype.hasClass = function(className) {
   return this.reload().then(newSchema => !!newSchema.data[className]);
 }
