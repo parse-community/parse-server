@@ -1,28 +1,52 @@
-// push.js
+import { Parse } from 'parse/node';
+import PromiseRouter from '../PromiseRouter';
+import rest from '../rest';
 
-var Parse = require('parse/node').Parse,
-    PromiseRouter = require('./PromiseRouter'),
-    rest = require('./rest');
+export class PushController {
 
-var validPushTypes = ['ios', 'android'];
+  constructor(pushAdapter) {
+    this._pushAdapter = pushAdapter;
+  }
 
-function handlePushWithoutQueue(req) {
-  validateMasterKey(req);
-  var where = getQueryCondition(req);
-  validateDeviceType(where);
-  // Replace the expiration_time with a valid Unix epoch milliseconds time
-  req.body['expiration_time'] = getExpirationTime(req);
-  return rest.find(req.config, req.auth, '_Installation', where).then(function(response) {
-    throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE,
-                  'This path is not implemented yet.');
-  });
+  handlePOST(req) {
+    if (!this._pushAdapter) {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+                            'Push adapter is not availabe');
+    }
+
+    validateMasterKey(req);
+    var where = getQueryCondition(req);
+    var pushAdapter = this._pushAdapter;
+    validatePushType(where, pushAdapter.getValidPushTypes());
+    // Replace the expiration_time with a valid Unix epoch milliseconds time
+    req.body['expiration_time'] = getExpirationTime(req);
+    // TODO: If the req can pass the checking, we return immediately instead of waiting
+    // pushes to be sent. We probably change this behaviour in the future.
+    rest.find(req.config, req.auth, '_Installation', where).then(function(response) {
+      return pushAdapter.send(req.body, response.results);
+    });
+    return Parse.Promise.as({
+        response: {
+          'result': true
+        }
+    });
+  }
+
+  getExpressRouter() {
+    var router = new PromiseRouter();
+    router.route('POST','/push', (req) => {
+      return this.handlePOST(req);
+    });
+    return router;
+  }
 }
 
 /**
  * Check whether the deviceType parameter in qury condition is valid or not.
  * @param {Object} where A query condition
+ * @param {Array} validPushTypes An array of valid push types(string)
  */
-function validateDeviceType(where) {
+function validatePushType(where, validPushTypes) {
   var where = where || {};
   var deviceTypeField = where.deviceType || {};
   var deviceTypes = [];
@@ -109,16 +133,11 @@ function validateMasterKey(req) {
   }
 }
 
-var router = new PromiseRouter();
-router.route('POST','/push', handlePushWithoutQueue);
-
-module.exports = {
-  router: router
-}
-
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-  module.exports.getQueryCondition = getQueryCondition;
-  module.exports.validateMasterKey = validateMasterKey;
-  module.exports.getExpirationTime = getExpirationTime;
-  module.exports.validateDeviceType = validateDeviceType;
+  PushController.getQueryCondition = getQueryCondition;
+  PushController.validateMasterKey = validateMasterKey;
+  PushController.getExpirationTime = getExpirationTime;
+  PushController.validatePushType = validatePushType;
 }
+
+export default PushController;
