@@ -134,3 +134,4 @@ You can also set up an app on Parse, providing the connection string for your mo
 ### Not supported
 
 * Push - We did not rebuild a new push delivery system for parse-server, but we are open to working on one together with the community.
+* `Parse.User.current()` or `Parse.Cloud.useMasterKey()` in cloud code. Instead of `Parse.User.current()` use `request.user` and instead of `Parse.Cloud.useMasterKey()` pass `useMasterKey: true` to each query. To make queries and saves as a specific used within Cloud Code, you need a session token, which you can pass in the request body, or find with a query.
