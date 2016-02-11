@@ -41,6 +41,6 @@ function getGlobalConfig(req) {
 }
 
 router.route('GET', '/config', getGlobalConfig);
-router.route('POST', '/config', updateGlobalConfig);
+router.route('PUT', '/config', updateGlobalConfig);
 
 module.exports = router;
