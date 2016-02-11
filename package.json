@@ -45,7 +45,7 @@
     "prepublish": "npm run build"
   },
   "engines": {
-    "node": ">=4.1"
+    "node": ">=4.3"
   },
   "bin": {
     "parse-server": "./bin/parse-server"
