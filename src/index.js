@@ -121,6 +121,9 @@ function ParseServer(args) {
   router.merge(require('./installations'));
   router.merge(require('./functions'));
   router.merge(require('./schemas'));
+  if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
+    router.merge(require('./global_config'));
+  }
 
   batch.mountOnto(router);
 
