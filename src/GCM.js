@@ -8,6 +8,10 @@ const GCMTimeToLiveMax = 4 * 7 * 24 * 60 * 60; // GCM allows a max of 4 weeks
 const GCMRegistrationTokensMax = 1000;
 
 function GCM(args) {
+  if (typeof args !== 'object' || !args.apiKey) {
+    throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+                          'GCM Configuration is invalid');
+  }
   this.sender = new gcm.Sender(args.apiKey);
 }
 
@@ -18,10 +22,6 @@ function GCM(args) {
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
 GCM.prototype.send = function(data, devices) {
-  if (devices.length >= GCMRegistrationTokensMax) {
-    throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                          'Too many registration tokens for a GCM request.');
-  }
   let pushId = randomstring.generate({
     length: 10,
     charset: 'alphanumeric'
@@ -37,21 +37,30 @@ GCM.prototype.send = function(data, devices) {
   let gcmPayload = generateGCMPayload(data.data, pushId, timeStamp, expirationTime);
   // Make and send gcm request
   let message = new gcm.Message(gcmPayload);
-  let promise = new Parse.Promise();
-  let registrationTokens = []
-  for (let device of devices) {
-    registrationTokens.push(device.deviceToken);
-  }
-  this.sender.send(message, { registrationTokens: registrationTokens }, 5, (error, response) => {
-    // TODO: Use the response from gcm to generate and save push report
-    // TODO: If gcm returns some deviceTokens are invalid, set tombstone for the installation
-    console.log('GCM request and response %j', {
-      request: message,
-      response: response
+
+  let sendPromises = [];
+  // For android, we can only have 1000 recepients per send, so we need to slice devices to
+  // chunk if necessary
+  let chunkDevices = sliceDevices(devices, GCMRegistrationTokensMax);
+  for (let chunkDevice of chunkDevices) {
+    let sendPromise = new Parse.Promise();
+    let registrationTokens = []
+    for (let device of chunkDevice) {
+      registrationTokens.push(device.deviceToken);
+    }
+    this.sender.send(message, { registrationTokens: registrationTokens }, 5, (error, response) => {
+      // TODO: Use the response from gcm to generate and save push report
+      // TODO: If gcm returns some deviceTokens are invalid, set tombstone for the installation
+      console.log('GCM request and response %j', {
+        request: message,
+        response: response
+      });
+      sendPromise.resolve();
     });
-    promise.resolve();
-  });
-  return promise;
+    sendPromises.push(sendPromise);
+  }
+
+  return Parse.Promise.when(sendPromises);
 }
 
 /**
@@ -62,7 +71,7 @@ GCM.prototype.send = function(data, devices) {
  * @param {Number|undefined} expirationTime A number whose format is the Unix Epoch or undefined
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
-let generateGCMPayload = function(coreData, pushId, timeStamp, expirationTime) {
+function generateGCMPayload(coreData, pushId, timeStamp, expirationTime) {
   let payloadData =  {
     'time': new Date(timeStamp).toISOString(),
     'push_id': pushId,
@@ -86,9 +95,22 @@ let generateGCMPayload = function(coreData, pushId, timeStamp, expirationTime) {
   return payload;
 }
 
-GCM.GCMRegistrationTokensMax = GCMRegistrationTokensMax;
+/**
+ * Slice a list of devices to several list of devices with fixed chunk size.
+ * @param {Array} devices An array of devices
+ * @param {Number} chunkSize The size of the a chunk
+ * @returns {Array} An array which contaisn several arries of devices with fixed chunk size
+ */
+function sliceDevices(devices, chunkSize) {
+  let chunkDevices = [];
+  while (devices.length > 0) {
+    chunkDevices.push(devices.splice(0, chunkSize));
+  }
+  return chunkDevices;
+}
 
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   GCM.generateGCMPayload = generateGCMPayload;
+  GCM.sliceDevices = sliceDevices;
 }
 module.exports = GCM;

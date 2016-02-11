@@ -9,12 +9,7 @@ const APNS = require('../../APNS');
 
 function ParsePushAdapter(pushConfig) {
   this.validPushTypes = ['ios', 'android'];
-  this.senders = {};
-
-  // Initialize senders
-  for (let validPushType of this.validPushTypes) {
-    this.senders[validPushType] = [];
-  }
+  this.senderMap = {};
 
   pushConfig = pushConfig || {};
   let pushTypes = Object.keys(pushConfig);
@@ -23,45 +18,15 @@ function ParsePushAdapter(pushConfig) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push to ' + pushTypes + ' is not supported');
     }
-
-    let typePushConfig = pushConfig[pushType];
-    let senderArgs = [];
-    // Since for ios, there maybe multiple cert/key pairs,
-    // typePushConfig can be an array.
-    if (Array.isArray(typePushConfig)) {
-      senderArgs = senderArgs.concat(typePushConfig);
-    } else if (typeof typePushConfig === 'object') {
-      senderArgs.push(typePushConfig);
-    } else {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Push Configuration is invalid');
-    }
-    for (let senderArg of senderArgs) {
-      let sender;
-      switch (pushType) {
-        case 'ios':
-          sender = new APNS(senderArg);
-          break;
-        case 'android':
-          sender = new GCM(senderArg);
-          break;
-      }
-      this.senders[pushType].push(sender);
+    switch (pushType) {
+      case 'ios':
+        this.senderMap[pushType] = new APNS(pushConfig[pushType]);
+        break;
+      case 'android':
+        this.senderMap[pushType] = new GCM(pushConfig[pushType]);
+        break;
     }
   }
-}
-
-/**
- * Get an array of push senders based on the push type.
- * @param {String} The push type
- * @returns {Array|Undefined} An array of push senders
- */
-ParsePushAdapter.prototype.getPushSenders = function(pushType) {
-  if (!this.senders[pushType]) {
-    console.log('No push sender for push type %s', pushType);
-    return [];
-  }
-  return this.senders[pushType];
 }
 
 /**
@@ -76,24 +41,18 @@ ParsePushAdapter.prototype.send = function(data, installations) {
   let deviceMap = classifyInstallation(installations, this.validPushTypes);
   let sendPromises = [];
   for (let pushType in deviceMap) {
-    let senders = this.getPushSenders(pushType);
-    // Since ios have dev/prod cert, a push type may have multiple senders
-    for (let sender of senders) {
-      let devices = deviceMap[pushType];
-      if (!sender || devices.length == 0) {
-        continue;
-      }
-      // For android, we can only have 1000 recepients per send
-      let chunkDevices = sliceDevices(pushType, devices, GCM.GCMRegistrationTokensMax);
-      for (let chunkDevice of chunkDevices) {
-        sendPromises.push(sender.send(data, chunkDevice));
-      }
+    let sender = this.senderMap[pushType];
+    if (!sender) {
+      console.log('Can not find sender for push type %s, %j', pushType, data);
+      continue;
     }
+    let devices = deviceMap[pushType];
+    sendPromises.push(sender.send(data, devices));
   }
   return Parse.Promise.when(sendPromises);
 }
 
-/**
+/**g
  * Classify the device token of installations based on its device type.
  * @param {Object} installations An array of installations
  * @param {Array} validPushTypes An array of valid push types(string)
@@ -113,7 +72,8 @@ function classifyInstallation(installations, validPushTypes) {
     let pushType = installation.deviceType;
     if (deviceMap[pushType]) {
       deviceMap[pushType].push({
-        deviceToken: installation.deviceToken
+        deviceToken: installation.deviceToken,
+        appIdentifier: installation.appIdentifier
       });
     } else {
       console.log('Unknown push type from installation %j', installation);
@@ -122,26 +82,7 @@ function classifyInstallation(installations, validPushTypes) {
   return deviceMap;
 }
 
-/**
- * Slice a list of devices to several list of devices with fixed chunk size.
- * @param {String} pushType The push type of the given device tokens
- * @param {Array} devices An array of devices
- * @param {Number} chunkSize The size of the a chunk
- * @returns {Array} An array which contaisn several arries of devices with fixed chunk size
- */
-function sliceDevices(pushType, devices, chunkSize) {
-  if (pushType !== 'android') {
-    return [devices];
-  }
-  let chunkDevices = [];
-  while (devices.length > 0) {
-    chunkDevices.push(devices.splice(0, chunkSize));
-  }
-  return chunkDevices;
-}
-
 if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   ParsePushAdapter.classifyInstallation = classifyInstallation;
-  ParsePushAdapter.sliceDevices = sliceDevices;
 }
 module.exports = ParsePushAdapter;
