@@ -41,29 +41,6 @@ function handleGet(req) {
   });
 }
 
-function handleLogout(req) {
-  // TODO: Verify correct behavior for logout without token
-  if (!req.info || !req.info.sessionToken) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'Session token required for logout.');
-  }
-  return rest.find(req.config, Auth.master(req.config), '_Session',
-                  { _session_token: req.info.sessionToken})
-  .then((response) => {
-    if (!response.results || response.results.length == 0) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-                            'Session token not found.');
-    }
-    return rest.del(req.config, Auth.master(req.config), '_Session',
-                    response.results[0].objectId);
-  }).then(() => {
-    return {
-      status: 200,
-      response: {}
-    };
-  });
-}
-
 function handleFind(req) {
   var options = {};
   if (req.body.skip) {
@@ -111,7 +88,6 @@ function handleMe(req) {
   });
 }
 
-router.route('POST', '/logout', handleLogout);
 router.route('POST','/sessions', handleCreate);
 router.route('GET','/sessions/me', handleMe);
 router.route('GET','/sessions/:objectId', handleGet);
