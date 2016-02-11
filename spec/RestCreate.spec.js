@@ -57,6 +57,50 @@ describe('rest create', () => {
       });
   });
 
+  it('handles anonymous user signup', (done) => {
+    var data1 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    var data2 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000002'
+        }
+      }
+    };
+    var username1;
+    rest.create(config, auth.nobody(config), '_User', data1)
+      .then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.create(config, auth.nobody(config), '_User', data1);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        username1 = r.response.username;
+        return rest.create(config, auth.nobody(config), '_User', data2);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.create(config, auth.nobody(config), '_User', data2);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(r.response.username).not.toEqual(username1);
+        done();
+      });
+  });
+
   it('test facebook signup and login', (done) => {
     var data = {
       authData: {
