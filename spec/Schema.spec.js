@@ -522,28 +522,31 @@ describe('Schema', () => {
   });
 
   it('can delete string fields and resave as number field', done => {
+    Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
     var p = Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.db, 'test_'))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
-    .then(obj1 => {
-      expect(obj1.get('aString')).toEqual(undefined);
-      obj1.set('aString', ['not a string', 'this time']);
-      obj1.save()
-      .then(obj1 => {
-        expect(obj1.get('aString')).toEqual(['not a string', 'this time']);
+    .then(obj1Reloaded => {
+      expect(obj1Reloaded.get('aString')).toEqual(undefined);
+      obj1Reloaded.set('aString', ['not a string', 'this time']);
+      obj1Reloaded.save()
+      .then(obj1reloadedAgain => {
+        expect(obj1reloadedAgain.get('aString')).toEqual(['not a string', 'this time']);
         return new Parse.Query('HasAllPOD').get(obj2.id);
       })
-      .then(obj2 => {
-        expect(obj2.get('aString')).toEqual(undefined);
+      .then(obj2reloaded => {
+        expect(obj2reloaded.get('aString')).toEqual(undefined);
         done();
+        Parse.Object.enableSingleInstance();
       });
     })
   });
 
   it('can delete pointer fields and resave as string', done => {
+    Parse.Object.disableSingleInstance();
     var obj1 = new Parse.Object('NewClass');
     obj1.save()
     .then(() => {
@@ -564,6 +567,7 @@ describe('Schema', () => {
     .then(obj1 => {
       expect(obj1.get('aPointer')).toEqual('Now a string');
       done();
+      Parse.Object.enableSingleInstance();
     });
   });
 });

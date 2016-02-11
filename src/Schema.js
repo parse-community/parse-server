@@ -471,8 +471,11 @@ Schema.prototype.deleteField = function(fieldName, className, database, prefix) 
             if (err) {
               reject(err);
             } else {
+              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ?
+                '_p_' + fieldName :
+                fieldName;
               return coll.update({}, {
-                "$unset": { [fieldName] : null },
+                "$unset": { [mongoFieldName] : null },
               }, {
                 multi: true,
               })
