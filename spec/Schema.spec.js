@@ -1,9 +1,24 @@
-// These tests check that the Schema operates correctly.
 var Config = require('../src/Config');
 var Schema = require('../src/Schema');
 var dd = require('deep-diff');
 
 var config = new Config('test');
+
+var hasAllPODobject = () => {
+  var obj = new Parse.Object('HasAllPOD');
+  obj.set('aNumber', 5);
+  obj.set('aString', 'string');
+  obj.set('aBool', true);
+  obj.set('aDate', new Date());
+  obj.set('aObject', {k1: 'value', k2: true, k3: 5});
+  obj.set('aArray', ['contents', true, 5]);
+  obj.set('aGeoPoint', new Parse.GeoPoint({latitude: 0, longitude: 0}));
+  obj.set('aFile', new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' }));
+  var objACL = new Parse.ACL();
+  objACL.setPublicWriteAccess(false);
+  obj.setACL(objACL);
+  return obj;
+};
 
 describe('Schema', () => {
   it('can validate one object', (done) => {
@@ -404,6 +419,155 @@ describe('Schema', () => {
       expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
       expect(error.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding geo2 when geo1 already exists.');
       done();
+    });
+  });
+
+  it('can check if a class exists', done => {
+    config.database.loadSchema()
+    .then(schema => {
+      return schema.addClassIfNotExists('NewClass', {})
+      .then(() => {
+        schema.hasClass('NewClass')
+        .then(hasClass => {
+          expect(hasClass).toEqual(true);
+          done();
+        })
+        .catch(fail);
+
+        schema.hasClass('NonexistantClass')
+        .then(hasClass => {
+          expect(hasClass).toEqual(false);
+          done();
+        })
+        .catch(fail);
+      })
+      .catch(error => {
+        fail('Couldn\'t create class');
+        fail(error);
+      });
+    })
+    .catch(error => fail('Couldn\'t load schema'));
+  });
+
+  it('refuses to delete fields from invalid class names', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('fieldName', 'invalid class name'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      done();
+    });
+  });
+
+  it('refuses to delete invalid fields', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('invalid field name', 'ValidClassName'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_KEY_NAME);
+      done();
+    });
+  });
+
+  it('refuses to delete the default fields', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('installationId', '_Installation'))
+    .catch(error => {
+      expect(error.code).toEqual(136);
+      expect(error.error).toEqual('field installationId cannot be changed');
+      done();
+    });
+  });
+
+  it('refuses to delete fields from nonexistant classes', done => {
+    config.database.loadSchema()
+    .then(schema => schema.deleteField('field', 'NoClass'))
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(error.error).toEqual('class NoClass does not exist');
+      done();
+    });
+  });
+
+  it('refuses to delete fields that dont exist', done => {
+    hasAllPODobject().save()
+    .then(() => config.database.loadSchema())
+    .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
+    .fail(error => {
+      expect(error.code).toEqual(255);
+      expect(error.error).toEqual('field missingField does not exist, cannot delete');
+      done();
+    });
+  });
+
+  it('drops related collection when deleting relation field', done => {
+    var obj1 = hasAllPODobject();
+    obj1.save()
+    .then(savedObj1 => {
+      var obj2 = new Parse.Object('HasPointersAndRelations');
+      obj2.set('aPointer', savedObj1);
+      var relation = obj2.relation('aRelation');
+      relation.add(obj1);
+      return obj2.save();
+    })
+    .then(() => {
+      config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+        expect(err).toEqual(null);
+        config.database.loadSchema()
+        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.db, 'test_'))
+        .then(() => config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+          expect(err).not.toEqual(null);
+          done();
+        }))
+      });
+    })
+  });
+
+  it('can delete string fields and resave as number field', done => {
+    Parse.Object.disableSingleInstance();
+    var obj1 = hasAllPODobject();
+    var obj2 = hasAllPODobject();
+    var p = Parse.Object.saveAll([obj1, obj2])
+    .then(() => config.database.loadSchema())
+    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.db, 'test_'))
+    .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
+    .then(obj1Reloaded => {
+      expect(obj1Reloaded.get('aString')).toEqual(undefined);
+      obj1Reloaded.set('aString', ['not a string', 'this time']);
+      obj1Reloaded.save()
+      .then(obj1reloadedAgain => {
+        expect(obj1reloadedAgain.get('aString')).toEqual(['not a string', 'this time']);
+        return new Parse.Query('HasAllPOD').get(obj2.id);
+      })
+      .then(obj2reloaded => {
+        expect(obj2reloaded.get('aString')).toEqual(undefined);
+        done();
+        Parse.Object.enableSingleInstance();
+      });
+    })
+  });
+
+  it('can delete pointer fields and resave as string', done => {
+    Parse.Object.disableSingleInstance();
+    var obj1 = new Parse.Object('NewClass');
+    obj1.save()
+    .then(() => {
+      obj1.set('aPointer', obj1);
+      return obj1.save();
+    })
+    .then(obj1 => {
+      expect(obj1.get('aPointer').id).toEqual(obj1.id);
+    })
+    .then(() => config.database.loadSchema())
+    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database.db, 'test_'))
+    .then(() => new Parse.Query('NewClass').get(obj1.id))
+    .then(obj1 => {
+      expect(obj1.get('aPointer')).toEqual(undefined);
+      obj1.set('aPointer', 'Now a string');
+      return obj1.save();
+    })
+    .then(obj1 => {
+      expect(obj1.get('aPointer')).toEqual('Now a string');
+      done();
+      Parse.Object.enableSingleInstance();
     });
   });
 });

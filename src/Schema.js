@@ -409,6 +409,88 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
   });
 };
 
+// Delete a field, and remove that data from all objects. This is intended
+// to remove unused fields, if other writers are writing objects that include
+// this field, the field may reappear. Returns a Promise that resolves with
+// no object on success, or rejects with { code, error } on failure.
+
+// Passing the database and prefix is necessary in order to drop relation collections
+// and remove fields from objects. Ideally the database would belong to
+// a database adapter and this fuction would close over it or access it via member.
+Schema.prototype.deleteField = function(fieldName, className, database, prefix) {
+  if (!classNameIsValid(className)) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_CLASS_NAME,
+      error: invalidClassNameMessage(className),
+    });
+  }
+
+  if (!fieldNameIsValid(fieldName)) {
+    return Promise.reject({
+      code: Parse.Error.INVALID_KEY_NAME,
+      error: 'invalid field name: ' + fieldName,
+    });
+  }
+
+  //Don't allow deleting the default fields.
+  if (!fieldNameIsValidForClass(fieldName, className)) {
+    return Promise.reject({
+      code: 136,
+      error: 'field ' + fieldName + ' cannot be changed',
+    });
+  }
+
+  return this.reload()
+  .then(schema => {
+    return schema.hasClass(className)
+    .then(hasClass => {
+      if (!hasClass) {
+        return Promise.reject({
+          code: Parse.Error.INVALID_CLASS_NAME,
+          error: 'class ' + className + ' does not exist',
+        });
+      }
+
+      if (!schema.data[className][fieldName]) {
+        return Promise.reject({
+          code: 255,
+          error: 'field ' + fieldName + ' does not exist, cannot delete',
+        });
+      }
+
+      if (schema.data[className][fieldName].startsWith('relation')) {
+        //For relations, drop the _Join table
+        return database.dropCollection(prefix + '_Join:' + fieldName + ':' + className)
+        //Save the _SCHEMA object
+        .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}));
+      } else {
+        //for non-relations, remove all the data. This is necessary to ensure that the data is still gone
+        //if they add the same field.
+        return new Promise((resolve, reject) => {
+          database.collection(prefix + className, (err, coll) => {
+            if (err) {
+              reject(err);
+            } else {
+              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ?
+                '_p_' + fieldName :
+                fieldName;
+              return coll.update({}, {
+                "$unset": { [mongoFieldName] : null },
+              }, {
+                multi: true,
+              })
+              //Save the _SCHEMA object
+              .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}))
+              .then(resolve)
+              .catch(reject);
+            }
+          });
+        });
+      }
+    });
+  });
+}
+
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
 function thenValidateField(schemaPromise, className, key, type) {
@@ -476,6 +558,13 @@ Schema.prototype.getExpectedType = function(className, key) {
   }
   return undefined;
 };
+
+// Checks if a given class is in the schema. Needs to load the
+// schema first, which is kinda janky. Hopefully we can refactor
+// and make this be a regular value.
+Schema.prototype.hasClass = function(className) {
+  return this.reload().then(newSchema => !!newSchema.data[className]);
+}
 
 // Helper function to check if a field is a pointer, returns true or false.
 Schema.prototype.isPointer = function(className, key) {
