@@ -133,6 +133,9 @@ function handleGet(req) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                             'Object not found.');
     } else {
+      if(req.params.className === "_User"){
+        delete response.results[0].sessionToken;
+      }
       return {response: response.results[0]};
     }
   });
