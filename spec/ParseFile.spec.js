@@ -101,8 +101,8 @@ describe('Parse.File testing', () => {
       }, (error, response, body) => {
         expect(error).toBe(null);
         var del_b = JSON.parse(body);
-        expect(response.statusCode).toEqual(400);
-        expect(del_b.code).toEqual(119);
+        expect(response.statusCode).toEqual(403);
+        expect(del_b.error).toMatch(/unauthorized/);
         // incorrect X-Parse-Master-Key header
         request.del({
           headers: {
@@ -114,8 +114,8 @@ describe('Parse.File testing', () => {
         }, (error, response, body) => {
           expect(error).toBe(null);
           var del_b2 = JSON.parse(body);
-          expect(response.statusCode).toEqual(400);
-          expect(del_b2.code).toEqual(119);
+          expect(response.statusCode).toEqual(403);
+          expect(del_b2.error).toMatch(/unauthorized/);
           done();
         });
       });

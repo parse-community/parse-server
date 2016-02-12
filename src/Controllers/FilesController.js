@@ -76,13 +76,6 @@ export class FilesController {
 
   deleteHandler() {
     return (req, res, next) => {
-      // enforce use of master key for file deletions
-      if(!req.auth.isMaster){
-        next(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-          'Master key required for file deletion.'));
-        return;
-      }
-
       this._filesAdapter.deleteFile(req.config, req.params.filename).then(() => {
         res.status(200);
         // TODO: return useful JSON here?
@@ -142,6 +135,7 @@ export class FilesController {
     router.delete('/files/:filename',
       Middlewares.allowCrossDomain,
       Middlewares.handleParseHeaders,
+      Middlewares.enforceMasterKeyAccess,
       this.deleteHandler()
     );
 
