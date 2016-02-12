@@ -38,8 +38,9 @@ The client keys used with Parse are no longer necessary with parse-server.  If y
 
 #### Advanced options:
 
-* filesAdapter - The default behavior (GridStore) can be changed by creating an adapter class (see `FilesAdapter.js`)
+* filesAdapter - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js))
 * databaseAdapter (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`)
+* loggerAdapter - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
 
 ---
 
