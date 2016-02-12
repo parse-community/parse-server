@@ -22,6 +22,7 @@ function handleCloudFunction(req) {
         params: req.body || {},
         master: req.auth && req.auth.isMaster,
         user: req.auth && req.auth.user,
+        installationId: req.info.installationId
       };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });

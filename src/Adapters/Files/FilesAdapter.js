@@ -14,6 +14,8 @@
 export class FilesAdapter {
   createFile(config, filename, data) { }
 
+  deleteFile(config, filename) { }
+
   getFileData(config, filename) { }
 
   getFileLocation(config, filename) { }

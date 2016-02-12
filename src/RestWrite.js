@@ -2,13 +2,12 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
-var crypto = require('crypto');
 var deepcopy = require('deepcopy');
-var rack = require('hat').rack();
 
 var Auth = require('./Auth');
 var cache = require('./cache');
 var Config = require('./Config');
+var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var facebook = require('./facebook');
 var Parse = require('parse/node');
@@ -57,7 +56,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     this.data.updatedAt = this.updatedAt;
     if (!this.query) {
       this.data.createdAt = this.updatedAt;
-      this.data.objectId = newStringId(10);
+      this.data.objectId = cryptoUtils.newObjectId();
     }
   }
 }
@@ -268,7 +267,7 @@ RestWrite.prototype.handleFacebookAuthData = function() {
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
       } else {
-        this.data.username = rack();
+        this.data.username = cryptoUtils.newToken();
       }
 
       // This FB auth does not already exist, so transform it to a
@@ -289,7 +288,7 @@ RestWrite.prototype.transformUser = function() {
   var promise = Promise.resolve();
 
   if (!this.query) {
-    var token = 'r:' + rack();
+    var token = 'r:' + cryptoUtils.newToken();
     this.storage['token'] = token;
     promise = promise.then(() => {
       var expiresAt = new Date();
@@ -335,7 +334,7 @@ RestWrite.prototype.transformUser = function() {
     // Check for username uniqueness
     if (!this.data.username) {
       if (!this.query) {
-        this.data.username = newStringId(25);
+        this.data.username = cryptoUtils.randomString(25);
       }
       return;
     }
@@ -428,7 +427,7 @@ RestWrite.prototype.handleSession = function() {
   }
 
   if (!this.query && !this.auth.isMaster) {
-    var token = 'r:' + rack();
+    var token = 'r:' + cryptoUtils.newToken();
     var expiresAt = new Date();
     expiresAt.setFullYear(expiresAt.getFullYear() + 1);
     var sessionData = {
@@ -720,21 +719,5 @@ RestWrite.prototype.location = function() {
 RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
-
-// Returns a unique string that's usable as an object or other id.
-function newStringId(size) {
-  var chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
-               'abcdefghijklmnopqrstuvwxyz' +
-               '0123456789');
-  var objectId = '';
-  var bytes = crypto.randomBytes(size);
-  for (var i = 0; i < bytes.length; ++i) {
-    // Note: there is a slight modulo bias, because chars length
-    // of 62 doesn't divide the number of all bytes (256) evenly.
-    // It is acceptable for our purposes.
-    objectId += chars[bytes.readUInt8(i) % chars.length];
-  }
-  return objectId;
-}
 
 module.exports = RestWrite;

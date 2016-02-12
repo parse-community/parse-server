@@ -51,12 +51,12 @@ export class InstallationsRouter extends ClassesRouter {
   }
 
   getExpressRouter() {
-    var router = new PromiseRouter();
-    router.route('GET','/installations', (req) => { return this.handleFind(req); });
-    router.route('GET','/installations/:objectId', (req) => { return this.handleGet(req); });
-    router.route('POST','/installations', (req) => { return this.handleCreate(req); });
-    router.route('PUT','/installations/:objectId', (req) => { return this.handleUpdate(req); });
-    router.route('DELETE','/installations/:objectId', (req) => { return this.handleDelete(req); });
+    let router = new PromiseRouter();
+    router.route('GET','/installations', req => { return this.handleFind(req); });
+    router.route('GET','/installations/:objectId', req => { return this.handleGet(req); });
+    router.route('POST','/installations', req => { return this.handleCreate(req); });
+    router.route('PUT','/installations/:objectId', req => { return this.handleUpdate(req); });
+    router.route('DELETE','/installations/:objectId', req => { return this.handleDelete(req); });
     return router;
   }
 }

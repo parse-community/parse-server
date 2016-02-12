@@ -4,11 +4,9 @@ import express from 'express';
 import mime from 'mime';
 import { Parse } from 'parse/node';
 import BodyParser from 'body-parser';
-import hat from 'hat';
 import * as Middlewares from '../middlewares';
 import Config from '../Config';
-
-const rack = hat.rack();
+import { randomHexString } from '../cryptoUtils';
 
 export class FilesController {
   constructor(filesAdapter) {
@@ -61,7 +59,7 @@ export class FilesController {
         extension = '.' + mime.extension(contentType);
       }
 
-      let filename = rack() + '_' + req.params.filename + extension;
+      let filename = randomHexString(32) + '_' + req.params.filename + extension;
       this._filesAdapter.createFile(req.config, filename, req.body).then(() => {
         res.status(201);
         var location = this._filesAdapter.getFileLocation(req.config, filename);
@@ -70,6 +68,19 @@ export class FilesController {
       }).catch((error) => {
         next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
           'Could not store file.'));
+      });
+    };
+  }
+
+  deleteHandler() {
+    return (req, res, next) => {
+      this._filesAdapter.deleteFile(req.config, req.params.filename).then(() => {
+        res.status(200);
+        // TODO: return useful JSON here?
+        res.end();
+      }).catch((error) => {
+        next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR,
+          'Could not delete file.'));
       });
     };
   }
@@ -117,6 +128,13 @@ export class FilesController {
       BodyParser.raw({type: '*/*', limit: '20mb'}),
       Middlewares.handleParseHeaders,
       this.createHandler()
+    );
+
+    router.delete('/files/:filename',
+      Middlewares.allowCrossDomain,
+      Middlewares.handleParseHeaders,
+      Middlewares.enforceMasterKeyAccess,
+      this.deleteHandler()
     );
 
     return router;

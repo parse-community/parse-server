@@ -56,6 +56,20 @@ export class S3Adapter extends FilesAdapter {
     });
   }
 
+  deleteFile(config, filename) {
+    return new Promise((resolve, reject) => {
+      let params = {
+        Key: this._bucketPrefix + filename
+      };
+      this._s3Client.deleteObject(params, (err, data) =>{
+        if(err !== null) {
+          return reject(err);
+        }
+        resolve(data);
+      });
+    });
+  }
+
   // Search for and return a file if found by filename
   // Returns a promise that succeeds with the buffer result from S3
   getFileData(config, filename) {
