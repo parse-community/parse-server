@@ -2,7 +2,7 @@
 
 const Parse = require('parse/node').Parse;
 const gcm = require('node-gcm');
-const randomstring = require('randomstring');
+const cryptoUtils = require('./cryptoUtils');
 
 const GCMTimeToLiveMax = 4 * 7 * 24 * 60 * 60; // GCM allows a max of 4 weeks
 const GCMRegistrationTokensMax = 1000;
@@ -22,10 +22,7 @@ function GCM(args) {
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
 GCM.prototype.send = function(data, devices) {
-  let pushId = randomstring.generate({
-    length: 10,
-    charset: 'alphanumeric'
-  });
+  let pushId = cryptoUtils.newObjectId();
   let timeStamp = Date.now();
   let expirationTime;
   // We handle the expiration_time convertion in push.js, so expiration_time is a valid date
