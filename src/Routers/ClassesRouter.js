@@ -51,6 +51,11 @@ export class ClassesRouter {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
+        
+        if(req.params.className === "_User"){
+          delete response.results[0].sessionToken;
+        }
+
         return { response: response.results[0] };
       });
   }
