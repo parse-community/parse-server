@@ -72,6 +72,9 @@ app.use('/parse', api);
 app.get('/', function(req, res) {
   res.status(200).send('Express is running here.');
 });
+// if you are migrating parse hosted webapps, remove the app.get('/ line above
+// set the correct absolute path to the public/index.html and uncomment below
+// app.use(express.static(__dirname + '/public'));
 
 app.listen(port, function() {
   console.log('parse-server-example running on port ' + port + '.');
