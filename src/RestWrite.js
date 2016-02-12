@@ -86,21 +86,15 @@ RestWrite.prototype.execute = function() {
 
 // Uses the Auth object to get the list of roles, adds the user id
 RestWrite.prototype.getUserAndRoleACL = function() {
-  if (this.auth.isMaster) {
+  if (this.auth.isMaster || !this.auth.user) {
     return Promise.resolve();
   }
-
-  this.runOptions.acl = ['*'];
-
-  if (this.auth.user) {
-    return this.auth.getUserRoles().then((roles) => {
-      roles.push(this.auth.user.id);
-      this.runOptions.acl = this.runOptions.acl.concat(roles);
-      return Promise.resolve();
-    });
-  }else{
+  return this.auth.getUserRoles().then((roles) => {
+    roles.push('*');
+    roles.push(this.auth.user.id);
+    this.runOptions.acl = roles;
     return Promise.resolve();
-  }
+  });
 };
 
 // Validates this operation against the schema.
@@ -176,11 +170,11 @@ RestWrite.prototype.validateAuthData = function() {
 
   var authData = this.data.authData;
   var anonData = this.data.authData.anonymous;
-  
+
   if (this.config.enableAnonymousUsers === true && (anonData === null ||
     (anonData && anonData.id))) {
     return this.handleAnonymousAuthData();
-  } 
+  }
 
   // Not anon, try other providers
   var providers = Object.keys(authData);
@@ -710,7 +704,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
-  
+
   if (this.className === '_Product' && this.data.download) {
     this.data.downloadName = this.data.download.name;
   }
@@ -735,7 +729,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL[this.data.objectId] = { read: true, write: true };
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
-    } 
+    }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then(() => {
