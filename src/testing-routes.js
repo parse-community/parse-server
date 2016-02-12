@@ -3,13 +3,13 @@
 var express = require('express'),
     cache = require('./cache'),
     middlewares = require('./middlewares'),
-    rack = require('hat').rack();
+    cryptoUtils = require('./cryptoUtils');
 
 var router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
-  var appId = rack();
+  var appId = cryptoUtils.randomHexString(32);
   cache.apps[appId] = {
     'collectionPrefix': appId + '_',
     'masterKey': 'master'

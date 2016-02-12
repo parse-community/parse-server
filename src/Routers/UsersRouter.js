@@ -1,6 +1,5 @@
 // These methods handle the User-related routes.
 
-import hat from 'hat';
 import deepcopy from 'deepcopy';
 
 import ClassesRouter from './ClassesRouter';
@@ -9,8 +8,7 @@ import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite from '../RestWrite';
-
-const rack = hat.rack();
+import { newToken } from '../cryptoUtils';
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -89,7 +87,7 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 
-        let token = 'r:' + rack();
+        let token = 'r:' + newToken();
         user.sessionToken = token;
         delete user.password;
 
