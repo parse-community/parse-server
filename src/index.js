@@ -22,6 +22,7 @@ import { ClassesRouter } from './Routers/ClassesRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { UsersRouter } from './Routers/UsersRouter';
 import { SessionsRouter } from './Routers/SessionsRouter';
+import { RolesRouter } from './Routers/RolesRouter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -133,7 +134,7 @@ function ParseServer(args) {
     new ClassesRouter().getExpressRouter(),
     new UsersRouter().getExpressRouter(),
     new SessionsRouter().getExpressRouter(),
-    require('./roles'),
+    new RolesRouter().getExpressRouter(),
     require('./analytics'),
     new InstallationsRouter().getExpressRouter(),
     require('./functions'),
