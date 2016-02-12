@@ -74,6 +74,19 @@ export class FilesController {
     };
   }
 
+  deleteHandler() {
+    return (req, res, next) => {
+      this._filesAdapter.deleteFile(req.config, req.params.filename).then(() => {
+        res.status(200);
+        // TODO: return useful JSON here?
+        res.end();
+      }).catch((error) => {
+        next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR,
+          'Could not delete file.'));
+      });
+    };
+  }
+
   /**
    * Find file references in REST-format object and adds the url key
    * with the current mount point and app id.
@@ -117,6 +130,13 @@ export class FilesController {
       BodyParser.raw({type: '*/*', limit: '20mb'}),
       Middlewares.handleParseHeaders,
       this.createHandler()
+    );
+
+    router.delete('/files/:filename',
+      Middlewares.allowCrossDomain,
+      Middlewares.handleParseHeaders,
+      Middlewares.enforceMasterKeyAccess,
+      this.deleteHandler()
     );
 
     return router;

@@ -178,15 +178,24 @@ var handleParseErrors = function(err, req, res, next) {
   }
 };
 
+function enforceMasterKeyAccess(req, res, next) {
+  if (!req.auth.isMaster) {
+    res.status(403);
+    res.end('{"error":"unauthorized: master key is required"}');
+    return;
+  }
+  next();
+}
+
 function invalidRequest(req, res) {
   res.status(403);
   res.end('{"error":"unauthorized"}');
 }
 
-
 module.exports = {
   allowCrossDomain: allowCrossDomain,
   allowMethodOverride: allowMethodOverride,
   handleParseErrors: handleParseErrors,
-  handleParseHeaders: handleParseHeaders
+  handleParseHeaders: handleParseHeaders,
+  enforceMasterKeyAccess: enforceMasterKeyAccess
 };
