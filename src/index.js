@@ -20,6 +20,7 @@ import { PushController } from './Controllers/PushController';
 
 import { ClassesRouter } from './Routers/ClassesRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
+import { UsersRouter } from './Routers/UsersRouter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -129,7 +130,7 @@ function ParseServer(args) {
 
   let routers = [
     new ClassesRouter().getExpressRouter(),
-    require('./users'),
+    new UsersRouter().getExpressRouter(),
     require('./sessions'),
     require('./roles'),
     require('./analytics'),
