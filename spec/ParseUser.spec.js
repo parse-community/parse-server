@@ -1358,6 +1358,25 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('retrieve user data from fetch, make sure the session token hasn\'t changed', (done) => {
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    var currentSessionToken = "";
+    Parse.Promise.as().then(function() {
+        return user.signUp();
+    }).then(function(){
+        currentSessionToken = user.getSessionToken();
+        return user.fetch();
+    }).then(function(u){
+        expect(currentSessionToken).toEqual(u.getSessionToken());
+        done();
+    }, function(error) {
+      ok(false, error);
+      done();
+    })
+  });
+
   it('user save should fail with invalid email', (done) => {
     var user = new Parse.User();
     user.set('username', 'teste');
