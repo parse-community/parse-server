@@ -24,6 +24,9 @@ import { UsersRouter } from './Routers/UsersRouter';
 import { SessionsRouter } from './Routers/SessionsRouter';
 import { RolesRouter } from './Routers/RolesRouter';
 
+import { FileLoggerAdapter } from './Adapters/Logger/FileLoggerAdapter';
+import { LoggerController } from './Controllers/LoggerController';
+
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -72,6 +75,9 @@ function ParseServer(args) {
     pushAdapter = new ParsePushAdapter(pushConfig)
   }
 
+  // Make logger adapter
+  let loggerAdapter = args.loggerAdapter || new FileLoggerAdapter();
+  
   if (args.databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
   }
@@ -139,7 +145,8 @@ function ParseServer(args) {
     new InstallationsRouter().getExpressRouter(),
     require('./functions'),
     require('./schemas'),
-    new PushController(pushAdapter).getExpressRouter()
+    new PushController(pushAdapter).getExpressRouter(),
+    new LoggerController(loggerAdapter).getExpressRouter()
   ];
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
