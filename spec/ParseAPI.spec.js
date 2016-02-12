@@ -1,7 +1,7 @@
 // A bunch of different tests are in here - it isn't very thematic.
 // It would probably be better to refactor them into different files.
 
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 
 describe('miscellaneous', function() {

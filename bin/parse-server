@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 var express = require('express');
-var ParseServer = require("../index").ParseServer;
+var ParseServer = require("../lib/index").ParseServer;
 
 var app = express();
 
@@ -21,7 +21,6 @@ if (process.env.PARSE_SERVER_OPTIONS) {
 	options.restAPIKey = process.env.PARSE_SERVER_REST_API_KEY;
 	options.dotNetKey = process.env.PARSE_SERVER_DOTNET_KEY;
 	options.javascriptKey = process.env.PARSE_SERVER_JAVASCRIPT_KEY;
-	options.dotNetKey = process.env.PARSE_SERVER_DOTNET_KEY;
 	options.masterKey = process.env.PARSE_SERVER_MASTER_KEY;
 	options.fileKey = process.env.PARSE_SERVER_FILE_KEY;
 	// Comma separated list of facebook app ids

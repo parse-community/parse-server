@@ -1,8 +1,8 @@
 {
   "name": "parse-server",
-  "version": "2.0.7",
+  "version": "2.0.8",
   "description": "An express module providing a Parse-compatible API server",
-  "main": "index.js",
+  "main": "lib/index.js",
   "repository": {
     "type": "git",
     "url": "https://github.com/ParsePlatform/parse-server"
@@ -11,34 +11,44 @@
   "dependencies": {
     "apn": "^1.7.5",
     "aws-sdk": "~2.2.33",
+    "babel-runtime": "^6.5.0",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.14.2",
     "deepcopy": "^0.6.1",
     "express": "^4.13.4",
-    "hat": "~0.0.3",
     "mime": "^1.3.4",
     "mongodb": "~2.1.0",
     "multer": "^1.1.0",
-    "parse": "^1.7.0",
-    "randomstring": "^1.1.3",
     "node-gcm": "^0.14.0",
-    "request": "^2.65.0"
+    "parse": "^1.7.0",
+    "request": "^2.65.0",
+    "winston": "^2.1.1"
   },
   "devDependencies": {
+    "babel-cli": "^6.5.1",
+    "babel-core": "^6.5.1",
+    "babel-istanbul": "^0.6.0",
+    "babel-preset-es2015": "^6.5.0",
+    "babel-register": "^6.5.1",
     "codecov": "^1.0.1",
+    "cross-env": "^1.0.7",
     "deep-diff": "^0.3.3",
-    "istanbul": "^0.4.2",
+    "gaze": "^0.5.2",
     "jasmine": "^2.3.2",
-    "mongodb-runner": "^3.1.15"
+    "mongodb-runner": "^3.1.15",
+    "nodemon": "^1.8.1"
   },
   "scripts": {
-    "pretest": "MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} mongodb-runner start",
-    "test": "NODE_ENV=test TESTING=1 ./node_modules/.bin/istanbul cover --include-all-sources -x **/spec/** ./node_modules/.bin/jasmine",
+    "dev": "npm run build && bin/dev",
+    "build": "./node_modules/.bin/babel src/ -d lib/",
+    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
+    "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node ./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/** ./node_modules/jasmine/bin/jasmine.js",
     "posttest": "mongodb-runner stop",
-    "start": "./bin/parse-server"
+    "start": "./bin/parse-server",
+    "prepublish": "npm run build"
   },
   "engines": {
-    "node": ">=4.1"
+    "node": ">=4.3"
   },
   "bin": {
     "parse-server": "./bin/parse-server"

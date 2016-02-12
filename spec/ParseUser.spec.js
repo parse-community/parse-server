@@ -6,7 +6,7 @@
 // Tests that involve sending password reset emails.
 
 var request = require('request');
-var passwordCrypto = require('../password');
+var passwordCrypto = require('../src/password');
 
 describe('Parse.User testing', () => {
   it("user sign up class method", (done) => {
@@ -61,6 +61,22 @@ describe('Parse.User testing', () => {
           }
         });
       }
+    });
+  });
+
+  it("user login with files", (done) => {
+    "use strict";
+
+    let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
+    file.save().then((file) => {
+      return Parse.User.signUp("asdf", "zxcv", { "file" : file });
+    }).then(() => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      let fileAgain = user.get('file');
+      ok(fileAgain.name());
+      ok(fileAgain.url());
+      done();
     });
   });
 
@@ -1575,6 +1591,28 @@ describe('Parse.User testing', () => {
       done();
     });
   });
+
+  it('ensure logout works', (done) => {
+    var user = null;
+    var sessionToken = null;
+
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp('log', 'out');
+    }).then((newUser) => {
+      user = newUser;
+      sessionToken = user.getSessionToken();
+      return Parse.User.logOut();
+    }).then(() => {
+      user.set('foo', 'bar');
+      return user.save(null, { sessionToken: sessionToken });
+    }).then(() => {
+      fail('Save should have failed.');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SESSION_MISSING);
+      done();
+    });
+  })
 
 });
 

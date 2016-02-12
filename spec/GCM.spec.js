@@ -1,6 +1,23 @@
-var GCM = require('../GCM');
+var GCM = require('../src/GCM');
 
 describe('GCM', () => {
+  it('can initialize', (done) => {
+    var args = {
+      apiKey: 'apiKey'
+    };
+    var gcm = new GCM(args);
+    expect(gcm.sender.key).toBe(args.apiKey);
+    done();
+  });
+
+  it('can throw on initializing with invalid args', (done) => {
+    var args = 123
+    expect(function() {
+      new GCM(args);
+    }).toThrow();
+    done();
+  });
+
   it('can generate GCM Payload without expiration time', (done) => {
     //Mock request data
     var data = {
@@ -90,7 +107,9 @@ describe('GCM', () => {
   });
 
   it('can send GCM request', (done) => {
-    var gcm = new GCM('apiKey');
+    var gcm = new GCM({
+      apiKey: 'apiKey'
+    });
     // Mock gcm sender
     var sender = {
       send: jasmine.createSpy('send')
@@ -104,34 +123,37 @@ describe('GCM', () => {
         'alert': 'alert'
       }
     }
-    // Mock registrationTokens
-    var registrationTokens = ['token'];
+    // Mock devices
+    var devices = [
+      {
+        deviceToken: 'token'
+      }
+    ];
 
-    var promise = gcm.send(data, registrationTokens);
+    gcm.send(data, devices);
     expect(sender.send).toHaveBeenCalled();
     var args = sender.send.calls.first().args;
     // It is too hard to verify message of gcm library, we just verify tokens and retry times
-    expect(args[1].registrationTokens).toEqual(registrationTokens);
+    expect(args[1].registrationTokens).toEqual(['token']);
     expect(args[2]).toEqual(5);
     done();
   });
 
-  it('can throw on sending when we have too many registration tokens', (done) => {
-    var gcm = new GCM('apiKey');
-    // Mock gcm sender
-    var sender = {
-      send: jasmine.createSpy('send')
-    };
-    gcm.sender = sender;
-    // Mock registrationTokens
-    var registrationTokens = [];
-    for (var i = 0; i <= 2000; i++) {
-      registrationTokens.push(i.toString());
-    }
+  it('can slice devices', (done) => {
+    // Mock devices
+    var devices = [makeDevice(1), makeDevice(2), makeDevice(3), makeDevice(4)];
 
-    expect(function() {
-      gcm.send({}, registrationTokens);
-    }).toThrow();
+    var chunkDevices = GCM.sliceDevices(devices, 3);
+    expect(chunkDevices).toEqual([
+      [makeDevice(1), makeDevice(2), makeDevice(3)],
+      [makeDevice(4)]
+    ]);
     done();
   });
+
+  function makeDevice(deviceToken) {
+    return {
+      deviceToken: deviceToken
+    };
+  }
 });
