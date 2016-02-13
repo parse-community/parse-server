@@ -80,7 +80,7 @@ Auth.prototype.getUserRoles = function() {
     return Promise.resolve(this.userRoles);
   }
   if (this.rolePromise) {
-    return rolePromise;
+    return this.rolePromise;
   }
   this.rolePromise = this._loadRoles();
   return this.rolePromise;
