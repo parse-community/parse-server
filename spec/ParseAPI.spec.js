@@ -129,6 +129,22 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('query without limit get default 100 records', function(done) {
+    var objects = [];
+    for (var i = 0; i < 150; i++) {
+      objects.push(new TestObject({name: 'name' + i}));
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      return new Parse.Query(TestObject).find();
+    }).then((results) => {
+      expect(results.length).toEqual(100);
+    done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
   it('basic saveAll', function(done) {
     var alpha = new TestObject({ letter: 'alpha' });
     var beta = new TestObject({ letter: 'beta' });
