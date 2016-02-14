@@ -30,6 +30,7 @@ OneSignalPushAdapter.prototype.getValidPushTypes = function() {
 }
 
 OneSignalPushAdapter.prototype.send = function(data, installations) {
+  console.log("Sending notification to "+installations.length+" devices.")
   let deviceMap = classifyInstallation(installations, this.validPushTypes);
 
   let sendPromises = [];
@@ -50,7 +51,9 @@ OneSignalPushAdapter.prototype.send = function(data, installations) {
 
 OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
 
-  let post = {};
+  data= data['data']
+
+  var post = {};
   if(data['badge']) {
     if(data['badge'] == "Increment") {
       post['ios_badgeType'] = 'Increase';
@@ -81,12 +84,12 @@ OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
   var tokenlength=tokens.length;
   var offset = 0
   // handle onesignal response. Start next batch if there's not an error.
-  let handleResponse = function(err) {
-    if (err) {
-      return promise.reject(err, tokens.slice(i, tokens.length()));
+  let handleResponse = function(wasSuccessful) {
+    if (!wasSuccessful) {
+      return promise.reject("OneSignal Error");
     }
 
-    if(offset => tokenlength) {
+    if(offset >= tokenlength) {
       promise.resolve()
     } else {
       this.sendNext();
@@ -94,7 +97,10 @@ OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
   }.bind(this)
 
   this.sendNext = function() {
-    post['include_android_reg_ids'] = tokens.slice(offset,offset+chunk);
+    post['include_ios_tokens'] = [];
+    tokens.slice(offset,offset+chunk).forEach(function(i) {
+      post['include_ios_tokens'].push(i['deviceToken'])
+    })
     offset+=chunk;
     this.sendToOneSignal(post, handleResponse);
   }.bind(this)
@@ -105,7 +111,9 @@ OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
 }
 
 OneSignalPushAdapter.prototype.sendToGCM = function(data,tokens) {
-  let post = {};
+  data= data['data']
+
+  var post = {};
   
   if(data['alert']) {
     post['contents'] = {en: data['alert']};
@@ -127,23 +135,27 @@ OneSignalPushAdapter.prototype.sendToGCM = function(data,tokens) {
   var tokenlength=tokens.length;
   var offset = 0
   // handle onesignal response. Start next batch if there's not an error.
-  let handleResponse = function(err) {
-    if (err) {
-      return promise.reject(err, tokens.slice(i, tokens.length()));
+  let handleResponse = function(wasSuccessful) {
+    if (!wasSuccessful) {
+      return promise.reject("OneSIgnal Error");
     }
 
-    if(offset => tokenlength) {
+    if(offset >= tokenlength) {
       promise.resolve()
     } else {
       this.sendNext();
     }
   }.bind(this);
 
-  this.sendNext = function() {
-    post['include_android_reg_ids'] = tokens.slice(offset,offset+chunk);;
+  this.sendNext = function() {    
+    post['include_android_reg_ids'] = [];
+    tokens.slice(offset,offset+chunk).forEach(function(i) {
+      post['include_android_reg_ids'].push(i['deviceToken'])
+    })
     offset+=chunk;
     this.sendToOneSignal(post, handleResponse);
-  }.bind(this);
+  }.bind(this)
+
 
   this.sendNext();
   return promise;
@@ -165,12 +177,21 @@ OneSignalPushAdapter.prototype.sendToOneSignal = function(data, cb) {
   data['app_id'] = this.OneSignalConfig['appId'];
 
   let request = this.https.request(options, function(res) {
-    cb(null);
+    if(res.statusCode < 299) {
+      cb(true);
+    } else {
+      console.log('OneSignal Error');
+      res.on('data', function(chunk) { 
+        console.log(chunk.toString())
+      });
+      cb(false)
+    }
   });
   request.on('error', function(e) {
-    cb(e);
+    console.log("Error connecting to OneSignal")
+    console.log(e);
+    cb(false);
   });
-  console.log(data);
   request.write(JSON.stringify(data))
   request.end();
 }
