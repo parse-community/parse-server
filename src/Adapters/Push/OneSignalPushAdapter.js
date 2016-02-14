@@ -4,11 +4,12 @@
 // for ios push.
 
 const Parse = require('parse/node').Parse;
+var deepcopy = require('deepcopy');
 
 function OneSignalPushAdapter(pushConfig) {
   this.https = require('https');
 
-  this.validPushTypes = ['ios', 'gcm','android'];
+  this.validPushTypes = ['ios', 'android'];
   this.senderMap = {};
 
   pushConfig = pushConfig || {};
@@ -17,7 +18,6 @@ function OneSignalPushAdapter(pushConfig) {
   this.OneSignalConfig['apiKey'] = pushConfig['oneSignalApiKey'];
   
   this.senderMap['ios'] = this.sendToAPNS.bind(this);
-  this.senderMap['gcm'] = this.sendToGCM.bind(this);
   this.senderMap['android'] = this.sendToGCM.bind(this);
 }
 
@@ -51,7 +51,7 @@ OneSignalPushAdapter.prototype.send = function(data, installations) {
 
 OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
 
-  data= data['data']
+  data= deepcopy(data['data']);
 
   var post = {};
   if(data['badge']) {
@@ -111,7 +111,7 @@ OneSignalPushAdapter.prototype.sendToAPNS = function(data,tokens) {
 }
 
 OneSignalPushAdapter.prototype.sendToGCM = function(data,tokens) {
-  data= data['data']
+  data= deepcopy(data['data']);
 
   var post = {};
   
