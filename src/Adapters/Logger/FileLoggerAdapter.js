@@ -3,7 +3,7 @@
 // Wrapper around Winston logging library with custom query
 // 
 // expected log entry to be in the shape of:
-// {"level":"info","message":"{ '0': 'Your Message' }","timestamp":"2016-02-04T05:59:27.412Z"}
+// {"level":"info","message":"Your Message","timestamp":"2016-02-04T05:59:27.412Z"}
 //
 import { LoggerAdapter } from './LoggerAdapter';
 import winston from 'winston';
