@@ -4,11 +4,9 @@ import express from 'express';
 import mime from 'mime';
 import { Parse } from 'parse/node';
 import BodyParser from 'body-parser';
-import hat from 'hat';
 import * as Middlewares from '../middlewares';
 import Config from '../Config';
-
-const rack = hat.rack();
+import { randomHexString } from '../cryptoUtils';
 
 export class FilesController {
   constructor(filesAdapter) {
@@ -61,7 +59,7 @@ export class FilesController {
         extension = '.' + mime.extension(contentType);
       }
 
-      let filename = rack() + '_' + req.params.filename + extension;
+      let filename = randomHexString(32) + '_' + req.params.filename + extension;
       this._filesAdapter.createFile(req.config, filename, req.body).then(() => {
         res.status(201);
         var location = this._filesAdapter.getFileLocation(req.config, filename);

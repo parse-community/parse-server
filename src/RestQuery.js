@@ -415,6 +415,11 @@ function includePath(config, auth, response, path) {
     for (var obj of includeResponse.results) {
       obj.__type = 'Object';
       obj.className = className;
+
+      if(className == "_User"){
+        delete obj.sessionToken;
+      }
+
       replace[obj.objectId] = obj;
     }
     var resp = {
