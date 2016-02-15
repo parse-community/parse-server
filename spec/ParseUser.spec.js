@@ -1606,7 +1606,9 @@ describe('Parse.User testing', () => {
     }).then(function(newUser) {
       fail('Session should have been invalidated');
       done();
-    }, function() {
+    }, function(err) {
+      expect(err.code).toBe(209);
+      expect(err.message).toBe('invalid session token');
       done();
     });
   });
