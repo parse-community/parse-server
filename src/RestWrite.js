@@ -150,8 +150,8 @@ RestWrite.prototype.validateAuthData = function() {
   var facebookData = this.data.authData.facebook;
   var anonData = this.data.authData.anonymous;
 
-  if (anonData === null ||
-    (anonData && anonData.id)) {
+  if (this.config.enableAnonymousUsers === true && (anonData === null ||
+    (anonData && anonData.id))) {
     return this.handleAnonymousAuthData();
   } else if (facebookData === null ||
     (facebookData && facebookData.id && facebookData.access_token)) {
