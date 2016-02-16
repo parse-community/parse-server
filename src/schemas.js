@@ -24,36 +24,10 @@ function classNameMismatchResponse(bodyClass, pathClass) {
   });
 }
 
-function mongoFieldTypeToSchemaAPIType(type) {
-  if (type[0] === '*') {
-    return {
-      type: 'Pointer',
-      targetClass: type.slice(1),
-    };
-  }
-  if (type.startsWith('relation<')) {
-    return {
-      type: 'Relation',
-      targetClass: type.slice('relation<'.length, type.length - 1),
-    };
-  }
-  switch (type) {
-    case 'number':   return {type: 'Number'};
-    case 'string':   return {type: 'String'};
-    case 'boolean':  return {type: 'Boolean'};
-    case 'date':     return {type: 'Date'};
-    case 'map':
-    case 'object':   return {type: 'Object'};
-    case 'array':    return {type: 'Array'};
-    case 'geopoint': return {type: 'GeoPoint'};
-    case 'file':     return {type: 'File'};
-  }
-}
-
 function mongoSchemaAPIResponseFields(schema) {
   var fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
   var response = fieldNames.reduce((obj, fieldName) => {
-    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
+    obj[fieldName] = Schema.mongoFieldTypeToSchemaAPIType(schema[fieldName])
     return obj;
   }, {});
   response.ACL = {type: 'ACL'};
@@ -131,17 +105,15 @@ function modifySchema(req) {
   }
 
   if (req.body.className && req.body.className != req.params.className) {
-    return classNameMismatchResponse(req.body.className, req.path.className);
+    return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  if (!req.body.fields) {
-    req.body.fields = {};
-  }
+  var submittedFields = req.body.fields || {};
+  var className = req.params.className;
 
   return req.config.database.loadSchema()
-  .then(schema => schema.hasClass(req.params.className))
-  .then(hasClass => {
-    if (!hasClass) {
+  .then(schema => {
+    if (!schema.data[className]) {
       return Promise.resolve({
         status: 400,
         response: {
@@ -150,6 +122,64 @@ function modifySchema(req) {
         }
       });
     }
+    var existingFields = schema.data[className];
+
+    for (var submittedFieldName in submittedFields) {
+      if (existingFields[submittedFieldName] && submittedFields[submittedFieldName].__op !== 'Delete') {
+        return Promise.resolve({
+          status: 400,
+          response: {
+            code: 255,
+            error: 'field ' + submittedFieldName + ' exists, cannot update',
+          }
+        });
+      }
+
+      if (!existingFields[submittedFieldName] && submittedFields[submittedFieldName].__op === 'Delete') {
+        return Promise.resolve({
+          status: 400,
+          response: {
+            code: 255,
+            error: 'field ' + submittedFieldName + ' does not exist, cannot delete',
+          }
+        });
+      }
+    }
+
+    var newSchema = Schema.buildMergedSchemaObject(existingFields, submittedFields);
+    var mongoObject = Schema.mongoSchemaFromFieldsAndClassName(newSchema, className);
+    if (!mongoObject.result) {
+      return Promise.resolve({
+        status: 400,
+        response: mongoObject,
+      });
+    }
+
+    // Finally we have checked to make sure the request is valid and we can start deleting fields.
+    // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
+    var deletionPromises = []
+    Object.keys(submittedFields).forEach(submittedFieldName => {
+      if (submittedFields[submittedFieldName].__op === 'Delete') {
+        var promise = req.config.database.connect()
+        .then(() => schema.deleteField(
+          submittedFieldName,
+          className,
+          req.config.database.db,
+          req.config.database.collectionPrefix
+        ));
+        deletionPromises.push(promise);
+      }
+    });
+
+    return Promise.all(deletionPromises)
+    .then(() => new Promise((resolve, reject) => {
+      schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err, docs) => {
+        if (err) {
+          reject(err);
+        }
+        resolve({ response: mongoSchemaToSchemaAPIResponse(mongoObject.result)});
+      })
+    }));
   });
 }
 

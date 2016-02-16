@@ -339,7 +339,7 @@ describe('schemas', () => {
     });
   });
 
-  it('rejects class name mis-matches', done => {
+  it('rejects class name mis-matches in put', done => {
     request.put({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -349,6 +349,7 @@ describe('schemas', () => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
       expect(body.error).toEqual('class name mismatch between WrongClassName and NewClass');
+      done();
     });
   });
 
@@ -370,12 +371,133 @@ describe('schemas', () => {
     });
   });
 
+  it('refuses to put to existing fields, even if it would not be a change', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aString: {type: 'String'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(400);
+        expect(body.code).toEqual(255);
+        expect(body.error).toEqual('field aString exists, cannot update');
+        done();
+      });
+    })
+  });
+
+  it('refuses to delete non-existant fields', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            nonExistantKey: {__op: "Delete"},
+          }
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(400);
+        expect(body.code).toEqual(255);
+        expect(body.error).toEqual('field nonExistantKey does not exist, cannot delete');
+        done();
+      });
+    });
+  });
+
+  it('refuses to add a geopoint to a class that already has one', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newGeo: {type: 'GeoPoint'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(400);
+        expect(body.code).toEqual(Parse.Error.INCORRECT_TYPE);
+        expect(body.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding newGeo when aGeoPoint already exists.');
+        done();
+      });
+    });
+  });
+
+  it('refuses to add two geopoints', done => {
+    var obj = new Parse.Object('NewClass');
+    obj.set('aString', 'aString');
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newGeo1: {type: 'GeoPoint'},
+            newGeo2: {type: 'GeoPoint'},
+          }
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(400);
+        expect(body.code).toEqual(Parse.Error.INCORRECT_TYPE);
+        expect(body.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding newGeo2 when newGeo1 already exists.');
+        done();
+      });
+    });
+  });
+
+  it('allows you to delete and add a geopoint in the same request', done => {
+    var obj = new Parse.Object('NewClass');
+    obj.set('geo1', new Parse.GeoPoint({latitude: 0, longitude: 0}));
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            geo2: {type: 'GeoPoint'},
+            geo1: {__op: 'Delete'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          "className": "NewClass",
+          "fields": {
+            "ACL": {"type": "ACL"},
+            "createdAt": {"type": "Date"},
+            "objectId": {"type": "String"},
+            "updatedAt": {"type": "Date"},
+            "geo2": {"type": "GeoPoint"},
+          }
+        })).toEqual(undefined);
+        done();
+      });
+    })
+  });
+
   it('put with no modifications returns all fields', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
       request.put({
-        url: 'http://localhost:8378/1/schemas/HasAllPOD'
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
         headers: masterKeyHeaders,
         json: true,
         body: {},
@@ -383,7 +505,7 @@ describe('schemas', () => {
         expect(body).toEqual(plainOldDataSchema);
         done();
       });
-    });
+    })
   });
 
   it('lets you add fields', done => {
@@ -403,16 +525,112 @@ describe('schemas', () => {
           }
         }
       }, (error, response, body) => {
-        expect(body).toEqual('blah');
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            "ACL": {"type": "ACL"},
+            "createdAt": {"type": "Date"},
+            "objectId": {"type": "String"},
+            "updatedAt": {"type": "Date"},
+            "newField": {"type": "String"},
+          },
+        })).toEqual(undefined);
         request.get({
           url: 'http://localhost:8378/1/schemas/NewClass',
           headers: masterKeyHeaders,
           json: true,
         }, (error, response, body) => {
-          expect(body).toEqual('blah');
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+              newField: {type: 'String'},
+            }
+          });
           done();
         });
       });
     })
+  });
+
+  it('lets you delete multiple fields and add fields', done => {
+    var obj1 = hasAllPODobject();
+    obj1.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aString: {__op: 'Delete'},
+            aNumber: {__op: 'Delete'},
+            aNewString: {type: 'String'},
+            aNewNumber: {type: 'Number'},
+            aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
+            aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
+          }
+        }
+      }, (error, response, body) => {
+        expect(body).toEqual({
+          className: 'HasAllPOD',
+          fields: {
+            //Default fields
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+            //Custom fields
+            aBool: {type: 'Boolean'},
+            aDate: {type: 'Date'},
+            aObject: {type: 'Object'},
+            aArray: {type: 'Array'},
+            aGeoPoint: {type: 'GeoPoint'},
+            aFile: {type: 'File'},
+            aNewNumber: {type: 'Number'},
+            aNewString: {type: 'String'},
+            aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
+            aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
+          }
+        });
+        var obj2 = new Parse.Object('HasAllPOD');
+        obj2.set('aNewPointer', obj1);
+        var relation = obj2.relation('aNewRelation');
+        relation.add(obj1);
+        obj2.save().then(done); //Just need to make sure saving works on the new object.
+      });
+    });
+  });
+
+  it('will not delete any fields if the additions are invalid', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            fakeNewField: {type: 'fake type'},
+            aString: {__op: 'Delete'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(body.code).toEqual(Parse.Error.INCORRECT_TYPE);
+        expect(body.error).toEqual('invalid field type: fake type');
+        request.get({
+          url: 'http://localhost:8378/1/schemas/HasAllPOD',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(response.body).toEqual(plainOldDataSchema);
+          done();
+        });
+      });
+    });
   });
 });
