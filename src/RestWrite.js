@@ -330,7 +330,7 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.password) {
       return;
     }
-    if (this.query) {
+    if (this.query && !this.auth.isMaster ) {
       this.storage['clearSessions'] = true;
     }
     return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
@@ -507,11 +507,6 @@ RestWrite.prototype.handleInstallation = function() {
   // We lowercase the installationId if present
   if (this.data.installationId) {
     this.data.installationId = this.data.installationId.toLowerCase();
-  }
-
-  if (this.data.deviceToken && this.data.deviceType == 'android') {
-    throw new Parse.Error(114,
-                          'deviceToken may not be set for deviceType android');
   }
 
   var promise = Promise.resolve();

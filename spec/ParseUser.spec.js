@@ -1606,7 +1606,30 @@ describe('Parse.User testing', () => {
     }).then(function(newUser) {
       fail('Session should have been invalidated');
       done();
-    }, function() {
+    }, function(err) {
+      expect(err.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(err.message).toBe('invalid session token');
+      done();
+    });
+  });
+  
+  it('test parse user become', (done) => {
+    var sessionToken = null;
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp("flessard", "folo",{'foo':1});
+    }).then(function(newUser) {
+      equal(Parse.User.current(), newUser);
+      sessionToken = newUser.getSessionToken();
+      ok(sessionToken);
+      newUser.set('foo',2);
+      return newUser.save();
+    }).then(function() {
+      return Parse.User.become(sessionToken);
+    }).then(function(newUser) {
+      equal(newUser.get('foo'), 2);
+      done();
+    }, function(e) {
+      fail('The session should still be valid');
       done();
     });
   });
