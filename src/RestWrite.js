@@ -671,6 +671,13 @@ RestWrite.prototype.runDatabaseOperation = function() {
         this.response.updatedAt = this.updatedAt;
       });
   } else {
+    // Set the default ACL for the new _User
+    if (!this.data.ACL && this.className === '_User') {
+      var ACL = {};
+      ACL[this.data.objectId] = { read: true, write: true };
+      ACL['*'] = { read: true, write: false };
+      this.data.ACL = ACL;
+    } 
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then(() => {
