@@ -20,6 +20,7 @@ function Config(applicationId, mount) {
   this.restAPIKey = cacheInfo.restAPIKey;
   this.fileKey = cacheInfo.fileKey;
   this.facebookAppIds = cacheInfo.facebookAppIds;
+  this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
 
   this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
   this.filesController = cacheInfo.filesController;
