@@ -55,21 +55,6 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   case '_wperm':
     return {key: key, value: restValue};
     break;
-  // case 'authData.anonymous.id':
-  //   if (options.query) {
-  //     return {key: '_auth_data_anonymous.id', value: restValue};
-  //   }
-  //   throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-  //                         'can only query on ' + key);
-  //   break;
-  // case 'authData.facebook.id':
-  //   if (options.query) {
-  //     // Special-case auth data.
-  //     return {key: '_auth_data_facebook.id', value: restValue};
-  //   }
-  //   throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-  //                         'can only query on ' + key);
-  //   break;
   case '$or':
     if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
