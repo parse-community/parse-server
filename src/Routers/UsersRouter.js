@@ -23,7 +23,6 @@ export class UsersRouter extends ClassesRouter {
 
   handleCreate(req) {
     let data = deepcopy(req.body);
-    data.installationId = req.info.installationId;
     req.body = data;
     req.params.className = '_User';
     return super.handleCreate(req);
