@@ -133,26 +133,6 @@ describe('Installations', () => {
     });
   });
 
-  it('fails for android with device token', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var device = 'android';
-    var input = {
-      'installationId': installId,
-      'deviceType': device,
-      'deviceToken': t,
-      'channels': ['foo', 'bar']
-    };
-    rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      fail('Should not have been able to create an Installation.');
-      done();
-    }).catch((error) => {
-      expect(error.code).toEqual(114);
-      done();
-    });
-  });
-
   it('fails for android with missing type', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var input = {
