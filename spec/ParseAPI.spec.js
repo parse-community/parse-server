@@ -587,6 +587,35 @@ describe('miscellaneous', function() {
       done();
     });
   });
+  
+  it('test cloud function query parameters', (done) => {
+    Parse.Cloud.define('echoParams', (req, res) => {
+      res.success(req.params);
+    });
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
+      qs: {
+        option: 1,
+        other: 2
+      },
+      body: '{"foo":"bar", "other": 1}'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var res = JSON.parse(body).result;
+      expect(res.option).toEqual('1');
+      // Make sure query string params override body params
+      expect(res.other).toEqual('2');
+      expect(res.foo).toEqual("bar");
+      delete Parse.Cloud.Functions['echoParams'];
+      done();
+    });
+  });
 
   it('test cloud function parameter validation success', (done) => {
     // Register a function with validation
