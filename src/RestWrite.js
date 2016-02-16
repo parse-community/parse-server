@@ -28,7 +28,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
   this.className = className;
   this.storage = {};
   this.runOptions = {
-    acl:['*']
+    acl:[]
   };
 
   if (!query && data.objectId) {
@@ -95,14 +95,21 @@ RestWrite.prototype.execute = function() {
 
 // Uses the Auth object to get the list of roles, adds the user id
 RestWrite.prototype.getUserAndRoleACL = function() {
-  if (this.auth.isMaster || !this.auth.user) {
+  if (this.auth.isMaster) {
     return Promise.resolve();
   }
-  return this.auth.getUserRoles().then((roles) => {
-    roles.push(this.auth.user.id);
-    this.runOptions.acl = this.runOptions.acl.concat(roles);
+
+  this.runOptions.acl.push("*");
+
+  if( this.auth.user ){
+    return this.auth.getUserRoles().then((roles) => {
+      roles.push(this.auth.user.id);
+      this.runOptions.acl = this.runOptions.acl.concat(roles);
+      return Promise.resolve();
+    });
+  }else{
     return Promise.resolve();
-  });
+  }
 };
 
 // Validates this operation against the schema.
