@@ -306,7 +306,7 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.password) {
       return;
     }
-    if (this.query) {
+    if (this.query && !this.auth.isMaster ) {
       this.storage['clearSessions'] = true;
     }
     return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
