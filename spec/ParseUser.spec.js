@@ -8,6 +8,20 @@
 var request = require('request');
 var passwordCrypto = require('../src/password');
 
+function verifyACL(user) {
+  const ACL = user.getACL();
+  expect(ACL.getReadAccess(user)).toBe(true);
+  expect(ACL.getWriteAccess(user)).toBe(true);
+  expect(ACL.getPublicReadAccess()).toBe(true);
+  expect(ACL.getPublicWriteAccess()).toBe(false);
+  const perms = ACL.permissionsById;
+  expect(Object.keys(perms).length).toBe(2);
+  expect(perms[user.id].read).toBe(true);
+  expect(perms[user.id].write).toBe(true);
+  expect(perms['*'].read).toBe(true);
+  expect(perms['*'].write).not.toBe(true);
+}
+
 describe('Parse.User testing', () => {
   it("user sign up class method", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
@@ -57,6 +71,7 @@ describe('Parse.User testing', () => {
         Parse.User.logIn("asdf", "zxcv", {
           success: function(user) {
             equal(user.get("username"), "asdf");
+            verifyACL(user);
             done();
           }
         });
@@ -1352,7 +1367,7 @@ describe('Parse.User testing', () => {
         var b = JSON.parse(body);
         expect(b.results.length).toEqual(1);
         var user = b.results[0];
-        expect(Object.keys(user).length).toEqual(6);
+        expect(Object.keys(user).length).toEqual(7);
         done();
       });
     });
