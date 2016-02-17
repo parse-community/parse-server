@@ -1,6 +1,6 @@
-<img src="http://parse.com/assets/svgs/parse-infinity.svg" alt="Parse logo" height="70"/>
+![Parse Server logo](.github/parse-server-logo.png?raw=true)
 
-## Parse Server
+## Open Source Parse API Server
 
 [![Build Status](https://img.shields.io/travis/ParsePlatform/parse-server/master.svg?style=flat)](https://travis-ci.org/ParsePlatform/parse-server)
 [![Coverage Status](https://img.shields.io/codecov/c/github/ParsePlatform/parse-server/master.svg)](https://codecov.io/github/ParsePlatform/parse-server?branch=master)
@@ -18,14 +18,9 @@ Documentation for Parse Server is available in the [wiki](https://github.com/Par
 
 If you're interested in developing for Parse Server, the [Development guide](https://github.com/ParsePlatform/parse-server/wiki/Development-Guide) will help you get set up.
 
-### Example Project
-
-Check out the [parse-server-example project](https://github.com/ParsePlatform/parse-server-example) repository for an example of a Node.js application that uses the parse-server module on Express.
-
 ### Migration Guide
 
-Migrate your existing Parse apps to your own Parse Server. The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. Learn more in the [Migration guide](https://github.com/ParsePlatform/parse-server/wiki/Migrating-an-Existing-Parse-App).
-
+The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. Learn more in the [Migration guide](https://github.com/ParsePlatform/parse-server/wiki/Migrating-an-Existing-Parse-App).
 
 
 ---
