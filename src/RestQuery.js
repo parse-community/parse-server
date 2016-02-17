@@ -377,7 +377,11 @@ RestQuery.prototype.handleInclude = function() {
       this.include = this.include.slice(1);
       return this.handleInclude();
     });
+  } else if (this.include.length > 0) {
+    this.include = this.include.slice(1);
+    return this.handleInclude();
   }
+  
   return pathResponse;
 };
 
