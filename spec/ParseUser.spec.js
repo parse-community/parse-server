@@ -8,6 +8,20 @@
 var request = require('request');
 var passwordCrypto = require('../src/password');
 
+function verifyACL(user) {
+  const ACL = user.getACL();
+  expect(ACL.getReadAccess(user)).toBe(true);
+  expect(ACL.getWriteAccess(user)).toBe(true);
+  expect(ACL.getPublicReadAccess()).toBe(true);
+  expect(ACL.getPublicWriteAccess()).toBe(false);
+  const perms = ACL.permissionsById;
+  expect(Object.keys(perms).length).toBe(2);
+  expect(perms[user.id].read).toBe(true);
+  expect(perms[user.id].write).toBe(true);
+  expect(perms['*'].read).toBe(true);
+  expect(perms['*'].write).not.toBe(true);
+}
+
 describe('Parse.User testing', () => {
   it("user sign up class method", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
@@ -57,6 +71,7 @@ describe('Parse.User testing', () => {
         Parse.User.logIn("asdf", "zxcv", {
           success: function(user) {
             equal(user.get("username"), "asdf");
+            verifyACL(user);
             done();
           }
         });
@@ -816,9 +831,11 @@ describe('Parse.User testing', () => {
   // server-side.
   var getMockFacebookProvider = function() {
     return {
-      userId: "8675309",
-      authToken: "jenny",
-      expiration: new Date().toJSON(),
+      authData: {
+        id: "8675309",
+        access_token: "jenny",
+        expiration_date: new Date().toJSON(),
+      },
       shouldError: false,
       loggedOut: false,
       synchronizedUserId: null,
@@ -831,11 +848,7 @@ describe('Parse.User testing', () => {
         } else if (this.shouldCancel) {
           options.error(this, null);
         } else {
-          options.success(this, {
-            id: this.userId,
-            access_token: this.authToken,
-            expiration_date: this.expiration
-          });
+          options.success(this, this.authData);
         }
       },
       restoreAuthentication: function(authData) {
@@ -874,13 +887,14 @@ describe('Parse.User testing', () => {
         ok(model instanceof Parse.User, "Model should be a Parse.User");
         strictEqual(Parse.User.current(), model);
         ok(model.extended(), "Should have used subclass.");
-        strictEqual(provider.userId, provider.synchronizedUserId);
-        strictEqual(provider.authToken, provider.synchronizedAuthToken);
-        strictEqual(provider.expiration, provider.synchronizedExpiration);
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
         done();
       },
       error: function(model, error) {
+        console.error(model, error);
         ok(false, "linking should have worked");
         done();
       }
@@ -895,9 +909,9 @@ describe('Parse.User testing', () => {
         ok(model instanceof Parse.User, "Model should be a Parse.User");
         strictEqual(Parse.User.current(), model);
         ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.userId, provider.synchronizedUserId);
-        strictEqual(provider.authToken, provider.synchronizedAuthToken);
-        strictEqual(provider.expiration, provider.synchronizedExpiration);
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
 
         Parse.User.logOut();
@@ -910,20 +924,22 @@ describe('Parse.User testing', () => {
                "Model should be a Parse.User");
             ok(innerModel === Parse.User.current(),
                "Returned model should be the current user");
-            ok(provider.userId === provider.synchronizedUserId);
-            ok(provider.authToken === provider.synchronizedAuthToken);
+            ok(provider.authData.id === provider.synchronizedUserId);
+            ok(provider.authData.access_token === provider.synchronizedAuthToken);
             ok(innerModel._isLinked("facebook"),
                "User should be linked to facebook");
             ok(innerModel.existed(), "User should not be newly-created");
             done();
           },
           error: function(model, error) {
+            fail(error);
             ok(false, "LogIn should have worked");
             done();
           }
         });
       },
       error: function(model, error) {
+        console.error(model, error);
         ok(false, "LogIn should have worked");
         done();
       }
@@ -972,9 +988,9 @@ describe('Parse.User testing', () => {
           success: function(model) {
             ok(model instanceof Parse.User, "Model should be a Parse.User");
             strictEqual(Parse.User.current(), model);
-            strictEqual(provider.userId, provider.synchronizedUserId);
-            strictEqual(provider.authToken, provider.synchronizedAuthToken);
-            strictEqual(provider.expiration, provider.synchronizedExpiration);
+            strictEqual(provider.authData.id, provider.synchronizedUserId);
+            strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+            strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
             ok(model._isLinked("facebook"), "User should be linked");
             done();
           },
@@ -1005,9 +1021,9 @@ describe('Parse.User testing', () => {
           success: function(model) {
             ok(model instanceof Parse.User, "Model should be a Parse.User");
             strictEqual(Parse.User.current(), model);
-            strictEqual(provider.userId, provider.synchronizedUserId);
-            strictEqual(provider.authToken, provider.synchronizedAuthToken);
-            strictEqual(provider.expiration, provider.synchronizedExpiration);
+            strictEqual(provider.authData.id, provider.synchronizedUserId);
+            strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+            strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
             ok(model._isLinked("facebook"), "User should be linked.");
             var user2 = new Parse.User();
             user2.set("username", "testLinkWithProviderToAlreadyLinkedUser2");
@@ -1108,9 +1124,9 @@ describe('Parse.User testing', () => {
         ok(model instanceof Parse.User, "Model should be a Parse.User.");
         strictEqual(Parse.User.current(), model);
         ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.userId, provider.synchronizedUserId);
-        strictEqual(provider.authToken, provider.synchronizedAuthToken);
-        strictEqual(provider.expiration, provider.synchronizedExpiration);
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook.");
 
         model._unlinkFrom("facebook", {
@@ -1144,9 +1160,9 @@ describe('Parse.User testing', () => {
         ok(model instanceof Parse.User, "Model should be a Parse.User");
         strictEqual(Parse.User.current(), model);
         ok(model.extended(), "Should have used the subclass.");
-        strictEqual(provider.userId, provider.synchronizedUserId);
-        strictEqual(provider.authToken, provider.synchronizedAuthToken);
-        strictEqual(provider.expiration, provider.synchronizedExpiration);
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
 
         model._unlinkFrom("facebook", {
@@ -1356,6 +1372,25 @@ describe('Parse.User testing', () => {
         done();
       });
     });
+  });
+
+  it('retrieve user data from fetch, make sure the session token hasn\'t changed', (done) => {
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    var currentSessionToken = "";
+    Parse.Promise.as().then(function() {
+        return user.signUp();
+    }).then(function(){
+        currentSessionToken = user.getSessionToken();
+        return user.fetch();
+    }).then(function(u){
+        expect(currentSessionToken).toEqual(u.getSessionToken());
+        done();
+    }, function(error) {
+      ok(false, error);
+      done();
+    })
   });
 
   it('user save should fail with invalid email', (done) => {
@@ -1587,7 +1622,30 @@ describe('Parse.User testing', () => {
     }).then(function(newUser) {
       fail('Session should have been invalidated');
       done();
-    }, function() {
+    }, function(err) {
+      expect(err.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(err.message).toBe('invalid session token');
+      done();
+    });
+  });
+  
+  it('test parse user become', (done) => {
+    var sessionToken = null;
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp("flessard", "folo",{'foo':1});
+    }).then(function(newUser) {
+      equal(Parse.User.current(), newUser);
+      sessionToken = newUser.getSessionToken();
+      ok(sessionToken);
+      newUser.set('foo',2);
+      return newUser.save();
+    }).then(function() {
+      return Parse.User.become(sessionToken);
+    }).then(function(newUser) {
+      equal(newUser.get('foo'), 2);
+      done();
+    }, function(e) {
+      fail('The session should still be valid');
       done();
     });
   });

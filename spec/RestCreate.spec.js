@@ -100,6 +100,25 @@ describe('rest create', () => {
         done();
       });
   });
+  
+  it('handles no anonymous users config', (done) => {
+     var NoAnnonConfig = Object.assign({}, config, {enableAnonymousUsers: false});
+     var data1 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    rest.create(NoAnnonConfig, auth.nobody(NoAnnonConfig), '_User', data1).then(() => {
+      fail("Should throw an error");
+      done();
+    }, (err) => {
+      expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
+      expect(err.message).toEqual('This authentication method is unsupported.');
+      done();
+    })
+  });
 
   it('test facebook signup and login', (done) => {
     var data = {

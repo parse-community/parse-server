@@ -104,7 +104,9 @@ function ParseServer(args) {
     restAPIKey: args.restAPIKey || '',
     fileKey: args.fileKey || 'invalid-file-key',
     facebookAppIds: args.facebookAppIds || [],
-    filesController: filesController
+    filesController: filesController,
+    enableAnonymousUsers: args.enableAnonymousUsers || true,
+    oauth: args.oauth || {},
   };
 
   // To maintain compatibility. TODO: Remove in v2.1

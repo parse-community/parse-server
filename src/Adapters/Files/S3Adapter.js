@@ -88,7 +88,7 @@ export class S3Adapter extends FilesAdapter {
   // The location is the direct S3 link if the option is set, otherwise we serve the file through parse-server
   getFileLocation(config, filename) {
     if (this._directAccess) {
-      return ('https://' + this.bucket + '._s3Client.amazonaws.com' + '/' + this._bucketPrefix + filename);
+      return `https://${this._bucket}.s3.amazonaws.com/${this._bucketPrefix + filename}`;
     }
     return (config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename));
   }
