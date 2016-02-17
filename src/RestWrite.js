@@ -150,8 +150,8 @@ RestWrite.prototype.validateAuthData = function() {
   var facebookData = this.data.authData.facebook;
   var anonData = this.data.authData.anonymous;
 
-  if (anonData === null ||
-    (anonData && anonData.id)) {
+  if (this.config.enableAnonymousUsers === true && (anonData === null ||
+    (anonData && anonData.id))) {
     return this.handleAnonymousAuthData();
   } else if (facebookData === null ||
     (facebookData && facebookData.id && facebookData.access_token)) {
@@ -306,7 +306,7 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.password) {
       return;
     }
-    if (this.query) {
+    if (this.query && !this.auth.isMaster ) {
       this.storage['clearSessions'] = true;
     }
     return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
@@ -485,11 +485,6 @@ RestWrite.prototype.handleInstallation = function() {
     this.data.installationId = this.data.installationId.toLowerCase();
   }
 
-  if (this.data.deviceToken && this.data.deviceType == 'android') {
-    throw new Parse.Error(114,
-                          'deviceToken may not be set for deviceType android');
-  }
-
   var promise = Promise.resolve();
 
   if (this.query && this.query.objectId) {
@@ -660,6 +655,13 @@ RestWrite.prototype.runDatabaseOperation = function() {
         this.response.updatedAt = this.updatedAt;
       });
   } else {
+    // Set the default ACL for the new _User
+    if (!this.data.ACL && this.className === '_User') {
+      var ACL = {};
+      ACL[this.data.objectId] = { read: true, write: true };
+      ACL['*'] = { read: true, write: false };
+      this.data.ACL = ACL;
+    } 
     // Run a create
     return this.config.database.create(this.className, this.data, options)
       .then(() => {

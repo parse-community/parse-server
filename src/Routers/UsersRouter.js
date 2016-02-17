@@ -23,7 +23,6 @@ export class UsersRouter extends ClassesRouter {
 
   handleCreate(req) {
     let data = deepcopy(req.body);
-    data.installationId = req.info.installationId;
     req.body = data;
     req.params.className = '_User';
     return super.handleCreate(req);
@@ -41,8 +40,7 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-        'Object not found.');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
     }
     return rest.find(req.config, Auth.master(req.config), '_Session',
       { _session_token: req.info.sessionToken },
@@ -51,8 +49,7 @@ export class UsersRouter extends ClassesRouter {
         if (!response.results ||
           response.results.length == 0 ||
           !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.');
+          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
         } else {
           let user = response.results[0].user;
           return { response: user };
@@ -145,10 +142,10 @@ export class UsersRouter extends ClassesRouter {
     let router = new PromiseRouter();
     router.route('GET', '/users', req => { return this.handleFind(req); });
     router.route('POST', '/users', req => { return this.handleCreate(req); });
+    router.route('GET', '/users/me', req => { return this.handleMe(req); });
     router.route('GET', '/users/:objectId', req => { return this.handleGet(req); });
     router.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
     router.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
-    router.route('GET', '/users/me', req => { return this.handleMe(req); });
     router.route('GET', '/login', req => { return this.handleLogIn(req); });
     router.route('POST', '/logout', req => { return this.handleLogOut(req); });
     router.route('POST', '/requestPasswordReset', () => {

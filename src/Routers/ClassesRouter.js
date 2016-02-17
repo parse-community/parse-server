@@ -12,6 +12,8 @@ export class ClassesRouter {
     }
     if (body.limit) {
       options.limit = Number(body.limit);
+    } else {
+      options.limit = Number(100);
     }
     if (body.order) {
       options.order = String(body.order);

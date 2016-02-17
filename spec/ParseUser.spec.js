@@ -8,6 +8,20 @@
 var request = require('request');
 var passwordCrypto = require('../src/password');
 
+function verifyACL(user) {
+  const ACL = user.getACL();
+  expect(ACL.getReadAccess(user)).toBe(true);
+  expect(ACL.getWriteAccess(user)).toBe(true);
+  expect(ACL.getPublicReadAccess()).toBe(true);
+  expect(ACL.getPublicWriteAccess()).toBe(false);
+  const perms = ACL.permissionsById;
+  expect(Object.keys(perms).length).toBe(2);
+  expect(perms[user.id].read).toBe(true);
+  expect(perms[user.id].write).toBe(true);
+  expect(perms['*'].read).toBe(true);
+  expect(perms['*'].write).not.toBe(true);
+}
+
 describe('Parse.User testing', () => {
   it("user sign up class method", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
@@ -57,6 +71,7 @@ describe('Parse.User testing', () => {
         Parse.User.logIn("asdf", "zxcv", {
           success: function(user) {
             equal(user.get("username"), "asdf");
+            verifyACL(user);
             done();
           }
         });
@@ -1606,7 +1621,30 @@ describe('Parse.User testing', () => {
     }).then(function(newUser) {
       fail('Session should have been invalidated');
       done();
-    }, function() {
+    }, function(err) {
+      expect(err.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
+      expect(err.message).toBe('invalid session token');
+      done();
+    });
+  });
+  
+  it('test parse user become', (done) => {
+    var sessionToken = null;
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp("flessard", "folo",{'foo':1});
+    }).then(function(newUser) {
+      equal(Parse.User.current(), newUser);
+      sessionToken = newUser.getSessionToken();
+      ok(sessionToken);
+      newUser.set('foo',2);
+      return newUser.save();
+    }).then(function() {
+      return Parse.User.become(sessionToken);
+    }).then(function(newUser) {
+      equal(newUser.get('foo'), 2);
+      done();
+    }, function(e) {
+      fail('The session should still be valid');
       done();
     });
   });
