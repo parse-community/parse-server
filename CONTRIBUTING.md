@@ -12,7 +12,4 @@ We really want Parse to be yours, to see it grow and thrive in the open source c
 
 ##### Code of Conduct
 
-This project adheres to the [Open Code of Conduct][code-of-conduct]. By participating, you are expected to honor this code.
-[code-of-conduct]: http://todogroup.org/opencodeofconduct/#Parse Server/fjm@fb.com
-
-
+This project adheres to the [Open Code of Conduct](http://todogroup.org/opencodeofconduct/#Parse Server/fjm@fb.com). By participating, you are expected to honor this code.
