@@ -23,9 +23,14 @@ export class Config {
     this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
+    
+    this.verifyUserEmails = cacheInfo.verifyUserEmails;
+    this.emailAdapter = cacheInfo.emailAdapter;
+    this.appName = cacheInfo.appName;
+
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;
-    this.pushController = cacheInfo.pushController;   
+    this.pushController = cacheInfo.pushController;
     this.loggerController = cacheInfo.loggerController;
     this.oauth = cacheInfo.oauth;
 

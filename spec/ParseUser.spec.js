@@ -49,6 +49,217 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('sends verification email if email verification is enabled', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail');
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+        user.fetch()
+        .then(() => {
+          expect(user.get('emailVerified')).toEqual(false);
+          done();
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+
+  it('does not send verification email if email verification is disabled', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: false,
+      emailAdapter: emailAdapter,
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail');
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        user.fetch()
+        .then(() => {
+          expect(emailAdapter.sendVerificationEmail.calls.count()).toEqual(0);
+          expect(user.get('emailVerified')).toEqual(undefined);
+          done();
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+
+  it('receives the app name and user in the adapter', done => {
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        expect(options.appName).toEqual('emailing app');
+        expect(options.user.get('email')).toEqual('user@parse.com');
+        done();
+      }
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.set('email', 'user@parse.com');
+    user.signUp(null, {
+      success: () => {},
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  })
+
+  it('when you click the link in the email it sets emailVerified to true and redirects you', done => {
+    var user = new Parse.User();
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        request.get(options.link, {
+          followRedirect: false,
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(302);
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/verify_email_success.html?username=zxcv');
+          user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(true);
+            done();
+          });
+        });
+      }
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.set('email', 'user@parse.com');
+    user.signUp();
+  });
+
+  it('redirects you to invalid link if you try to verify email incorrecly', done => {
+    request.get('http://localhost:8378/1/verify_email', {
+      followRedirect: false,
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(302);
+      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+      done()
+    });
+  });
+
+  it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
+    request.get('http://localhost:8378/1/verify_email?token=asdfasdf&username=sadfasga', {
+      followRedirect: false,
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(302);
+      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+      done();
+    });
+  });
+
+  it('does not update email verified if you use an invalid token', done => {
+    var user = new Parse.User();
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        request.get('http://localhost:8378/1/verify_email?token=invalid&username=zxcv', {
+          followRedirect: false,
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(302);
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+          user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(false);
+            done();
+          });
+        });
+      }
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.set('email', 'user@parse.com');
+    user.signUp(null, {
+      success: () => {},
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+
   it("user login wrong username", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function(user) {
@@ -1704,7 +1915,7 @@ describe('Parse.User testing', () => {
       done();
     });
   });
-  
+
   it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {

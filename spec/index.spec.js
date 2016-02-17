@@ -1,4 +1,5 @@
 var request = require('request');
+var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -36,5 +37,115 @@ describe('server', () => {
       expect(body.message).toEqual('Internal server error.');
       done();
     });
+  });
+
+  it('can load email adapter via object', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    });
+    done();
+  });
+
+  it('can load email adapter via class', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        class: MockEmailAdapterWithOptions,
+        options: {
+          apiKey: 'k',
+          domain: 'd',
+        }
+      },
+    });
+    done();
+  });
+
+  it('can load email adapter via module name', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        module: './Email/SimpleMailgunAdapter',
+        options: {
+          apiKey: 'k',
+          domain: 'd',
+        }
+      },
+    });
+    done();
+  });
+
+  it('can load email adapter via only module name', done => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: './Email/SimpleMailgunAdapter',
+    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    done();
+  });
+
+  it('throws if you initialize email adapter incorrecly', done => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        module: './Email/SimpleMailgunAdapter',
+        options: {
+          domain: 'd',
+        }
+      },
+    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    done();
   });
 });
