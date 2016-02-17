@@ -16,8 +16,7 @@ function validateAuthData(authData) {
 }
 
 // Returns a promise that fulfills iff this app id is valid.
-function validateAppId(appIds, authData) {
-  var access_token = authData.access_token;
+function validateAppId(appIds, access_token) {
   if (!appIds.length) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,

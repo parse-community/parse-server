@@ -36,6 +36,61 @@ The client keys used with Parse are no longer necessary with parse-server.  If y
 * restAPIKey
 * dotNetKey
 
+#### OAuth Support
+
+parse-server supports 3rd party authentication with
+
+* Twitter
+* Meetup
+* Linkedin
+* Google
+* Instagram
+* Facebook
+
+
+Configuration options for these 3rd-party modules is done with the oauth option passed to ParseServer:
+
+```
+{
+  oauth: {
+   twitter: {
+     consumer_key: "", // REQUIRED
+     consumer_secret: "" // REQUIRED
+   },
+   facebook: {
+     appIds: "FACEBOOK APP ID"
+   }
+  }
+
+}
+```
+
+#### Custom Authentication
+
+It is possible to leverage the OAuth support with any 3rd party authentication that you bring in.
+
+```
+{
+
+  oauth: {
+   my_custom_auth: {
+     module: "PATH_TO_MODULE" // OR object, 
+     option1: "",
+     option2: "",
+   }
+  }
+}
+```
+
+On this module, you need to implement and export those two functions `validateAuthData(authData, options) {} ` and `validateAppId(appIds, authData) {}`.
+
+For more informations about custom auth please see the examples:
+
+- [facebook OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/facebook.js)
+- [twitter OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/twitter.js)
+- [instagram OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/instagram.js)
+
+
 #### Advanced options:
 
 * filesAdapter - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js))

@@ -55,21 +55,6 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   case '_wperm':
     return {key: key, value: restValue};
     break;
-  case 'authData.anonymous.id':
-    if (options.query) {
-      return {key: '_auth_data_anonymous.id', value: restValue};
-    }
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                          'can only query on ' + key);
-    break;
-  case 'authData.facebook.id':
-    if (options.query) {
-      // Special-case auth data.
-      return {key: '_auth_data_facebook.id', value: restValue};
-    }
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                          'can only query on ' + key);
-    break;
   case '$or':
     if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
@@ -97,6 +82,18 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     });
     return {key: '$and', value: mongoSubqueries};
   default:
+    // Other auth data
+    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+    if (authDataMatch) {
+      if (options.query) {
+        var provider = authDataMatch[1];
+        // Special-case auth data.
+        return {key: '_auth_data_'+provider+'.id', value: restValue};
+      }
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
+                            'can only query on ' + key);
+      break;
+    };
     if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'invalid key name: ' + key);
@@ -646,15 +643,16 @@ function untransformObject(schema, className, mongoObject) {
       case '_expiresAt':
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
-      case '_auth_data_anonymous':
-        restObject['authData'] = restObject['authData'] || {};
-        restObject['authData']['anonymous'] = mongoObject[key];
-        break;
-      case '_auth_data_facebook':
-        restObject['authData'] = restObject['authData'] || {};
-        restObject['authData']['facebook'] = mongoObject[key];
-        break;
       default:
+        // Check other auth data keys
+        var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+        if (authDataMatch) {
+          var provider = authDataMatch[1];
+          restObject['authData'] = restObject['authData'] || {};
+          restObject['authData'][provider] = mongoObject[key];
+          break;
+        }
+        
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
           var expected;

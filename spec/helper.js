@@ -5,7 +5,7 @@ jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 var cache = require('../src/cache');
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
-var facebook = require('../src/facebook');
+var facebook = require('../src/oauth/facebook');
 var ParseServer = require('../src/index').ParseServer;
 
 var databaseURI = process.env.DATABASE_URI;
@@ -22,7 +22,13 @@ var api = new ParseServer({
   restAPIKey: 'rest',
   masterKey: 'test',
   collectionPrefix: 'test_',
-  fileKey: 'test'
+  fileKey: 'test',
+  oauth: { // Override the facebook provider
+    facebook: mockFacebook(),
+    myoauth: {
+      module: "../spec/myoauth" // relative path as it's run from src
+    }
+  }
 });
 
 var app = express();
@@ -40,7 +46,6 @@ Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
-  mockFacebook();
   Parse.User.enableUnsafeCurrentUser();
   done();
 });
@@ -175,18 +180,20 @@ function range(n) {
 }
 
 function mockFacebook() {
-  facebook.validateUserId = function(userId, accessToken) {
-    if (userId === '8675309' && accessToken === 'jenny') {
+  var facebook = {};
+  facebook.validateAuthData = function(authData) {
+    if (authData.id === '8675309' && authData.access_token === 'jenny') {
       return Promise.resolve();
     }
     return Promise.reject();
   };
-  facebook.validateAppId = function(appId, accessToken) {
-    if (accessToken === 'jenny') {
+  facebook.validateAppId = function(appId, authData) {
+    if (authData.access_token === 'jenny') {
       return Promise.resolve();
     }
     return Promise.reject();
   };
+  return facebook;
 }
 
 function clearData() {

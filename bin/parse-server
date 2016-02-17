@@ -30,6 +30,11 @@ if (process.env.PARSE_SERVER_OPTIONS) {
 		facebookAppIds = facebookAppIds.split(",");
 		options.facebookAppIds = facebookAppIds;
 	}
+
+	var oauth = process.env.PARSE_SERVER_OAUTH_PROVIDERS;
+	if (oauth) {
+		options.oauth = JSON.parse(oauth);
+	};
 }
 
 var mountPath = process.env.PARSE_SERVER_MOUNT_PATH || "/";
