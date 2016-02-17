@@ -403,6 +403,11 @@ RestWrite.prototype.transformUser = function() {
           throw new Parse.Error(Parse.Error.USERNAME_TAKEN,
                                 'Account already exists for this username');
         }
+        if (this.config.verifyUserEmails && this.data.email) {
+          this.data.emailVerified = false;
+          this.data._email_verify_token = cryptoUtils.randomString(25);
+          this.data._perishable_token = cryptoUtils.randomString(25);
+        }
         return Promise.resolve();
       });
   }).then(() => {
@@ -715,10 +720,23 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.INVALID_ACL, 'Invalid ACL.');
   }
 
+  function sendEmailVerification() {
+    var hasUserEmail = typeof this.data.email !== 'undefined' && this.className === "_User";
+    if (hasUserEmail && this.config.verifyUserEmails) {
+      let link = this.config.mount + "/verify_email?token=" + encodeURIComponent(this.data._email_verify_token) + "&username=" + encodeURIComponent(this.data.username);
+      this.config.emailAdapter.sendVerificationEmail({
+        link: link,
+        user: this.auth.user,
+        appName: this.co.appName,
+      });
+    }
+  }
+
   if (this.query) {
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
+        sendEmailVerification.call(this);
         this.response = resp;
         this.response.updatedAt = this.updatedAt;
       });
@@ -732,6 +750,9 @@ RestWrite.prototype.runDatabaseOperation = function() {
     }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
+      .then(() => {
+        sendEmailVerification.call(this);
+      })
       .then(() => {
         var resp = {
           objectId: this.data.objectId,
