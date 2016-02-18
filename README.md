@@ -110,43 +110,11 @@ For more informations about custom auth please see the examples:
 
 ---
 
-### Usage
+### Usage with Middleware (Express)
 
 You can create an instance of ParseServer, and mount it on a new or existing Express website:
 
-```js
-var express = require('express');
-var ParseServer = require('parse-server').ParseServer;
-
-var app = express();
-
-var port = process.env.PORT || 1337;
-
-// Specify the connection string for your mongodb database
-// and the location to your Parse cloud code
-var api = new ParseServer({
-  databaseURI: 'mongodb://localhost:27017/dev',
-  cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
-  appId: 'myAppId',
-  masterKey: '', //Add your master key here. Keep it secret!
-  fileKey: 'optionalFileKey',
-  serverURL: 'http://localhost:' + port + '/parse' // Don't forget to change to https if needed
-});
-
-// Serve the Parse API on the /parse URL prefix
-app.use('/parse', api);
-
-// Hello world
-app.get('/', function(req, res) {
-  res.status(200).send('Express is running here.');
-});
-
-app.listen(port, function() {
-  console.log('parse-server-example running on port ' + port + '.');
-});
-
-```
-
+See the [example project](https://github.com/ParsePlatform/parse-server-example) for code samples.
 
 #### Standalone usage
 
