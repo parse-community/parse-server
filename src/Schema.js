@@ -521,7 +521,7 @@ Schema.prototype.deleteField = function(fieldName, className, database, prefix) 
         });
       }
 
-      if (schema.data[className][fieldName].startsWith('relation')) {
+      if (schema.data[className][fieldName].startsWith('relation<')) {
         //For relations, drop the _Join table
         return database.dropCollection(prefix + '_Join:' + fieldName + ':' + className)
         //Save the _SCHEMA object
@@ -714,6 +714,7 @@ function getObjectType(obj) {
 module.exports = {
   load: load,
   classNameIsValid: classNameIsValid,
+  invalidClassNameMessage: invalidClassNameMessage,
   mongoSchemaFromFieldsAndClassName: mongoSchemaFromFieldsAndClassName,
   schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject: buildMergedSchemaObject,
