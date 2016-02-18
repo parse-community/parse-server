@@ -54,10 +54,17 @@ export class ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         
-        if(req.params.className === "_User"){
+        if (req.params.className === "_User") {
+          
           delete response.results[0].sessionToken;
-        }
-
+          
+          const user =  response.results[0];
+         
+          if (req.auth.user && user.objectId == req.auth.user.id) {
+            // Force the session token
+            response.results[0].sessionToken = req.info.sessionToken;
+          }
+        }        
         return { response: response.results[0] };
       });
   }
