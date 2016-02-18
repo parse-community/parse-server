@@ -105,6 +105,9 @@ For more informations about custom auth please see the examples:
 * databaseAdapter (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`)
 * loggerAdapter - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
 * enableAnonymousUsers - Defaults to true. Set to false to disable anonymous users.
+
+
+
 ---
 
 ### Usage
