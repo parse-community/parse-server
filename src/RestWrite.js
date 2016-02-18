@@ -27,9 +27,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
   this.auth = auth;
   this.className = className;
   this.storage = {};
-  this.runOptions = {
-    acl:[]
-  };
+  this.runOptions = {};
 
   if (!query && data.objectId) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
@@ -99,7 +97,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
     return Promise.resolve();
   }
 
-  this.runOptions.acl.push("*");
+  this.runOptions.acl = ['*'];
 
   if( this.auth.user ){
     return this.auth.getUserRoles().then((roles) => {
