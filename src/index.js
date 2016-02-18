@@ -105,7 +105,8 @@ function ParseServer(args) {
     fileKey: args.fileKey || 'invalid-file-key',
     facebookAppIds: args.facebookAppIds || [],
     filesController: filesController,
-    enableAnonymousUsers: args.enableAnonymousUsers || true
+    enableAnonymousUsers: args.enableAnonymousUsers || true,
+    oauth: args.oauth || {},
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
