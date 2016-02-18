@@ -1,37 +1,41 @@
 /*jshint node:true */
+var ParseCloudExpressApp = require('parse-cloud-express').app;
+var express = require("express");
+var bodyParser = require('body-parser');
 
 var CloudCodeServer = function(config) {
     'use strict';
-    var path = require("path");
-    config.cloudServerURL = config.cloudServerURL || `http://localhost:${config.port}`;
-    config.mountPath = config.mountPath || "/_hooks";
+    
     var Parse = require("parse/node");
     
-    global.Parse = Parse;
-    Parse.initialize(config.applicationId, config.javascriptKey, config.masterKey);
-    var ParseCloudExpress = require('parse-cloud-express');
+    config.cloudServerURL =  config.cloudServerURL || `http://localhost:${config.port}`;
+    config.mountPath =  config.mountPath || "/_hooks";
+    
+    global.Parse = require("parse/node");
+    
+    // Mount Parse.Cloud
     require("./Parse.Cloud");
-    Parse.Cloud.injectAutoRegistration(config);
+    // Register the current configuration
+    Parse.Cloud.registerConfiguration(config);
+    
+    // Setup the Parse app
+    Parse.applicationId = config.applicationId;
+    Parse.javascriptKey = config.javascriptKey;
+    Parse.masterKey = config.masterKey;    
 
-    var express = require("express");
-    var bodyParser = require('body-parser');
-    var app = require("express/lib/application");
-
-
-    var cloudCodeHooksApp = express();
+    const cloudCodeHooksApp = express();
     cloudCodeHooksApp.use(bodyParser.json({ 'type': '*/*' }));
-    this.httpServer = cloudCodeHooksApp.listen(config.port);
-    if (process.env.NODE_ENV !== "test") {
-        console.log("[%s] Running Cloud Code for "+Parse.applicationId+" on http://localhost:%s", process.pid, config.port);
-    }
+    this.httpServer = cloudCodeHooksApp.listen(config.port);        
     
-    Parse.Cloud.serverURL = config.cloudServerURL;
-    Parse.Cloud.app = cloudCodeHooksApp;
     
-    cloudCodeHooksApp.use(config.mountPath, ParseCloudExpress.app);
+    cloudCodeHooksApp.use(config.mountPath, ParseCloudExpressApp);
     
     this.app = cloudCodeHooksApp;
     require(config.main);
+    
+    if (process.env.NODE_ENV !== "test") {
+        console.log("[%s] Running Cloud Code for "+Parse.applicationId+" on http://localhost:%s", process.pid, config.port);
+    }
 }
 CloudCodeServer.prototype.close = function() {
     this.httpServer.close();

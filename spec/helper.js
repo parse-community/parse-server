@@ -47,7 +47,6 @@ Parse.Promise.disableAPlusCompliant();
 beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = serverURL;
-  mockFacebook();
   Parse.User.enableUnsafeCurrentUser();
   done();
 });

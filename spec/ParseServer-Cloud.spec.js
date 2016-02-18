@@ -3,6 +3,8 @@ var Parse = require("parse/node");
 var apps = configuration.applications;
 var configLoader = require("../bin/config");
 var Server = require("../src/cloud-code");
+var ParseCloud = require("../src/cloud-code/Parse.Cloud");
+Parse.Hooks = require("../src/cloud-code/Parse.Hooks");
 var jsonCacheDir =  "./.cache";
 var express = require("express");
 var databaseURI = process.env.DATABASE_URI;
@@ -12,6 +14,10 @@ var ParseServer = require('../src/index').ParseServer;
 var port = 8379;
 var serverURL = 'http://localhost:' + port + '/1';
 
+for(var i in configuration.applications) {
+  configuration.applications[i].serverURL = serverURL;
+}
+
 var app = express();
 var server = app.listen(port);
 
@@ -19,32 +25,28 @@ var server = app.listen(port);
 var api = new ParseServer(configuration);
 app.use('/1', api);
 
-function createEchoHook() {
-  return Parse.Cloud.define("echoParseKeys",  (req, res) => {
-    res.success({ applicationId: Parse.applicationId, 
-                  javascriptKey: Parse.javascriptKey,
-                  masterKey: Parse.masterKey });
-  });
+function use(app) {
+  Parse.initialize(app.appId || app.applicationId, app.javascriptKey, app.masterKey);
+  Parse.serverURL = app.serverURL;
 }
 
-function createBeforeSaveHook() {
-  return Parse.Cloud.beforeSave("InjectAppId",  (req, res) => {
-    req.object.set('applicationId', Parse.applicationId);
-    req.object.set('javascriptKey', Parse.javascriptKey);
-    req.object.set('masterKey', Parse.masterKey);
-    res.success();
-  });
-}
+var shouldWait = process.env.WAIT_FOR_SERVER;
 
 describe('Multi Server Testing', () => {
   beforeEach((done) => {
     // Set the proper Pare serverURL
-    Parse.initialize("test2", "test2", "test2");
-    Parse.serverURL = serverURL;
-    done();
+    use(apps[0]);
+    if (shouldWait) {
+      shouldWait = false;
+      setTimeout(() => {
+        done();
+      }, 500);
+    } else {
+      done();
+    }
   })
   it('first app should have hello', done => {
-    Parse.initialize(apps[0].appId, apps[0].javascriptKey, apps[0].masterKey);
+   	Parse.initialize(apps[0].appId, apps[0].javascriptKey, apps[0].masterKey);
     Parse.Cloud.run('hello', {},  (result, error) =>  {
       expect(result).toEqual('Hello world!');
       done();
@@ -52,51 +54,54 @@ describe('Multi Server Testing', () => {
   });
 
   it('second app should have hello', done => {
-    Parse.initialize(apps[1].appId, apps[1].javascriptKey, apps[1].masterKey);
+   	use(apps[1]);
     Parse.Cloud.run('hello', {},  (result, error) =>  {
       expect(result).toEqual('Hello world');
+      console.error(error);
       done();
     });
   });
 
-  it('should echo the right applicatio ID', done => {
-    Parse.initialize(apps[1].appId, apps[1].javascriptKey, apps[1].masterKey);
-    createEchoHook();
-    Parse.Cloud.run('echoParseKeys', {},  (result, error) =>  {
+  it('should echo the right application ID', done => {
+    var hit = 0;
+    function doneIfNeeded() {
+      hit++;
+      if (hit != 2) {
+        return;
+      }
+      done();
+    }
+    use(apps[1]);
+    Parse.Cloud.run('echoParseKeys', {}).then((result) =>  {
       expect(result.applicationId).toEqual(apps[1].appId);
       expect(result.javascriptKey).toEqual(apps[1].javascriptKey);
       expect(result.masterKey).toEqual(apps[1].masterKey);
-      Parse.Cloud._removeHook("Functions", 'echoParseKeys', null, apps[1].appId);
-      done();
+      use(apps[1]);
+      doneIfNeeded();
+    }, (error) => {
+      console.error(error);
+      fail(JSON.stringify(error));
+      doneIfNeeded();
     });
 
-    Parse.initialize(apps[0].appId, apps[0].javascriptKey, apps[0].masterKey);
-    createEchoHook();
-    Parse.Cloud.run('echoParseKeys', {},  (result, error) =>  {
-      expect(result.applicationId).toEqual(apps[0].appId);
-      expect(result.javascriptKey).toEqual(apps[0].javascriptKey);
-      expect(result.masterKey).toEqual(apps[0].masterKey);
-      Parse.Cloud._removeHook("Functions", 'echoParseKeys', null, apps[0].appId);
-      done();
+    use(apps[0]);
+    Parse.Cloud.run('echoParseKeys', {}).then((result) =>  {
+      fail("This function should not be defined");
+      doneIfNeeded();
+    }, (error) => {
+      
+      doneIfNeeded();
     });
   });
 
   it('should delete the proper hook and not leak', done => {
     
-    Parse.initialize(apps[1].appId, apps[1].javascriptKey, apps[1].masterKey);
-    createEchoHook();
+    use(apps[1]);
     
     Parse.Cloud.run('echoParseKeys', {}).then( (result) =>  {
       expect(result.applicationId).toEqual(apps[1].appId);
       expect(result.javascriptKey).toEqual(apps[1].javascriptKey);
       expect(result.masterKey).toEqual(apps[1].masterKey);
-      Parse.Cloud._removeHook("Functions", 'echoParseKeys');
-      return Parse.Promise.as();
-    }).then( () => {
-      Parse.initialize(apps[0].appId, apps[0].javascriptKey, apps[0].masterKey);
-      return Parse.Cloud.run('echoParseKeys', {});
-    }).then( (res) => {
-      fail("this call should not succeed");
       done();
     }).fail( (err) => {
       expect(err.code).toEqual(141);
@@ -107,25 +112,23 @@ describe('Multi Server Testing', () => {
 
   it('should create the proper beforeSave and set the proper app ID', done => {
     
-    Parse.initialize(apps[1].appId, apps[1].javascriptKey, apps[1].masterKey);
-    createBeforeSaveHook();
+    use(apps[1]);
     var obj = new Parse.Object('InjectAppId');
-    obj.save().then( () =>  {
+    return obj.save().then( () =>  {
       var query = new Parse.Query('InjectAppId');
       query.get(obj.id).then( (objAgain) =>  {
         expect(objAgain.get('applicationId')).toEqual(apps[1].appId);
         expect(objAgain.get('javascriptKey')).toEqual(apps[1].javascriptKey);
         expect(objAgain.get('masterKey')).toEqual(apps[1].masterKey);
-        Parse.Cloud._removeHook("Triggers", 'beforeSave', 'InjectAppId');
         done();
       },  (error) =>  {
-        fail(error);
-        Parse.Cloud._removeHook("Triggers", 'beforeSave', 'InjectAppId');
+        fail("Failed getting object");
+        fail(JSON.stringify(error));
         done();
       });
     },  (error) =>  {
-      fail(error);
-      Parse.Cloud._removeHook("Triggers", 'beforeSave', 'InjectAppId');
+      fail("Failed saving obj");
+      fail(JSON.stringify(error));
       done();
     });
 
@@ -133,7 +136,7 @@ describe('Multi Server Testing', () => {
 
   it('should create an object in the proper DB (and not the other)', done => {
 
-    Parse.initialize(apps[1].appId, apps[1].javascriptKey, apps[1].masterKey);
+    use(apps[1]);
     var obj = new Parse.Object('SomeObject');
     obj.save().then( () => {
       var query = new Parse.Query('SomeObject');
@@ -171,14 +174,14 @@ describe('Multi Server Testing', () => {
       applicationId: apps[1].appId,
       javascriptKey: apps[1].javascriptKey,
       masterKey: apps[1].masterKey,
-      port: 12345,
+      port: 12355,
       main: "../cloud/main-2.js",
-      serverURL: Parse.serverURL,
+      serverURL: serverURL,
       hooksCreationStrategy: "always"
     };
+
     var server = new Server(config);
-    Parse.initialize(config.applicationId, config.javascriptKey, config.masterKey);
-    Parse.serverURL = config.serverURL;
+    
     Parse.Cloud.define("myCloud",  (req, res) => {
       res.success("code!");
     }).then( () => {
@@ -205,16 +208,14 @@ describe('Multi Server Testing', () => {
       applicationId: apps[1].appId,
       javascriptKey: apps[1].javascriptKey,
       masterKey: apps[1].masterKey,
-      port: 12345,
+      port: 12346,
       main: "../cloud/main.js",
-      serverURL: Parse.serverURL,
+      serverURL: serverURL,
       hooksCreationStrategy: "always"
     };
     var server = new Server(config);
 
     var triggerTime = 0;
-    Parse.initialize(config.applicationId, config.javascriptKey, config.masterKey);
-    Parse.serverURL = config.serverURL;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
       var object = req.object;
@@ -248,9 +249,7 @@ describe('Multi Server Testing', () => {
         // Make sure the checking has been triggered
         expect(triggerTime).toBe(2);
         // Clear mock beforeSave
-        if (Parse.Cloud._removeHook) {
-          Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
-        };
+        Parse.Hooks.deleteTrigger('GameScore', 'beforeSave');
         server.close();
         done();
       }, (error) => {
@@ -259,7 +258,7 @@ describe('Multi Server Testing', () => {
         done();
       });
     }, (err) => {
-      fail(err);
+      fail(JSON.strngify(err));
       server.close();
       done();
     });
@@ -273,15 +272,13 @@ describe('Multi Server Testing', () => {
       applicationId: apps[1].appId,
       javascriptKey: apps[1].javascriptKey,
       masterKey: apps[1].masterKey,
-      port: 12345,
+      port: 12347,
       main: "../cloud/main.js",
-      serverURL: Parse.serverURL,
+      serverURL: serverURL,
       hooksCreationStrategy: "always"
     };
     var server = new Server(config);
-    Parse.initialize(config.applicationId, config.javascriptKey, config.masterKey);
-    Parse.serverURL = config.serverURL;
-    
+
     Parse.Cloud.define("hello_world", (req, res) => {
       
       fail("This shoud not be called!");
@@ -293,6 +290,10 @@ describe('Multi Server Testing', () => {
       expect(res).toBeUndefined();
       return Parse.Cloud.run("hello_world", {});
       
+    }, function(err){
+      fail(err);
+      server.close();
+      done();
     }).then( (res) => {
       
       expect(res).toBeUndefined();

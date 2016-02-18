@@ -9,7 +9,6 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    httpRequest = require("parse-cloud-express/lib/httpRequest"),
     triggers = require('./triggers'),
     hooks = require('./hooks'),
     path = require("path"),
@@ -32,9 +31,9 @@ import { RolesRouter } from './Routers/RolesRouter';
 import { FileLoggerAdapter } from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController } from './Controllers/LoggerController';
 
-// Mutate the Parse object to add the Cloud Code handlers
-addParseCloud();
-
+// Load Parse and mutate Parse.Cloud
+global.Parse = Parse;    
+require("./cloud-code/Parse.Cloud");
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
 // "databaseAdapter": a class like ExportAdapter providing create, find,
@@ -60,7 +59,7 @@ addParseCloud();
 // "push": optional key from configure push
 
 function ParseServer(args) {
-
+ 
   loadConfiguration(args);
   
   // This app serves the Parse API directly.
@@ -145,7 +144,9 @@ function loadConfiguration(args) {
   if (!args.appId || !args.masterKey) {
     throw 'You must provide an appId and masterKey!';
   }
-
+	Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
+  Parse.serverURL = args.serverURL;
+   
   if (args.databaseAdapter) {
     DatabaseAdapter.setAdapter(args.databaseAdapter);
   }
@@ -176,12 +177,12 @@ function loadConfiguration(args) {
 
   if (args.cloud) {
     if (typeof args.cloud === 'object') {
+      // Register configuration for cloud code
+      Parse.Cloud.registerConfiguration(args.cloud);
       CloudCodeLauncher(args.cloud);
     } else if (typeof args.cloud === 'function') {
-      addParseCloud();
       args.cloud(Parse)
     } else if (typeof args.cloud === 'string') {
-      addParseCloud();
       require(args.cloud);
     } else {
       throw "argument 'cloud' must either be a string or a function or an object";
@@ -207,47 +208,8 @@ function loadConfiguration(args) {
   if (process.env.FACEBOOK_APP_ID) {
     cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
-  
+
   require("./hooks").load(args.appId);
-}
-
-function addParseCloud() {
-
-  Parse.Cloud.define = function(functionName, handler, validationHandler) {
-    triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
-  };
-  Parse.Cloud.beforeSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    triggers.addTrigger('beforeSave', className, handler, Parse.applicationId);
-  };
-  Parse.Cloud.beforeDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    triggers.addTrigger('beforeDelete', className, handler, Parse.applicationId);
-  };
-  Parse.Cloud.afterSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    triggers.addTrigger('afterSave', className, handler, Parse.applicationId);
-  };
-  Parse.Cloud.afterDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    triggers.addTrigger('afterDelete', className, handler, Parse.applicationId);
-  };
-  if (process.env.NODE_ENV == "test") {
-    Parse.Hooks = Parse.Hooks || {};
-    Parse.Cloud._removeHook = function(category, name, type, applicationId) {
-      applicationId = applicationId || Parse.applicationId;
-      triggers._unregister(applicationId, category, name, type);
-    }
-  };
-  Parse.Cloud.httpRequest = httpRequest;
-  global.Parse = Parse;
-}
-
-function getClassName(parseClass) {
-  if (parseClass && parseClass.className) {
-    return parseClass.className;
-  }
-  return parseClass;
 }
 
 module.exports = {

@@ -25,4 +25,5 @@ module.exports = function(options) {
   });
   
   cloudCode.start();
+  return cloudCode;
 }
