@@ -183,10 +183,95 @@ function modifySchema(req) {
   });
 }
 
+// A helper function that removes all join tables for a schema. Returns a promise.
+var removeJoinTables = (database, prefix, mongoSchema) => {
+  return Promise.all(Object.keys(mongoSchema)
+    .filter(field => mongoSchema[field].startsWith('relation<'))
+    .map(field => {
+      var joinCollectionName = prefix + '_Join:' + field + ':' + mongoSchema._id;
+      return new Promise((resolve, reject) => {
+        database.dropCollection(joinCollectionName, (err, results) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
+        })
+      });
+    })
+  );
+};
+
+function deleteSchema(req) {
+  if (!req.auth.isMaster) {
+    return masterKeyRequiredResponse();
+  }
+
+  if (!Schema.classNameIsValid(req.params.className)) {
+    return Promise.resolve({
+      status: 400,
+      response: {
+        code: Parse.Error.INVALID_CLASS_NAME,
+        error: Schema.invalidClassNameMessage(req.params.className),
+      }
+    });
+  }
+
+  return req.config.database.collection(req.params.className)
+  .then(coll => new Promise((resolve, reject) => {
+    coll.count((err, count) => {
+      if (err) {
+        reject(err);
+      } else if (count > 0) {
+        resolve({
+          status: 400,
+          response: {
+            code: 255,
+            error: 'class ' + req.params.className + ' not empty, contains ' + count + ' objects, cannot drop schema',
+          }
+        });
+      } else {
+        coll.drop((err, reply) => {
+          if (err) {
+            reject(err);
+          } else {
+            // We've dropped the collection now, so delete the item from _SCHEMA
+            // and clear the _Join collections
+            req.config.database.collection('_SCHEMA')
+            .then(coll => new Promise((resolve, reject) => {
+              coll.findAndRemove({ _id: req.params.className }, [], (err, doc) => {
+                if (err) {
+                  reject(err);
+                } else if (doc.value === null) {
+                  //tried to delete non-existant class
+                  resolve({ response: {}});
+                } else {
+                  removeJoinTables(req.config.database.db, req.config.database.collectionPrefix, doc.value)
+                  .then(resolve, reject);
+                }
+              });
+            }))
+            .then(resolve.bind(undefined, {response: {}}), reject);
+          }
+        });
+      }
+    });
+  }))
+  .catch(error => {
+    if (error.message == 'ns not found') {
+      // If they try to delete a non-existant class, thats fine, just let them.
+      return Promise.resolve({ response: {} });
+    } else {
+      return Promise.reject(error);
+    }
+  });
+}
+
 router.route('GET', '/schemas', getAllSchemas);
 router.route('GET', '/schemas/:className', getOneSchema);
 router.route('POST', '/schemas', createSchema);
 router.route('POST', '/schemas/:className', createSchema);
 router.route('PUT', '/schemas/:className', modifySchema);
+router.route('DELETE', '/schemas/:className', deleteSchema);
 
 module.exports = router;
