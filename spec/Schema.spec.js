@@ -162,6 +162,9 @@ describe('Schema', () => {
         foo: 'string',
       })
       done();
+    })
+    .catch(error => {
+      fail('Error creating class: ' + JSON.stringify(error));
     });
   });
 
@@ -569,5 +572,33 @@ describe('Schema', () => {
       done();
       Parse.Object.enableSingleInstance();
     });
+  });
+
+  it('can merge schemas', done => {
+    expect(Schema.buildMergedSchemaObject({
+      _id: 'SomeClass',
+      someType: 'number'
+    }, {
+      newType: {type: 'Number'}
+    })).toEqual({
+      someType: {type: 'Number'},
+      newType: {type: 'Number'},
+    });
+    done();
+  });
+
+  it('can merge deletions', done => {
+    expect(Schema.buildMergedSchemaObject({
+      _id: 'SomeClass',
+      someType: 'number',
+      outDatedType: 'string',
+    },{
+      newType: {type: 'GeoPoint'},
+      outDatedType: {__op: 'Delete'},
+    })).toEqual({
+      someType: {type: 'Number'},
+      newType: {type: 'GeoPoint'},
+    });
+    done();
   });
 });

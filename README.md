@@ -1,20 +1,35 @@
-## parse-server
+<img src="http://parse.com/assets/svgs/parse-infinity.svg" alt="Parse logo" height="70"/>
+
+## Parse Server
 
 [![Build Status](https://img.shields.io/travis/ParsePlatform/parse-server/master.svg?style=flat)](https://travis-ci.org/ParsePlatform/parse-server)
 [![Coverage Status](https://img.shields.io/codecov/c/github/ParsePlatform/parse-server/master.svg)](https://codecov.io/github/ParsePlatform/parse-server?branch=master)
 [![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
 
-A Parse.com API compatible router package for Express
+Parse Server is an open source version of the Parse backend that can be deployed to any infrastructure that can run Node.js.
+
+Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
 Read the announcement blog post here:  http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/
 
-Read the migration guide here: https://parse.com/docs/server/guide#migrating
+## Documentation
 
-There is a development wiki here on GitHub: https://github.com/ParsePlatform/parse-server/wiki
+Documentation for Parse Server is available in the [wiki](https://github.com/ParsePlatform/parse-server/wiki) for this repository. The [Parse Server guide](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide) is a good place to get started.
 
-We also have an [example project](https://github.com/ParsePlatform/parse-server-example) using the parse-server module on Express.
+If you're interested in developing for Parse Server, the [Development guide](https://github.com/ParsePlatform/parse-server/wiki/Development-Guide) will help you get set up.
+
+### Example Project
+
+Check out the [parse-server-example project](https://github.com/ParsePlatform/parse-server-example) repository for an example of a Node.js application that uses the parse-server module on Express.
+
+### Migration Guide
+
+Migrate your existing Parse apps to your own Parse Server. The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. Learn more in the [Migration guide](https://github.com/ParsePlatform/parse-server/wiki/Migrating-an-Existing-Parse-App).
+
+
 
 ---
+
 
 #### Basic options:
 
@@ -36,12 +51,67 @@ The client keys used with Parse are no longer necessary with parse-server.  If y
 * restAPIKey
 * dotNetKey
 
+#### OAuth Support
+
+parse-server supports 3rd party authentication with
+
+* Twitter
+* Meetup
+* Linkedin
+* Google
+* Instagram
+* Facebook
+
+
+Configuration options for these 3rd-party modules is done with the oauth option passed to ParseServer:
+
+```
+{
+  oauth: {
+   twitter: {
+     consumer_key: "", // REQUIRED
+     consumer_secret: "" // REQUIRED
+   },
+   facebook: {
+     appIds: "FACEBOOK APP ID"
+   }
+  }
+
+}
+```
+
+#### Custom Authentication
+
+It is possible to leverage the OAuth support with any 3rd party authentication that you bring in.
+
+```
+{
+
+  oauth: {
+   my_custom_auth: {
+     module: "PATH_TO_MODULE" // OR object,
+     option1: "",
+     option2: "",
+   }
+  }
+}
+```
+
+On this module, you need to implement and export those two functions `validateAuthData(authData, options) {} ` and `validateAppId(appIds, authData) {}`.
+
+For more informations about custom auth please see the examples:
+
+- [facebook OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/facebook.js)
+- [twitter OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/twitter.js)
+- [instagram OAuth](https://github.com/ParsePlatform/parse-server/blob/master/src/oauth/instagram.js)
+
+
 #### Advanced options:
 
 * filesAdapter - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js))
 * databaseAdapter (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`)
 * loggerAdapter - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
-
+* enableAnonymousUsers - Defaults to true. Set to false to disable anonymous users.
 ---
 
 ### Usage
@@ -86,12 +156,12 @@ app.listen(port, function() {
 
 You can configure the Parse Server with environment variables:
 
-```js 
+```js
 PARSE_SERVER_DATABASE_URI
 PARSE_SERVER_CLOUD_CODE_MAIN
 PARSE_SERVER_COLLECTION_PREFIX
 PARSE_SERVER_APPLICATION_ID // required
-PARSE_SERVER_CLIENT_KEY 
+PARSE_SERVER_CLIENT_KEY
 PARSE_SERVER_REST_API_KEY
 PARSE_SERVER_DOTNET_KEY
 PARSE_SERVER_JAVASCRIPT_KEY
@@ -137,3 +207,7 @@ You can also set up an app on Parse, providing the connection string for your mo
 ### Not supported
 
 * `Parse.User.current()` or `Parse.Cloud.useMasterKey()` in cloud code. Instead of `Parse.User.current()` use `request.user` and instead of `Parse.Cloud.useMasterKey()` pass `useMasterKey: true` to each query. To make queries and writes as a specific user within Cloud Code, you need the user's session token, which is available in `request.user.getSessionToken()`.
+
+## Contributing
+
+We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
