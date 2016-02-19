@@ -67,7 +67,7 @@ var defaultColumns = {
     "icon":               {type:'File'},
     "order":              {type:'Number'},
     "title":              {type:'String'},
-    "subtile":            {type:'String'},
+    "subtitle":            {type:'String'},
   }
 };
 

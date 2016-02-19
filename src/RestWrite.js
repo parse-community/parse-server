@@ -683,6 +683,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
+  
+  if (this.className === '_Product' && this.data.download) {
+    this.data.downloadName = this.data.download.name;
+  }
 
   // TODO: Add better detection for ACL, ensuring a user can't be locked from
   //       their own user record.

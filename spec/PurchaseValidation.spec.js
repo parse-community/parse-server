@@ -182,6 +182,7 @@ describe("test validate_receipt endpoint", () => {
         product.set("title", "a new title");
         return product.save();
       }).then(function(productAgain){
+        expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
         expect(productAgain.get("title")).toEqual("a new title");
         done();
       }).fail(function(err){
