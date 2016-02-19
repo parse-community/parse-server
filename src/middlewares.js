@@ -26,7 +26,7 @@ function handleParseHeaders(req, res, next) {
     restAPIKey: req.get('X-Parse-REST-API-Key')
   };
 
-  if (req.body && req.body._noBody) {
+  if (req.body) {
     // Unity SDK sends a _noBody key which needs to be removed.
     // Unclear at this point if action needs to be taken.
     delete req.body._noBody;
