@@ -306,7 +306,8 @@ ExportAdapter.prototype.destroy = function(className, query, options = {}) {
 
     return coll.remove(mongoWhere);
   }).then((resp) => {
-    if (resp.result.n === 0) {
+    //Check _Session to avoid changing password failed without any session.
+    if (resp.result.n === 0 && className !== "_Session") {
       return Promise.reject(
         new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                         'Object not found.'));

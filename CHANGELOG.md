@@ -1,5 +1,12 @@
 ## Parse Server Changelog
 
+### 2.1.1 (2/18/2016)
+
+* Experimental: Schemas API support for DELETE operations
+* Fix: Session token issue fetching Users
+* Fix: Facebook auth validation
+* Fix: Invalid error when deleting missing session
+
 ### 2.1.0 (2/17/2016)
 
 * Feature: Support for additional OAuth providers

@@ -6,7 +6,6 @@ import * as AWS from 'aws-sdk';
 import { FilesAdapter } from './FilesAdapter';
 
 const DEFAULT_S3_REGION = "us-east-1";
-const DEFAULT_S3_BUCKET = "parse-files";
 
 export class S3Adapter extends FilesAdapter {
   // Creates an S3 session.
@@ -15,8 +14,8 @@ export class S3Adapter extends FilesAdapter {
   constructor(
     accessKey,
     secretKey,
+    bucket,
     { region = DEFAULT_S3_REGION,
-      bucket = DEFAULT_S3_BUCKET,
       bucketPrefix = '',
       directAccess = false } = {}
   ) {
