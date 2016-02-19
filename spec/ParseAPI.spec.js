@@ -721,4 +721,14 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('fetches the config using a promise', done => {
+    Parse.Cloud.run('PromiseWithoutRejectedCallbackFail').then((s) => {
+      expect(s instanceof Object).toBe(true);
+      expect(s.config instanceof Object).toBe(true);
+      done();
+    }, (e) => {
+      fail(e);
+    });
+  });
+
 });
