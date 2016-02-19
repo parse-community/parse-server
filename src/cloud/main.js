@@ -102,3 +102,20 @@ Parse.Cloud.define('requiredParameterCheck', function(req, res) {
 }, function(params) {
   return params.name;
 });
+
+Parse.Cloud.define("PromiseWithoutRejectedCallbackFail", function(request, response) {
+  var promises = [];
+	var result = {};
+
+	// fetch config
+	result.config = {};
+
+	promises.push(Parse.Config.get().then(function(config) {
+		result.config = config.attributes;
+	}));
+  
+  // wait for all promises to finish
+	Parse.Promise.when(promises).then(function() {
+		response.success(result);
+	});  
+});
