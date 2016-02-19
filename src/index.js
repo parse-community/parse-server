@@ -106,7 +106,7 @@ function ParseServer({
   }
 
   let filesController = new FilesController(filesAdapter);
-
+  
   cache.apps[appId] = {
     masterKey: masterKey,
     collectionPrefix: collectionPrefix,
@@ -119,7 +119,7 @@ function ParseServer({
     filesController: filesController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
-  };
+};
 
   // To maintain compatibility. TODO: Remove in v2.1
   if (process.env.FACEBOOK_APP_ID) {
@@ -135,7 +135,7 @@ function ParseServer({
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', filesController.getExpressRouter());
+  api.use('/', FilesController.getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -156,7 +156,7 @@ function ParseServer({
     new InstallationsRouter().getExpressRouter(),
     require('./functions'),
     require('./schemas'),
-    new PushController(pushAdapter).getExpressRouter(),
+    PushController.getExpressRouter(),
     new LoggerController(loggerAdapter).getExpressRouter(),
     require('./validate_purchase')
   ];
