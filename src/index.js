@@ -9,11 +9,15 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    httpRequest = require('./httpRequest');
+    triggers = require('./triggers'),
+    hooks = require('./hooks'),
+    path = require("path"),
+    CloudCodeLauncher = require("./cloud-code/launcher");
 
 import { GridStoreAdapter } from './Adapters/Files/GridStoreAdapter';
 import { S3Adapter } from './Adapters/Files/S3Adapter';
 import { FilesController } from './Controllers/FilesController';
+import { JSONStorageProvider, JSONStorageController } from './Controllers/JSONStorageController';
 
 import ParsePushAdapter from './Adapters/Push/ParsePushAdapter';
 import { PushController } from './Controllers/PushController';
@@ -27,9 +31,9 @@ import { RolesRouter } from './Routers/RolesRouter';
 import { FileLoggerAdapter } from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController } from './Controllers/LoggerController';
 
-// Mutate the Parse object to add the Cloud Code handlers
-addParseCloud();
-
+// Load Parse and mutate Parse.Cloud
+global.Parse = Parse;    
+require("./cloud-code/Parse.Cloud");
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
 // "databaseAdapter": a class like ExportAdapter providing create, find,
@@ -55,77 +59,15 @@ addParseCloud();
 // "push": optional key from configure push
 
 function ParseServer(args) {
-  if (!args.appId || !args.masterKey) {
-    throw 'You must provide an appId and masterKey!';
-  }
-
-  if (args.databaseAdapter) {
-    DatabaseAdapter.setAdapter(args.databaseAdapter);
-  }
-
-  // Make files adapter
-  let filesAdapter = args.filesAdapter || new GridStoreAdapter();
-
-  // Make push adapter
-  let pushConfig = args.push;
-  let pushAdapter;
-  if (pushConfig && pushConfig.adapter) {
-    pushAdapter = pushConfig.adapter;
-  } else if (pushConfig) {
-    pushAdapter = new ParsePushAdapter(pushConfig)
-  }
-
-  // Make logger adapter
-  let loggerAdapter = args.loggerAdapter || new FileLoggerAdapter();
+ 
+  loadConfiguration(args);
   
-  if (args.databaseURI) {
-    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
-  }
-  if (args.cloud) {
-    addParseCloud();
-    if (typeof args.cloud === 'function') {
-      args.cloud(Parse)
-    } else if (typeof args.cloud === 'string') {
-      require(args.cloud);
-    } else {
-      throw "argument 'cloud' must either be a string or a function";
-    }
-
-  }
-
-  let filesController = new FilesController(filesAdapter);
-
-  cache.apps[args.appId] = {
-    masterKey: args.masterKey,
-    collectionPrefix: args.collectionPrefix || '',
-    clientKey: args.clientKey || '',
-    javascriptKey: args.javascriptKey || '',
-    dotNetKey: args.dotNetKey || '',
-    restAPIKey: args.restAPIKey || '',
-    fileKey: args.fileKey || 'invalid-file-key',
-    facebookAppIds: args.facebookAppIds || [],
-    filesController: filesController,
-    enableAnonymousUsers: args.enableAnonymousUsers || true,
-    oauth: args.oauth || {},
-  };
-
-  // To maintain compatibility. TODO: Remove in v2.1
-  if (process.env.FACEBOOK_APP_ID) {
-    cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
-  }
-
-  // Initialize the node client SDK automatically
-  Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
-  if(args.serverURL) {
-    Parse.serverURL = args.serverURL;
-  }
-
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
-  var api = express();
-
+	var api = express(); 
+  
   // File handling needs to be before default middlewares are applied
-  api.use('/', filesController.getExpressRouter());
+  api.use(FilesController.getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -147,9 +89,10 @@ function ParseServer(args) {
     new InstallationsRouter().getExpressRouter(),
     require('./functions'),
     require('./schemas'),
-    new PushController(pushAdapter).getExpressRouter(),
-    new LoggerController(loggerAdapter).getExpressRouter()
+    require('./hooks'),
+    PushController.getExpressRouter()
   ];
+
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
   }
@@ -167,45 +110,106 @@ function ParseServer(args) {
   return api;
 }
 
-function addParseCloud() {
-  Parse.Cloud.Functions = {};
-  Parse.Cloud.Validators = {};
-  Parse.Cloud.Triggers = {
-    beforeSave: {},
-    beforeDelete: {},
-    afterSave: {},
-    afterDelete: {}
-  };
-
-  Parse.Cloud.define = function(functionName, handler, validationHandler) {
-    Parse.Cloud.Functions[functionName] = handler;
-    Parse.Cloud.Validators[functionName] = validationHandler;
-  };
-  Parse.Cloud.beforeSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    Parse.Cloud.Triggers.beforeSave[className] = handler;
-  };
-  Parse.Cloud.beforeDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    Parse.Cloud.Triggers.beforeDelete[className] = handler;
-  };
-  Parse.Cloud.afterSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    Parse.Cloud.Triggers.afterSave[className] = handler;
-  };
-  Parse.Cloud.afterDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
-    Parse.Cloud.Triggers.afterDelete[className] = handler;
-  };
-  Parse.Cloud.httpRequest = httpRequest;
-  global.Parse = Parse;
-}
-
-function getClassName(parseClass) {
-  if (parseClass && parseClass.className) {
-    return parseClass.className;
+function loadConfiguration(args) {
+  
+  if (args.applications) {
+    var port = parseInt(process.env.PORT) || 8080;
+    port++;
+    args.applications.forEach(function(app){
+      if (typeof app.cloud === "string") {
+        app.cloud = {
+          main: path.resolve(app.cloud),
+          // Increment the port for the sub processes
+          port: port++,
+          hooksCreationStrategy: "always"
+        }
+      }
+      if (app.cloud) {
+        // Setup the defaults if needed for light cloud configurations
+        app.cloud.applicationId = app.cloud.applicationId || app.appId;
+        app.cloud.javascriptKey = app.cloud.javascriptKey || app.javascriptKey;
+        app.cloud.masterKey = app.cloud.masterKey || app.masterKey;
+        app.cloud.serverURL = app.cloud.serverURL || app.serverURL;
+      }
+   
+      // Global configuration
+      app.databaseAdapter = app.databaseAdapter || args.databaseAdapter;
+      app.filesAdapter = app.filesAdapter || args.filesAdapter;
+      app.jsonCacheDir = app.jsonCacheDir || args.jsonCacheDir;
+      loadConfiguration(app);
+    });
+    return;
   }
-  return parseClass;
+  
+  if (!args.appId || !args.masterKey) {
+    throw 'You must provide an appId and masterKey!';
+  }
+	Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
+  Parse.serverURL = args.serverURL;
+   
+  if (args.databaseAdapter) {
+    DatabaseAdapter.setAdapter(args.databaseAdapter);
+  }
+
+  // Make files adapter
+  let filesAdapter = args.filesAdapter || new GridStoreAdapter();
+  let filesController = new FilesController(filesAdapter);
+  
+  // Make push adapter
+  let pushConfig = args.push;
+  let pushAdapter;
+  if (pushConfig && pushConfig.adapter) {
+    pushAdapter = pushConfig.adapter;
+  } else if (pushConfig) {
+    pushAdapter = new ParsePushAdapter(pushConfig)
+  }
+  
+  let pushController = new PushController(pushAdapter);
+
+  // Make logger adapter
+  let loggerAdapter = args.loggerAdapter || new FileLoggerAdapter();
+  
+  if (args.databaseURI) {
+    DatabaseAdapter.setAppDatabaseURI(args.appId, args.databaseURI);
+  }
+  
+  JSONStorageProvider.setAdapter(new JSONStorageController(args.jsonCacheDir || "./.cache"));
+
+  if (args.cloud) {
+    if (typeof args.cloud === 'object') {
+      // Register configuration for cloud code
+      Parse.Cloud.registerConfiguration(args.cloud);
+      CloudCodeLauncher(args.cloud);
+    } else if (typeof args.cloud === 'function') {
+      args.cloud(Parse)
+    } else if (typeof args.cloud === 'string') {
+      require(args.cloud);
+    } else {
+      throw "argument 'cloud' must either be a string or a function or an object";
+    }
+  }
+
+  cache.apps[args.appId] = {
+    masterKey: args.masterKey,
+    collectionPrefix: args.collectionPrefix || '',
+    clientKey: args.clientKey || '',
+    javascriptKey: args.javascriptKey || '',
+    dotNetKey: args.dotNetKey || '',
+    restAPIKey: args.restAPIKey || '',
+    fileKey: args.fileKey || 'invalid-file-key',
+    facebookAppIds: args.facebookAppIds || [],
+    filesController: filesController,
+    pushController: pushController,
+    enableAnonymousUsers: args.enableAnonymousUsers || true,
+    oauth: args.oauth || {},
+  };
+
+  // To maintain compatibility. TODO: Remove in v2.1
+  if (process.env.FACEBOOK_APP_ID) {
+    cache.apps[args.appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+  }
+
+  require("./hooks").load(args.appId);
 }
 
 module.exports = {

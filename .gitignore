@@ -32,5 +32,11 @@ node_modules
 # WebStorm/IntelliJ
 .idea
 
+# visual studio code
+.vscode
+
 # Babel.js
 lib/
+
+# Cache
+.cache

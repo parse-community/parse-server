@@ -3,22 +3,27 @@
 var express = require('express'),
     Parse = require('parse/node').Parse,
     PromiseRouter = require('./PromiseRouter'),
-    rest = require('./rest');
+    rest = require('./rest'),
+    triggers = require("./triggers");
 
 var router = new PromiseRouter();
 
 function handleCloudFunction(req) {
-  if (Parse.Cloud.Functions[req.params.functionName]) {
+  var applicationId = req.config.applicationId;
+  var theFunction = triggers.getFunction(req.params.functionName, applicationId);
+  var theValidator = triggers.getValidator(req.params.functionName, applicationId);
+  if (theFunction) {
 
+    const params = Object.assign({}, req.body, req.query);
     var request = {
-      params: Object.assign({}, req.body, req.query),
+      params: params,
       master: req.auth && req.auth.isMaster,
       user: req.auth && req.auth.user,
       installationId: req.info.installationId
     };
 
-    if (Parse.Cloud.Validators[req.params.functionName]) {
-      var result = Parse.Cloud.Validators[req.params.functionName](request);
+    if (theValidator && typeof theValidator === "function") {
+      var result = theValidator(request);
       if (!result) {
         throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
       }
@@ -26,7 +31,11 @@ function handleCloudFunction(req) {
 
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
-      Parse.Cloud.Functions[req.params.functionName](request, response);
+      // Force the keys before the function calls.
+      Parse.applicationId = req.config.applicationId;
+      Parse.javascriptKey = req.config.javascriptKey;
+      Parse.masterKey = req.config.masterKey;
+      theFunction(request, response);
     });
   } else {
     throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid function.');

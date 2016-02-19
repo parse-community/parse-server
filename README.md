@@ -120,8 +120,6 @@ var ParseServer = require('parse-server').ParseServer;
 
 var app = express();
 
-var port = process.env.PORT || 1337;
-
 // Specify the connection string for your mongodb database
 // and the location to your Parse cloud code
 var api = new ParseServer({
@@ -141,6 +139,7 @@ app.get('/', function(req, res) {
   res.status(200).send('Express is running here.');
 });
 
+var port = process.env.PORT || 1337;
 app.listen(port, function() {
   console.log('parse-server-example running on port ' + port + '.');
 });
@@ -174,6 +173,86 @@ Alernatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to
 
 To start the server, just run `npm start`.
 
+
+#### Configuration file
+
+You can pass a configuration JSON file to npm start:
+
+`$ npm start -- --config path/to/config.json`
+
+(note that the first `--` is the required format by npm)
+
+#### Multiple applications
+
+You can host mutiple applications on the same server by specifying as options or use a config JSON;
+
+```
+{
+	"applications": [
+		{
+			"appId": "APP1",
+			"masterKey": "MASTERKEY1",
+			...
+		},
+		{
+			"appId": "APP2",
+			"masterKey": "MASTERKEY2",
+			...
+		},
+    // General adapters configuration (optional)
+    // It's overriden by specific configuration
+    databaseAdapter: "...",
+    filesAdatpter: "..."
+	]
+}
+```
+
+Use `$ npm start -- --config path/to/config.json` to start the server
+
+
+:+1: if you use the `PARSE_SERVER_OPTIONS` environment variable, the multiple applications support will be granted too.
+
+:warning: Make sure to use different databases for each app. The behaviour could be unexpected otherwise.
+
+##### Cloud Code for multiple applications
+
+Cloud code will run in a separate node process and use HTTP as a transport to register the hooks.
+
+```
+cloud: "path/to/main.js"
+```
+
+The cloud code server will start on port 8081 and will be incremented for each app.
+
+
+You can specify a specific port for each of your cloud code:
+
+```
+cloud: {
+  main: "/path/to/main.js",
+  port: 12345,
+  forever: {
+    ... // (Options to pass to forever)[https://github.com/foreverjs/forever-monitor]
+  }
+}
+```
+
+If you only have a single app, but pass an object for the cloud option,
+this will be run in a separate process too.
+
+The other options available for Cloud Code are:
+
+`hooksCreationStrategy: "always" | "never" | "try"`
+
+* *always* will always use the last cloud code server 
+* *never* will not register the new hook
+* *try* will register the hook if it doesn't exist
+
+##### Standalone Cloud Code Server
+
+please see (here)[https://github.com/ParsePlatform/parse-server/blob/master/src/cloud-code/README.md]
+
+
 ##### Global installation
 
 You can install parse-server globally
@@ -182,6 +261,14 @@ You can install parse-server globally
 
 Now you can just run `$ parse-server` from your command line.
 
+To pass a configuration file you can use `$ parse-server --config path/to/config.json`
+
+
+#### Create a new set of keys
+
+run `$ ./bin/gen-keys` to generate a new set of keys for a new app.
+
+You can use the configuration provided with the json configuration.
 
 ### Supported
 

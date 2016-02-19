@@ -24,8 +24,9 @@ function Config(applicationId, mount) {
 
   this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
   this.filesController = cacheInfo.filesController;
-
+  this.pushController = cacheInfo.pushController;   
   this.oauth = cacheInfo.oauth;
+
   this.mount = mount;
 }
 
