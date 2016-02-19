@@ -116,9 +116,7 @@ function ParseServer(args) {
 
   // Initialize the node client SDK automatically
   Parse.initialize(args.appId, args.javascriptKey || '', args.masterKey);
-  if(args.serverURL) {
-    Parse.serverURL = args.serverURL;
-  }
+  Parse.serverURL = args.serverURL || '';
 
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
