@@ -49,7 +49,7 @@ describe('Parse Role testing', () => {
     }).then((x) => {
       x.set('foo', 'baz');
       // This should fail:
-      return x.save();
+      return x.save({},{sessionToken: ""});
     }).then((x) => {
       fail('Should not have been able to save.');
     }, (e) => {

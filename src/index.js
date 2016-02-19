@@ -72,7 +72,7 @@ function ParseServer({
   facebookAppIds = [],
   enableAnonymousUsers = true,
   oauth = {},
-  serverURL,
+  serverURL = '',
 }) {
   if (!appId || !masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -128,9 +128,7 @@ function ParseServer({
 
   // Initialize the node client SDK automatically
   Parse.initialize(appId, javascriptKey, masterKey);
-  if (serverURL) {
-    Parse.serverURL = serverURL;
-  }
+  Parse.serverURL = serverURL;
 
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
