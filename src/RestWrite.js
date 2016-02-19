@@ -90,7 +90,7 @@ RestWrite.prototype.execute = function() {
 
 // Validates this operation against the schema.
 RestWrite.prototype.validateSchema = function() {
-  return this.config.database.validateObject(this.className, this.data);
+  return this.config.database.validateObject(this.className, this.data, this.query);
 };
 
 // Runs any beforeSave triggers against this operation.

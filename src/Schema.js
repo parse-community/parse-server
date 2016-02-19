@@ -59,8 +59,22 @@ var defaultColumns = {
     "sessionToken":   {type:'String'},
     "expiresAt":      {type:'Date'},
     "createdWith":    {type:'Object'}
+  },
+  _Product: {
+    "productIdentifier":  {type:'String'},
+    "download":           {type:'File'},
+    "downloadName":       {type:'String'},
+    "icon":               {type:'File'},
+    "order":              {type:'Number'},
+    "title":              {type:'String'},
+    "subtile":            {type:'String'},
   }
 };
+
+
+var requiredColumns = {
+  _Product: ["productIdentifier", "icon", "order", "title", "subtitle"]
+}
 
 // Valid classes must:
 // Be one of _User, _Installation, _Role, _Session OR
@@ -75,6 +89,7 @@ function classNameIsValid(className) {
     className === '_Session' ||
     className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
     className === '_Role' ||
+    className === '_Product' ||
     joinClassRegex.test(className) ||
     //Class names have the same constraints as field names, but also allow the previous additional names.
     fieldNameIsValid(className)
@@ -565,7 +580,7 @@ function thenValidateField(schemaPromise, className, key, type) {
 // Validates an object provided in REST format.
 // Returns a promise that resolves to the new schema if this object is
 // valid.
-Schema.prototype.validateObject = function(className, object) {
+Schema.prototype.validateObject = function(className, object, query) {
   var geocount = 0;
   var promise = this.validateClassName(className);
   for (var key in object) {
@@ -586,8 +601,47 @@ Schema.prototype.validateObject = function(className, object) {
     }
     promise = thenValidateField(promise, className, key, expected);
   }
+  promise = thenValidateRequiredColumns(promise, className, object, query);
   return promise;
 };
+
+// Given a schema promise, construct another schema promise that
+// validates this field once the schema loads.
+function thenValidateRequiredColumns(schemaPromise, className, object, query) {
+  return schemaPromise.then((schema) => {
+    return schema.validateRequiredColumns(className, object, query);
+  });
+}
+
+// Validates that all the properties are set for the object
+Schema.prototype.validateRequiredColumns = function(className, object, query) {
+
+  var columns = requiredColumns[className];
+  if (!columns || columns.length == 0) {
+    return Promise.resolve(this);
+  }
+    
+  var missingColumns = columns.filter(function(column){
+    if (query && query.objectId) {
+      if (object[column] && typeof object[column] === "object") {
+        // Trying to delete a required column
+        return object[column].__op == 'Delete';
+      }
+      // Not trying to do anything there
+      return false;
+    }
+    return !object[column] 
+  });
+  
+  if (missingColumns.length > 0) {
+   throw new Parse.Error(
+        Parse.Error.INCORRECT_TYPE,
+        missingColumns[0]+' is required.');
+  }
+  
+  return Promise.resolve(this);
+}
+
 
 // Validates an operation passes class-level-permissions set in the schema
 Schema.prototype.validatePermission = function(className, aclGroup, operation) {
