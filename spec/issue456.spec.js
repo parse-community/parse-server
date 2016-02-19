@@ -68,4 +68,17 @@ describe("issue 456", () => {
     });
     
   })
+  
+  it("should properly run query promises together in cloud code", (done) => {
+    
+    Parse.Cloud.run("testCreateManyObjectInParallel").then( (res) => {
+      expect(res.length).toBe(2);
+      expect(res[0].length).toBe(200);
+      expect(res[1].length).toBe(200);
+      done();
+    }).fail((err) => {
+      fail(err);
+      done();
+    });
+  });
 })

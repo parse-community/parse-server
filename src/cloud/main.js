@@ -129,3 +129,48 @@ Parse.Cloud.define("testRunQueriesTogether", (req, res) => {
     res.success([obj1Again, obj2Again]);
   });
 });
+
+Parse.Cloud.define("testCreateManyObjectInParallel", (req, res) => {
+  var objects1 = [];
+  var objects2 = [];
+  // create 400 objects
+  for(var i=0; i<200; i++) {
+    var objA = new Parse.Object("ObjectA");
+    var objB = new Parse.Object("ObjectB");
+    objA.set({
+      index: i
+    })
+    objB.set({
+      index: i
+    })
+    objects1.push(objA);
+    objects2.push(objB);
+  }
+  
+  // Gotta save dem all
+  var promises = [];
+  promises.push(Parse.Object.saveAll(objects1));
+  promises.push(Parse.Object.saveAll(objects2));
+  return Parse.Promise.when(promises).then(function(res){
+    if (res.length != 2) {
+      throw "Should have two results"
+    }
+    if (res[0].length != 200) {
+      throw "Should have saved 200 object on the 1st class"
+    }
+    if (res[1].length != 200) {
+      throw "Should have saved 200 object on the 2nd class"
+    }
+    var qA = new Parse.Query("ObjectA");
+    var qB = new Parse.Query("ObjectB");
+    qA.limit(1000);
+    qB.limit(1000);
+    var promises = [];
+    promises.push(qA.find());
+    promises.push(qB.find());
+    return Parse.Promise.when(promises);  
+  }).then(function(results){
+    res.success(results);
+  })
+  
+})
