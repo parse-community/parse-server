@@ -3,7 +3,7 @@ describe("bug #454", () => {
   it("should update password with master key", done => {
     const user = new Parse.User();
     user.set("username", "hello");
-    user.set("password", "world");
+    user.setPassword("world");
     var userId;
     
     user.save().then(res => {
@@ -19,7 +19,7 @@ describe("bug #454", () => {
       expect(res.length).toBe(1);
       const user = res[0];
       expect(user.id).toEqual(userId);
-      user.set("password", "bla");
+      user.setPassword("bla");
       return user.save(null, {useMasterKey: true});
     }).then((res) => {
       return Parse.User.logIn("hello", "bla")
