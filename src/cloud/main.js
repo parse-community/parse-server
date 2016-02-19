@@ -102,3 +102,30 @@ Parse.Cloud.define('requiredParameterCheck', function(req, res) {
 }, function(params) {
   return params.name;
 });
+
+Parse.Cloud.define("testRunQueriesTogether", (req, res) => {
+  const obj1 = new Parse.Object("ObjectA");
+  obj1.set({
+    "foo": "bar"
+  })
+  
+  const obj2 = new Parse.Object("ObjectB");
+  obj2.set({
+    "bar": "baz"
+  });
+  
+  Parse.Promise.when(obj1.save(), obj2.save()).then((obj1Again, obj2Again) => {
+    expect(obj1Again.get("foo")).toEqual("bar");
+    expect(obj2Again.get("bar")).toEqual("baz");
+    
+    const q1 = new Parse.Query("ObjectA");
+    const q2 = new Parse.Query("ObjectB");
+    
+    return Parse.Promise.when(q1.first(), q2.first())
+    
+  }).then((obj1Again, obj2Again) => {
+    expect(obj1Again.get("foo")).toEqual("bar");
+    expect(obj2Again.get("bar")).toEqual("baz");
+    res.success([obj1Again, obj2Again]);
+  });
+});
