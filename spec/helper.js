@@ -7,12 +7,13 @@ var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
 var facebook = require('../src/oauth/facebook');
 var ParseServer = require('../src/index').ParseServer;
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
 
-// Set up an API server for testing
-var api = new ParseServer({
+// Default server configuration for tests.
+var defaultConfiguration = {
   databaseURI: databaseURI,
   cloud: cloudMain,
   appId: 'test',
@@ -29,12 +30,29 @@ var api = new ParseServer({
       module: "../spec/myoauth" // relative path as it's run from src
     }
   }
-});
+};
 
+// Set up a default API server for testing with default configuration.
+var api = new ParseServer(defaultConfiguration);
 var app = express();
 app.use('/1', api);
 var port = 8378;
 var server = app.listen(port);
+
+// Prevent reinitializing the server from clobbering Cloud Code
+delete defaultConfiguration.cloud;
+
+// Allows testing specific configurations of Parse Server
+var setServerConfiguration = configuration => {
+  api = new ParseServer(configuration);
+  app = express();
+  app.use('/1', api);
+  cache.clearCache();
+  server.close();
+  server = app.listen(port);
+}
+
+var restoreServerConfiguration = () => setServerConfiguration(defaultConfiguration);
 
 // Set up a Parse client to talk to our test API server
 var Parse = require('parse/node');
@@ -51,9 +69,11 @@ beforeEach(function(done) {
 });
 
 afterEach(function(done) {
+  restoreServerConfiguration();
   Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
+    DatabaseAdapter.clearDatabaseURIs();
     done();
   }, (error) => {
     console.log('error in clearData', error);
@@ -221,3 +241,4 @@ global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
+global.setServerConfiguration = setServerConfiguration;
