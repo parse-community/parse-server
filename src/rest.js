@@ -57,11 +57,18 @@ function del(config, auth, className, objectId) {
     }
     return Promise.resolve({});
   }).then(() => {
+    if (!auth.isMaster) {
+      return auth.getUserRoles();
+    }else{
+      return Promise.resolve();
+    }
+  }).then(() => {
     var options = {};
     if (!auth.isMaster) {
       options.acl = ['*'];
       if (auth.user) {
         options.acl.push(auth.user.id);
+        options.acl = options.acl.concat(auth.userRoles);
       }
     }
 

@@ -1,5 +1,12 @@
 ## Parse Server Changelog
 
+### 2.1.2 (2/19/2016)
+
+* Change: The S3 file adapter constructor requires a bucket name
+* Fix: Parse Query should throw if improperly encoded
+* Fix: Issue where roles were not used in some requests
+* Fix: serverURL will no longer default to api.parse.com/1
+
 ### 2.1.1 (2/18/2016)
 
 * Experimental: Schemas API support for DELETE operations

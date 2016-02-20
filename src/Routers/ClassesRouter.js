@@ -2,11 +2,22 @@
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 
-export class ClassesRouter {
-  // Returns a promise that resolves to a {response} object.
+import url from 'url';
+
+export class ClassesRouter extends PromiseRouter {
+  
   handleFind(req) {
     let body = Object.assign(req.body, req.query);
     let options = {};
+    let allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
+      'include', 'redirectClassNameForKey', 'where'];
+
+    for (var key in body) {
+      if (allowConstraints.indexOf(key) === -1) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+      }
+    }
+
     if (body.skip) {
       options.skip = Number(body.skip);
     }
@@ -86,15 +97,13 @@ export class ClassesRouter {
         return {response: {}};
       });
   }
-
-  getExpressRouter() {
-    var router = new PromiseRouter();
-    router.route('GET', '/classes/:className', (req) => { return this.handleFind(req); });
-    router.route('GET', '/classes/:className/:objectId', (req) => { return this.handleGet(req); });
-    router.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
-    router.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
-    router.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
-    return router;
+  
+  mountRoutes() {
+    this.route('GET', '/classes/:className', (req) => { return this.handleFind(req); });
+    this.route('GET', '/classes/:className/:objectId', (req) => { return this.handleGet(req); });
+    this.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
+    this.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
+    this.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
   }
 }
 

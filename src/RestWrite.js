@@ -27,6 +27,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
   this.auth = auth;
   this.className = className;
   this.storage = {};
+  this.runOptions = {};
 
   if (!query && data.objectId) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
@@ -66,6 +67,8 @@ function RestWrite(config, auth, className, query, data, originalData) {
 // status and location are optional.
 RestWrite.prototype.execute = function() {
   return Promise.resolve().then(() => {
+    return this.getUserAndRoleACL();
+  }).then(() => {
     return this.validateSchema();
   }).then(() => {
     return this.handleInstallation();
@@ -88,9 +91,28 @@ RestWrite.prototype.execute = function() {
   });
 };
 
+// Uses the Auth object to get the list of roles, adds the user id
+RestWrite.prototype.getUserAndRoleACL = function() {
+  if (this.auth.isMaster) {
+    return Promise.resolve();
+  }
+
+  this.runOptions.acl = ['*'];
+
+  if( this.auth.user ){
+    return this.auth.getUserRoles().then((roles) => {
+      roles.push(this.auth.user.id);
+      this.runOptions.acl = this.runOptions.acl.concat(roles);
+      return Promise.resolve();
+    });
+  }else{
+    return Promise.resolve();
+  }
+};
+
 // Validates this operation against the schema.
 RestWrite.prototype.validateSchema = function() {
-  return this.config.database.validateObject(this.className, this.data);
+  return this.config.database.validateObject(this.className, this.data, this.query);
 };
 
 // Runs any beforeSave triggers against this operation.
@@ -683,6 +705,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
+  
+  if (this.className === '_Product' && this.data.download) {
+    this.data.downloadName = this.data.download.name;
+  }
 
   // TODO: Add better detection for ACL, ensuring a user can't be locked from
   //       their own user record.
@@ -690,18 +716,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.INVALID_ACL, 'Invalid ACL.');
   }
 
-  var options = {};
-  if (!this.auth.isMaster) {
-    options.acl = ['*'];
-    if (this.auth.user) {
-      options.acl.push(this.auth.user.id);
-    }
-  }
-
   if (this.query) {
     // Run an update
     return this.config.database.update(
-      this.className, this.query, this.data, options).then((resp) => {
+      this.className, this.query, this.data, this.runOptions).then((resp) => {
         this.response = resp;
         this.response.updatedAt = this.updatedAt;
       });
@@ -714,7 +732,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.data.ACL = ACL;
     } 
     // Run a create
-    return this.config.database.create(this.className, this.data, options)
+    return this.config.database.create(this.className, this.data, this.runOptions)
       .then(() => {
         var resp = {
           objectId: this.data.objectId,

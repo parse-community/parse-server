@@ -48,15 +48,13 @@ export class SessionsRouter extends ClassesRouter {
       });
   }
 
-  getExpressRouter() {
-    let router = new PromiseRouter();
-    router.route('GET','/sessions/me', req => { return this.handleMe(req); });
-    router.route('GET', '/sessions', req => { return this.handleFind(req); });
-    router.route('GET', '/sessions/:objectId', req => { return this.handleGet(req); });
-    router.route('POST', '/sessions', req => { return this.handleCreate(req); });
-    router.route('PUT', '/sessions/:objectId', req => { return this.handleUpdate(req); });
-    router.route('DELETE', '/sessions/:objectId', req => { return this.handleDelete(req); });
-    return router;
+  mountRoutes() {
+    this.route('GET','/sessions/me', req => { return this.handleMe(req); });
+    this.route('GET', '/sessions', req => { return this.handleFind(req); });
+    this.route('GET', '/sessions/:objectId', req => { return this.handleGet(req); });
+    this.route('POST', '/sessions', req => { return this.handleCreate(req); });
+    this.route('PUT', '/sessions/:objectId', req => { return this.handleUpdate(req); });
+    this.route('DELETE', '/sessions/:objectId', req => { return this.handleDelete(req); });
   }
 }
 
