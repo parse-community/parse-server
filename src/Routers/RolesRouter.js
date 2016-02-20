@@ -29,14 +29,12 @@ export class RolesRouter extends ClassesRouter {
     return super.handleDelete(req);
   }
 
-  getExpressRouter() {
-    let router = new PromiseRouter();
-    router.route('GET','/roles', req => { return this.handleFind(req); });
-    router.route('GET','/roles/:objectId', req => { return this.handleGet(req); });
-    router.route('POST','/roles', req => { return this.handleCreate(req); });
-    router.route('PUT','/roles/:objectId', req => { return this.handleUpdate(req); });
-    router.route('DELETE','/roles/:objectId', req => { return this.handleDelete(req); });
-    return router;
+  mountRoutes() {
+    this.route('GET','/roles', req => { return this.handleFind(req); });
+    this.route('GET','/roles/:objectId', req => { return this.handleGet(req); });
+    this.route('POST','/roles', req => { return this.handleCreate(req); });
+    this.route('PUT','/roles/:objectId', req => { return this.handleUpdate(req); });
+    this.route('DELETE','/roles/:objectId', req => { return this.handleDelete(req); });
   }
 }
 

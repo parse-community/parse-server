@@ -2,11 +2,11 @@
 
 var express = require('express'),
     Parse = require('parse/node').Parse,
-    PromiseRouter = require('./PromiseRouter'),
-    Schema = require('./Schema');
+    Schema = require('../Schema');
 
-var router = new PromiseRouter();
+import PromiseRouter from '../PromiseRouter';
 
+// TODO: refactor in a SchemaController at one point...
 function masterKeyRequiredResponse() {
   return Promise.resolve({
     status: 401,
@@ -257,21 +257,23 @@ function deleteSchema(req) {
       }
     });
   }))
-  .catch(error => {
+  .catch( (error) => {
     if (error.message == 'ns not found') {
       // If they try to delete a non-existant class, thats fine, just let them.
       return Promise.resolve({ response: {} });
-    } else {
-      return Promise.reject(error);
-    }
+    } 
+    
+    return Promise.reject(error);
   });
 }
 
-router.route('GET', '/schemas', getAllSchemas);
-router.route('GET', '/schemas/:className', getOneSchema);
-router.route('POST', '/schemas', createSchema);
-router.route('POST', '/schemas/:className', createSchema);
-router.route('PUT', '/schemas/:className', modifySchema);
-router.route('DELETE', '/schemas/:className', deleteSchema);
-
-module.exports = router;
+export class SchemasRouter extends PromiseRouter {
+  mountRoutes() {
+    this.route('GET', '/schemas', getAllSchemas);
+    this.route('GET', '/schemas/:className', getOneSchema);
+    this.route('POST', '/schemas', createSchema);
+    this.route('POST', '/schemas/:className', createSchema);
+    this.route('PUT', '/schemas/:className', modifySchema);
+    this.route('DELETE', '/schemas/:className', deleteSchema);
+  }
+}

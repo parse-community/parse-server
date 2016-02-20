@@ -8,9 +8,9 @@ var batch = require('./batch'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
-    PromiseRouter = require('./PromiseRouter'),
     httpRequest = require('./httpRequest');
-
+    
+import PromiseRouter           from './PromiseRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';
 import { FilesController }     from './Controllers/FilesController';
@@ -23,6 +23,11 @@ import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { UsersRouter }         from './Routers/UsersRouter';
 import { SessionsRouter }      from './Routers/SessionsRouter';
 import { RolesRouter }         from './Routers/RolesRouter';
+import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
+import { FunctionsRouter }     from './Routers/FunctionsRouter';
+import { SchemasRouter }       from './Routers/SchemasRouter';
+import { IAPValidationRouter } from './Routers/IAPValidationRouter';
+
 
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -148,18 +153,19 @@ function ParseServer({
   api.use(middlewares.handleParseHeaders);
 
   let routers = [
-    new ClassesRouter().getExpressRouter(),
-    new UsersRouter().getExpressRouter(),
-    new SessionsRouter().getExpressRouter(),
-    new RolesRouter().getExpressRouter(),
-    require('./analytics'),
-    new InstallationsRouter().getExpressRouter(),
-    require('./functions'),
-    require('./schemas'),
+    new ClassesRouter(),
+    new UsersRouter(),
+    new SessionsRouter(),
+    new RolesRouter(),
+    new AnalyticsRouter(),
+    new InstallationsRouter(),
+    new FunctionsRouter(),
+    new SchemasRouter(),
     PushController.getExpressRouter(),
     new LoggerController(loggerAdapter).getExpressRouter(),
-    require('./validate_purchase')
+    new IAPValidationRouter()
   ];
+  
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
   }

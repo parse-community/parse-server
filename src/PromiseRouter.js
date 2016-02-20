@@ -5,7 +5,7 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-function PromiseRouter() {
+export default class PromiseRouter {
   // Each entry should be an object with:
   // path: the path to route, in express format
   // method: the HTTP method that this route handles.
@@ -15,73 +15,102 @@ function PromiseRouter() {
   //     status: optional. the http status code. defaults to 200
   //     response: a json object with the content of the response
   //     location: optional. a location header
-  this.routes = [];
+  constructor() {
+    this.routes = [];
+    this.mountRoutes();
+  }
+  
+  // Leave the opportunity to
+  // subclasses to mount their routes by overriding
+  mountRoutes() {}
+  
+  // Merge the routes into this one
+  merge(router) {
+    for (var route of router.routes) {
+      this.routes.push(route);
+    }
+  };
+  
+  route(method, path, handler) {
+    switch(method) {
+    case 'POST':
+    case 'GET':
+    case 'PUT':
+    case 'DELETE':
+      break;
+    default:
+      throw 'cannot route method: ' + method;
+    }
+
+    this.routes.push({
+      path: path,
+      method: method,
+      handler: handler
+    });
+  };
+  
+  // Returns an object with:
+  //   handler: the handler that should deal with this request
+  //   params: any :-params that got parsed from the path
+  // Returns undefined if there is no match.
+  match(method, path) {
+    for (var route of this.routes) {
+      if (route.method != method) {
+        continue;
+      }
+
+      // NOTE: we can only route the specific wildcards :className and
+      // :objectId, and in that order.
+      // This is pretty hacky but I don't want to rebuild the entire
+      // express route matcher. Maybe there's a way to reuse its logic.
+      var pattern = '^' + route.path + '$';
+
+      pattern = pattern.replace(':className',
+                                '(_?[A-Za-z][A-Za-z_0-9]*)');
+      pattern = pattern.replace(':objectId',
+                                '([A-Za-z0-9]+)');
+      var re = new RegExp(pattern);
+      var m = path.match(re);
+      if (!m) {
+        continue;
+      }
+      var params = {};
+      if (m[1]) {
+        params.className = m[1];
+      }
+      if (m[2]) {
+        params.objectId = m[2];
+      }
+
+      return {params: params, handler: route.handler};
+    }
+  };
+  
+  // Mount the routes on this router onto an express app (or express router)
+  mountOnto(expressApp) {
+    for (var route of this.routes) {
+      switch(route.method) {
+      case 'POST':
+        expressApp.post(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'GET':
+        expressApp.get(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'PUT':
+        expressApp.put(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'DELETE':
+        expressApp.delete(route.path, makeExpressHandler(route.handler));
+        break;
+      default:
+        throw 'unexpected code branch';
+      }
+    }
+  };
 }
 
 // Global flag. Set this to true to log every request and response.
 PromiseRouter.verbose = process.env.VERBOSE || false;
-
-// Merge the routes into this one
-PromiseRouter.prototype.merge = function(router) {
-  for (var route of router.routes) {
-    this.routes.push(route);
-  }
-};
-
-PromiseRouter.prototype.route = function(method, path, handler) {
-  switch(method) {
-  case 'POST':
-  case 'GET':
-  case 'PUT':
-  case 'DELETE':
-    break;
-  default:
-    throw 'cannot route method: ' + method;
-  }
-
-  this.routes.push({
-    path: path,
-    method: method,
-    handler: handler
-  });
-};
-
-// Returns an object with:
-//   handler: the handler that should deal with this request
-//   params: any :-params that got parsed from the path
-// Returns undefined if there is no match.
-PromiseRouter.prototype.match = function(method, path) {
-  for (var route of this.routes) {
-    if (route.method != method) {
-      continue;
-    }
-
-    // NOTE: we can only route the specific wildcards :className and
-    // :objectId, and in that order.
-    // This is pretty hacky but I don't want to rebuild the entire
-    // express route matcher. Maybe there's a way to reuse its logic.
-    var pattern = '^' + route.path + '$';
-
-    pattern = pattern.replace(':className',
-                              '(_?[A-Za-z][A-Za-z_0-9]*)');
-    pattern = pattern.replace(':objectId',
-                              '([A-Za-z0-9]+)');
-    var re = new RegExp(pattern);
-    var m = path.match(re);
-    if (!m) {
-      continue;
-    }
-    var params = {};
-    if (m[1]) {
-      params.className = m[1];
-    }
-    if (m[2]) {
-      params.objectId = m[2];
-    }
-
-    return {params: params, handler: route.handler};
-  }
-};
 
 // A helper function to make an express handler out of a a promise
 // handler.
@@ -122,27 +151,3 @@ function makeExpressHandler(promiseHandler) {
     }
   }
 }
-
-// Mount the routes on this router onto an express app (or express router)
-PromiseRouter.prototype.mountOnto = function(expressApp) {
-  for (var route of this.routes) {
-    switch(route.method) {
-    case 'POST':
-      expressApp.post(route.path, makeExpressHandler(route.handler));
-      break;
-    case 'GET':
-      expressApp.get(route.path, makeExpressHandler(route.handler));
-      break;
-    case 'PUT':
-      expressApp.put(route.path, makeExpressHandler(route.handler));
-      break;
-    case 'DELETE':
-      expressApp.delete(route.path, makeExpressHandler(route.handler));
-      break;
-    default:
-      throw 'unexpected code branch';
-    }
-  }
-};
-
-module.exports = PromiseRouter;
