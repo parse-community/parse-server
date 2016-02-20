@@ -11,11 +11,13 @@ var DatabaseAdapter = require('../src/DatabaseAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
+var port = 8378;
 
 // Default server configuration for tests.
 var defaultConfiguration = {
   databaseURI: databaseURI,
   cloud: cloudMain,
+  serverURL: 'http://localhost:' + port + '/1',
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',
@@ -36,7 +38,6 @@ var defaultConfiguration = {
 var api = new ParseServer(defaultConfiguration);
 var app = express();
 app.use('/1', api);
-var port = 8378;
 var server = app.listen(port);
 
 // Prevent reinitializing the server from clobbering Cloud Code

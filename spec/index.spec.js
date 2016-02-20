@@ -10,6 +10,7 @@ describe('server', () => {
   it('fails if database is unreachable', done => {
     setServerConfiguration({
       databaseURI: 'mongodb://fake:fake@ds043605.mongolab.com:43605/drew3',
+      serverURL: 'http://localhost:8378/1',
       appId: 'test',
       javascriptKey: 'test',
       dotNetKey: 'windows',
