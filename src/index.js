@@ -30,6 +30,7 @@ import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
+import { LogsRouter }         from './Routers/LogsRouter';
 
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -168,7 +169,7 @@ function ParseServer({
     new FunctionsRouter(),
     new SchemasRouter(),
     new PushRouter(),
-    new LoggerController(loggerAdapter).getExpressRouter(),
+    new LogsRouter(),
     new IAPValidationRouter()
   ];
   
