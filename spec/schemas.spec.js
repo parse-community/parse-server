@@ -1,6 +1,9 @@
 var Parse = require('parse/node').Parse;
 var request = require('request');
 var dd = require('deep-diff');
+var Config = require('../src/Config');
+
+var config = new Config('test');
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');
@@ -631,6 +634,104 @@ describe('schemas', () => {
           done();
         });
       });
+    });
+  });
+
+  it('requires the master key to delete schemas', done => {
+    request.del({
+      url: 'http://localhost:8378/1/schemas/DoesntMatter',
+      headers: noAuthHeaders,
+      json: true,
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
+  it('refuses to delete non-empty collection', done => {
+    var obj = hasAllPODobject();
+    obj.save()
+    .then(() => {
+      request.del({
+        url: 'http://localhost:8378/1/schemas/HasAllPOD',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(400);
+        expect(body.code).toEqual(255);
+        expect(body.error).toEqual('class HasAllPOD not empty, contains 1 objects, cannot drop schema');
+        done();
+      });
+    });
+  });
+
+  it('fails when deleting collections with invalid class names', done => {
+    request.del({
+      url: 'http://localhost:8378/1/schemas/_GlobalConfig',
+      headers: masterKeyHeaders,
+      json: true,
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(400);
+      expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+      expect(body.error).toEqual('Invalid classname: _GlobalConfig, classnames can only have alphanumeric characters and _, and must start with an alpha character ');
+      done();
+    })
+  });
+
+  it('does not fail when deleting nonexistant collections', done => {
+    request.del({
+      url: 'http://localhost:8378/1/schemas/Missing',
+      headers: masterKeyHeaders,
+      json: true,
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      expect(body).toEqual({});
+      done();
+    });
+  });
+
+  it('deletes collections including join tables', done => {
+    var obj = new Parse.Object('MyClass');
+    obj.set('data', 'data');
+    obj.save()
+    .then(() => {
+      var obj2 = new Parse.Object('MyOtherClass');
+      var relation = obj2.relation('aRelation');
+      relation.add(obj);
+      return obj2.save();
+    })
+    .then(obj2 => obj2.destroy())
+    .then(() => {
+      request.del({
+        url: 'http://localhost:8378/1/schemas/MyOtherClass',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(200);
+        expect(response.body).toEqual({});
+        config.database.db.collection('test__Join:aRelation:MyOtherClass', { strict: true }, (err, coll) => {
+          //Expect Join table to be gone
+          expect(err).not.toEqual(null);
+          config.database.db.collection('test_MyOtherClass', { strict: true }, (err, coll) => {
+            // Expect data table to be gone
+            expect(err).not.toEqual(null);
+            request.get({
+              url: 'http://localhost:8378/1/schemas/MyOtherClass',
+              headers: masterKeyHeaders,
+              json: true,
+            }, (error, response, body) => {
+              //Expect _SCHEMA entry to be gone.
+              expect(response.statusCode).toEqual(400);
+              expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+              expect(body.error).toEqual('class MyOtherClass does not exist');
+              done();
+            });
+          });
+        });
+      });
+    }, error => {
+      fail(error);
     });
   });
 });

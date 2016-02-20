@@ -2,11 +2,22 @@
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 
+import url from 'url';
+
 export class ClassesRouter {
   // Returns a promise that resolves to a {response} object.
   handleFind(req) {
     let body = Object.assign(req.body, req.query);
     let options = {};
+    let allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
+      'include', 'redirectClassNameForKey', 'where'];
+
+    for (var key in body) {
+      if (allowConstraints.indexOf(key) === -1) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+      }
+    }
+
     if (body.skip) {
       options.skip = Number(body.skip);
     }
@@ -54,10 +65,17 @@ export class ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
         
-        if(req.params.className === "_User"){
+        if (req.params.className === "_User") {
+          
           delete response.results[0].sessionToken;
-        }
-
+          
+          const user =  response.results[0];
+         
+          if (req.auth.user && user.objectId == req.auth.user.id) {
+            // Force the session token
+            response.results[0].sessionToken = req.info.sessionToken;
+          }
+        }        
         return { response: response.results[0] };
       });
   }

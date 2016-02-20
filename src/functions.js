@@ -10,10 +10,15 @@ var router = new PromiseRouter();
 function handleCloudFunction(req) {
   if (Parse.Cloud.Functions[req.params.functionName]) {
 
-    const params = Object.assign({}, req.body, req.query);
-    
+    var request = {
+      params: Object.assign({}, req.body, req.query),
+      master: req.auth && req.auth.isMaster,
+      user: req.auth && req.auth.user,
+      installationId: req.info.installationId
+    };
+
     if (Parse.Cloud.Validators[req.params.functionName]) {
-      var result = Parse.Cloud.Validators[req.params.functionName](params);
+      var result = Parse.Cloud.Validators[req.params.functionName](request);
       if (!result) {
         throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
       }
@@ -21,12 +26,6 @@ function handleCloudFunction(req) {
 
     return new Promise(function (resolve, reject) {
       var response = createResponseObject(resolve, reject);
-      var request = {
-        params: params,
-        master: req.auth && req.auth.isMaster,
-        user: req.auth && req.auth.user,
-        installationId: req.info.installationId
-      };
       Parse.Cloud.Functions[req.params.functionName](request, response);
     });
   } else {

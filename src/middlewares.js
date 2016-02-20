@@ -26,7 +26,7 @@ function handleParseHeaders(req, res, next) {
     restAPIKey: req.get('X-Parse-REST-API-Key')
   };
 
-  if (req.body && req.body._noBody) {
+  if (req.body) {
     // Unity SDK sends a _noBody key which needs to be removed.
     // Unclear at this point if action needs to be taken.
     delete req.body._noBody;
@@ -138,7 +138,7 @@ function handleParseHeaders(req, res, next) {
 var allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', '*');
+  res.header('Access-Control-Allow-Headers', 'X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
 
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {

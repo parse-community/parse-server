@@ -587,7 +587,7 @@ describe('miscellaneous', function() {
       done();
     });
   });
-  
+
   it('test cloud function query parameters', (done) => {
     Parse.Cloud.define('echoParams', (req, res) => {
       res.success(req.params);
@@ -621,8 +621,8 @@ describe('miscellaneous', function() {
     // Register a function with validation
     Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
       res.success('works');
-    }, (params) => {
-      return params.success === 100;
+    }, (request) => {
+      return request.params.success === 100;
     });
 
     Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
@@ -638,8 +638,8 @@ describe('miscellaneous', function() {
     // Register a function with validation
     Parse.Cloud.define('functionWithParameterValidationFailure', (req, res) => {
       res.success('noway');
-    }, (params) => {
-      return params.success === 100;
+    }, (request) => {
+      return request.params.success === 100;
     });
 
     Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
@@ -717,6 +717,17 @@ describe('miscellaneous', function() {
       expect(error).toBe(null);
       var b = JSON.parse(body);
       expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
+  it('fails on invalid function', done => {
+    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then((s) => {
+      fail('This should have never suceeded');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toEqual('Invalid function.');
       done();
     });
   });
