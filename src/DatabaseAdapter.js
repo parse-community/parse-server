@@ -34,6 +34,12 @@ function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
 }
 
+//Used by tests
+function clearDatabaseURIs() {
+  appDatabaseURIs = {};
+  dbConnections = {};
+}
+
 function getDatabaseConnection(appId) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
@@ -52,5 +58,6 @@ module.exports = {
   getDatabaseConnection: getDatabaseConnection,
   setAdapter: setAdapter,
   setDatabaseURI: setDatabaseURI,
-  setAppDatabaseURI: setAppDatabaseURI
+  setAppDatabaseURI: setAppDatabaseURI,
+  clearDatabaseURIs: clearDatabaseURIs,
 };

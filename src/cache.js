@@ -25,6 +25,13 @@ function clearUser(sessionToken) {
   delete users[sessionToken];
 }
 
+//So far used only in tests
+function clearCache() {
+  apps = {};
+  stats = {};
+  users = {};
+}
+
 module.exports = {
   apps: apps,
   stats: stats,
@@ -33,5 +40,6 @@ module.exports = {
   updateStat: updateStat,
   clearUser: clearUser,
   getUser: getUser,
-  setUser: setUser
+  setUser: setUser,
+  clearCache: clearCache,
 };
