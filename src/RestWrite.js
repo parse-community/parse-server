@@ -112,7 +112,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the schema.
 RestWrite.prototype.validateSchema = function() {
-  return this.config.database.validateObject(this.className, this.data);
+  return this.config.database.validateObject(this.className, this.data, this.query);
 };
 
 // Runs any beforeSave triggers against this operation.
@@ -704,6 +704,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
       !this.auth.couldUpdateUserId(this.query.objectId)) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
+  }
+  
+  if (this.className === '_Product' && this.data.download) {
+    this.data.downloadName = this.data.download.name;
   }
 
   // TODO: Add better detection for ACL, ensuring a user can't be locked from

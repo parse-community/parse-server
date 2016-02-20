@@ -146,7 +146,8 @@ function ParseServer(args) {
     require('./functions'),
     require('./schemas'),
     new PushController(pushAdapter).getExpressRouter(),
-    new LoggerController(loggerAdapter).getExpressRouter()
+    new LoggerController(loggerAdapter).getExpressRouter(),
+    require('./validate_purchase')
   ];
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
