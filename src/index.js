@@ -18,6 +18,7 @@ import { FilesController }     from './Controllers/FilesController';
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
 import { PushController }      from './Controllers/PushController';
 
+
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { UsersRouter }         from './Routers/UsersRouter';
@@ -27,7 +28,7 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
-
+import { PushRouter }          from './Routers/PushRouter';
 
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -111,6 +112,7 @@ function ParseServer({
   }
 
   let filesController = new FilesController(filesAdapter);
+  let pushController = new PushController(pushAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,
@@ -122,6 +124,7 @@ function ParseServer({
     fileKey: fileKey,
     facebookAppIds: facebookAppIds,
     filesController: filesController,
+    pushController: pushController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
 };
@@ -161,7 +164,7 @@ function ParseServer({
     new InstallationsRouter(),
     new FunctionsRouter(),
     new SchemasRouter(),
-    PushController.getExpressRouter(),
+    new PushRouter(),
     new LoggerController(loggerAdapter).getExpressRouter(),
     new IAPValidationRouter()
   ];
