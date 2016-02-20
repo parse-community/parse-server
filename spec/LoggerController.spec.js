@@ -2,53 +2,85 @@ var LoggerController = require('../src/Controllers/LoggerController').LoggerCont
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 
 describe('LoggerController', () => {
-  it('can check valid master key of request', (done) => {
+  it('can check process a query witout throwing', (done) => {
     // Make mock request
-    var request = {
-      auth: {
-        isMaster: true
-      },
-      query: {}
+    var query = {};
+
+    var loggerController = new LoggerController(new FileLoggerAdapter());
+
+    expect(() => {
+      loggerController.getLogs(query).then(function(res) {
+        expect(res.length).toBe(0);
+        done();
+      })
+    }).not.toThrow();
+  });
+  
+  it('properly validates dateTimes', (done) => {
+    expect(LoggerController.validDateTime()).toBe(null);
+    expect(LoggerController.validDateTime("String")).toBe(null);
+    expect(LoggerController.validDateTime(123456).getTime()).toBe(123456);
+    expect(LoggerController.validDateTime("2016-01-01Z00:00:00").getTime()).toBe(1451606400000);
+    done();
+  });
+  
+  it('can set the proper default values', (done) => {
+    // Make mock request
+    var result = LoggerController.parseOptions();
+    expect(result.size).toEqual(10);
+    expect(result.order).toEqual('desc');
+    expect(result.level).toEqual('info');
+   
+    done();
+  });
+  
+  it('can process a query witout throwing', (done) => {
+    // Make mock request
+    var query = {
+      from: "2016-01-01Z00:00:00",
+      until: "2016-01-01Z00:00:00",
+      size: 5, 
+      order: 'asc',
+      level: 'error'
+    };
+
+    var result = LoggerController.parseOptions(query);
+
+    expect(result.from.getTime()).toEqual(1451606400000);
+    expect(result.until.getTime()).toEqual(1451606400000);
+    expect(result.size).toEqual(5);
+    expect(result.order).toEqual('asc');
+    expect(result.level).toEqual('error');
+   
+    done();
+  });
+  
+  it('can check process a query witout throwing', (done) => {
+    // Make mock request
+    var query = {
+      from: "2015-01-01",
+      until: "2016-01-01",
+      size: 5, 
+      order: 'desc',
+      level: 'error'
     };
 
     var loggerController = new LoggerController(new FileLoggerAdapter());
 
     expect(() => {
-      loggerController.handleGET(request);
+      loggerController.getLogs(query).then(function(res) {
+        expect(res.length).toBe(0);
+        done();
+      })
     }).not.toThrow();
-    done();
   });
-
-  it('can check invalid construction of controller', (done) => {
-    // Make mock request
-    var request = {
-      auth: {
-        isMaster: true
-      },
-      query: {}
-    };
+  
+  it('should throw without an adapter', (done) => {
 
     var loggerController = new LoggerController();
 
     expect(() => {
-      loggerController.handleGET(request);
-    }).toThrow();
-    done();
-  });
-
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      auth: {
-        isMaster: false
-      },
-      query: {}
-    };
-
-    var loggerController = new LoggerController(new FileLoggerAdapter());
-
-    expect(() => {
-      loggerController.handleGET(request);
+      loggerController.getLogs();
     }).toThrow();
     done();
   });
