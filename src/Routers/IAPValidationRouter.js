@@ -1,8 +1,9 @@
-var PromiseRouter = require("./PromiseRouter");
+import PromiseRouter from '../PromiseRouter';
 var request = require("request");
-var rest = require("./rest");
-var Auth = require("./Auth");
+var rest = require("../rest");
+var Auth = require("../Auth");
 
+// TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
 const IAP_PRODUCTION_URL = "https://buy.itunes.apple.com/verifyReceipt";
 
@@ -57,34 +58,39 @@ function getFileForProductIdentifier(productIdentifier, req) {
   });
 }
 
-function handleRequest(req) {
-  let receipt = req.body.receipt;
-  const productIdentifier = req.body.productIdentifier;
-  
-  if (!receipt || ! productIdentifier) {
-    // TODO: Error, malformed request
-    throw new Parse.Error(Parse.Error.INVALID_JSON, "missing receipt or productIdentifier");
-  }
-  
-  // Transform the object if there
-  // otherwise assume it's in Base64 already
-  if (typeof receipt == "object") {
-    if (receipt["__type"] == "Bytes") {
-      receipt = receipt.base64;
-    }
-  }
-  
-  if (process.env.NODE_ENV == "test" && req.body.bypassAppStoreValidation) {
-    return getFileForProductIdentifier(productIdentifier, req);
-  }
-  
-  return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
-    return getFileForProductIdentifier(productIdentifier, req);
-  }, (error) => {
-    return Promise.resolve({response: appStoreError(error.status) });
-  });
-}
 
-var router = new PromiseRouter();
-router.route("POST","/validate_purchase", handleRequest);
-module.exports = router;
+
+export class IAPValidationRouter extends PromiseRouter {
+ 
+ handleRequest(req) {
+    let receipt = req.body.receipt;
+    const productIdentifier = req.body.productIdentifier;
+    
+    if (!receipt || ! productIdentifier) {
+      // TODO: Error, malformed request
+      throw new Parse.Error(Parse.Error.INVALID_JSON, "missing receipt or productIdentifier");
+    }
+    
+    // Transform the object if there
+    // otherwise assume it's in Base64 already
+    if (typeof receipt == "object") {
+      if (receipt["__type"] == "Bytes") {
+        receipt = receipt.base64;
+      }
+    }
+    
+    if (process.env.NODE_ENV == "test" && req.body.bypassAppStoreValidation) {
+      return getFileForProductIdentifier(productIdentifier, req);
+    }
+    
+    return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
+      return getFileForProductIdentifier(productIdentifier, req);
+    }, (error) => {
+      return Promise.resolve({response: appStoreError(error.status) });
+    });
+  }
+  
+  mountRoutes() {
+    this.route("POST","/validate_purchase", this.handleRequest);
+  }
+}

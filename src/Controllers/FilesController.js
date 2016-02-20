@@ -13,6 +13,13 @@ export class FilesController {
     this._filesAdapter = filesAdapter;
   }
 
+  static getHandler() {
+     return (req, res) => {
+       let config = new Config(req.params.appId);
+       return config.filesController.getHandler()(req, res);
+     }
+  }
+  
   getHandler() {
     return (req, res) => {
       let config = new Config(req.params.appId);
@@ -28,6 +35,13 @@ export class FilesController {
         res.end('File not found.');
       });
     };
+  }
+
+  static createHandler() {
+     return (req, res, next) => {
+       let config = req.config;
+       return config.filesController.createHandler()(req, res, next);
+     }
   }
 
   createHandler() {
@@ -50,6 +64,7 @@ export class FilesController {
         return;
       }
 
+      const filesController = req.config.filesController;
       // If a content-type is included, we'll add an extension so we can
       // return the same content-type.
       let extension = '';
@@ -60,9 +75,9 @@ export class FilesController {
       }
 
       let filename = randomHexString(32) + '_' + req.params.filename + extension;
-      this._filesAdapter.createFile(req.config, filename, req.body).then(() => {
+      filesController._filesAdapter.createFile(req.config, filename, req.body).then(() => {
         res.status(201);
-        var location = this._filesAdapter.getFileLocation(req.config, filename);
+        var location = filesController._filesAdapter.getFileLocation(req.config, filename);
         res.set('Location', location);
         res.json({ url: location, name: filename });
       }).catch((error) => {
@@ -70,6 +85,13 @@ export class FilesController {
           'Could not store file.'));
       });
     };
+  }
+
+  static deleteHandler() {
+     return (req, res, next) => {
+       let config = req.config;
+       return config.filesController.deleteHandler()(req, res, next);
+     }
   }
 
   deleteHandler() {
@@ -114,9 +136,9 @@ export class FilesController {
     }
   }
 
-  getExpressRouter() {
+  static getExpressRouter() {
     let router = express.Router();
-    router.get('/files/:appId/:filename', this.getHandler());
+    router.get('/files/:appId/:filename', FilesController.getHandler());
 
     router.post('/files', function(req, res, next) {
       next(new Parse.Error(Parse.Error.INVALID_FILE_NAME,
@@ -127,14 +149,14 @@ export class FilesController {
       Middlewares.allowCrossDomain,
       BodyParser.raw({type: '*/*', limit: '20mb'}),
       Middlewares.handleParseHeaders,
-      this.createHandler()
+      FilesController.createHandler()
     );
 
     router.delete('/files/:filename',
       Middlewares.allowCrossDomain,
       Middlewares.handleParseHeaders,
       Middlewares.enforceMasterKeyAccess,
-      this.deleteHandler()
+      FilesController.deleteHandler()
     );
 
     return router;
