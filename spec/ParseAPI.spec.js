@@ -1,7 +1,7 @@
 // A bunch of different tests are in here - it isn't very thematic.
 // It would probably be better to refactor them into different files.
 
-var DatabaseAdapter = require('../DatabaseAdapter');
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 
 describe('miscellaneous', function() {
@@ -129,6 +129,22 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('query without limit get default 100 records', function(done) {
+    var objects = [];
+    for (var i = 0; i < 150; i++) {
+      objects.push(new TestObject({name: 'name' + i}));
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      return new Parse.Query(TestObject).find();
+    }).then((results) => {
+      expect(results.length).toEqual(100);
+    done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
   it('basic saveAll', function(done) {
     var alpha = new TestObject({ letter: 'alpha' });
     var beta = new TestObject({ letter: 'beta' });
@@ -153,12 +169,26 @@ describe('miscellaneous', function() {
   });
 
   it('basic beforeSave rejection', function(done) {
-    var obj = new Parse.Object('BeforeSaveFailure');
+    var obj = new Parse.Object('BeforeSaveFail');
+    obj.set('foo', 'bar');
+    obj.save().then(() => {
+      fail('Should not have been able to save BeforeSaveFailure class.');
+      done();
+    }, () => {
+      done();
+    })
+  });
+
+  it('basic beforeSave rejection via promise', function(done) {
+    var obj = new Parse.Object('BeforeSaveFailWithPromise');
     obj.set('foo', 'bar');
     obj.save().then(function() {
       fail('Should not have been able to save BeforeSaveFailure class.');
       done();
     }, function(error) {
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(error.message).toEqual('Nope');
+
       done();
     })
   });
@@ -250,6 +280,20 @@ describe('miscellaneous', function() {
       // We should have been able to fetch the object again
       fail(error);
     });
+  })
+
+  it('basic beforeDelete rejection via promise', function(done) {
+    var obj = new Parse.Object('BeforeDeleteFailWithPromise');
+    obj.set('foo', 'bar');
+    obj.save().then(function() {
+      fail('Should not have been able to save BeforeSaveFailure class.');
+      done();
+    }, function(error) {
+      expect(error.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(error.message).toEqual('Nope');
+
+      done();
+    })
   });
 
   it('test beforeDelete success', function(done) {
@@ -544,6 +588,71 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test cloud function query parameters', (done) => {
+    Parse.Cloud.define('echoParams', (req, res) => {
+      res.success(req.params);
+    });
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/functions/echoParams', //?option=1&other=2
+      qs: {
+        option: 1,
+        other: 2
+      },
+      body: '{"foo":"bar", "other": 1}'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var res = JSON.parse(body).result;
+      expect(res.option).toEqual('1');
+      // Make sure query string params override body params
+      expect(res.other).toEqual('2');
+      expect(res.foo).toEqual("bar");
+      delete Parse.Cloud.Functions['echoParams'];
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation success', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
+      res.success('works');
+    }, (request) => {
+      return request.params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+      delete Parse.Cloud.Functions['functionWithParameterValidation'];
+      done();
+    }, (e) => {
+      fail('Validation should not have failed.');
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidationFailure', (req, res) => {
+      res.success('noway');
+    }, (request) => {
+      return request.params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
+      fail('Validation should not have succeeded');
+      delete Parse.Cloud.Functions['functionWithParameterValidationFailure'];
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(141);
+      expect(e.message).toEqual('Validation failed.');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
@@ -608,6 +717,17 @@ describe('miscellaneous', function() {
       expect(error).toBe(null);
       var b = JSON.parse(body);
       expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
+  it('fails on invalid function', done => {
+    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then((s) => {
+      fail('This should have never suceeded');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toEqual('Invalid function.');
       done();
     });
   });

@@ -28,3 +28,9 @@ node_modules
 
 # Emacs
 *~
+
+# WebStorm/IntelliJ
+.idea
+
+# Babel.js
+lib/

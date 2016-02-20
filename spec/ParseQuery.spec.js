@@ -2056,7 +2056,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('query match on array value', (done) => {
+  it('query match on array with single object', (done) => {
     var target = {__type: 'Pointer', className: 'TestObject', objectId: 'abc123'};
     var obj = new Parse.Object('TestObject');
     obj.set('someObjs', [target]);
@@ -2072,4 +2072,20 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('query match on array with multiple objects', (done) => {
+    var target1 = {__type: 'Pointer', className: 'TestObject', objectId: 'abc'};
+    var target2 = {__type: 'Pointer', className: 'TestObject', objectId: '123'};
+    var obj= new Parse.Object('TestObject');
+    obj.set('someObjs', [target1, target2]);
+    obj.save().then(() => {
+      var query = new Parse.Query('TestObject');
+      query.equalTo('someObjs', target1);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      done();
+    }, (error) => {
+      console.log(error);
+    });
+  });
 });

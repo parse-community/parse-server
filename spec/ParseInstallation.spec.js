@@ -1,12 +1,12 @@
 // These tests check the Installations functionality of the REST API.
 // Ported from installation_collection_test.go
 
-var auth = require('../Auth');
-var cache = require('../cache');
-var Config = require('../Config');
-var DatabaseAdapter = require('../DatabaseAdapter');
+var auth = require('../src/Auth');
+var cache = require('../src/cache');
+var Config = require('../src/Config');
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 var Parse = require('parse/node').Parse;
-var rest = require('../rest');
+var rest = require('../src/rest');
 
 var config = new Config('test');
 var database = DatabaseAdapter.getDatabaseConnection('test');
@@ -129,26 +129,6 @@ describe('Installations', () => {
       done();
     }).catch((error) => {
       expect(error.code).toEqual(135);
-      done();
-    });
-  });
-
-  it('fails for android with device token', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var device = 'android';
-    var input = {
-      'installationId': installId,
-      'deviceType': device,
-      'deviceToken': t,
-      'channels': ['foo', 'bar']
-    };
-    rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      fail('Should not have been able to create an Installation.');
-      done();
-    }).catch((error) => {
-      expect(error.code).toEqual(114);
       done();
     });
   });
