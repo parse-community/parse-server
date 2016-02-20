@@ -29,6 +29,7 @@ import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { PushRouter }          from './Routers/PushRouter';
+import { FilesRouter }         from './Routers/FilesRouter';
 
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -111,8 +112,9 @@ function ParseServer({
     }
   }
 
-  let filesController = new FilesController(filesAdapter);
-  let pushController = new PushController(pushAdapter);
+  const filesController = new FilesController(filesAdapter);
+  const pushController = new PushController(pushAdapter);
+  const loggerController = new LoggerController(loggerAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,
@@ -125,6 +127,7 @@ function ParseServer({
     facebookAppIds: facebookAppIds,
     filesController: filesController,
     pushController: pushController,
+    loggerController: loggerController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
 };
@@ -143,7 +146,7 @@ function ParseServer({
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', FilesController.getExpressRouter());
+  api.use('/', new FilesRouter().getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {

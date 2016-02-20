@@ -1,7 +1,4 @@
 // AnalyticsRouter.js
-
-var Parse = require('parse/node').Parse;
-
 import PromiseRouter from '../PromiseRouter';
 
 // Returns a promise that resolves to an empty object response
