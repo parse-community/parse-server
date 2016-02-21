@@ -8,6 +8,8 @@ based on the parameters passed
 
  */
 
+const DefaultAdapters = {};
+
 export class AdaptableController {
    /**
    * Check whether the api call has master key or not.
@@ -17,12 +19,11 @@ export class AdaptableController {
    * Supported options types:
    * - string: the options will be loaded with required, when loaded, if default 
    * is set on the returned object, we'll use that one to support modules
-   * - object: a plain javascript object (options.constructor === Object), if options.adapter is set, we'll try to load it with the same mechanics
+   * - object: a plain javascript object (options.constructor === Object), if options.adapter is set, we'll try to load it with the same mechanics.
    * - function: we'll create a new instance from that function, and pass the options object
    */ 
-  constructor(options, defaultAdapter) {
-
-    // Use the default by default
+  constructor(options) {
+ 
     let adapter;
 
     // We have options and options have adapter key
@@ -37,7 +38,7 @@ export class AdaptableController {
     }
     
     if (!adapter) {
-      adapter = defaultAdapter;
+      adapter = this.defaultAdapter();
     }
 
     // This is a string, require the module
@@ -57,6 +58,15 @@ export class AdaptableController {
 
     this.adapter = adapter;
     this.options = options;
+  }
+  
+  defaultAdapter() {
+     return DefaultAdapters[this.constructor.name];
+  }
+  
+  // Sets the default adapter for that Class
+  static setDefaultAdapter(defaultAdapter) {
+    DefaultAdapters[this.name] = defaultAdapter;
   }
 }
 

@@ -47,14 +47,16 @@ describe("AdaptableController", ()=>{
   });
   
   it("should instantiate the default adapter from Class", (done) => {
-    var controller = new AdaptableController(null, FilesAdapter);
+    AdaptableController.setDefaultAdapter(FilesAdapter);
+    var controller = new AdaptableController();
     expect(controller.adapter instanceof FilesAdapter).toBe(true);
     done();
   });
   
   it("should use the default adapter", (done) => {
     var adapter = new FilesAdapter();
-    var controller = new AdaptableController(null, adapter);
+    AdaptableController.setDefaultAdapter(adapter);
+    var controller = new AdaptableController();
     expect(controller.adapter).toBe(adapter);
     done();
   });
