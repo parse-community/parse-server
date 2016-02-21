@@ -1,5 +1,7 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
+import 'babel-polyfill';
+
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     cache = require('./cache'),
@@ -17,7 +19,6 @@ import { FilesController }     from './Controllers/FilesController';
 
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
 import { PushController }      from './Controllers/PushController';
-
 
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
