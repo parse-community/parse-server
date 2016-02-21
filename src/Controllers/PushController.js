@@ -1,12 +1,9 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
+import AdaptableController from './AdaptableController';
 
-export class PushController {
-
-  constructor(pushAdapter) {
-    this._pushAdapter = pushAdapter;
-  };
+export class PushController extends AdaptableController {
 
   /**
    * Check whether the deviceType parameter in qury condition is valid or not.
@@ -42,13 +39,12 @@ export class PushController {
   }
 
   sendPush(body = {}, where = {}, config, auth) {
-    var pushAdapter = this._pushAdapter;
+    var pushAdapter = this.adapter;
     if (!pushAdapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
     PushController.validateMasterKey(auth);
-    
     PushController.validatePushType(where, pushAdapter.getValidPushTypes());
     // Replace the expiration_time with a valid Unix epoch milliseconds time
     body['expiration_time'] = PushController.getExpirationTime(body);

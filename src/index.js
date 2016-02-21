@@ -67,9 +67,9 @@ function ParseServer({
   appId,
   masterKey,
   databaseAdapter,
-  filesAdapter = new GridStoreAdapter(),
+  filesAdapter,
   push,
-  loggerAdapter = new FileLoggerAdapter(),
+  loggerAdapter,
   databaseURI,
   cloud,
   collectionPrefix = '',
@@ -91,15 +91,6 @@ function ParseServer({
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
 
-  // Make push adapter
-  let pushConfig = push;
-  let pushAdapter;
-  if (pushConfig && pushConfig.adapter) {
-    pushAdapter = pushConfig.adapter;
-  } else if (pushConfig) {
-    pushAdapter = new ParsePushAdapter(pushConfig)
-  }
-
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
   }
@@ -114,9 +105,11 @@ function ParseServer({
     }
   }
 
-  const filesController = new FilesController(filesAdapter);
-  const pushController = new PushController(pushAdapter);
-  const loggerController = new LoggerController(loggerAdapter);
+  // We pass the options and the base class for the adatper,
+  // Note that passing an instance would work too
+  const filesController = new FilesController(filesAdapter, GridStoreAdapter);
+  const pushController = new PushController(push, new ParsePushAdapter(push));
+  const loggerController = new LoggerController(loggerAdapter, FileLoggerAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,
