@@ -40,6 +40,7 @@ import { PushRouter }          from './Routers/PushRouter';
 import { randomString }        from './cryptoUtils';
 import { RolesRouter }         from './Routers/RolesRouter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';
+import { AzureBlobStorageAdapter } from './Adapters/Files/AzureBlobStorageAdapter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { SessionsRouter }      from './Routers/SessionsRouter';
 import { setFeature }          from './features';
@@ -260,5 +261,6 @@ function addParseCloud() {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
-  GCSAdapter: GCSAdapter
+  GCSAdapter: GCSAdapter,
+  AzureBlobStorageAdapter: AzureBlobStorageAdapter
 };
