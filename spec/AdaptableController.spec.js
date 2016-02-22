@@ -15,6 +15,11 @@ describe("AdaptableController", ()=>{
     var adapter = new FilesAdapter();
     var controller = new FilesController(adapter);
     expect(controller.adapter).toBe(adapter);
+    // make sure _adapter is private
+    expect(controller._adapter).toBe(undefined);
+    // Override _adapter is not doing anything
+    controller._adapter = "Hello";
+    expect(controller.adapter).toBe(adapter);
     done();
   });
   
@@ -22,6 +27,17 @@ describe("AdaptableController", ()=>{
     var adapter = new FilesAdapter();
     expect(() => {
       new MockController(adapter);
+    }).toThrow();
+    done();
+  });
+  
+  it("should fail setting the wrong adapter to the controller", (done) => {
+    function WrongAdapter() {};
+    var adapter = new FilesAdapter();
+    var controller = new FilesController(adapter);
+    var otherAdapter = new WrongAdapter();
+    expect(() => {
+      controller.adapter = otherAdapter;
     }).toThrow();
     done();
   });
@@ -39,6 +55,33 @@ describe("AdaptableController", ()=>{
     expect(() => {
       new FilesController();
     }).toThrow();
+    done();
+  });
+  
+  it("should accept an object adapter", (done) => {
+    var adapter = {
+      createFile: function(config, filename, data) { },
+      deleteFile: function(config, filename) { },
+      getFileData: function(config, filename) { },
+      getFileLocation: function(config, filename) { },
+    }
+    expect(() => {
+      new FilesController(adapter);
+    }).not.toThrow();
+    done();
+  });
+  
+  it("should accept an object adapter", (done) => {
+    function AGoodAdapter() {};
+    AGoodAdapter.prototype.createFile = function(config, filename, data) { };
+    AGoodAdapter.prototype.deleteFile = function(config, filename) { };
+    AGoodAdapter.prototype.getFileData = function(config, filename) { };
+    AGoodAdapter.prototype.getFileLocation = function(config, filename) { };
+    
+    var adapter = new AGoodAdapter();
+    expect(() => {
+      new FilesController(adapter);
+    }).not.toThrow();
     done();
   });
 });

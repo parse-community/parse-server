@@ -8,26 +8,22 @@ based on the parameters passed
 
  */
 
+// _adapter is private, use Symbol
+var _adapter = Symbol();
+
 export class AdaptableController {
-   /**
-   * Check whether the api call has master key or not.
-   * @param {options} the adapter options
-   * @param {defaultAdapter} the default adapter class or object to use
-   * @discussion
-   * Supported options types:
-   * - string: the options will be loaded with required, when loaded, if default 
-   * is set on the returned object, we'll use that one to support modules
-   * - object: a plain javascript object (options.constructor === Object), if options.adapter is set, we'll try to load it with the same mechanics.
-   * - function: we'll create a new instance from that function, and pass the options object
-   */ 
-  constructor(adapter, options) {
-    this.setAdapter(adapter, options);
+
+  constructor(adapter) {
+    this.adapter = adapter;
+  }
+
+  set adapter(adapter) {
+    this.validateAdapter(adapter);
+    this[_adapter] = adapter;
   }
   
-  setAdapter(adapter, options) {
-    this.validateAdapter(adapter);
-    this.adapter = adapter;
-    this.options = options;
+  get adapter() {
+    return this[_adapter];
   }
   
   expectedAdapterType() {
