@@ -426,6 +426,12 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
   // Just to check that the key is valid
   transform.transformKey(this, className, key);
 
+  if( key.indexOf(".") > 0 ) {
+      // subdocument key (x.y) => ok if x is of type 'object'    
+      key = key.split(".")[ 0 ];
+      type = 'object';
+  }
+
   var expected = this.data[className][key];
   if (expected) {
     expected = (expected === 'map' ? 'object' : expected);
