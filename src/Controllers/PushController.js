@@ -1,12 +1,10 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
+import AdaptableController from './AdaptableController';
+import { PushAdapter } from '../Adapters/Push/PushAdapter';
 
-export class PushController {
-
-  constructor(pushAdapter) {
-    this._pushAdapter = pushAdapter;
-  };
+export class PushController extends AdaptableController {
 
   /**
    * Check whether the deviceType parameter in qury condition is valid or not.
@@ -28,7 +26,7 @@ export class PushController {
                               deviceType + ' is not supported push type.');
       }
     }
-  };
+  }
   
   /**
    * Check whether the api call has master key or not.
@@ -42,13 +40,12 @@ export class PushController {
   }
 
   sendPush(body = {}, where = {}, config, auth) {
-    var pushAdapter = this._pushAdapter;
+    var pushAdapter = this.adapter;
     if (!pushAdapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
     PushController.validateMasterKey(auth);
-    
     PushController.validatePushType(where, pushAdapter.getValidPushTypes());
     // Replace the expiration_time with a valid Unix epoch milliseconds time
     body['expiration_time'] = PushController.getExpirationTime(body);
@@ -57,7 +54,8 @@ export class PushController {
     rest.find(config, auth, '_Installation', where).then(function(response) {
       return pushAdapter.send(body, response.results);
     });
-  };
+  }
+  
   /**
    * Get expiration time from the request body.
    * @param {Object} request A request object
@@ -84,7 +82,11 @@ export class PushController {
                             body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
-  };
+  }
+
+  expectedAdapterType() {
+    return PushAdapter;
+  }
 };
 
 export default PushController;

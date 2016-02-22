@@ -227,7 +227,8 @@ describe('OneSignalPushAdapter', () => {
 
   function makeDevice(deviceToken, appIdentifier) {
     return {
-      deviceToken: deviceToken
+      deviceToken: deviceToken,
+      appIdentifier: appIdentifier
     };
   }
   
