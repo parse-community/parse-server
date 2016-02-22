@@ -13,7 +13,7 @@ var batch = require('./batch'),
     httpRequest = require('./httpRequest');
 
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
-import passwordReset           from './passwordReset';
+//import passwordReset           from './passwordReset';
 import PromiseRouter           from './PromiseRouter';
 import SimpleMailgunAdapter    from './Adapters/Email/SimpleMailgunAdapter';
 import verifyEmail             from './verifyEmail';
@@ -166,8 +166,8 @@ function ParseServer({
   // File handling needs to be before default middlewares are applied
   api.use('/', new FilesRouter().getExpressRouter());
   if (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1) {
-    api.use('/request_password_reset', passwordReset.reset(appName, appId));
-    api.get('/password_reset_success', passwordReset.success);
+    //api.use('/request_password_reset', passwordReset.reset(appName, appId));
+    //api.get('/password_reset_success', passwordReset.success);
     api.get('/verify_email', verifyEmail(appId, serverURL));
   }
 
