@@ -3,6 +3,8 @@
 // PushAdapter, it uses GCM for android push and APNS
 // for ios push.
 
+import { classifyInstallations } from './PushAdapterUtils';
+
 const Parse = require('parse/node').Parse;
 var deepcopy = require('deepcopy');
 import PushAdapter from './PushAdapter';
@@ -25,7 +27,7 @@ export class OneSignalPushAdapter extends PushAdapter {
   
   send(data, installations) {
     console.log("Sending notification to "+installations.length+" devices.")
-    let deviceMap = PushAdapter.classifyInstallation(installations, this.validPushTypes);
+    let deviceMap = classifyInstallations(installations, this.validPushTypes);
 
     let sendPromises = [];
     for (let pushType in deviceMap) {
@@ -41,6 +43,14 @@ export class OneSignalPushAdapter extends PushAdapter {
       }
     }
     return Parse.Promise.when(sendPromises);
+  }
+  
+  static classifyInstallations(installations, validTypes) {
+    return classifyInstallations(installations, validTypes)
+  }
+  
+  getValidPushTypes() {
+    return this.validPushTypes;
   }
   
   sendToAPNS(data,tokens) {
