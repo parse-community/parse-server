@@ -188,6 +188,17 @@ function ParseServer({
 
   api.use(middlewares.handleParseErrors);
 
+
+  process.on('uncaughtException', (err) => {
+    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+      console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+      process.exit(0);
+    }
+    else {
+      throw err;
+    }
+  });  
+
   return api;
 }
 
