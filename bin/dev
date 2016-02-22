@@ -4,14 +4,17 @@ var nodemon = require('nodemon');
 var babel = require("babel-core");
 var gaze = require('gaze'); 
 var fs = require('fs');
+var path = require('path');
 
 // Watch the src and transpile when changed
 gaze('src/**/*', function(err, watcher) {
   if (err) throw err;
-  watcher.on('changed', function(file) {
-    console.log(file + " has changed");
+  watcher.on('changed', function(sourceFile) {
+    console.log(sourceFile + " has changed");
     try {
-      fs.writeFile(file.replace(/\/src\//, "/lib/"), babel.transformFileSync(file).code);
+      targetFile = path.relative(__dirname, sourceFile).replace(/\/src\//, '/lib/');
+      targetFile = path.resolve(__dirname, targetFile);
+      fs.writeFile(targetFile, babel.transformFileSync(sourceFile).code);
     } catch (e) {
       console.error(e.message, e.stack);
     }

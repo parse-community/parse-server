@@ -26,6 +26,14 @@ var defaultConfiguration = {
   masterKey: 'test',
   collectionPrefix: 'test_',
   fileKey: 'test',
+  push: {
+    'ios': {      
+      cert: 'prodCert.pem',
+      key: 'prodKey.pem',
+      production: true,
+      bundleId: 'bundleId'
+    }
+  },
   oauth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {

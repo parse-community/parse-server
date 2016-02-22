@@ -1,5 +1,7 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
+import 'babel-polyfill';
+
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     cache = require('./cache'),
@@ -27,7 +29,9 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
-
+import { PushRouter }          from './Routers/PushRouter';
+import { FilesRouter }         from './Routers/FilesRouter';
+import { LogsRouter }         from './Routers/LogsRouter';
 
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -110,7 +114,9 @@ function ParseServer({
     }
   }
 
-  let filesController = new FilesController(filesAdapter);
+  const filesController = new FilesController(filesAdapter);
+  const pushController = new PushController(pushAdapter);
+  const loggerController = new LoggerController(loggerAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,
@@ -122,6 +128,8 @@ function ParseServer({
     fileKey: fileKey,
     facebookAppIds: facebookAppIds,
     filesController: filesController,
+    pushController: pushController,
+    loggerController: loggerController,
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
 };
@@ -140,7 +148,7 @@ function ParseServer({
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', FilesController.getExpressRouter());
+  api.use('/', new FilesRouter().getExpressRouter());
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -161,8 +169,8 @@ function ParseServer({
     new InstallationsRouter(),
     new FunctionsRouter(),
     new SchemasRouter(),
-    PushController.getExpressRouter(),
-    new LoggerController(loggerAdapter).getExpressRouter(),
+    new PushRouter(),
+    new LogsRouter(),
     new IAPValidationRouter()
   ];
   

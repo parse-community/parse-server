@@ -1736,4 +1736,33 @@ describe('Parse.Object testing', () => {
     });
   });
 
+
+  it("should create nested keys with _", done => {
+    const object = new Parse.Object("AnObject");
+    object.set("foo", {
+      "_bar": "_",
+      "baz_bar": 1,
+      "__foo_bar": true,
+      "_0": "underscore_zero",
+      "_more": {
+        "_nested": "key"
+      }
+    });
+    object.save().then( res => {
+      ok(res);
+      return res.fetch();
+    }).then( res => {
+      const foo = res.get("foo");
+      expect(foo["_bar"]).toEqual("_");
+      expect(foo["baz_bar"]).toEqual(1);
+      expect(foo["__foo_bar"]).toBe(true);
+      expect(foo["_0"]).toEqual("underscore_zero");
+      expect(foo["_more"]["_nested"]).toEqual("key");
+      done();
+    }).fail( err => {
+      console.error(err);
+      fail("should not fail");
+      done();
+    })
+  })
 });

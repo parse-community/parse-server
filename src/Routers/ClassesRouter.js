@@ -7,12 +7,12 @@ import url from 'url';
 export class ClassesRouter extends PromiseRouter {
   
   handleFind(req) {
-    let body = Object.assign(req.body, req.query);
+    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     let options = {};
     let allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
       'include', 'redirectClassNameForKey', 'where'];
 
-    for (var key in body) {
+    for (let key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
@@ -96,6 +96,18 @@ export class ClassesRouter extends PromiseRouter {
       .then(() => {
         return {response: {}};
       });
+  }
+
+  static JSONFromQuery(query) {
+    let json = {};
+    for (let [key, value] of Object.entries(query)) {
+      try {
+        json[key] = JSON.parse(value);
+      } catch (e) {
+        json[key] = value;
+      }
+    }
+    return json
   }
   
   mountRoutes() {
