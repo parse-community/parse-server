@@ -26,6 +26,7 @@ export class Config {
 
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.emailAdapter = cacheInfo.emailAdapter;
+    this.appName = cacheInfo.appName;
 
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
     this.filesController = cacheInfo.filesController;

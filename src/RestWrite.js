@@ -404,7 +404,6 @@ RestWrite.prototype.transformUser = function() {
                                 'Account already exists for this username');
         }
         if (this.config.verifyUserEmails && this.data.email) {
-          this.data.emailVerified = false;
           this.data._perishable_token = cryptoUtils.randomString(25);
         }
         return Promise.resolve();

@@ -147,9 +147,10 @@ function ParseServer({
     oauth: oauth,
     verifyUserEmails: verifyUserEmails,
     emailAdapter: emailAdapter,
+    appName: appName,
   };
 
-  // To maintain compatibility. TODO: Remove in v2.1
+  // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
   if (process.env.FACEBOOK_APP_ID) {
     cache.apps[appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
@@ -164,9 +165,11 @@ function ParseServer({
 
   // File handling needs to be before default middlewares are applied
   api.use('/', new FilesRouter().getExpressRouter());
-  api.use('/request_password_reset', passwordReset.reset(appName, appId));
-  api.get('/password_reset_success', passwordReset.success);
-  api.get('/verify_email', verifyEmail);
+  if (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1) {
+    api.use('/request_password_reset', passwordReset.reset(appName, appId));
+    api.get('/password_reset_success', passwordReset.success);
+    api.get('/verify_email', verifyEmail(appId, serverURL));
+  }
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {

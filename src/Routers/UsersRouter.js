@@ -9,6 +9,7 @@ import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 let cryptoUtils = require('../cryptoUtils');
+let triggers = require('../triggers');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -28,6 +29,7 @@ export class UsersRouter extends ClassesRouter {
 
     if (req.config.verifyUserEmails) {
       req.body._email_verify_token = cryptoUtils.randomString(25);
+      req.body.emailVerified = false;
     }
 
     let p = super.handleCreate(req);
@@ -39,7 +41,7 @@ export class UsersRouter extends ClassesRouter {
         req.config.emailAdapter.sendVerificationEmail({
           appName: req.config.appName,
           link: link,
-          user: req.auth.user,
+          user: triggers.inflate('_User', req.body),
         });
       });
     }
