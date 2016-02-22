@@ -8,7 +8,7 @@ import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
-import { newToken }   from '../cryptoUtils';
+let cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -25,7 +25,25 @@ export class UsersRouter extends ClassesRouter {
     let data = deepcopy(req.body);
     req.body = data;
     req.params.className = '_User';
-    return super.handleCreate(req);
+
+    if (req.config.verifyUserEmails) {
+      req.body._email_verify_token = cryptoUtils.randomString(25);
+    }
+
+    let p = super.handleCreate(req);
+
+    if (req.config.verifyUserEmails) {
+      // Send email as fire-and-forget once the user makes it into the DB.
+      p.then(() => {
+        let link = req.config.mount + "/verify_email?token=" + encodeURIComponent(req.body._email_verify_token) + "&username=" + encodeURIComponent(req.body.username);
+        req.config.emailAdapter.sendVerificationEmail({
+          appName: req.config.appName,
+          link: link,
+          user: req.auth.user,
+        });
+      });
+    }
+    return p;
   }
 
   handleUpdate(req) {
@@ -84,7 +102,7 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 
-        let token = 'r:' + newToken();
+        let token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
 

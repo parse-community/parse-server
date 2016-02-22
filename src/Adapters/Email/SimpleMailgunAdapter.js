@@ -28,7 +28,7 @@ export default (mailgunOptions) => {
 	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
 	      "" +
 	      "Click here to confirm it:\n" + link;
-			sendMail(user.email, 'Please verify your e-mail for ' + appName, verifyMessage);
+			return sendMail(user.email, 'Please verify your e-mail for ' + appName, verifyMessage);
 		}
 	}
 }

@@ -146,6 +146,7 @@ function ParseServer({
     enableAnonymousUsers: enableAnonymousUsers,
     oauth: oauth,
     verifyUserEmails: verifyUserEmails,
+    emailAdapter: emailAdapter,
   };
 
   // To maintain compatibility. TODO: Remove in v2.1

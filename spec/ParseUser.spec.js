@@ -47,6 +47,40 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('sends verification email if email verification is enabled', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail');
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+        done();
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+
   it("user login wrong username", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function(user) {
@@ -1628,7 +1662,7 @@ describe('Parse.User testing', () => {
       done();
     });
   });
-  
+
   it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {
