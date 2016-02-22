@@ -2,6 +2,7 @@ import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import AdaptableController from './AdaptableController';
+import { PushAdapter } from '../Adapters/Push/PushAdapter';
 
 export class PushController extends AdaptableController {
 
@@ -25,7 +26,7 @@ export class PushController extends AdaptableController {
                               deviceType + ' is not supported push type.');
       }
     }
-  };
+  }
   
   /**
    * Check whether the api call has master key or not.
@@ -53,7 +54,8 @@ export class PushController extends AdaptableController {
     rest.find(config, auth, '_Installation', where).then(function(response) {
       return pushAdapter.send(body, response.results);
     });
-  };
+  }
+  
   /**
    * Get expiration time from the request body.
    * @param {Object} request A request object
@@ -80,7 +82,11 @@ export class PushController extends AdaptableController {
                             body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
-  };
+  }
+
+  expectedAdapterType() {
+    return PushAdapter;
+  }
 };
 
 export default PushController;

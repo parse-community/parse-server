@@ -8,8 +8,6 @@ based on the parameters passed
 
  */
 
-const DefaultAdapters = {};
-
 export class AdaptableController {
    /**
    * Check whether the api call has master key or not.
@@ -22,51 +20,49 @@ export class AdaptableController {
    * - object: a plain javascript object (options.constructor === Object), if options.adapter is set, we'll try to load it with the same mechanics.
    * - function: we'll create a new instance from that function, and pass the options object
    */ 
-  constructor(options) {
- 
-    let adapter;
-
-    // We have options and options have adapter key
-    if (options) {
-      // Pass an adapter as a module name, a function or an instance
-      if (typeof options == "string" || typeof options == "function" || options.constructor != Object) {
-        adapter = options;
-      }
-      if (options.adapter) {
-        adapter = options.adapter;
-      }
-    }
-    
-    if (!adapter) {
-      adapter = this.defaultAdapter();
-    }
-
-    // This is a string, require the module
-    if (typeof adapter === "string") {
-      adapter = require(adapter);
-      // If it's define as a module, get the default
-      if (adapter.default) {
-        adapter = adapter.default;
-      }
-    }
-    // From there it's either a function or an object
-    // if it's an function, instanciate and pass the options 
-    if (typeof adapter === "function") {
-      var Adapter = adapter;
-      adapter = new Adapter(options);
-    }
-
+  constructor(adapter, options) {
+    this.setAdapter(adapter, options);
+  }
+  
+  setAdapter(adapter, options) {
+    this.validateAdapter(adapter);
     this.adapter = adapter;
     this.options = options;
   }
   
-  defaultAdapter() {
-     return DefaultAdapters[this.constructor.name];
+  expectedAdapterType() {
+    throw new Error("Subclasses should implement expectedAdapterType()");
   }
   
-  // Sets the default adapter for that Class
-  static setDefaultAdapter(defaultAdapter) {
-    DefaultAdapters[this.name] = defaultAdapter;
+  validateAdapter(adapter) {
+    
+    if (!adapter) {
+      throw new Error(this.constructor.name+" requires an adapter");
+    }
+    
+    let Type = this.expectedAdapterType();
+    // Allow skipping for testing
+    if (!Type) { 
+      return;
+    }
+    
+    // Makes sure the prototype matches
+    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce( (obj, key) => {
+       const adapterType = typeof adapter[key];
+       const expectedType = typeof Type.prototype[key];
+       if (adapterType !== expectedType) {
+         obj[key] = {
+           expected: expectedType,
+           actual: adapterType
+         }
+       }
+       return obj;
+    }, {});
+   
+    if (Object.keys(mismatches).length > 0) {
+      console.error(adapter, mismatches);
+      throw new Error("Adapter prototype don't match expected prototype");
+    }
   }
 }
 

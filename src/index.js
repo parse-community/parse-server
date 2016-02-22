@@ -33,13 +33,9 @@ import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { LogsRouter }         from './Routers/LogsRouter';
 
+import { AdapterLoader }       from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
-
-
-FilesController.setDefaultAdapter(GridStoreAdapter);
-PushController.setDefaultAdapter(ParsePushAdapter);
-LoggerController.setDefaultAdapter(FileLoggerAdapter);
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -109,12 +105,17 @@ function ParseServer({
       throw "argument 'cloud' must either be a string or a function";
     }
   }
+  
+  
+  const filesControllerAdapter = AdapterLoader.load(filesAdapter, GridStoreAdapter);
+  const pushControllerAdapter = AdapterLoader.load(push, ParsePushAdapter);
+  const loggerControllerAdapter = AdapterLoader.load(loggerAdapter, FileLoggerAdapter);
 
   // We pass the options and the base class for the adatper,
   // Note that passing an instance would work too
-  const filesController = new FilesController(filesAdapter);
-  const pushController = new PushController(push);
-  const loggerController = new LoggerController(loggerAdapter);
+  const filesController = new FilesController(filesControllerAdapter);
+  const pushController = new PushController(pushControllerAdapter);
+  const loggerController = new LoggerController(loggerControllerAdapter);
   
   cache.apps[appId] = {
     masterKey: masterKey,

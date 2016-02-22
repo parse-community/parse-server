@@ -1,6 +1,7 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import AdaptableController from './AdaptableController';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
 const Promise = Parse.Promise;
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
@@ -69,6 +70,10 @@ export class LoggerController extends AdaptableController {
       promise.resolve(result);
     });
     return promise;
+  }
+  
+  expectedAdapterType() {
+    return LoggerAdapter;
   }
 }
 

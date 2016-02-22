@@ -76,13 +76,11 @@ describe('LoggerController', () => {
   });
   
   it('should throw without an adapter', (done) => {
-    LoggerController.setDefaultAdapter(undefined);
-    var loggerController = new LoggerController();
+    
 
     expect(() => {
-      loggerController.getLogs();
+      var loggerController = new LoggerController();
     }).toThrow();
-    LoggerController.setDefaultAdapter(FileLoggerAdapter);
     done();
   });
 });
