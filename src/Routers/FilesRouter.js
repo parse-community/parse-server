@@ -7,7 +7,7 @@ import mime from 'mime';
 import Config from '../Config';
 
 export class FilesRouter {
-  
+
   getExpressRouter() {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
@@ -19,7 +19,7 @@ export class FilesRouter {
 
     router.post('/files/:filename',
       Middlewares.allowCrossDomain,
-      BodyParser.raw({type: '*/*', limit: '20mb'}),
+      BodyParser.raw({type: () => { return true; }, limit: '20mb'}), // Allow uploads without Content-Type, or with any Content-Type.
       Middlewares.handleParseHeaders,
       this.createHandler
     );
@@ -32,23 +32,23 @@ export class FilesRouter {
     );
     return router;
   }
-  
-  getHandler(req, res, next) {
+
+  getHandler(req, res) {
     const config = new Config(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
     filesController.getFileData(config, filename).then((data) => {
-        res.status(200);
-        var contentType = mime.lookup(filename);
-        res.set('Content-type', contentType);
-        res.end(data);
-      }).catch((error) => {
-        res.status(404);
-        res.set('Content-type', 'text/plain');
-        res.end('File not found.');
-      });
+      res.status(200);
+      var contentType = mime.lookup(filename);
+      res.set('Content-Type', contentType);
+      res.end(data);
+    }).catch(() => {
+      res.status(404);
+      res.set('Content-Type', 'text/plain');
+      res.end('File not found.');
+    });
   }
-  
+
   createHandler(req, res, next) {
     if (!req.body || !req.body.length) {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
@@ -68,7 +68,7 @@ export class FilesRouter {
       return;
     }
     let extension = '';
-    
+
     // Not very safe there.
     const hasExtension = req.params.filename.indexOf('.') > 0;
     const contentType = req.get('Content-type');
@@ -81,15 +81,15 @@ export class FilesRouter {
     const filesController = config.filesController;
 
     filesController.createFile(config, filename, req.body).then((result) => {
-      res.status(201);  
+      res.status(201);
       res.set('Location', result.url);
       res.json(result);
     }).catch((err) => {
-       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
-          'Could not store file.'));
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
+        'Could not store file.'));
     });
   }
-  
+
   deleteHandler(req, res, next) {
     const filesController = req.config.filesController;
     filesController.deleteFile(req.config, req.params.filename).then(() => {

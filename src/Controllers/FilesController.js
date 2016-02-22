@@ -19,7 +19,7 @@ export class FilesController extends AdaptableController {
         name: filename
       });
     });
-  } 
+  }
 
   deleteFile(config, filename) {
     return this.adapter.deleteFile(config, filename);
@@ -30,7 +30,7 @@ export class FilesController extends AdaptableController {
    * with the current mount point and app id.
    * Object may be a single object or list of REST-format objects.
    */
-   expandFilesInObject(config, object) {
+  expandFilesInObject(config, object) {
     if (object instanceof Array) {
       object.map((obj) => this.expandFilesInObject(config, obj));
       return;
@@ -53,7 +53,7 @@ export class FilesController extends AdaptableController {
       }
     }
   }
-  
+
   expectedAdapterType() {
     return FilesAdapter;
   }
