@@ -627,6 +627,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
       case '_acl':
       case '_email_verify_token':
       case '_perishable_token':
+      case '_tombstone':
         break;
       case '_session_token':
         restObject['sessionToken'] = mongoObject[key];
