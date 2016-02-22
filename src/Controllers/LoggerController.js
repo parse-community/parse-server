@@ -1,5 +1,7 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
+import AdaptableController from './AdaptableController';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
 const Promise = Parse.Promise;
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
@@ -14,11 +16,7 @@ export const LogOrder = {
   ASCENDING: 'asc'
 }
 
-export class LoggerController {
-  
-  constructor(loggerAdapter, loggerOptions) {
-    this._loggerAdapter = loggerAdapter;
-  }
+export class LoggerController extends AdaptableController {
   
   // check that date input is valid
   static validDateTime(date) {
@@ -59,7 +57,7 @@ export class LoggerController {
   // order (optional) Direction of results returned, either “asc” or “desc”. Defaults to “desc”.
   // size (optional) Number of rows returned by search. Defaults to 10
   getLogs(options= {}) {
-    if (!this._loggerAdapter) {
+    if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Logger adapter is not availabe');
     }
@@ -68,10 +66,14 @@ export class LoggerController {
     
     options = LoggerController.parseOptions(options);
     
-    this._loggerAdapter.query(options, (result) => {
+    this.adapter.query(options, (result) => {
       promise.resolve(result);
     });
     return promise;
+  }
+  
+  expectedAdapterType() {
+    return LoggerAdapter;
   }
 }
 

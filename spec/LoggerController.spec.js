@@ -76,11 +76,10 @@ describe('LoggerController', () => {
   });
   
   it('should throw without an adapter', (done) => {
-
-    var loggerController = new LoggerController();
+    
 
     expect(() => {
-      loggerController.getLogs();
+      var loggerController = new LoggerController();
     }).toThrow();
     done();
   });
