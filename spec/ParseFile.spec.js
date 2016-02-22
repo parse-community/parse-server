@@ -10,25 +10,49 @@ for (var i = 0; i < str.length; i++) {
 }
 
 describe('Parse.File testing', () => {
-  it('works with REST API', done => {
-    var headers = {
-      'Content-Type': 'application/octet-stream',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest'
-    };
-    request.post({
-      headers: headers,
-      url: 'http://localhost:8378/1/files/file.txt',
-      body: 'argle bargle',
-    }, (error, response, body) => {
-      expect(error).toBe(null);
-      var b = JSON.parse(body);
-      expect(b.name).toMatch(/_file.txt$/);
-      expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
-      request.get(b.url, (error, response, body) => {
+  describe('creating files', () => {
+    it('works with Content-Type', done => {
+      var headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }, (error, response, body) => {
         expect(error).toBe(null);
-        expect(body).toEqual('argle bargle');
-        done();
+        var b = JSON.parse(body);
+        expect(b.name).toMatch(/_file.txt$/);
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
+        request.get(b.url, (error, response, body) => {
+          expect(error).toBe(null);
+          expect(body).toEqual('argle bargle');
+          done();
+        });
+      });
+    });
+
+    it('works without Content-Type', done => {
+      var headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(b.name).toMatch(/_file.txt$/);
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.txt$/);
+        request.get(b.url, (error, response, body) => {
+          expect(error).toBe(null);
+          expect(body).toEqual('argle bargle');
+          done();
+        });
       });
     });
   });
