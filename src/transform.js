@@ -42,9 +42,6 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     key = '_updated_at';
     timeField = true;
     break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
   case '_email_verify_token':
     key = "_email_verify_token";
     break;

@@ -158,36 +158,6 @@ export class UsersRouter extends ClassesRouter {
     return Promise.resolve(success);
   }
 
-  handleReset(req) {
-    if (!req.body.email && req.query.email) {
-      req.body = req.query;
-    }
-
-    if (!req.body.email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING,
-        'email is required.');
-    }
-
-    return req.database.find('_User', {email: req.body.email})
-    .then((results) => {
-      if (!results.length) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND,
-          'Email not found.');
-      }
-      var emailSender = req.info.app && req.info.app.emailSender;
-      if (!emailSender) {
-        throw new Error("No email sender function specified");
-      }
-      var perishableSessionToken = encodeURIComponent(results[0].perishableSessionToken);
-      var encodedEmail = encodeURIComponent(req.body.email)
-      var endpoint = req.config.mount + "/request_password_reset?token=" +  perishableSessionToken + "&username=" + encodedEmail;
-      return emailSender(Constants.RESET_PASSWORD, endpoint,req.body.email);
-    })
-    .then(()=>{
-      return {response:{}};
-    })
-  }
-
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
     this.route('POST', '/users', req => { return this.handleCreate(req); });
@@ -197,6 +167,9 @@ export class UsersRouter extends ClassesRouter {
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
+    this.route('POST', '/requestPasswordReset', () => {
+      throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, 'This path is not implemented yet.');
+    });
     this.route('POST', '/requestPasswordReset', req => this.handleReset(req));
   }
 }

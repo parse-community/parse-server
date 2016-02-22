@@ -403,9 +403,6 @@ RestWrite.prototype.transformUser = function() {
           throw new Parse.Error(Parse.Error.USERNAME_TAKEN,
                                 'Account already exists for this username');
         }
-        if (this.config.verifyUserEmails && this.data.email) {
-          this.data._perishable_token = cryptoUtils.randomString(25);
-        }
         return Promise.resolve();
       });
   }).then(() => {
