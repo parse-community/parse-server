@@ -9,13 +9,15 @@ module.exports = function(options) {
   };
   delete options.success;
   delete options.error;
-  if (options.uri && !options.url) {
-    options.uri = options.url;
-    delete options.url;
-  }
+  delete options.uri; // not supported
   if (typeof options.body === 'object') {
     options.body = JSON.stringify(options.body);
+    options.headers = options.headers || {};
+    options.headers['Content-Type'] = "application/json";
   }
+  // set follow redirects to false by default
+  options.followRedirect = options.followRedirects == true ? true : false;
+  
   request(options, (error, response, body) => {
     var httpResponse = {};
     httpResponse.status = response.statusCode;
@@ -29,12 +31,12 @@ module.exports = function(options) {
     // Consider <200 && >= 400 as errors 
     if (error || httpResponse.status <200 || httpResponse.status >=400) {
       if (callbacks.error) {
-        return callbacks.error(httpResponse);
+        callbacks.error(httpResponse);
       }
       return promise.reject(httpResponse);
     } else {
       if (callbacks.success) {
-        return callbacks.success(httpResponse);
+        callbacks.success(httpResponse);
       }
       return promise.resolve(httpResponse);
     }
