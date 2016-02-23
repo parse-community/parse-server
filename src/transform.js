@@ -262,12 +262,8 @@ function transformACL(restObject) {
       wperm.push(entry);
     }
   }
-  if (rperm.length) {
-    output._rperm = rperm;
-  }
-  if (wperm.length) {
-    output._wperm = wperm;
-  }
+  output._rperm = rperm;
+  output._wperm = wperm;
   delete restObject.ACL;
   return output;
 }
@@ -586,7 +582,7 @@ function transformUpdateOperator(operator, flatten) {
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
-function untransformObject(schema, className, mongoObject) {
+function untransformObject(schema, className, mongoObject, isNestedObject = false) {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -627,6 +623,7 @@ function untransformObject(schema, className, mongoObject) {
       case '_acl':
       case '_email_verify_token':
       case '_perishable_token':
+      case '_tombstone':
         break;
       case '_session_token':
         restObject['sessionToken'] = mongoObject[key];
@@ -683,10 +680,8 @@ function untransformObject(schema, className, mongoObject) {
             objectId: objData[1]
           };
           break;
-        } else if (key[0] == '_' && key != '__type') {
+        } else if (!isNestedObject && key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
-        //} else if (mongoObject[key] === null) {
-          //break;
         } else {
           var expectedType = schema.getExpectedType(className, key);
           var value = mongoObject[key];
@@ -700,7 +695,7 @@ function untransformObject(schema, className, mongoObject) {
           }
         }
         restObject[key] = untransformObject(schema, className,
-                                            mongoObject[key]);
+                                            mongoObject[key], true);
       }
     }
     return restObject;

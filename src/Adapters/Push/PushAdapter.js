@@ -8,10 +8,15 @@
 //
 // Default is ParsePushAdapter, which uses GCM for
 // android push and APNS for ios push.
+
 export class PushAdapter {
   send(devices, installations) { }
 
-  getValidPushTypes() { }
+  /**
+   * Get an array of valid push types.
+   * @returns {Array} An array of valid push types
+   */
+  getValidPushTypes() {}
 }
 
 export default PushAdapter;

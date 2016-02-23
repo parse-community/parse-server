@@ -1,8 +1,8 @@
 // global_config.js
 
-var Parse = require('parse/node').Parse,
-    PromiseRouter = require('./PromiseRouter');
+var Parse = require('parse/node').Parse;
 
+import PromiseRouter from './PromiseRouter';
 var router = new PromiseRouter();
 
 function getGlobalConfig(req) {

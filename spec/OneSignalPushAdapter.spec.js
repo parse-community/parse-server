@@ -1,6 +1,6 @@
 
 var OneSignalPushAdapter = require('../src/Adapters/Push/OneSignalPushAdapter');
-
+var classifyInstallations = require('../src/Adapters/Push/PushAdapterUtils').classifyInstallations;
 describe('OneSignalPushAdapter', () => {
   it('can be initialized', (done) => {
     // Make mock config
@@ -47,7 +47,7 @@ describe('OneSignalPushAdapter', () => {
       }
     ];
 
-    var deviceMap = OneSignalPushAdapter.classifyInstallation(installations, validPushTypes);
+    var deviceMap = OneSignalPushAdapter.classifyInstallations(installations, validPushTypes);
     expect(deviceMap['android']).toEqual([makeDevice('androidToken')]);
     expect(deviceMap['ios']).toEqual([makeDevice('iosToken')]);
     expect(deviceMap['win']).toBe(undefined);
@@ -227,7 +227,8 @@ describe('OneSignalPushAdapter', () => {
 
   function makeDevice(deviceToken, appIdentifier) {
     return {
-      deviceToken: deviceToken
+      deviceToken: deviceToken,
+      appIdentifier: appIdentifier
     };
   }
   

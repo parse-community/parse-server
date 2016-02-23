@@ -138,20 +138,18 @@ export class UsersRouter extends ClassesRouter {
     return Promise.resolve(success);
   }
 
-  getExpressRouter() {
-    let router = new PromiseRouter();
-    router.route('GET', '/users', req => { return this.handleFind(req); });
-    router.route('POST', '/users', req => { return this.handleCreate(req); });
-    router.route('GET', '/users/me', req => { return this.handleMe(req); });
-    router.route('GET', '/users/:objectId', req => { return this.handleGet(req); });
-    router.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
-    router.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
-    router.route('GET', '/login', req => { return this.handleLogIn(req); });
-    router.route('POST', '/logout', req => { return this.handleLogOut(req); });
-    router.route('POST', '/requestPasswordReset', () => {
+  mountRoutes() {
+    this.route('GET', '/users', req => { return this.handleFind(req); });
+    this.route('POST', '/users', req => { return this.handleCreate(req); });
+    this.route('GET', '/users/me', req => { return this.handleMe(req); });
+    this.route('GET', '/users/:objectId', req => { return this.handleGet(req); });
+    this.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
+    this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
+    this.route('GET', '/login', req => { return this.handleLogIn(req); });
+    this.route('POST', '/logout', req => { return this.handleLogOut(req); });
+    this.route('POST', '/requestPasswordReset', () => {
       throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, 'This path is not implemented yet.');
     });
-    return router;
   }
 }
 

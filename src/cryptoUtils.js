@@ -1,7 +1,9 @@
+/* @flow */
+
 import { randomBytes } from 'crypto';
 
 // Returns a new random hex string of the given even size.
-export function randomHexString(size) {
+export function randomHexString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomHexString is useless.');
   }
@@ -17,28 +19,28 @@ export function randomHexString(size) {
 // because chars length of 62 doesn't divide the number of all bytes
 // (256) evenly. Such bias is acceptable for most cases when the output
 // length is long enough and doesn't need to be uniform.
-export function randomString(size) {
+export function randomString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomString is useless.');
   }
-  var chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+  let chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
                'abcdefghijklmnopqrstuvwxyz' +
                '0123456789');
-  var objectId = '';
-  var bytes = randomBytes(size);
-  for (var i = 0; i < bytes.length; ++i) {
+  let objectId = '';
+  let bytes = randomBytes(size);
+  for (let i = 0; i < bytes.length; ++i) {
     objectId += chars[bytes.readUInt8(i) % chars.length];
   }
   return objectId;
 }
 
 // Returns a new random alphanumeric string suitable for object ID.
-export function newObjectId() {
+export function newObjectId(): string {
   //TODO: increase length to better protect against collisions.
   return randomString(10);
 }
 
 // Returns a new random hex string suitable for secure tokens.
-export function newToken() {
+export function newToken(): string {
   return randomHexString(32);
 }

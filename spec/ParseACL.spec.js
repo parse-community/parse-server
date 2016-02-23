@@ -1141,4 +1141,18 @@ describe('Parse.ACL', () => {
     }));
   });
 
+  it('restricted ACL does not have public access', (done) => {
+    var obj = new Parse.Object("TestClassMasterACL");
+    var acl = new Parse.ACL();
+    obj.set('ACL', acl);
+    obj.save().then(() => {
+      var query = new Parse.Query("TestClassMasterACL");
+      return query.find();
+    }).then((results) => {
+      console.log(JSON.stringify(results[0]));
+      ok(!results.length, 'Should not have returned object with secure ACL.');
+      done();
+    });
+  });
+
 });

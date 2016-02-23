@@ -1,34 +1,52 @@
 import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
+import AdaptableController from './AdaptableController';
+import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
 const Promise = Parse.Promise;
-const INFO = 'info';
-const ERROR = 'error';
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
-// only allow request with master key
-let enforceSecurity = (auth) => {
-  if (!auth || !auth.isMaster) {
-    throw new Parse.Error(
-      Parse.Error.OPERATION_FORBIDDEN,
-      'Clients aren\'t allowed to perform the ' +
-      'get' + ' operation on logs.'
-    );
-  }
+export const LogLevel = {
+  INFO: 'info',
+  ERROR: 'error'
 }
 
-// check that date input is valid
-let isValidDateTime = (date) => {
-  if (!date || isNaN(Number(date))) {
-    return false;
-  }
+export const LogOrder = {
+  DESCENDING: 'desc',
+  ASCENDING: 'asc'
 }
 
-export class LoggerController {
+export class LoggerController extends AdaptableController {
+  
+  // check that date input is valid
+  static validDateTime(date) {
+    if (!date) {
+      return null; 
+    }
+    date = new Date(date);
+    
+    if (!isNaN(date.getTime())) {
+      return date;
+    }
 
-  constructor(loggerAdapter) {
-    this._loggerAdapter = loggerAdapter;
+    return null;
+  }
+  
+  static parseOptions(options = {}) {
+    let from = LoggerController.validDateTime(options.from) ||
+      new Date(Date.now() - 7 * MILLISECONDS_IN_A_DAY);
+    let until = LoggerController.validDateTime(options.until) || new Date();
+    let size = Number(options.size) || 10;
+    let order = options.order || LogOrder.DESCENDING;
+    let level = options.level || LogLevel.INFO;
+    
+    return {
+      from,
+      until,
+      size,
+      order,
+      level,
+    };
   }
 
   // Returns a promise for a {response} object.
@@ -38,40 +56,24 @@ export class LoggerController {
   // until (optional) End time for the search. Defaults to current time.
   // order (optional) Direction of results returned, either “asc” or “desc”. Defaults to “desc”.
   // size (optional) Number of rows returned by search. Defaults to 10
-  handleGET(req) {
-    if (!this._loggerAdapter) {
+  getLogs(options= {}) {
+    if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Logger adapter is not availabe');
     }
 
     let promise = new Parse.Promise();
-    let from = (isValidDateTime(req.query.from) && new Date(req.query.from)) ||
-      new Date(Date.now() - 7 * MILLISECONDS_IN_A_DAY);
-    let until = (isValidDateTime(req.query.until) && new Date(req.query.until)) || new Date();
-    let size = Number(req.query.size) || 10;
-    let order = req.query.order || 'desc';
-    let level = req.query.level || INFO;
-    enforceSecurity(req.auth);
-    this._loggerAdapter.query({
-      from,
-      until,
-      size,
-      order,
-      level,
-    }, (result) => {
-      promise.resolve({
-        response: result
-      });
+    
+    options = LoggerController.parseOptions(options);
+    
+    this.adapter.query(options, (result) => {
+      promise.resolve(result);
     });
     return promise;
   }
-
-  getExpressRouter() {
-    let router = new PromiseRouter();
-    router.route('GET','/logs', (req) => {
-      return this.handleGET(req);
-    });
-    return router;
+  
+  expectedAdapterType() {
+    return LoggerAdapter;
   }
 }
 
