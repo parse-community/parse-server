@@ -3,7 +3,7 @@ var program = require('commander');
 var _definitions;
 var _reverseDefinitions;
 
-program.loadDefinitions = function(definitions, prefix = "") {
+program.loadDefinitions = function(definitions) {
   _definitions = definitions;
   Object.keys(definitions).reduce(function(program, opt){
     if (typeof definitions[opt] == "object") {
@@ -28,6 +28,7 @@ program.loadDefinitions = function(definitions, prefix = "") {
       return object;
    }, {});
    
+   /* istanbul ignore next */
    program.on('--help', function(){
     console.log('  Configure From Environment:');
     console.log('');
