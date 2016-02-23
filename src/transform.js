@@ -747,21 +747,41 @@ var BytesCoder = {
 
 var GeoPointCoder = {
   databaseToJSON(object) {
-    return {
-      __type: 'GeoPoint',
-      latitude: object[1],
-      longitude: object[0]
+    if (GeoPointCoder.isValidGeoJson(object)) {
+      return {
+        __type: 'GeoPoint',
+        latitude: object['coordinates'][1],
+        longitude: object['coordinates'][0]
+      }
+    } else if (GeoPointCoder.isValidLegacyCoordinates(object)) {
+      return {
+        __type: 'GeoPoint',
+        latitude: object[1],
+        longitude: object[0]
+      }
+    } else {
+        throw 'invalid database object';
     }
   },
 
+  isValidGeoJson(object) {
+    return (object instanceof Object
+      && object['type'] == 'Point'
+      && 'coordinates' in object
+      && GeoPointCoder.isValidLegacyCoordinates(object['coordinates']));
+  },
+
+  isValidLegacyCoordinates(object) {
+    return (object instanceof Array
+      && object.length == 2);
+  },
+
   isValidDatabaseObject(object) {
-    return (object instanceof Array &&
-      object.length == 2
-    );
+    return GeoPointCoder.isValidGeoJson(object) || GeoPointCoder.isValidLegacyCoordinates(object);
   },
 
   JSONToDatabase(json) {
-    return [ json.longitude, json.latitude ];
+    return { type: 'Point', coordinates: [ json.longitude, json.latitude ] };
   },
 
   isValidJSON(value) {

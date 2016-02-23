@@ -66,7 +66,7 @@ describe('transformCreate', () => {
     it('plain', (done) => {
       var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
       var out = transform.transformCreate(dummySchema, null, {location: geoPoint});
-      expect(out.location).toEqual([180, -180]);
+      expect(out.location).toEqual({ type: 'Point', coordinates: [ 180, -180 ] });
       done();
     });
 

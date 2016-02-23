@@ -479,7 +479,7 @@ ExportAdapter.prototype.smartFind = function(coll, where, options) {
       }
 
       var index = {};
-      index[key] = '2d';
+      index[key] = '2dsphere';
       //TODO: condiser moving index creation logic into Schema.js
       return coll.createIndex(index).then(() => {
         // Retry, but just once.
