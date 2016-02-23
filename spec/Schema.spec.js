@@ -14,9 +14,6 @@ var hasAllPODobject = () => {
   obj.set('aArray', ['contents', true, 5]);
   obj.set('aGeoPoint', new Parse.GeoPoint({latitude: 0, longitude: 0}));
   obj.set('aFile', new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' }));
-  var objACL = new Parse.ACL();
-  objACL.setPublicWriteAccess(false);
-  obj.setACL(objACL);
   return obj;
 };
 
@@ -545,7 +542,7 @@ describe('Schema', () => {
         done();
         Parse.Object.enableSingleInstance();
       });
-    })
+    });
   });
 
   it('can delete pointer fields and resave as string', done => {
