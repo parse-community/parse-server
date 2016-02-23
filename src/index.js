@@ -33,7 +33,7 @@ import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { LogsRouter }         from './Routers/LogsRouter';
 
-import { AdapterLoader }       from './Adapters/AdapterLoader';
+import { loadAdapter }       from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
 
@@ -107,9 +107,9 @@ function ParseServer({
   }
   
   
-  const filesControllerAdapter = AdapterLoader.load(filesAdapter, GridStoreAdapter);
-  const pushControllerAdapter = AdapterLoader.load(push, ParsePushAdapter);
-  const loggerControllerAdapter = AdapterLoader.load(loggerAdapter, FileLoggerAdapter);
+  const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
+  const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
+  const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
 
   // We pass the options and the base class for the adatper,
   // Note that passing an instance would work too

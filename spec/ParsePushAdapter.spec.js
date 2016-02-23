@@ -80,7 +80,7 @@ describe('ParsePushAdapter', () => {
       }
     ];
 
-    var deviceMap = ParsePushAdapter.classifyInstallation(installations, validPushTypes);
+    var deviceMap = ParsePushAdapter.classifyInstallations(installations, validPushTypes);
     expect(deviceMap['android']).toEqual([makeDevice('androidToken')]);
     expect(deviceMap['ios']).toEqual([makeDevice('iosToken')]);
     expect(deviceMap['win']).toBe(undefined);

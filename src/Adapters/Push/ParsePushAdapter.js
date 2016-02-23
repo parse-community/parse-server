@@ -7,6 +7,7 @@ const Parse = require('parse/node').Parse;
 const GCM = require('../../GCM');
 const APNS = require('../../APNS');
 import PushAdapter from './PushAdapter';
+import { classifyInstallations } from './PushAdapterUtils';
 
 export class ParsePushAdapter extends PushAdapter {
   constructor(pushConfig = {}) {
@@ -31,8 +32,16 @@ export class ParsePushAdapter extends PushAdapter {
     }
   }
   
+  getValidPushTypes() {
+    return this.validPushTypes;
+  }
+
+  static classifyInstallations(installations, validTypes) {
+    return classifyInstallations(installations, validTypes)
+  }
+  
   send(data, installations) {
-    let deviceMap = PushAdapter.classifyInstallation(installations, this.validPushTypes);
+    let deviceMap = classifyInstallations(installations, this.validPushTypes);
     let sendPromises = [];
     for (let pushType in deviceMap) {
       let sender = this.senderMap[pushType];

@@ -1,5 +1,5 @@
 
-var AdapterLoader = require("../src/Adapters/AdapterLoader").AdapterLoader;
+var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
 var FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
 
 describe("AdaptableController", ()=>{
@@ -7,7 +7,7 @@ describe("AdaptableController", ()=>{
   it("should instantiate an adapter from string in object", (done) => {
     var adapterPath = require('path').resolve("./spec/MockAdapter");
 
-    var adapter = AdapterLoader.load({
+    var adapter = loadAdapter({
       adapter: adapterPath,
       key: "value", 
       foo: "bar"
@@ -21,7 +21,7 @@ describe("AdaptableController", ()=>{
   
   it("should instantiate an adapter from string", (done) => {
     var adapterPath = require('path').resolve("./spec/MockAdapter");
-    var adapter = AdapterLoader.load(adapterPath);
+    var adapter = loadAdapter(adapterPath);
     
     expect(adapter instanceof Object).toBe(true);
     expect(adapter.options).toBe(adapterPath);
@@ -30,7 +30,7 @@ describe("AdaptableController", ()=>{
   
   it("should instantiate an adapter from string that is module", (done) => {
     var adapterPath = require('path').resolve("./src/Adapters/Files/FilesAdapter");
-    var adapter = AdapterLoader.load({
+    var adapter = loadAdapter({
       adapter: adapterPath
     });
     
@@ -39,7 +39,7 @@ describe("AdaptableController", ()=>{
   });
   
   it("should instantiate an adapter from function/Class", (done) => {
-    var adapter = AdapterLoader.load({
+    var adapter = loadAdapter({
       adapter: FilesAdapter
     });
     expect(adapter instanceof FilesAdapter).toBe(true);
@@ -47,21 +47,21 @@ describe("AdaptableController", ()=>{
   });
   
   it("should instantiate the default adapter from Class", (done) => {
-    var adapter = AdapterLoader.load(null, FilesAdapter);
+    var adapter = loadAdapter(null, FilesAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
   
   it("should use the default adapter", (done) => {
     var defaultAdapter = new FilesAdapter();
-    var adapter = AdapterLoader.load(null, defaultAdapter);
+    var adapter = loadAdapter(null, defaultAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
   
   it("should use the provided adapter", (done) => {
     var originalAdapter = new FilesAdapter();
-    var adapter = AdapterLoader.load(originalAdapter);
+    var adapter = loadAdapter(originalAdapter);
     expect(adapter).toBe(originalAdapter);
     done();
   });
