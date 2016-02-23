@@ -23,6 +23,9 @@ if (process.env.PARSE_SERVER_OPTIONS) {
 	options.javascriptKey = process.env.PARSE_SERVER_JAVASCRIPT_KEY;
 	options.masterKey = process.env.PARSE_SERVER_MASTER_KEY;
 	options.fileKey = process.env.PARSE_SERVER_FILE_KEY;
+	//set serverURL where your parse server makes internal calls against
+	options.serverURL = process.env.PARSE_SERVER_SERVERURL;
+	
 	// Comma separated list of facebook app ids
 	var facebookAppIds = process.env.PARSE_SERVER_FACEBOOK_APP_IDS;
 
