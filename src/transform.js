@@ -42,6 +42,9 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     key = '_updated_at';
     timeField = true;
     break;
+  case '_email_verify_token':
+    key = "_email_verify_token";
+    break;
   case 'sessionToken':
   case '_session_token':
     key = '_session_token';
@@ -649,7 +652,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
           restObject['authData'][provider] = mongoObject[key];
           break;
         }
-        
+
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
           var expected;
