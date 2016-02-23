@@ -10,7 +10,7 @@ var ParseServer = require('../src/index').ParseServer;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
-var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
+var cloudMain = process.env.CLOUD_CODE_MAIN || '../spec/cloud/main.js';
 var port = 8378;
 
 // Default server configuration for tests.
