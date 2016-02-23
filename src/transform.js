@@ -262,12 +262,8 @@ function transformACL(restObject) {
       wperm.push(entry);
     }
   }
-  if (rperm.length) {
-    output._rperm = rperm;
-  }
-  if (wperm.length) {
-    output._wperm = wperm;
-  }
+  output._rperm = rperm;
+  output._wperm = wperm;
   delete restObject.ACL;
   return output;
 }
