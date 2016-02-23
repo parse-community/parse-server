@@ -2,8 +2,9 @@ var request = require('request');
 
 describe('server', () => {
   it('requires a master key and app id', done => {
-    expect(setServerConfiguration.bind(undefined, { masterKey: 'mykey' })).toThrow('You must provide an appId and masterKey!');
-    expect(setServerConfiguration.bind(undefined, { appId: 'myId' })).toThrow('You must provide an appId and masterKey!');
+    expect(setServerConfiguration.bind(undefined, {  })).toThrow('You must provide an appId!');
+    expect(setServerConfiguration.bind(undefined, { appId: 'myId' })).toThrow('You must provide a masterKey!');
+    expect(setServerConfiguration.bind(undefined, { appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');
     done();
   });
 
