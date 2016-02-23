@@ -50,15 +50,6 @@ function RestWrite(config, auth, className, query, data, originalData) {
 
   // The timestamp we'll use for this whole operation
   this.updatedAt = Parse._encode(new Date()).iso;
-
-  if (this.data) {
-    // Add default fields
-    this.data.updatedAt = this.updatedAt;
-    if (!this.query) {
-      this.data.createdAt = this.updatedAt;
-      this.data.objectId = cryptoUtils.newObjectId();
-    }
-  }
 }
 
 // A convenient method to perform all the steps of processing the
@@ -76,6 +67,8 @@ RestWrite.prototype.execute = function() {
     return this.handleSession();
   }).then(() => {
     return this.runBeforeTrigger();
+  }).then(() => {
+    return this.setRequiredFieldsIfNeeded();
   }).then(() => {
     return this.validateAuthData();
   }).then(() => {
@@ -99,7 +92,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
   this.runOptions.acl = ['*'];
 
-  if( this.auth.user ){
+  if (this.auth.user) {
     return this.auth.getUserRoles().then((roles) => {
       roles.push(this.auth.user.id);
       this.runOptions.acl = this.runOptions.acl.concat(roles);
@@ -144,6 +137,18 @@ RestWrite.prototype.runBeforeTrigger = function() {
       }
     }
   });
+};
+
+RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
+  if (this.data) {
+    // Add default fields
+    this.data.updatedAt = this.updatedAt;
+    if (!this.query) {
+      this.data.createdAt = this.updatedAt;
+      this.data.objectId = cryptoUtils.newObjectId();
+    }
+  }
+  return Promise.resolve();
 };
 
 // Transforms auth data for a user object.

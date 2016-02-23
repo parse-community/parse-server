@@ -390,15 +390,19 @@ describe('miscellaneous', function() {
       var object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      expect(object.id).not.toBeUndefined();
-      expect(object.createdAt).not.toBeUndefined();
-      expect(object.updatedAt).not.toBeUndefined();
       if (triggerTime == 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
+        // No objectId/createdAt/updatedAt
+        expect(object.id).toBeUndefined();
+        expect(object.createdAt).toBeUndefined();
+        expect(object.updatedAt).toBeUndefined();
       } else if (triggerTime == 1) {
         // Update
         expect(object.get('foo')).toEqual('baz');
+        expect(object.id).not.toBeUndefined();
+        expect(object.createdAt).not.toBeUndefined();
+        expect(object.updatedAt).not.toBeUndefined();
       } else {
         res.error();
       }
@@ -431,10 +435,10 @@ describe('miscellaneous', function() {
     Parse.Cloud.afterSave('GameScore', function(req, res) {
       var object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
-      expect(object.get('fooAgain')).toEqual('barAgain');
       expect(object.id).not.toBeUndefined();
       expect(object.createdAt).not.toBeUndefined();
       expect(object.updatedAt).not.toBeUndefined();
+      expect(object.get('fooAgain')).toEqual('barAgain');
       if (triggerTime == 0) {
         // Create
         expect(object.get('foo')).toEqual('bar');
@@ -474,17 +478,21 @@ describe('miscellaneous', function() {
       var object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      expect(object.id).not.toBeUndefined();
-      expect(object.createdAt).not.toBeUndefined();
-      expect(object.updatedAt).not.toBeUndefined();
       var originalObject = req.original;
       if (triggerTime == 0) {
+        // No id/createdAt/updatedAt
+        expect(object.id).toBeUndefined();
+        expect(object.createdAt).toBeUndefined();
+        expect(object.updatedAt).toBeUndefined();
         // Create
         expect(object.get('foo')).toEqual('bar');
         // Check the originalObject is undefined
         expect(originalObject).toBeUndefined();
       } else if (triggerTime == 1) {
         // Update
+        expect(object.id).not.toBeUndefined();
+        expect(object.createdAt).not.toBeUndefined();
+        expect(object.updatedAt).not.toBeUndefined();
         expect(object.get('foo')).toEqual('baz');
         // Check the originalObject
         expect(originalObject instanceof Parse.Object).toBeTruthy();
