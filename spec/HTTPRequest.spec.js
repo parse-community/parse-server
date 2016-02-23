@@ -139,6 +139,9 @@ describe("httpRequest", () => {
       body: {
          foo: "bar"
       },
+      headers: {
+        'Content-Type': 'application/json'
+      },
       success: function() { calls++; },
       error: function() { calls++; }
     }).then(function(httpResponse){
@@ -150,5 +153,29 @@ describe("httpRequest", () => {
       fail("should not fail");
       done();
     })
+  });
+  it("should encode a JSON body", (done) => {
+    
+    var result = httpRequest.encodeBody({"foo": "bar"}, {'Content-Type': 'application/json'});
+    expect(result).toEqual('{"foo":"bar"}');
+    done();
+    
+  })
+   it("should encode a www-form body", (done) => {
+    
+    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'cOntent-tYpe': 'application/x-www-form-urlencoded'});
+    expect(result).toEqual("foo=bar&bar=baz");
+    done();
+  });
+  it("should not encode a wrong content type", (done) => {
+    
+    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'cOntent-tYpe': 'mime/jpeg'});
+    expect(result).toEqual({"foo": "bar", "bar": "baz"});
+    done();
+  });
+  it("should not encode when missing content type", (done) => {
+    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'X-Custom-Header': 'my-header'});
+    expect(result).toEqual({"foo": "bar", "bar": "baz"});
+    done();
   })
 });

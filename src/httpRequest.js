@@ -1,6 +1,27 @@
 var request = require("request"),
   Parse = require('parse/node').Parse;
 
+var encodeBody = function(body, headers = {}) {
+  if (typeof body !== 'object') {
+    return body;
+  }
+  var contentTypeKeys = Object.keys(headers).filter((key) => {
+    return key.match(/content-type/i) != null;
+  });
+
+  if (contentTypeKeys.length == 1) {
+    var contentType = contentTypeKeys[0];
+    if (headers[contentType].match(/application\/json/i)) {
+      body = JSON.stringify(body);
+    } else if(headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
+      body = Object.keys(body).map(function(key){
+        return `${key}=${encodeURIComponent(body[key])}`
+      }).join("&");
+    }
+  }
+  return body;
+}
+
 module.exports = function(options) {
   var promise = new Parse.Promise();
   var callbacks = {
@@ -10,13 +31,9 @@ module.exports = function(options) {
   delete options.success;
   delete options.error;
   delete options.uri; // not supported
-  if (typeof options.body === 'object') {
-    options.body = JSON.stringify(options.body);
-    options.headers = options.headers || {};
-    options.headers['Content-Type'] = "application/json";
-  }
+  options.body = encodeBody(options.body, options.headers);
   // set follow redirects to false by default
-  options.followRedirect = options.followRedirects == true ? true : false;
+  options.followRedirect = options.followRedirects == true;
   
   request(options, (error, response, body) => {
     var httpResponse = {};
@@ -43,3 +60,5 @@ module.exports = function(options) {
   });
   return promise;
 };
+
+module.exports.encodeBody = encodeBody;
