@@ -1,4 +1,3 @@
-
 export function loadAdapter(options, defaultAdapter) {
   let adapter;
 
@@ -12,7 +11,7 @@ export function loadAdapter(options, defaultAdapter) {
       adapter = options.adapter;
     }
   }
-  
+
   if (!adapter) {
     adapter = defaultAdapter;
   }
@@ -26,10 +25,12 @@ export function loadAdapter(options, defaultAdapter) {
     }
   }
   // From there it's either a function or an object
-  // if it's an function, instanciate and pass the options 
+  // if it's an function, instanciate and pass the options
   if (typeof adapter === "function") {
     var Adapter = adapter;
     adapter = new Adapter(options);
   }
   return adapter;
 }
+
+module.exports = { loadAdapter }

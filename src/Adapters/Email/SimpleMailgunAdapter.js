@@ -1,6 +1,9 @@
 import Mailgun from 'mailgun-js';
 
-export default (mailgunOptions) => {
+let SimpleMailgunAdapter = mailgunOptions => {
+	if (!mailgunOptions || !mailgunOptions.apiKey || !mailgunOptions.domain) {
+		throw 'SimpleMailgunAdapter requires an API Key and domain.';
+	}
 	let mailgun = Mailgun(mailgunOptions);
 
 	let sendMail = (to, subject, text) => {
@@ -32,3 +35,5 @@ export default (mailgunOptions) => {
 		}
 	}
 }
+
+module.exports = SimpleMailgunAdapter
