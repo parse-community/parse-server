@@ -429,6 +429,47 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test beforeSave get dirtyKeys on update', function(done) {
+    var triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', function(req, res) {
+      var object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      expect(object.get('fooAgain')).toEqual('barAgain');
+      if (triggerTime == 0) {
+        // Create
+        expect(object.get('foo')).toEqual('bar');
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.dirtyKeys()).toEqual(['foo']);
+        expect(object.dirty('foo')).toBeTruthy();
+        expect(object.get('foo')).toEqual('baz');
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    var obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
+    obj.save().then(function() {
+      // We only update foo
+      obj.set('foo', 'baz');
+      return obj.save();
+    }).then(function() {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      // Clear mock beforeSave
+      delete Parse.Cloud.Triggers.beforeSave.GameScore;
+      done();
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
   it('test afterSave get full object on create and update', function(done) {
     var triggerTime = 0;
     // Register a mock beforeSave hook
