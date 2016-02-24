@@ -83,6 +83,7 @@ function ParseServer({
   enableAnonymousUsers = true,
   oauth = {},
   serverURL = '',
+  maxUploadSize = '20mb'
 }) {
   if (!appId || !masterKey) {
     throw 'You must provide an appId and masterKey!';
@@ -147,14 +148,16 @@ function ParseServer({
   var api = express();
 
   // File handling needs to be before default middlewares are applied
-  api.use('/', new FilesRouter().getExpressRouter());
+  api.use('/', new FilesRouter().getExpressRouter({
+    maxUploadSize: maxUploadSize
+  }));
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
     api.use('/', require('./testing-routes').router);
   }
 
-  api.use(bodyParser.json({ 'type': '*/*' }));
+  api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
   api.use(middlewares.allowCrossDomain);
   api.use(middlewares.allowMethodOverride);
   api.use(middlewares.handleParseHeaders);
