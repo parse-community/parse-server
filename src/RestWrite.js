@@ -116,18 +116,23 @@ RestWrite.prototype.runBeforeTrigger = function() {
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
   }
-  // Build the inflated object, for a create write, originalData is empty
-  var inflatedObject = triggers.inflate(extraData, this.originalData);;
-  inflatedObject._finishFetch(this.data);
-  // Build the original object, we only do this for a update write
-  var originalObject;
+
+  let originalObject = null;
+  let updatedObject = null;
   if (this.query && this.query.objectId) {
+    // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
+    updatedObject = triggers.inflate(extraData, this.originalData);
+    updatedObject.set(Parse._decode(undefined, this.data));
+  } else {
+    // This is create of an object, so no original object exists.
+    // TODO: (nlutsenko) Use the same flow as for creation, when _Session triggers support is removed.
+    updatedObject = triggers.inflate(extraData, this.data);
   }
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(
-      'beforeSave', this.auth, inflatedObject, originalObject);
+      'beforeSave', this.auth, updatedObject, originalObject);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
