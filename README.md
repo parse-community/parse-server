@@ -49,7 +49,7 @@ You can configure Parse Server with a configuration file, arguments and environm
 
 To start the server: 
 
-`npm start -- --appId MYAPP --masterKey MASTER_KEY`.
+`npm start -- --appId MYAPP --masterKey MASTER_KEY --serverURL http://localhost:1337/parse`.
 
 To get more help for running the parse-server standalone, you can run:
 
@@ -113,6 +113,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
 * `enableAnonymousUsers` - Defaults to true. Set to false to disable anonymous users.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
+* `maxUploadSize` - Defaults to 20mb. Max file size for uploads
 
 #### Using environment variables
 
@@ -131,6 +132,7 @@ PARSE_SERVER_JAVASCRIPT_KEY
 PARSE_SERVER_DOTNET_KEY
 PARSE_SERVER_FILE_KEY
 PARSE_SERVER_FACEBOOK_APP_IDS // string of comma separated list
+PARSE_SERVER_MAX_UPLOAD_SIZE
 
 ```
 

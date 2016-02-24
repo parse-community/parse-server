@@ -90,5 +90,10 @@ module.exports = {
   "loggerAdapter": {
     env: "PARSE_SERVER_LOGGER_ADAPTER",
     help: "Adapter module for the logging sub-system"
+  },
+  "maxUploadSize": {
+    env: "PARSE_SERVER_MAX_UPLOAD_SIZE",
+    help: "Max file size for uploads.",
+    default: "20mb"
   }
 };
