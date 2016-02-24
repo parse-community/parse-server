@@ -6,7 +6,7 @@ let SimpleMailgunAdapter = mailgunOptions => {
 	}
 	let mailgun = Mailgun(mailgunOptions);
 
-	let sendMail = (to, subject, text) => {
+	let sendMail = ({to, subject, text}) => {
 		let data = {
 			from: mailgunOptions.fromAddress,
 			to: to,
@@ -24,16 +24,21 @@ let SimpleMailgunAdapter = mailgunOptions => {
 		});
 	}
 
-	return {
+	return Object.freeze({
 		sendVerificationEmail: ({ link, user, appName, }) => {
 			let verifyMessage =
 	      "Hi,\n\n" +
 	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
 	      "" +
 	      "Click here to confirm it:\n" + link;
-			return sendMail(user.email, 'Please verify your e-mail for ' + appName, verifyMessage);
-		}
-	}
+			return sendMail({ 
+        to:user.email, 
+        subject: 'Please verify your e-mail for ' + appName, 
+        text: verifyMessage
+      });
+		},
+    sendMail: sendMail
+	});
 }
 
 module.exports = SimpleMailgunAdapter

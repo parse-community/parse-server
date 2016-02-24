@@ -28,8 +28,7 @@ export class UsersRouter extends ClassesRouter {
     req.params.className = '_User';
 
     if (req.config.verifyUserEmails) {
-      req.body._email_verify_token = cryptoUtils.randomString(25);
-      req.body.emailVerified = false;
+      req.config.mailController.setEmailVerificationStatus(req.body, false);
     }
 
     let p = super.handleCreate(req);
@@ -37,12 +36,7 @@ export class UsersRouter extends ClassesRouter {
     if (req.config.verifyUserEmails) {
       // Send email as fire-and-forget once the user makes it into the DB.
       p.then(() => {
-        let link = req.config.mount + "/verify_email?token=" + encodeURIComponent(req.body._email_verify_token) + "&username=" + encodeURIComponent(req.body.username);
-        req.config.emailAdapter.sendVerificationEmail({
-          appName: req.config.appName,
-          link: link,
-          user: triggers.inflate('_User', req.body),
-        });
+        req.config.mailController.sendVerificationEmail(req.body, req.config);
       });
     }
     return p;

@@ -31,7 +31,6 @@ export class AdaptableController {
   }
   
   validateAdapter(adapter) {
-    
     if (!adapter) {
       throw new Error(this.constructor.name+" requires an adapter");
     }

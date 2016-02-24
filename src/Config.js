@@ -24,8 +24,8 @@ export class Config {
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     
+    this.mailController = cacheInfo.mailController;
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
-    this.emailAdapter = cacheInfo.emailAdapter;
     this.appName = cacheInfo.appName;
 
     this.hooksController = cacheInfo.hooksController;
