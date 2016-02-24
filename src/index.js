@@ -47,6 +47,8 @@ addParseCloud();
 //                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
+// "loggerAdapter": a class like FileLoggerAdapter providing info, error,
+//                 and query
 // "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
 //          what database this Parse API connects to.
 // "cloud": relative location to cloud code to require, or a function
