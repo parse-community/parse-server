@@ -18,6 +18,10 @@ var getTrigger = function(className, triggerType) {
   return undefined;
 };
 
+function triggerExists(className: string, type: string): boolean {
+  return (getTrigger(className, type) != undefined);
+}
+
 var getRequestObject = function(triggerType, auth, parseObject, originalParseObject) {
   var request = {
     triggerName: triggerType,
@@ -52,7 +56,7 @@ var getResponseObject = function(request, resolve, reject) {
     success: function() {
       var response = {};
       if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object.toJSON();
+        response['object'] = request.object._getSaveJSON();
       }
       return resolve(response);
     },
@@ -96,5 +100,6 @@ module.exports = {
   getRequestObject: getRequestObject,
   inflate: inflate,
   maybeRunTrigger: maybeRunTrigger,
+  triggerExists: triggerExists,
   Types: Types
 };
