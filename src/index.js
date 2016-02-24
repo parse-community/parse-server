@@ -4,13 +4,13 @@ import 'babel-polyfill';
 
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
-    cache = require('./cache'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse;
 
+import cache                   from './cache';
 import PromiseRouter           from './PromiseRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';

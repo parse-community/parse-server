@@ -2,10 +2,12 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
+import cache from './cache';
+
 export class Config {
 
   constructor(applicationId, mount) {
-    var cache = require('./cache');
+    
     var DatabaseAdapter = require('./DatabaseAdapter');
 
     var cacheInfo = cache.apps[applicationId];

@@ -8,8 +8,8 @@
 // things.
 
 var Parse = require('parse/node').Parse;
+import cache from './cache';
 
-var cache = require('./cache');
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');

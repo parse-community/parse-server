@@ -2,10 +2,10 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
+import cache from './cache';
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
@@ -114,7 +114,7 @@ RestWrite.prototype.validateSchema = function() {
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
-  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave)) {
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
   }
 

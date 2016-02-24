@@ -13,11 +13,11 @@
 // * This list is incomplete and the database process is not fully modularized.
 //
 // Default is ExportAdapter, which uses mongo.
+import cache from './cache';
 
 var ExportAdapter = require('./ExportAdapter');
 
 var adapter = ExportAdapter;
-var cache = require('./cache');
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
 var appDatabaseURIs = {};
