@@ -533,6 +533,48 @@ describe('miscellaneous', function() {
         done();
       });
     });
+
+    it('pointer mutation properly saves object', done => {
+      let className = 'GameScore';
+
+      Parse.Cloud.beforeSave(className, (req, res) => {
+        let object = req.object;
+        expect(object instanceof Parse.Object).toBeTruthy();
+
+        let child = object.get('child');
+        expect(child instanceof Parse.Object).toBeTruthy();
+        child.set('a', 'b');
+        child.save().then(() => {
+          res.success();
+        });
+      });
+
+      let obj = new Parse.Object(className);
+      obj.set('foo', 'bar');
+
+      let child = new Parse.Object('Child');
+      child.save().then(() => {
+        obj.set('child', child);
+        return obj.save();
+      }).then(() => {
+        let query = new Parse.Query(className);
+        query.include('child');
+        return query.get(obj.id).then(objAgain => {
+          expect(objAgain.get('foo')).toEqual('bar');
+
+          let childAgain = objAgain.get('child');
+          expect(childAgain instanceof Parse.Object).toBeTruthy();
+          expect(childAgain.get('a')).toEqual('b');
+
+          return Promise.resolve();
+        });
+      }).then(() => {
+        done();
+      }, error => {
+        fail(error);
+        done();
+      });
+    });
   });
 
   it('test afterSave get full object on create and update', function(done) {
