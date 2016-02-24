@@ -6,6 +6,7 @@
 * Feature: Better error messages when attempting to run the server on a port that is already in use or without a server URL
 * Feature: Allow customization of max file size
 * Performance: Faster saves if not using beforeSave triggers
+* Fix: Send session token in response to current user endpoint
 * Fix: Remove triggers for _Session collection
 * Fix: Improve compatability of Cloud Code beforeSave hook for newly created object
 * Fix: ACL creation for master key only objects
