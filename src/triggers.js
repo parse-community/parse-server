@@ -18,6 +18,10 @@ var getTrigger = function(className, triggerType) {
   return undefined;
 };
 
+function triggerExists(className: string, type: string): boolean {
+  return (getTrigger(className, type) != undefined);
+}
+
 var getRequestObject = function(triggerType, auth, parseObject, originalParseObject) {
   var request = {
     triggerName: triggerType,
@@ -96,5 +100,6 @@ module.exports = {
   getRequestObject: getRequestObject,
   inflate: inflate,
   maybeRunTrigger: maybeRunTrigger,
+  triggerExists: triggerExists,
   Types: Types
 };

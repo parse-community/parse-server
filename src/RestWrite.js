@@ -111,6 +111,11 @@ RestWrite.prototype.validateSchema = function() {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
+  // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave)) {
+    return Promise.resolve();
+  }
+
   // Cloud code gets a bit of extra data for its objects
   var extraData = {className: this.className};
   if (this.query && this.query.objectId) {
