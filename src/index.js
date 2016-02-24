@@ -211,24 +211,35 @@ function addParseCloud() {
     afterDelete: {}
   };
 
+  function validateClassNameForTriggers(className) {
+    const restrictedClassNames = [ '_Session' ];
+    if (restrictedClassNames.indexOf(className) != -1) {
+      throw `Triggers are not supported for ${className} class.`;
+    }
+  }
+
   Parse.Cloud.define = function(functionName, handler, validationHandler) {
     Parse.Cloud.Functions[functionName] = handler;
     Parse.Cloud.Validators[functionName] = validationHandler;
   };
   Parse.Cloud.beforeSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
+    let className = getClassName(parseClass);
+    validateClassNameForTriggers(className);
     Parse.Cloud.Triggers.beforeSave[className] = handler;
   };
   Parse.Cloud.beforeDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
+    let className = getClassName(parseClass);
+    validateClassNameForTriggers(className);
     Parse.Cloud.Triggers.beforeDelete[className] = handler;
   };
   Parse.Cloud.afterSave = function(parseClass, handler) {
-    var className = getClassName(parseClass);
+    let className = getClassName(parseClass);
+    validateClassNameForTriggers(className);
     Parse.Cloud.Triggers.afterSave[className] = handler;
   };
   Parse.Cloud.afterDelete = function(parseClass, handler) {
-    var className = getClassName(parseClass);
+    let className = getClassName(parseClass);
+    validateClassNameForTriggers(className);
     Parse.Cloud.Triggers.afterDelete[className] = handler;
   };
   Parse.Cloud.httpRequest = httpRequest;
