@@ -44,7 +44,28 @@ app.listen(1337, function() {
 
 ### Standalone Parse Server
 
-Parse Server can also run as a standalone API server. The standalone Parse Server can be configured using [environment variables](#configuration). To start the server, just run `npm start`.
+Parse Server can also run as a standalone API server. 
+You can configure Parse Server with a configuration file, arguments and environment variables.
+
+To start the server: 
+
+`npm start -- --appId MYAPP --masterKey MASTER_KEY`.
+
+To get more help for running the parse-server standalone, you can run:
+
+`$ npm start -- --help`
+
+The standalone API server supports loading a configuration file in JSON format:
+
+`$ npm start -- path/to/your/config.json`
+
+The default port is 1337, to use a different port set the PORT environment variable:
+
+`$ PORT=8080 npm start -- path/to/your/config.json`
+
+The standalone Parse Server can be configured using [environment variables](#configuration).
+
+Please refer to the [configuration section](#configuration) or help;
 
 You can also install Parse Server globally:
 

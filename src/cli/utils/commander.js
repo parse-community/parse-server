@@ -2,7 +2,7 @@ var program = require('commander');
 
 var _definitions;
 var _reverseDefinitions;
-
+var _defaults;
 program.loadDefinitions = function(definitions) {
   _definitions = definitions;
   Object.keys(definitions).reduce(function(program, opt){
@@ -16,7 +16,12 @@ program.loadDefinitions = function(definitions) {
     }
     return program.option(`--${opt} [${opt}]`)
   }, program);
-  
+  _defaults = Object.keys(definitions).reduce(function(defs, opt) {
+    if(_definitions[opt].default) {
+      defs[opt] = _definitions[opt].default;
+    }
+    return defs;
+  }, {});
   _reverseDefinitions = Object.keys(definitions).reduce(function(object, key){
       let value = definitions[key];
       if (typeof value == "object") {
@@ -63,6 +68,11 @@ program.parse = function(args, env) {
   Object.keys(envOptions).forEach(function(key){
    if (!program[key]) {
      program[key] = envOptions[key];
+   } 
+  });
+  Object.keys(_defaults).forEach(function(key){
+    if (!program[key]) {
+     program[key] = _defaults[key];
    } 
   });
 }

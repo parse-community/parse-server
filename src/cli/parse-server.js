@@ -3,6 +3,7 @@ var express = require('express');
 var ParseServer = require("../index").ParseServer;
 var definitions = require('./cli-definitions');
 var program = require('./utils/commander');
+var colors = require('colors');
 
 program.loadDefinitions(definitions);
 
@@ -19,15 +20,15 @@ program.on('--help', function(){
   console.log('  Usage with npm start');
   console.log('');
   console.log('    $ npm start -- path/to/config.json');
-  console.log('    $ npm start -- --appId APP_ID --masterKey MASTER_KEY');
-  console.log('    $ npm start -- --appId APP_ID --masterKey MASTER_KEY');
+  console.log('    $ npm start -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
+  console.log('    $ npm start -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
   console.log('');
   console.log('');
   console.log('  Usage:');
   console.log('');
   console.log('    $ parse-server path/to/config.json');
-  console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY');
-  console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY');
+  console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
+  console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
   console.log('');
 });
   
@@ -40,6 +41,14 @@ if (program.args.length > 0 ) {
   jsonPath = path.resolve(jsonPath);
   options = require(jsonPath);
   console.log(`Configuation loaded from ${jsonPath}`)
+} 
+
+if (!program.appId || !program.masterKey || !program.serverURL) {
+  program.outputHelp();
+  console.error("");
+  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
+  console.error("");
+  process.exit(1);
 }
 
 var options = Object.keys(definitions).reduce(function (options, key) {
@@ -48,8 +57,6 @@ var options = Object.keys(definitions).reduce(function (options, key) {
   }
   return options;
 }, options);
-
-options.mountPath = options.mountPath || '/';
 
 var app = express();
 var api = new ParseServer(options);

@@ -22,6 +22,7 @@
     "babel-runtime": "^6.5.0",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "^1.14.2",
+    "colors": "^1.1.2",
     "commander": "^2.9.0",
     "deepcopy": "^0.6.1",
     "express": "^4.13.4",

@@ -11,7 +11,8 @@ module.exports = {
   },
   "serverURL": { 
     env: "PARSE_SERVER_URL",
-    help: "URL to your parse server with http:// or https://"
+    help: "URL to your parse server with http:// or https://",
+    required: true
   },
   "databaseURI": { 
     env: "PARSE_SERVER_DATABASE_URI",
@@ -65,7 +66,7 @@ module.exports = {
   },
   "enableAnonymousUsers": {
     env: "PARSE_SERVER_ENABLE_ANON_USERS",
-    help: "Enable (or disable) anon users, enabled by default",
+    help: "Enable (or disable) anon users, defaults to true",
     action: function(opt) {
       if (opt == "true" || opt == "1") {
         return true;
@@ -75,7 +76,8 @@ module.exports = {
   },
   "mountPath": { 
     env: "PARSE_SERVER_MOUNT_PATH",
-    help: "Mount path for the server, defaults to /"
+    help: "Mount path for the server, defaults to /parse",
+    default: "/parse"
   },
   "databaseAdapter": {
     env: "PARSE_SERVER_DATABASE_ADAPTER",
