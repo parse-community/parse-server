@@ -1,5 +1,22 @@
 ## Parse Server Changelog
 
+### 2.1.3 (2/24/2016)
+
+* Feature: Add initial support for in-app purchases
+* Feature: Better error messages when attempting to run the server on a port that is already in use or without a server URL
+* Feature: Allow customization of max file size
+* Performance: Faster saves if not using beforeSave triggers
+* Fix: Remove triggers for _Session collection
+* Fix: Improve compatability of Cloud Code beforeSave hook for newly created object
+* Fix: ACL creation for master key only objects
+* Fix: Allow uploading files without Content-Type
+* Fix: Add features to http requrest to match Parse.com
+* Fix: Bugs in development script when running from locations other than project root
+* Fix: Can pass query constraints in URL
+* Fix: Objects with legacy "_tombstone" key now don't cause issues.
+* Fix: Allow nested keys in objects to begin with underscores
+* Fix: Allow correct headers for CORS
+
 ### 2.1.2 (2/19/2016)
 
 * Change: The S3 file adapter constructor requires a bucket name
