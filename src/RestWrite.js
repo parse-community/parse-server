@@ -74,6 +74,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.transformUser();
   }).then(() => {
+    return this.expandFilesForExistingObjects();
+  }).then(() => {
     return this.runDatabaseOperation();
   }).then(() => {
     return this.handleFollowup();
@@ -702,6 +704,16 @@ RestWrite.prototype.handleInstallation = function() {
     // TODO: Validate ops (add/remove on channels, $inc on badge, etc.)
   });
   return promise;
+};
+
+// If we short-circuted the object response - then we need to make sure we expand all the files,
+// since this might not have a query, meaning it won't return the full result back.
+// TODO: (nlutsenko) This should die when we move to per-class based controllers on _Session/_User
+RestWrite.prototype.expandFilesForExistingObjects = function() {
+  // Check whether we have a short-circuited response - only then run expansion.
+  if (this.response && this.response.response) {
+    this.config.filesController.expandFilesInObject(this.config, this.response.response);
+  }
 };
 
 RestWrite.prototype.runDatabaseOperation = function() {

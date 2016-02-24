@@ -82,8 +82,6 @@ describe('Parse.User testing', () => {
   });
 
   it("user login with files", (done) => {
-    "use strict";
-
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
@@ -927,6 +925,29 @@ describe('Parse.User testing', () => {
         ok(false, "linking should have worked");
         done();
       }
+    });
+  });
+
+  it('log in with provider with files', done => {
+    let provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
+    file.save().then(file => {
+      let user = new Parse.User();
+      user.set('file', file);
+      return user._linkWith('facebook', {});
+    }).then(user => {
+      expect(user._isLinked("facebook")).toBeTruthy();
+      return Parse.User._logInWith('facebook', {});
+    }).then(user => {
+      let fileAgain = user.get('file');
+      expect(fileAgain.name()).toMatch(/yolo.txt$/);
+      expect(fileAgain.url()).toMatch(/yolo.txt$/);
+    }).then(() => {
+      done();
+    }, error => {
+      fail(error);
+      done();
     });
   });
 
