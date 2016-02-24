@@ -1,6 +1,6 @@
 import path from 'path';
 import express from 'express';
-import ParseServer from '../index';
+import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
@@ -54,7 +54,7 @@ let options = Object.keys(definitions).reduce(function (options, key) {
     options[key] = program[key];
   }
   return options;
-}, options);
+}, {});
 
 const app = express();
 const api = new ParseServer(options);
@@ -70,5 +70,5 @@ app.listen(options.port, function() {
     console.log(`${key}: ${value}`);
   }
   console.log('');
-  console.log('parse-server running on http://localhost:'+ optins.port + options.mountPath);
+  console.log('parse-server running on http://localhost:'+ options.port + options.mountPath);
 });
