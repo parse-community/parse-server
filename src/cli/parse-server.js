@@ -1,9 +1,9 @@
-var path = require("path");
-var express = require('express');
-var ParseServer = require("../index").ParseServer;
-var definitions = require('./cli-definitions');
-var program = require('./utils/commander');
-var colors = require('colors');
+import path from 'path';
+import express from 'express';
+import ParseServer from '../index';
+import definitions from './cli-definitions';
+import program from './utils/commander';
+import colors from 'colors';
 
 program.loadDefinitions(definitions);
 
@@ -34,10 +34,8 @@ program.on('--help', function(){
   
 program.parse(process.argv, process.env);
 
-var options = {};
-
 if (program.args.length > 0 ) {
-  var jsonPath = program.args[0];
+  let jsonPath = program.args[0];
   jsonPath = path.resolve(jsonPath);
   options = require(jsonPath);
   console.log(`Configuation loaded from ${jsonPath}`)
@@ -51,27 +49,26 @@ if (!program.appId || !program.masterKey || !program.serverURL) {
   process.exit(1);
 }
 
-var options = Object.keys(definitions).reduce(function (options, key) {
+let options = Object.keys(definitions).reduce(function (options, key) {
   if (program[key]) {
     options[key] = program[key];
   }
   return options;
 }, options);
 
-var app = express();
-var api = new ParseServer(options);
+const app = express();
+const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-var port = process.env.PORT || 1337;
-app.listen(port, function() {
+app.listen(options.port, function() {
   
   for (let key in options) {
-    var value = options[key];
+    let value = options[key];
     if (key == "masterKey") {
       value = "***REDACTED***";
     }
     console.log(`${key}: ${value}`);
   }
   console.log('');
-  console.log('parse-server running on http://localhost:'+ port + options.mountPath);
+  console.log('parse-server running on http://localhost:'+ optins.port + options.mountPath);
 });

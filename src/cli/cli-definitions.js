@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   "appId": { 
     env: "PARSE_SERVER_APPLICATION_ID",
     help: "Your Parse Application ID",
@@ -11,8 +11,20 @@ module.exports = {
   },
   "serverURL": { 
     env: "PARSE_SERVER_URL",
-    help: "URL to your parse server with http:// or https://",
+    help: "URL to your parse server with http:// or https://.",
     required: true
+  },
+  "port": {
+     port: "PORT",
+     help: "The port to run the ParseServer. defaults to 1337.",
+     default: 1337,
+     action: function(opt) {
+       opt = parseInt(opt);
+       if (!Number.isInteger(opt)) {
+         throw new Error("The port is invalid");
+       }
+       return opt;
+     }
   },
   "databaseURI": { 
     env: "PARSE_SERVER_DATABASE_URI",
