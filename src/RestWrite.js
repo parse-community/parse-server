@@ -66,11 +66,11 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.handleSession();
   }).then(() => {
+    return this.validateAuthData();
+  }).then(() => {
     return this.runBeforeTrigger();
   }).then(() => {
     return this.setRequiredFieldsIfNeeded();
-  }).then(() => {
-    return this.validateAuthData();
   }).then(() => {
     return this.transformUser();
   }).then(() => {
@@ -111,6 +111,10 @@ RestWrite.prototype.validateSchema = function() {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
+  if (this.response) {
+    return;
+  }
+
   // Cloud code gets a bit of extra data for its objects
   var extraData = {className: this.className};
   if (this.query && this.query.objectId) {
