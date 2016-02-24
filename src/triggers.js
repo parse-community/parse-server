@@ -56,7 +56,7 @@ var getResponseObject = function(request, resolve, reject) {
     success: function() {
       var response = {};
       if (request.triggerName === Types.beforeSave) {
-        response['object'] = request.object.toJSON();
+        response['object'] = request.object._getSaveJSON();
       }
       return resolve(response);
     },
