@@ -5,6 +5,8 @@
 // Tests that involve revocable sessions.
 // Tests that involve sending password reset emails.
 
+"use strict";
+
 var request = require('request');
 var passwordCrypto = require('../src/password');
 
@@ -92,6 +94,33 @@ describe('Parse.User testing', () => {
       ok(fileAgain.name());
       ok(fileAgain.url());
       done();
+    });
+  });
+
+  describe('become', () => {
+    it('sends token back', done => {
+      let user = null;
+      var sessionToken = null;
+
+      Parse.User.signUp('Jason', 'Parse', { 'code': 'red' }).then(newUser => {
+        user = newUser;
+        expect(user.get('code'), 'red');
+
+        sessionToken = newUser.getSessionToken();
+        expect(sessionToken).toBeDefined();
+
+        return Parse.User.become(sessionToken);
+      }).then(newUser => {
+        expect(newUser.id).toEqual(user.id);
+        expect(newUser.get('username'), 'Jason');
+        expect(newUser.get('code'), 'red');
+        expect(newUser.getSessionToken()).toEqual(sessionToken);
+      }).then(() => {
+        done();
+      }, error => {
+        fail(error);
+        done();
+      });
     });
   });
 
