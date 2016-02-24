@@ -42,8 +42,9 @@ export class UsersRouter extends ClassesRouter {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
     }
+    let sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
-      { _session_token: req.info.sessionToken },
+      { _session_token: sessionToken },
       { include: 'user' })
       .then((response) => {
         if (!response.results ||
@@ -52,6 +53,8 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
         } else {
           let user = response.results[0].user;
+          // Send token back on the login, because SDKs expect that.
+          user.sessionToken = sessionToken;
           return { response: user };
         }
       });
