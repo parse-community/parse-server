@@ -11,7 +11,7 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
     httpRequest = require('./httpRequest');
-    
+
 import PromiseRouter           from './PromiseRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';
@@ -31,12 +31,13 @@ import { SchemasRouter }       from './Routers/SchemasRouter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { PushRouter }          from './Routers/PushRouter';
 import { FilesRouter }         from './Routers/FilesRouter';
-import { LogsRouter }         from './Routers/LogsRouter';
+import { LogsRouter }          from './Routers/LogsRouter';
 
-import { loadAdapter }       from './Adapters/AdapterLoader';
+import { loadAdapter }         from './Adapters/AdapterLoader';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { LoggerController }    from './Controllers/LoggerController';
 
+import requiredParameter       from './requiredParameter';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -65,8 +66,8 @@ addParseCloud();
 // "push": optional key from configure push
 
 function ParseServer({
-  appId,
-  masterKey,
+  appId = requiredParameter('You must provide an appId!'),
+  masterKey = requiredParameter('You must provide a masterKey!'),
   databaseAdapter,
   filesAdapter,
   push,
@@ -82,13 +83,9 @@ function ParseServer({
   facebookAppIds = [],
   enableAnonymousUsers = true,
   oauth = {},
-  serverURL = '',
+  serverURL = requiredParameter('You must provide a serverURL!'),
   maxUploadSize = '20mb'
 }) {
-  if (!appId || !masterKey) {
-    throw 'You must provide an appId and masterKey!';
-  }
-
   if (databaseAdapter) {
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
@@ -106,8 +103,8 @@ function ParseServer({
       throw "argument 'cloud' must either be a string or a function";
     }
   }
-  
-  
+
+
   const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
   const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
@@ -117,7 +114,7 @@ function ParseServer({
   const filesController = new FilesController(filesControllerAdapter);
   const pushController = new PushController(pushControllerAdapter);
   const loggerController = new LoggerController(loggerControllerAdapter);
-  
+
   cache.apps[appId] = {
     masterKey: masterKey,
     collectionPrefix: collectionPrefix,
@@ -175,7 +172,7 @@ function ParseServer({
     new LogsRouter(),
     new IAPValidationRouter()
   ];
-  
+
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
   }
