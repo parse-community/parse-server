@@ -364,11 +364,18 @@ ExportAdapter.prototype.deleteEverything = function() {
     var promises = [];
     for (var coll of colls) {
       if (!coll.namespace.match(/\.system\./) &&
-          coll.collectionName.indexOf(this.collectionPrefix) === 0) {
+        coll.collectionName.indexOf(this.collectionPrefix) === 0) {
         promises.push(coll.drop());
       }
     }
     return Promise.all(promises);
+  });
+};
+
+ExportAdapter.prototype.dropDatabase = function() {
+  this.schemaPromise = null;
+  return this.connect().then(() => {
+    return this.db.dropDatabase();
   });
 };
 
