@@ -91,8 +91,8 @@ function ParseServer({
 }) {
   
   // Initialize the node client SDK automatically
-  Parse.initialize(appId, javascriptKey || '', masterKey);
-  Parse.serverURL = serverURL || '';
+  Parse.initialize(appId, javascriptKey, masterKey);
+  Parse.serverURL = serverURL;
   
   if (databaseAdapter) {
     DatabaseAdapter.setAdapter(databaseAdapter);

@@ -1,5 +1,6 @@
 var DatabaseAdapter = require('../DatabaseAdapter'),
-    triggers = require('../triggers');
+    triggers = require('../triggers'),
+    request = require('request');
 const collection = "_Hooks";
 
 export class HooksController {
@@ -183,18 +184,18 @@ export class HooksController {
 }
 
 function wrapToHTTPRequest(hook) {
-  return function(request, response) {
+  return function(req, res) {
     var jsonBody = {};
-    for(var i in request) {
-      jsonBody[i] = request[i];
+    for(var i in req) {
+      jsonBody[i] = req[i];
     }
-    if (request.object) {
-      jsonBody.object = request.object.toJSON();
-      jsonBody.object.className = request.object.className;
+    if (req.object) {
+      jsonBody.object = req.object.toJSON();
+      jsonBody.object.className = req.object.className;
     }
-    if (request.original) {
-      jsonBody.original = request.original.toJSON();
-      jsonBody.original.className = request.original.className;
+    if (req.original) {
+      jsonBody.original = req.original.toJSON();
+      jsonBody.original.className = req.original.className;
     }
     var jsonRequest = {};
     jsonRequest.headers = {
@@ -202,7 +203,7 @@ function wrapToHTTPRequest(hook) {
     }
     jsonRequest.body = JSON.stringify(jsonBody);
     
-    require("request").post(hook.url, jsonRequest, function(err, res, body){
+    request.post(hook.url, jsonRequest, function(err, httpResponse, body){
       var result;
       if (body) {
         if (typeof body == "string") {
@@ -218,9 +219,9 @@ function wrapToHTTPRequest(hook) {
         }
       }
       if (err) {
-        return response.error(err);
+        return res.error(err);
       } else {   
-        return response.success(result);
+        return res.success(result);
       }
     });
   }
