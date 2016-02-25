@@ -1,7 +1,8 @@
+import cache from './cache';
+
 var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 
 // Checks that the request is authorized for this app and checks user

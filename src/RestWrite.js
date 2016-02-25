@@ -2,10 +2,10 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
+import cache from './cache';
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
@@ -114,7 +114,7 @@ RestWrite.prototype.validateSchema = function() {
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
-  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave)) {
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
   }
 
@@ -134,7 +134,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(
-      'beforeSave', this.auth, updatedObject, originalObject);
+      'beforeSave', this.auth, updatedObject, originalObject, this.config.applicationId);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
@@ -294,7 +294,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
   if (!validateAuthData || !validateAppId) {
     return false;
   };
-
+	
   return validateAuthData(authData, oauthOptions)
     .then(() => {
       if (appIds && typeof validateAppId === "function") {
@@ -789,7 +789,7 @@ RestWrite.prototype.runAfterTrigger = function() {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject);
+  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.

@@ -275,7 +275,11 @@ describe('miscellaneous', function() {
       var objAgain = new Parse.Object('BeforeDeleteFail', {objectId: id});
       return objAgain.fetch();
     }).then((objAgain) => {
-      expect(objAgain.get('foo')).toEqual('bar');
+      if (objAgain) {
+        expect(objAgain.get('foo')).toEqual('bar');
+      } else {
+        fail("unable to fetch the object ", id);
+      }
       done();
     }, (error) => {
       // We should have been able to fetch the object again
@@ -351,6 +355,11 @@ describe('miscellaneous', function() {
   it('test cloud function return types', function(done) {
     Parse.Cloud.run('foo').then((result) => {
       expect(result.object instanceof Parse.Object).toBeTruthy();
+      if (!result.object) {
+        fail("Unable to run foo");
+        done();
+        return;
+      }
       expect(result.object.className).toEqual('Foo');
       expect(result.object.get('x')).toEqual(2);
       var bar = result.object.get('relation');
@@ -381,23 +390,25 @@ describe('miscellaneous', function() {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    });
+    }).fail( err => {
+      fail(err);
+      done();
+    })
   });
 
   describe('beforeSave', () => {
     beforeEach(done => {
       // Make sure the required mock for all tests is unset.
-      delete Parse.Cloud.Triggers.beforeSave.GameScore;
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     });
-
     afterEach(done => {
       // Make sure the required mock for all tests is unset.
-      delete Parse.Cloud.Triggers.beforeSave.GameScore;
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
-    });
-
-    it('object is set on create and update', done => {
+   });
+   
+   it('object is set on create and update', done => {
       let triggerTime = 0;
       // Register a mock beforeSave hook
       Parse.Cloud.beforeSave('GameScore', (req, res) => {
@@ -610,8 +621,8 @@ describe('miscellaneous', function() {
     }).then(function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      delete Parse.Cloud.Triggers.afterSave.GameScore;
+      // Clear mock beforeSave
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     }, function(error) {
       fail(error);
@@ -663,9 +674,10 @@ describe('miscellaneous', function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
       // Clear mock afterSave
-      delete Parse.Cloud.Triggers.afterSave.GameScore;
+       Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, function(error) {
+      console.error(error);
       fail(error);
       done();
     });
@@ -678,12 +690,12 @@ describe('miscellaneous', function() {
     });
     Parse.Cloud.run('willFail').then((s) => {
       fail('Should not have succeeded.');
-      delete Parse.Cloud.Functions['willFail'];
+      Parse.Cloud._removeHook("Functions", "willFail");
       done();
     }, (e) => {
       expect(e.code).toEqual(141);
       expect(e.message).toEqual('noway');
-      delete Parse.Cloud.Functions['willFail'];
+      Parse.Cloud._removeHook("Functions", "willFail");
       done();
     });
   });
@@ -712,7 +724,7 @@ describe('miscellaneous', function() {
       // Make sure query string params override body params
       expect(res.other).toEqual('2');
       expect(res.foo).toEqual("bar");
-      delete Parse.Cloud.Functions['echoParams'];
+      Parse.Cloud._removeHook("Functions",'echoParams');
       done();
     });
   });
@@ -726,7 +738,7 @@ describe('miscellaneous', function() {
     });
 
     Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
-      delete Parse.Cloud.Functions['functionWithParameterValidation'];
+      Parse.Cloud._removeHook("Functions", "functionWithParameterValidation");
       done();
     }, (e) => {
       fail('Validation should not have failed.');
@@ -744,7 +756,7 @@ describe('miscellaneous', function() {
 
     Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
       fail('Validation should not have succeeded');
-      delete Parse.Cloud.Functions['functionWithParameterValidationFailure'];
+      Parse.Cloud._removeHook("Functions", "functionWithParameterValidationFailure");
       done();
     }, (e) => {
       expect(e.code).toEqual(141);
