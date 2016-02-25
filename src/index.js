@@ -39,6 +39,7 @@ import { LoggerController }    from './Controllers/LoggerController';
 import { HooksController }     from './Controllers/HooksController';
 
 import requiredParameter       from './requiredParameter';
+import { randomString }        from './cryptoUtils';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -79,7 +80,7 @@ function ParseServer({
   cloud,
   collectionPrefix = '',
   clientKey = '',
-  javascriptKey = '',
+  javascriptKey = randomString(20),
   dotNetKey = '',
   restAPIKey = '',
   fileKey = 'invalid-file-key',
