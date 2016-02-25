@@ -34,6 +34,7 @@ program.on('--help', function(){
   
 program.parse(process.argv, process.env);
 
+let options;
 if (program.args.length > 0 ) {
   let jsonPath = program.args[0];
   jsonPath = path.resolve(jsonPath);
@@ -49,12 +50,16 @@ if (!program.appId || !program.masterKey || !program.serverURL) {
   process.exit(1);
 }
 
-let options = Object.keys(definitions).reduce(function (options, key) {
+options = Object.keys(definitions).reduce(function (options, key) {
   if (program[key]) {
     options[key] = program[key];
   }
   return options;
-}, {});
+}, options);
+
+if (!options.serverURL) {
+  options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+}
 
 const app = express();
 const api = new ParseServer(options);
@@ -70,5 +75,5 @@ app.listen(options.port, function() {
     console.log(`${key}: ${value}`);
   }
   console.log('');
-  console.log('parse-server running on http://localhost:'+ options.port + options.mountPath);
+  console.log('parse-server running on '+options.serverURL);
 });

@@ -9,11 +9,6 @@ export default {
     help: "Your Parse Master Key",
     required: true
   },
-  "serverURL": { 
-    env: "PARSE_SERVER_URL",
-    help: "URL to your parse server with http:// or https://.",
-    required: true
-  },
   "port": {
      port: "PORT",
      help: "The port to run the ParseServer. defaults to 1337.",
@@ -29,6 +24,10 @@ export default {
   "databaseURI": { 
     env: "PARSE_SERVER_DATABASE_URI",
     help: "The full URI to your mongodb database"
+  },
+  "serverURL": { 
+    env: "PARSE_SERVER_URL",
+    help: "URL to your parse server with http:// or https://.",
   },
   "clientKey": { 
     env: "PARSE_SERVER_CLIENT_KEY",
