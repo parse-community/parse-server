@@ -335,6 +335,11 @@ describe('Parse.Object testing', () => {
        'Item should not be updated with invalid key.');
     item.save({ "foo^bar": "baz" }).then(fail, done);
   });
+  
+  it("invalid __type", function(done) {
+    var item = new Parse.Object("Item");    
+    item.save({ "foo": {__type: "IvalidName"} }).then(fail, done);
+  });
 
   it("simple field deletion", function(done) {
     var simple = new Parse.Object("SimpleObject");
