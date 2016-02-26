@@ -103,9 +103,9 @@ function handleParseHeaders(req, res, next) {
   
   // We do it with mismatching keys to support no-keys config
   var keyMismatch = keys.reduce(function(mismatch, key){
-    // check the info key
-    // increment the mismatch if different
-    if (info[key] !== req.config[key]) {
+
+    // check if set in the config and compare
+    if (req.config[key] && info[key] !== req.config[key]) {
       mismatch++;
     }
     return mismatch;
