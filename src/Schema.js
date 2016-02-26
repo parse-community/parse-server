@@ -620,7 +620,7 @@ Schema.prototype.validateRequiredColumns = function(className, object, query) {
   if (!columns || columns.length == 0) {
     return Promise.resolve(this);
   }
-    
+
   var missingColumns = columns.filter(function(column){
     if (query && query.objectId) {
       if (object[column] && typeof object[column] === "object") {
@@ -630,15 +630,15 @@ Schema.prototype.validateRequiredColumns = function(className, object, query) {
       // Not trying to do anything there
       return false;
     }
-    return !object[column] 
+    return !object[column]
   });
-  
+
   if (missingColumns.length > 0) {
    throw new Parse.Error(
         Parse.Error.INCORRECT_TYPE,
         missingColumns[0]+' is required.');
   }
-  
+
   return Promise.resolve(this);
 }
 
@@ -725,19 +725,31 @@ function getObjectType(obj) {
   if (obj instanceof Array) {
     return 'array';
   }
-  if (obj.__type === 'Pointer' && obj.className) {
-    return '*' + obj.className;
-  }
-  if (obj.__type === 'File' && obj.name) {
-    return 'file';
-  }
-  if (obj.__type === 'Date' && obj.iso) {
-    return 'date';
-  }
-  if (obj.__type == 'GeoPoint' &&
-      obj.latitude != null &&
-      obj.longitude != null) {
-    return 'geopoint';
+  if (obj.__type){
+    switch(obj.__type) {
+      case 'Pointer' :
+        if(obj.className) {
+          return '*' + obj.className;
+        }
+        break;
+      case 'File' :
+        if(obj.url && obj.name) {
+          return 'file';
+        }
+        break;
+      case 'Date' :
+        if(obj.iso) {
+          return 'date';
+        }
+        break;
+      case 'GeoPoint' :
+        if(obj.latitude != null && obj.longitude != null) {
+          return 'geopoint';
+        }
+        break;
+      default :
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'invalid type: ' + obj.__type);
+    }
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);
