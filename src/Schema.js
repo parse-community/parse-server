@@ -728,7 +728,7 @@ function getObjectType(obj) {
   if (obj.__type === 'Pointer' && obj.className) {
     return '*' + obj.className;
   }
-  if (obj.__type === 'File' && obj.url && obj.name) {
+  if (obj.__type === 'File' && obj.name) {
     return 'file';
   }
   if (obj.__type === 'Date' && obj.iso) {

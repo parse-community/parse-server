@@ -1,6 +1,8 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_file_test.js
 
+"use strict";
+
 var request = require('request');
 
 var str = "Hello World!";
@@ -482,7 +484,22 @@ describe('Parse.File testing', () => {
       );
       done();
     });
-
   });
 
+  it('supports files in objects without urls', done => {
+    var file = {
+      __type: 'File',
+      name: '123.txt'
+    };
+    var obj = new Parse.Object('FileTest');
+    obj.set('file', file);
+    obj.save().then(() => {
+      var query = new Parse.Query('FileTest');
+      return query.first();
+    }).then(result => {
+      let fileAgain = result.get('file');
+      expect(fileAgain.url()).toMatch(/123.txt$/);
+      done();
+    });
+  });
 });
