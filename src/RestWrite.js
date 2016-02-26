@@ -176,7 +176,7 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
 
-  if (!this.data.authData) {
+  if (!this.data.authData || !Object.keys(this.data.authData).length) {
     return;
   }
 
