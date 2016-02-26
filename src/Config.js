@@ -25,6 +25,8 @@ export class Config {
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     
     this.mailController = cacheInfo.mailController;
+    
+    this.serverURL = cacheInfo.serverURL;
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.appName = cacheInfo.appName;
 
@@ -32,11 +34,32 @@ export class Config {
     this.filesController = cacheInfo.filesController;
     this.pushController = cacheInfo.pushController;
     this.loggerController = cacheInfo.loggerController;
+    this.mailController = cacheInfo.mailController;
     this.oauth = cacheInfo.oauth;
 
     this.mount = mount;
   }
-}
+  
+  get invalidLinkURL() {
+    return `${this.serverURL}/apps/invalid_link.html`;
+  }
+  
+  get verifyEmailSuccessURL() {
+    return `${this.serverURL}/apps/verify_email_success.html`;
+  }
+  
+  get choosePasswordURL() {
+    return `${this.serverURL}/apps/choose_password`;
+  }
+  
+  get passwordResetSuccessURL() {
+    return `${this.serverURL}/apps/password_reset_success.html`;
+  }
+  
+  get verifyEmailURL() {
+    return `${this.serverURL}/apps/${this.applicationId}/verify_email`;
+  }
+};
 
 export default Config;
 module.exports = Config;

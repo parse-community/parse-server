@@ -5,6 +5,8 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
+import express from 'express';
+
 export default class PromiseRouter {
   // Each entry should be an object with:
   // path: the path to route, in express format
@@ -15,8 +17,8 @@ export default class PromiseRouter {
   //     status: optional. the http status code. defaults to 200
   //     response: a json object with the content of the response
   //     location: optional. a location header
-  constructor() {
-    this.routes = [];
+  constructor(routes = []) {
+    this.routes = routes;
     this.mountRoutes();
   }
   
@@ -125,6 +127,29 @@ export default class PromiseRouter {
       }
     }
   };
+  
+  expressApp() {
+    var expressApp = express();
+    for (var route of this.routes) {
+      switch(route.method) {
+      case 'POST':
+        expressApp.post(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'GET':
+        expressApp.get(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'PUT':
+        expressApp.put(route.path, makeExpressHandler(route.handler));
+        break;
+      case 'DELETE':
+        expressApp.delete(route.path, makeExpressHandler(route.handler));
+        break;
+      default:
+        throw 'unexpected code branch';
+      }
+    }
+    return expressApp;
+  }
 }
 
 // Global flag. Set this to true to log every request and response.
@@ -142,15 +167,19 @@ function makeExpressHandler(promiseHandler) {
                     JSON.stringify(req.body, null, 2));
       }
       promiseHandler(req).then((result) => {
-        if (!result.response) {
-          console.log('BUG: the handler did not include a "response" field');
+        if (!result.response && !result.location) {
+          console.log('BUG: the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
         if (PromiseRouter.verbose) {
           console.log('response:', JSON.stringify(result.response, null, 2));
         }
+        
         var status = result.status || 200;
         res.status(status);
+        if (result.location && !result.response) {
+          return res.redirect(result.location);
+        }
         if (result.location) {
           res.set('Location', result.location);
         }

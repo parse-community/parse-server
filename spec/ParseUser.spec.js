@@ -171,7 +171,7 @@ describe('Parse.User testing', () => {
           followRedirect: false,
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/verify_email_success.html?username=zxcv');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=zxcv');
           user.fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(true);
@@ -202,21 +202,21 @@ describe('Parse.User testing', () => {
   });
 
   it('redirects you to invalid link if you try to verify email incorrecly', done => {
-    request.get('http://localhost:8378/1/verify_email', {
+    request.get('http://localhost:8378/1/apps/test/verify_email', {
       followRedirect: false,
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(302);
-      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
       done()
     });
   });
 
   it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
-    request.get('http://localhost:8378/1/verify_email?token=asdfasdf&username=sadfasga', {
+    request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
       followRedirect: false,
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(302);
-      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
       done();
     });
   });
@@ -225,11 +225,11 @@ describe('Parse.User testing', () => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: options => {
-        request.get('http://localhost:8378/1/verify_email?token=invalid&username=zxcv', {
+        request.get('http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv', {
           followRedirect: false,
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/invalid_link.html');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
           user.fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(false);

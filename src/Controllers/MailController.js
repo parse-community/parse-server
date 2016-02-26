@@ -13,7 +13,8 @@ export class MailController extends AdaptableController {
   sendVerificationEmail(user, config) {
     const token = encodeURIComponent(user._email_verify_token);
     const username = encodeURIComponent(user.username);
-    let link = `${config.mount}/verify_email?token=${token}&username=${username}`;
+   
+    let link = `${config.verifyEmailURL}?token=${token}&username=${username}`;
     this.adapter.sendVerificationEmail({
       appName: config.appName,
       link: link,

@@ -15,7 +15,6 @@ import cache                   from './cache';
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
 //import passwordReset           from './passwordReset';
 import PromiseRouter           from './PromiseRouter';
-import verifyEmail             from './verifyEmail';
 import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
@@ -27,8 +26,10 @@ import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { LogsRouter }          from './Routers/LogsRouter';
 import { HooksRouter }         from './Routers/HooksRouter';
+import { PublicAPIRouter }     from './Routers/PublicAPIRouter';
 
 import { HooksController }     from './Controllers/HooksController';
+import { UserController }      from './Controllers/UserController';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { loadAdapter }         from './Adapters/AdapterLoader';
 import { LoggerController }    from './Controllers/LoggerController';
@@ -134,16 +135,23 @@ function ParseServer({
   const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
   const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
-
+  const emailControllerAdapter = loadAdapter(emailAdapter);
   // We pass the options and the base class for the adatper,
   // Note that passing an instance would work too
-  const filesController = new FilesController(filesControllerAdapter);
-  const pushController = new PushController(pushControllerAdapter);
-  const loggerController = new LoggerController(loggerControllerAdapter);
+  const filesController = new FilesController(filesControllerAdapter, appId);
+  const pushController = new PushController(pushControllerAdapter, appId);
+  const loggerController = new LoggerController(loggerControllerAdapter, appId);
   const hooksController = new HooksController(appId, collectionPrefix);
+  const userController = new UserController(appId);
+  let mailController;
+  
+  if (verifyUserEmails) {
+    mailController = new MailController(loadAdapter(emailAdapter));
+  }
   
   cache.apps.set(appId, {
     masterKey: masterKey,
+    serverURL: serverURL,
     collectionPrefix: collectionPrefix,
     clientKey: clientKey,
     javascriptKey: javascriptKey,
@@ -155,17 +163,13 @@ function ParseServer({
     pushController: pushController,
     loggerController: loggerController,
     hooksController: hooksController,
+    mailController: mailController,
+    verifyUserEmails: verifyUserEmails,
     enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
     oauth: oauth,
     appName: appName,
   });
-
-  if (verifyUserEmails && (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1)) {
-    let mailController = new MailController(loadAdapter(emailAdapter));
-    cache.apps[appId].mailController = mailController;
-    cache.apps[appId].verifyUserEmails = verifyUserEmails;
-  }
 
   // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
   if (process.env.FACEBOOK_APP_ID) {
@@ -175,17 +179,16 @@ function ParseServer({
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
   var api = express();
-
+  //api.use("/apps", express.static(__dirname + "/public"));
   // File handling needs to be before default middlewares are applied
   api.use('/', new FilesRouter().getExpressRouter({
     maxUploadSize: maxUploadSize
   }));
 
   if (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1) {
-    //api.use('/request_password_reset', passwordReset.reset(appName, appId));
-    //api.get('/password_reset_success', passwordReset.success);
-    api.get('/verify_email', verifyEmail(appId, serverURL));
+    api.use('/', new PublicAPIRouter().expressApp());    
   }
+
 
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
@@ -218,13 +221,16 @@ function ParseServer({
   if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
     routers.push(new HooksRouter());
   }
+  
+  let routes = routers.reduce((memo, router) => {
+    return memo.concat(router.routes);
+  }, []);
 
-  let appRouter = new PromiseRouter();
-  routers.forEach((router) => {
-    appRouter.merge(router);
-  });
+  let appRouter = new PromiseRouter(routes);
+  
   batch.mountOnto(appRouter);
 
+  api.use(appRouter.expressApp());
   appRouter.mountOnto(api);
 
   api.use(middlewares.handleParseErrors);

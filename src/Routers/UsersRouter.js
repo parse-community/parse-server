@@ -154,6 +154,11 @@ export class UsersRouter extends ClassesRouter {
     }
     return Promise.resolve(success);
   }
+  
+  handleReset(req) {
+     let userController = req.config.userController;
+     return userController.requestPasswordReset();
+  }
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -164,9 +169,6 @@ export class UsersRouter extends ClassesRouter {
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
-    this.route('POST', '/requestPasswordReset', () => {
-      throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, 'This path is not implemented yet.');
-    });
     this.route('POST', '/requestPasswordReset', req => this.handleReset(req));
   }
 }
