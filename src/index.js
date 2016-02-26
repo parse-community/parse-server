@@ -79,10 +79,10 @@ function ParseServer({
   databaseURI,
   cloud,
   collectionPrefix = '',
-  clientKey = '',
-  javascriptKey = randomString(20),
-  dotNetKey = '',
-  restAPIKey = '',
+  clientKey,
+  javascriptKey,
+  dotNetKey,
+  restAPIKey,
   fileKey = 'invalid-file-key',
   facebookAppIds = [],
   enableAnonymousUsers = true,
@@ -92,7 +92,7 @@ function ParseServer({
 }) {
   
   // Initialize the node client SDK automatically
-  Parse.initialize(appId, javascriptKey, masterKey);
+  Parse.initialize(appId, javascriptKey || 'unused', masterKey);
   Parse.serverURL = serverURL;
   
   if (databaseAdapter) {
