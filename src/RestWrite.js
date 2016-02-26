@@ -571,6 +571,9 @@ RestWrite.prototype.handleInstallation = function() {
 
   var promise = Promise.resolve();
 
+  var idMatch; // Will be a match on either objectId or installationId
+  var deviceTokenMatches = [];
+
   if (this.query && this.query.objectId) {
     promise = promise.then(() => {
       return this.config.database.find('_Installation', {
@@ -580,22 +583,22 @@ RestWrite.prototype.handleInstallation = function() {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                                 'Object not found for update.');
         }
-        var existing = results[0];
-        if (this.data.installationId && existing.installationId &&
-          this.data.installationId !== existing.installationId) {
+        idMatch = results[0];
+        if (this.data.installationId && idMatch.installationId &&
+          this.data.installationId !== idMatch.installationId) {
           throw new Parse.Error(136,
                                 'installationId may not be changed in this ' +
                                 'operation');
         }
-        if (this.data.deviceToken && existing.deviceToken &&
-          this.data.deviceToken !== existing.deviceToken &&
-          !this.data.installationId && !existing.installationId) {
+        if (this.data.deviceToken && idMatch.deviceToken &&
+          this.data.deviceToken !== idMatch.deviceToken &&
+          !this.data.installationId && !idMatch.installationId) {
           throw new Parse.Error(136,
                                 'deviceToken may not be changed in this ' +
                                 'operation');
         }
         if (this.data.deviceType && this.data.deviceType &&
-          this.data.deviceType !== existing.deviceType) {
+          this.data.deviceType !== idMatch.deviceType) {
           throw new Parse.Error(136,
                                 'deviceType may not be changed in this ' +
                                 'operation');
@@ -606,10 +609,8 @@ RestWrite.prototype.handleInstallation = function() {
   }
 
   // Check if we already have installations for the installationId/deviceToken
-  var installationMatch;
-  var deviceTokenMatches = [];
   promise = promise.then(() => {
-    if (this.data.installationId) {
+    if (!idMatch && this.data.installationId) {
       return this.config.database.find('_Installation', {
         'installationId': this.data.installationId
       });
@@ -618,7 +619,7 @@ RestWrite.prototype.handleInstallation = function() {
   }).then((results) => {
     if (results && results.length) {
       // We only take the first match by installationId
-      installationMatch = results[0];
+      idMatch = results[0];
     }
     if (this.data.deviceToken) {
       return this.config.database.find(
@@ -630,7 +631,7 @@ RestWrite.prototype.handleInstallation = function() {
     if (results) {
       deviceTokenMatches = results;
     }
-    if (!installationMatch) {
+    if (!idMatch) {
       if (!deviceTokenMatches.length) {
         return;
       } else if (deviceTokenMatches.length == 1 &&
@@ -668,14 +669,14 @@ RestWrite.prototype.handleInstallation = function() {
         // Exactly one device token match and it doesn't have an installation
         // ID. This is the one case where we want to merge with the existing
         // object.
-        var delQuery = {objectId: installationMatch.objectId};
+        var delQuery = {objectId: idMatch.objectId};
         return this.config.database.destroy('_Installation', delQuery)
           .then(() => {
             return deviceTokenMatches[0]['objectId'];
           });
       } else {
         if (this.data.deviceToken &&
-          installationMatch.deviceToken != this.data.deviceToken) {
+          idMatch.deviceToken != this.data.deviceToken) {
           // We're setting the device token on an existing installation, so
           // we should try cleaning out old installations that match this
           // device token.
@@ -691,7 +692,7 @@ RestWrite.prototype.handleInstallation = function() {
           this.config.database.destroy('_Installation', delQuery);
         }
         // In non-merge scenarios, just return the installation match id
-        return installationMatch.objectId;
+        return idMatch.objectId;
       }
     }
   }).then((objId) => {
