@@ -762,6 +762,11 @@ function getObjectType(obj) {
           throw new Parse.Error(Parse.Error.INCORRECT_TYPE, JSON.stringify(obj) + " is not a valid GeoPoint");
         }
         break;
+      case 'Bytes' :
+        if(!obj.base64) {
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'Bytes type has no base64 field: ' + JSON.stringify(obj));
+        }
+        break;
       default :
         throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'invalid type: ' + obj.__type);
     }
