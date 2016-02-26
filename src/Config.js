@@ -26,6 +26,7 @@ export class Config {
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
+    this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;

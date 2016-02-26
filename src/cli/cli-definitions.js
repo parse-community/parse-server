@@ -85,6 +85,16 @@ export default {
       return false;
     }
   },
+  "allowClientClassCreation": {
+    env: "PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION",
+    help: "Enable (or disable) client class creation, defaults to true",
+    action: function(opt) {
+      if (opt == "true" || opt == "1") {
+        return true;
+      }
+      return false;
+    }
+  },
   "mountPath": { 
     env: "PARSE_SERVER_MOUNT_PATH",
     help: "Mount path for the server, defaults to /parse",
