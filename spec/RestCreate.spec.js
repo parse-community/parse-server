@@ -1,4 +1,4 @@
-// These tests check the "create" functionality of the REST API.
+// These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
 var Config = require('../src/Config');
@@ -38,6 +38,38 @@ describe('rest create', () => {
       expect(typeof mob.object).toBe('object');
       expect(mob.date instanceof Date).toBe(true);
       done();
+    });
+  });
+
+  it('handles object and subdocument', (done) => {
+    var obj = {
+      subdoc: {foo: 'bar', wu: 'tan'},
+    };
+    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
+      return database.mongoFind('MyClass', {}, {});
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      var mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('tan');
+      expect(typeof mob._id).toEqual('string');
+
+      var obj = {
+        'subdoc.wu': 'clan',
+      };
+
+      rest.update(config, auth.nobody(config), 'MyClass', mob._id, obj).then(() => {
+        return database.mongoFind('MyClass', {}, {});
+      }).then((results) => {
+        expect(results.length).toEqual(1);
+        var mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('clan');
+        done();
+      });
+
     });
   });
 
