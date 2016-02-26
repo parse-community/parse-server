@@ -88,6 +88,7 @@ function ParseServer({
   enableAnonymousUsers = true,
   allowClientClassCreation = true,
   oauth = {},
+  enableExperimentalConfig = false,
   serverURL = requiredParameter('You must provide a serverURL!'),
   maxUploadSize = '20mb'
 }) {
@@ -142,6 +143,7 @@ function ParseServer({
     enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
     oauth: oauth,
+    enableExperimentalConfig: enableExperimentalConfig
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
@@ -182,7 +184,7 @@ function ParseServer({
     new IAPValidationRouter()
   ];
 
-  if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
+  if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING || enableExperimentalConfig) {
     routers.push(require('./global_config'));
   }
   
