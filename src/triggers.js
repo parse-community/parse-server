@@ -10,7 +10,6 @@ export const Types = {
 };
 
 const baseStore = function() {
-  
   let Validators = {};
   let Functions = {};
   let Triggers = Object.keys(Types).reduce(function(base, key){
@@ -23,7 +22,7 @@ const baseStore = function() {
     Validators,
     Triggers
   });
-}
+};
 
 const _triggerStore = {};
 
@@ -58,7 +57,6 @@ export function _unregister(a,b,c,d) {
     delete _triggerStore[a][b][c];
   }
 }
-
 
 export function getTrigger(className, triggerType, applicationId) {
   if (!applicationId) {

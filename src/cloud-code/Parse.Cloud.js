@@ -1,5 +1,5 @@
-var Parse = require("parse/node");
-var triggers = require("../triggers");
+import { Parse } from 'parse/node';
+import * as triggers from '../triggers';
 
 function validateClassNameForTriggers(className) {
   const restrictedClassNames = [ '_Session' ];
@@ -23,22 +23,22 @@ ParseCloud.define = function(functionName, handler, validationHandler) {
 
 ParseCloud.beforeSave = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger('beforeSave', className, handler, Parse.applicationId);
+  triggers.addTrigger(triggers.Types.beforeSave, className, handler, Parse.applicationId);
 };
 
 ParseCloud.beforeDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger('beforeDelete', className, handler, Parse.applicationId);
+  triggers.addTrigger(triggers.Types.beforeDelete, className, handler, Parse.applicationId);
 };
 
 ParseCloud.afterSave = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger('afterSave', className, handler, Parse.applicationId);
+  triggers.addTrigger(triggers.Types.afterSave, className, handler, Parse.applicationId);
 };
 
 ParseCloud.afterDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
-  triggers.addTrigger('afterDelete', className, handler, Parse.applicationId);
+  triggers.addTrigger(triggers.Types.afterDelete, className, handler, Parse.applicationId);
 };
   
 ParseCloud._removeHook = function(category, name, type, applicationId) {
