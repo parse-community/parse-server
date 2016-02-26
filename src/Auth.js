@@ -159,6 +159,22 @@ Auth.prototype._getAllRoleNamesForId = function(roleID) {
       return Promise.resolve([]);
     }
     var roleIDs = results.map(r => r.objectId);
+    
+    var parentRolesPromises = roleIDs.map( (roleId) => {
+      return this._getAllRoleNamesForId(roleId);
+    });
+    parentRolesPromises.push(Promise.resolve(roleIDs));
+    return Promise.all(parentRolesPromises);
+  }).then(function(results){
+    // Flatten
+    let roleIDs = results.reduce( (memo, result) => {
+      if (typeof result == "object") {
+        memo = memo.concat(result);
+      } else {
+        memo.push(result);
+      }
+      return memo;
+    }, []);
     return Promise.resolve(roleIDs);
   });
 };
