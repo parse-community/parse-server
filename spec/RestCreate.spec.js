@@ -73,6 +73,20 @@ describe('rest create', () => {
     });
   });
 
+  it('handles create on non-existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
+      .then(() => {
+        fail('Should throw an error');
+        done();
+      }, (err) => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual('This user is not allowed to access ' +
+                                    'non-existent class: ClientClassCreation');
+        done();
+    });
+  });
+
   it('handles user signup', (done) => {
     var user = {
       username: 'asdf',

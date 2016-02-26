@@ -116,6 +116,8 @@ RestQuery.prototype.execute = function() {
   }).then(() => {
     return this.redirectClassNameForKey();
   }).then(() => {
+    return this.validateClientClassCreation();
+  }).then(() => {
     return this.replaceSelect();
   }).then(() => {
     return this.replaceDontSelect();
@@ -159,6 +161,25 @@ RestQuery.prototype.redirectClassNameForKey = function() {
       this.className = newClassName;
       this.redirectClassName = newClassName;
     });
+};
+
+// Validates this operation against the allowClientClassCreation config.
+RestQuery.prototype.validateClientClassCreation = function() {
+  if (this.config.allowClientClassCreation === false && !this.auth.isMaster) {
+    return this.config.database.loadSchema().then((schema) => {
+      return schema.hasClass(this.className)
+    }).then((hasClass) => {
+      if (hasClass === true) {
+        return Promise.resolve();
+      }
+
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+                            'This user is not allowed to access ' +
+                            'non-existent class: ' + this.className);
+    });
+  } else {
+    return Promise.resolve();
+  }
 };
 
 // Replaces a $inQuery clause by running the subquery, if there is an

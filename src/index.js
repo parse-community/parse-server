@@ -86,6 +86,7 @@ function ParseServer({
   fileKey = 'invalid-file-key',
   facebookAppIds = [],
   enableAnonymousUsers = true,
+  allowClientClassCreation = true,
   oauth = {},
   serverURL = requiredParameter('You must provide a serverURL!'),
   maxUploadSize = '20mb'
@@ -139,6 +140,7 @@ function ParseServer({
     loggerController: loggerController,
     hooksController: hooksController,
     enableAnonymousUsers: enableAnonymousUsers,
+    allowClientClassCreation: allowClientClassCreation,
     oauth: oauth,
   };
 
