@@ -34,7 +34,7 @@ program.on('--help', function(){
   
 program.parse(process.argv, process.env);
 
-let options;
+let options = {};
 if (program.args.length > 0 ) {
   let jsonPath = program.args[0];
   jsonPath = path.resolve(jsonPath);
