@@ -133,8 +133,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   updatedObject.set(Parse._decode(undefined, this.data));
 
   return Promise.resolve().then(() => {
-    return triggers.maybeRunTrigger(
-      'beforeSave', this.auth, updatedObject, originalObject, this.config.applicationId);
+    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config.applicationId);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
@@ -789,7 +788,7 @@ RestWrite.prototype.runAfterTrigger = function() {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger('afterSave', this.auth, inflatedObject, originalObject, this.config.applicationId);
+  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, inflatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.
