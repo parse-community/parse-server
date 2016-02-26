@@ -736,21 +736,30 @@ function getObjectType(obj) {
       case 'Pointer' :
         if(obj.className) {
           return '*' + obj.className;
+        } else {
+          throw new Parse.Error(Parse.Error.INVALID_POINTER, JSON.stringify(obj) + " is not a valid Pointer");
         }
         break;
       case 'File' :
         if(obj.url && obj.name) {
           return 'file';
+        } else {
+          let msg = obj.name? JSON.stringify(obj) + " is not a valid File" : "File has no name";
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, msg);
         }
         break;
       case 'Date' :
         if(obj.iso) {
           return 'date';
+        } else {
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, JSON.stringify(obj) + " is not a valid Date");
         }
         break;
       case 'GeoPoint' :
         if(obj.latitude != null && obj.longitude != null) {
           return 'geopoint';
+        } else {
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, JSON.stringify(obj) + " is not a valid GeoPoint");
         }
         break;
       default :
