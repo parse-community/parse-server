@@ -32,7 +32,8 @@
     "node-gcm": "^0.14.0",
     "parse": "^1.7.0",
     "request": "^2.65.0",
-    "winston": "^2.1.1"
+    "winston": "^2.1.1",
+    "cron": "1.1.0"
   },
   "devDependencies": {
     "babel-cli": "^6.5.1",
