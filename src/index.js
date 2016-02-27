@@ -220,13 +220,6 @@ function addParseCloud() {
   global.Parse = Parse;
 }
 
-function getClassName(parseClass) {
-  if (parseClass && parseClass.className) {
-    return parseClass.className;
-  }
-  return parseClass;
-}
-
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter
