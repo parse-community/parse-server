@@ -610,7 +610,7 @@ RestWrite.prototype.handleInstallation = function() {
 
   // Check if we already have installations for the installationId/deviceToken
   promise = promise.then(() => {
-    if (!idMatch && this.data.installationId) {
+    if (this.data.installationId) {
       return this.config.database.find('_Installation', {
         'installationId': this.data.installationId
       });
