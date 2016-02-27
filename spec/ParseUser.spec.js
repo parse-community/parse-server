@@ -147,7 +147,6 @@ describe('Parse.User testing', () => {
       ok(false, "Shouldn't have been able to log in with non existing user.");
     }, function(error) {
       ok(error);
-      console.log(error);
       return Parse.Promise.as();
     }).then(function() {
       done();
