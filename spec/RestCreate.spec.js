@@ -8,7 +8,7 @@ var rest = require('../src/rest');
 var request = require('request');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 
 describe('rest create', () => {
   it('handles _id', (done) => {
