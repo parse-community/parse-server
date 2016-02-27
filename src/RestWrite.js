@@ -68,11 +68,11 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.handleSession();
   }).then(() => {
+    return this.validateAuthData();
+  }).then(() => {
     return this.runBeforeTrigger();
   }).then(() => {
     return this.setRequiredFieldsIfNeeded();
-  }).then(() => {
-    return this.validateAuthData();
   }).then(() => {
     return this.transformUser();
   }).then(() => {
@@ -134,6 +134,10 @@ RestWrite.prototype.validateSchema = function() {
 // Runs any beforeSave triggers against this operation.
 // Any change leads to our data being mutated.
 RestWrite.prototype.runBeforeTrigger = function() {
+  if (this.response) {
+    return;
+  }
+  
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
   if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
