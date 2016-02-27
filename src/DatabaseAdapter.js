@@ -52,8 +52,6 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
   dbConnections[appId] = new DatabaseController(storageAdapter, {
     collectionPrefix: collectionPrefix
   });
-
-  dbConnections[appId].connect();
   return dbConnections[appId];
 }
 

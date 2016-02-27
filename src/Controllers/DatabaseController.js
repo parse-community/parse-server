@@ -39,9 +39,7 @@ DatabaseController.prototype.collection = function(className) {
 };
 
 DatabaseController.prototype.rawCollection = function(className) {
-  return this.connect().then(() => {
-    return this.adapter.database.collection(this.collectionPrefix + className);
-  });
+  return this.adapter.collection(this.collectionPrefix + className);
 };
 
 function returnsTrue() {
@@ -345,16 +343,10 @@ DatabaseController.prototype.mongoFind = function(className, query, options = {}
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
 
-  return this.connect().then(() => {
-    return this.adapter.database.collections();
-  }).then((colls) => {
-    var promises = [];
-    for (var coll of colls) {
-      if (!coll.namespace.match(/\.system\./) &&
-          coll.collectionName.indexOf(this.collectionPrefix) === 0) {
-        promises.push(coll.drop());
-      }
-    }
+  return this.adapter.collectionsContaining(this.collectionPrefix).then(collections => {
+    let promises = collections.map(collection => {
+      return collection.drop();
+    });
     return Promise.all(promises);
   });
 };
