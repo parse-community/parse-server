@@ -12,7 +12,7 @@ Parse Server works with the Express web application framework. It can be added t
 
 We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed using any of the following buttons:
 
-<a title="Deploy to AWS" href="https://console.aws.amazon.com/elasticbeanstalk/home?region=us-west-2#/newApplication?applicationName=ParseServer&solutionStackName=Node.js&tierName=WebServer&sourceBundleUrl=https://s3.amazonaws.com/elasticbeanstalk-samples-us-east-1/eb-parse-server-sample/parse-server-example.zip" target="_blank"><img src="http://d0.awsstatic.com/product-marketing/Elastic%20Beanstalk/deploy-to-aws.png" height="40"></a> <a title="Deploy to Heroku" href="https://heroku.com/deploy?template=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="https://www.herokucdn.com/deploy/button.png"></a> <a title="Deploy to Azure" href="https://azuredeploy.net/?repository=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"></a>
+<a title="Deploy to AWS" href="https://console.aws.amazon.com/elasticbeanstalk/home?region=us-west-2#/newApplication?applicationName=ParseServer&solutionStackName=Node.js&tierName=WebServer&sourceBundleUrl=https://s3.amazonaws.com/elasticbeanstalk-samples-us-east-1/eb-parse-server-sample/parse-server-example.zip" target="_blank"><img src="http://d0.awsstatic.com/product-marketing/Elastic%20Beanstalk/deploy-to-aws.png" height="40"></a> <a title="Deploy to Heroku" href="https://heroku.com/deploy?template=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="https://www.herokucdn.com/deploy/button.png"></a> <a title="Deploy to Azure" href="https://azuredeploy.net/?repository=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"></a> <a title="Deploy to GCP" href="https://cloud.google.com/nodejs/resources/frameworks/parse-server" target="_blank"><img src="https://gcpstatic.storage.googleapis.com/deploy%402x.png" height="36"></a>
 
 ### Parse Server + Express
 
@@ -44,10 +44,10 @@ app.listen(1337, function() {
 
 ### Standalone Parse Server
 
-Parse Server can also run as a standalone API server. 
+Parse Server can also run as a standalone API server.
 You can configure Parse Server with a configuration file, arguments and environment variables.
 
-To start the server: 
+To start the server:
 
 `npm start -- --appId MYAPP --masterKey MASTER_KEY --serverURL http://localhost:1337/parse`.
 
