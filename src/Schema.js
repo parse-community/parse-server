@@ -735,9 +735,9 @@ function getObjectType(obj) {
         }
         break;
       case 'File' :
-        if(obj.url && obj.name) {
+        if(obj.name) {
           return 'file';
-        } else if(!obj.url){
+        } else {
           let msg = obj.name? JSON.stringify(obj) + " is not a valid File" : "File has no name";
           throw new Parse.Error(Parse.Error.INCORRECT_TYPE, msg);
         }
