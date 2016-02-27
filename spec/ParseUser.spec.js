@@ -122,6 +122,41 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("become on non existing user", (done) => {
+    var user = null;
+    var sessionToken = null;
+    var userPointer = null;
+
+    Parse.Promise.as().then(function() {
+      return Parse.User.signUp("9090", "-----");
+
+    }).then(function(newUser) {
+      equal(Parse.User.current(), newUser);
+
+      user = newUser;
+      userPointer = user.toPointer();
+      sessionToken = newUser.getSessionToken();
+      ok(sessionToken);
+
+            var u = Parse.Object.fromJSON(userPointer);
+      return u.destroy({useMasterKey:true});
+
+    }).then(function() {
+      return Parse.User.become(sessionToken);
+    }).then((user) => {
+      ok(false, "Shouldn't have been able to log in with non existing user.");
+    }, function(error) {
+      ok(error);
+      console.log(error);
+      return Parse.Promise.as();
+    }).then(function() {
+      done();
+    }, function(error) {
+      ok(false, error);
+      done();
+    });
+  });
+
   it("become", (done) => {
     var user = null;
     var sessionToken = null;
