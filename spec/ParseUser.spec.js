@@ -52,6 +52,7 @@ describe('Parse.User testing', () => {
   it('sends verification email if email verification is enabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
@@ -91,6 +92,7 @@ describe('Parse.User testing', () => {
   it('does not send verification email if email verification is disabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
@@ -134,6 +136,7 @@ describe('Parse.User testing', () => {
         expect(options.user.get('email')).toEqual('user@parse.com');
         done();
       },
+      sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
     setServerConfiguration({
@@ -176,9 +179,14 @@ describe('Parse.User testing', () => {
           .then(() => {
             expect(user.get('emailVerified')).toEqual(true);
             done();
+          }, (err) => {
+            console.error(err);
+            fail("this should not fail");
+            done();
           });
         });
       },
+      sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
     setServerConfiguration({
@@ -237,6 +245,7 @@ describe('Parse.User testing', () => {
           });
         });
       },
+      sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
     setServerConfiguration({
@@ -270,6 +279,11 @@ describe('Parse.User testing', () => {
       success: function(user) {
         Parse.User.logIn("non_existent_user", "asdf3",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+      }, 
+      error: function(err) {
+        console.error(err);
+        fail("Shit should not fail");
+        done();
       }
     });
   });

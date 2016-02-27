@@ -167,16 +167,21 @@ function makeExpressHandler(promiseHandler) {
                     JSON.stringify(req.body, null, 2));
       }
       promiseHandler(req).then((result) => {
-        if (!result.response && !result.location) {
+        if (!result.response && !result.location && !result.text) {
           console.log('BUG: the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
         if (PromiseRouter.verbose) {
-          console.log('response:', JSON.stringify(result.response, null, 2));
+          console.log('response:', JSON.stringify(result, null, 2));
         }
         
         var status = result.status || 200;
         res.status(status);
+        
+        if (result.text) {
+          return res.send(result.text);
+        }
+        
         if (result.location && !result.response) {
           return res.redirect(result.location);
         }

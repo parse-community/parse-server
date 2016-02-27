@@ -27,16 +27,14 @@ export class UsersRouter extends ClassesRouter {
     req.body = data;
     req.params.className = '_User';
 
-    if (req.config.verifyUserEmails) {
-      req.config.mailController.setEmailVerificationStatus(req.body, false);
-    }
+    req.config.userController.setEmailVerifyToken(req.body);
 
     let p = super.handleCreate(req);
-
-    if (req.config.verifyUserEmails) {
+  
+  if (req.config.verifyUserEmails) {
       // Send email as fire-and-forget once the user makes it into the DB.
       p.then(() => {
-        req.config.mailController.sendVerificationEmail(req.body, req.config);
+        req.config.userController.sendVerificationEmail(req.body, req.config);
       });
     }
     return p;
@@ -155,10 +153,23 @@ export class UsersRouter extends ClassesRouter {
     return Promise.resolve(success);
   }
   
-  handleReset(req) {
+  handleResetRequest(req) {
+
+     let { email } = req.body.email;
+     if (!email) {
+       throw "Missing email";
+     }
      let userController = req.config.userController;
-     return userController.requestPasswordReset();
+     
+     return userController.sendPasswordResetEmail(email).then((token) => {
+        return Promise.resolve({
+          response: {}
+        })
+     }, (err) => {
+       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
+     });
   }
+  
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -169,7 +180,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
-    this.route('POST', '/requestPasswordReset', req => this.handleReset(req));
+    this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); })
   }
 }
 

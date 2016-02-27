@@ -19,7 +19,6 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }     from './Controllers/FilesController';
-import { MailController }      from './Controllers/MailController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
@@ -27,6 +26,7 @@ import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { LogsRouter }          from './Routers/LogsRouter';
 import { HooksRouter }         from './Routers/HooksRouter';
 import { PublicAPIRouter }     from './Routers/PublicAPIRouter';
+import { GlobalConfigRouter }  from './Routers/GlobalConfigRouter';
 
 import { HooksController }     from './Controllers/HooksController';
 import { UserController }      from './Controllers/UserController';
@@ -142,12 +142,8 @@ function ParseServer({
   const pushController = new PushController(pushControllerAdapter, appId);
   const loggerController = new LoggerController(loggerControllerAdapter, appId);
   const hooksController = new HooksController(appId, collectionPrefix);
-  const userController = new UserController(appId);
-  let mailController;
-  
-  if (verifyUserEmails) {
-    mailController = new MailController(loadAdapter(emailAdapter));
-  }
+  const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
+
   
   cache.apps.set(appId, {
     masterKey: masterKey,
@@ -163,7 +159,7 @@ function ParseServer({
     pushController: pushController,
     loggerController: loggerController,
     hooksController: hooksController,
-    mailController: mailController,
+    userController: userController,
     verifyUserEmails: verifyUserEmails,
     enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
@@ -215,7 +211,7 @@ function ParseServer({
   ];
 
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
-    routers.push(require('./global_config'));
+    routers.push(new GlobalConfigRouter());
   }
   
   if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
@@ -231,7 +227,6 @@ function ParseServer({
   batch.mountOnto(appRouter);
 
   api.use(appRouter.expressApp());
-  appRouter.mountOnto(api);
 
   api.use(middlewares.handleParseErrors);
 

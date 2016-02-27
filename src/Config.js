@@ -24,8 +24,6 @@ export class Config {
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     
-    this.mailController = cacheInfo.mailController;
-    
     this.serverURL = cacheInfo.serverURL;
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.appName = cacheInfo.appName;
@@ -34,7 +32,7 @@ export class Config {
     this.filesController = cacheInfo.filesController;
     this.pushController = cacheInfo.pushController;
     this.loggerController = cacheInfo.loggerController;
-    this.mailController = cacheInfo.mailController;
+    this.userController = cacheInfo.userController;
     this.oauth = cacheInfo.oauth;
 
     this.mount = mount;
@@ -49,7 +47,11 @@ export class Config {
   }
   
   get choosePasswordURL() {
-    return `${this.serverURL}/apps/choose_password`;
+    return `${this.serverURL}/apps/${this.applicationId}/choose_password`;
+  }
+  
+  get requestResetPasswordURL() {
+    return `${this.serverURL}/apps/${this.applicationId}/request_password_reset`;
   }
   
   get passwordResetSuccessURL() {

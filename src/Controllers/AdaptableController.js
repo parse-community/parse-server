@@ -10,11 +10,12 @@ based on the parameters passed
 
 // _adapter is private, use Symbol
 var _adapter = Symbol();
-import cache from '../cache';
+import Config from '../Config';
 
 export class AdaptableController {
 
-  constructor(adapter, appId) {
+  constructor(adapter, appId, options) {
+    this.options = options;
     this.adapter = adapter;
     this.appId = appId;
   }
@@ -29,7 +30,7 @@ export class AdaptableController {
   }
   
   get config() {
-    return cache.apps[this.appId];
+    return new Config(this.appId);
   }
   
   expectedAdapterType() {

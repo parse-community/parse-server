@@ -1,3 +1,5 @@
 module.exports = {
-  sendVerificationEmail: () => Promise.resolve();
+  sendVerificationEmail: () => Promise.resolve(),
+  sendPasswordResetEmail: () => Promise.resolve(),
+  sendMail: () => Promise.resolve()
 }

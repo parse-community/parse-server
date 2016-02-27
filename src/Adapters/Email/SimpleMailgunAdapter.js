@@ -37,6 +37,19 @@ let SimpleMailgunAdapter = mailgunOptions => {
         text: verifyMessage
       });
 		},
+    
+    sendPasswordResetEmail: ({link,user, appName}) => {
+      let message =
+        "Hi,\n\n" + 
+        "You requested to reset your password for " + appName + ".\n\n" +
+        "" +
+        "Click here to reset it:\n" + link; 
+      return sendMail({ 
+        to:user.email, 
+        subject: 'Password Reset for ' + appName, 
+        text: message
+      });
+    },
     sendMail: sendMail
 	});
 }

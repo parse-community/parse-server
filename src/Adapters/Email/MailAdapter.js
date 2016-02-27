@@ -1,5 +1,6 @@
 export class MailAdapter {
   sendVerificationEmail(options) {}
+  sendPasswordResetEmail(options) {}
   sendMail(options) {}
 }
 
