@@ -10,7 +10,7 @@
 // keeping it this way for now.
 //
 // In API-handling code, you should only use the Schema class via the
-// ExportAdapter. This will let us replace the schema logic for
+// DatabaseController. This will let us replace the schema logic for
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 

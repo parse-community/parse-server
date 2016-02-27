@@ -13,11 +13,9 @@
 // * destroy(className, query, options)
 // * This list is incomplete and the database process is not fully modularized.
 //
-// Default is ExportAdapter, which uses mongo.
+// Default is DatabaseController, which uses mongo at this time.
 
-var ExportAdapter = require('./ExportAdapter');
-
-var adapter = ExportAdapter;
+var adapter = require('./Controllers/DatabaseController');
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
 var appDatabaseURIs = {};

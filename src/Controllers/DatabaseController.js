@@ -5,12 +5,12 @@ var mongodb = require('mongodb');
 var MongoClient = mongodb.MongoClient;
 var Parse = require('parse/node').Parse;
 
-var Schema = require('./Schema');
-var transform = require('./transform');
+var Schema = require('./../Schema');
+var transform = require('./../transform');
 
 // options can contain:
 //   collectionPrefix: the string to put in front of every collection name.
-function ExportAdapter(mongoURI, options = {}) {
+function DatabaseController(mongoURI, options = {}) {
   this.mongoURI = mongoURI;
 
   this.collectionPrefix = options.collectionPrefix;
@@ -27,7 +27,7 @@ function ExportAdapter(mongoURI, options = {}) {
 // connection is successful.
 // this.db will be populated with a Mongo "Db" object when the
 // promise resolves successfully.
-ExportAdapter.prototype.connect = function() {
+DatabaseController.prototype.connect = function() {
   if (this.connectionPromise) {
     // There's already a connection in progress.
     return this.connectionPromise;
@@ -43,7 +43,7 @@ ExportAdapter.prototype.connect = function() {
 
 // Returns a promise for a Mongo collection.
 // Generally just for internal use.
-ExportAdapter.prototype.collection = function(className) {
+DatabaseController.prototype.collection = function(className) {
   if (!Schema.classNameIsValid(className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
@@ -51,7 +51,7 @@ ExportAdapter.prototype.collection = function(className) {
   return this.rawCollection(className);
 };
 
-ExportAdapter.prototype.rawCollection = function(className) {
+DatabaseController.prototype.rawCollection = function(className) {
   return this.connect().then(() => {
     return this.db.collection(this.collectionPrefix + className);
   });
@@ -64,7 +64,7 @@ function returnsTrue() {
 // Returns a promise for a schema object.
 // If we are provided a acceptor, then we run it on the schema.
 // If the schema isn't accepted, we reload it at most once.
-ExportAdapter.prototype.loadSchema = function(acceptor = returnsTrue) {
+DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 
   if (!this.schemaPromise) {
     this.schemaPromise = this.collection('_SCHEMA').then((coll) => {
@@ -88,8 +88,8 @@ ExportAdapter.prototype.loadSchema = function(acceptor = returnsTrue) {
 
 // Returns a promise for the classname that is related to the given
 // classname through the key.
-// TODO: make this not in the ExportAdapter interface
-ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
+// TODO: make this not in the DatabaseController interface
+DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
     var match = t.match(/^relation<(.*)>$/);
@@ -105,7 +105,7 @@ ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
 // Returns a promise that resolves to the new schema.
 // This does not update this.schema, because in a situation like a
 // batch request, that could confuse other users of the schema.
-ExportAdapter.prototype.validateObject = function(className, object, query) {
+DatabaseController.prototype.validateObject = function(className, object, query) {
   return this.loadSchema().then((schema) => {
     return schema.validateObject(className, object, query);
   });
@@ -113,7 +113,7 @@ ExportAdapter.prototype.validateObject = function(className, object, query) {
 
 // Like transform.untransformObject but you need to provide a className.
 // Filters out any data that shouldn't be on this REST-formatted object.
-ExportAdapter.prototype.untransformObject = function(
+DatabaseController.prototype.untransformObject = function(
   schema, isMaster, aclGroup, className, mongoObject) {
   var object = transform.untransformObject(schema, className, mongoObject);
 
@@ -138,7 +138,7 @@ ExportAdapter.prototype.untransformObject = function(
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-ExportAdapter.prototype.update = function(className, query, update, options) {
+DatabaseController.prototype.update = function(className, query, update, options) {
   var acceptor = function(schema) {
     return schema.hasKeys(className, Object.keys(query));
   };
@@ -196,7 +196,7 @@ ExportAdapter.prototype.update = function(className, query, update, options) {
 // Returns a promise that resolves successfully when these are
 // processed.
 // This mutates update.
-ExportAdapter.prototype.handleRelationUpdates = function(className,
+DatabaseController.prototype.handleRelationUpdates = function(className,
                                                          objectId,
                                                          update) {
   var pending = [];
@@ -243,7 +243,7 @@ ExportAdapter.prototype.handleRelationUpdates = function(className,
 
 // Adds a relation.
 // Returns a promise that resolves successfully iff the add was successful.
-ExportAdapter.prototype.addRelation = function(key, fromClassName,
+DatabaseController.prototype.addRelation = function(key, fromClassName,
                                                fromId, toId) {
   var doc = {
     relatedId: toId,
@@ -258,7 +258,7 @@ ExportAdapter.prototype.addRelation = function(key, fromClassName,
 // Removes a relation.
 // Returns a promise that resolves successfully iff the remove was
 // successful.
-ExportAdapter.prototype.removeRelation = function(key, fromClassName,
+DatabaseController.prototype.removeRelation = function(key, fromClassName,
                                                   fromId, toId) {
   var doc = {
     relatedId: toId,
@@ -277,7 +277,7 @@ ExportAdapter.prototype.removeRelation = function(key, fromClassName,
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-ExportAdapter.prototype.destroy = function(className, query, options = {}) {
+DatabaseController.prototype.destroy = function(className, query, options = {}) {
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
 
@@ -320,7 +320,7 @@ ExportAdapter.prototype.destroy = function(className, query, options = {}) {
 
 // Inserts an object into the database.
 // Returns a promise that resolves successfully iff the object saved.
-ExportAdapter.prototype.create = function(className, object, options) {
+DatabaseController.prototype.create = function(className, object, options) {
   var schema;
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
@@ -346,7 +346,7 @@ ExportAdapter.prototype.create = function(className, object, options) {
 // This should only be used for testing - use 'find' for normal code
 // to avoid Mongo-format dependencies.
 // Returns a promise that resolves to a list of items.
-ExportAdapter.prototype.mongoFind = function(className, query, options = {}) {
+DatabaseController.prototype.mongoFind = function(className, query, options = {}) {
   return this.collection(className).then((coll) => {
     return coll.find(query, options).toArray();
   });
@@ -355,7 +355,7 @@ ExportAdapter.prototype.mongoFind = function(className, query, options = {}) {
 // Deletes everything in the database matching the current collectionPrefix
 // Won't delete collections in the system namespace
 // Returns a promise.
-ExportAdapter.prototype.deleteEverything = function() {
+DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
 
   return this.connect().then(() => {
@@ -390,7 +390,7 @@ function keysForQuery(query) {
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
-ExportAdapter.prototype.relatedIds = function(className, key, owningId) {
+DatabaseController.prototype.relatedIds = function(className, key, owningId) {
   var joinTable = '_Join:' + key + ':' + className;
   return this.collection(joinTable).then((coll) => {
     return coll.find({owningId: owningId}).toArray();
@@ -401,7 +401,7 @@ ExportAdapter.prototype.relatedIds = function(className, key, owningId) {
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
-ExportAdapter.prototype.owningIds = function(className, key, relatedIds) {
+DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
   var joinTable = '_Join:' + key + ':' + className;
   return this.collection(joinTable).then((coll) => {
     return coll.find({relatedId: {'$in': relatedIds}}).toArray();
@@ -414,7 +414,7 @@ ExportAdapter.prototype.owningIds = function(className, key, relatedIds) {
 // equal-to-pointer constraints on relation fields.
 // Returns a promise that resolves when query is mutated
 // TODO: this only handles one of these at a time - make it handle more
-ExportAdapter.prototype.reduceInRelation = function(className, query, schema) {
+DatabaseController.prototype.reduceInRelation = function(className, query, schema) {
   // Search for an in-relation or equal-to-relation
   for (var key in query) {
     if (query[key] &&
@@ -442,7 +442,7 @@ ExportAdapter.prototype.reduceInRelation = function(className, query, schema) {
 
 // Modifies query so that it no longer has $relatedTo
 // Returns a promise that resolves when query is mutated
-ExportAdapter.prototype.reduceRelationKeys = function(className, query) {
+DatabaseController.prototype.reduceRelationKeys = function(className, query) {
   var relatedTo = query['$relatedTo'];
   if (relatedTo) {
     return this.relatedIds(
@@ -461,7 +461,7 @@ ExportAdapter.prototype.reduceRelationKeys = function(className, query) {
 // none, then build the geoindex.
 // This could be improved a lot but it's not clear if that's a good
 // idea. Or even if this behavior is a good idea.
-ExportAdapter.prototype.smartFind = function(coll, where, options) {
+DatabaseController.prototype.smartFind = function(coll, where, options) {
   return coll.find(where, options).toArray()
     .then((result) => {
       return result;
@@ -502,7 +502,7 @@ ExportAdapter.prototype.smartFind = function(coll, where, options) {
 // TODO: make userIds not needed here. The db adapter shouldn't know
 // anything about users, ideally. Then, improve the format of the ACL
 // arg to work like the others.
-ExportAdapter.prototype.find = function(className, query, options = {}) {
+DatabaseController.prototype.find = function(className, query, options = {}) {
   var mongoOptions = {};
   if (options.skip) {
     mongoOptions.skip = options.skip;
@@ -568,4 +568,4 @@ ExportAdapter.prototype.find = function(className, query, options = {}) {
   });
 };
 
-module.exports = ExportAdapter;
+module.exports = DatabaseController;
