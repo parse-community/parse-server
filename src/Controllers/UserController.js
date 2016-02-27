@@ -4,6 +4,9 @@ import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 
 var DatabaseAdapter = require('../DatabaseAdapter');
+var RestWrite = require('../RestWrite');
+var hash = require('../password').hash;
+var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
 
@@ -35,7 +38,7 @@ export class UserController extends AdaptableController {
   }
   
   
-  verifyEmail(username, token) {
+  verifyEmail(username, token, config = this.config) {
     
     return new Promise((resolve, reject) => {
       
@@ -45,7 +48,7 @@ export class UserController extends AdaptableController {
         return;
       }
       
-      var database = this.config.database;
+      var database = config.database;
      
       database.collection('_User').then(coll => {
         // Need direct database access because verification token is not a parse field
@@ -64,45 +67,24 @@ export class UserController extends AdaptableController {
     });    
   }
   
-  checkResetTokenValidity(username, token) {
-    var database = this.config.database;
+  checkResetTokenValidity(username, token, config = this.config) {
     return new Promise((resolve, reject) => {
-      database.collection('_User').then(coll => {
-        // Need direct database access because verification token is not a parse field
+      return config.database.collection('_User').then(coll => {
         return coll.findOne({
           username: username,
-          _email_reset_token: token,
+          _perishable_token: token,
         }, (err, doc) => {
-          if (err || !doc.value) {
-            reject();
+          if (err || !doc) {
+            reject(err);
           } else {
-            resolve();
+            resolve(doc);
           }
         });
       });
     });
   }
   
-  setPasswordResetToken(email) {
-    var database = this.config.database;
-    var token = randomString(25);
-    return new Promise((resolve, reject) => {
-      database.collection('_User').then(coll => {
-        // Need direct database access because verification token is not a parse field
-        return coll.findAndModify({
-          email: email,
-        }, null, {$set: {_email_reset_token: token}}, (err, doc) => {
-          if (err || !doc.value) {
-            reject();
-          } else {
-            console.log(doc);
-            resolve(token);
-          }
-        });
-      });
-    });
-  }
-  
+
   sendVerificationEmail(user, config = this.config) {
     if (!this.shouldVerifyEmails) {
       return;
@@ -119,25 +101,68 @@ export class UserController extends AdaptableController {
     });
   }
   
-  sendPasswordResetEmail(user, config = this.config) {
+  setPasswordResetToken(email, config = this.config) {
+    var database = config.database;
+    var token = randomString(25);
+    return new Promise((resolve, reject) => {
+      return database.collection('_User').then(coll => {
+        // Need direct database access because verification token is not a parse field
+        return coll.findAndModify({
+          email: email,
+        }, null, {$set: {_perishable_token: token}}, (err, doc) => {
+          if (err || !doc.value) {
+            console.error(err);
+            reject(err);
+          } else {
+            doc.value._perishable_token = token;
+            resolve(doc.value);
+          }
+        });
+      });
+    });
+  }
+
+  sendPasswordResetEmail(email, config = this.config) {
     if (!this.adapter) {
+      throw "Trying to send a reset password but no adapter is set";
+      //  TODO: No adapter?
       return;
     }
     
-    const token = encodeURIComponent(user._email_reset_token);
-    const username = encodeURIComponent(user.username);
-    
-    let link = `${config.requestPasswordResetURL}?token=${token}&username=${username}`
-    this.adapter.sendPasswordResetEmail({
-      appName: config.appName,
-      link: link,
-      user: inflate('_User', user),
+    return this.setPasswordResetToken(email).then((user) => {
+
+      const token = encodeURIComponent(user._perishable_token);
+      const username = encodeURIComponent(user.username);    
+      let link = `${config.requestResetPasswordURL}?token=${token}&username=${username}`
+      this.adapter.sendPasswordResetEmail({
+        appName: config.appName,
+        link: link,
+        user: inflate('_User', user),
+      });
+      return Promise.resolve(user);
+    }, (err) => {
+      return Promise.reject(err);
     });
+  }
+  
+  updatePassword(username, token, password, config = this.config) {
+   return this.checkResetTokenValidity(username, token, config).then(() => {
+     return updateUserPassword(username, token, password, config);
+   });
   }
 
   sendMail(options) {
     this.adapter.sendMail(options);
   }
 }
+
+// Mark this private
+function updateUserPassword(username, token, password, config) { 
+    var write = new RestWrite(config, Auth.master(config), '_User', {
+            username: username, 
+            _perishable_token: token
+          }, {password: password, _perishable_token: null }, undefined);
+    return write.execute();
+ }
 
 export default UserController;

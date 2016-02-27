@@ -21,7 +21,7 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     let userController = config.userController;
-    return userController.verifyEmail(username, token, appId).then( () => {
+    return userController.verifyEmail(username, token).then( () => {
       return Promise.resolve({
         status: 302,
         location: `${config.verifyEmailSuccessURL}?username=${username}`
@@ -33,7 +33,13 @@ export class PublicAPIRouter extends PromiseRouter {
   
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      var config = new Config(req.params.appId);
+      var config = new Config(req.query.id);
+      if (!config.serverURL) {
+        return Promise.resolve({
+          status: 404,
+          text: 'Not found.'
+        });
+      }
       // Should we keep the file in memory or leave like that?
       fs.readFile(path.resolve(views, "choose_password"), 'utf-8', (err, data) => {
         if (err) {
@@ -47,22 +53,50 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
   
-  resetPassword(req) {
-    var { username, token } = req.params;
+  requestResetPassword(req) {
+
+    var { username, token } = req.query;
     
     if (!username || !token) {
       return this.invalidLink(req);
     }
     
     let config = req.config;
-    return config.userController.checkResetTokenValidity(username, token).then( () => {
+    return config.userController.checkResetTokenValidity(username, token).then( (user) => {
       return Promise.resolve({
         status: 302,
-        location: `${config.choosePasswordURL}?token=${token}&id=${config.applicationId}&username=${username}`
+        location: `${config.choosePasswordURL}?token=${token}&id=${config.applicationId}&username=${username}&app=${config.appName}`
       })
     }, () => {
       return this.invalidLink(req);
     })
+  }
+  
+  resetPassword(req) {
+    var {
+      username,
+      token,
+      new_password
+    } = req.body;
+    
+    if (!username || !token || !new_password) {
+      return this.invalidLink(req);
+    }
+    
+    let config = req.config;
+    return config.userController.updatePassword(username, token, new_password).then((result) => {
+      return Promise.resolve({
+        status: 302,
+        location: config.passwordResetSuccessURL
+      });
+    }, (err) => {
+      console.error(err);
+      return Promise.resolve({
+        status: 302,
+        location: `${config.choosePasswordURL}?token=${token}&id=${config.applicationId}&username=${username}&error=${err}&app=${config.appName}`
+      });
+    });
+    
   }
 
   invalidLink(req) {
@@ -80,13 +114,14 @@ export class PublicAPIRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET','/apps/:appId/verify_email', this.setConfig, req => { return this.verifyEmail(req); });
     this.route('GET','/apps/choose_password', req => { return this.changePassword(req); });
-    this.route('GET','/apps/:appId/request_password_reset', this.setConfig, req => { return this.resetPassword(req); });
+    this.route('POST','/apps/:appId/request_password_reset', this.setConfig, req => { return this.resetPassword(req); });
+    this.route('GET','/apps/:appId/request_password_reset', this.setConfig, req => { return this.requestResetPassword(req); });
   }
   
   expressApp() {
     var router = express();
     router.use("/apps", express.static(public_html));
-    router.use(super.expressApp());
+    router.use("/", super.expressApp());
     return router;
   }
 }

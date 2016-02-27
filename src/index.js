@@ -182,7 +182,8 @@ function ParseServer({
   }));
 
   if (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1) {
-    api.use('/', new PublicAPIRouter().expressApp());    
+    // need the body parser for the password reset
+    api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());    
   }
 
 

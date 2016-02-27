@@ -45,6 +45,9 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   case '_email_verify_token':
     key = "_email_verify_token";
     break;
+  case '_perishable_token':
+    key = "_perishable_token";
+    break;
   case 'sessionToken':
   case '_session_token':
     key = '_session_token';

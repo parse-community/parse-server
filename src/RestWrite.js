@@ -832,4 +832,5 @@ RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
 
+export default RestWrite;
 module.exports = RestWrite;

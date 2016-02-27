@@ -34,7 +34,7 @@ export class UsersRouter extends ClassesRouter {
   if (req.config.verifyUserEmails) {
       // Send email as fire-and-forget once the user makes it into the DB.
       p.then(() => {
-        req.config.userController.sendVerificationEmail(req.body, req.config);
+        req.config.userController.sendVerificationEmail(req.body);
       });
     }
     return p;
@@ -154,17 +154,16 @@ export class UsersRouter extends ClassesRouter {
   }
   
   handleResetRequest(req) {
-
-     let { email } = req.body.email;
+     let { email } = req.body;
      if (!email) {
-       throw "Missing email";
+       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
      }
      let userController = req.config.userController;
      
      return userController.sendPasswordResetEmail(email).then((token) => {
         return Promise.resolve({
           response: {}
-        })
+        });
      }, (err) => {
        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
      });

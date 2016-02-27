@@ -12,7 +12,7 @@ describe("public API", () => {
   });
   
   it("should get choose_password", (done) => {
-    request('http://localhost:8378/1/apps/choose_password', (err, httpResponse, body) => {
+    request('http://localhost:8378/1/apps/choose_password?id=test', (err, httpResponse, body) => {
       expect(httpResponse.statusCode).toBe(200);
       done();
     });

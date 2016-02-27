@@ -47,7 +47,7 @@ export class Config {
   }
   
   get choosePasswordURL() {
-    return `${this.serverURL}/apps/${this.applicationId}/choose_password`;
+    return `${this.serverURL}/apps/choose_password`;
   }
   
   get requestResetPasswordURL() {
