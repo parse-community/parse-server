@@ -52,13 +52,13 @@ delete defaultConfiguration.cloud;
 
 // Allows testing specific configurations of Parse Server
 var setServerConfiguration = configuration => {
-  api = new ParseServer(configuration);
-  app = express();
-  app.use('/1', api);
-  cache.clearCache();
   server.close();
+  cache.clearCache();
+  app = express();
+  api = new ParseServer(configuration);
+  app.use('/1', api);
   server = app.listen(port);
-}
+};
 
 var restoreServerConfiguration = () => setServerConfiguration(defaultConfiguration);
 
