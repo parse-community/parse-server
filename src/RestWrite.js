@@ -60,6 +60,8 @@ RestWrite.prototype.execute = function() {
   return Promise.resolve().then(() => {
     return this.getUserAndRoleACL();
   }).then(() => {
+    return this.validateClientClassCreation();
+  }).then(() => {
     return this.validateSchema();
   }).then(() => {
     return this.handleInstallation();
@@ -101,6 +103,25 @@ RestWrite.prototype.getUserAndRoleACL = function() {
       return Promise.resolve();
     });
   }else{
+    return Promise.resolve();
+  }
+};
+
+// Validates this operation against the allowClientClassCreation config.
+RestWrite.prototype.validateClientClassCreation = function() {
+  if (this.config.allowClientClassCreation === false && !this.auth.isMaster) {
+    return this.config.database.loadSchema().then((schema) => {
+      return schema.hasClass(this.className)
+    }).then((hasClass) => {
+      if (hasClass === true) {
+        return Promise.resolve();
+      }
+
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+                            'This user is not allowed to access ' +
+                            'non-existent class: ' + this.className);
+    });
+  } else {
     return Promise.resolve();
   }
 };
@@ -176,7 +197,7 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
 
-  if (!this.data.authData) {
+  if (!this.data.authData || !Object.keys(this.data.authData).length) {
     return;
   }
 

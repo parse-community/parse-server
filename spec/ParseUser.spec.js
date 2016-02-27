@@ -1720,7 +1720,17 @@ describe('Parse.User testing', () => {
       expect(e.code).toEqual(Parse.Error.SESSION_MISSING);
       done();
     });
-  })
+  });
+
+  it('support user/password signup with empty authData block', (done) => {
+    // The android SDK can send an empty authData object along with username and password.
+    Parse.User.signUp('artof', 'thedeal', { authData: {} }).then((user) => {
+      done();
+    }, (error) => {
+      fail('Signup should have succeeded.');
+      done();
+    });
+  });
 
 });
 
