@@ -1,3 +1,4 @@
+/** @flow weak */
 // Database Adapter
 //
 // Allows you to change the underlying database.
@@ -13,7 +14,6 @@
 // * This list is incomplete and the database process is not fully modularized.
 //
 // Default is ExportAdapter, which uses mongo.
-import cache from './cache';
 
 var ExportAdapter = require('./ExportAdapter');
 
@@ -40,14 +40,14 @@ function clearDatabaseURIs() {
   dbConnections = {};
 }
 
-function getDatabaseConnection(appId) {
+function getDatabaseConnection(appId: string, collectionPrefix: string) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
   }
 
   var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
   dbConnections[appId] = new adapter(dbURI, {
-    collectionPrefix: cache.apps[appId]['collectionPrefix']
+    collectionPrefix: collectionPrefix
   });
   dbConnections[appId].connect();
   return dbConnections[appId];
@@ -59,5 +59,5 @@ module.exports = {
   setAdapter: setAdapter,
   setDatabaseURI: setDatabaseURI,
   setAppDatabaseURI: setAppDatabaseURI,
-  clearDatabaseURIs: clearDatabaseURIs,
+  clearDatabaseURIs: clearDatabaseURIs
 };

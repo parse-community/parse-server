@@ -5,12 +5,10 @@
 import cache from './cache';
 
 export class Config {
+  constructor(applicationId: string, mount: string) {
+    let DatabaseAdapter = require('./DatabaseAdapter');
 
-  constructor(applicationId, mount) {
-    
-    var DatabaseAdapter = require('./DatabaseAdapter');
-
-    var cacheInfo = cache.apps[applicationId];
+    let cacheInfo = cache.apps[applicationId];
     this.valid = !!cacheInfo;
     if (!this.valid) {
       return;
@@ -27,7 +25,7 @@ export class Config {
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.database = DatabaseAdapter.getDatabaseConnection(applicationId);
+    this.database = DatabaseAdapter.getDatabaseConnection(applicationId, this.collectionPrefix);
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;
     this.pushController = cacheInfo.pushController;   
@@ -36,7 +34,7 @@ export class Config {
 
     this.mount = mount;
   }
-};
+}
 
 export default Config;
 module.exports = Config;

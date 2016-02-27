@@ -1,23 +1,31 @@
-var DatabaseAdapter = require('../DatabaseAdapter'),
-    triggers = require('../triggers'),
-    request = require('request');
-const collection = "_Hooks";
+/** @flow weak */
+
+import * as DatabaseAdapter from "../DatabaseAdapter";
+import * as triggers from "../triggers";
+import * as Parse from "parse/node";
+import * as request from "request";
+
+const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
-    
-  constructor(applicationId) {
-    this.applicationId = applicationId;
+  _applicationId: string;
+  _collectionPrefix: string;
+  _collection;
+
+  constructor(applicationId: string, collectionPrefix: string = '') {
+    this._applicationId = applicationId;
+    this._collectionPrefix = collectionPrefix;
   }
   
   database() {
-    return DatabaseAdapter.getDatabaseConnection(this.applicationId);
+    return DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix);
   }
   
   collection() {
     if (this._collection) {
       return Promise.resolve(this._collection)
     }
-    return this.database().rawCollection(collection).then((collection) => {
+    return this.database().rawCollection(DefaultHooksCollectionName).then((collection) => {
       this._collection = collection;
       return collection;
     });
@@ -40,12 +48,12 @@ export class HooksController {
   }
   
   deleteFunction(functionName) {
-    triggers.removeFunction(functionName, this.applicationId);
+    triggers.removeFunction(functionName, this._applicationId);
     return this.delete({functionName: functionName});
   }
   
   deleteTrigger(className, triggerName) {
-    triggers.removeTrigger(triggerName, className, this.applicationId);
+    triggers.removeTrigger(triggerName, className, this._applicationId);
     return this.delete({className: className, triggerName: triggerName});
   }
   
@@ -60,7 +68,7 @@ export class HooksController {
   getOne(query) {
     return this.collection()
     .then(coll => coll.findOne(query, {_id: 0}))
-    .then(hook => {
+    .then(hook => {
       return hook;
     });
   }
@@ -68,7 +76,7 @@ export class HooksController {
   get(query) {
     return this.collection()
     .then(coll => coll.find(query, {_id: 0}).toArray())
-    .then(hooks => {
+    .then(hooks => {
       return hooks;
     });
   }
@@ -102,9 +110,9 @@ export class HooksController {
     var wrappedFunction = wrapToHTTPRequest(hook);
     wrappedFunction.url = hook.url;
     if (hook.className) {
-      triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this.applicationId)
+      triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
     } else {
-      triggers.addFunction(hook.functionName, wrappedFunction, null, this.applicationId);
+      triggers.addFunction(hook.functionName, wrappedFunction, null, this._applicationId);
     }
   } 
   

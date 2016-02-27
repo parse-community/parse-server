@@ -1,9 +1,10 @@
+'use strict';
 
 var request = require('request');
 var Parse = require('parse/node').Parse;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 
-var database = DatabaseAdapter.getDatabaseConnection('test');
+let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 
 describe('a GlobalConfig', () => {
   beforeEach(function(done) {

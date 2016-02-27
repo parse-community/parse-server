@@ -1,3 +1,4 @@
+'use strict';
 // These tests check the Installations functionality of the REST API.
 // Ported from installation_collection_test.go
 
@@ -9,7 +10,7 @@ var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 
 describe('Installations', () => {
 
