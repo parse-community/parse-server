@@ -10,10 +10,11 @@ var router = express.Router();
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
   var appId = cryptoUtils.randomHexString(32);
-  cache.apps[appId] = {
+  // TODO: (nlutsenko) This doesn't work and should die, since there are no controllers on this configuration.
+  cache.apps.set(appId, {
     'collectionPrefix': appId + '_',
     'masterKey': 'master'
-  };
+  });
   var keys = {
     'application_id': appId,
     'client_key': 'unused',
@@ -42,7 +43,7 @@ function dropApp(req, res) {
     return res.status(401).send({"error": "unauthorized"});
   }
   req.database.deleteEverything().then(() => {
-    delete cache.apps[req.config.applicationId];
+    cache.apps.remove(req.config.applicationId);
     res.status(200).send({});
   });
 }

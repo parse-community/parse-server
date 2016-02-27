@@ -43,7 +43,7 @@ function nobody(config) {
 
 // Returns a promise that resolves to an Auth object
 var getAuthForSessionToken = function(config, sessionToken) {
-  var cachedUser = cache.getUser(sessionToken);
+  var cachedUser = cache.users.get(sessionToken);
   if (cachedUser) {
     return Promise.resolve(new Auth(config, false, cachedUser));
   }
@@ -65,8 +65,8 @@ var getAuthForSessionToken = function(config, sessionToken) {
     delete obj.password;
     obj['className'] = '_User';
     obj['sessionToken'] = sessionToken;
-    var userObject = Parse.Object.fromJSON(obj);
-    cache.setUser(sessionToken, userObject);
+    let userObject = Parse.Object.fromJSON(obj);
+    cache.users.set(sessionToken, userObject);
     return new Auth(config, false, userObject);
   });
 };

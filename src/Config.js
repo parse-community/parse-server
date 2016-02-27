@@ -7,15 +7,12 @@ import cache from './cache';
 export class Config {
   constructor(applicationId: string, mount: string) {
     let DatabaseAdapter = require('./DatabaseAdapter');
-
-    let cacheInfo = cache.apps[applicationId];
-    this.valid = !!cacheInfo;
-    if (!this.valid) {
+    let cacheInfo = cache.apps.get(applicationId);
+    if (!cacheInfo) {
       return;
     }
 
     this.applicationId = applicationId;
-    this.collectionPrefix = cacheInfo.collectionPrefix || '';
     this.masterKey = cacheInfo.masterKey;
     this.clientKey = cacheInfo.clientKey;
     this.javascriptKey = cacheInfo.javascriptKey;
@@ -25,7 +22,7 @@ export class Config {
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.database = DatabaseAdapter.getDatabaseConnection(applicationId, this.collectionPrefix);
+    this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;
     this.pushController = cacheInfo.pushController;   
