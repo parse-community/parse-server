@@ -84,7 +84,6 @@ function handleParseHeaders(req, res, next) {
 
   info.app = cache.apps.get(info.appId);
   req.config = new Config(info.appId, mount);
-  req.database = req.config.database;
   req.info = info;
 
   var isMaster = (info.masterKey === req.config.masterKey);

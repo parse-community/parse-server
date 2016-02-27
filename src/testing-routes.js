@@ -32,7 +32,7 @@ function clearApp(req, res) {
   if (!req.auth.isMaster) {
     return res.status(401).send({"error": "unauthorized"});
   }
-  req.database.deleteEverything().then(() => {
+  return req.config.database.deleteEverything().then(() => {
     res.status(200).send({});
   });
 }
@@ -42,7 +42,7 @@ function dropApp(req, res) {
   if (!req.auth.isMaster) {
     return res.status(401).send({"error": "unauthorized"});
   }
-  req.database.deleteEverything().then(() => {
+  return req.config.database.deleteEverything().then(() => {
     cache.apps.remove(req.config.applicationId);
     res.status(200).send({});
   });
