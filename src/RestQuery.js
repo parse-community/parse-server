@@ -165,7 +165,9 @@ RestQuery.prototype.redirectClassNameForKey = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestQuery.prototype.validateClientClassCreation = function() {
-  if (this.config.allowClientClassCreation === false && !this.auth.isMaster) {
+  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  if (this.config.allowClientClassCreation === false && !this.auth.isMaster
+      && sysClass.indexOf(this.className) === -1) {
     return this.config.database.loadSchema().then((schema) => {
       return schema.hasClass(this.className)
     }).then((hasClass) => {

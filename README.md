@@ -126,6 +126,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `databaseAdapter` (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`)
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
 * `enableAnonymousUsers` - Defaults to true. Set to false to disable anonymous users.
+* `allowClientClassCreation` - Defaults to true. Set to false to disable client class creation.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
 * `maxUploadSize` - Defaults to 20mb. Max file size for uploads
 
