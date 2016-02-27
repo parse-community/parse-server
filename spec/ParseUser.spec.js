@@ -5,6 +5,8 @@
 // Tests that involve revocable sessions.
 // Tests that involve sending password reset emails.
 
+"use strict";
+
 var request = require('request');
 var passwordCrypto = require('../src/password');
 
@@ -80,8 +82,6 @@ describe('Parse.User testing', () => {
   });
 
   it("user login with files", (done) => {
-    "use strict";
-
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
@@ -92,6 +92,33 @@ describe('Parse.User testing', () => {
       ok(fileAgain.name());
       ok(fileAgain.url());
       done();
+    });
+  });
+
+  describe('become', () => {
+    it('sends token back', done => {
+      let user = null;
+      var sessionToken = null;
+
+      Parse.User.signUp('Jason', 'Parse', { 'code': 'red' }).then(newUser => {
+        user = newUser;
+        expect(user.get('code'), 'red');
+
+        sessionToken = newUser.getSessionToken();
+        expect(sessionToken).toBeDefined();
+
+        return Parse.User.become(sessionToken);
+      }).then(newUser => {
+        expect(newUser.id).toEqual(user.id);
+        expect(newUser.get('username'), 'Jason');
+        expect(newUser.get('code'), 'red');
+        expect(newUser.getSessionToken()).toEqual(sessionToken);
+      }).then(() => {
+        done();
+      }, error => {
+        fail(error);
+        done();
+      });
     });
   });
 
@@ -901,6 +928,29 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('log in with provider with files', done => {
+    let provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
+    file.save().then(file => {
+      let user = new Parse.User();
+      user.set('file', file);
+      return user._linkWith('facebook', {});
+    }).then(user => {
+      expect(user._isLinked("facebook")).toBeTruthy();
+      return Parse.User._logInWith('facebook', {});
+    }).then(user => {
+      let fileAgain = user.get('file');
+      expect(fileAgain.name()).toMatch(/yolo.txt$/);
+      expect(fileAgain.url()).toMatch(/yolo.txt$/);
+    }).then(() => {
+      done();
+    }, error => {
+      fail(error);
+      done();
+    });
+  });
+
   it("log in with provider twice", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1670,7 +1720,17 @@ describe('Parse.User testing', () => {
       expect(e.code).toEqual(Parse.Error.SESSION_MISSING);
       done();
     });
-  })
+  });
+
+  it('support user/password signup with empty authData block', (done) => {
+    // The android SDK can send an empty authData object along with username and password.
+    Parse.User.signUp('artof', 'thedeal', { authData: {} }).then((user) => {
+      done();
+    }, (error) => {
+      fail('Signup should have succeeded.');
+      done();
+    });
+  });
 
 });
 

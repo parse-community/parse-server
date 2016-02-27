@@ -1,7 +1,7 @@
 // testing-routes.js
+import cache from './cache';
 
 var express = require('express'),
-    cache = require('./cache'),
     middlewares = require('./middlewares'),
     cryptoUtils = require('./cryptoUtils');
 

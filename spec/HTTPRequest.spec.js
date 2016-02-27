@@ -1,4 +1,4 @@
-var httpRequest = require("../src/httpRequest"),
+var httpRequest = require("../src/cloud-code/httpRequest"),
     bodyParser = require('body-parser'),
     express = require("express");
 

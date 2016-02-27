@@ -44,7 +44,42 @@ app.listen(1337, function() {
 
 ### Standalone Parse Server
 
-Parse Server can also run as a standalone API server. The standalone Parse Server can be configured using [environment variables](#configuration). To start the server, just run `npm start`.
+Parse Server can also run as a standalone API server. 
+You can configure Parse Server with a configuration file, arguments and environment variables.
+
+To start the server: 
+
+`npm start -- --appId MYAPP --masterKey MASTER_KEY --serverURL http://localhost:1337/parse`.
+
+To get more help for running the parse-server standalone, you can run:
+
+`$ npm start -- --help`
+
+The standalone API server supports loading a configuration file in JSON format:
+
+`$ npm start -- path/to/your/config.json`
+
+The default port is 1337, to use a different port set the PORT environment variable:
+
+`$ PORT=8080 npm start -- path/to/your/config.json`
+
+The standalone Parse Server can be configured using [environment variables](#configuration).
+
+Please refer to the [configuration section](#configuration) or help;
+
+To get more help for running the parse-server standalone, you can run:
+
+`$ npm start -- --help`
+
+The standalone API server supports loading a configuration file in JSON format:
+
+`$ npm start -- path/to/your/config.json`
+
+The default port is 1337, to use a different port set the `--port` option:
+
+`$ npm start -- --port=8080 path/to/your/config.json`
+
+Please refer to the [configuration section](#configuration) or help;
 
 You can also install Parse Server globally:
 
@@ -92,6 +127,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
 * `enableAnonymousUsers` - Defaults to true. Set to false to disable anonymous users.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
+* `maxUploadSize` - Defaults to 20mb. Max file size for uploads
 
 #### Using environment variables
 
@@ -110,6 +146,7 @@ PARSE_SERVER_JAVASCRIPT_KEY
 PARSE_SERVER_DOTNET_KEY
 PARSE_SERVER_FILE_KEY
 PARSE_SERVER_FACEBOOK_APP_IDS // string of comma separated list
+PARSE_SERVER_MAX_UPLOAD_SIZE
 
 ```
 

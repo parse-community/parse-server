@@ -8,8 +8,8 @@
 // things.
 
 var Parse = require('parse/node').Parse;
+import cache from './cache';
 
-var cache = require('./cache');
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
@@ -39,8 +39,8 @@ function del(config, auth, className, objectId) {
   var inflatedObject;
 
   return Promise.resolve().then(() => {
-    if (triggers.getTrigger(className, 'beforeDelete') ||
-        triggers.getTrigger(className, 'afterDelete') ||
+    if (triggers.getTrigger(className, triggers.Types.beforeDelete, config.applicationId) ||
+        triggers.getTrigger(className, triggers.Types.afterDelete, config.applicationId) ||
         className == '_Session') {
       return find(config, auth, className, {objectId: objectId})
       .then((response) => {
@@ -48,8 +48,7 @@ function del(config, auth, className, objectId) {
           response.results[0].className = className;
           cache.clearUser(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
-          return triggers.maybeRunTrigger('beforeDelete',
-                                          auth, inflatedObject);
+          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -76,7 +75,7 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger('afterDelete', auth, inflatedObject);
+    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config.applicationId);
     return Promise.resolve();
   });
 }
@@ -96,8 +95,8 @@ function update(config, auth, className, objectId, restObject) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve().then(() => {
-    if (triggers.getTrigger(className, 'beforeSave') ||
-        triggers.getTrigger(className, 'afterSave')) {
+    if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
+        triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId)) {
       return find(config, auth, className, {objectId: objectId});
     }
     return Promise.resolve({});

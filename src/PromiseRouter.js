@@ -31,7 +31,7 @@ export default class PromiseRouter {
     }
   };
   
-  route(method, path, handler) {
+  route(method, path, ...handlers) {
     switch(method) {
     case 'POST':
     case 'GET':
@@ -40,6 +40,25 @@ export default class PromiseRouter {
       break;
     default:
       throw 'cannot route method: ' + method;
+    }
+
+    let handler = handlers[0];
+  
+    if (handlers.length > 1) {
+      const length = handlers.length;
+      handler = function(req) {
+        var next = function(i, req, res) {
+          if (i == length) {
+            return res;
+          }
+          let result =  handlers[i](req);
+          if (!result || typeof result.then !== "function") {
+            result = Promise.resolve(result);
+          }
+          return result.then((res) => (next(i+1, req, res))); 
+        }
+        return next(0, req);
+      }
     }
 
     this.routes.push({
@@ -58,7 +77,6 @@ export default class PromiseRouter {
       if (route.method != method) {
         continue;
       }
-
       // NOTE: we can only route the specific wildcards :className and
       // :objectId, and in that order.
       // This is pretty hacky but I don't want to rebuild the entire

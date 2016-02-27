@@ -1,7 +1,8 @@
+import cache from './cache';
+
 var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
-var cache = require('./cache');
 var Config = require('./Config');
 
 // Checks that the request is authorized for this app and checks user
@@ -98,20 +99,20 @@ function handleParseHeaders(req, res, next) {
 
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
-  var keyRequired = (req.config.clientKey
-    || req.config.javascriptKey
-    || req.config.dotNetKey
-    || req.config.restAPIKey);
-  var keyHandled = false;
-  if (keyRequired
-    && ((info.clientKey && req.config.clientKey && info.clientKey === req.config.clientKey)
-      || (info.javascriptKey && req.config.javascriptKey && info.javascriptKey === req.config.javascriptKey)
-      || (info.dotNetKey && req.config.dotNetKey && info.dotNetKey === req.config.dotNetKey)
-      || (info.restAPIKey && req.config.restAPIKey && info.restAPIKey === req.config.restAPIKey)
-    )) {
-    keyHandled = true;
-  }
-  if (keyRequired && !keyHandled) {
+  let keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
+  
+  // We do it with mismatching keys to support no-keys config
+  var keyMismatch = keys.reduce(function(mismatch, key){
+
+    // check if set in the config and compare
+    if (req.config[key] && info[key] !== req.config[key]) {
+      mismatch++;
+    }
+    return mismatch;
+  }, 0);
+  
+  // All keys mismatch
+  if (keyMismatch == keys.length) {
     return invalidRequest(req, res);
   }
 
@@ -138,7 +139,7 @@ function handleParseHeaders(req, res, next) {
 var allowCrossDomain = function(req, res, next) {
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
+  res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
 
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {

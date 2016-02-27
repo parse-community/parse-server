@@ -1,45 +1,45 @@
-var apps = {};
-var stats = {};
-var isLoaded = false;
-var users = {};
+export var apps = {};
+export var stats = {};
+export var isLoaded = false;
+export var users = {};
 
-function getApp(app, callback) {
+export function getApp(app, callback) {
   if (apps[app]) return callback(true, apps[app]);
   return callback(false);
 }
 
-function updateStat(key, value) {
+export function updateStat(key, value) {
   stats[key] = value;
 }
 
-function getUser(sessionToken) {
+export function getUser(sessionToken) {
   if (users[sessionToken]) return users[sessionToken];
   return undefined;
 }
 
-function setUser(sessionToken, userObject) {
+export function setUser(sessionToken, userObject) {
   users[sessionToken] = userObject;
 }
 
-function clearUser(sessionToken) {
+export function clearUser(sessionToken) {
   delete users[sessionToken];
 }
 
 //So far used only in tests
-function clearCache() {
+export function clearCache() {
   apps = {};
   stats = {};
   users = {};
 }
 
-module.exports = {
-  apps: apps,
-  stats: stats,
-  isLoaded: isLoaded,
-  getApp: getApp,
-  updateStat: updateStat,
-  clearUser: clearUser,
-  getUser: getUser,
-  setUser: setUser,
-  clearCache: clearCache,
+export default {
+  apps,
+  stats,
+  isLoaded,
+  getApp,
+  updateStat,
+  clearUser,
+  getUser,
+  setUser,
+  clearCache,
 };

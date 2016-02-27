@@ -1,4 +1,3 @@
-import PromiseRouter from '../PromiseRouter';
 import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
@@ -8,7 +7,7 @@ import Config from '../Config';
 
 export class FilesRouter {
 
-  getExpressRouter() {
+  getExpressRouter(options = {}) {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
 
@@ -19,7 +18,7 @@ export class FilesRouter {
 
     router.post('/files/:filename',
       Middlewares.allowCrossDomain,
-      BodyParser.raw({type: () => { return true; }, limit: '20mb'}), // Allow uploads without Content-Type, or with any Content-Type.
+      BodyParser.raw({type: () => { return true; }, limit: options.maxUploadSize || '20mb'}), // Allow uploads without Content-Type, or with any Content-Type.
       Middlewares.handleParseHeaders,
       this.createHandler
     );

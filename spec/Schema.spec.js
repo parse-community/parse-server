@@ -29,6 +29,17 @@ describe('Schema', () => {
     });
   });
 
+  it('can validate one object with dot notation', (done) => {
+    config.database.loadSchema().then((schema) => {
+      return schema.validateObject('TestObjectWithSubDoc', {x: false, y: 'YY', z: 1, 'aObject.k1': 'newValue'});
+    }).then((schema) => {
+      done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
   it('can validate two objects in a row', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('Foo', {x: true, y: 'yyy', z: 0});
