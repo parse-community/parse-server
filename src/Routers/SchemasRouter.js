@@ -164,7 +164,7 @@ function modifySchema(req) {
         .then(() => schema.deleteField(
           submittedFieldName,
           className,
-          req.config.database.db,
+          req.config.database.adapter.database,
           req.config.database.collectionPrefix
         ));
         deletionPromises.push(promise);
@@ -246,7 +246,7 @@ function deleteSchema(req) {
                   //tried to delete non-existant class
                   resolve({ response: {}});
                 } else {
-                  removeJoinTables(req.config.database.db, req.config.database.collectionPrefix, doc.value)
+                  removeJoinTables(req.config.database.adapter.database, req.config.database.collectionPrefix, doc.value)
                   .then(resolve, reject);
                 }
               });

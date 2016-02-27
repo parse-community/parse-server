@@ -24,15 +24,8 @@ function DatabaseController(adapter, { collectionPrefix } = {}) {
 
 // Connects to the database. Returns a promise that resolves when the
 // connection is successful.
-// this.db will be populated with a Mongo "Db" object when the
-// promise resolves successfully.
 DatabaseController.prototype.connect = function() {
-  if (this.adapter.connectionPromise) {
-    return this.adapter.connectionPromise;
-  }
-  return this.adapter.connect().then(() => {
-    this.db = this.adapter.database;
-  });
+  return this.adapter.connect();
 };
 
 // Returns a promise for a Mongo collection.
@@ -47,7 +40,7 @@ DatabaseController.prototype.collection = function(className) {
 
 DatabaseController.prototype.rawCollection = function(className) {
   return this.connect().then(() => {
-    return this.db.collection(this.collectionPrefix + className);
+    return this.adapter.database.collection(this.collectionPrefix + className);
   });
 };
 
@@ -353,7 +346,7 @@ DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
 
   return this.connect().then(() => {
-    return this.db.collections();
+    return this.adapter.database.collections();
   }).then((colls) => {
     var promises = [];
     for (var coll of colls) {

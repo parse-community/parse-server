@@ -520,11 +520,11 @@ describe('Schema', () => {
       return obj2.save();
     })
     .then(() => {
-      config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+      config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
         expect(err).toEqual(null);
         config.database.loadSchema()
-        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.db, 'test_'))
-        .then(() => config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
+        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.adapter.database, 'test_'))
+        .then(() => config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
           expect(err).not.toEqual(null);
           done();
         }))
@@ -538,7 +538,7 @@ describe('Schema', () => {
     var obj2 = hasAllPODobject();
     var p = Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.db, 'test_'))
+    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.adapter.database, 'test_'))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
     .then(obj1Reloaded => {
       expect(obj1Reloaded.get('aString')).toEqual(undefined);
@@ -568,7 +568,7 @@ describe('Schema', () => {
       expect(obj1.get('aPointer').id).toEqual(obj1.id);
     })
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database.db, 'test_'))
+    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database.adapter.database, 'test_'))
     .then(() => new Parse.Query('NewClass').get(obj1.id))
     .then(obj1 => {
       expect(obj1.get('aPointer')).toEqual(undefined);
