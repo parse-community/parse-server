@@ -2,7 +2,6 @@
 // Parse database.
 
 var mongodb = require('mongodb');
-var MongoClient = mongodb.MongoClient;
 var Parse = require('parse/node').Parse;
 
 var Schema = require('./../Schema');
@@ -10,10 +9,10 @@ var transform = require('./../transform');
 
 // options can contain:
 //   collectionPrefix: the string to put in front of every collection name.
-function DatabaseController(mongoURI, options = {}) {
-  this.mongoURI = mongoURI;
+function DatabaseController(adapter, { collectionPrefix } = {}) {
+  this.adapter = adapter;
 
-  this.collectionPrefix = options.collectionPrefix;
+  this.collectionPrefix = collectionPrefix;
 
   // We don't want a mutable this.schema, because then you could have
   // one request that uses different schemas for different parts of
@@ -28,17 +27,12 @@ function DatabaseController(mongoURI, options = {}) {
 // this.db will be populated with a Mongo "Db" object when the
 // promise resolves successfully.
 DatabaseController.prototype.connect = function() {
-  if (this.connectionPromise) {
-    // There's already a connection in progress.
-    return this.connectionPromise;
+  if (this.adapter.connectionPromise) {
+    return this.adapter.connectionPromise;
   }
-
-  this.connectionPromise = Promise.resolve().then(() => {
-    return MongoClient.connect(this.mongoURI);
-  }).then((db) => {
-    this.db = db;
+  return this.adapter.connect().then(() => {
+    this.db = this.adapter.database;
   });
-  return this.connectionPromise;
 };
 
 // Returns a promise for a Mongo collection.
