@@ -25,6 +25,7 @@ export class Config {
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     
     this.serverURL = cacheInfo.serverURL;
+    this.publicServerURL = cacheInfo.publicServerURL;
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.appName = cacheInfo.appName;
 
@@ -34,32 +35,36 @@ export class Config {
     this.loggerController = cacheInfo.loggerController;
     this.userController = cacheInfo.userController;
     this.oauth = cacheInfo.oauth;
-
+    this.customPages = cacheInfo.customPages || {};
     this.mount = mount;
   }
   
+  get linksServerURL() {
+    return this.publicServerURL || this.serverURL;
+  }
+  
   get invalidLinkURL() {
-    return `${this.serverURL}/apps/invalid_link.html`;
+    return this.customPages.invalidLink || `${this.linksServerURL}/apps/invalid_link.html`;
   }
   
   get verifyEmailSuccessURL() {
-    return `${this.serverURL}/apps/verify_email_success.html`;
+    return this.customPages.verifyEmailSuccess || `${this.linksServerURL}/apps/verify_email_success.html`;
   }
   
   get choosePasswordURL() {
-    return `${this.serverURL}/apps/choose_password`;
+    return this.customPages.choosePassword || `${this.linksServerURL}/apps/choose_password`;
   }
   
   get requestResetPasswordURL() {
-    return `${this.serverURL}/apps/${this.applicationId}/request_password_reset`;
+    return `${this.linksServerURL}/apps/${this.applicationId}/request_password_reset`;
   }
   
   get passwordResetSuccessURL() {
-    return `${this.serverURL}/apps/password_reset_success.html`;
+    return this.customPages.passwordResetSuccess || `${this.linksServerURL}/apps/password_reset_success.html`;
   }
   
   get verifyEmailURL() {
-    return `${this.serverURL}/apps/${this.applicationId}/verify_email`;
+    return `${this.linksServerURL}/apps/${this.applicationId}/verify_email`;
   }
 };
 

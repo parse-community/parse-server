@@ -38,7 +38,7 @@ export class UserController extends AdaptableController {
   }
   
   
-  verifyEmail(username, token, config = this.config) {
+  verifyEmail(username, token) {
     
     return new Promise((resolve, reject) => {
       
@@ -48,7 +48,7 @@ export class UserController extends AdaptableController {
         return;
       }
       
-      var database = config.database;
+      var database = this.config.database;
      
       database.collection('_User').then(coll => {
         // Need direct database access because verification token is not a parse field
@@ -57,9 +57,9 @@ export class UserController extends AdaptableController {
           _email_verify_token: token,
         }, null, {$set: {emailVerified: true}}, (err, doc) => {
           if (err || !doc.value) {
-            reject();
+            reject(err);
           } else {
-            resolve();
+            resolve(doc.value);
           }
         });
       });
@@ -67,9 +67,9 @@ export class UserController extends AdaptableController {
     });    
   }
   
-  checkResetTokenValidity(username, token, config = this.config) {
+  checkResetTokenValidity(username, token) {
     return new Promise((resolve, reject) => {
-      return config.database.collection('_User').then(coll => {
+      return this.config.database.collection('_User').then(coll => {
         return coll.findOne({
           username: username,
           _perishable_token: token,
@@ -85,7 +85,7 @@ export class UserController extends AdaptableController {
   }
   
 
-  sendVerificationEmail(user, config = this.config) {
+  sendVerificationEmail(user) {
     if (!this.shouldVerifyEmails) {
       return;
     }
@@ -93,16 +93,16 @@ export class UserController extends AdaptableController {
     const token = encodeURIComponent(user._email_verify_token);
     const username = encodeURIComponent(user.username);
    
-    let link = `${config.verifyEmailURL}?token=${token}&username=${username}`;
+    let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
     this.adapter.sendVerificationEmail({
-      appName: config.appName,
+      appName: this.config.appName,
       link: link,
       user: inflate('_User', user),
     });
   }
   
-  setPasswordResetToken(email, config = this.config) {
-    var database = config.database;
+  setPasswordResetToken(email) {
+    var database = this.config.database;
     var token = randomString(25);
     return new Promise((resolve, reject) => {
       return database.collection('_User').then(coll => {
@@ -122,7 +122,7 @@ export class UserController extends AdaptableController {
     });
   }
 
-  sendPasswordResetEmail(email, config = this.config) {
+  sendPasswordResetEmail(email) {
     if (!this.adapter) {
       throw "Trying to send a reset password but no adapter is set";
       //  TODO: No adapter?
@@ -133,26 +133,20 @@ export class UserController extends AdaptableController {
 
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);    
-      let link = `${config.requestResetPasswordURL}?token=${token}&username=${username}`
+      let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
       this.adapter.sendPasswordResetEmail({
-        appName: config.appName,
+        appName: this.config.appName,
         link: link,
         user: inflate('_User', user),
       });
       return Promise.resolve(user);
-    }, (err) => {
-      return Promise.reject(err);
     });
   }
   
-  updatePassword(username, token, password, config = this.config) {
-   return this.checkResetTokenValidity(username, token, config).then(() => {
-     return updateUserPassword(username, token, password, config);
+  updatePassword(username, token, password, config) {
+   return this.checkResetTokenValidity(username, token).then(() => {
+     return updateUserPassword(username, token, password, this.config);
    });
-  }
-
-  sendMail(options) {
-    this.adapter.sendMail(options);
   }
 }
 

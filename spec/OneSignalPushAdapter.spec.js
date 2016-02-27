@@ -20,11 +20,11 @@ describe('OneSignalPushAdapter', () => {
     done();
   });
   
-  it('cannt be initialized if options are missing', (done) => {
+  it('cannot be initialized if options are missing', (done) => {
 
     expect(() => {
       new OneSignalPushAdapter();
-    }).toThrow("Trying to initialiazed OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey");
+    }).toThrow("Trying to initialize OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey");
     done();
   });
 

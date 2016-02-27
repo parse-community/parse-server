@@ -20,7 +20,7 @@ export class OneSignalPushAdapter extends PushAdapter {
     this.OneSignalConfig = {};
     const { oneSignalAppId, oneSignalApiKey } = pushConfig;
     if (!oneSignalAppId || !oneSignalApiKey) {
-      throw "Trying to initialiazed OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey";
+      throw "Trying to initialize OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey";
     }
     this.OneSignalConfig['appId'] = pushConfig['oneSignalAppId'];
     this.OneSignalConfig['apiKey'] = pushConfig['oneSignalApiKey'];

@@ -465,12 +465,18 @@ RestWrite.prototype.transformUser = function() {
                                 'address');
         }
         return Promise.resolve();
-      });
+      }).then(() => {
+        // We updated the email, send a new validation
+        this.storage['sendVerificationEmail'] = true;
+        this.config.userController.setEmailVerifyToken(this.data);
+        return Promise.resolve();
+      })
   });
 };
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
+  
   if (this.storage && this.storage['clearSessions']) {
     var sessionQuery = {
       user: {
@@ -480,8 +486,15 @@ RestWrite.prototype.handleFollowup = function() {
         }
     };
     delete this.storage['clearSessions'];
-    return this.config.database.destroy('_Session', sessionQuery)
+    this.config.database.destroy('_Session', sessionQuery)
     .then(this.handleFollowup.bind(this));
+  }
+  
+  if (this.storage && this.storage['sendVerificationEmail']) {
+    delete this.storage['sendVerificationEmail'];
+    // Fire and forget!
+    this.config.userController.sendVerificationEmail(this.data);
+    this.handleFollowup.bind(this);
   }
 };
 

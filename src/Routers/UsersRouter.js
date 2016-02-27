@@ -27,17 +27,17 @@ export class UsersRouter extends ClassesRouter {
     req.body = data;
     req.params.className = '_User';
 
-    req.config.userController.setEmailVerifyToken(req.body);
+    //req.config.userController.setEmailVerifyToken(req.body);
 
-    let p = super.handleCreate(req);
+    return super.handleCreate(req);
   
-  if (req.config.verifyUserEmails) {
-      // Send email as fire-and-forget once the user makes it into the DB.
-      p.then(() => {
-        req.config.userController.sendVerificationEmail(req.body);
-      });
-    }
-    return p;
+  // if (req.config.verifyUserEmails) {
+  //     // Send email as fire-and-forget once the user makes it into the DB.
+  //     p.then(() => {
+  //       req.config.userController.sendVerificationEmail(req.body);
+  //     });
+  //   }
+  //   return p;
   }
 
   handleUpdate(req) {

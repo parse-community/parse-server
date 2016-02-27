@@ -107,6 +107,13 @@ function ParseServer({
   maxUploadSize = '20mb',
   verifyUserEmails = false,
   emailAdapter,
+  publicServerURL,
+  customPages = {
+    invalidLink: undefined,
+    verifyEmailSuccess: undefined,
+    choosePassword: undefined,
+    passwordResetSuccess: undefined
+  },
 }) {
   
   // Initialize the node client SDK automatically
@@ -119,6 +126,12 @@ function ParseServer({
 
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
+  }
+  
+  if (verifyUserEmails && !publicServerURL && !process.env.TESTING) {
+    console.warn("");
+    console.warn("You should set publicServerURL to serve the public pages");
+    console.warn("");
   }
   
   if (cloud) {
@@ -165,6 +178,8 @@ function ParseServer({
     allowClientClassCreation: allowClientClassCreation,
     oauth: oauth,
     appName: appName,
+    publicServerURL: publicServerURL,
+    customPages: customPages,
   });
 
   // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
@@ -181,12 +196,8 @@ function ParseServer({
     maxUploadSize: maxUploadSize
   }));
 
-  if (process.env.PARSE_EXPERIMENTAL_EMAIL_VERIFICATION_ENABLED || process.env.TESTING == 1) {
-    // need the body parser for the password reset
-    api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());    
-  }
-
-
+  api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());    
+  
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
     api.use('/', require('./testing-routes').router);

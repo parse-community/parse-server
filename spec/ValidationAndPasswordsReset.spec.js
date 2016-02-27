@@ -1,6 +1,40 @@
 "use strict";
 
 var request = require('request');
+var Config = require("../src/Config");
+describe("Custom Pages Configuration", () => {
+  it("should set the custom pages", (done) => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      customPages: {
+        invalidLink: "myInvalidLink",
+        verifyEmailSuccess: "myVerifyEmailSuccess",
+        choosePassword: "myChoosePassword",
+        passwordResetSuccess: "myPasswordResetSuccess"
+      },
+      publicServerURL: "https://my.public.server.com/1"
+    });
+    
+    var config = new Config("test");
+    
+    expect(config.invalidLinkURL).toEqual("myInvalidLink");
+    expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
+    expect(config.choosePasswordURL).toEqual("myChoosePassword");
+    expect(config.passwordResetSuccessURL).toEqual("myPasswordResetSuccess");
+    expect(config.verifyEmailURL).toEqual("https://my.public.server.com/1/apps/test/verify_email");
+    expect(config.requestResetPasswordURL).toEqual("https://my.public.server.com/1/apps/test/request_password_reset");
+    done();
+  });
+});
 
 describe("Email Verification", () => {
   it('sends verification email if email verification is enabled', done => {
@@ -27,11 +61,98 @@ describe("Email Verification", () => {
     var user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
+    user.setEmail('cool_guy@parse.com');
     user.signUp(null, {
       success: function(user) {
         expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
         user.fetch()
         .then(() => {
+          expect(user.get('emailVerified')).toEqual(false);
+          done();
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+  
+  it('does not send verification email when verification is enabled and email is not set', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail');
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+        user.fetch()
+        .then(() => {
+          expect(user.get('emailVerified')).toEqual(undefined);
+          done();
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+  
+  it('does send a validation email when updating the email', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail');
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+        user.fetch()
+        .then((user) => {
+          user.set("email", "cool_guy@parse.com");
+          return user.save();
+        }).then((user) => {
+          expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+          return user.fetch();
+        }).then(() => {
           expect(user.get('emailVerified')).toEqual(false);
           done();
         });
