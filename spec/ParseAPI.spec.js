@@ -384,7 +384,7 @@ describe('miscellaneous', function() {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId);
+      var db = DatabaseAdapter.getDatabaseConnection(appId, 'test_');
       return db.mongoFind('TestObject', {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);

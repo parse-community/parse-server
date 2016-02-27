@@ -124,7 +124,7 @@ function ParseServer({
   const filesController = new FilesController(filesControllerAdapter);
   const pushController = new PushController(pushControllerAdapter);
   const loggerController = new LoggerController(loggerControllerAdapter);
-  const hooksController = new HooksController(appId);
+  const hooksController = new HooksController(appId, collectionPrefix);
   
   cache.apps[appId] = {
     masterKey: masterKey,
@@ -141,7 +141,7 @@ function ParseServer({
     hooksController: hooksController,
     enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
-    oauth: oauth,
+    oauth: oauth
   };
 
   // To maintain compatibility. TODO: Remove in v2.1
