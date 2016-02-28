@@ -335,10 +335,37 @@ describe('Parse.Object testing', () => {
        'Item should not be updated with invalid key.');
     item.save({ "foo^bar": "baz" }).then(fail, done);
   });
-  
+
   it("invalid __type", function(done) {
-    var item = new Parse.Object("Item");    
-    item.save({ "foo": {__type: "IvalidName"} }).then(fail, done);
+    var item = new Parse.Object("Item");
+    var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes'];
+    var Error = Parse.Error;
+    var tests = types.map(type => {
+      var test = new Parse.Object("Item");
+      test.set('foo', {
+        __type: type
+      });
+      return test;
+    });
+    var next = function(index) {
+      if (index < tests.length) {
+        tests[index].save().then(fail, error => {
+          if (types[index] === 'Pointer') {
+            expect(error.code).toEqual(Parse.Error.INVALID_POINTER);
+          } else {
+            expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
+          }
+          next(index + 1);
+        });
+      } else {
+        done();
+      }
+    }
+    item.save({
+      "foo": {
+        __type: "IvalidName"
+      }
+    }).then(fail, err => next(0));
   });
 
   it("simple field deletion", function(done) {
