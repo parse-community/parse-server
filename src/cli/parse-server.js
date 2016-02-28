@@ -4,7 +4,6 @@ import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
-import { FileSystemAdapter } from '../Adapters/Files/FileSystemAdapter';
 
 program.loadDefinitions(definitions);
 
