@@ -150,10 +150,67 @@ describe("Email Verification", () => {
           user.set("email", "cool_guy@parse.com");
           return user.save();
         }).then((user) => {
-          expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
           return user.fetch();
         }).then(() => {
           expect(user.get('emailVerified')).toEqual(false);
+          // Wait as on update emai, we need to fetch the username
+          setTimeout(function(){
+            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+            done();
+          }, 200);
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+  
+  it('does send with a simple adapter', done => {
+    var calls = 0;
+    var emailAdapter = {
+      sendMail: function(options){
+        expect(options.to).toBe('cool_guy@parse.com');
+        if (calls == 0) {
+          expect(options.subject).toEqual('Please verify your e-mail for My Cool App');
+          expect(options.text.match(/verify_email/)).not.toBe(null);
+        } else if (calls == 1) {
+          expect(options.subject).toEqual('Password Reset for My Cool App');
+          expect(options.text.match(/request_password_reset/)).not.toBe(null);
+        }
+        calls++;
+        return Promise.resolve();
+      }
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'My Cool App',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+    });
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.set("email", "cool_guy@parse.com");
+    user.signUp(null, {
+      success: function(user) {
+        expect(calls).toBe(1);
+        user.fetch()
+        .then((user) => {
+          return user.save();
+        }).then((user) => {
+          return Parse.User.requestPasswordReset("cool_guy@parse.com");
+        }).then(() => {
+          expect(calls).toBe(2);
           done();
         });
       },

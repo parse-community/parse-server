@@ -25,31 +25,6 @@ let SimpleMailgunAdapter = mailgunOptions => {
 	}
 
 	return Object.freeze({
-		sendVerificationEmail: ({ link, user, appName, }) => {
-			let verifyMessage =
-	      "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
-	      "" +
-	      "Click here to confirm it:\n" + link;
-			return sendMail({ 
-        to:user.email, 
-        subject: 'Please verify your e-mail for ' + appName, 
-        text: verifyMessage
-      });
-		},
-    
-    sendPasswordResetEmail: ({link,user, appName}) => {
-      let message =
-        "Hi,\n\n" + 
-        "You requested to reset your password for " + appName + ".\n\n" +
-        "" +
-        "Click here to reset it:\n" + link; 
-      return sendMail({ 
-        to:user.email, 
-        subject: 'Password Reset for ' + appName, 
-        text: message
-      });
-    },
     sendMail: sendMail
 	});
 }
