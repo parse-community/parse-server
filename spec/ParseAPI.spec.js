@@ -372,6 +372,15 @@ describe('miscellaneous', function() {
       done();
     });
   });
+  
+  it('test cloud function shoud echo keys', function(done) {
+    Parse.Cloud.run('echoKeys').then((result) => {
+      expect(result.applicationId).toEqual(Parse.applicationId);
+      expect(result.masterKey).toEqual(Parse.masterKey);
+      expect(result.javascriptKey).toEqual(Parse.javascriptKey);
+      done();
+    });
+  });
 
   it('test rest_create_app', function(done) {
     var appId;
