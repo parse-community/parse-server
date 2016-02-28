@@ -7,7 +7,7 @@ const cryptoUtils = require('./cryptoUtils');
 const GCMTimeToLiveMax = 4 * 7 * 24 * 60 * 60; // GCM allows a max of 4 weeks
 const GCMRegistrationTokensMax = 1000;
 
-function GCM(args) {
+export function GCM(args) {
   if (typeof args !== 'object' || !args.apiKey) {
     throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                           'GCM Configuration is invalid');
@@ -54,7 +54,8 @@ GCM.prototype.send = function(data, devices) {
   }
   // Generate gcm payload
   // PushId is not a formal field of GCM, but Parse Android SDK uses this field to deduplicate push notifications
-  let gcmPayload = generateGCMPayload(data.data, pushId, timestamp, expirationTime);
+  let gcmPayload = generateGCMPayload(data.data, null, null, data.expirationTime);
+
   // Make and send gcm request
   let message = new gcm.Message(gcmPayload);
 
@@ -109,18 +110,23 @@ GCM.prototype.send = function(data, devices) {
  * @param {Number|undefined} expirationTime A number whose format is the Unix Epoch or undefined
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
-function generateGCMPayload(coreData, pushId, timeStamp, expirationTime) {
+export function generateGCMPayload(coreData, pushId, timeStamp, expirationTime) {
+  pushId = pushId || cryptoUtils.newObjectId();
+  timeStamp = timeStamp || Date.now();
+
   let payloadData =  {
     'time': new Date(timeStamp).toISOString(),
     'push_id': pushId,
     'data': JSON.stringify(coreData)
   }
+
   let payload = {
     priority: 'normal',
     data: payloadData
   };
+
   if (expirationTime) {
-   // The timeStamp and expiration is in milliseconds but gcm requires second
+    // The timeStamp and expiration is in milliseconds but gcm requires second
     let timeToLive = Math.floor((expirationTime - timeStamp) / 1000);
     if (timeToLive < 0) {
       timeToLive = 0;
@@ -130,6 +136,7 @@ function generateGCMPayload(coreData, pushId, timeStamp, expirationTime) {
     }
     payload.timeToLive = timeToLive;
   }
+
   return payload;
 }
 
@@ -151,4 +158,3 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   GCM.generateGCMPayload = generateGCMPayload;
   GCM.sliceDevices = sliceDevices;
 }
-module.exports = GCM;
