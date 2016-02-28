@@ -100,3 +100,11 @@ Parse.Cloud.define('requiredParameterCheck', function(req, res) {
 }, function(params) {
   return params.name;
 });
+
+Parse.Cloud.define('echoKeys', function(req, res){
+  return res.success({
+    applicationId: Parse.applicationId,
+    masterKey: Parse.masterKey,
+    javascriptKey: Parse.javascriptKey
+  })
+});
