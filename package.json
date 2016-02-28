@@ -26,6 +26,7 @@
     "commander": "^2.9.0",
     "deepcopy": "^0.6.1",
     "express": "^4.13.4",
+    "gcloud": "^0.28.0",
     "mime": "^1.3.4",
     "mongodb": "~2.1.0",
     "multer": "^1.1.0",

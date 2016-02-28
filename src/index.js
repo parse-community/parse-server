@@ -14,6 +14,7 @@ import cache                   from './cache';
 import PromiseRouter           from './PromiseRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';
+import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
 import { FilesController }     from './Controllers/FilesController';
 
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
@@ -91,11 +92,11 @@ function ParseServer({
   serverURL = requiredParameter('You must provide a serverURL!'),
   maxUploadSize = '20mb'
 }) {
-  
+
   // Initialize the node client SDK automatically
   Parse.initialize(appId, javascriptKey || 'unused', masterKey);
   Parse.serverURL = serverURL;
-  
+
   if (databaseAdapter) {
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
@@ -103,7 +104,7 @@ function ParseServer({
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
   }
-  
+
   if (cloud) {
     addParseCloud();
     if (typeof cloud === 'function') {
@@ -125,7 +126,7 @@ function ParseServer({
   const pushController = new PushController(pushControllerAdapter);
   const loggerController = new LoggerController(loggerControllerAdapter);
   const hooksController = new HooksController(appId, collectionPrefix);
-  
+
   cache.apps[appId] = {
     masterKey: masterKey,
     collectionPrefix: collectionPrefix,
@@ -185,7 +186,7 @@ function ParseServer({
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(require('./global_config'));
   }
-  
+
   if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
     routers.push(new HooksRouter());
   }
@@ -229,5 +230,6 @@ function getClassName(parseClass) {
 
 module.exports = {
   ParseServer: ParseServer,
-  S3Adapter: S3Adapter
+  S3Adapter: S3Adapter,
+  GCSAdapter: GCSAdapter
 };
