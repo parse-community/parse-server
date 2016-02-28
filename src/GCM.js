@@ -7,7 +7,7 @@ const cryptoUtils = require('./cryptoUtils');
 const GCMTimeToLiveMax = 4 * 7 * 24 * 60 * 60; // GCM allows a max of 4 weeks
 const GCMRegistrationTokensMax = 1000;
 
-function GCM(args) {
+export function GCM(args) {
   if (typeof args !== 'object' || !args.apiKey) {
     throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                           'GCM Configuration is invalid');
@@ -52,7 +52,8 @@ GCM.prototype.send = function(data, devices) {
     expirationTime = data['expiration_time'];
   }
   // Generate gcm payload
-  let gcmPayload = generateGCMPayload(data.data, timestamp, expirationTime);
+  let gcmPayload = generateGCMPayload(data.data, null, data.expirationTime);
+
   // Make and send gcm request
   let message = new gcm.Message(gcmPayload);
 
@@ -107,17 +108,21 @@ GCM.prototype.send = function(data, devices) {
  * @param {Number|undefined} expirationTime A number whose format is the Unix Epoch or undefined
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
-function generateGCMPayload(coreData, timeStamp, expirationTime) {
+export function generateGCMPayload(coreData, timeStamp, expirationTime) {
+  timeStamp = timeStamp || Date.now();
+
   let payloadData =  {
     'time': new Date(timeStamp).toISOString(),
     'data': JSON.stringify(coreData)
   }
+
   let payload = {
     priority: 'normal',
     data: payloadData
   };
+
   if (expirationTime) {
-   // The timeStamp and expiration is in milliseconds but gcm requires second
+    // The timeStamp and expiration is in milliseconds but gcm requires second
     let timeToLive = Math.floor((expirationTime - timeStamp) / 1000);
     if (timeToLive < 0) {
       timeToLive = 0;
@@ -127,6 +132,7 @@ function generateGCMPayload(coreData, timeStamp, expirationTime) {
     }
     payload.timeToLive = timeToLive;
   }
+
   return payload;
 }
 
@@ -148,4 +154,3 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   GCM.generateGCMPayload = generateGCMPayload;
   GCM.sliceDevices = sliceDevices;
 }
-module.exports = GCM;
