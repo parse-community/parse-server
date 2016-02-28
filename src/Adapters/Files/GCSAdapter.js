@@ -34,7 +34,7 @@ export class GCSAdapter extends FilesAdapter {
     return new Promise((resolve, reject) => {
       let file = this._gcsClient.bucket(this._bucket).file(this._bucketPrefix + filename);
       // gcloud supports upload(file) not upload(bytes), so we need to stream.
-      var uploadStream = file.createWriteStream(options);
+      var uploadStream = file.createWriteStream();
       uploadStream.on('error', (err) => {
         return reject(err);
       }).on('finish', () => {
