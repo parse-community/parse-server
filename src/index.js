@@ -46,6 +46,7 @@ import { SessionsRouter }      from './Routers/SessionsRouter';
 import { setFeature }          from './features';
 import { UserController }      from './Controllers/UserController';
 import { UsersRouter }         from './Routers/UsersRouter';
+import { FilesController }     from './Controllers/FilesController';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -265,5 +266,6 @@ function addParseCloud() {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
-  GCSAdapter: GCSAdapter
+  GCSAdapter: GCSAdapter,
+  FileSystemAdapter: FileSystemAdapter
 };
