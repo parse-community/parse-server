@@ -21,7 +21,7 @@ export class FileSystemAdapter extends FilesAdapter {
   // Returns a promise
   createFile(config, filename, data) {
     return new Promise((resolve, reject) => {
-      let filepath = this._getLocalFilePath(config, filename);
+      let filepath = this._getLocalFilePath(filename);
       fs.writeFile(filepath, data, (err) => {
         if(err !== null) {
           return reject(err);
@@ -33,7 +33,7 @@ export class FileSystemAdapter extends FilesAdapter {
 
   deleteFile(config, filename) {
     return new Promise((resolve, reject) => {
-      let filepath = this._getLocalFilePath(config, filename);
+      let filepath = this._getLocalFilePath(filename);
       fs.readFile( filepath , function (err, data) {
         if(err !== null) {
           return reject(err);
@@ -51,7 +51,7 @@ export class FileSystemAdapter extends FilesAdapter {
 
   getFileData(config, filename) {
     return new Promise((resolve, reject) => {
-      let filepath = this._getLocalFilePath(config, filename);
+      let filepath = this._getLocalFilePath(filename);
       fs.readFile( filepath , function (err, data) {
         if(err !== null) {
           return reject(err);
@@ -62,14 +62,14 @@ export class FileSystemAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return (config.mount + '/' + this._getLocalFilePath(config, filename));
+    return (config.mount + '/' + this._getLocalFilePath(filename));
   }
 
   /*
     Helpers
    --------------- */
 
-  _getLocalFilePath(config, filename) {
+  _getLocalFilePath(filename) {
     let filesDir = 'files';
     let applicationDir = filesDir + '/' + this._filesDir;
     if (!fs.existsSync(applicationDir)) {
