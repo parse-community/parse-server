@@ -46,8 +46,9 @@ export class GCSAdapter extends FilesAdapter {
             }
             resolve();
           });
+        } else {
+          resolve();
         }
-        resolve();
       });
       uploadStream.write(data);
       uploadStream.end();
