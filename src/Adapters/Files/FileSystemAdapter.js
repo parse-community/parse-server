@@ -4,9 +4,19 @@
 // Requires write access to the server's file system.
 
 import { FilesAdapter } from './FilesAdapter';
+import colors from 'colors';
 var fs = require('fs');
+var path = require('path');
 
 export class FileSystemAdapter extends FilesAdapter {
+
+  constructor({filesSubDirectory = ''} = {}) {
+    super();
+
+    this._filesDir = filesSubDirectory;
+    this._mkdir(filesSubDirectory);
+  }
+
   // For a given config object, filename, and data, store a file
   // Returns a promise
   createFile(config, filename, data) {
@@ -55,17 +65,37 @@ export class FileSystemAdapter extends FilesAdapter {
     return (config.mount + '/' + this._getLocalFilePath(config, filename));
   }
 
+  /*
+    Helpers
+   --------------- */
+
   _getLocalFilePath(config, filename) {
     let filesDir = 'files';
-    if (!fs.existsSync(filesDir)) {
-      fs.mkdirSync(filesDir);
-    }
-
-    let applicationDir = filesDir + '/' + config.applicationId;
+    let applicationDir = filesDir + '/' + this._filesDir;
     if (!fs.existsSync(applicationDir)) {
-      fs.mkdirSync(applicationDir);
+      this._mkdir(applicationDir);
     }
     return (applicationDir + '/' + encodeURIComponent(filename));
+  }
+
+  _mkdir(path, root) {
+    // snippet found on -> http://stackoverflow.com/a/10600228
+    var dirs = path.split('/'), dir = dirs.shift(), root = (root || '') + dir + '/';
+
+    try {
+      fs.mkdirSync(root);
+    }
+    catch (e) {
+      if ( e.code == 'EACCES' ) {
+          console.error("");
+          console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
+          console.error("");
+          process.exit(1);
+      }
+      //dir wasn't made, something went wrong
+      if(!fs.statSync(root).isDirectory()) throw new Error(e);
+    }
+    return !dirs.length || this._mkdir(dirs.join('/'), root);
   }
 }
 
