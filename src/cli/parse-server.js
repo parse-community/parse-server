@@ -4,7 +4,6 @@ import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
-import { FileSystemAdapter } from '../Adapters/Files/FileSystemAdapter';
 
 program.loadDefinitions(definitions);
 
@@ -60,21 +59,6 @@ options = Object.keys(definitions).reduce(function (options, key) {
 
 if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
-}
-
-if (options.filesAdapter instanceof FileSystemAdapter) {
-  var fs = require('fs');
-
-  try {
-    fs.mkdirSync('files');
-  } catch(e) {
-    if ( e.code == 'EACCES' ) {
-        console.error("");
-        console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
-        console.error("");
-        process.exit(1);
-    }
-  }
 }
 
 const app = express();
