@@ -17,7 +17,9 @@ var GCP_PROJECT_ID = "<gcp_project_id>";
 var GCP_KEYFILE_PATH = "<path/to/keyfile>";
 var GCS_BUCKET_NAME = "<gcs_bucket_name>";
 
-describe('Parse.File testing', () => {
+// Note the 'xdescribe', make sure to delete the 'x' once the above vars
+// are filled in to run the test suite
+xdescribe('Parse.File GCS testing', () => {
   describe('GCS directAccess: false', () => {
     beforeEach(function(done){
       var port = 8378;
