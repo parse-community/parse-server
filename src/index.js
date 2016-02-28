@@ -47,6 +47,7 @@ import { setFeature }          from './features';
 import { UserController }      from './Controllers/UserController';
 import { UsersRouter }         from './Routers/UsersRouter';
 import { FilesController }     from './Controllers/FilesController';
+import { FileSystemAdapter }   from './Adapters/Files/FileSystemAdapter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();

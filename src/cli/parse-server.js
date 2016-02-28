@@ -4,6 +4,7 @@ import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
+import { FileSystemAdapter } from '../Adapters/Files/FileSystemAdapter';
 
 program.loadDefinitions(definitions);
 
@@ -42,6 +43,14 @@ if (program.args.length > 0 ) {
   console.log(`Configuation loaded from ${jsonPath}`)
 } 
 
+if (!program.appId || !program.masterKey || !program.serverURL) {
+  program.outputHelp();
+  console.error("");
+  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
+  console.error("");
+  process.exit(1);
+}
+
 options = Object.keys(definitions).reduce(function (options, key) {
   if (program[key]) {
     options[key] = program[key];
@@ -53,19 +62,26 @@ if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
 }
 
-if (!options.appId || !options.masterKey || !options.serverURL) {
-  program.outputHelp();
-  console.error("");
-  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
-  console.error("");
-  process.exit(1);
+if (options.filesAdapter instanceof FileSystemAdapter) {
+  var fs = require('fs');
+
+  try {
+    fs.mkdirSync('files');
+  } catch(e) {
+    if ( e.code == 'EACCES' ) {
+        console.error("");
+        console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
+        console.error("");
+        process.exit(1);
+    }
+  }
 }
 
 const app = express();
 const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-var server = app.listen(options.port, function() {
+app.listen(options.port, function() {
   
   for (let key in options) {
     let value = options[key];
@@ -77,12 +93,3 @@ var server = app.listen(options.port, function() {
   console.log('');
   console.log('parse-server running on '+options.serverURL);
 });
-
-var handleShutdown = function() {
-  console.log('Termination signal received. Shutting down.');
-  server.close(function () {
-    process.exit(0);
-  });
-};
-process.on('SIGTERM', handleShutdown);
-process.on('SIGINT', handleShutdown);
