@@ -40,8 +40,6 @@ import { HooksController }     from './Controllers/HooksController';
 
 import requiredParameter       from './requiredParameter';
 import { randomString }        from './cryptoUtils';
-// Mutate the Parse object to add the Cloud Code handlers
-addParseCloud();
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
@@ -210,7 +208,8 @@ function ParseServer({
     }
   });
   hooksController.load();
-
+  // Mutate the Parse object to add the Cloud Code handlers
+  addParseCloud();
   return api;
 }
 
