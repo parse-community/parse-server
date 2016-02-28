@@ -162,16 +162,12 @@ export class UserController extends AdaptableController {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);    
       let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
-      
-      if (!user.username) {
-        console.log('No username...');
-      }
-      
+
       let options = {
-          appName: this.config.appName,
-          link: link,
-          user: inflate('_User', user),
-        };
+        appName: this.config.appName,
+        link: link,
+        user: inflate('_User', user),
+      };
       
       if (this.adapter.sendPasswordResetEmail) {
         this.adapter.sendPasswordResetEmail(options);

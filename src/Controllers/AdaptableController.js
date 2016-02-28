@@ -16,8 +16,8 @@ export class AdaptableController {
 
   constructor(adapter, appId, options) {
     this.options = options;
-    this.adapter = adapter;
     this.appId = appId;
+    this.adapter = adapter;
   }
 
   set adapter(adapter) {
@@ -62,8 +62,7 @@ export class AdaptableController {
     }, {});
    
     if (Object.keys(mismatches).length > 0) {
-      console.error(adapter, mismatches);
-      throw new Error("Adapter prototype don't match expected prototype");
+      throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
     }
   }
 }

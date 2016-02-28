@@ -11,6 +11,7 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse;
 
 import cache                   from './cache';
+import Config                  from './Config';
 
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
 //import passwordReset           from './passwordReset';
@@ -72,17 +73,6 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 
-let validateEmailConfiguration = (verifyUserEmails, appName, emailAdapter) => {
-  if (verifyUserEmails) {
-    if (typeof appName !== 'string') {
-      throw 'An app name is required when using email verification.';
-    }
-    if (!emailAdapter) {
-      throw 'User email verification was enabled, but no email adapter was provided';
-    }
-  }
-}
-
 function ParseServer({
   appId = requiredParameter('You must provide an appId!'),
   masterKey = requiredParameter('You must provide a masterKey!'),
@@ -127,13 +117,7 @@ function ParseServer({
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
   }
-  
-  if (verifyUserEmails && !publicServerURL && !process.env.TESTING) {
-    console.warn("");
-    console.warn("You should set publicServerURL to serve the public pages");
-    console.warn("");
-  }
-  
+
   if (cloud) {
     addParseCloud();
     if (typeof cloud === 'function') {
@@ -186,6 +170,8 @@ function ParseServer({
   if (process.env.FACEBOOK_APP_ID) {
     cache.apps.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
+  
+  Config.validate(cache.apps.get(appId));
 
   // This app serves the Parse API directly.
   // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.

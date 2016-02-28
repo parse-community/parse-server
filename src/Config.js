@@ -39,6 +39,29 @@ export class Config {
     this.mount = mount;
   }
   
+  static validate(options) {
+    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
+                                appName: options.appName, 
+                                publicServerURL: options.publicServerURL})
+  }
+  
+  static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
+    if (verifyUserEmails) {
+      if (typeof appName !== 'string') {
+        throw 'An app name is required when using email verification.';
+      }
+      if (!process.env.TESTING && typeof publicServerURL !== 'string') {
+        if (process.env.NODE_ENV === 'production') {
+          throw 'A public server url is required when using email verification.';
+        } else {
+          console.warn("");
+          console.warn("You should set publicServerURL to serve the public pages");
+          console.warn("");
+        }
+      }
+    }
+  }
+  
   get linksServerURL() {
     return this.publicServerURL || this.serverURL;
   }
