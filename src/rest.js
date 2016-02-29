@@ -46,7 +46,7 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.clearUser(response.results[0].sessionToken);
+          cache.users.remove(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
         }
