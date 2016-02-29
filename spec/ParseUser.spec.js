@@ -1026,6 +1026,32 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("login with provider should not call beforeSave trigger", (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.User.logOut();
+
+        Parse.Cloud.beforeSave(Parse.User, function(req, res) {
+          res.error("Before save shouldn't be called on login");
+        });
+
+        Parse.User._logInWith("facebook", {
+          success: function(innerModel) {
+            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+            done();
+          },
+          error: function(model, error) {
+            ok(undefined, error);
+            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+            done();
+          }
+        });
+      }
+    });
+  });
+
   it("link with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
