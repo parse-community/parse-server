@@ -8,7 +8,7 @@
 // * getFileLocation(config, request, filename)
 //
 // Default is GridStoreAdapter, which requires mongo
-// and for the API server to be using the ExportAdapter
+// and for the API server to be using the DatabaseController with Mongo
 // database adapter.
 
 export class FilesAdapter {

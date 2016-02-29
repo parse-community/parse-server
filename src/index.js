@@ -45,7 +45,7 @@ addParseCloud();
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
-// "databaseAdapter": a class like ExportAdapter providing create, find,
+// "databaseAdapter": a class like DatabaseController providing create, find,
 //                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
