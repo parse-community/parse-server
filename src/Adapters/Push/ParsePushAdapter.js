@@ -14,6 +14,10 @@ export class ParsePushAdapter extends PushAdapter {
     super(pushConfig);
     this.validPushTypes = ['ios', 'android'];
     this.senderMap = {};
+    // used in PushController for Dashboard Features
+    this.feature = {
+      immediatePush: true
+    };
     let pushTypes = Object.keys(pushConfig);
     
     for (let pushType of pushTypes) {

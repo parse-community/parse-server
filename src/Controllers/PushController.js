@@ -3,8 +3,15 @@ import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
+import features from '../features';
+
+const FEATURE_NAME = 'push';
 
 export class PushController extends AdaptableController {
+
+  setFeature() {
+    features.setFeature(FEATURE_NAME, this.adapter.feature || {});
+  }
 
   /**
    * Check whether the deviceType parameter in qury condition is valid or not.
