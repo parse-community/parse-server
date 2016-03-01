@@ -369,7 +369,7 @@ describe('schemas', () => {
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(body.error).toEqual('class NoClass does not exist');
+      expect(body.error).toEqual('Class NoClass does not exist.');
       done();
     });
   });
@@ -390,7 +390,7 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('field aString exists, cannot update');
+        expect(body.error).toEqual('Field aString exists, cannot update.');
         done();
       });
     })
@@ -412,7 +412,7 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('field nonExistentKey does not exist, cannot delete');
+        expect(body.error).toEqual('Field nonExistentKey does not exist, cannot delete.');
         done();
       });
     });

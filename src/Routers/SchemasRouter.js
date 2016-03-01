@@ -1,8 +1,8 @@
 // schemas.js
 
 var express = require('express'),
-    Parse = require('parse/node').Parse,
-    Schema = require('../Schema');
+  Parse = require('parse/node').Parse,
+  Schema = require('../Schema');
 
 import PromiseRouter from '../PromiseRouter';
 
@@ -49,10 +49,10 @@ function getAllSchemas(req) {
     return masterKeyRequiredResponse();
   }
   return req.config.database.collection('_SCHEMA')
-  .then(coll => coll.find({}).toArray())
-  .then(schemas => ({response: {
-    results: schemas.map(mongoSchemaToSchemaAPIResponse)
-  }}));
+    .then(coll => coll.find({}).toArray())
+    .then(schemas => ({response: {
+      results: schemas.map(mongoSchemaToSchemaAPIResponse)
+    }}));
 }
 
 function getOneSchema(req) {
@@ -60,15 +60,15 @@ function getOneSchema(req) {
     return masterKeyRequiredResponse();
   }
   return req.config.database.collection('_SCHEMA')
-  .then(coll => coll.findOne({'_id': req.params.className}))
-  .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
-  .catch(() => ({
-    status: 400,
-    response: {
-      code: 103,
-      error: 'class ' + req.params.className + ' does not exist',
-    }
-  }));
+    .then(coll => coll.findOne({'_id': req.params.className}))
+    .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
+    .catch(() => ({
+      status: 400,
+      response: {
+        code: 103,
+        error: 'class ' + req.params.className + ' does not exist',
+      }
+    }));
 }
 
 function createSchema(req) {
@@ -91,12 +91,12 @@ function createSchema(req) {
     });
   }
   return req.config.database.loadSchema()
-  .then(schema => schema.addClassIfNotExists(className, req.body.fields))
-  .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
-  .catch(error => ({
-    status: 400,
-    response: error,
-  }));
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields))
+    .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
+    .catch(error => ({
+      status: 400,
+      response: error,
+    }));
 }
 
 function modifySchema(req) {
@@ -112,75 +112,48 @@ function modifySchema(req) {
   var className = req.params.className;
 
   return req.config.database.loadSchema()
-  .then(schema => {
-    if (!schema.data[className]) {
-      return Promise.resolve({
-        status: 400,
-        response: {
-          code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class ' + req.params.className + ' does not exist',
+    .then(schema => {
+      if (!schema.data[className]) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${req.params.className} does not exist.`);
+      }
+
+      let existingFields = schema.data[className];
+      Object.keys(submittedFields).forEach(name => {
+        let field = submittedFields[name];
+        if (existingFields[name] && field.__op !== 'Delete') {
+          throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
+        }
+        if (!existingFields[name] && field.__op === 'Delete') {
+          throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
         }
       });
-    }
-    var existingFields = schema.data[className];
 
-    for (var submittedFieldName in submittedFields) {
-      if (existingFields[submittedFieldName] && submittedFields[submittedFieldName].__op !== 'Delete') {
-        return Promise.resolve({
-          status: 400,
-          response: {
-            code: 255,
-            error: 'field ' + submittedFieldName + ' exists, cannot update',
-          }
-        });
+      let newSchema = Schema.buildMergedSchemaObject(existingFields, submittedFields);
+      let mongoObject = Schema.mongoSchemaFromFieldsAndClassName(newSchema, className);
+      if (!mongoObject.result) {
+        throw new Parse.Error(mongoObject.code, mongoObject.error);
       }
 
-      if (!existingFields[submittedFieldName] && submittedFields[submittedFieldName].__op === 'Delete') {
-        return Promise.resolve({
-          status: 400,
-          response: {
-            code: 255,
-            error: 'field ' + submittedFieldName + ' does not exist, cannot delete',
-          }
-        });
-      }
-    }
-
-    var newSchema = Schema.buildMergedSchemaObject(existingFields, submittedFields);
-    var mongoObject = Schema.mongoSchemaFromFieldsAndClassName(newSchema, className);
-    if (!mongoObject.result) {
-      return Promise.resolve({
-        status: 400,
-        response: mongoObject,
+      // Finally we have checked to make sure the request is valid and we can start deleting fields.
+      // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
+      let deletionPromises = [];
+      Object.keys(submittedFields).forEach(submittedFieldName => {
+        if (submittedFields[submittedFieldName].__op === 'Delete') {
+          let promise = schema.deleteField(submittedFieldName, className, req.config.database);
+          deletionPromises.push(promise);
+        }
       });
-    }
 
-    // Finally we have checked to make sure the request is valid and we can start deleting fields.
-    // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
-    var deletionPromises = []
-    Object.keys(submittedFields).forEach(submittedFieldName => {
-      if (submittedFields[submittedFieldName].__op === 'Delete') {
-        var promise = req.config.database.connect()
-        .then(() => schema.deleteField(
-          submittedFieldName,
-          className,
-          req.config.database.adapter.database,
-          req.config.database.collectionPrefix
-        ));
-        deletionPromises.push(promise);
-      }
+      return Promise.all(deletionPromises)
+        .then(() => new Promise((resolve, reject) => {
+          schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err, docs) => {
+            if (err) {
+              reject(err);
+            }
+            resolve({ response: mongoSchemaToSchemaAPIResponse(mongoObject.result)});
+          })
+        }));
     });
-
-    return Promise.all(deletionPromises)
-    .then(() => new Promise((resolve, reject) => {
-      schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err, docs) => {
-        if (err) {
-          reject(err);
-        }
-        resolve({ response: mongoSchemaToSchemaAPIResponse(mongoObject.result)});
-      })
-    }));
-  });
 }
 
 // A helper function that removes all join tables for a schema. Returns a promise.

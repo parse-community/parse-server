@@ -483,7 +483,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('installationId', '_Installation'))
     .catch(error => {
       expect(error.code).toEqual(136);
-      expect(error.error).toEqual('field installationId cannot be changed');
+      expect(error.message).toEqual('field installationId cannot be changed');
       done();
     });
   });
@@ -493,7 +493,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('field', 'NoClass'))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(error.error).toEqual('class NoClass does not exist');
+      expect(error.message).toEqual('Class NoClass does not exist.');
       done();
     });
   });
@@ -504,7 +504,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
     .fail(error => {
       expect(error.code).toEqual(255);
-      expect(error.error).toEqual('field missingField does not exist, cannot delete');
+      expect(error.message).toEqual('Field missingField does not exist, cannot delete.');
       done();
     });
   });
@@ -523,11 +523,11 @@ describe('Schema', () => {
       config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
         expect(err).toEqual(null);
         config.database.loadSchema()
-        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.adapter.database, 'test_'))
+        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database))
         .then(() => config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
           expect(err).not.toEqual(null);
           done();
-        }))
+        }));
       });
     })
   });
@@ -538,7 +538,7 @@ describe('Schema', () => {
     var obj2 = hasAllPODobject();
     var p = Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.adapter.database, 'test_'))
+    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
     .then(obj1Reloaded => {
       expect(obj1Reloaded.get('aString')).toEqual(undefined);
@@ -568,7 +568,7 @@ describe('Schema', () => {
       expect(obj1.get('aPointer').id).toEqual(obj1.id);
     })
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database.adapter.database, 'test_'))
+    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database))
     .then(() => new Parse.Query('NewClass').get(obj1.id))
     .then(obj1 => {
       expect(obj1.get('aPointer')).toEqual(undefined);
