@@ -42,6 +42,10 @@ DatabaseController.prototype.rawCollection = function(className) {
   return this.adapter.collection(this.collectionPrefix + className);
 };
 
+DatabaseController.prototype.dropCollection = function(className) {
+  return this.adapter.dropCollection(this.collectionPrefix + className);
+};
+
 function returnsTrue() {
   return true;
 }

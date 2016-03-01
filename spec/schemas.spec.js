@@ -396,7 +396,7 @@ describe('schemas', () => {
     })
   });
 
-  it('refuses to delete non-existant fields', done => {
+  it('refuses to delete non-existent fields', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -406,13 +406,13 @@ describe('schemas', () => {
         json: true,
         body: {
           fields: {
-            nonExistantKey: {__op: "Delete"},
+            nonExistentKey: {__op: "Delete"},
           }
         }
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('field nonExistantKey does not exist, cannot delete');
+        expect(body.error).toEqual('field nonExistentKey does not exist, cannot delete');
         done();
       });
     });
@@ -660,7 +660,8 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('class HasAllPOD not empty, contains 1 objects, cannot drop schema');
+        expect(body.error).toMatch(/HasAllPOD/);
+        expect(body.error).toMatch(/contains 1/);
         done();
       });
     });
