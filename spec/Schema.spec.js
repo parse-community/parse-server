@@ -1,3 +1,5 @@
+'use strict';
+
 var Config = require('../src/Config');
 var Schema = require('../src/Schema');
 var dd = require('deep-diff');
@@ -512,24 +514,31 @@ describe('Schema', () => {
   it('drops related collection when deleting relation field', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
-    .then(savedObj1 => {
-      var obj2 = new Parse.Object('HasPointersAndRelations');
-      obj2.set('aPointer', savedObj1);
-      var relation = obj2.relation('aRelation');
-      relation.add(obj1);
-      return obj2.save();
-    })
-    .then(() => {
-      config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
-        expect(err).toEqual(null);
-        config.database.loadSchema()
-        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database))
-        .then(() => config.database.adapter.database.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
-          expect(err).not.toEqual(null);
-          done();
-        }));
+      .then(savedObj1 => {
+        var obj2 = new Parse.Object('HasPointersAndRelations');
+        obj2.set('aPointer', savedObj1);
+        var relation = obj2.relation('aRelation');
+        relation.add(obj1);
+        return obj2.save();
+      })
+      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
+      .then(exists => {
+        if (!exists) {
+          fail('Relation collection should exist after save.');
+        }
+      })
+      .then(() => config.database.loadSchema())
+      .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database))
+      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
+      .then(exists => {
+        if (exists) {
+          fail('Relation collection should not exist after deleting relation field.');
+        }
+        done();
+      }, error => {
+        fail(error);
+        done();
       });
-    })
   });
 
   it('can delete string fields and resave as number field', done => {

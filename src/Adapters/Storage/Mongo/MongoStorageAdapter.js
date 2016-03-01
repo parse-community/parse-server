@@ -30,8 +30,12 @@ export class MongoStorageAdapter {
     });
   }
 
-  dropCollection(name: string) {
-    return this.connect.then(() => this.collection(name).then(collection => collection.drop()));
+  collectionExists(name: string) {
+    return this.connect().then(() => {
+      return this.database.listCollections({ name: name }).toArray();
+    }).then(collections => {
+      return collections.length > 0;
+    });
   }
 
   dropCollection(name: string) {
