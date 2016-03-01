@@ -81,7 +81,7 @@ function ParseServer({
   filesAdapter,
   push,
   loggerAdapter,
-  databaseURI,
+  databaseURI = DatabaseAdapter.defaultDatabaseURI,
   cloud,
   collectionPrefix = '',
   clientKey,
@@ -129,7 +129,9 @@ function ParseServer({
     }
   }
 
-  const filesControllerAdapter = loadAdapter(filesAdapter, GridStoreAdapter);
+  const filesControllerAdapter = loadAdapter(filesAdapter, () => {
+    return new GridStoreAdapter(databaseURI);
+  });
   const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
   const emailControllerAdapter = loadAdapter(emailAdapter);
