@@ -1,3 +1,5 @@
+'use strict';
+
 var Parse = require('parse/node').Parse;
 var request = require('request');
 var dd = require('deep-diff');
@@ -711,28 +713,35 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
-        config.database.adapter.database.collection('test__Join:aRelation:MyOtherClass', { strict: true }, (err, coll) => {
-          //Expect Join table to be gone
-          expect(err).not.toEqual(null);
-          config.database.adapter.database.collection('test_MyOtherClass', { strict: true }, (err, coll) => {
-            // Expect data table to be gone
-            expect(err).not.toEqual(null);
-            request.get({
-              url: 'http://localhost:8378/1/schemas/MyOtherClass',
-              headers: masterKeyHeaders,
-              json: true,
-            }, (error, response, body) => {
-              //Expect _SCHEMA entry to be gone.
-              expect(response.statusCode).toEqual(400);
-              expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-              expect(body.error).toEqual('class MyOtherClass does not exist');
-              done();
-            });
+        config.database.collectionExists('_Join:aRelation:MyOtherClass').then(exists => {
+          if (exists) {
+            fail('Relation collection should be deleted.');
+            done();
+          }
+          return config.database.collectionExists('MyOtherClass');
+        }).then(exists => {
+          if (exists) {
+            fail('Class collection should be deleted.');
+            done();
+          }
+        }).then(() => {
+          request.get({
+            url: 'http://localhost:8378/1/schemas/MyOtherClass',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            //Expect _SCHEMA entry to be gone.
+            expect(response.statusCode).toEqual(400);
+            expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+            expect(body.error).toEqual('class MyOtherClass does not exist');
+            done();
           });
         });
       });
+    }).then(() => {
     }, error => {
       fail(error);
+      done();
     });
   });
 });
