@@ -1,2 +1,2 @@
-/* @flow */
-export default (errorMessage: string) => {throw errorMessage}
+/** @flow */
+export default (errorMessage: string): any => { throw errorMessage }

@@ -45,7 +45,7 @@ addParseCloud();
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
-// "databaseAdapter": a class like ExportAdapter providing create, find,
+// "databaseAdapter": a class like DatabaseController providing create, find,
 //                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
@@ -126,7 +126,7 @@ function ParseServer({
   const loggerController = new LoggerController(loggerControllerAdapter);
   const hooksController = new HooksController(appId, collectionPrefix);
   
-  cache.apps[appId] = {
+  cache.apps.set(appId, {
     masterKey: masterKey,
     collectionPrefix: collectionPrefix,
     clientKey: clientKey,
@@ -142,11 +142,11 @@ function ParseServer({
     enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
     oauth: oauth
-  };
+  });
 
   // To maintain compatibility. TODO: Remove in v2.1
   if (process.env.FACEBOOK_APP_ID) {
-    cache.apps[appId]['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+    cache.apps.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
 
   // This app serves the Parse API directly.
@@ -218,13 +218,6 @@ function addParseCloud() {
   const ParseCloud = require("./cloud-code/Parse.Cloud");
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
-}
-
-function getClassName(parseClass) {
-  if (parseClass && parseClass.className) {
-    return parseClass.className;
-  }
-  return parseClass;
 }
 
 module.exports = {

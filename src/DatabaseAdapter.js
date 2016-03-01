@@ -13,11 +13,12 @@
 // * destroy(className, query, options)
 // * This list is incomplete and the database process is not fully modularized.
 //
-// Default is ExportAdapter, which uses mongo.
+// Default is MongoStorageAdapter.
 
-var ExportAdapter = require('./ExportAdapter');
+import DatabaseController from './Controllers/DatabaseController';
+import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
-var adapter = ExportAdapter;
+let adapter = MongoStorageAdapter;
 var dbConnections = {};
 var databaseURI = 'mongodb://localhost:27017/parse';
 var appDatabaseURIs = {};
@@ -46,10 +47,11 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
   }
 
   var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
-  dbConnections[appId] = new adapter(dbURI, {
+
+  let storageAdapter = new adapter(dbURI);
+  dbConnections[appId] = new DatabaseController(storageAdapter, {
     collectionPrefix: collectionPrefix
   });
-  dbConnections[appId].connect();
   return dbConnections[appId];
 }
 

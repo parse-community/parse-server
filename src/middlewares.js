@@ -35,7 +35,7 @@ function handleParseHeaders(req, res, next) {
 
   var fileViaJSON = false;
 
-  if (!info.appId || !cache.apps[info.appId]) {
+  if (!info.appId || !cache.apps.get(info.appId)) {
     // See if we can find the app id on the body.
     if (req.body instanceof Buffer) {
       // The only chance to find the app id is if this is a file
@@ -44,12 +44,10 @@ function handleParseHeaders(req, res, next) {
       fileViaJSON = true;
     }
 
-    if (req.body && req.body._ApplicationId
-    && cache.apps[req.body._ApplicationId]
-    && (
-      !info.masterKey
-      ||
-      cache.apps[req.body._ApplicationId]['masterKey'] === info.masterKey)
+    if (req.body &&
+      req.body._ApplicationId &&
+      cache.apps.get(req.body._ApplicationId) &&
+      (!info.masterKey || cache.apps.get(req.body._ApplicationId).masterKey === info.masterKey)
     ) {
       info.appId = req.body._ApplicationId;
       info.javascriptKey = req.body._JavaScriptKey || '';
@@ -84,9 +82,8 @@ function handleParseHeaders(req, res, next) {
     req.body = new Buffer(base64, 'base64');
   }
 
-  info.app = cache.apps[info.appId];
+  info.app = cache.apps.get(info.appId);
   req.config = new Config(info.appId, mount);
-  req.database = req.config.database;
   req.info = info;
 
   var isMaster = (info.masterKey === req.config.masterKey);

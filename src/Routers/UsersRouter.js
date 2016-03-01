@@ -76,7 +76,7 @@ export class UsersRouter extends ClassesRouter {
     }
 
     let user;
-    return req.database.find('_User', { username: req.body.username })
+    return req.config.database.find('_User', { username: req.body.username })
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');

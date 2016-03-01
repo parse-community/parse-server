@@ -710,10 +710,10 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
-        config.database.db.collection('test__Join:aRelation:MyOtherClass', { strict: true }, (err, coll) => {
+        config.database.adapter.database.collection('test__Join:aRelation:MyOtherClass', { strict: true }, (err, coll) => {
           //Expect Join table to be gone
           expect(err).not.toEqual(null);
-          config.database.db.collection('test_MyOtherClass', { strict: true }, (err, coll) => {
+          config.database.adapter.database.collection('test_MyOtherClass', { strict: true }, (err, coll) => {
             // Expect data table to be gone
             expect(err).not.toEqual(null);
             request.get({
