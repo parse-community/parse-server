@@ -30,6 +30,17 @@ export class MongoStorageAdapter {
     });
   }
 
+  collectionExists(name: string) {
+    return this.connect().then(() => {
+      return this.database.listCollections({ name: name }).toArray();
+    }).then(collections => {
+      return collections.length > 0;
+    });
+  }
+
+  dropCollection(name: string) {
+    return this.collection(name).then(collection => collection.drop());
+  }
   // Used for testing only right now.
   collectionsContaining(match: string) {
     return this.connect().then(() => {

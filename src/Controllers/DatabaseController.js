@@ -38,8 +38,16 @@ DatabaseController.prototype.collection = function(className) {
   return this.rawCollection(className);
 };
 
+DatabaseController.prototype.collectionExists = function(className) {
+  return this.adapter.collectionExists(this.collectionPrefix + className);
+};
+
 DatabaseController.prototype.rawCollection = function(className) {
   return this.adapter.collection(this.collectionPrefix + className);
+};
+
+DatabaseController.prototype.dropCollection = function(className) {
+  return this.adapter.dropCollection(this.collectionPrefix + className);
 };
 
 function returnsTrue() {

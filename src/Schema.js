@@ -500,80 +500,47 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
 
 // Passing the database and prefix is necessary in order to drop relation collections
 // and remove fields from objects. Ideally the database would belong to
-// a database adapter and this fuction would close over it or access it via member.
-Schema.prototype.deleteField = function(fieldName, className, database, prefix) {
+// a database adapter and this function would close over it or access it via member.
+Schema.prototype.deleteField = function(fieldName, className, database) {
   if (!classNameIsValid(className)) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: invalidClassNameMessage(className),
-    });
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(className));
   }
-
   if (!fieldNameIsValid(fieldName)) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_KEY_NAME,
-      error: 'invalid field name: ' + fieldName,
-    });
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
   }
-
   //Don't allow deleting the default fields.
   if (!fieldNameIsValidForClass(fieldName, className)) {
-    return Promise.reject({
-      code: 136,
-      error: 'field ' + fieldName + ' cannot be changed',
-    });
+    throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
   }
 
   return this.reload()
-  .then(schema => {
-    return schema.hasClass(className)
-    .then(hasClass => {
-      if (!hasClass) {
-        return Promise.reject({
-          code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class ' + className + ' does not exist',
-        });
-      }
+    .then(schema => {
+      return schema.hasClass(className)
+        .then(hasClass => {
+          if (!hasClass) {
+            throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+          }
+          if (!schema.data[className][fieldName]) {
+            throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+          }
 
-      if (!schema.data[className][fieldName]) {
-        return Promise.reject({
-          code: 255,
-          error: 'field ' + fieldName + ' does not exist, cannot delete',
-        });
-      }
+          if (schema.data[className][fieldName].startsWith('relation<')) {
+            //For relations, drop the _Join table
+            return database.dropCollection(`_Join:${fieldName}:${className}`);
+          }
 
-      if (schema.data[className][fieldName].startsWith('relation<')) {
-        //For relations, drop the _Join table
-        return database.dropCollection(prefix + '_Join:' + fieldName + ':' + className)
-        //Save the _SCHEMA object
+          // for non-relations, remove all the data.
+          // This is necessary to ensure that the data is still gone if they add the same field.
+          return database.collection(className)
+            .then(collection => {
+              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ? '_p_' + fieldName : fieldName;
+              return collection.update({}, { "$unset": { [mongoFieldName] : null } }, { multi: true });
+            });
+        })
+        // Save the _SCHEMA object
         .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}));
-      } else {
-        //for non-relations, remove all the data. This is necessary to ensure that the data is still gone
-        //if they add the same field.
-        return new Promise((resolve, reject) => {
-          database.collection(prefix + className, (err, coll) => {
-            if (err) {
-              reject(err);
-            } else {
-              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ?
-                '_p_' + fieldName :
-                fieldName;
-              return coll.update({}, {
-                "$unset": { [mongoFieldName] : null },
-              }, {
-                multi: true,
-              })
-              //Save the _SCHEMA object
-              .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}))
-              .then(resolve)
-              .catch(reject);
-            }
-          });
-        });
-      }
     });
-  });
-}
+};
 
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
