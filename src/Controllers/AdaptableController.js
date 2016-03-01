@@ -18,7 +18,11 @@ export class AdaptableController {
     this.options = options;
     this.appId = appId;
     this.adapter = adapter;
+    this.setFeature();
   }
+
+  // sets features for Dashboard to consume from features router
+  setFeature() {}
 
   set adapter(adapter) {
     this.validateAdapter(adapter);

@@ -18,6 +18,7 @@ import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
 import PromiseRouter           from './PromiseRouter';
 import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
+import { FeaturesRouter }      from './Routers/FeaturesRouter';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
@@ -207,7 +208,8 @@ function ParseServer({
     new SchemasRouter(),
     new PushRouter(),
     new LogsRouter(),
-    new IAPValidationRouter()
+    new IAPValidationRouter(),
+    new FeaturesRouter(),
   ];
 
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
