@@ -28,7 +28,7 @@ export class GridStoreAdapter extends FilesAdapter {
 
   // For a given config object, filename, and data, store a file
   // Returns a promise
-  createFile(config, filename: string, data) {
+  createFile(config, filename: string, data, contentType) {
     return this._connect().then(database => {
       let gridStore = new GridStore(database, filename, 'w');
       return gridStore.open();

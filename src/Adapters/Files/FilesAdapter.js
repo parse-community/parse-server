@@ -12,7 +12,7 @@
 // database adapter.
 
 export class FilesAdapter {
-  createFile(config, filename, data) { }
+  createFile(config, filename: string, data, contentType: string) { }
 
   deleteFile(config, filename) { }
 
