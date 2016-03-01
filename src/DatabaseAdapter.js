@@ -18,10 +18,12 @@
 import DatabaseController from './Controllers/DatabaseController';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
+const DefaultDatabaseURI = 'mongodb://localhost:27017/parse';
+
 let adapter = MongoStorageAdapter;
-var dbConnections = {};
-var databaseURI = 'mongodb://localhost:27017/parse';
-var appDatabaseURIs = {};
+let dbConnections = {};
+let databaseURI = DefaultDatabaseURI;
+let appDatabaseURIs = {};
 
 function setAdapter(databaseAdapter) {
   adapter = databaseAdapter;
@@ -61,5 +63,6 @@ module.exports = {
   setAdapter: setAdapter,
   setDatabaseURI: setDatabaseURI,
   setAppDatabaseURI: setAppDatabaseURI,
-  clearDatabaseURIs: clearDatabaseURIs
+  clearDatabaseURIs: clearDatabaseURIs,
+  defaultDatabaseURI: databaseURI
 };

@@ -1,28 +1,47 @@
-// GridStoreAdapter
-//
-// Stores files in Mongo using GridStore
-// Requires the database adapter to be based on mongoclient
+/**
+ GridStoreAdapter
+ Stores files in Mongo using GridStore
+ Requires the database adapter to be based on mongoclient
 
-import { GridStore } from 'mongodb';
+ @flow weak
+ */
+
+import { MongoClient, GridStore, Db} from 'mongodb';
 import { FilesAdapter } from './FilesAdapter';
 
 export class GridStoreAdapter extends FilesAdapter {
+  _databaseURI: string;
+  _connectionPromise: Promise<Db>;
+
+  constructor(mongoDatabaseURI: string) {
+    super();
+    this._databaseURI = mongoDatabaseURI;
+    this._connect();
+  }
+
+  _connect() {
+    if (!this._connectionPromise) {
+      this._connectionPromise = MongoClient.connect(this._databaseURI);
+    }
+    return this._connectionPromise;
+  }
+
   // For a given config object, filename, and data, store a file
   // Returns a promise
-  createFile(config, filename, data) {
-    return config.database.connect().then(() => {
-      let gridStore = new GridStore(config.database.adapter.database, filename, 'w');
+  createFile(config, filename: string, data) {
+    return this._connect().then(database => {
+      let gridStore = new GridStore(database, filename, 'w');
       return gridStore.open();
-    }).then((gridStore) => {
+    }).then(gridStore => {
       return gridStore.write(data);
-    }).then((gridStore) => {
+    }).then(gridStore => {
       return gridStore.close();
     });
   }
 
-  deleteFile(config, filename) {
-    return config.database.connect().then(() => {
-      let gridStore = new GridStore(config.database.adapter.database, filename, 'w');
+  deleteFile(config, filename: string) {
+    return this._connect().then(database => {
+      let gridStore = new GridStore(database, filename, 'w');
       return gridStore.open();
     }).then((gridStore) => {
       return gridStore.unlink();
@@ -31,13 +50,14 @@ export class GridStoreAdapter extends FilesAdapter {
     });
   }
 
-  getFileData(config, filename) {
-    return config.database.connect().then(() => {
-      return GridStore.exist(config.database.adapter.database, filename);
-    }).then(() => {
-      let gridStore = new GridStore(config.database.adapter.database, filename, 'r');
-      return gridStore.open();
-    }).then((gridStore) => {
+  getFileData(config, filename: string) {
+    return this._connect().then(database => {
+      return GridStore.exist(database, filename)
+        .then(() => {
+          let gridStore = new GridStore(database, filename, 'r');
+          return gridStore.open();
+        });
+    }).then(gridStore => {
       return gridStore.read();
     });
   }
