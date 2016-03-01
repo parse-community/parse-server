@@ -14,26 +14,18 @@
  * Features that use Adapters should specify the feature options through
  * the setFeature method in your controller and feature
  * Reference PushController and ParsePushAdapter as an example.
- * 
+ *
  * NOTE: When adding new endpoints be sure to update this list both (features, featureSwitch)
- * if you are planning to have a UI consume it. 
+ * if you are planning to have a UI consume it.
  */
 
 // default features
 let features = {
-  analytics: {
-    slowQueries: false,
-    performanceAnalysis: false,
-    retentionAnalysis: false,
-  },
-  classes: {},
-  files: {},
-  functions: {},
   globalConfig: {
-    create: true,
-    read: true,
-    update: true,
-    delete: true,
+    create: false,
+    read: false,
+    update: false,
+    delete: false,
   },
   hooks: {
     create: false,
@@ -41,15 +33,19 @@ let features = {
     update: false,
     delete: false,
   },
-  iapValidation: {},
-  installations: {},
   logs: {
-    info: true,
-    error: true,
+    level: false,
+    size: false,
+    order: false,
+    until: false,
+    from: false,
   },
-  publicAPI: {},
-  push: {},
-  roles: {},
+  push: {
+    immediatePush: false,
+    scheduledPush: false,
+    storedPushData: false,
+    pushAudiences: false,
+  },
   schemas: {
     addField: true,
     removeField: true,
@@ -58,27 +54,15 @@ let features = {
     clearAllDataFromClass: false,
     exportClass: false,
   },
-  sessions: {},
-  users: {},
 };
 
 // master switch for features
 let featuresSwitch = {
-  analytics: true,
-  classes: true,
-  files: true,
-  functions: true,
   globalConfig: true,
   hooks: true,
-  iapValidation: true,
-  installations: true,
   logs: true,
-  publicAPI: true,
   push: true,
-  roles: true,
   schemas: true,
-  sessions: true,
-  users: true,
 };
 
 /**
@@ -94,7 +78,7 @@ function setFeature(key, value) {
 function getFeatures() {
   let result = {};
   Object.keys(features).forEach((key) => {
-    if (featuresSwitch[key]) {
+    if (featuresSwitch[key] && features[key]) {
       result[key] = features[key];
     }
   });

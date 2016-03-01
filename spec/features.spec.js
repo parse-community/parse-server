@@ -5,7 +5,7 @@ const request = require("request");
 
 describe('features', () => {
   it('set and get features', (done) => {
-    features.setFeature('users', {
+    features.setFeature('push', {
       testOption1: true,
       testOption2: false
     });
@@ -14,10 +14,10 @@ describe('features', () => {
 
     var expected = {
       testOption1: true,
-      testOption2: false 
+      testOption2: false
     };
 
-    expect(_features.users).toEqual(expected);
+    expect(_features.push).toEqual(expected);
     done();
   });
 
