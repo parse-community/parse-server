@@ -2,15 +2,17 @@
 var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
 var FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
 
-describe("AdaptableController", ()=>{
+describe("AdapterLoader", ()=>{
     
   it("should instantiate an adapter from string in object", (done) => {
     var adapterPath = require('path').resolve("./spec/MockAdapter");
 
     var adapter = loadAdapter({
       adapter: adapterPath,
-      key: "value", 
-      foo: "bar"
+      options: {
+        key: "value", 
+        foo: "bar"
+      }
     });
     
     expect(adapter instanceof Object).toBe(true);
@@ -24,7 +26,6 @@ describe("AdaptableController", ()=>{
     var adapter = loadAdapter(adapterPath);
     
     expect(adapter instanceof Object).toBe(true);
-    expect(adapter.options).toBe(adapterPath);
     done();
   });
   
@@ -63,6 +64,24 @@ describe("AdaptableController", ()=>{
     var originalAdapter = new FilesAdapter();
     var adapter = loadAdapter(originalAdapter);
     expect(adapter).toBe(originalAdapter);
+    done();
+  });
+  
+  it("should fail loading an improperly configured adapter", (done) => {
+    var Adapter = function(options) {
+      if (!options.foo) {
+        throw "foo is required for that adapter";
+      }
+    }
+    var adapterOptions = {
+      param: "key",
+      doSomething: function() {}
+    };
+     
+    expect(() => {
+      var adapter = loadAdapter(adapterOptions, Adapter);
+      expect(adapter).toEqual(adapterOptions);
+    }).not.toThrow("foo is required for that adapter");
     done();
   });
 });

@@ -4,23 +4,38 @@
 
 import * as AWS from 'aws-sdk';
 import { FilesAdapter } from './FilesAdapter';
+import requiredParameter from '../../requiredParameter';
 
 const DEFAULT_S3_REGION = "us-east-1";
+
+function parseS3AdapterOptions(...options) {
+  if (options.length === 1 && typeof options[0] == "object") {
+    return options;
+  }
+  
+  const additionalOptions = options[3] || {};
+  
+  return {
+    accessKey: options[0],
+    secretKey: options[1],
+    bucket: options[2],
+    region: additionalOptions.region
+  }
+}
 
 export class S3Adapter extends FilesAdapter {
   // Creates an S3 session.
   // Providing AWS access and secret keys is mandatory
   // Region and bucket will use sane defaults if omitted
   constructor(
-    accessKey,
-    secretKey,
-    bucket,
-    { region = DEFAULT_S3_REGION,
-      bucketPrefix = '',
-      directAccess = false } = {}
-  ) {
+     accessKey = requiredParameter('S3Adapter requires an accessKey'),
+     secretKey = requiredParameter('S3Adapter requires a secretKey'),
+     bucket,
+     { region = DEFAULT_S3_REGION,
+       bucketPrefix = '',
+       directAccess = false } = {}) {
     super();
-
+    
     this._region = region;
     this._bucket = bucket;
     this._bucketPrefix = bucketPrefix;

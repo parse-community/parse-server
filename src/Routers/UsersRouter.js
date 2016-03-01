@@ -1,14 +1,15 @@
 // These methods handle the User-related routes.
 
-import deepcopy from 'deepcopy';
+import deepcopy       from 'deepcopy';
 
-import ClassesRouter from './ClassesRouter';
-import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
-import Auth from '../Auth';
+import ClassesRouter  from './ClassesRouter';
+import PromiseRouter  from '../PromiseRouter';
+import rest           from '../rest';
+import Auth           from '../Auth';
 import passwordCrypto from '../password';
-import RestWrite from '../RestWrite';
-import { newToken } from '../cryptoUtils';
+import RestWrite      from '../RestWrite';
+let cryptoUtils = require('../cryptoUtils');
+let triggers = require('../triggers');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -25,7 +26,18 @@ export class UsersRouter extends ClassesRouter {
     let data = deepcopy(req.body);
     req.body = data;
     req.params.className = '_User';
+
+    //req.config.userController.setEmailVerifyToken(req.body);
+
     return super.handleCreate(req);
+  
+  // if (req.config.verifyUserEmails) {
+  //     // Send email as fire-and-forget once the user makes it into the DB.
+  //     p.then(() => {
+  //       req.config.userController.sendVerificationEmail(req.body);
+  //     });
+  //   }
+  //   return p;
   }
 
   handleUpdate(req) {
@@ -87,7 +99,7 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 
-        let token = 'r:' + newToken();
+        let token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
 
@@ -140,6 +152,23 @@ export class UsersRouter extends ClassesRouter {
     }
     return Promise.resolve(success);
   }
+  
+  handleResetRequest(req) {
+     let { email } = req.body;
+     if (!email) {
+       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+     }
+     let userController = req.config.userController;
+     
+     return userController.sendPasswordResetEmail(email).then((token) => {
+        return Promise.resolve({
+          response: {}
+        });
+     }, (err) => {
+       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
+     });
+  }
+  
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -150,9 +179,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
-    this.route('POST', '/requestPasswordReset', () => {
-      throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, 'This path is not implemented yet.');
-    });
+    this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); })
   }
 }
 

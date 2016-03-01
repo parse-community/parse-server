@@ -101,7 +101,6 @@ let _verifyTransports = ({infoLogger, errorLogger, logsFolder}) => {
 export class FileLoggerAdapter extends LoggerAdapter {
   constructor(options = {}) {
     super();
-
     this._logsFolder = options.logsFolder || LOGS_FOLDER;
 
     // check logs folder exists

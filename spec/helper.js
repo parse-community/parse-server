@@ -250,3 +250,4 @@ global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
 global.setServerConfiguration = setServerConfiguration;
+global.defaultConfiguration = defaultConfiguration;

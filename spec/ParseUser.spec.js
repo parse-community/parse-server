@@ -54,6 +54,11 @@ describe('Parse.User testing', () => {
       success: function(user) {
         Parse.User.logIn("non_existent_user", "asdf3",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+      }, 
+      error: function(err) {
+        console.error(err);
+        fail("Shit should not fail");
+        done();
       }
     });
   });
@@ -1704,7 +1709,7 @@ describe('Parse.User testing', () => {
       done();
     });
   });
-  
+
   it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {

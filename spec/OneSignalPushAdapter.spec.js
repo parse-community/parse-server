@@ -1,13 +1,15 @@
 
 var OneSignalPushAdapter = require('../src/Adapters/Push/OneSignalPushAdapter');
 var classifyInstallations = require('../src/Adapters/Push/PushAdapterUtils').classifyInstallations;
+
+// Make mock config
+var pushConfig = {
+  oneSignalAppId:"APP ID",
+  oneSignalApiKey:"API KEY"
+};
+
 describe('OneSignalPushAdapter', () => {
   it('can be initialized', (done) => {
-    // Make mock config
-    var pushConfig = {
-      	oneSignalAppId:"APP ID",
-		oneSignalApiKey:"API KEY"
-    };
 
     var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
 
@@ -17,9 +19,17 @@ describe('OneSignalPushAdapter', () => {
     expect(senderMap.android instanceof Function).toBe(true);
     done();
   });
+  
+  it('cannot be initialized if options are missing', (done) => {
+
+    expect(() => {
+      new OneSignalPushAdapter();
+    }).toThrow("Trying to initialize OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey");
+    done();
+  });
 
   it('can get valid push types', (done) => {
-    var oneSignalPushAdapter = new OneSignalPushAdapter();
+    var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
 
     expect(oneSignalPushAdapter.getValidPushTypes()).toEqual(['ios', 'android']);
     done();
@@ -56,7 +66,7 @@ describe('OneSignalPushAdapter', () => {
 
 
   it('can send push notifications', (done) => {
-    var oneSignalPushAdapter = new OneSignalPushAdapter();
+    var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
 
     // Mock android ios senders
     var androidSender = jasmine.createSpy('send')
@@ -108,7 +118,7 @@ describe('OneSignalPushAdapter', () => {
   });
 
   it("can send iOS notifications", (done) => {
-  	var oneSignalPushAdapter = new OneSignalPushAdapter();
+  	var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
   	var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
   	oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
 
@@ -135,7 +145,7 @@ describe('OneSignalPushAdapter', () => {
   });
 
   it("can send Android notifications", (done) => {
-  	var oneSignalPushAdapter = new OneSignalPushAdapter();
+  	var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
   	var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
   	oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
 
@@ -157,10 +167,7 @@ describe('OneSignalPushAdapter', () => {
   });
 
   it("can post the correct data", (done) => {
-  	var pushConfig = {
-      	oneSignalAppId:"APP ID",
-		oneSignalApiKey:"API KEY"
-    };
+
     var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
 
     var write = jasmine.createSpy('write');
