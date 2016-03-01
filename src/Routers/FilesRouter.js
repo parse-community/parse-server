@@ -4,6 +4,7 @@ import * as Middlewares from '../middlewares';
 import { randomHexString } from '../cryptoUtils';
 import mime from 'mime';
 import Config from '../Config';
+import path from 'path';
 
 export class FilesRouter {
 
@@ -66,20 +67,25 @@ export class FilesRouter {
         'Filename contains invalid characters.'));
       return;
     }
-    let extension = '';
 
-    // Not very safe there.
-    const hasExtension = req.params.filename.indexOf('.') > 0;
-    const contentType = req.get('Content-type');
+    let filename = req.params.filename;
+
+    // safe way to get the extension
+    let extname = path.extname(filename);
+    let contentType = req.get('Content-type');
+
+    const hasExtension = extname.length > 0;
+
     if (!hasExtension && contentType && mime.extension(contentType)) {
-      extension = '.' + mime.extension(contentType);
+      filename = filename + '.' + mime.extension(contentType);
+    } else if (hasExtension && !contentType) {
+      contentType = mime.lookup(req.params.filename);
     }
 
-    const filename = req.params.filename + extension;
     const config = req.config;
     const filesController = config.filesController;
 
-    filesController.createFile(config, filename, req.body).then((result) => {
+    filesController.createFile(config, filename, req.body, contentType).then((result) => {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);

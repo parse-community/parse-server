@@ -10,7 +10,7 @@ var FCTestFactory = require("./FilesControllerTestFactory");
 describe("FilesController",()=>{
   
   // Test the grid store adapter
-  var gridStoreAdapter = new GridStoreAdapter();
+  var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
   FCTestFactory.testAdapter("GridStoreAdapter", gridStoreAdapter);
   
   if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {

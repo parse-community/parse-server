@@ -68,13 +68,16 @@ export class S3Adapter extends FilesAdapter {
 
   // For a given config object, filename, and data, store a file in S3
   // Returns a promise containing the S3 object creation response
-  createFile(config, filename, data) {
+  createFile(config, filename, data, contentType) {
     let params = {
       Key: this._bucketPrefix + filename,
       Body: data
     };
     if (this._directAccess) {
       params.ACL = "public-read"
+    }
+    if (contentType) {
+      params.ContentType = contentType;
     }
     return this.createBucket().then(() => {
       return new Promise((resolve, reject) => {
