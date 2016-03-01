@@ -1,14 +1,14 @@
-// These tests check the "create" functionality of the REST API.
-var auth = require('../Auth');
-var cache = require('../cache');
-var Config = require('../Config');
-var DatabaseAdapter = require('../DatabaseAdapter');
+// These tests check the "create" / "update" functionality of the REST API.
+var auth = require('../src/Auth');
+var cache = require('../src/cache');
+var Config = require('../src/Config');
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 var Parse = require('parse/node').Parse;
-var rest = require('../rest');
+var rest = require('../src/rest');
 var request = require('request');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test');
+var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 
 describe('rest create', () => {
   it('handles _id', (done) => {
@@ -41,6 +41,52 @@ describe('rest create', () => {
     });
   });
 
+  it('handles object and subdocument', (done) => {
+    var obj = {
+      subdoc: {foo: 'bar', wu: 'tan'},
+    };
+    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
+      return database.mongoFind('MyClass', {}, {});
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      var mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('tan');
+      expect(typeof mob._id).toEqual('string');
+
+      var obj = {
+        'subdoc.wu': 'clan',
+      };
+
+      rest.update(config, auth.nobody(config), 'MyClass', mob._id, obj).then(() => {
+        return database.mongoFind('MyClass', {}, {});
+      }).then((results) => {
+        expect(results.length).toEqual(1);
+        var mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('clan');
+        done();
+      });
+
+    });
+  });
+
+  it('handles create on non-existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
+      .then(() => {
+        fail('Should throw an error');
+        done();
+      }, (err) => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual('This user is not allowed to access ' +
+                                    'non-existent class: ClientClassCreation');
+        done();
+    });
+  });
+
   it('handles user signup', (done) => {
     var user = {
       username: 'asdf',
@@ -55,6 +101,69 @@ describe('rest create', () => {
         expect(typeof r.response.sessionToken).toEqual('string');
         done();
       });
+  });
+
+  it('handles anonymous user signup', (done) => {
+    var data1 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    var data2 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000002'
+        }
+      }
+    };
+    var username1;
+    rest.create(config, auth.nobody(config), '_User', data1)
+      .then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.create(config, auth.nobody(config), '_User', data1);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        username1 = r.response.username;
+        return rest.create(config, auth.nobody(config), '_User', data2);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.create(config, auth.nobody(config), '_User', data2);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(r.response.username).not.toEqual(username1);
+        done();
+      });
+  });
+  
+  it('handles no anonymous users config', (done) => {
+     var NoAnnonConfig = Object.assign({}, config, {enableAnonymousUsers: false});
+     var data1 = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    rest.create(NoAnnonConfig, auth.nobody(NoAnnonConfig), '_User', data1).then(() => {
+      fail("Should throw an error");
+      done();
+    }, (err) => {
+      expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
+      expect(err.message).toEqual('This authentication method is unsupported.');
+      done();
+    })
   });
 
   it('test facebook signup and login', (done) => {

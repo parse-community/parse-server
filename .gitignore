@@ -28,3 +28,15 @@ node_modules
 
 # Emacs
 *~
+
+# WebStorm/IntelliJ
+.idea
+
+# visual studio code
+.vscode
+
+# Babel.js
+lib/
+
+# cache folder
+.cache

@@ -1,8 +1,11 @@
 // These tests check the "find" functionality of the REST API.
-var auth = require('../Auth');
-var cache = require('../cache');
-var Config = require('../Config');
-var rest = require('../rest');
+var auth = require('../src/Auth');
+var cache = require('../src/cache');
+var Config = require('../src/Config');
+var rest = require('../src/rest');
+
+var querystring = require('querystring');
+var request = require('request');
 
 var config = new Config('test');
 var nobody = auth.nobody(config);
@@ -90,6 +93,65 @@ describe('rest query', () => {
       expect(typeof results[0].fromUser.username).toEqual('string');
       done();
     }).catch((error) => { console.log(error); });
+  });
+
+  it('query non-existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
+      .then(() => {
+        fail('Should throw an error');
+        done();
+      }, (err) => {
+        expect(err.code).toEqual(Parse.Error.OPERATION_FORBIDDEN);
+        expect(err.message).toEqual('This user is not allowed to access ' +
+                                    'non-existent class: ClientClassCreation');
+        done();
+    });
+  });
+
+  it('query with wrongly encoded parameter', (done) => {
+    rest.create(config, nobody, 'TestParameterEncode', {foo: 'bar'}
+    ).then(() => {
+      return rest.create(config, nobody,
+                         'TestParameterEncode', {foo: 'baz'});
+    }).then(() => {
+      var headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
+                         + querystring.stringify({
+                             where: '{"foo":{"$ne": "baz"}}',
+                             limit: 1
+                         }).replace('=', '%3D'),
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
+        expect(b.error).toEqual('Improper encode of parameter');
+        done();
+      });
+    }).then(() => {
+      var headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
+                         + querystring.stringify({
+                             limit: 1
+                         }).replace('=', '%3D'),
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
+        expect(b.error).toEqual('Improper encode of parameter');
+        done();
+      });
+    });
   });
 
 });

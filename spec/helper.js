@@ -1,20 +1,22 @@
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 1000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 
-var cache = require('../cache');
-var DatabaseAdapter = require('../DatabaseAdapter');
+var cache = require('../src/cache').default;
+var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
-var facebook = require('../facebook');
-var ParseServer = require('../index').ParseServer;
+var facebook = require('../src/oauth/facebook');
+var ParseServer = require('../src/index').ParseServer;
 
 var databaseURI = process.env.DATABASE_URI;
-var cloudMain = process.env.CLOUD_CODE_MAIN || './cloud/main.js';
+var cloudMain = process.env.CLOUD_CODE_MAIN || '../spec/cloud/main.js';
+var port = 8378;
 
-// Set up an API server for testing
-var api = new ParseServer({
+// Default server configuration for tests.
+var defaultConfiguration = {
   databaseURI: databaseURI,
   cloud: cloudMain,
+  serverURL: 'http://localhost:' + port + '/1',
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',
@@ -22,13 +24,43 @@ var api = new ParseServer({
   restAPIKey: 'rest',
   masterKey: 'test',
   collectionPrefix: 'test_',
-  fileKey: 'test'
-});
+  fileKey: 'test',
+  push: {
+    'ios': {      
+      cert: 'prodCert.pem',
+      key: 'prodKey.pem',
+      production: true,
+      bundleId: 'bundleId'
+    }
+  },
+  oauth: { // Override the facebook provider
+    facebook: mockFacebook(),
+    myoauth: {
+      module: "../spec/myoauth" // relative path as it's run from src
+    }
+  }
+};
 
+// Set up a default API server for testing with default configuration.
+var api = new ParseServer(defaultConfiguration);
 var app = express();
 app.use('/1', api);
-var port = 8378;
 var server = app.listen(port);
+
+// Prevent reinitializing the server from clobbering Cloud Code
+delete defaultConfiguration.cloud;
+
+// Allows testing specific configurations of Parse Server
+var setServerConfiguration = configuration => {
+  server.close();
+  cache.clearCache();
+  app = express();
+  api = new ParseServer(configuration);
+  app.use('/1', api);
+  server = app.listen(port);
+};
+
+var restoreServerConfiguration = () => setServerConfiguration(defaultConfiguration);
 
 // Set up a Parse client to talk to our test API server
 var Parse = require('parse/node');
@@ -40,16 +72,16 @@ Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
-  mockFacebook();
   Parse.User.enableUnsafeCurrentUser();
   done();
 });
 
 afterEach(function(done) {
-  Parse.User.logOut();
-  Parse.Promise.as().then(() => {
+  restoreServerConfiguration();
+  Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
+    DatabaseAdapter.clearDatabaseURIs();
     done();
   }, (error) => {
     console.log('error in clearData', error);
@@ -153,7 +185,7 @@ function normalize(obj) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
   var answer = '{';
-  for (key of Object.keys(obj).sort()) {
+  for (var key of Object.keys(obj).sort()) {
     answer += key + ': ';
     answer += normalize(obj[key]);
     answer += ', ';
@@ -176,23 +208,25 @@ function range(n) {
 }
 
 function mockFacebook() {
-  facebook.validateUserId = function(userId, accessToken) {
-    if (userId === '8675309' && accessToken === 'jenny') {
+  var facebook = {};
+  facebook.validateAuthData = function(authData) {
+    if (authData.id === '8675309' && authData.access_token === 'jenny') {
       return Promise.resolve();
     }
     return Promise.reject();
   };
-  facebook.validateAppId = function(appId, accessToken) {
-    if (accessToken === 'jenny') {
+  facebook.validateAppId = function(appId, authData) {
+    if (authData.access_token === 'jenny') {
       return Promise.resolve();
     }
     return Promise.reject();
   };
+  return facebook;
 }
 
 function clearData() {
   var promises = [];
-  for (conn in DatabaseAdapter.dbConnections) {
+  for (var conn in DatabaseAdapter.dbConnections) {
     promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
   }
   return Promise.all(promises);
@@ -215,3 +249,5 @@ global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
+global.setServerConfiguration = setServerConfiguration;
+global.defaultConfiguration = defaultConfiguration;

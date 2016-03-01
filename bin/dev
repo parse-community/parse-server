@@ -1,0 +1,37 @@
+#!/usr/bin/env node
+
+var nodemon = require('nodemon');
+var babel = require("babel-core");
+var gaze = require('gaze'); 
+var fs = require('fs');
+var path = require('path');
+
+// Watch the src and transpile when changed
+gaze('src/**/*', function(err, watcher) {
+  if (err) throw err;
+  watcher.on('changed', function(sourceFile) {
+    console.log(sourceFile + " has changed");
+    try {
+      targetFile = path.relative(__dirname, sourceFile).replace(/\/src\//, '/lib/');
+      targetFile = path.resolve(__dirname, targetFile);
+      fs.writeFile(targetFile, babel.transformFileSync(sourceFile).code);
+    } catch (e) {
+      console.error(e.message, e.stack);
+    }
+  });
+});
+
+try {
+  // Run and watch dist 
+  nodemon({
+    script: 'bin/parse-server',
+    ext: 'js json',
+    watch: 'lib'
+  });
+} catch (e) {
+  console.error(e.message, e.stack);
+}
+
+process.once('SIGINT', function() {
+    process.exit(0);
+});

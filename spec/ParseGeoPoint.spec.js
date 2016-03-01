@@ -39,33 +39,37 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it('geo line', (done) => {
-    var line = [];
-    for (var i = 0; i < 10; ++i) {
-      var obj = new TestObject();
-      var point = new Parse.GeoPoint(i * 4.0 - 12.0, i * 3.2 - 11.0);
-      obj.set('location', point);
-      obj.set('construct', 'line');
-      obj.set('seq', i);
-      line.push(obj);
-    }
-    Parse.Object.saveAll(line, {
-      success: function() {
-        var query = new Parse.Query(TestObject);
-        var point = new Parse.GeoPoint(24, 19);
-        query.equalTo('construct', 'line');
-        query.withinMiles('location', point, 10000);
-        query.find({
-          success: function(results) {
-            equal(results.length, 10);
-            equal(results[0].get('seq'), 9);
-            equal(results[3].get('seq'), 6);
-            done();
-          }
-        });
-      }
-    });
-  });
+//
+// This test is disabled, since it's extremely flaky on Travis-CI.
+// Tracking issue: https://github.com/ParsePlatform/parse-server/issues/572
+//
+//  it('geo line', (done) => {
+//     var line = [];
+//     for (var i = 0; i < 10; ++i) {
+//       var obj = new TestObject();
+//       var point = new Parse.GeoPoint(i * 4.0 - 12.0, i * 3.2 - 11.0);
+//       obj.set('location', point);
+//       obj.set('construct', 'line');
+//       obj.set('seq', i);
+//       line.push(obj);
+//     }
+//     Parse.Object.saveAll(line, {
+//       success: function() {
+//         var query = new Parse.Query(TestObject);
+//         var point = new Parse.GeoPoint(24, 19);
+//         query.equalTo('construct', 'line');
+//         query.withinMiles('location', point, 10000);
+//         query.find({
+//           success: function(results) {
+//             equal(results.length, 10);
+//             equal(results[0].get('seq'), 9);
+//             equal(results[3].get('seq'), 6);
+//             done();
+//           }
+//         });
+//       }
+//     });
+//   });
 
   it('geo max distance large', (done) => {
     var objects = [];
@@ -285,6 +289,49 @@ describe('Parse.GeoPoint testing', () => {
     }).then((results) => {
       equal(results.length, 1);
       done();
+    });
+  });
+
+  it('supports a sub-object with a geo point', done => {
+    var point = new Parse.GeoPoint(44.0, -11.0);
+    var obj = new TestObject();
+    obj.set('subobject', { location: point });
+    obj.save(null, {
+      success: function() {
+        var query = new Parse.Query(TestObject);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            var pointAgain = results[0].get('subobject')['location'];
+            ok(pointAgain);
+            equal(pointAgain.latitude, 44.0);
+            equal(pointAgain.longitude, -11.0);
+            done();
+          }
+        });
+      }
+    });
+  });
+
+  it('supports array of geo points', done => {
+    var point1 = new Parse.GeoPoint(44.0, -11.0);
+    var point2 = new Parse.GeoPoint(22.0, -55.0);
+    var obj = new TestObject();
+    obj.set('locations', [ point1, point2 ]);
+    obj.save(null, {
+      success: function() {
+        var query = new Parse.Query(TestObject);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            var locations = results[0].get('locations');
+            expect(locations.length).toEqual(2);
+            expect(locations[0]).toEqual(point1);
+            expect(locations[1]).toEqual(point2);
+            done();
+          }
+        });
+      }
     });
   });
 });
