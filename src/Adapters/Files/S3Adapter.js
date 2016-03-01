@@ -48,6 +48,22 @@ export class S3Adapter extends FilesAdapter {
     };
     AWS.config._region = this._region;
     this._s3Client = new AWS.S3(s3Options);
+    this._hasBucket = false;
+  }
+  
+  createBucket() {
+    var promise;
+    if (this._hasBucket) {
+      promise = Promise.resolve();
+    } else {
+      promise = new Promise((resolve, reject) => {
+        this._s3Client.createBucket(() => {
+          this._hasBucket = true;
+          resolve();
+        });
+      }); 
+    }
+    return promise;
   }
 
   // For a given config object, filename, and data, store a file in S3
@@ -60,26 +76,30 @@ export class S3Adapter extends FilesAdapter {
     if (this._directAccess) {
       params.ACL = "public-read"
     }
-    return new Promise((resolve, reject) => {
-      this._s3Client.upload(params, (err, data) => {
-        if (err !== null) {
-          return reject(err);
-        }
-        resolve(data);
+    return this.createBucket().then(() => {
+      return new Promise((resolve, reject) => {
+        this._s3Client.upload(params, (err, data) => {
+          if (err !== null) {
+            return reject(err);
+          }
+          resolve(data);
+        });
       });
     });
   }
 
   deleteFile(config, filename) {
-    return new Promise((resolve, reject) => {
-      let params = {
-        Key: this._bucketPrefix + filename
-      };
-      this._s3Client.deleteObject(params, (err, data) =>{
-        if(err !== null) {
-          return reject(err);
-        }
-        resolve(data);
+    return this.createBucket().then(() => {
+      return new Promise((resolve, reject) => {
+        let params = {
+          Key: this._bucketPrefix + filename
+        };
+        this._s3Client.deleteObject(params, (err, data) =>{
+          if(err !== null) {
+            return reject(err);
+          }
+          resolve(data);
+        });
       });
     });
   }
@@ -88,12 +108,18 @@ export class S3Adapter extends FilesAdapter {
   // Returns a promise that succeeds with the buffer result from S3
   getFileData(config, filename) {
     let params = {Key: this._bucketPrefix + filename};
-    return new Promise((resolve, reject) => {
-      this._s3Client.getObject(params, (err, data) => {
-        if (err !== null) {
-          return reject(err);
-        }
-        resolve(data.Body);
+    return this.createBucket().then(() => {
+      return new Promise((resolve, reject) => {
+        this._s3Client.getObject(params, (err, data) => {
+          if (err !== null) {
+            return reject(err);
+          }
+          // Something happend here...
+          if (data && !data.Body) {
+            return reject(data);
+          }
+          resolve(data.Body);
+        });
       });
     });
   }
