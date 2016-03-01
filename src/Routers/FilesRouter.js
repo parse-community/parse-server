@@ -2,9 +2,8 @@ import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import { randomHexString } from '../cryptoUtils';
-import mime from 'mime';
 import Config from '../Config';
-import path from 'path';
+import mime from 'mime';
 
 export class FilesRouter {
 
@@ -42,7 +41,7 @@ export class FilesRouter {
       var contentType = mime.lookup(filename);
       res.set('Content-Type', contentType);
       res.end(data);
-    }).catch(() => {
+    }).catch((err) => {
       res.status(404);
       res.set('Content-Type', 'text/plain');
       res.end('File not found.');
@@ -68,20 +67,8 @@ export class FilesRouter {
       return;
     }
 
-    let filename = req.params.filename;
-
-    // safe way to get the extension
-    let extname = path.extname(filename);
-    let contentType = req.get('Content-type');
-
-    const hasExtension = extname.length > 0;
-
-    if (!hasExtension && contentType && mime.extension(contentType)) {
-      filename = filename + '.' + mime.extension(contentType);
-    } else if (hasExtension && !contentType) {
-      contentType = mime.lookup(req.params.filename);
-    }
-
+    const filename = req.params.filename;
+    const contentType = req.get('Content-type');
     const config = req.config;
     const filesController = config.filesController;
 
