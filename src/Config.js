@@ -50,44 +50,34 @@ export class Config {
       if (typeof appName !== 'string') {
         throw 'An app name is required when using email verification.';
       }
-      if (!process.env.TESTING && typeof publicServerURL !== 'string') {
-        if (process.env.NODE_ENV === 'production') {
-          throw 'A public server url is required when using email verification.';
-        } else {
-          console.warn("");
-          console.warn("You should set publicServerURL to serve the public pages");
-          console.warn("");
-        }
+      if (typeof publicServerURL !== 'string') {
+        throw 'A public server url is required when using email verification.';
       }
     }
   }
-  
-  get linksServerURL() {
-    return this.publicServerURL || this.serverURL;
-  }
-  
+
   get invalidLinkURL() {
-    return this.customPages.invalidLink || `${this.linksServerURL}/apps/invalid_link.html`;
+    return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
   }
   
   get verifyEmailSuccessURL() {
-    return this.customPages.verifyEmailSuccess || `${this.linksServerURL}/apps/verify_email_success.html`;
+    return this.customPages.verifyEmailSuccess || `${this.publicServerURL}/apps/verify_email_success.html`;
   }
   
   get choosePasswordURL() {
-    return this.customPages.choosePassword || `${this.linksServerURL}/apps/choose_password`;
+    return this.customPages.choosePassword || `${this.publicServerURL}/apps/choose_password`;
   }
   
   get requestResetPasswordURL() {
-    return `${this.linksServerURL}/apps/${this.applicationId}/request_password_reset`;
+    return `${this.publicServerURL}/apps/${this.applicationId}/request_password_reset`;
   }
   
   get passwordResetSuccessURL() {
-    return this.customPages.passwordResetSuccess || `${this.linksServerURL}/apps/password_reset_success.html`;
+    return this.customPages.passwordResetSuccess || `${this.publicServerURL}/apps/password_reset_success.html`;
   }
   
   get verifyEmailURL() {
-    return `${this.linksServerURL}/apps/${this.applicationId}/verify_email`;
+    return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
 };
 

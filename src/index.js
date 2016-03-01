@@ -182,7 +182,7 @@ function ParseServer({
     maxUploadSize: maxUploadSize
   }));
 
-  api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());    
+  api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());
   
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {

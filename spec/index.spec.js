@@ -56,6 +56,7 @@ describe('server', () => {
         apiKey: 'k',
         domain: 'd',
       }),
+      publicServerURL: 'http://localhost:8378/1'
     });
     done();
   });
@@ -80,6 +81,7 @@ describe('server', () => {
           domain: 'd',
         }
       },
+      publicServerURL: 'http://localhost:8378/1'
     });
     done();
   });
@@ -104,6 +106,7 @@ describe('server', () => {
           domain: 'd',
         }
       },
+      publicServerURL: 'http://localhost:8378/1'
     });
     done();
   });
@@ -122,6 +125,7 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: './Email/SimpleMailgunAdapter',
+      publicServerURL: 'http://localhost:8378/1'
     })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
     done();
   });
@@ -145,6 +149,7 @@ describe('server', () => {
           domain: 'd',
         }
       },
+      publicServerURL: 'http://localhost:8378/1'
     })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
     done();
   });

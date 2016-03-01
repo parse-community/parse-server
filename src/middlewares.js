@@ -174,6 +174,9 @@ var handleParseErrors = function(err, req, res, next) {
 
     res.status(httpStatus);
     res.json({code: err.code, error: err.message});
+  } else if (err.status && err.message) {
+    res.status(err.status);
+    res.json({error: err.message});
   } else {
     console.log('Uncaught internal server error.', err, err.stack);
     res.status(500);

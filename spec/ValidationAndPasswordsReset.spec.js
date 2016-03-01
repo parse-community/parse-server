@@ -56,6 +56,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     spyOn(emailAdapter, 'sendVerificationEmail');
     var user = new Parse.User();
@@ -97,6 +98,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     spyOn(emailAdapter, 'sendVerificationEmail');
     var user = new Parse.User();
@@ -137,6 +139,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     spyOn(emailAdapter, 'sendVerificationEmail');
     var user = new Parse.User();
@@ -196,6 +199,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     var user = new Parse.User();
     user.setPassword("asdf");
@@ -284,6 +288,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     var user = new Parse.User();
     user.setPassword("asdf");
@@ -334,6 +339,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
     user.setUsername("zxcv");
@@ -342,6 +348,25 @@ describe("Email Verification", () => {
   });
 
   it('redirects you to invalid link if you try to verify email incorrecly', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {}
+      },
+      publicServerURL: "http://localhost:8378/1"
+    });
     request.get('http://localhost:8378/1/apps/test/verify_email', {
       followRedirect: false,
     }, (error, response, body) => {
@@ -352,6 +377,25 @@ describe("Email Verification", () => {
   });
 
   it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {}
+      },
+      publicServerURL: "http://localhost:8378/1"
+    });
     request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
       followRedirect: false,
     }, (error, response, body) => {
@@ -393,6 +437,7 @@ describe("Email Verification", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
     user.setUsername("zxcv");
@@ -443,6 +488,7 @@ describe("Password Reset", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
     user.setUsername("zxcv");
@@ -459,6 +505,25 @@ describe("Password Reset", () => {
   });
   
   it('redirects you to invalid link if you try to request password for a nonexistant users email', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'emailing app',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {}
+      },
+      publicServerURL: "http://localhost:8378/1"
+    });
     request.get('http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga', {
       followRedirect: false,
     }, (error, response, body) => {
@@ -533,6 +598,7 @@ describe("Password Reset", () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
     user.setUsername("zxcv");

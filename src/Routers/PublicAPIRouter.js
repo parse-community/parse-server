@@ -11,10 +11,13 @@ let views = path.resolve(__dirname, '../../views');
 export class PublicAPIRouter extends PromiseRouter {
   
   verifyEmail(req) {
-    var token = req.query.token;
-    var username = req.query.username;
-    var appId = req.params.appId;
-    var config = new Config(appId);
+    let { token, username }= req.query;
+    let appId = req.params.appId;
+    let config = new Config(appId);
+    
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
     
     if (!token || !username) {
       return this.invalidLink(req);
@@ -33,9 +36,9 @@ export class PublicAPIRouter extends PromiseRouter {
   
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      var config = new Config(req.query.id);
-      if (!config.serverURL) {
-        return Promise.resolve({
+      let config = new Config(req.query.id);
+      if (!config.publicServerURL) {
+        return resolve({
           status: 404,
           text: 'Not found.'
         });
@@ -45,7 +48,7 @@ export class PublicAPIRouter extends PromiseRouter {
         if (err) {
           return reject(err);
         }
-        data = data.replace("PARSE_SERVER_URL", `'${config.serverURL}'`);
+        data = data.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
         resolve({
           text: data
         })
@@ -55,13 +58,18 @@ export class PublicAPIRouter extends PromiseRouter {
   
   requestResetPassword(req) {
 
-    var { username, token } = req.query;
+    let config = req.config;
+    
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+    
+    let { username, token } = req.query;
     
     if (!username || !token) {
       return this.invalidLink(req);
     }
     
-    let config = req.config;
     return config.userController.checkResetTokenValidity(username, token).then( (user) => {
       return Promise.resolve({
         status: 302,
@@ -73,7 +81,14 @@ export class PublicAPIRouter extends PromiseRouter {
   }
   
   resetPassword(req) {
-    var {
+
+    let config = req.config;
+    
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+    
+    let {
       username,
       token,
       new_password
@@ -83,14 +98,12 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
     
-    let config = req.config;
     return config.userController.updatePassword(username, token, new_password).then((result) => {
       return Promise.resolve({
         status: 302,
         location: config.passwordResetSuccessURL
       });
     }, (err) => {
-      console.error(err);
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?token=${token}&id=${config.applicationId}&username=${username}&error=${err}&app=${config.appName}`
@@ -106,20 +119,37 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
   
+  missingPublicServerURL() {
+    return Promise.resolve({
+      text:  'Not found.',
+      status: 404
+    });
+  }
+  
   setConfig(req) {
     req.config = new Config(req.params.appId);
     return Promise.resolve();
   }
   
   mountRoutes() {
-    this.route('GET','/apps/:appId/verify_email', this.setConfig, req => { return this.verifyEmail(req); });
-    this.route('GET','/apps/choose_password', req => { return this.changePassword(req); });
-    this.route('POST','/apps/:appId/request_password_reset', this.setConfig, req => { return this.resetPassword(req); });
-    this.route('GET','/apps/:appId/request_password_reset', this.setConfig, req => { return this.requestResetPassword(req); });
+    this.route('GET','/apps/:appId/verify_email',  
+      req => { this.setConfig(req) }, 
+      req => { return this.verifyEmail(req); });
+    
+    this.route('GET','/apps/choose_password', 
+      req => { return this.changePassword(req); });
+    
+    this.route('POST','/apps/:appId/request_password_reset', 
+      req => { this.setConfig(req) }, 
+      req => { return this.resetPassword(req); });
+    
+    this.route('GET','/apps/:appId/request_password_reset', 
+      req => { this.setConfig(req) }, 
+      req => { return this.requestResetPassword(req); });
   }
   
   expressApp() {
-    var router = express();
+    let router = express();
     router.use("/apps", express.static(public_html));
     router.use("/", super.expressApp());
     return router;
