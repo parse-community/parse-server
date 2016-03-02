@@ -853,4 +853,32 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('dedupes an installation properly and returns updatedAt', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    let data = {
+      'installationId': 'lkjsahdfkjhsdfkjhsdfkjhsdf',
+      'deviceType': 'embedded'
+    };
+    let requestOptions = {
+      headers: headers,
+      url: 'http://localhost:8378/1/installations',
+      body: JSON.stringify(data)
+    };
+    request.post(requestOptions, (error, response, body) => {
+      expect(error).toBe(null);
+      let b = JSON.parse(body);
+      expect(typeof b.objectId).toEqual('string');
+      request.post(requestOptions, (error, response, body) => {
+        expect(error).toBe(null);
+        let b = JSON.parse(body);
+        expect(typeof b.updatedAt).toEqual('string');
+        done();
+      });
+    });
+  });
+
 });

@@ -782,8 +782,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
-        this.response = resp;
-        this.response.updatedAt = this.updatedAt;
+        resp.updatedAt = this.updatedAt;
+        this.response = {
+          response: resp
+        };
       });
   } else {
     // Set the default ACL for the new _User
