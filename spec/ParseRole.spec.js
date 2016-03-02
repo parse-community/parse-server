@@ -108,7 +108,7 @@ describe('Parse Role testing', () => {
     .then((r) => {
       fail("_Role object should not save without name.");
     }, (error) => {
-      expect(error.code).toEqual(135);
+      expect(error.code).toEqual(111);
       done();
     });
   });

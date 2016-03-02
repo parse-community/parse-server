@@ -81,9 +81,6 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
-    if(req.params.className === '_Role' && req.body && !req.body.name){
-      throw new Parse.Error(135, 'Role names must be specified.');
-    }
     return rest.create(req.config, req.auth, req.params.className, req.body);
   }
 
