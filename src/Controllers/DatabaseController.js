@@ -542,6 +542,7 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
       mongoWhere = {'$and': [mongoWhere, {'$or': orParts}]};
     }
     if (options.count) {
+      delete mongoOptions.limit;
       return coll.count(mongoWhere, mongoOptions);
     } else {
       return this.smartFind(coll, mongoWhere, mongoOptions)
