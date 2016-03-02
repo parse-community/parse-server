@@ -98,8 +98,8 @@ describe('schemas', () => {
       json: true,
       headers: restKeyHeaders,
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -110,8 +110,8 @@ describe('schemas', () => {
       json: true,
       headers: restKeyHeaders,
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -206,8 +206,8 @@ describe('schemas', () => {
         className: 'MyClass',
       },
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });

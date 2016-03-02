@@ -194,6 +194,16 @@ function enforceMasterKeyAccess(req, res, next) {
   next();
 }
 
+function promiseEnforceMasterKeyAccess(request) {
+  if (!request.auth.isMaster) {
+    let error = new Error();
+    error.status = 403;
+    error.message = "unauthorized: master key is required";
+    throw error;
+  }
+  return Promise.resolve();
+}
+
 function invalidRequest(req, res) {
   res.status(403);
   res.end('{"error":"unauthorized"}');
@@ -204,5 +214,6 @@ module.exports = {
   allowMethodOverride: allowMethodOverride,
   handleParseErrors: handleParseErrors,
   handleParseHeaders: handleParseHeaders,
-  enforceMasterKeyAccess: enforceMasterKeyAccess
+  enforceMasterKeyAccess: enforceMasterKeyAccess,
+  promiseEnforceMasterKeyAccess
 };

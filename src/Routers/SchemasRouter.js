@@ -5,14 +5,7 @@ var express = require('express'),
   Schema = require('../Schema');
 
 import PromiseRouter from '../PromiseRouter';
-
-// TODO: refactor in a SchemaController at one point...
-function masterKeyRequiredResponse() {
-  return Promise.resolve({
-    status: 401,
-    response: {error: 'master key not specified'},
-  })
-}
+import * as middleware from "../middlewares";
 
 function classNameMismatchResponse(bodyClass, pathClass) {
   return Promise.resolve({
@@ -45,9 +38,6 @@ function mongoSchemaToSchemaAPIResponse(schema) {
 }
 
 function getAllSchemas(req) {
-  if (!req.auth.isMaster) {
-    return masterKeyRequiredResponse();
-  }
   return req.config.database.collection('_SCHEMA')
     .then(coll => coll.find({}).toArray())
     .then(schemas => ({response: {
@@ -56,9 +46,6 @@ function getAllSchemas(req) {
 }
 
 function getOneSchema(req) {
-  if (!req.auth.isMaster) {
-    return masterKeyRequiredResponse();
-  }
   return req.config.database.collection('_SCHEMA')
     .then(coll => coll.findOne({'_id': req.params.className}))
     .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
@@ -72,9 +59,6 @@ function getOneSchema(req) {
 }
 
 function createSchema(req) {
-  if (!req.auth.isMaster) {
-    return masterKeyRequiredResponse();
-  }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
@@ -100,10 +84,6 @@ function createSchema(req) {
 }
 
 function modifySchema(req) {
-  if (!req.auth.isMaster) {
-    return masterKeyRequiredResponse();
-  }
-
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
@@ -168,10 +148,6 @@ var removeJoinTables = (database, mongoSchema) => {
 };
 
 function deleteSchema(req) {
-  if (!req.auth.isMaster) {
-    return masterKeyRequiredResponse();
-  }
-
   if (!Schema.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, Schema.invalidClassNameMessage(req.params.className));
   }
@@ -214,11 +190,11 @@ function deleteSchema(req) {
 
 export class SchemasRouter extends PromiseRouter {
   mountRoutes() {
-    this.route('GET', '/schemas', getAllSchemas);
-    this.route('GET', '/schemas/:className', getOneSchema);
-    this.route('POST', '/schemas', createSchema);
-    this.route('POST', '/schemas/:className', createSchema);
-    this.route('PUT', '/schemas/:className', modifySchema);
-    this.route('DELETE', '/schemas/:className', deleteSchema);
+    this.route('GET', '/schemas', middleware.promiseEnforceMasterKeyAccess, getAllSchemas);
+    this.route('GET', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, getOneSchema);
+    this.route('POST', '/schemas', middleware.promiseEnforceMasterKeyAccess, createSchema);
+    this.route('POST', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, createSchema);
+    this.route('PUT', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, modifySchema);
+    this.route('DELETE', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, deleteSchema);
   }
 }
