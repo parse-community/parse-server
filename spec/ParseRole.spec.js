@@ -96,7 +96,6 @@ describe('Parse Role testing', () => {
        })
        done();
      }, function(err){
-       console.log('error?',err);
        fail("should succeed")
        done();
      });
