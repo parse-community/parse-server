@@ -46,6 +46,17 @@ export default class MongoCollection {
   count(query, { skip, limit, sort } = {}) {
     return this._mongoCollection.count(query, { skip, limit, sort });
   }
+  
+  // Atomically find and delete an object based on query.
+  // The result is the promise with an object that was in the database before deleting.
+  // Postgres Note: Translates directly to `DELETE * FROM ... RETURNING *`, which will return data after delete is done.
+  findOneAndDelete(query) {
+    // arguments: query, sort
+    return this._mongoCollection.findAndRemove(query, []).then(document => {
+      // Value is the object where mongo returns multiple fields.
+      return document.value;
+    });
+  }
 
   drop() {
     return this._mongoCollection.drop();

@@ -164,14 +164,14 @@ function deleteSchema(req) {
     .then(() => {
       // We've dropped the collection now, so delete the item from _SCHEMA
       // and clear the _Join collections
-      return req.config.database.collection('_SCHEMA')
-        .then(coll => coll.findAndRemove({_id: req.params.className}, []))
-        .then(doc => {
-          if (doc.value === null) {
+      return req.config.database.adaptiveCollection('_SCHEMA')
+        .then(coll => coll.findOneAndDelete({_id: req.params.className}))
+        .then(document => {
+          if (document === null) {
             //tried to delete non-existent class
             return Promise.resolve();
           }
-          return removeJoinTables(req.config.database, doc.value);
+          return removeJoinTables(req.config.database, document);
         });
     })
     .then(() => {
