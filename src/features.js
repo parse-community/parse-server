@@ -58,7 +58,6 @@ let features = {
 
 // master switch for features
 let featuresSwitch = {
-  serverVersion: true,
   globalConfig: true,
   hooks: true,
   logs: true,
