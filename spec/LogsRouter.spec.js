@@ -23,7 +23,7 @@ describe('LogsRouter', () => {
     var router = new LogsRouter();
 
     expect(() => {
-      router.handleGET(request);
+      router.validateRequest(request);
     }).not.toThrow();
     done();
   });
@@ -43,14 +43,14 @@ describe('LogsRouter', () => {
     var router = new LogsRouter();
 
     expect(() => {
-      router.handleGET(request);
+      router.validateRequest(request);
     }).toThrow();
     done();
   });
 
   it('can check invalid master key of request', done => {
     request.get({
-      url: 'http://localhost:8378/1/logs',
+      url: 'http://localhost:8378/1/scriptlog',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',

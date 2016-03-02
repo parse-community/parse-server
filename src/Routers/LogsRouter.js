@@ -5,7 +5,16 @@ import * as middleware from "../middlewares";
 export class LogsRouter extends PromiseRouter {
   
   mountRoutes() {
-    this.route('GET','/logs', middleware.promiseEnforceMasterKeyAccess, req => { return this.handleGET(req); });
+    this.route('GET','/scriptlog', middleware.promiseEnforceMasterKeyAccess, this.validateRequest,  (req) => {
+      return this.handleGET(req);
+    });
+  }
+
+  validateRequest(req) {
+    if (!req.config || !req.config.loggerController) {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+        'Logger adapter is not availabe');
+    }
   }
 
   // Returns a promise for a {response} object.
@@ -15,17 +24,17 @@ export class LogsRouter extends PromiseRouter {
   // until (optional) End time for the search. Defaults to current time.
   // order (optional) Direction of results returned, either “asc” or “desc”. Defaults to “desc”.
   // size (optional) Number of rows returned by search. Defaults to 10
+  // n same as size, overrides size if set
   handleGET(req) {
-    if (!req.config || !req.config.loggerController) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Logger adapter is not available.');
-    }
-
-    let from = req.query.from;
-    let until = req.query.until;
+    const from = req.query.from;
+    const until = req.query.until;
     let size = req.query.size;
-    let order = req.query.order
-    let level = req.query.level;
+    if (req.query.n) {
+      size = req.query.n;      
+    }
     
+    const order = req.query.order
+    const level = req.query.level;
     const options = {
       from,
       until,
@@ -33,10 +42,12 @@ export class LogsRouter extends PromiseRouter {
       order,
       level
     };
-    
-    return req.config.loggerController
-      .getLogs(options)
-      .then(result => ({ response: result }));
+
+    return req.config.loggerController.getLogs(options).then((result) => {
+      return Promise.resolve({
+        response: result
+      });
+    })
   }
 }
 
