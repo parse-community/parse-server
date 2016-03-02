@@ -366,13 +366,11 @@ DatabaseController.prototype.deleteEverything = function() {
 function keysForQuery(query) {
   var sublist = query['$and'] || query['$or'];
   if (sublist) {
-    var answer = new Set();
-    for (var subquery of sublist) {
-      for (var key of keysForQuery(subquery)) {
-        answer.add(key);
-      }
-    }
-    return answer;
+    let answer = sublist.reduce((memo, subquery) => {
+      return memo.concat(keysForQuery(subquery));
+    }, []);
+
+    return new Set(answer);
   }
 
   return new Set(Object.keys(query));
@@ -400,6 +398,17 @@ DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
 DatabaseController.prototype.reduceInRelation = function(className, query, schema) {
   // Search for an in-relation or equal-to-relation
   // Make it sequential for now, not sure of paralleization side effects
+  if (query['$or']) {
+    let ors = query['$or'];
+    return Promise.all(ors.map((aQuery, index) => {
+      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
+        if (aQuery) {
+          query['$or'][index] = aQuery; 
+        }
+      })
+    }));
+  }
+
   return Object.keys(query).reduce((promise, key) => {
     return promise.then(() => {
       if (query[key] &&
@@ -420,15 +429,25 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
           delete query[key];
           query.objectId = Object.assign({'$in': []}, query.objectId);
           query.objectId['$in'] = query.objectId['$in'].concat(ids);
+          return Promise.resolve(query);
         });
       }
     });
-  }, Promise.resolve());
+  }, Promise.resolve()).then(() => {
+    return Promise.resolve(query);
+  })
 };
 
 // Modifies query so that it no longer has $relatedTo
 // Returns a promise that resolves when query is mutated
 DatabaseController.prototype.reduceRelationKeys = function(className, query) {
+  
+  if (query['$or']) {
+    return Promise.all(query['$or'].map((aQuery) => {
+      return this.reduceRelationKeys(className, aQuery);
+    }));
+  }
+  
   var relatedTo = query['$relatedTo'];
   if (relatedTo) {
     return this.relatedIds(

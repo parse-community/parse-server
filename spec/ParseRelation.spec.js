@@ -287,7 +287,55 @@ describe('Parse.Relation testing', () => {
             query.containedIn("otherChild", [childObjects[0]]);
             query.find({
               success: function(list) {
-                equal(list.length, 2, "There should be only one result");
+                equal(list.length, 2, "There should be 2 results");
+                done();
+              }
+            });
+          }
+        });
+      }
+    });
+  });
+  
+  it("or queries on pointer and relation fields", (done) => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x: i}));
+    }
+
+    Parse.Object.saveAll(childObjects, {
+      success: function() {
+        var ParentObject = Parse.Object.extend("ParentObject");
+        var parent = new ParentObject();
+        parent.set("x", 4);
+        var relation = parent.relation("toChilds");
+        relation.add(childObjects[0]);
+        relation.add(childObjects[1]);
+        relation.add(childObjects[2]);
+        
+        var parent2 = new ParentObject();
+        parent2.set("x", 3);
+        parent2.set("toChild", childObjects[2]);
+        
+        var parents = [];
+        parents.push(parent);
+        parents.push(parent2);
+        parents.push(new ParentObject());
+        
+        Parse.Object.saveAll(parents, {
+          success: function() {
+            var query1 = new Parse.Query(ParentObject);
+            query1.containedIn("toChilds", [childObjects[2]]);
+            var query2 = new Parse.Query(ParentObject);
+            query2.equalTo("toChild", childObjects[2]);
+            var query = Parse.Query.or(query1, query2);
+            query.find({
+              success: function(list) {
+                list = list.filter(function(item){
+                  return item.id == parent.id || item.id == parent2.id;
+                });
+                equal(list.length, 2, "There should be 2 results");
                 done();
               }
             });
