@@ -350,11 +350,7 @@ describe('Parse.Object testing', () => {
     var next = function(index) {
       if (index < tests.length) {
         tests[index].save().then(fail, error => {
-          if (types[index] === 'Pointer') {
-            expect(error.code).toEqual(Parse.Error.INVALID_POINTER);
-          } else {
-            expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
-          }
+          expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
           next(index + 1);
         });
       } else {

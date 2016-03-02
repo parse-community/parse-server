@@ -737,34 +737,33 @@ function getObjectType(obj) {
         if(obj.className) {
           return '*' + obj.className;
         } else {
-          throw new Parse.Error(Parse.Error.INVALID_POINTER, JSON.stringify(obj) + " is not a valid Pointer");
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
         break;
       case 'File' :
         if(obj.name) {
           return 'file';
         } else {
-          let msg = obj.name? JSON.stringify(obj) + " is not a valid File" : "File has no name";
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, msg);
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
         break;
       case 'Date' :
         if(obj.iso) {
           return 'date';
         } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, JSON.stringify(obj) + " is not a valid Date");
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
         break;
       case 'GeoPoint' :
         if(obj.latitude != null && obj.longitude != null) {
           return 'geopoint';
         } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, JSON.stringify(obj) + " is not a valid GeoPoint");
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
         break;
       case 'Bytes' :
         if(!obj.base64) {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'Bytes type has no base64 field: ' + JSON.stringify(obj));
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
         break;
       default :
