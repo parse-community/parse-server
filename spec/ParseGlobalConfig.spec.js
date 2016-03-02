@@ -53,8 +53,8 @@ describe('a GlobalConfig', () => {
         'X-Parse-REST-API-Key': 'rest'
       },
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('unauthorized');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });  
