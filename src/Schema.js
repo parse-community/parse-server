@@ -74,7 +74,7 @@ var defaultColumns = {
 
 var requiredColumns = {
   _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
-  _Role: ["name"]
+  _Role: ["name", "ACL"]
 }
 
 // Valid classes must:

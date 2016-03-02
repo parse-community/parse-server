@@ -65,8 +65,7 @@ describe('Parse Role testing', () => {
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
 
     var createRole = function(name, parent, user) {
-      var role = new Parse.Object("_Role")
-      role.set("name", name);
+      var role = new Parse.Role(name, new Parse.ACL());
       if (user) {
         var users = role.relation('users');
         users.add(user);
@@ -97,6 +96,7 @@ describe('Parse Role testing', () => {
        })
        done();
      }, function(err){
+       console.log('error?',err);
        fail("should succeed")
        done();
      });
@@ -109,7 +109,14 @@ describe('Parse Role testing', () => {
       fail("_Role object should not save without name.");
     }, (error) => {
       expect(error.code).toEqual(111);
-      done();
+      role.set('name','testRole');
+      role.save(null,{useMasterKey:true})
+      .then((r2)=>{
+        fail("_Role object should not save without ACL.");
+      }, (error2) =>{
+        expect(error2.code).toEqual(111);
+        done();
+      });
     });
   });
 
