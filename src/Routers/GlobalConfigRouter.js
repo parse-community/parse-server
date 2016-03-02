@@ -3,6 +3,7 @@
 var Parse = require('parse/node').Parse;
 
 import PromiseRouter from '../PromiseRouter';
+import * as middleware from "../middlewares";
 
 export class GlobalConfigRouter extends PromiseRouter {
   getGlobalConfig(req) {
@@ -18,13 +19,6 @@ export class GlobalConfigRouter extends PromiseRouter {
       }));
   }
   updateGlobalConfig(req) {
-    if (!req.auth.isMaster) {
-      return Promise.resolve({
-        status: 401,
-        response: {error: 'unauthorized'},
-      });
-    }
-
     return req.config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }))
       .then(response => {
@@ -41,7 +35,7 @@ export class GlobalConfigRouter extends PromiseRouter {
   
   mountRoutes() {
     this.route('GET', '/config', req => { return this.getGlobalConfig(req) });
-    this.route('PUT', '/config', req => { return this.updateGlobalConfig(req) });
+    this.route('PUT', '/config', middleware.promiseEnforceMasterKeyAccess, req => { return this.updateGlobalConfig(req) });
   }
 }
 
