@@ -1,4 +1,5 @@
 var request = require('request');
+var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 
 describe('server', () => {
@@ -152,5 +153,19 @@ describe('server', () => {
       publicServerURL: 'http://localhost:8378/1'
     })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
     done();
+  });
+
+  it('can report the server version', done => {
+    request.get({
+      url: 'http://localhost:8378/1/features',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+      json: true,
+    }, (error, response, body) => {
+      expect(body.serverVersion).toEqual(parseServerPackage.version);
+      done();
+    })
   });
 });
