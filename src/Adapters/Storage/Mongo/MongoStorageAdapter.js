@@ -1,4 +1,6 @@
 
+import MongoCollection from './MongoCollection';
+
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
 
@@ -28,6 +30,12 @@ export class MongoStorageAdapter {
     return this.connect().then(() => {
       return this.database.collection(name);
     });
+  }
+
+  adaptiveCollection(name: string) {
+    return this.connect()
+      .then(() => this.database.collection(name))
+      .then(rawCollection => new MongoCollection(rawCollection));
   }
 
   collectionExists(name: string) {
