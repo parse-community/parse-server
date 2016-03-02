@@ -36,6 +36,12 @@ module.exports = function(options) {
   options.followRedirect = options.followRedirects == true;
   
   request(options, (error, response, body) => {
+    if (error) {
+      if (callbacks.error) {
+        callbacks.error(error);
+      }
+      return promise.reject(error);
+    }
     var httpResponse = {};
     httpResponse.status = response.statusCode;
     httpResponse.headers = response.headers;
@@ -46,7 +52,7 @@ module.exports = function(options) {
       httpResponse.data = JSON.parse(response.body);
     } catch (e) {}
     // Consider <200 && >= 400 as errors 
-    if (error || httpResponse.status <200 || httpResponse.status >=400) {
+    if (httpResponse.status < 200 || httpResponse.status >= 400) {
       if (callbacks.error) {
         callbacks.error(httpResponse);
       }

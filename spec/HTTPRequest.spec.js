@@ -177,5 +177,20 @@ describe("httpRequest", () => {
     var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'X-Custom-Header': 'my-header'});
     expect(result).toEqual({"foo": "bar", "bar": "baz"});
     done();
+  });
+  
+  it("should fail gracefully", (done) => {
+    httpRequest({
+      url: "http://not a good url",
+      success: function() { 
+        fail("should not succeed");
+        done();
+      },
+      error: function(error) { 
+        expect(error).not.toBeUndefined();
+        expect(error).not.toBeNull();
+        done();
+      }
+    });
   })
 });
