@@ -38,6 +38,10 @@ DatabaseController.prototype.collection = function(className) {
   return this.rawCollection(className);
 };
 
+DatabaseController.prototype.adaptiveCollection = function(className) {
+  return this.adapter.adaptiveCollection(this.collectionPrefix + className);
+};
+
 DatabaseController.prototype.collectionExists = function(className) {
   return this.adapter.collectionExists(this.collectionPrefix + className);
 };
@@ -340,9 +344,8 @@ DatabaseController.prototype.create = function(className, object, options) {
 // to avoid Mongo-format dependencies.
 // Returns a promise that resolves to a list of items.
 DatabaseController.prototype.mongoFind = function(className, query, options = {}) {
-  return this.collection(className).then((coll) => {
-    return coll.find(query, options).toArray();
-  });
+  return this.adaptiveCollection(className)
+    .then(collection => collection.find(query, options));
 };
 
 // Deletes everything in the database matching the current collectionPrefix
@@ -378,23 +381,17 @@ function keysForQuery(query) {
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
 DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  var joinTable = '_Join:' + key + ':' + className;
-  return this.collection(joinTable).then((coll) => {
-    return coll.find({owningId: owningId}).toArray();
-  }).then((results) => {
-    return results.map(r => r.relatedId);
-  });
+  return this.adaptiveCollection(joinTableName(className, key))
+    .then(coll => coll.find({owningId : owningId}))
+    .then(results => results.map(r => r.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
 DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
-  var joinTable = '_Join:' + key + ':' + className;
-  return this.collection(joinTable).then((coll) => {
-    return coll.find({relatedId: {'$in': relatedIds}}).toArray();
-  }).then((results) => {
-    return results.map(r => r.owningId);
-  });
+  return this.adaptiveCollection(joinTableName(className, key))
+    .then(coll => coll.find({ relatedId: { '$in': relatedIds } }))
+    .then(results => results.map(r => r.owningId));
 };
 
 // Modifies query so that it no longer has $in on relation fields, or
@@ -441,38 +438,6 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
         return this.reduceRelationKeys(className, query);
       });
   }
-};
-
-// Does a find with "smart indexing".
-// Currently this just means, if it needs a geoindex and there is
-// none, then build the geoindex.
-// This could be improved a lot but it's not clear if that's a good
-// idea. Or even if this behavior is a good idea.
-DatabaseController.prototype.smartFind = function(coll, where, options) {
-  return coll.find(where, options).toArray()
-    .then((result) => {
-      return result;
-    }, (error) => {
-      // Check for "no geoindex" error
-      if (!error.message.match(/unable to find index for .geoNear/) ||
-          error.code != 17007) {
-        throw error;
-      }
-
-      // Figure out what key needs an index
-      var key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
-      if (!key) {
-        throw error;
-      }
-
-      var index = {};
-      index[key] = '2d';
-      //TODO: condiser moving index creation logic into Schema.js
-      return coll.createIndex(index).then(() => {
-        // Retry, but just once.
-        return coll.find(where, options).toArray();
-      });
-    });
 };
 
 // Runs a query on the database.
@@ -528,8 +493,8 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   }).then(() => {
     return this.reduceInRelation(className, query, schema);
   }).then(() => {
-    return this.collection(className);
-  }).then((coll) => {
+    return this.adaptiveCollection(className);
+  }).then(collection => {
     var mongoWhere = transform.transformWhere(schema, className, query);
     if (!isMaster) {
       var orParts = [
@@ -543,9 +508,9 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
     }
     if (options.count) {
       delete mongoOptions.limit;
-      return coll.count(mongoWhere, mongoOptions);
+      return collection.count(mongoWhere, mongoOptions);
     } else {
-      return this.smartFind(coll, mongoWhere, mongoOptions)
+      return collection.find(mongoWhere, mongoOptions)
         .then((mongoResults) => {
           return mongoResults.map((r) => {
             return this.untransformObject(
@@ -555,5 +520,9 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
     }
   });
 };
+
+function joinTableName(className, key) {
+  return `_Join:${key}:${className}`;
+}
 
 module.exports = DatabaseController;
