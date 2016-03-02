@@ -396,15 +396,14 @@ DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
 // equal-to-pointer constraints on relation fields.
 // Returns a promise that resolves when query is mutated
 DatabaseController.prototype.reduceInRelation = function(className, query, schema) {
+  
   // Search for an in-relation or equal-to-relation
   // Make it sequential for now, not sure of paralleization side effects
   if (query['$or']) {
     let ors = query['$or'];
     return Promise.all(ors.map((aQuery, index) => {
       return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
-        if (aQuery) {
-          query['$or'][index] = aQuery; 
-        }
+        query['$or'][index] = aQuery; 
       })
     }));
   }
@@ -416,7 +415,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
         let t = schema.getExpectedType(className, key);
         let match = t ? t.match(/^relation<(.*)>$/) : false;
         if (!match) {
-          return;
+          return Promise.resolve(query);
         }
         let relatedClassName = match[1];
         let relatedIds;
@@ -455,7 +454,10 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
       relatedTo.key,
       relatedTo.object.objectId).then((ids) => {
         delete query['$relatedTo'];
-        query['objectId'] = {'$in': ids};
+        query.objectId = query.objectId || {};
+        let queryIn = query.objectId['$in'] || [];
+        queryIn = queryIn.concat(ids);
+        query['objectId'] = {'$in': queryIn};
         return this.reduceRelationKeys(className, query);
       });
   }
