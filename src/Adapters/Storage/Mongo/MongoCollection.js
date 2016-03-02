@@ -46,4 +46,8 @@ export default class MongoCollection {
   count(query, { skip, limit, sort } = {}) {
     return this._mongoCollection.count(query, { skip, limit, sort });
   }
+
+  drop() {
+    return this._mongoCollection.drop();
+  }
 }

@@ -38,11 +38,10 @@ function mongoSchemaToSchemaAPIResponse(schema) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.collection('_SCHEMA')
-    .then(coll => coll.find({}).toArray())
-    .then(schemas => ({response: {
-      results: schemas.map(mongoSchemaToSchemaAPIResponse)
-    }}));
+  return req.config.database.adaptiveCollection('_SCHEMA')
+    .then(collection => collection.find({}))
+    .then(schemas => schemas.map(mongoSchemaToSchemaAPIResponse))
+    .then(schemas => ({ response: { results: schemas }}));
 }
 
 function getOneSchema(req) {
@@ -152,7 +151,7 @@ function deleteSchema(req) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, Schema.invalidClassNameMessage(req.params.className));
   }
 
-  return req.config.database.collection(req.params.className)
+  return req.config.database.adaptiveCollection(req.params.className)
     .then(collection => {
       return collection.count()
         .then(count => {
@@ -161,19 +160,19 @@ function deleteSchema(req) {
           }
           return collection.drop();
         })
-        .then(() => {
-          // We've dropped the collection now, so delete the item from _SCHEMA
-          // and clear the _Join collections
-          return req.config.database.collection('_SCHEMA')
-            .then(coll => coll.findAndRemove({_id: req.params.className}, []))
-            .then(doc => {
-              if (doc.value === null) {
-                //tried to delete non-existent class
-                return Promise.resolve();
-              }
-              return removeJoinTables(req.config.database, doc.value);
-            });
-        })
+    })
+    .then(() => {
+      // We've dropped the collection now, so delete the item from _SCHEMA
+      // and clear the _Join collections
+      return req.config.database.collection('_SCHEMA')
+        .then(coll => coll.findAndRemove({_id: req.params.className}, []))
+        .then(doc => {
+          if (doc.value === null) {
+            //tried to delete non-existent class
+            return Promise.resolve();
+          }
+          return removeJoinTables(req.config.database, doc.value);
+        });
     })
     .then(() => {
       // Success
