@@ -142,51 +142,45 @@ DatabaseController.prototype.update = function(className, query, update, options
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
   var mongoUpdate, schema;
-  return this.loadSchema(acceptor).then((s) => {
-    schema = s;
-    if (!isMaster) {
-      return schema.validatePermission(className, aclGroup, 'update');
-    }
-    return Promise.resolve();
-  }).then(() => {
-
-    return this.handleRelationUpdates(className, query.objectId, update);
-  }).then(() => {
-    return this.collection(className);
-  }).then((coll) => {
-    var mongoWhere = transform.transformWhere(schema, className, query);
-    if (options.acl) {
-      var writePerms = [
-        {_wperm: {'$exists': false}}
-      ];
-      for (var entry of options.acl) {
-        writePerms.push({_wperm: {'$in': [entry]}});
+  return this.loadSchema(acceptor)
+    .then(s => {
+      schema = s;
+      if (!isMaster) {
+        return schema.validatePermission(className, aclGroup, 'update');
       }
-      mongoWhere = {'$and': [mongoWhere, {'$or': writePerms}]};
-    }
-
-    mongoUpdate = transform.transformUpdate(schema, className, update);
-
-    return coll.findAndModify(mongoWhere, {}, mongoUpdate, {});
-  }).then((result) => {
-    if (!result.value) {
-      return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                                            'Object not found.'));
-    }
-    if (result.lastErrorObject.n != 1) {
-      return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                                            'Object not found.'));
-    }
-
-    var response = {};
-    var inc = mongoUpdate['$inc'];
-    if (inc) {
-      for (var key in inc) {
-        response[key] = (result.value[key] || 0) + inc[key];
+      return Promise.resolve();
+    })
+    .then(() => this.handleRelationUpdates(className, query.objectId, update))
+    .then(() => this.adaptiveCollection(className))
+    .then(collection => {
+      var mongoWhere = transform.transformWhere(schema, className, query);
+      if (options.acl) {
+        var writePerms = [
+          {_wperm: {'$exists': false}}
+        ];
+        for (var entry of options.acl) {
+          writePerms.push({_wperm: {'$in': [entry]}});
+        }
+        mongoWhere = {'$and': [mongoWhere, {'$or': writePerms}]};
       }
-    }
-    return response;
-  });
+      mongoUpdate = transform.transformUpdate(schema, className, update);
+      return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+    })
+    .then(result => {
+      if (!result) {
+        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+          'Object not found.'));
+      }
+
+      let response = {};
+      let inc = mongoUpdate['$inc'];
+      if (inc) {
+        Object.keys(inc).forEach(key => {
+          response[key] = result[key];
+        });
+      }
+      return response;
+    });
 };
 
 // Processes relation-updating operations from a REST-format update.
