@@ -40,49 +40,43 @@ export class UserController extends AdaptableController {
   
   
   verifyEmail(username, token) {
-    
-    return new Promise((resolve, reject) => {
-      
+    if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
-      if (!this.shouldVerifyEmails) {
-        reject();
-        return;
-      }
-      
-      var database = this.config.database;
-     
-      database.collection('_User').then(coll => {
+      // TODO: Better error here.
+      return Promise.reject();
+    }
+
+    return this.config.database
+      .adaptiveCollection('_User')
+      .then(collection => {
         // Need direct database access because verification token is not a parse field
-        return coll.findAndModify({
+        return collection.findOneAndUpdate({
           username: username,
-          _email_verify_token: token,
-        }, null, {$set: {emailVerified: true}}, (err, doc) => {
-          if (err || !doc.value) {
-            reject(err);
-          } else {
-            resolve(doc.value);
-          }
-        });
+          _email_verify_token: token
+        }, {$set: {emailVerified: true}});
+      })
+      .then(document => {
+        if (!document) {
+          return Promise.reject();
+        }
+        return document;
       });
-       
-    });    
   }
   
   checkResetTokenValidity(username, token) {
-    return new Promise((resolve, reject) => {
-      return this.config.database.collection('_User').then(coll => {
-        return coll.findOne({
-          username: username,
-          _perishable_token: token,
-        }, (err, doc) => {
-          if (err || !doc) {
-            reject(err);
-          } else {
-            resolve(doc);
-          }
-        });
+    return this.config.database.adaptiveCollection('_User')
+      .then(collection => {
+          return collection.find({
+            username: username,
+            _perishable_token: token
+          }, { limit: 1 });
+        })
+      .then(results => {
+        if (results.length != 1) {
+          return Promise.reject();
+        }
+        return results[0];
       });
-    });
   }
   
   getUserIfNeeded(user) {
@@ -130,24 +124,16 @@ export class UserController extends AdaptableController {
   }
   
   setPasswordResetToken(email) {
-    var database = this.config.database;
-    var token = randomString(25);
-    return new Promise((resolve, reject) => {
-      return database.collection('_User').then(coll => {
+    let token = randomString(25);
+    return this.config.database
+      .adaptiveCollection('_User')
+      .then(collection => {
         // Need direct database access because verification token is not a parse field
-        return coll.findAndModify({
-          email: email,
-        }, null, {$set: {_perishable_token: token}}, (err, doc) => {
-          if (err || !doc.value) {
-            console.error(err);
-            reject(err);
-          } else {
-            doc.value._perishable_token = token;
-            resolve(doc.value);
-          }
-        });
+        return collection.findOneAndUpdate(
+          { email: email}, // query
+          { $set: { _perishable_token: token } } // update
+        );
       });
-    });
   }
 
   sendPasswordResetEmail(email) {
