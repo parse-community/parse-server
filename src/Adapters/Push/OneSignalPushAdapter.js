@@ -61,7 +61,7 @@ export class OneSignalPushAdapter extends PushAdapter {
 
     data= deepcopy(data['data']);
 
-    var post = {};
+    var post = deepcopy(data['params']);
     if(data['badge']) {
       if(data['badge'] == "Increment") {
         post['ios_badgeType'] = 'Increase';
@@ -121,7 +121,7 @@ export class OneSignalPushAdapter extends PushAdapter {
   sendToGCM(data,tokens) {
     data= deepcopy(data['data']);
 
-    var post = {};
+   var post = deepcopy(data['params']);
     
     if(data['alert']) {
       post['contents'] = {en: data['alert']};
