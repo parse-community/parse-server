@@ -1,0 +1,35 @@
+{
+  "parser": "babel-eslint",
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "impliedStrict": true,
+    "sourceType": "module"
+  },
+  "env": {
+    "node": true,
+    "jasmine": true,
+    "es6": true
+  },
+  "globals": {
+    "Parse": true,
+    "TestObject": true,
+		"Item": true,
+		"Container": true,
+		"create": true,
+		"createTestUser": true,
+		"notWorking": true,
+		"ok": true,
+		"equal": true,
+		"strictEqual": true,
+		"notEqual": true,
+		"expectSuccess": true,
+		"expectError": true,
+		"arrayContains": true,
+		"jequal": true,
+		"range": true,
+		"setServerConfiguration": true,
+		"defaultConfiguration": true
+  },
+  "rules": {},
+  "plugins": ["flowtype"]
+}
