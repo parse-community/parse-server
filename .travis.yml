@@ -1,13 +1,17 @@
 branches:
   only:
-    - master
+  - master
 language: node_js
 node_js:
-  - "4.3"
+- '4.3'
 env:
+  matrix:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
+  global:
+  - secure: Zy4Zx+18IOMbDcymi7wprThSjdd5Z4PqbqxIAvIRJqAvwu6c3d6UhVXiKRM3PxmMwjHeZvB8YR3OavrSq2orf8HmHiQS8Z5For7i07vLpWXR2ZkYN7gFuLDZgLP738FYLtOMJPIKx1hHfonIDWi4A4TyFoRTQb96w1PJv3p1hNy/gnblRL3hTYAEoZTEURFfVv41I2gpKzomN/VqhLuhlZpdn3rpahYSklls4tLCtwYYdfTLMCM+4PAa1GEO68op/NeV4l/l71ab07kPdnE26B4SMOEk1sGZKWMyK0fWdPKwp9a8r/xqyzvWK1RqU78rNJ0GhbiYF3YBdn1yslqII1ap7GJwEfn2/3VJlBvRKCBu0vIO5Mdgivf29MhcnACytj4C6HfCQcLgQlSZwqy5eyXqOc7f8irxQpNYqKspM+zpU77b/7hDyy/GVhpu9nstjnuv04bQNVE8Q4cby0GLw7+EJDjk1Ql80w03IfD6R12jFNI8U95YW2HCKoCLBi1Pld9XET7P6fJN4T+ir4aAdrTCPyUM7Evn8yVd+2L4+NuL62iJF5nmjBEij217IwqTTwGtpX2aBV4ADzf2Uh97Jn22c7D4rwiiPX1Sf5Z85460zZB+0klhYjTFZEia1/oONCwOchyFPvMIxkKDnOyMVLxs221fSmHh2gyWCPePBWU=
+  - secure: Kf+GT7bt/xT+FgtzPvrXqNmjbyB9qj+0zpZf8lHgHBvPoIhAfnCuF7KP8VA2Uod1HYyE6QZMUuyK+BAsy2XfaRfYgDPijdivW2HkJv7gKrg0SMz5/choQZp5MaNENVbrdmDtRAGANm51IRhbc2xx2knP5+fG0qtVybFDNGW0k4XDG2/pfmOMjt+OFOJh8yYelcJSbMPC9dBtiSwAba/kgy+Zl3CjLTBu6lZEH01Y1KOIAFhlJKX/beyGvmgHyjiMVD7SBmJXoxS5ZNq9IoL5y/FZ90jiFu0qMcW0SSWthJQVXzo8q5zf774l6cKlBa3p8K/I3Dk/AT/GaBBm4e6hZF+GQmRytaEda9x+V3fVFNz1T9pSceDqIP1e3M/mfd17qwIRiOjPArIMvDpXbEVGToAxJEs7ZpvmQ7dM/C1fywK2hhfqLcPhTKtK8UrQ2zVt6sEcvKztpkAOYjrC+y4cw6yyUL5SmKOzR2Lao4sm8e3dq5BprzUbNoDnesdbIeV2LpfpARVGq3tTPIWm6KtXQTTU5HHuk004fH9WYT1U90bcediN5ginPuFxH6I/Wguer9gdZoZqpYcI5f91Yr8SamS7tT3v7Ku2ckqPUpzaQx/piXUsmScIwbqiN7YzWzNixSaMxglGhs3+6fFemWRALrHXyJq3npT1Qp/UzkwzO7g=
 cache:
   directories:
-    - $HOME/.mongodb/versions/downloads
-after_success: ./node_modules/.bin/codecov
+  - "$HOME/.mongodb/versions/downloads"
+after_success: "./node_modules/.bin/codecov"
