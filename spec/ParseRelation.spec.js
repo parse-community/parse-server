@@ -237,7 +237,57 @@ describe('Parse.Relation testing', () => {
               success: function(list) {
                 equal(list.length, 1, "There should be only one result");
                 equal(list[0].id, parent2.id,
-                      "Should have gotten back the right result");
+                      "Should have gotten back the right result"); 
+                done();
+              }
+            });
+          }
+        });
+      }
+    });
+  });
+  
+  it("queries on relation fields with multiple ins", (done) => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x: i}));
+    }
+
+    Parse.Object.saveAll(childObjects, {
+      success: function() {
+        var ParentObject = Parse.Object.extend("ParentObject");
+        var parent = new ParentObject();
+        parent.set("x", 4);
+        var relation = parent.relation("child");
+        relation.add(childObjects[0]);
+        relation.add(childObjects[1]);
+        relation.add(childObjects[2]);
+        var parent2 = new ParentObject();
+        parent2.set("x", 3);
+        var relation2 = parent2.relation("child");
+        relation2.add(childObjects[4]);
+        relation2.add(childObjects[5]);
+        relation2.add(childObjects[6]);
+        
+        var otherChild2 = parent2.relation("otherChild");
+        otherChild2.add(childObjects[0]);
+        otherChild2.add(childObjects[1]);
+        otherChild2.add(childObjects[2]);
+
+        var parents = [];
+        parents.push(parent);
+        parents.push(parent2);
+        Parse.Object.saveAll(parents, {
+          success: function() {
+            var query = new Parse.Query(ParentObject);
+            var objects = [];
+            objects.push(childObjects[0]);
+            query.containedIn("child", objects);
+            query.containedIn("otherChild", [childObjects[0]]);
+            query.find({
+              success: function(list) {
+                equal(list.length, 2, "There should be only one result");
                 done();
               }
             });

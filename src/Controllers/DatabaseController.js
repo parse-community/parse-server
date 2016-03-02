@@ -397,31 +397,33 @@ DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
 // Modifies query so that it no longer has $in on relation fields, or
 // equal-to-pointer constraints on relation fields.
 // Returns a promise that resolves when query is mutated
-// TODO: this only handles one of these at a time - make it handle more
 DatabaseController.prototype.reduceInRelation = function(className, query, schema) {
   // Search for an in-relation or equal-to-relation
-  for (var key in query) {
-    if (query[key] &&
-        (query[key]['$in'] || query[key].__type == 'Pointer')) {
-      var t = schema.getExpectedType(className, key);
-      var match = t ? t.match(/^relation<(.*)>$/) : false;
-      if (!match) {
-        continue;
+  // Make it sequential for now, not sure of paralleization side effects
+  return Object.keys(query).reduce((promise, key) => {
+    return promise.then(() => {
+      if (query[key] &&
+          (query[key]['$in'] || query[key].__type == 'Pointer')) {
+        let t = schema.getExpectedType(className, key);
+        let match = t ? t.match(/^relation<(.*)>$/) : false;
+        if (!match) {
+          return;
+        }
+        let relatedClassName = match[1];
+        let relatedIds;
+        if (query[key]['$in']) {
+          relatedIds = query[key]['$in'].map(r => r.objectId);
+        } else {
+          relatedIds = [query[key].objectId];
+        }
+        return this.owningIds(className, key, relatedIds).then((ids) => {
+          delete query[key];
+          query.objectId = Object.assign({'$in': []}, query.objectId);
+          query.objectId['$in'] = query.objectId['$in'].concat(ids);
+        });
       }
-      var relatedClassName = match[1];
-      var relatedIds;
-      if (query[key]['$in']) {
-        relatedIds = query[key]['$in'].map(r => r.objectId);
-      } else {
-        relatedIds = [query[key].objectId];
-      }
-      return this.owningIds(className, key, relatedIds).then((ids) => {
-        delete query[key];
-        query.objectId = {'$in': ids};
-      });
-    }
-  }
-  return Promise.resolve();
+    });
+  }, Promise.resolve());
 };
 
 // Modifies query so that it no longer has $relatedTo
