@@ -69,20 +69,19 @@ export class UserController extends AdaptableController {
   }
   
   checkResetTokenValidity(username, token) {
-    return new Promise((resolve, reject) => {
-      return this.config.database.collection('_User').then(coll => {
-        return coll.findOne({
-          username: username,
-          _perishable_token: token,
-        }, (err, doc) => {
-          if (err || !doc) {
-            reject(err);
-          } else {
-            resolve(doc);
-          }
-        });
+    return this.config.database.adaptiveCollection('_User')
+      .then(collection => {
+          return collection.find({
+            username: username,
+            _perishable_token: token
+          }, { limit: 1 });
+        })
+      .then(results => {
+        if (results.length != 1) {
+          return Promise.reject();
+        }
+        return results[0];
       });
-    });
   }
   
   getUserIfNeeded(user) {
