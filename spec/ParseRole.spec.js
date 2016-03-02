@@ -59,17 +59,17 @@ describe('Parse Role testing', () => {
     });
 
   });
-  
+
   it("should recursively load roles", (done) => {
-    
+
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
-    
+
     var createRole = function(name, parent, user) {
       var role = new Parse.Object("_Role")
       role.set("name", name);
       if (user) {
         var users = role.relation('users');
-        users.add(user); 
+        users.add(user);
       }
       if (parent) {
         role.relation('roles').add(parent);
@@ -78,7 +78,7 @@ describe('Parse Role testing', () => {
     }
     var roleIds = {};
      createTestUser().then( (user) => {
-       
+
        return createRole(rolesNames[0], null, null).then( (aRole) => {
          roleIds[aRole.get("name")] = aRole.id;
           return createRole(rolesNames[1], aRole, null);
@@ -100,6 +100,17 @@ describe('Parse Role testing', () => {
        fail("should succeed")
        done();
      });
+  });
+
+  it("_Role object should not save without name.", (done) => {
+    var role = new Parse.Role();
+    role.save(null,{useMasterKey:true})
+    .then((r) => {
+      fail("_Role object should not save without name.");
+    }, (error) => {
+      expect(error.code).toEqual(135);
+      done();
+    });
   });
 
 });

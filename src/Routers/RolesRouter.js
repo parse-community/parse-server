@@ -16,9 +16,6 @@ export class RolesRouter extends ClassesRouter {
 
   handleCreate(req) {
     req.params.className = '_Role';
-    if(req.body && !req.body.name){
-      throw new Parse.Error(135, 'Role names must be specified.');
-    }
     return super.handleCreate(req);
   }
 
