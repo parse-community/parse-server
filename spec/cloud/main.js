@@ -108,3 +108,7 @@ Parse.Cloud.define('echoKeys', function(req, res){
     javascriptKey: Parse.javascriptKey
   })
 });
+
+Parse.Cloud.define('echoParams', function(req, res) {
+  return res.success(req.params);
+});

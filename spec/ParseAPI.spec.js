@@ -710,9 +710,6 @@ describe('miscellaneous', function() {
   });
 
   it('test cloud function query parameters', (done) => {
-    Parse.Cloud.define('echoParams', (req, res) => {
-      res.success(req.params);
-    });
     var headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
@@ -733,7 +730,6 @@ describe('miscellaneous', function() {
       // Make sure query string params override body params
       expect(res.other).toEqual('2');
       expect(res.foo).toEqual("bar");
-      Parse.Cloud._removeHook("Functions",'echoParams');
       done();
     });
   });
@@ -849,6 +845,30 @@ describe('miscellaneous', function() {
     }, (e) => {
       expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
       expect(e.message).toEqual('Invalid function.');
+      done();
+    });
+  });
+  
+  it('echo the params as passed', done => {
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'test'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/functions/echoParams',
+      json: {
+        date: {
+          __type: "Date",
+          iso: "2016-02-25T00:00:00.000Z"
+        },
+      },
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var res = body.result;
+      expect(res.date.__type).toEqual('Date');
+      expect(res.date.iso).toEqual("2016-02-25T00:00:00.000Z");
       done();
     });
   });
