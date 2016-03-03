@@ -7,10 +7,11 @@ import cache from './cache';
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
 // userObject is a Parse.User and can be null if there's no user.
-function Auth(config, isMaster, userObject) {
+function Auth({ config, isMaster = false, user, installationId } = {}) {
   this.config = config;
+  this.installationId = installationId;
   this.isMaster = isMaster;
-  this.user = userObject;
+  this.user = user;
 
   // Assuming a users roles won't change during a single request, we'll
   // only load them once.
@@ -33,19 +34,19 @@ Auth.prototype.couldUpdateUserId = function(userId) {
 
 // A helper to get a master-level Auth object
 function master(config) {
-  return new Auth(config, true, null);
+  return new Auth({ config, isMaster: true });
 }
 
 // A helper to get a nobody-level Auth object
 function nobody(config) {
-  return new Auth(config, false, null);
+  return new Auth({ config, isMaster: false });
 }
 
 // Returns a promise that resolves to an Auth object
-var getAuthForSessionToken = function(config, sessionToken) {
+var getAuthForSessionToken = function({ config, sessionToken, installationId } = {}) {
   var cachedUser = cache.users.get(sessionToken);
   if (cachedUser) {
-    return Promise.resolve(new Auth(config, false, cachedUser));
+    return Promise.resolve(new Auth({ config, isMaster: false, installationId, user: cachedUser }));
   }
   var restOptions = {
     limit: 1,
@@ -67,7 +68,7 @@ var getAuthForSessionToken = function(config, sessionToken) {
     obj['sessionToken'] = sessionToken;
     let userObject = Parse.Object.fromJSON(obj);
     cache.users.set(sessionToken, userObject);
-    return new Auth(config, false, userObject);
+    return new Auth({ config, isMaster: false, installationId, user: userObject });
   });
 };
 

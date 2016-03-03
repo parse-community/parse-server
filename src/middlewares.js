@@ -89,7 +89,7 @@ function handleParseHeaders(req, res, next) {
   var isMaster = (info.masterKey === req.config.masterKey);
 
   if (isMaster) {
-    req.auth = new auth.Auth(req.config, true);
+    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
     next();
     return;
   }
@@ -114,23 +114,23 @@ function handleParseHeaders(req, res, next) {
   }
 
   if (!info.sessionToken) {
-    req.auth = new auth.Auth(req.config, false);
+    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
     next();
     return;
   }
 
-  return auth.getAuthForSessionToken(
-    req.config, info.sessionToken).then((auth) => {
+  return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+    .then((auth) => {
       if (auth) {
         req.auth = auth;
         next();
       }
-    }).catch((error) => {
+    })
+    .catch((error) => {
       // TODO: Determine the correct error scenario.
       console.log(error);
       throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
     });
-
 }
 
 var allowCrossDomain = function(req, res, next) {

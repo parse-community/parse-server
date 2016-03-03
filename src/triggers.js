@@ -110,12 +110,11 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   if (auth.user) {
     request['user'] = auth.user;
   }
-  // TODO: Add installation to Auth?
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
   }
   return request;
-};
+}
 
 // Creates the response object, and uses the request object to pass data
 // The API will call this with REST API formatted objects, this will

@@ -86,7 +86,7 @@ describe('Parse Role testing', () => {
          return createRole(rolesNames[2], anotherRole, user);
        }).then( (lastRole) => {
          roleIds[lastRole.get("name")] = lastRole.id;
-         var auth = new Auth(new Config("test") , true, user);
+         var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
          return auth._loadRoles();
        })
      }).then( (roles) => {

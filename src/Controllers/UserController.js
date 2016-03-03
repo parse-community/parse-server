@@ -22,23 +22,22 @@ export class UserController extends AdaptableController {
     }
     super.validateAdapter(adapter);
   }
-  
+
   expectedAdapterType() {
     return MailAdapter;
   }
-  
+
   get shouldVerifyEmails() {
     return this.options.verifyUserEmails;
   }
-  
+
   setEmailVerifyToken(user) {
     if (this.shouldVerifyEmails) {
       user._email_verify_token = randomString(25);
       user.emailVerified = false;
     }
   }
-  
-  
+
   verifyEmail(username, token) {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
@@ -62,7 +61,7 @@ export class UserController extends AdaptableController {
         return document;
       });
   }
-  
+
   checkResetTokenValidity(username, token) {
     return this.config.database.adaptiveCollection('_User')
       .then(collection => {
@@ -78,7 +77,7 @@ export class UserController extends AdaptableController {
         return results[0];
       });
   }
-  
+
   getUserIfNeeded(user) {
     if (user.username && user.email) {
       return Promise.resolve(user);
@@ -90,7 +89,7 @@ export class UserController extends AdaptableController {
     if (user.email) {
       where.email = user.email;
     }
-    
+
     var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function(result){
       if (result.results.length != 1) {
@@ -99,7 +98,7 @@ export class UserController extends AdaptableController {
       return result.results[0];
     })
   }
-  
+
 
   sendVerificationEmail(user) {
     if (!this.shouldVerifyEmails) {
@@ -122,7 +121,7 @@ export class UserController extends AdaptableController {
       }
     });
   }
-  
+
   setPasswordResetToken(email) {
     let token = randomString(25);
     return this.config.database
@@ -142,11 +141,11 @@ export class UserController extends AdaptableController {
       //  TODO: No adapter?
       return;
     }
-    
+
     return this.setPasswordResetToken(email).then((user) => {
 
       const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);    
+      const username = encodeURIComponent(user.username);
       let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
 
       let options = {
@@ -154,7 +153,7 @@ export class UserController extends AdaptableController {
         link: link,
         user: inflate('_User', user),
       };
-      
+
       if (this.adapter.sendPasswordResetEmail) {
         this.adapter.sendPasswordResetEmail(options);
       } else {
@@ -164,13 +163,13 @@ export class UserController extends AdaptableController {
       return Promise.resolve(user);
     });
   }
-  
+
   updatePassword(username, token, password, config) {
    return this.checkResetTokenValidity(username, token).then(() => {
      return updateUserPassword(username, token, password, this.config);
    });
   }
-  
+
   defaultVerificationEmail({link, user, appName, }) {
     let text = "Hi,\n\n" +
 	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
@@ -180,9 +179,9 @@ export class UserController extends AdaptableController {
     let subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
   }
-  
+
   defaultResetPasswordEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" + 
+    let text = "Hi,\n\n" +
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
@@ -193,9 +192,9 @@ export class UserController extends AdaptableController {
 }
 
 // Mark this private
-function updateUserPassword(username, token, password, config) { 
+function updateUserPassword(username, token, password, config) {
     var write = new RestWrite(config, Auth.master(config), '_User', {
-            username: username, 
+            username: username,
             _perishable_token: token
           }, {password: password, _perishable_token: null }, undefined);
     return write.execute();
