@@ -214,7 +214,11 @@ RestQuery.prototype.replaceInQuery = function() {
       });
     }
     delete inQueryObject['$inQuery'];
-    inQueryObject['$in'] = values;
+    if (Array.isArray(inQueryObject['$in'])) {
+      inQueryObject['$in'] = inQueryObject['$in'].concat(values);
+    } else {
+      inQueryObject['$in'] = values;
+    }
 
     // Recurse to repeat
     return this.replaceInQuery();
@@ -251,7 +255,11 @@ RestQuery.prototype.replaceNotInQuery = function() {
       });
     }
     delete notInQueryObject['$notInQuery'];
-    notInQueryObject['$nin'] = values;
+    if (Array.isArray(notInQueryObject['$nin'])) {
+      notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
+    } else {
+      notInQueryObject['$nin'] = values;
+    }
 
     // Recurse to repeat
     return this.replaceNotInQuery();
@@ -290,7 +298,11 @@ RestQuery.prototype.replaceSelect = function() {
       values.push(result[selectValue.key]);
     }
     delete selectObject['$select'];
-    selectObject['$in'] = values;
+    if (Array.isArray(selectObject['$in'])) {
+      selectObject['$in'] = selectObject['$in'].concat(values);
+    } else {
+      selectObject['$in'] = values;
+    }
 
     // Keep replacing $select clauses
     return this.replaceSelect();
@@ -329,7 +341,11 @@ RestQuery.prototype.replaceDontSelect = function() {
       values.push(result[dontSelectValue.key]);
     }
     delete dontSelectObject['$dontSelect'];
-    dontSelectObject['$nin'] = values;
+    if (Array.isArray(dontSelectObject['$nin'])) {
+      dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
+    } else {
+      dontSelectObject['$nin'] = values;
+    }
 
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
