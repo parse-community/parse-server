@@ -816,6 +816,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterTrigger = function() {
+  if (!this.response || !this.response.response) {
+    return;
+  }
+
+  // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return Promise.resolve();
+  }
+
   var extraData = {className: this.className};
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
