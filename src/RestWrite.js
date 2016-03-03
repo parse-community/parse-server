@@ -816,22 +816,33 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
 // Returns nothing - doesn't wait for the trigger.
 RestWrite.prototype.runAfterTrigger = function() {
+  if (!this.response || !this.response.response) {
+    return;
+  }
+
+  // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+    return Promise.resolve();
+  }
+
   var extraData = {className: this.className};
   if (this.query && this.query.objectId) {
     extraData.objectId = this.query.objectId;
   }
 
-  // Build the inflated object, different from beforeSave, originalData is not empty
-  // since developers can change data in the beforeSave.
-  var inflatedObject = triggers.inflate(extraData, this.originalData);
-  inflatedObject._finishFetch(this.data);
   // Build the original object, we only do this for a update write.
-  var originalObject;
+  let originalObject;
   if (this.query && this.query.objectId) {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, inflatedObject, originalObject, this.config.applicationId);
+  // Build the inflated object, different from beforeSave, originalData is not empty
+  // since developers can change data in the beforeSave.
+  let updatedObject = triggers.inflate(extraData, this.originalData);
+  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
+
+  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.

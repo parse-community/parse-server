@@ -692,6 +692,46 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('afterSave flattens custom operations', done => {
+    var triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.afterSave('GameScore', function(req, res) {
+      let object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      let originalObject = req.original;
+      if (triggerTime == 0) {
+        // Create
+        expect(object.get('yolo')).toEqual(1);
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.get('yolo')).toEqual(2);
+        // Check the originalObject
+        expect(originalObject.get('yolo')).toEqual(1);
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    var obj = new Parse.Object('GameScore');
+    obj.increment('yolo', 1);
+    obj.save().then(() => {
+      obj.increment('yolo', 1);
+      return obj.save();
+    }).then(() => {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      // Clear mock afterSave
+      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
+      done();
+    }, error => {
+      console.error(error);
+      fail(error);
+      done();
+    });
+  });
+
   it('test cloud function error handling', (done) => {
     // Register a function which will fail
     Parse.Cloud.define('willFail', (req, res) => {
