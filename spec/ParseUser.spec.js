@@ -54,7 +54,7 @@ describe('Parse.User testing', () => {
       success: function(user) {
         Parse.User.logIn("non_existent_user", "asdf3",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
-      }, 
+      },
       error: function(err) {
         console.error(err);
         fail("Shit should not fail");
@@ -1763,5 +1763,22 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("session expiresAt correct format", (done) => {
+    Parse.User.signUp("asdf", "zxcv", null, {
+      success: function(user) {
+        request.get({
+          url: 'http://localhost:8378/1/classes/_Session',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+        }, (error, response, body) => {
+          expect(body.results[0].expiresAt.__type).toEqual('Date');
+          done();
+        })
+      }
+    });
+  });
 });
 

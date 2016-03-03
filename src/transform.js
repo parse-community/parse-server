@@ -644,7 +644,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
         break;
       case 'expiresAt':
       case '_expiresAt':
-        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
         break;
       default:
         // Check other auth data keys
