@@ -29,7 +29,7 @@ describe('features', () => {
 
   it('requires the master key to get all schemas', done => {
     request.get({
-      url: 'http://localhost:8378/1/features',
+      url: 'http://localhost:8378/1/serverInfo',
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
