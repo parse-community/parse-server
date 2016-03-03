@@ -704,38 +704,25 @@ function getObjectType(obj) {
       case 'Pointer' :
         if(obj.className) {
           return '*' + obj.className;
-        } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
-        break;
       case 'File' :
         if(obj.name) {
           return 'file';
-        } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
-        break;
       case 'Date' :
         if(obj.iso) {
           return 'date';
-        } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
-        break;
       case 'GeoPoint' :
         if(obj.latitude != null && obj.longitude != null) {
           return 'geopoint';
-        } else {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
         }
-        break;
       case 'Bytes' :
-        if(!obj.base64) {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
+        if(obj.base64) {
+          return;
         }
-        break;
-      default :
-        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'invalid type: ' + obj.__type);
+      default:
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
     }
   }
   if (obj['$ne']) {
