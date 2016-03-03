@@ -749,6 +749,80 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test beforeSave/afterSave get installationId', function(done) {
+    let triggerTime = 0;
+    Parse.Cloud.beforeSave('GameScore', function(req, res) {
+      triggerTime++;
+      expect(triggerTime).toEqual(1);
+      expect(req.installationId).toEqual('yolo');
+      res.success();
+    });
+    Parse.Cloud.afterSave('GameScore', function(req) {
+      triggerTime++;
+      expect(triggerTime).toEqual(2);
+      expect(req.installationId).toEqual('yolo');
+    });
+
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Installation-Id': 'yolo'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({ a: 'b' })
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(triggerTime).toEqual(2);
+
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
+      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
+      done();
+    });
+  });
+
+  it('test beforeDelete/afterDelete get installationId', function(done) {
+    let triggerTime = 0;
+    Parse.Cloud.beforeDelete('GameScore', function(req, res) {
+      triggerTime++;
+      expect(triggerTime).toEqual(1);
+      expect(req.installationId).toEqual('yolo');
+      res.success();
+    });
+    Parse.Cloud.afterDelete('GameScore', function(req) {
+      triggerTime++;
+      expect(triggerTime).toEqual(2);
+      expect(req.installationId).toEqual('yolo');
+    });
+
+    var headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Installation-Id': 'yolo'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/GameScore',
+      body: JSON.stringify({ a: 'b' })
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      request.del({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/GameScore/' + JSON.parse(body).objectId
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        expect(triggerTime).toEqual(2);
+
+        Parse.Cloud._removeHook("Triggers", "beforeDelete", "GameScore");
+        Parse.Cloud._removeHook("Triggers", "afterDelete", "GameScore");
+        done();
+      });
+    });
+  });
+
   it('test cloud function query parameters', (done) => {
     Parse.Cloud.define('echoParams', (req, res) => {
       res.success(req.params);
