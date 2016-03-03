@@ -655,4 +655,21 @@ describe('Schema', () => {
     });
     done();
   });
+
+  it('ignore default field when merge with system class', done => {
+    expect(Schema.buildMergedSchemaObject({
+      _id: '_User',
+      username: 'string',
+      password: 'string',
+      authData: 'object',
+      email: 'string',
+      emailVerified: 'boolean'
+    },{
+      authData: {type: 'string'},
+      customField: {type: 'string'},
+    })).toEqual({
+      customField: {type: 'string'}
+    });
+    done();
+  });
 });
