@@ -1,3 +1,4 @@
+'use strict';
 
 var OneSignalPushAdapter = require('../src/Adapters/Push/OneSignalPushAdapter');
 var classifyInstallations = require('../src/Adapters/Push/PushAdapterUtils').classifyInstallations;
@@ -210,7 +211,7 @@ describe('OneSignalPushAdapter', () => {
     expect(write).toHaveBeenCalled();
 
     // iOS
-    args = write.calls.first().args;
+    let args = write.calls.first().args;
     expect(args[0]).toEqual(JSON.stringify({
   		'contents': { 'en':'Example content'},
   		'content_available':true,
@@ -219,7 +220,7 @@ describe('OneSignalPushAdapter', () => {
   		'app_id':'APP ID'
   		}));
 
-	// Android
+    // Android
     args = write.calls.mostRecent().args;
     expect(args[0]).toEqual(JSON.stringify({
   		'contents': { 'en':'Example content'},
