@@ -417,9 +417,8 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
         relatedIds = [query[key].objectId];
       }
       return this.owningIds(className, key, relatedIds).then((ids) => {
-        delete query[key];
-        query.objectId = Object.assign({'$in': []}, query.objectId);
-        query.objectId['$in'] = query.objectId['$in'].concat(ids);
+        delete query[key]; 
+        this.addInObjectIdsIds(ids, query);
         return Promise.resolve(query);
       });
     }
@@ -448,14 +447,22 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
       relatedTo.key,
       relatedTo.object.objectId).then((ids) => {
         delete query['$relatedTo'];
-        query.objectId = query.objectId || {};
-        let queryIn = query.objectId['$in'] || [];
-        queryIn = queryIn.concat(ids);
-        query['objectId'] = {'$in': queryIn};
+        this.addInObjectIdsIds(ids, query);
         return this.reduceRelationKeys(className, query);
       });
   }
 };
+
+DatabaseController.prototype.addInObjectIdsIds = function(ids, query) {
+  if (typeof query.objectId == 'string') {
+    query.objectId = {'$in': [query.objectId]};
+  }
+   query.objectId = query.objectId || {};
+   let queryIn =  [].concat(query.objectId['$in'] || [], ids || []);
+   // make a set and spread to remove duplicates
+   query.objectId = {'$in': [...new Set(queryIn)]};
+   return query;
+}
 
 // Runs a query on the database.
 // Returns a promise that resolves to a list of items.

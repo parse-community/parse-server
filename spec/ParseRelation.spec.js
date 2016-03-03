@@ -291,6 +291,44 @@ describe('Parse.Relation testing', () => {
     });
   });
   
+  it("query on pointer and relation fields with equal", (done) => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x: i}));
+    }
+
+    Parse.Object.saveAll(childObjects).then(() => {
+        var ParentObject = Parse.Object.extend("ParentObject");
+        var parent = new ParentObject();
+        parent.set("x", 4);
+        var relation = parent.relation("toChilds");
+        relation.add(childObjects[0]);
+        relation.add(childObjects[1]);
+        relation.add(childObjects[2]);
+        
+        var parent2 = new ParentObject();
+        parent2.set("x", 3);
+        parent2.set("toChild", childObjects[2]);
+        
+        var parents = [];
+        parents.push(parent);
+        parents.push(parent2);
+        parents.push(new ParentObject());
+        
+       return Parse.Object.saveAll(parents).then(() => {
+          var query = new Parse.Query(ParentObject);
+          query.equalTo("objectId", parent.id);
+          query.equalTo("toChilds", childObjects[2]);
+         
+          return query.find().then((list) => {
+            equal(list.length, 1, "There should be 1 result");
+            done();
+          });
+        });
+    });
+  });
+  
   it("or queries on pointer and relation fields", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -334,6 +372,7 @@ describe('Parse.Relation testing', () => {
         });
     });
   });
+
 
   it("Get query on relation using un-fetched parent object", (done) => {
     // Setup data model

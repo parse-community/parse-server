@@ -2088,4 +2088,60 @@ describe('Parse.Query testing', () => {
       console.log(error);
     });
   });
+  
+  // #371
+  it('should properly interpret a query', (done) => {
+    var query = new Parse.Query("C1");
+    var auxQuery = new Parse.Query("C1");
+    query.matchesKeyInQuery("A1", "A2", auxQuery);
+    query.include("A3");
+    query.include("A2");
+    query.find().then((result) => {
+      done();
+    }, (err) => {
+      console.error(err);
+      fail("should not failt");
+      done();
+    })
+  });
+  
+  it('should properly interpret a query', (done) => {
+    var user = new Parse.User();
+    user.set("username", "foo");
+    user.set("password", "bar");
+    return user.save().then( (user) => {
+      var objIdQuery = new Parse.Query("_User").equalTo("objectId", user.id);
+      var blockedUserQuery = user.relation("blockedUsers").query();
+      
+      var aResponseQuery = new Parse.Query("MatchRelationshipActivityResponse");
+      aResponseQuery.equalTo("userA", user);
+      aResponseQuery.equalTo("userAResponse", 1);
+      
+      var bResponseQuery = new Parse.Query("MatchRelationshipActivityResponse");
+      bResponseQuery.equalTo("userB", user);
+      bResponseQuery.equalTo("userBResponse", 1);
+      
+      var matchOr = Parse.Query.or(aResponseQuery, bResponseQuery);
+      var matchRelationshipA = new Parse.Query("_User");
+      matchRelationshipA.matchesKeyInQuery("objectId", "userAObjectId", matchOr);
+      var matchRelationshipB = new Parse.Query("_User");
+      matchRelationshipB.matchesKeyInQuery("objectId", "userBObjectId", matchOr);
+      
+      
+      var orQuery = Parse.Query.or(objIdQuery, blockedUserQuery, matchRelationshipA, matchRelationshipB);
+      var query = new Parse.Query("_User");
+      query.doesNotMatchQuery("objectId", orQuery);
+      return query.find();
+    }).then((res) => {
+      done();
+      done();
+    }, (err) => {
+      console.error(err);
+      fail("should not fail");
+      done();
+    });
+    
+    
+  });
+  
 });
