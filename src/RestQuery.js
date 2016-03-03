@@ -271,11 +271,11 @@ RestQuery.prototype.replaceSelect = function() {
 
   // The select value must have precisely two keys - query and key
   var selectValue = selectObject['$select'];
+  // iOS SDK don't send where if not set, let it pass
   if (!selectValue.query ||
       !selectValue.key ||
       typeof selectValue.query !== 'object' ||
       !selectValue.query.className ||
-      !selectValue.query.where ||
       Object.keys(selectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $select');
