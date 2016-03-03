@@ -408,31 +408,31 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
     }));
   }
 
-  return Object.keys(query).reduce((promise, key) => {
-    return promise.then(() => {
-      if (query[key] &&
-          (query[key]['$in'] || query[key].__type == 'Pointer')) {
-        let t = schema.getExpectedType(className, key);
-        let match = t ? t.match(/^relation<(.*)>$/) : false;
-        if (!match) {
-          return Promise.resolve(query);
-        }
-        let relatedClassName = match[1];
-        let relatedIds;
-        if (query[key]['$in']) {
-          relatedIds = query[key]['$in'].map(r => r.objectId);
-        } else {
-          relatedIds = [query[key].objectId];
-        }
-        return this.owningIds(className, key, relatedIds).then((ids) => {
-          delete query[key];
-          query.objectId = Object.assign({'$in': []}, query.objectId);
-          query.objectId['$in'] = query.objectId['$in'].concat(ids);
-          return Promise.resolve(query);
-        });
+  let promises = Object.keys(query).map((key) => {
+    if (query[key] && (query[key]['$in'] || query[key].__type == 'Pointer')) {
+      let t = schema.getExpectedType(className, key);
+      let match = t ? t.match(/^relation<(.*)>$/) : false;
+      if (!match) {
+        return Promise.resolve(query);
       }
-    });
-  }, Promise.resolve()).then(() => {
+      let relatedClassName = match[1];
+      let relatedIds;
+      if (query[key]['$in']) {
+        relatedIds = query[key]['$in'].map(r => r.objectId);
+      } else {
+        relatedIds = [query[key].objectId];
+      }
+      return this.owningIds(className, key, relatedIds).then((ids) => {
+        delete query[key];
+        query.objectId = Object.assign({'$in': []}, query.objectId);
+        query.objectId['$in'] = query.objectId['$in'].concat(ids);
+        return Promise.resolve(query);
+      });
+    }
+    return Promise.resolve(query);
+  })
+  
+  return Promise.all(promises).then(() => {
     return Promise.resolve(query);
   })
 };

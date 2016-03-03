@@ -254,46 +254,40 @@ describe('Parse.Relation testing', () => {
       childObjects.push(new ChildObject({x: i}));
     }
 
-    Parse.Object.saveAll(childObjects, {
-      success: function() {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("child");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        var relation2 = parent2.relation("child");
-        relation2.add(childObjects[4]);
-        relation2.add(childObjects[5]);
-        relation2.add(childObjects[6]);
-        
-        var otherChild2 = parent2.relation("otherChild");
-        otherChild2.add(childObjects[0]);
-        otherChild2.add(childObjects[1]);
-        otherChild2.add(childObjects[2]);
+    Parse.Object.saveAll(childObjects).then(() => {
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("child");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      var relation2 = parent2.relation("child");
+      relation2.add(childObjects[4]);
+      relation2.add(childObjects[5]);
+      relation2.add(childObjects[6]);
+      
+      var otherChild2 = parent2.relation("otherChild");
+      otherChild2.add(childObjects[0]);
+      otherChild2.add(childObjects[1]);
+      otherChild2.add(childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        Parse.Object.saveAll(parents, {
-          success: function() {
-            var query = new Parse.Query(ParentObject);
-            var objects = [];
-            objects.push(childObjects[0]);
-            query.containedIn("child", objects);
-            query.containedIn("otherChild", [childObjects[0]]);
-            query.find({
-              success: function(list) {
-                equal(list.length, 2, "There should be 2 results");
-                done();
-              }
-            });
-          }
-        });
-      }
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      return Parse.Object.saveAll(parents);
+    }).then(() => {
+      var query = new Parse.Query(ParentObject);
+      var objects = [];
+      objects.push(childObjects[0]);
+      query.containedIn("child", objects);
+      query.containedIn("otherChild", [childObjects[0]]);
+      return query.find();
+    }).then((list) => {
+      equal(list.length, 2, "There should be 2 results");
+      done();
     });
   });
   
@@ -304,8 +298,7 @@ describe('Parse.Relation testing', () => {
       childObjects.push(new ChildObject({x: i}));
     }
 
-    Parse.Object.saveAll(childObjects, {
-      success: function() {
+    Parse.Object.saveAll(childObjects).then(() => {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -323,25 +316,22 @@ describe('Parse.Relation testing', () => {
         parents.push(parent2);
         parents.push(new ParentObject());
         
-        Parse.Object.saveAll(parents, {
-          success: function() {
-            var query1 = new Parse.Query(ParentObject);
-            query1.containedIn("toChilds", [childObjects[2]]);
-            var query2 = new Parse.Query(ParentObject);
-            query2.equalTo("toChild", childObjects[2]);
-            var query = Parse.Query.or(query1, query2);
-            query.find({
-              success: function(list) {
-                list = list.filter(function(item){
-                  return item.id == parent.id || item.id == parent2.id;
-                });
-                equal(list.length, 2, "There should be 2 results");
-                done();
-              }
+       return Parse.Object.saveAll(parents).then(() => {
+          var query1 = new Parse.Query(ParentObject);
+          query1.containedIn("toChilds", [childObjects[2]]);
+          var query2 = new Parse.Query(ParentObject);
+          query2.equalTo("toChild", childObjects[2]);
+          var query = Parse.Query.or(query1, query2);
+          return query.find().then((list) => {
+            var objectIds = list.map(function(item){
+              return item.id;
             });
-          }
+            expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+            expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+            equal(list.length, 2, "There should be 2 results");
+            done();
+          });
         });
-      }
     });
   });
 
