@@ -744,4 +744,75 @@ describe('schemas', () => {
       done();
     });
   });
+
+  it('deletes schema when actual collection does not exist', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForDelete'
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      expect(response.body.className).toEqual('NewClassForDelete');
+      request.del({
+        url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(200);
+        expect(response.body).toEqual({});
+        config.database.loadSchema().then(schema => {
+          schema.hasClass('NewClassForDelete').then(exist => {
+            expect(exist).toEqual(false);
+            done();
+          });
+        })
+      });
+    });
+  });
+
+  it('deletes schema when actual collection exists', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForDelete'
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      expect(response.body.className).toEqual('NewClassForDelete');
+      request.post({
+        url: 'http://localhost:8378/1/classes/NewClassForDelete',
+        headers: restKeyHeaders,
+        json: true
+      }, (error, response, body) => {
+        expect(error).toEqual(null);
+        expect(typeof response.body.objectId).toEqual('string');
+        request.del({
+          url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.body.objectId,
+          headers: restKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(error).toEqual(null);
+          request.del({
+            url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            expect(response.statusCode).toEqual(200);
+            expect(response.body).toEqual({});
+            config.database.loadSchema().then(schema => {
+              schema.hasClass('NewClassForDelete').then(exist => {
+                expect(exist).toEqual(false);
+                done();
+              });
+            });
+          });
+        });
+      });
+    });
+  });
 });
