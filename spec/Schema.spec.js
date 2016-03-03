@@ -188,8 +188,8 @@ describe('Schema', () => {
           foo: {type: 'String'}
         }))
         .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME)
-          expect(error.error).toEqual('class NewClass already exists');
+          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+          expect(error.message).toEqual('Class NewClass already exists.');
           done();
         });
       });
@@ -216,7 +216,7 @@ describe('Schema', () => {
       Promise.all([p1,p2])
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-        expect(error.error).toEqual('class NewClass already exists');
+        expect(error.message).toEqual('Class NewClass already exists.');
         done();
       });
     });
@@ -561,7 +561,8 @@ describe('Schema', () => {
       .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
       .then(exists => {
         if (!exists) {
-          fail('Relation collection should exist after save.');
+          fail('Relation collection ' +
+            'should exist after save.');
         }
       })
       .then(() => config.database.loadSchema())

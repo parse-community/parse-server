@@ -8,13 +8,10 @@ import PromiseRouter from '../PromiseRouter';
 import * as middleware from "../middlewares";
 
 function classNameMismatchResponse(bodyClass, pathClass) {
-  return Promise.resolve({
-    status: 400,
-    response: {
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: 'class name mismatch between ' + bodyClass + ' and ' + pathClass,
-    }
-  });
+  throw new Parse.Error(
+    Parse.Error.INVALID_CLASS_NAME,
+    `Class name mismatch between ${bodyClass} and ${pathClass}.`
+  );
 }
 
 function mongoSchemaAPIResponseFields(schema) {
@@ -45,16 +42,16 @@ function getAllSchemas(req) {
 }
 
 function getOneSchema(req) {
-  return req.config.database.collection('_SCHEMA')
-    .then(coll => coll.findOne({'_id': req.params.className}))
-    .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
-    .catch(() => ({
-      status: 400,
-      response: {
-        code: 103,
-        error: 'class ' + req.params.className + ' does not exist',
+  const className = req.params.className;
+  return req.config.database.adaptiveCollection('_SCHEMA')
+    .then(collection => collection.find({ '_id': className }, { limit: 1 }))
+    .then(results => {
+      if (results.length != 1) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       }
-    }));
+      return results[0];
+    })
+    .then(schema => ({ response: mongoSchemaToSchemaAPIResponse(schema) }));
 }
 
 function createSchema(req) {
@@ -63,23 +60,15 @@ function createSchema(req) {
       return classNameMismatchResponse(req.body.className, req.params.className);
     }
   }
-  var className = req.params.className || req.body.className;
+
+  const className = req.params.className || req.body.className;
   if (!className) {
-    return Promise.resolve({
-      status: 400,
-      response: {
-        code: 135,
-        error: 'POST ' + req.path + ' needs class name',
-      },
-    });
+    throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
+
   return req.config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists(className, req.body.fields))
-    .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
-    .catch(error => ({
-      status: 400,
-      response: error,
-    }));
+    .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }));
 }
 
 function modifySchema(req) {
