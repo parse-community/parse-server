@@ -1,5 +1,41 @@
 ## Parse Server Changelog
 
+### 2.1.4 (3/3/2016)
+
+* New: serverInfo endpoint that returns server version and info about the server's features
+* Improvement: Add support for badges on iOS
+* Improvement: Improve failure handling in cloud code http requests
+* Improvement: Add support for queries on pointers and relations
+* Improvement: Add support for multiple $in clauses in a query
+* Improvement: Add allowClientClassCreation config option
+* Improvement: Allow atomically setting subdocument keys
+* Improvement: Allow arbitrarily deeply nested roles
+* Improvement: Set proper content-type in S3 File Adapter
+* Improvement: S3 adapter auto-creates buckets
+* Improvement: Better error messages for many errors
+* Performance: Improved algorithm for validating client keys
+* Experimental: Parse Hooks and Hooks API
+* Experimental: Email verification and password reset emails
+* Experimental: Improve compatability of logs feature with Parse.com
+* Fix: Fix for attempting to delete missing classes via schemas API
+* Fix: Allow creation of system classes via schemas API
+* Fix: Allow missing where cause in $select
+* Fix: Improve handling of invalid object ids
+* Fix: Replace query overwriting existing query
+* Fix: Propagate installationId in cloud code triggers
+* Fix: Session expiresAt is now a Date instead of a string
+* Fix: Fix count queries
+* Fix: Disallow _Role objects without names or without ACL
+* Fix: Better handling of invalid types submitted
+* Fix: beforeSave will not be triggered for attempts to save with invalid authData
+* Fix: Fix duplicate device token issues on Android
+* Fix: Allow empty authData on signup
+* Fix: Allow Master Key Headers (CORS)
+* Fix: Fix bugs if JavaScript key was not provided in server configuration
+* Fix: Parse Files on objects can now be stored without URLs
+* Fix: allow both objectId or installationId when modifying installation
+* Fix: Command line works better when not given options
+
 ### 2.1.3 (2/24/2016)
 
 * Feature: Add initial support for in-app purchases
@@ -8,7 +44,7 @@
 * Performance: Faster saves if not using beforeSave triggers
 * Fix: Send session token in response to current user endpoint
 * Fix: Remove triggers for _Session collection
-* Fix: Improve compatability of Cloud Code beforeSave hook for newly created object
+* Fix: Improve compatability of cloud code beforeSave hook for newly created object
 * Fix: ACL creation for master key only objects
 * Fix: Allow uploading files without Content-Type
 * Fix: Add features to http requrest to match Parse.com
@@ -41,7 +77,7 @@
 * Feature: Support for logs, extensible via Log Adapter
 * Feature: New Push Adapter for sending push notifications through OneSignal
 * Feature: Tighter default security for Users
-* Feature: Pass parameters to Cloud Code in query string
+* Feature: Pass parameters to cloud code in query string
 * Feature: Disable anonymous users via configuration.
 * Experimental: Schemas API support for PUT operations
 * Fix: Prevent installation ID from being added to User
@@ -58,7 +94,7 @@
 ### 2.0.8 (2/11/2016)
 
 * Add: support for Android and iOS push notifications
-* Experimental: Cloud Code validation hooks (can mark as non-experimental after we have docs)
+* Experimental: cloud code validation hooks (can mark as non-experimental after we have docs)
 * Experimental: support for schemas API (GET and POST only)
 * Experimental: support for Parse Config (GET and POST only)
 * Fix: Querying objects with equality constraint on array column
