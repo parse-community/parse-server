@@ -10,12 +10,13 @@ var batch = require('./batch'),
     multer = require('multer'),
     Parse = require('parse/node').Parse;
 
+//import passwordReset           from './passwordReset';
 import cache                   from './cache';
 import Config                  from './Config';
-
+import parseServerPackage      from '../package.json';
 import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
-//import passwordReset           from './passwordReset';
 import PromiseRouter           from './PromiseRouter';
+import requiredParameter       from './requiredParameter';
 import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { FeaturesRouter }      from './Routers/FeaturesRouter';
@@ -23,28 +24,27 @@ import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
-import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
-import { IAPValidationRouter } from './Routers/IAPValidationRouter';
-import { LogsRouter }          from './Routers/LogsRouter';
-import { HooksRouter }         from './Routers/HooksRouter';
-import { PublicAPIRouter }     from './Routers/PublicAPIRouter';
 import { GlobalConfigRouter }  from './Routers/GlobalConfigRouter';
-
+import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { HooksController }     from './Controllers/HooksController';
-import { UserController }      from './Controllers/UserController';
+import { HooksRouter }         from './Routers/HooksRouter';
+import { IAPValidationRouter } from './Routers/IAPValidationRouter';
 import { InstallationsRouter } from './Routers/InstallationsRouter';
 import { loadAdapter }         from './Adapters/AdapterLoader';
 import { LoggerController }    from './Controllers/LoggerController';
+import { LogsRouter }          from './Routers/LogsRouter';
+import { PublicAPIRouter }     from './Routers/PublicAPIRouter';
 import { PushController }      from './Controllers/PushController';
 import { PushRouter }          from './Routers/PushRouter';
+import { randomString }        from './cryptoUtils';
 import { RolesRouter }         from './Routers/RolesRouter';
 import { S3Adapter }           from './Adapters/Files/S3Adapter';
 import { SchemasRouter }       from './Routers/SchemasRouter';
 import { SessionsRouter }      from './Routers/SessionsRouter';
+import { setFeature }          from './features';
+import { UserController }      from './Controllers/UserController';
 import { UsersRouter }         from './Routers/UsersRouter';
 
-import requiredParameter       from './requiredParameter';
-import { randomString }        from './cryptoUtils';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -106,11 +106,11 @@ function ParseServer({
     passwordResetSuccess: undefined
   },
 }) {
-  
+  setFeature('serverVersion', parseServerPackage.version);
   // Initialize the node client SDK automatically
   Parse.initialize(appId, javascriptKey || 'unused', masterKey);
   Parse.serverURL = serverURL;
-  
+
   if (databaseAdapter) {
     DatabaseAdapter.setAdapter(databaseAdapter);
   }
@@ -144,7 +144,7 @@ function ParseServer({
   const hooksController = new HooksController(appId, collectionPrefix);
   const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-  
+
   cache.apps.set(appId, {
     masterKey: masterKey,
     serverURL: serverURL,
@@ -173,7 +173,7 @@ function ParseServer({
   if (process.env.FACEBOOK_APP_ID) {
     cache.apps.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
   }
-  
+
   Config.validate(cache.apps.get(appId));
 
   // This app serves the Parse API directly.
@@ -186,7 +186,7 @@ function ParseServer({
   }));
 
   api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());
-  
+
   // TODO: separate this from the regular ParseServer object
   if (process.env.TESTING == 1) {
     api.use('/', require('./testing-routes').router);
@@ -215,17 +215,17 @@ function ParseServer({
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
     routers.push(new GlobalConfigRouter());
   }
-  
+
   if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
     routers.push(new HooksRouter());
   }
-  
+
   let routes = routers.reduce((memo, router) => {
     return memo.concat(router.routes);
   }, []);
 
   let appRouter = new PromiseRouter(routes);
-  
+
   batch.mountOnto(appRouter);
 
   api.use(appRouter.expressApp());
