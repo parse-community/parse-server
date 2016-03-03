@@ -509,7 +509,7 @@ function replacePointers(object, path, replace) {
   }
 
   if (path.length == 0) {
-    if (object.__type == 'Pointer' && replace[object.objectId]) {
+    if (object.__type == 'Pointer') {
       return replace[object.objectId];
     }
     return object;
