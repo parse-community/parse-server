@@ -175,7 +175,7 @@ describe('schemas', () => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: 103,
-          error: 'class HASALLPOD does not exist',
+          error: 'Class HASALLPOD does not exist.',
         });
         done();
       });
@@ -733,7 +733,7 @@ describe('schemas', () => {
             //Expect _SCHEMA entry to be gone.
             expect(response.statusCode).toEqual(400);
             expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-            expect(body.error).toEqual('class MyOtherClass does not exist');
+            expect(body.error).toEqual('Class MyOtherClass does not exist.');
             done();
           });
         });

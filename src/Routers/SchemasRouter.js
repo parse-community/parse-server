@@ -45,16 +45,16 @@ function getAllSchemas(req) {
 }
 
 function getOneSchema(req) {
-  return req.config.database.collection('_SCHEMA')
-    .then(coll => coll.findOne({'_id': req.params.className}))
-    .then(schema => ({response: mongoSchemaToSchemaAPIResponse(schema)}))
-    .catch(() => ({
-      status: 400,
-      response: {
-        code: 103,
-        error: 'class ' + req.params.className + ' does not exist',
+  const className = req.params.className;
+  return req.config.database.adaptiveCollection('_SCHEMA')
+    .then(collection => collection.find({ '_id': className }, { limit: 1 }))
+    .then(results => {
+      if (results.length != 1) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       }
-    }));
+      return results[0];
+    })
+    .then(schema => ({ response: mongoSchemaToSchemaAPIResponse(schema) }));
 }
 
 function createSchema(req) {
@@ -70,7 +70,7 @@ function createSchema(req) {
       response: {
         code: 135,
         error: 'POST ' + req.path + ' needs class name',
-      },
+      }
     });
   }
   return req.config.database.loadSchema()
