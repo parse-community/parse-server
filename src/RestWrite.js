@@ -821,17 +821,19 @@ RestWrite.prototype.runAfterTrigger = function() {
     extraData.objectId = this.query.objectId;
   }
 
-  // Build the inflated object, different from beforeSave, originalData is not empty
-  // since developers can change data in the beforeSave.
-  var inflatedObject = triggers.inflate(extraData, this.originalData);
-  inflatedObject._finishFetch(this.data);
   // Build the original object, we only do this for a update write.
-  var originalObject;
+  let originalObject;
   if (this.query && this.query.objectId) {
     originalObject = triggers.inflate(extraData, this.originalData);
   }
 
-  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, inflatedObject, originalObject, this.config.applicationId);
+  // Build the inflated object, different from beforeSave, originalData is not empty
+  // since developers can change data in the beforeSave.
+  let updatedObject = triggers.inflate(extraData, this.originalData);
+  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
+
+  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
 };
 
 // A helper to figure out what location this operation happens at.
