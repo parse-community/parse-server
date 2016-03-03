@@ -308,8 +308,12 @@ function mongoFieldTypeToSchemaAPIType(type) {
 // is done in mongoSchemaFromFieldsAndClassName.
 function buildMergedSchemaObject(mongoObject, putRequest) {
   var newSchema = {};
+  let sysSchemaField = Object.keys(defaultColumns).indexOf(mongoObject._id) === -1 ? [] : Object.keys(defaultColumns[mongoObject._id]);
   for (var oldField in mongoObject) {
     if (oldField !== '_id' && oldField !== 'ACL' &&  oldField !== 'updatedAt' && oldField !== 'createdAt' && oldField !== 'objectId') {
+      if (sysSchemaField.length > 0 && sysSchemaField.indexOf(oldField) !== -1) {
+        continue;
+      }
       var fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
       if (!fieldIsDeleted) {
         newSchema[oldField] = mongoFieldTypeToSchemaAPIType(mongoObject[oldField]);
@@ -318,6 +322,9 @@ function buildMergedSchemaObject(mongoObject, putRequest) {
   }
   for (var newField in putRequest) {
     if (newField !== 'objectId' && putRequest[newField].__op !== 'Delete') {
+      if (sysSchemaField.length > 0 && sysSchemaField.indexOf(newField) !== -1) {
+        continue;
+      }
       newSchema[newField] = putRequest[newField];
     }
   }
