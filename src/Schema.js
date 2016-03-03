@@ -333,29 +333,22 @@ function buildMergedSchemaObject(mongoObject, putRequest) {
 // enabled) before calling this function.
 Schema.prototype.addClassIfNotExists = function(className, fields) {
   if (this.data[className]) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: 'class ' + className + ' already exists',
-    });
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
   }
 
-  var mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
-
+  let mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
   if (!mongoObject.result) {
     return Promise.reject(mongoObject);
   }
 
   return this.collection.insertOne(mongoObject.result)
-  .then(result => result.ops[0])
-  .catch(error => {
-    if (error.code === 11000) { //Mongo's duplicate key error
-      return Promise.reject({
-        code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class ' + className + ' already exists',
-      });
-    }
-    return Promise.reject(error);
-  });
+    .then(result => result.ops[0])
+    .catch(error => {
+      if (error.code === 11000) { //Mongo's duplicate key error
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      }
+      return Promise.reject(error);
+    });
 };
 
 // Returns a promise that resolves successfully to the new schema

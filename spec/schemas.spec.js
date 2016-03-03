@@ -224,7 +224,7 @@ describe('schemas', () => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class name mismatch between B and A',
+        error: 'Class name mismatch between B and A.',
       });
       done();
     });
@@ -240,7 +240,7 @@ describe('schemas', () => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: 135,
-        error: 'POST /schemas needs class name',
+        error: 'POST /schemas needs a class name.',
       });
       done();
     })
@@ -267,7 +267,7 @@ describe('schemas', () => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class A already exists',
+          error: 'Class A already exists.'
         });
         done();
       });
@@ -353,7 +353,7 @@ describe('schemas', () => {
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(body.error).toEqual('class name mismatch between WrongClassName and NewClass');
+      expect(body.error).toEqual('Class name mismatch between WrongClassName and NewClass.');
       done();
     });
   });
