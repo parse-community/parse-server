@@ -422,6 +422,43 @@ describe('Schema', () => {
     });
   });
 
+  it('creates non-custom classes which include relation field', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('_Role', {}))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: '_Role',
+        createdAt: 'string',
+        updatedAt: 'string',
+        objectId: 'string',
+        name: 'string',
+        users: 'relation<_User>',
+        roles: 'relation<_Role>',
+      });
+      done();
+    });
+  });
+
+  it('creates non-custom classes which include pointer field', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('_Session', {}))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: '_Session',
+        createdAt: 'string',
+        updatedAt: 'string',
+        objectId: 'string',
+        restricted: 'boolean',
+        user: '*_User',
+        installationId: 'string',
+        sessionToken: 'string',
+        expiresAt: 'date',
+        createdWith: 'object'
+      });
+      done();
+    });
+  });
+
   it('refuses to create two geopoints', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {

@@ -48,13 +48,13 @@ var defaultColumns = {
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
-    "users": {type:'Relation',className:'_User'},
-    "roles": {type:'Relation',className:'_Role'}
+    "users": {type:'Relation', targetClass:'_User'},
+    "roles": {type:'Relation', targetClass:'_Role'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Session: {
     "restricted":     {type:'Boolean'},
-    "user":           {type:'Pointer', className:'_User'},
+    "user":           {type:'Pointer', targetClass:'_User'},
     "installationId": {type:'String'},
     "sessionToken":   {type:'String'},
     "expiresAt":      {type:'Date'},
