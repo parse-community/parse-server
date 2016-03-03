@@ -524,6 +524,7 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
       mongoWhere = {'$and': [mongoWhere, {'$or': orParts}]};
     }
     if (options.count) {
+      delete mongoOptions.limit;
       return collection.count(mongoWhere, mongoOptions);
     } else {
       return collection.find(mongoWhere, mongoOptions)
