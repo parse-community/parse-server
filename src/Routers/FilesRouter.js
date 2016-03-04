@@ -2,7 +2,7 @@ import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
 import { randomHexString } from '../cryptoUtils';
-import Config from '../Config';
+import cache from '../cache';
 import mime from 'mime';
 
 export class FilesRouter {
@@ -33,7 +33,7 @@ export class FilesRouter {
   }
 
   getHandler(req, res) {
-    const config = new Config(req.params.appId);
+    const config = cache.apps.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
     filesController.getFileData(config, filename).then((data) => {

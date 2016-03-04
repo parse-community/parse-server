@@ -13,13 +13,13 @@ export function CacheStore<KeyType, ValueType>() {
       delete dataStore[key];
     },
     clear(): void {
-      dataStore = {};
+      //dataStore = {};
     }
   };
 }
 
-const apps = CacheStore();
-const users = CacheStore();
+export const apps = CacheStore();
+export const users = CacheStore();
 
 //So far used only in tests
 export function clearCache(): void {

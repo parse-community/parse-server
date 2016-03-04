@@ -95,7 +95,9 @@ describe('Parse.File testing', () => {
             url: b.url
           }, (error, response, body) => {
             expect(error).toBe(null);
-            expect(response.statusCode).toEqual(404);
+            if(response) {
+              expect(response.statusCode).toEqual(404); 
+            }
             done();
           });
         });
@@ -359,7 +361,12 @@ describe('Parse.File testing', () => {
       var b = JSON.parse(body);
       expect(b.name).toMatch(/\.html$/);
       request.get(b.url, (error, response, body) => {
-        expect(response.headers['content-type']).toMatch(/^text\/html/);
+        if (response) {
+          expect(response.headers['content-type']).toMatch(/^text\/html/);
+        } else {
+          fail("failed...");
+        }
+
         done();
       });
     });

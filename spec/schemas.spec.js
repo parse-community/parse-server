@@ -3,9 +3,9 @@
 var Parse = require('parse/node').Parse;
 var request = require('request');
 var dd = require('deep-diff');
-var Config = require('../src/Config');
+var cache = require('../src/cache');
 
-var config = new Config('test');
+var config = cache.apps.get('test');
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');

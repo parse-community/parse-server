@@ -3,7 +3,6 @@ import cache from './cache';
 var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
-var Config = require('./Config');
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -83,9 +82,10 @@ function handleParseHeaders(req, res, next) {
   }
 
   info.app = cache.apps.get(info.appId);
-  req.config = new Config(info.appId, mount);
+  req.config = cache.apps.get(info.appId);
+  req.config.mount = mount;
   req.info = info;
-
+  
   var isMaster = (info.masterKey === req.config.masterKey);
 
   if (isMaster) {

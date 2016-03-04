@@ -1,6 +1,6 @@
 var PushController = require('../src/Controllers/PushController').PushController;
 
-var Config = require('../src/Config');
+var cache = require('../src/cache');
 
 describe('PushController', () => {
   it('can check valid master key of request', (done) => {
@@ -176,7 +176,7 @@ describe('PushController', () => {
     }
   }
   
-   var config = new Config(Parse.applicationId);
+   var config = cache.apps.get(Parse.applicationId);
    var auth = {
     isMaster: true
    }
@@ -228,7 +228,7 @@ describe('PushController', () => {
     }
   }
   
-   var config = new Config(Parse.applicationId);
+   var config = cache.apps.get(Parse.applicationId);
    var auth = {
     isMaster: true
    }

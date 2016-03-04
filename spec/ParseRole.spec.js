@@ -3,7 +3,7 @@
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
 var Auth = require("../src/Auth").Auth;
-var Config = require("../src/Config");
+var cache = require("../src/cache");
 
 describe('Parse Role testing', () => {
 
@@ -86,7 +86,7 @@ describe('Parse Role testing', () => {
          return createRole(rolesNames[2], anotherRole, user);
        }).then( (lastRole) => {
          roleIds[lastRole.get("name")] = lastRole.id;
-         var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+         var auth = new Auth({ config: cache.apps.get("test"), isMaster: true, user: user });
          return auth._loadRoles();
        })
      }).then( (roles) => {

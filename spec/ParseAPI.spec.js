@@ -382,29 +382,6 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('test rest_create_app', function(done) {
-    var appId;
-    Parse._request('POST', 'rest_create_app').then((res) => {
-      expect(typeof res.application_id).toEqual('string');
-      expect(res.master_key).toEqual('master');
-      appId = res.application_id;
-      Parse.initialize(appId, 'unused');
-      var obj = new Parse.Object('TestObject');
-      obj.set('foo', 'bar');
-      return obj.save();
-    }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId, 'test_');
-      return db.mongoFind('TestObject', {}, {});
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0]['foo']).toEqual('bar');
-      done();
-    }).fail( err => {
-      fail(err);
-      done();
-    })
-  });
-
   describe('beforeSave', () => {
     beforeEach(done => {
       // Make sure the required mock for all tests is unset.
@@ -898,6 +875,7 @@ describe('miscellaneous', function() {
       headers: headers,
       url: 'http://localhost:8378/1/classes/TestObject'
     }, (error, response, body) => {
+      console.log(body);
       expect(error).toBe(null);
       var b = JSON.parse(body);
       expect(b.error).toEqual('unauthorized');
@@ -916,6 +894,7 @@ describe('miscellaneous', function() {
       url: 'http://localhost:8378/1/classes/TestObject'
     }, (error, response, body) => {
       expect(error).toBe(null);
+      console.log(body);
       var b = JSON.parse(body);
       expect(b.error).toEqual('unauthorized');
       done();
