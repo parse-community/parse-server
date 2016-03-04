@@ -10,6 +10,8 @@
   "files": [
     "bin/",
     "lib/",
+    "public_html/",
+    "views/",
     "LICENSE",
     "PATENTS",
     "README.md"
