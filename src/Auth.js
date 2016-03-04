@@ -139,18 +139,18 @@ Auth.prototype._loadRoles = function() {
 };
 
 // Given a role object id, get any other roles it is part of
-// TODO: Make recursive to support role nesting beyond 1 level deep
 Auth.prototype._getAllRoleNamesForId = function(roleID) {
+  
+  // As per documentation, a Role inherits AnotherRole
+  // if this Role is in the roles pointer of this AnotherRole
+  // Let's find all the roles where this role is in a roles relation
   var rolePointer = {
     __type: 'Pointer',
     className: '_Role',
     objectId: roleID
   };
   var restWhere = {
-    '$relatedTo': {
-      key: 'roles',
-      object: rolePointer
-    }
+    'roles': rolePointer
   };
   var query = new RestQuery(this.config, master(this.config), '_Role',
                             restWhere, {});
@@ -161,6 +161,10 @@ Auth.prototype._getAllRoleNamesForId = function(roleID) {
     }
     var roleIDs = results.map(r => r.objectId);
     
+    // we found a list of roles where the roleID
+    // is referenced in the roles relation,
+    // Get the roles where those found roles are also
+    // referenced the same way
     var parentRolesPromises = roleIDs.map( (roleId) => {
       return this._getAllRoleNamesForId(roleId);
     });
