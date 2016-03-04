@@ -1,6 +1,6 @@
 import path from 'path';
 import express from 'express';
-import { ParseServer } from '../index';
+import ParseServer from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
