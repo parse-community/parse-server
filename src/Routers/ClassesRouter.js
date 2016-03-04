@@ -2,8 +2,6 @@
 import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 
-import url from 'url';
-
 export class ClassesRouter extends PromiseRouter {
   
   handleFind(req) {

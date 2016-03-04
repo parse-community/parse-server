@@ -1,5 +1,4 @@
 import PromiseRouter from '../PromiseRouter';
-import UserController from '../Controllers/UserController';
 import Config from '../Config';
 import express from 'express';
 import path from 'path';
@@ -44,7 +43,7 @@ export class PublicAPIRouter extends PromiseRouter {
         });
       }
       // Should we keep the file in memory or leave like that?
-      fs.readFile(path.resolve(views, "choose_password"), 'utf-8', (err, data) => {
+      fs.readFile(path.resolve(views, "choose_password"), 'utf-8', (err, data) => {
         if (err) {
           return reject(err);
         }
@@ -70,7 +69,7 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
     
-    return config.userController.checkResetTokenValidity(username, token).then( (user) => {
+    return config.userController.checkResetTokenValidity(username, token).then( () => {
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?token=${token}&id=${config.applicationId}&username=${username}&app=${config.appName}`
@@ -98,7 +97,7 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
     
-    return config.userController.updatePassword(username, token, new_password).then((result) => {
+    return config.userController.updatePassword(username, token, new_password).then(() => {
       return Promise.resolve({
         status: 302,
         location: config.passwordResetSuccessURL

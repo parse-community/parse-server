@@ -42,7 +42,7 @@ export class OneSignalPushAdapter extends PushAdapter {
       }
       let devices = deviceMap[pushType];
 
-      if(devices.length > 0) {
+      if (devices.length > 0) {
         sendPromises.push(sender(data, devices));
       }
     }
@@ -62,8 +62,8 @@ export class OneSignalPushAdapter extends PushAdapter {
     data= deepcopy(data['data']);
 
     var post = {};
-    if(data['badge']) {
-      if(data['badge'] == "Increment") {
+    if (data['badge']) {
+      if (data['badge'] == "Increment") {
         post['ios_badgeType'] = 'Increase';
         post['ios_badgeCount'] = 1;
       } else {
@@ -72,15 +72,15 @@ export class OneSignalPushAdapter extends PushAdapter {
       }
       delete data['badge'];
     }
-    if(data['alert']) {
+    if (data['alert']) {
       post['contents'] = {en: data['alert']};
       delete data['alert'];
     }
-    if(data['sound']) {
+    if (data['sound']) {
       post['ios_sound'] = data['sound'];
       delete data['sound'];
     }
-    if(data['content-available'] == 1) {
+    if (data['content-available'] == 1) {
       post['content_available'] = true;
       delete data['content-available'];
     }
@@ -97,7 +97,7 @@ export class OneSignalPushAdapter extends PushAdapter {
         return promise.reject("OneSignal Error");
       }
 
-      if(offset >= tokenlength) {
+      if (offset >= tokenlength) {
         promise.resolve()
       } else {
         this.sendNext();
@@ -123,15 +123,15 @@ export class OneSignalPushAdapter extends PushAdapter {
 
     var post = {};
     
-    if(data['alert']) {
+    if (data['alert']) {
       post['contents'] = {en: data['alert']};
       delete data['alert'];
     }
-    if(data['title']) {
+    if (data['title']) {
       post['title'] = {en: data['title']};
       delete data['title']; 
     }
-    if(data['uri']) {
+    if (data['uri']) {
       post['url'] = data['uri'];
     }
 
@@ -148,7 +148,7 @@ export class OneSignalPushAdapter extends PushAdapter {
         return promise.reject("OneSIgnal Error");
       }
 
-      if(offset >= tokenlength) {
+      if (offset >= tokenlength) {
         promise.resolve()
       } else {
         this.sendNext();
@@ -184,7 +184,7 @@ export class OneSignalPushAdapter extends PushAdapter {
     data['app_id'] = this.OneSignalConfig['appId'];
 
     let request = this.https.request(options, function(res) {
-      if(res.statusCode < 299) {
+      if (res.statusCode < 299) {
         cb(true);
       } else {
         console.log('OneSignal Error');

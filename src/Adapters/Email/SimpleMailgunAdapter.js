@@ -11,7 +11,7 @@ let SimpleMailgunAdapter = mailgunOptions => {
 			from: mailgunOptions.fromAddress,
 			to: to,
 			subject: subject,
-			text: text,
+			text: text
 		}
 
 		return new Promise((resolve, reject) => {

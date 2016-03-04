@@ -1,7 +1,6 @@
 // FunctionsRouter.js
 
-var express = require('express'),
-    Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
     triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';

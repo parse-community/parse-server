@@ -184,8 +184,7 @@ function generateNotification(coreData, expirationTime) {
         break;
       case 'content-available':
         notification.setNewsstandAvailable(true);
-        let isAvailable = coreData['content-available'] === 1;
-        notification.setContentAvailable(isAvailable);
+        notification.setContentAvailable(coreData['content-available'] === 1);
         break;
       case 'category':
         notification.category = coreData.category;

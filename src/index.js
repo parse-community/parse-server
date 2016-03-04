@@ -7,7 +7,6 @@ var batch = require('./batch'),
     DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     middlewares = require('./middlewares'),
-    multer = require('multer'),
     Parse = require('parse/node').Parse;
 
 import cache                   from './cache';
@@ -44,7 +43,7 @@ import { SessionsRouter }      from './Routers/SessionsRouter';
 import { UsersRouter }         from './Routers/UsersRouter';
 
 import requiredParameter       from './requiredParameter';
-import { randomString }        from './cryptoUtils';
+
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -104,7 +103,7 @@ function ParseServer({
     verifyEmailSuccess: undefined,
     choosePassword: undefined,
     passwordResetSuccess: undefined
-  },
+  }
 }) {
   
   // Initialize the node client SDK automatically
@@ -166,7 +165,7 @@ function ParseServer({
     oauth: oauth,
     appName: appName,
     publicServerURL: publicServerURL,
-    customPages: customPages,
+    customPages: customPages
   });
 
   // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
@@ -209,7 +208,7 @@ function ParseServer({
     new PushRouter(),
     new LogsRouter(),
     new IAPValidationRouter(),
-    new FeaturesRouter(),
+    new FeaturesRouter()
   ];
 
   if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
@@ -233,7 +232,7 @@ function ParseServer({
   api.use(middlewares.handleParseErrors);
 
   process.on('uncaughtException', (err) => {
-    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+    if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
       console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
       process.exit(0);
     }
@@ -254,5 +253,5 @@ function addParseCloud() {
 
 module.exports = {
   ParseServer: ParseServer,
-  S3Adapter: S3Adapter,
+  S3Adapter: S3Adapter
 };

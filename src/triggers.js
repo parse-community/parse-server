@@ -70,7 +70,7 @@ export function getTrigger(className, triggerType, applicationId) {
     return manager.Triggers[triggerType][className];
   }
   return undefined;
-};
+}
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return (getTrigger(className, type, applicationId) != undefined);
@@ -80,7 +80,7 @@ export function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -88,7 +88,7 @@ export function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {
     return manager.Validators[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -115,7 +115,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     request['installationId'] = auth.installationId;
   }
   return request;
-};
+}
 
 // Creates the response object, and uses the request object to pass data
 // The API will call this with REST API formatted objects, this will
@@ -139,7 +139,7 @@ export function getResponseObject(request, resolve, reject) {
       return reject(scriptError);
     }
   }
-};
+}
 
 // To be used as part of the promise chain when saving/deleting an object
 // Will resolve successfully if no trigger is configured
@@ -161,7 +161,7 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     Parse.masterKey = cache.apps.get(applicationId).masterKey;
     trigger(request, response);
   });
-};
+}
 
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object

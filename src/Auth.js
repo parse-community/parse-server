@@ -1,4 +1,3 @@
-var deepcopy = require('deepcopy');
 var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 

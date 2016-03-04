@@ -10,7 +10,7 @@ export function loadAdapter(adapter, defaultAdapter, options) {
   } else if (typeof adapter === "function") {
     try {
       return adapter(options);
-    } catch(e) {
+    } catch (e) {
       var Adapter = adapter;
       return new Adapter(options);
     }
@@ -34,7 +34,9 @@ export function loadAdapter(adapter, defaultAdapter, options) {
     // incompatible
     try {
       return loadAdapter(defaultAdapter, undefined, adapter);
-    } catch (e) {};
+    } catch (e) {
+      // do nothing with the error
+    }
   }
   // return the adapter as is as it's unusable otherwise
   return adapter;     

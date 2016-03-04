@@ -24,7 +24,7 @@ let features = {
   analytics: {
     slowQueries: false,
     performanceAnalysis: false,
-    retentionAnalysis: false,
+    retentionAnalysis: false
   },
   classes: {},
   files: {},
@@ -33,19 +33,19 @@ let features = {
     create: true,
     read: true,
     update: true,
-    delete: true,
+    delete: true
   },
   hooks: {
     create: false,
     read: false,
     update: false,
-    delete: false,
+    delete: false
   },
   iapValidation: {},
   installations: {},
   logs: {
     info: true,
-    error: true,
+    error: true
   },
   publicAPI: {},
   push: {},
@@ -56,10 +56,10 @@ let features = {
     addClass: true,
     removeClass: true,
     clearAllDataFromClass: false,
-    exportClass: false,
+    exportClass: false
   },
   sessions: {},
-  users: {},
+  users: {}
 };
 
 // master switch for features
@@ -78,7 +78,7 @@ let featuresSwitch = {
   roles: true,
   schemas: true,
   sessions: true,
-  users: true,
+  users: true
 };
 
 /**
@@ -103,5 +103,5 @@ function getFeatures() {
 
 module.exports = {
   getFeatures,
-  setFeature,
+  setFeature
 };

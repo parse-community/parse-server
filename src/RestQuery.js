@@ -3,8 +3,6 @@
 
 var Parse = require('parse/node').Parse;
 
-import { default as FilesController } from './Controllers/FilesController';
-
 // restOptions can include:
 //   skip
 //   limit
@@ -52,7 +50,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}) {
   this.include = [];
 
   for (var option in restOptions) {
-    switch(option) {
+    switch (option) {
     case 'keys':
       this.keys = new Set(restOptions.keys.split(','));
       this.keys.add('objectId');
@@ -443,7 +441,7 @@ function includePath(config, auth, response, path) {
       obj.__type = 'Object';
       obj.className = className;
 
-      if(className == "_User"){
+      if (className == "_User"){
         delete obj.sessionToken;
       }
 
@@ -539,7 +537,7 @@ function findObjectWithKey(root, key) {
   }
   if (root instanceof Array) {
     for (var item of root) {
-      var answer = findObjectWithKey(item, key);
+      let answer = findObjectWithKey(item, key);
       if (answer) {
         return answer;
       }
@@ -549,7 +547,7 @@ function findObjectWithKey(root, key) {
     return root;
   }
   for (var subkey in root) {
-    var answer = findObjectWithKey(root[subkey], key);
+    let answer = findObjectWithKey(root[subkey], key);
     if (answer) {
       return answer;
     }

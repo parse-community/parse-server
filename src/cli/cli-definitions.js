@@ -27,7 +27,7 @@ export default {
   },
   "serverURL": { 
     env: "PARSE_SERVER_URL",
-    help: "URL to your parse server with http:// or https://.",
+    help: "URL to your parse server with http:// or https://."
   },
   "clientKey": { 
     env: "PARSE_SERVER_CLIENT_KEY",
@@ -65,7 +65,7 @@ export default {
   },
   "fileKey": { 
     env: "PARSE_SERVER_FILE_KEY",
-    help: "Key for your files",
+    help: "Key for your files"
   }, 
   "facebookAppIds": { 
     env: "PARSE_SERVER_FACEBOOK_APP_IDS",

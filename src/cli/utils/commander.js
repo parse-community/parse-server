@@ -20,7 +20,7 @@ Command.prototype.loadDefinitions = function(definitions) {
   }, this);
   
   _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if(_definitions[opt].default) {
+    if (_definitions[opt].default) {
       defs[opt] = _definitions[opt].default;
     }
     return defs;

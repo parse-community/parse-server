@@ -3,10 +3,8 @@ import { inflate } from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
 
-var DatabaseAdapter = require('../DatabaseAdapter');
 var RestWrite = require('../RestWrite');
 var RestQuery = require('../RestQuery');
-var hash = require('../password').hash;
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
@@ -55,7 +53,7 @@ export class UserController extends AdaptableController {
         // Need direct database access because verification token is not a parse field
         return coll.findAndModify({
           username: username,
-          _email_verify_token: token,
+          _email_verify_token: token
         }, null, {$set: {emailVerified: true}}, (err, doc) => {
           if (err || !doc.value) {
             reject(err);
@@ -73,7 +71,7 @@ export class UserController extends AdaptableController {
       return this.config.database.collection('_User').then(coll => {
         return coll.findOne({
           username: username,
-          _perishable_token: token,
+          _perishable_token: token
         }, (err, doc) => {
           if (err || !doc) {
             reject(err);
@@ -112,14 +110,14 @@ export class UserController extends AdaptableController {
       return;
     }
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then((user) => {
+    this.getUserIfNeeded(user).then((user) => {
       const token = encodeURIComponent(user._email_verify_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
       let options = {
         appName: this.config.appName,
         link: link,
-        user: inflate('_User', user),
+        user: inflate('_User', user)
       };
       if (this.adapter.sendVerificationEmail) {
         this.adapter.sendVerificationEmail(options);
@@ -136,7 +134,7 @@ export class UserController extends AdaptableController {
       return database.collection('_User').then(coll => {
         // Need direct database access because verification token is not a parse field
         return coll.findAndModify({
-          email: email,
+          email: email
         }, null, {$set: {_perishable_token: token}}, (err, doc) => {
           if (err || !doc.value) {
             console.error(err);
@@ -153,8 +151,6 @@ export class UserController extends AdaptableController {
   sendPasswordResetEmail(email) {
     if (!this.adapter) {
       throw "Trying to send a reset password but no adapter is set";
-      //  TODO: No adapter?
-      return;
     }
     
     return this.setPasswordResetToken(email).then((user) => {
@@ -166,7 +162,7 @@ export class UserController extends AdaptableController {
       let options = {
         appName: this.config.appName,
         link: link,
-        user: inflate('_User', user),
+        user: inflate('_User', user)
       };
       
       if (this.adapter.sendPasswordResetEmail) {
@@ -179,23 +175,23 @@ export class UserController extends AdaptableController {
     });
   }
   
-  updatePassword(username, token, password, config) {
+  updatePassword(username, token, password) {
    return this.checkResetTokenValidity(username, token).then(() => {
      return updateUserPassword(username, token, password, this.config);
    });
   }
   
-  defaultVerificationEmail({link, user, appName, }) {
+  defaultVerificationEmail({link, user, appName }) {
     let text = "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
-	      "" +
-	      "Click here to confirm it:\n" + link;
+      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
+      "" +
+      "Click here to confirm it:\n" + link;
     let to = user.get("email");
     let subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
   }
   
-  defaultResetPasswordEmail({link, user, appName, }) {
+  defaultResetPasswordEmail({link, user, appName }) {
     let text = "Hi,\n\n" + 
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +

@@ -10,7 +10,7 @@ const send = function(method, path, body) {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Master-Key': Parse.masterKey,
         'Content-Type': 'application/json'
-      },
+      }
   };
   
   if (body) {
@@ -57,7 +57,7 @@ Hooks.getTrigger = function(className, triggerName) {
 
 Hooks.get = function(type, functionName, triggerName) {
   var url = "/hooks/"+type;
-  if(functionName) {
+  if (functionName) {
     url += "/"+functionName;
     if (triggerName) {
       url += "/"+triggerName;

@@ -1,5 +1,4 @@
 // FilesController.js
-import { Parse } from 'parse/node';
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';

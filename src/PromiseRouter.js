@@ -31,10 +31,10 @@ export default class PromiseRouter {
     for (var route of router.routes) {
       this.routes.push(route);
     }
-  };
+  }
   
   route(method, path, ...handlers) {
-    switch(method) {
+    switch (method) {
     case 'POST':
     case 'GET':
     case 'PUT':
@@ -47,10 +47,9 @@ export default class PromiseRouter {
     let handler = handlers[0];
   
     if (handlers.length > 1) {
-      const length = handlers.length;
       handler = function(req) {
         return handlers.reduce((promise, handler) => {
-          return promise.then((result) => {
+          return promise.then(() => {
             return handler(req);
           });
         }, Promise.resolve());
@@ -62,7 +61,7 @@ export default class PromiseRouter {
       method: method,
       handler: handler
     });
-  };
+  }
   
   // Returns an object with:
   //   handler: the handler that should deal with this request
@@ -98,12 +97,12 @@ export default class PromiseRouter {
 
       return {params: params, handler: route.handler};
     }
-  };
+  }
   
   // Mount the routes on this router onto an express app (or express router)
   mountOnto(expressApp) {
     for (var route of this.routes) {
-      switch(route.method) {
+      switch (route.method) {
       case 'POST':
         expressApp.post(route.path, makeExpressHandler(route.handler));
         break;
@@ -120,12 +119,12 @@ export default class PromiseRouter {
         throw 'unexpected code branch';
       }
     }
-  };
+  }
   
   expressApp() {
     var expressApp = express();
     for (var route of this.routes) {
-      switch(route.method) {
+      switch (route.method) {
       case 'POST':
         expressApp.post(route.path, makeExpressHandler(route.handler));
         break;

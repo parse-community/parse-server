@@ -13,7 +13,7 @@ var encodeBody = function(body, headers = {}) {
     var contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
       body = JSON.stringify(body);
-    } else if(headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
+    } else if (headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
       body = Object.keys(body).map(function(key){
         return `${key}=${encodeURIComponent(body[key])}`
       }).join("&");
@@ -35,7 +35,7 @@ module.exports = function(options) {
   // set follow redirects to false by default
   options.followRedirect = options.followRedirects == true;
   
-  request(options, (error, response, body) => {
+  request(options, (error, response) => {
     var httpResponse = {};
     httpResponse.status = response.statusCode;
     httpResponse.headers = response.headers;
@@ -44,7 +44,9 @@ module.exports = function(options) {
     httpResponse.text = response.body;
     try {
       httpResponse.data = JSON.parse(response.body);
-    } catch (e) {}
+    } catch (e) {
+      // Ignore when failing to parse
+    }
     // Consider <200 && >= 400 as errors 
     if (error || httpResponse.status <200 || httpResponse.status >=400) {
       if (callbacks.error) {

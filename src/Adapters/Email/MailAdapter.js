@@ -1,4 +1,4 @@
-
+/*eslint no-unused-vars: 0*/
 /*
   Mail Adapter prototype
   A MailAdapter should implement at least sendMail()

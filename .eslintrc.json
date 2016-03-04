@@ -10,6 +10,9 @@
     "es6": true
   },
   "extends": "eslint:recommended",
-  "rules": {},
+  "rules": {
+    "no-console": 0,
+    "keyword-spacing": 2
+  },
   "plugins": ["flowtype"]
 }

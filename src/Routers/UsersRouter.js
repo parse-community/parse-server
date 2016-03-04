@@ -3,13 +3,11 @@
 import deepcopy       from 'deepcopy';
 
 import ClassesRouter  from './ClassesRouter';
-import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 let cryptoUtils = require('../cryptoUtils');
-let triggers = require('../triggers');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -160,11 +158,11 @@ export class UsersRouter extends ClassesRouter {
      }
      let userController = req.config.userController;
      
-     return userController.sendPasswordResetEmail(email).then((token) => {
+     return userController.sendPasswordResetEmail(email).then(() => {
         return Promise.resolve({
           response: {}
         });
-     }, (err) => {
+     }, () => {
        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
      });
   }

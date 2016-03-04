@@ -8,21 +8,6 @@ import requiredParameter from '../../requiredParameter';
 
 const DEFAULT_S3_REGION = "us-east-1";
 
-function parseS3AdapterOptions(...options) {
-  if (options.length === 1 && typeof options[0] == "object") {
-    return options;
-  }
-  
-  const additionalOptions = options[3] || {};
-  
-  return {
-    accessKey: options[0],
-    secretKey: options[1],
-    bucket: options[2],
-    region: additionalOptions.region
-  }
-}
-
 export class S3Adapter extends FilesAdapter {
   // Creates an S3 session.
   // Providing AWS access and secret keys is mandatory
@@ -56,7 +41,7 @@ export class S3Adapter extends FilesAdapter {
     if (this._hasBucket) {
       promise = Promise.resolve();
     } else {
-      promise = new Promise((resolve, reject) => {
+      promise = new Promise((resolve) => {
         this._s3Client.createBucket(() => {
           this._hasBucket = true;
           resolve();
@@ -98,7 +83,7 @@ export class S3Adapter extends FilesAdapter {
           Key: this._bucketPrefix + filename
         };
         this._s3Client.deleteObject(params, (err, data) =>{
-          if(err !== null) {
+          if (err !== null) {
             return reject(err);
           }
           resolve(data);

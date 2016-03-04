@@ -1,4 +1,3 @@
-import PushController from '../Controllers/PushController'
 import PromiseRouter from '../PromiseRouter';
 
 export class PushRouter extends PromiseRouter {

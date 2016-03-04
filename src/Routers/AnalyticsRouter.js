@@ -2,7 +2,7 @@
 import PromiseRouter from '../PromiseRouter';
 
 // Returns a promise that resolves to an empty object response
-function ignoreAndSucceed(req) {
+function ignoreAndSucceed() {
   return Promise.resolve({
     response: {}
   });

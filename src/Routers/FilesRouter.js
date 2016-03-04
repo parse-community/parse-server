@@ -1,7 +1,6 @@
 import express from 'express';
 import BodyParser from 'body-parser';
 import * as Middlewares from '../middlewares';
-import { randomHexString } from '../cryptoUtils';
 import Config from '../Config';
 import mime from 'mime';
 
@@ -41,7 +40,7 @@ export class FilesRouter {
       var contentType = mime.lookup(filename);
       res.set('Content-Type', contentType);
       res.end(data);
-    }).catch((err) => {
+    }).catch(() => {
       res.status(404);
       res.set('Content-Type', 'text/plain');
       res.end('File not found.');
@@ -76,7 +75,7 @@ export class FilesRouter {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);
-    }).catch((err) => {
+    }).catch(() => {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
         'Could not store file.'));
     });
@@ -88,7 +87,7 @@ export class FilesRouter {
       res.status(200);
       // TODO: return useful JSON here?
       res.end();
-    }).catch((error) => {
+    }).catch(() => {
       next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR,
         'Could not delete file.'));
     });

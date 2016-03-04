@@ -14,21 +14,21 @@ export class GlobalConfigRouter extends PromiseRouter {
         status: 404,
         response: {
           code: Parse.Error.INVALID_KEY_NAME,
-          error: 'config does not exist',
+          error: 'config does not exist'
         }
       }));
   }
   updateGlobalConfig(req) {
     return req.config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.findOneAndUpdate({ _id: 1 }, { $set: req.body }))
-      .then(response => {
+      .then(() => {
         return { response: { result: true } }
       })
       .catch(() => ({
         status: 404,
         response: {
           code: Parse.Error.INVALID_KEY_NAME,
-          error: 'config cannot be updated',
+          error: 'config cannot be updated'
         }
      }));
   }

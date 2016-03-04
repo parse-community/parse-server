@@ -1,7 +1,6 @@
 // schemas.js
 
-var express = require('express'),
-  Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
   Schema = require('../Schema');
 
 import PromiseRouter from '../PromiseRouter';
@@ -12,7 +11,7 @@ function classNameMismatchResponse(bodyClass, pathClass) {
     status: 400,
     response: {
       code: Parse.Error.INVALID_CLASS_NAME,
-      error: 'class name mismatch between ' + bodyClass + ' and ' + pathClass,
+      error: 'class name mismatch between ' + bodyClass + ' and ' + pathClass
     }
   });
 }
@@ -33,7 +32,7 @@ function mongoSchemaAPIResponseFields(schema) {
 function mongoSchemaToSchemaAPIResponse(schema) {
   return {
     className: schema._id,
-    fields: mongoSchemaAPIResponseFields(schema),
+    fields: mongoSchemaAPIResponseFields(schema)
   };
 }
 
@@ -52,7 +51,7 @@ function getOneSchema(req) {
       status: 400,
       response: {
         code: 103,
-        error: 'class ' + req.params.className + ' does not exist',
+        error: 'class ' + req.params.className + ' does not exist'
       }
     }));
 }
@@ -69,8 +68,8 @@ function createSchema(req) {
       status: 400,
       response: {
         code: 135,
-        error: 'POST ' + req.path + ' needs class name',
-      },
+        error: 'POST ' + req.path + ' needs class name'
+      }
     });
   }
   return req.config.database.loadSchema()
@@ -78,7 +77,7 @@ function createSchema(req) {
     .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }))
     .catch(error => ({
       status: 400,
-      response: error,
+      response: error
     }));
 }
 
@@ -125,7 +124,7 @@ function modifySchema(req) {
 
       return Promise.all(deletionPromises)
         .then(() => new Promise((resolve, reject) => {
-          schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err, docs) => {
+          schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err) => {
             if (err) {
               reject(err);
             }

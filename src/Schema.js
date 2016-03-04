@@ -23,7 +23,7 @@ var defaultColumns = {
     "objectId":  {type:'String'},
     "createdAt": {type:'Date'},
     "updatedAt": {type:'Date'},
-    "ACL":       {type:'ACL'},
+    "ACL":       {type:'ACL'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _User: {
@@ -31,7 +31,7 @@ var defaultColumns = {
     "password":      {type:'String'},
     "authData":      {type:'Object'},
     "email":         {type:'String'},
-    "emailVerified": {type:'Boolean'},
+    "emailVerified": {type:'Boolean'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Installation: {
@@ -67,7 +67,7 @@ var defaultColumns = {
     "icon":               {type:'File'},
     "order":              {type:'Number'},
     "title":              {type:'String'},
-    "subtitle":            {type:'String'},
+    "subtitle":            {type:'String'}
   }
 };
 
@@ -181,7 +181,7 @@ function Schema(collection, mongoSchema) {
     var permsData = null;
     for (var key in obj) {
       var value = obj[key];
-      switch(key) {
+      switch (key) {
       case '_id':
         className = value;
         break;
@@ -221,7 +221,7 @@ function mongoSchemaFromFieldsAndClassName(fields, className) {
   if (!classNameIsValid(className)) {
     return {
       code: Parse.Error.INVALID_CLASS_NAME,
-      error: invalidClassNameMessage(className),
+      error: invalidClassNameMessage(className)
     };
   }
 
@@ -229,13 +229,13 @@ function mongoSchemaFromFieldsAndClassName(fields, className) {
     if (!fieldNameIsValid(fieldName)) {
       return {
         code: Parse.Error.INVALID_KEY_NAME,
-        error: 'invalid field name: ' + fieldName,
+        error: 'invalid field name: ' + fieldName
       };
     }
     if (!fieldNameIsValidForClass(fieldName, className)) {
       return {
         code: 136,
-        error: 'field ' + fieldName + ' cannot be added',
+        error: 'field ' + fieldName + ' cannot be added'
       };
     }
   }
@@ -247,16 +247,16 @@ function mongoSchemaFromFieldsAndClassName(fields, className) {
     createdAt: 'string'
   };
 
-  for (var fieldName in defaultColumns[className]) {
-    var validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
+  for (let fieldName in defaultColumns[className]) {
+    let validatedField = schemaAPITypeToMongoFieldType(defaultColumns[className][fieldName]);
     if (!validatedField.result) {
       return validatedField;
     }
     mongoObject[fieldName] = validatedField.result;
   }
 
-  for (var fieldName in fields) {
-    var validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
+  for (let fieldName in fields) {
+    let validatedField = schemaAPITypeToMongoFieldType(fields[fieldName]);
     if (!validatedField.result) {
       return validatedField;
     }
@@ -267,7 +267,7 @@ function mongoSchemaFromFieldsAndClassName(fields, className) {
   if (geoPoints.length > 1) {
     return {
       code: Parse.Error.INCORRECT_TYPE,
-      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
+      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.'
     };
   }
 
@@ -278,13 +278,13 @@ function mongoFieldTypeToSchemaAPIType(type) {
   if (type[0] === '*') {
     return {
       type: 'Pointer',
-      targetClass: type.slice(1),
+      targetClass: type.slice(1)
     };
   }
   if (type.startsWith('relation<')) {
     return {
       type: 'Relation',
-      targetClass: type.slice('relation<'.length, type.length - 1),
+      targetClass: type.slice('relation<'.length, type.length - 1)
     };
   }
   switch (type) {
@@ -334,7 +334,7 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
   if (this.data[className]) {
     return Promise.reject({
       code: Parse.Error.INVALID_CLASS_NAME,
-      error: 'class ' + className + ' already exists',
+      error: 'class ' + className + ' already exists'
     });
   }
 
@@ -350,7 +350,7 @@ Schema.prototype.addClassIfNotExists = function(className, fields) {
     if (error.code === 11000) { //Mongo's duplicate key error
       return Promise.reject({
         code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class ' + className + ' already exists',
+        error: 'class ' + className + ' already exists'
       });
     }
     return Promise.reject(error);
@@ -385,7 +385,7 @@ Schema.prototype.validateClassName = function(className, freeze) {
   }).then((schema) => {
     // Ensure that the schema now validates
     return schema.validateClassName(className, true);
-  }, (error) => {
+  }, () => {
     // The schema still doesn't validate. Give up
     throw new Parse.Error(Parse.Error.INVALID_JSON,
                           'schema class name does not revalidate');
@@ -426,7 +426,7 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
   // Just to check that the key is valid
   transform.transformKey(this, className, key);
 
-  if( key.indexOf(".") > 0 ) {
+  if ( key.indexOf(".") > 0 ) {
       // subdocument key (x.y) => ok if x is of type 'object'    
       key = key.split(".")[ 0 ];
       type = 'object';
@@ -486,7 +486,7 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
   }).then((schema) => {
     // Ensure that the schema now validates
     return schema.validateField(className, key, type, true);
-  }, (error) => {
+  }, () => {
     // The schema still doesn't validate. Give up
     throw new Parse.Error(Parse.Error.INVALID_JSON,
                           'schema key will not revalidate');
@@ -672,7 +672,7 @@ Schema.prototype.isPointer = function(className, key) {
 // TODO: ensure that this is compatible with the format used in Open DB
 function getType(obj) {
   var type = typeof obj;
-  switch(type) {
+  switch (type) {
   case 'boolean':
   case 'string':
   case 'number':
@@ -716,7 +716,7 @@ function getObjectType(obj) {
     return getObjectType(obj['$ne']);
   }
   if (obj.__op) {
-    switch(obj.__op) {
+    switch (obj.__op) {
     case 'Increment':
       return 'number';
     case 'Delete':
@@ -745,5 +745,5 @@ module.exports = {
   mongoSchemaFromFieldsAndClassName: mongoSchemaFromFieldsAndClassName,
   schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject: buildMergedSchemaObject,
-  mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
+  mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType
 };

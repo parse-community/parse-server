@@ -1,7 +1,6 @@
 // InstallationsRouter.js
 
 import ClassesRouter from './ClassesRouter';
-import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 
 export class InstallationsRouter extends ClassesRouter {

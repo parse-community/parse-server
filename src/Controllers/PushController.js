@@ -1,5 +1,4 @@
 import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
@@ -23,7 +22,7 @@ export class PushController extends AdaptableController {
     var deviceTypes = [];
     if (typeof deviceTypeField === 'string') {
       deviceTypes.push(deviceTypeField);
-    } else if (typeof deviceTypeField['$in'] === 'array') {
+    } else if (Array.isArray(deviceTypeField['$in'])) {
       deviceTypes.concat(deviceTypeField['$in']);
     }
     for (var i = 0; i < deviceTypes.length; i++) {
@@ -94,6 +93,6 @@ export class PushController extends AdaptableController {
   expectedAdapterType() {
     return PushAdapter;
   }
-};
+}
 
 export default PushController;

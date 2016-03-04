@@ -2,11 +2,9 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
-import cache from './cache';
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var oauth = require("./oauth");
@@ -102,7 +100,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
       this.runOptions.acl = this.runOptions.acl.concat(roles);
       return Promise.resolve();
     });
-  }else{
+  } else {
     return Promise.resolve();
   }
 };
@@ -306,7 +304,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
     if (oauthOptions.module) {
       validateAuthData = require(oauthOptions.module).validateAuthData;
       validateAppId = require(oauthOptions.module).validateAppId;
-    };
+    }
 
     if (oauthOptions.validateAuthData) {
       validateAuthData = oauthOptions.validateAuthData;
@@ -319,7 +317,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
 
   if (!validateAuthData || !validateAppId) {
     return false;
-  };
+  }
 	
   return validateAuthData(authData, oauthOptions)
     .then(() => {
@@ -691,7 +689,7 @@ RestWrite.prototype.handleInstallation = function() {
         // an installation ID. Try cleaning out old installations that match
         // the deviceToken, and return nil to signal that a new object should
         // be created.
-        var delQuery = {
+        let delQuery = {
           'deviceToken': this.data.deviceToken,
           'installationId': {
             '$ne': this.data.installationId
@@ -709,7 +707,7 @@ RestWrite.prototype.handleInstallation = function() {
         // Exactly one device token match and it doesn't have an installation
         // ID. This is the one case where we want to merge with the existing
         // object.
-        var delQuery = {objectId: idMatch.objectId};
+        let delQuery = {objectId: idMatch.objectId};
         return this.config.database.destroy('_Installation', delQuery)
           .then(() => {
             return deviceTokenMatches[0]['objectId'];
@@ -720,7 +718,7 @@ RestWrite.prototype.handleInstallation = function() {
           // We're setting the device token on an existing installation, so
           // we should try cleaning out old installations that match this
           // device token.
-          var delQuery = {
+          let delQuery = {
             'deviceToken': this.data.deviceToken,
             'installationId': {
               '$ne': this.data.installationId

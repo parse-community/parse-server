@@ -27,7 +27,7 @@ let simpleCache = {
   until: null,
   order: null,
   data: [],
-  level: 'info',
+  level: 'info'
 };
 
 // returns Date object rounded to nearest day
@@ -170,7 +170,6 @@ export class FileLoggerAdapter extends LoggerAdapter {
     }
 
     let curDate = roundedUntil;
-    let curSize = 0;
     let method = order === 'desc' ? 'push' : 'unshift';
     let files = [];
     let promises = [];
@@ -184,7 +183,7 @@ export class FileLoggerAdapter extends LoggerAdapter {
     // read each file and split based on newline char.
     // limitation is message cannot contain newline
     // TODO: strip out delimiter from logged message
-    files.forEach(function(file, i) {
+    files.forEach(function(file) {
       let promise = new Parse.Promise();
       fs.readFile(file, 'utf8', function(err, data) {
         if (err) {
@@ -201,7 +200,7 @@ export class FileLoggerAdapter extends LoggerAdapter {
 
     Parse.Promise.when(promises).then((results) => {
       let logs = [];
-      results.forEach(function(logEntries, i) {
+      results.forEach(function(logEntries) {
         logEntries.forEach(function(entry) {
           if (_isValidLogEntry(from, until, entry)) {
             logs[method](JSON.parse(entry));
@@ -214,7 +213,7 @@ export class FileLoggerAdapter extends LoggerAdapter {
         until: roundedUntil,
         data: logs,
         order,
-        level,
+        level
       };
       callback(logs.slice(0, size));
     });

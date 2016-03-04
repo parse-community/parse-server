@@ -1,6 +1,5 @@
 
 import ClassesRouter from './ClassesRouter';
-import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 

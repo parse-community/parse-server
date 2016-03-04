@@ -1,7 +1,6 @@
 // A database adapter that works with data exported from the hosted
 // Parse database.
 
-var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
 var Schema = require('./../Schema');
@@ -205,7 +204,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className,
       return;
     }
     if (op.__op == 'AddRelation') {
-      for (var object of op.objects) {
+      for (let object of op.objects) {
         pending.push(this.addRelation(key, className,
                                       objectId,
                                       object.objectId));
@@ -214,7 +213,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className,
     }
 
     if (op.__op == 'RemoveRelation') {
-      for (var object of op.objects) {
+      for (let object of op.objects) {
         pending.push(this.removeRelation(key, className,
                                          objectId,
                                          object.objectId));
@@ -223,16 +222,16 @@ DatabaseController.prototype.handleRelationUpdates = function(className,
     }
 
     if (op.__op == 'Batch') {
-      for (var x of op.ops) {
+      for (let x of op.ops) {
         process(x, key);
       }
     }
   };
 
-  for (var key in update) {
+  for (let key in update) {
     process(update[key], key);
   }
-  for (var key of deleteMe) {
+  for (let key of deleteMe) {
     delete update[key];
   }
   return Promise.all(pending);
@@ -408,7 +407,6 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
       if (!match) {
         continue;
       }
-      var relatedClassName = match[1];
       var relatedIds;
       if (query[key]['$in']) {
         relatedIds = query[key]['$in'].map(r => r.objectId);

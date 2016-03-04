@@ -79,7 +79,7 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
-};
+}
 
 export default Config;
 module.exports = Config;

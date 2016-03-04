@@ -24,11 +24,11 @@ OAuth.prototype.send = function(method, path, params, body){
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
+    }).on('error', function() {
       reject('Failed to make an OAuth request');
     });
     if (request.body) {
-    	httpRequest.write(request.body);
+      httpRequest.write(request.body);
     }
     httpRequest.end();
   });
@@ -50,7 +50,7 @@ OAuth.prototype.buildRequest = function(method, path, params, body) {
 
   var oauth_params = this.oauth_params || {};
   oauth_params.oauth_consumer_key = this.consumer_key;
-  if(this.auth_token){
+  if (this.auth_token){
     oauth_params["oauth_token"] = this.auth_token;
   }
 
@@ -118,15 +118,13 @@ OAuth.nonce = function(){
     var text = "";
     var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for( var i=0; i < 30; i++ )
+    for ( var i=0; i < 30; i++ )
         text += possible.charAt(Math.floor(Math.random() * possible.length));
 
     return text;
 }
 
-OAuth.buildParameterString = function(obj){
-	var result = {};
-
+OAuth.buildParameterString = function(obj) {
 	// Sort keys and encode values
 	if (obj) {
 		var keys = Object.keys(obj).sort();
@@ -173,7 +171,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 		oauth_parameters.oauth_version = OAuth.version;
 	}
 
-	if(!auth_token_secret){
+	if (!auth_token_secret){
 		auth_token_secret="";
 	}
 	// Force GET method if unset
@@ -184,9 +182,9 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 	// Collect  all the parameters in one signatureParameters object
 	var signatureParams = {};
 	var parametersToMerge = [request.params, request.body, oauth_parameters];
-	for(var i in parametersToMerge) {
+	for (var i in parametersToMerge) {
 		var parameters = parametersToMerge[i];
-		for(var k in parameters) {
+		for (var k in parameters) {
 			signatureParams[k] = parameters[k];
 		}
 	}
@@ -205,17 +203,17 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 
 	// Set the signature in the params
 	oauth_parameters.oauth_signature = signature;
-	if(!request.headers){
+	if (!request.headers){
 		request.headers = {};
 	}
 
 	// Set the authorization header
-	var signature = Object.keys(oauth_parameters).sort().map(function(key){
+	let authorizationSignature = Object.keys(oauth_parameters).sort().map(function(key){
 		var value = oauth_parameters[key];
 		return key+'="'+value+'"';
 	}).join(", ")
 
-	request.headers.Authorization = 'OAuth ' + signature;
+	request.headers.Authorization = 'OAuth ' + authorizationSignature;
 
 	// Set the content type header
 	request.headers["Content-Type"] = "application/x-www-form-urlencoded";

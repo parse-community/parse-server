@@ -156,7 +156,7 @@ var allowMethodOverride = function(req, res, next) {
   next();
 };
 
-var handleParseErrors = function(err, req, res, next) {
+var handleParseErrors = function(err, req, res) {
   if (err instanceof Parse.Error) {
     var httpStatus;
 

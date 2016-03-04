@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: 0*/
 // Push Adapter
 //
 // Allows you to change the push notification mechanism.

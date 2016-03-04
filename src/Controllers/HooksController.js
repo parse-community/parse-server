@@ -60,7 +60,7 @@ export class HooksController {
   delete(query) {
     return this.collection().then((collection) => {
       return collection.remove(query)
-    }).then( (res) => {
+    }).then( () => {
       return {};
     }, 1);
   }
@@ -101,7 +101,7 @@ export class HooksController {
     }
     return this.collection().then((collection) => {
       return collection.update(query, hook, {upsert: true})
-    }).then(function(res){
+    }).then(function(){
       return hook;
     })
   }
@@ -138,7 +138,7 @@ export class HooksController {
     } 
     
     return this.addHook(hook);
-  };
+  }
   
   createHook(aHook) {
     if (aHook.functionName) {
@@ -159,7 +159,7 @@ export class HooksController {
     }
     
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
   
   updateHook(aHook) {
     if (aHook.functionName) {
@@ -178,7 +178,7 @@ export class HooksController {
       });
     }
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
   
   load() {
     return this.getHooks().then((hooks) => {
@@ -194,7 +194,7 @@ export class HooksController {
 function wrapToHTTPRequest(hook) {
   return function(req, res) {
     var jsonBody = {};
-    for(var i in req) {
+    for (var i in req) {
       jsonBody[i] = req[i];
     }
     if (req.object) {
@@ -217,7 +217,7 @@ function wrapToHTTPRequest(hook) {
         if (typeof body == "string") {
           try {
             body = JSON.parse(body);
-          } catch(e) {
+          } catch (e) {
             err = {error: "Malformed response", code: -1};
           }
         }

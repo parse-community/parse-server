@@ -27,7 +27,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
-  switch(key) {
+  switch (key) {
   case 'objectId':
   case '_id':
     key = '_id';
@@ -60,8 +60,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
-    break;
-  case '$or':
+  case '$or': {
     if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $or in queries');
@@ -70,12 +69,13 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
                             'bad $or format - use an array value');
     }
-    var mongoSubqueries = restValue.map((s) => {
+    let mongoSubqueries = restValue.map((s) => {
       return transformWhere(schema, className, s);
     });
-    return {key: '$or', value: mongoSubqueries};
-  case '$and':
-    if (!options.query) {
+    return {key: '$or', value: mongoSubqueries}; 
+  }
+  case '$and': {
+   if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $and in queries');
     }
@@ -83,10 +83,11 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       throw new Parse.Error(Parse.Error.INVALID_QUERY,
                             'bad $and format - use an array value');
     }
-    var mongoSubqueries = restValue.map((s) => {
+    let mongoSubqueries = restValue.map((s) => {
       return transformWhere(schema, className, s);
     });
-    return {key: '$and', value: mongoSubqueries};
+    return {key: '$and', value: mongoSubqueries}; 
+  }
   default:
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -98,8 +99,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       }
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'can only query on ' + key);
-      break;
-    };
+    }
     if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'invalid key name: ' + key);
@@ -327,7 +327,7 @@ function transformAtom(atom, force, options) {
   options = options || {};
   var inArray = options.inArray;
   var inObject = options.inObject;
-  switch(typeof atom) {
+  switch (typeof atom) {
   case 'string':
   case 'number':
   case 'boolean':
@@ -405,7 +405,7 @@ function transformConstraint(constraint, inArray) {
   var keys = Object.keys(constraint).sort().reverse();
   var answer = {};
   for (var key of keys) {
-    switch(key) {
+    switch (key) {
     case '$lt':
     case '$lte':
     case '$gt':
@@ -417,8 +417,8 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$in':
-    case '$nin':
-      var arr = constraint[key];
+    case '$nin': {
+      let arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
@@ -426,18 +426,21 @@ function transformConstraint(constraint, inArray) {
       answer[key] = arr.map((v) => {
         return transformAtom(v, true);
       });
-      break;
+      break; 
+    }
 
-    case '$all':
-      var arr = constraint[key];
+    case '$all': {
+      let arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
       }
       answer[key] = arr.map((v) => {
         return transformAtom(v, true, { inArray: true });
-      });
-      break;
+      });    
+      break;  
+    }
+      
 
     case '$regex':
       var s = constraint[key];
@@ -526,14 +529,12 @@ function transformUpdateOperator(operator, flatten) {
     return CannotTransform;
   }
 
-  switch(operator.__op) {
+  switch (operator.__op) {
   case 'Delete':
     if (flatten) {
       return undefined;
-    } else {
-      return {__op: '$unset', arg: ''};
     }
-
+    return {__op: '$unset', arg: ''};
   case 'Increment':
     if (typeof operator.amount !== 'number') {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
@@ -541,10 +542,8 @@ function transformUpdateOperator(operator, flatten) {
     }
     if (flatten) {
       return operator.amount;
-    } else {
-      return {__op: '$inc', arg: operator.amount};
     }
-
+    return {__op: '$inc', arg: operator.amount};
   case 'Add':
   case 'AddUnique':
     if (!(operator.objects instanceof Array)) {
@@ -556,28 +555,24 @@ function transformUpdateOperator(operator, flatten) {
     });
     if (flatten) {
       return toAdd;
-    } else {
-      var mongoOp = {
+    }
+    var mongoOp = {
         Add: '$push',
         AddUnique: '$addToSet'
       }[operator.__op];
-      return {__op: mongoOp, arg: {'$each': toAdd}};
-    }
-
+    return {__op: mongoOp, arg: {'$each': toAdd}};
   case 'Remove':
     if (!(operator.objects instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
                             'objects to remove must be an array');
     }
+    if (flatten) {
+      return [];
+    }
     var toRemove = operator.objects.map((obj) => {
       return transformAtom(obj, true, { inArray: true });
     });
-    if (flatten) {
-      return [];
-    } else {
-      return {__op: '$pullAll', arg: toRemove};
-    }
-
+    return {__op: '$pullAll', arg: toRemove};
   default:
     throw new Parse.Error(
       Parse.Error.COMMAND_UNAVAILABLE,
@@ -589,7 +584,7 @@ function transformUpdateOperator(operator, flatten) {
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
 function untransformObject(schema, className, mongoObject, isNestedObject = false) {
-  switch(typeof mongoObject) {
+  switch (typeof mongoObject) {
   case 'string':
   case 'number':
   case 'boolean':
@@ -619,7 +614,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      switch(key) {
+      switch (key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];
         break;

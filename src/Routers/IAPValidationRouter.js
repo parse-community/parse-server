@@ -1,7 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 var request = require("request");
 var rest = require("../rest");
-var Auth = require("../Auth");
 
 // TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -29,7 +28,7 @@ function validateWithAppStore(url, receipt) {
     request.post({
       url: url,
       body: { "receipt-data": receipt },
-      json: true,
+      json: true
     }, function(err, res, body) {
       var status = body.status;
       if (status == 0) {
