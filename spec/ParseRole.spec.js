@@ -19,7 +19,7 @@ describe('Parse Role testing', () => {
       var users = role.relation('users');
       users.add(user);
       return role.save({}, { useMasterKey: true });
-    }).then((x) => {
+    }).then(() => {
       var query = new Parse.Query('_Role');
       return query.find({ useMasterKey: true });
     }).then((x) => {
@@ -39,7 +39,7 @@ describe('Parse Role testing', () => {
       acl.setRoleWriteAccess('Foos', true);
       obj.setACL(acl);
       return obj.save();
-    }).then((x) => {
+    }).then(() => {
       var query = new Parse.Query('TestObject');
       return query.find({ sessionToken: user.getSessionToken() });
     }).then((x) => {
@@ -52,9 +52,9 @@ describe('Parse Role testing', () => {
       x.set('foo', 'baz');
       // This should fail:
       return x.save({},{sessionToken: ""});
-    }).then((x) => {
+    }).then(() => {
       fail('Should not have been able to save.');
-    }, (e) => {
+    }, () => {
       done();
     });
 
@@ -96,7 +96,7 @@ describe('Parse Role testing', () => {
         expect(roles.indexOf('role:'+name)).not.toBe(-1);
        })
        done();
-     }, function(err){
+     }, function(){
        fail("should succeed")
        done();
      });

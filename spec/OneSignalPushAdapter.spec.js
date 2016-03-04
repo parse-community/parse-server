@@ -1,6 +1,5 @@
-
 var OneSignalPushAdapter = require('../src/Adapters/Push/OneSignalPushAdapter');
-var classifyInstallations = require('../src/Adapters/Push/PushAdapterUtils').classifyInstallations;
+
 
 // Make mock config
 var pushConfig = {
@@ -22,7 +21,7 @@ describe('OneSignalPushAdapter', () => {
   
   it('cannot be initialized if options are missing', (done) => {
 
-    expect(() => {
+    expect(() => {
       new OneSignalPushAdapter();
     }).toThrow("Trying to initialize OneSignalPushAdapter without oneSignalAppId or oneSignalApiKey");
     done();
@@ -118,52 +117,52 @@ describe('OneSignalPushAdapter', () => {
   });
 
   it("can send iOS notifications", (done) => {
-  	var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
-  	var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
-  	oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
+    var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
+    var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
+    oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
 
-  	oneSignalPushAdapter.sendToAPNS({'data':{
-  		'badge': 1,
-  		'alert': "Example content",
-  		'sound': "Example sound",
-  		'content-available': 1,
-  		'misc-data': 'Example Data'
-  	}},[{'deviceToken':'iosToken1'},{'deviceToken':'iosToken2'}])
+    oneSignalPushAdapter.sendToAPNS({'data':{
+      'badge': 1,
+      'alert': "Example content",
+      'sound': "Example sound",
+      'content-available': 1,
+      'misc-data': 'Example Data'
+    }},[{'deviceToken':'iosToken1'},{'deviceToken':'iosToken2'}])
 
-  	expect(sendToOneSignal).toHaveBeenCalled();
-  	var args = sendToOneSignal.calls.first().args;
-  	expect(args[0]).toEqual({
-  		'ios_badgeType':'SetTo',
-  		'ios_badgeCount':1,
-  		'contents': { 'en':'Example content'},
-  		'ios_sound': 'Example sound',
-  		'content_available':true,
-  		'data':{'misc-data':'Example Data'},
-  		'include_ios_tokens':['iosToken1','iosToken2']
-  	})
-  	done();
+    expect(sendToOneSignal).toHaveBeenCalled();
+    var args = sendToOneSignal.calls.first().args;
+    expect(args[0]).toEqual({
+      'ios_badgeType':'SetTo',
+      'ios_badgeCount':1,
+      'contents': { 'en':'Example content'},
+      'ios_sound': 'Example sound',
+      'content_available':true,
+      'data':{'misc-data':'Example Data'},
+      'include_ios_tokens':['iosToken1','iosToken2']
+    })
+    done();
   });
 
   it("can send Android notifications", (done) => {
-  	var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
-  	var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
-  	oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
+    var oneSignalPushAdapter = new OneSignalPushAdapter(pushConfig);
+    var sendToOneSignal = jasmine.createSpy('sendToOneSignal');
+    oneSignalPushAdapter.sendToOneSignal = sendToOneSignal;
 
-  	oneSignalPushAdapter.sendToGCM({'data':{
-  		'title': 'Example title',
-  		'alert': 'Example content',
-  		'misc-data': 'Example Data'
-  	}},[{'deviceToken':'androidToken1'},{'deviceToken':'androidToken2'}])
+    oneSignalPushAdapter.sendToGCM({'data':{
+      'title': 'Example title',
+      'alert': 'Example content',
+      'misc-data': 'Example Data'
+    }},[{'deviceToken':'androidToken1'},{'deviceToken':'androidToken2'}])
 
-  	expect(sendToOneSignal).toHaveBeenCalled();
-  	var args = sendToOneSignal.calls.first().args;
-  	expect(args[0]).toEqual({
-  		'contents': { 'en':'Example content'},
-  		'title': {'en':'Example title'},
-  		'data':{'misc-data':'Example Data'},
-  		'include_android_reg_ids': ['androidToken1','androidToken2']
-  	})
-  	done();
+    expect(sendToOneSignal).toHaveBeenCalled();
+    var args = sendToOneSignal.calls.first().args;
+    expect(args[0]).toEqual({
+      'contents': { 'en':'Example content'},
+      'title': {'en':'Example title'},
+      'data':{'misc-data':'Example Data'},
+      'include_android_reg_ids': ['androidToken1','androidToken2']
+    })
+    done();
   });
 
   it("can post the correct data", (done) => {
@@ -172,13 +171,13 @@ describe('OneSignalPushAdapter', () => {
 
     var write = jasmine.createSpy('write');
     oneSignalPushAdapter.https = {
-    	'request': function(a,b) {
-    		return {
-    			'end':function(){},
-    			'on':function(a,b){},
-    			'write':write
-    		}
-    	}
+      'request': function() {
+        return {
+          'end':function(){},
+          'on':function(){},
+          'write':write
+        }
+      }
     };
 
     var installations = [
@@ -201,33 +200,33 @@ describe('OneSignalPushAdapter', () => {
     ];
 
     oneSignalPushAdapter.send({'data':{
-  		'title': 'Example title',
-  		'alert': 'Example content',
-  		'content-available':1,
-  		'misc-data': 'Example Data'
-  	}}, installations);
+      'title': 'Example title',
+      'alert': 'Example content',
+      'content-available':1,
+      'misc-data': 'Example Data'
+    }}, installations);
 
     expect(write).toHaveBeenCalled();
 
     // iOS
-    args = write.calls.first().args;
+    let args = write.calls.first().args;
     expect(args[0]).toEqual(JSON.stringify({
-  		'contents': { 'en':'Example content'},
-  		'content_available':true,
-  		'data':{'title':'Example title','misc-data':'Example Data'},
-  		'include_ios_tokens':['iosToken'],
-  		'app_id':'APP ID'
-  		}));
+      'contents': { 'en':'Example content'},
+      'content_available':true,
+      'data':{'title':'Example title','misc-data':'Example Data'},
+      'include_ios_tokens':['iosToken'],
+      'app_id':'APP ID'
+      }));
 
-	// Android
+  // Android
     args = write.calls.mostRecent().args;
     expect(args[0]).toEqual(JSON.stringify({
-  		'contents': { 'en':'Example content'},
-  		'title': {'en':'Example title'},
-  		'data':{"content-available":1,'misc-data':'Example Data'},
-  		'include_android_reg_ids':['androidToken'],
-  		'app_id':'APP ID'
-  		}));
+      'contents': { 'en':'Example content'},
+      'title': {'en':'Example title'},
+      'data':{"content-available":1,'misc-data':'Example Data'},
+      'include_android_reg_ids':['androidToken'],
+      'app_id':'APP ID'
+      }));
 
     done();
   });

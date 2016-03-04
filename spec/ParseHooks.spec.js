@@ -64,13 +64,13 @@ describe('Hooks', () => {
      }, (err) => {
        fail(err);
        done();
-     }).then((res) => {
+     }).then(() => {
        // Find again! but should be deleted
        return Parse.Hooks.getFunction("My-Test-Function");
      }, (err) => {
        fail(err);
        done();
-     }).then((res) => {
+     }).then(() => {
        fail("Should not succeed")
        done();
      }, (err) => {
@@ -110,7 +110,7 @@ describe('Hooks', () => {
      }, (err) => {
        fail(err);
        done();
-     }).then((res) => {
+     }).then(() => {
        // Find again! but should be deleted
        return Parse.Hooks.getTrigger("MyClass","beforeDelete");
      }, (err) => {
@@ -132,7 +132,7 @@ describe('Hooks', () => {
      request.post(Parse.serverURL+"/hooks/functions", {
        headers: {
          "X-Parse-Application-Id": Parse.applicationId,
-         "X-Parse-REST-API-Key": Parse.restKey,
+         "X-Parse-REST-API-Key": Parse.restKey
        },
        body: JSON.stringify({ url: "http://hello.word", functionName: "SomeFunction"})
      }, (err, res, body) => {
@@ -189,7 +189,7 @@ describe('Hooks', () => {
         expect(err.code).toBe(143);
         expect(err.error).toBe('no function named: A_COOL_FUNCTION is defined');
         return Parse.Hooks.getFunction("A_COOL_FUNCTION")
-      }).then( (res) => {
+      }).then( () => {
         fail("the function should not exist");
         done();
       }, (err) => {
@@ -206,7 +206,7 @@ describe('Hooks', () => {
         expect(err.code).toBe(143);
         expect(err.error).toBe('class AClassName does not exist');
         return Parse.Hooks.getTrigger("AClassName","beforeSave")
-      }).then( (res) => {
+      }).then( () => {
         fail("the function should not exist");
         done();
       }, (err) => {
@@ -231,7 +231,7 @@ describe('Hooks', () => {
      request.post(Parse.serverURL+"/hooks/functions", {
        headers: {
          "X-Parse-Application-Id": Parse.applicationId,
-         "X-Parse-Master-Key": Parse.masterKey,
+         "X-Parse-Master-Key": Parse.masterKey
        },
        body: JSON.stringify({ functionName: "SomeFunction"})
      }, (err, res, body) => {
@@ -251,7 +251,7 @@ describe('Hooks', () => {
        promises.push(Parse.Hooks.createFunction("AFunction"+i, "http://url.com/function"+i));
      }
      
-     Parse.Promise.when(promises).then(function(results){
+     Parse.Promise.when(promises).then(() => {
        for (var i=0; i<5; i++) {
          // Delete everything from memory, as the server just started
          triggers.removeTrigger("beforeSave", "MyClass"+i, Parse.applicationId);
@@ -312,7 +312,7 @@ describe('Hooks', () => {
        console.error(err);
        fail("Should not fail creating a function");
        done();
-     }).then(function(res){
+     }).then(function(){
        fail("Should not succeed calling that function");
        done();
      }, (err) => {
@@ -367,7 +367,7 @@ describe('Hooks', () => {
      Parse.Hooks.createTrigger("SomeRandomObject", "afterSave" ,hookServerURL+"/AfterSaveSome").then(function(){
        const obj = new Parse.Object("SomeRandomObject");
        return obj.save();
-     }).then(function(res){
+     }).then(function() {
        var promise = new Parse.Promise();
        // Wait a bit here as it's an after save
        setTimeout(function(){
@@ -378,7 +378,7 @@ describe('Hooks', () => {
         });
        }, 300)
        return promise;
-     }).then(function(res){
+     }).then(function(res) {
        expect(res.get("foo")).toEqual("bar");
        done();
      }).fail((err) => {

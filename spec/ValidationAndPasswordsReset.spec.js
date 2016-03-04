@@ -72,7 +72,7 @@ describe("Email Verification", () => {
           done();
         });
       },
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -113,7 +113,7 @@ describe("Email Verification", () => {
           done();
         });
       },
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -163,7 +163,7 @@ describe("Email Verification", () => {
           }, 200);
         });
       },
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -211,14 +211,14 @@ describe("Email Verification", () => {
         user.fetch()
         .then((user) => {
           return user.save();
-        }).then((user) => {
+        }).then(() => {
           return Parse.User.requestPasswordReset("cool_guy@parse.com");
         }).then(() => {
           expect(calls).toBe(2);
           done();
         });
       },
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -243,7 +243,7 @@ describe("Email Verification", () => {
       collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: false,
-      emailAdapter: emailAdapter,
+      emailAdapter: emailAdapter
     });
     spyOn(emailAdapter, 'sendVerificationEmail');
     var user = new Parse.User();
@@ -258,7 +258,7 @@ describe("Email Verification", () => {
           done();
         });
       },
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -296,7 +296,7 @@ describe("Email Verification", () => {
     user.set('email', 'user@parse.com');
     user.signUp(null, {
       success: () => {},
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -308,8 +308,8 @@ describe("Email Verification", () => {
     var emailAdapter = {
       sendVerificationEmail: options => {
         request.get(options.link, {
-          followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false
+        }, (error, response) => {
           expect(response.statusCode).toEqual(302);
           expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=zxcv');
           user.fetch()
@@ -368,8 +368,8 @@ describe("Email Verification", () => {
       publicServerURL: "http://localhost:8378/1"
     });
     request.get('http://localhost:8378/1/apps/test/verify_email', {
-      followRedirect: false,
-    }, (error, response, body) => {
+      followRedirect: false
+    }, (error, response) => {
       expect(response.statusCode).toEqual(302);
       expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
       done()
@@ -397,8 +397,8 @@ describe("Email Verification", () => {
       publicServerURL: "http://localhost:8378/1"
     });
     request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
-      followRedirect: false,
-    }, (error, response, body) => {
+      followRedirect: false
+    }, (error, response) => {
       expect(response.statusCode).toEqual(302);
       expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
       done();
@@ -408,10 +408,10 @@ describe("Email Verification", () => {
   it('does not update email verified if you use an invalid token', done => {
     var user = new Parse.User();
     var emailAdapter = {
-      sendVerificationEmail: options => {
+      sendVerificationEmail: () => {
         request.get('http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv', {
-          followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false
+        }, (error, response) => {
           expect(response.statusCode).toEqual(302);
           expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
           user.fetch()
@@ -444,7 +444,7 @@ describe("Email Verification", () => {
     user.set('email', 'user@parse.com');
     user.signUp(null, {
       success: () => {},
-      error: function(userAgain, error) {
+      error: function() {
         fail('Failed to save user');
         done();
       }
@@ -460,8 +460,8 @@ describe("Password Reset", () => {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         request.get(options.link, {
-          followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false
+        }, (error, response) => {
           if (error) {
             console.error(error);
             fail("Failed to get the reset link");
@@ -525,8 +525,8 @@ describe("Password Reset", () => {
       publicServerURL: "http://localhost:8378/1"
     });
     request.get('http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga', {
-      followRedirect: false,
-    }, (error, response, body) => {
+      followRedirect: false
+    }, (error, response) => {
       expect(response.statusCode).toEqual(302);
       expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
       done();
@@ -539,8 +539,8 @@ describe("Password Reset", () => {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         request.get(options.link, {
-          followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false
+        }, (error, response) => {
           if (error) {
             console.error(error);
             fail("Failed to get the reset link");
@@ -562,8 +562,8 @@ describe("Password Reset", () => {
             headers: {
                'Content-Type': 'application/x-www-form-urlencoded'
             },
-            followRedirect: false,
-          }, (error, response, body) => {
+            followRedirect: false
+          }, (error, response) => {
             if (error) {
               console.error(error);
               fail("Failed to POST request password reset");
@@ -572,7 +572,7 @@ describe("Password Reset", () => {
             expect(response.statusCode).toEqual(302);
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
             
-            Parse.User.logIn("zxcv", "hello").then(function(user){
+            Parse.User.logIn("zxcv", "hello").then(function(){
               done();
             }, (err) => {
               console.error(err);

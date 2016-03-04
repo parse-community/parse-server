@@ -44,8 +44,8 @@ describe('miscellaneous', function() {
   });
 
   it('fail to create a duplicate username', function(done) {
-    createTestUser(function(data) {
-      createTestUser(function(data) {
+    createTestUser(function() {
+      createTestUser(function() {
         fail('Should not have been able to save duplicate username.');
       }, function(error) {
         expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
@@ -697,7 +697,7 @@ describe('miscellaneous', function() {
     Parse.Cloud.define('willFail', (req, res) => {
       res.error('noway');
     });
-    Parse.Cloud.run('willFail').then((s) => {
+    Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
       Parse.Cloud._removeHook("Functions", "willFail");
       done();
@@ -746,10 +746,10 @@ describe('miscellaneous', function() {
       return request.params.success === 100;
     });
 
-    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then(() => {
       Parse.Cloud._removeHook("Functions", "functionWithParameterValidation");
       done();
-    }, (e) => {
+    }, () => {
       fail('Validation should not have failed.');
       done();
     });
@@ -763,7 +763,7 @@ describe('miscellaneous', function() {
       return request.params.success === 100;
     });
 
-    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
+    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then(() => {
       fail('Validation should not have succeeded');
       Parse.Cloud._removeHook("Functions", "functionWithParameterValidationFailure");
       done();
@@ -843,7 +843,7 @@ describe('miscellaneous', function() {
   });
 
   it('fails on invalid function', done => {
-    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then((s) => {
+    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then(() => {
       fail('This should have never suceeded');
       done();
     }, (e) => {

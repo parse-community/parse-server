@@ -88,7 +88,7 @@ describe('Parse.Query testing', () => {
         error: function(err) {
           fail(err);
           done();
-        },
+        }
       });
     });
   });
@@ -163,7 +163,7 @@ describe('Parse.Query testing', () => {
         error: function(e) {
           fail(e);
           done();
-        },
+        }
       });
     });
   });
@@ -506,7 +506,7 @@ describe('Parse.Query testing', () => {
       var query = new Parse.Query(TestObject);
       query.get(undefined, {
         success: fail,
-        error: done,
+        error: done
       });
     });
   });
@@ -514,10 +514,9 @@ describe('Parse.Query testing', () => {
   it("get error", function(done) {
     Parse.Object.saveAll([new TestObject({foo: 'bar'})], function(items) {
       ok(items[0]);
-      var objectId = items[0].id;
       var query = new Parse.Query(TestObject);
       query.get("InvalidObjectID", {
-        success: function(result) {
+        success: function() {
           ok(false, "The get should have failed.");
           done();
         },
@@ -661,7 +660,7 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
-    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function(list) {
+    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function() {
       var query = new Parse.Query(BoxedNumber);
       query.ascending("number");
       query.find(expectSuccess({
@@ -680,7 +679,7 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
-    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function(list) {
+    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function() {
       var query = new Parse.Query(BoxedNumber);
       query.descending("number");
       query.find(expectSuccess({
@@ -702,7 +701,7 @@ describe('Parse.Query testing', () => {
     };
     Parse.Object.saveAll(
       [3, 1, 3, 2].map(makeBoxedNumber),
-      function(list) {
+      function() {
         var query = new Parse.Query(BoxedNumber);
         query.ascending("number").addDescending("string");
         query.find(expectSuccess({
@@ -728,7 +727,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
-                         function(list) {
+                         function() {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number").addAscending("string");
                            query.find(expectSuccess({
@@ -754,7 +753,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
-                         function(list) {
+                         function() {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number,string");
                            query.find(expectSuccess({
@@ -780,7 +779,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
-                         function(list) {
+                         function() {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number, string");
                            query.find(expectSuccess({
@@ -806,7 +805,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
-                         function(list) {
+                         function() {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending(["number", "string"]);
                            query.find(expectSuccess({
@@ -832,7 +831,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
-                         function(list) {
+                         function() {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number", "string");
                            query.find(expectSuccess({
@@ -856,7 +855,7 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
-    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function(list) {
+    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function() {
       var query = new Parse.Query(BoxedNumber);
       query.ascending("_password");
       query.find(expectError(Parse.Error.INVALID_KEY_NAME, done));
@@ -886,7 +885,7 @@ describe('Parse.Query testing', () => {
         error: function(e) {
           fail(e);
           done();
-        },
+        }
       });
     });
   });
@@ -927,7 +926,7 @@ describe('Parse.Query testing', () => {
     }).then(function() {
       numbers[1].set("number", 4);
       numbers[1].save(null, {
-        success: function(model) {
+        success: function() {
           var query = new Parse.Query(BoxedNumber);
           query.ascending("_updated_at");
           query.find({
@@ -954,7 +953,7 @@ describe('Parse.Query testing', () => {
     }).then(function() {
       numbers[1].set("number", 4);
       numbers[1].save(null, {
-        success: function(model) {
+        success: function() {
           var query = new Parse.Query(BoxedNumber);
           query.descending("_updated_at");
           query.find({
@@ -1077,7 +1076,7 @@ describe('Parse.Query testing', () => {
       var query = new Parse.Query(TestObject);
       query.matches("myString", "FootBall", "i");
       query.find({
-        success: function(results) {
+        success: function() {
           done();
         }
       });
@@ -1136,7 +1135,7 @@ describe('Parse.Query testing', () => {
                             var query = new Parse.Query(TestObject);
                             query.contains("myString", someAscii);
                             query.find({
-                              success: function(results, foo) {
+                              success: function(results) {
                                 equal(results.length, 4);
                                 done();
                               }
@@ -1152,7 +1151,7 @@ describe('Parse.Query testing', () => {
                             var query = new Parse.Query(TestObject);
                             query.startsWith("myString", someAscii);
                             query.find({
-                              success: function(results, foo) {
+                              success: function(results) {
                                 equal(results.length, 2);
                                 done();
                               }
@@ -1168,7 +1167,7 @@ describe('Parse.Query testing', () => {
                             var query = new Parse.Query(TestObject);
                             query.startsWith("myString", someAscii);
                             query.find({
-                              success: function(results, foo) {
+                              success: function(results) {
                                 equal(results.length, 2);
                                 done();
                               }
@@ -1195,7 +1194,7 @@ describe('Parse.Query testing', () => {
           equal(results.length, 5);
           for (var result of results) {
             ok(result.get("x"));
-          };
+          }
           done();
         }
       });
@@ -1212,7 +1211,7 @@ describe('Parse.Query testing', () => {
         item.set('y', i + 1);
       }
       objects.push(item);
-    };
+    }
     Parse.Object.saveAll(objects, function() {
       var query = new Parse.Query(TestObject);
       query.doesNotExist("x");
@@ -1241,7 +1240,7 @@ describe('Parse.Query testing', () => {
         container.set('y', i);
       }
       objects.push(container);
-    };
+    }
     Parse.Object.saveAll(objects, function() {
       var query = new Parse.Query(Container);
       query.exists("x");
@@ -1250,7 +1249,7 @@ describe('Parse.Query testing', () => {
           equal(results.length, 5);
           for (var result of results) {
             ok(result.get("x"));
-          };
+          }
           done();
         }
       });
@@ -1279,7 +1278,7 @@ describe('Parse.Query testing', () => {
           equal(results.length, 4);
           for (var result of results) {
             ok(result.get("y"));
-          };
+          }
           done();
         }
       });
@@ -1580,7 +1579,7 @@ describe('Parse.Query testing', () => {
     obj.set("length", 5);
     equal(obj.get("length"), 5);
     obj.save(null, {
-      success: function(obj) {
+      success: function() {
         var query = new Parse.Query(TestObject);
         query.find({
           success: function(results) {
@@ -1755,7 +1754,7 @@ describe('Parse.Query testing', () => {
           equal(seen.length, COUNT);
           for (var i = 0; i < COUNT; i++) {
             equal(seen[i], 1, "Should have seen object number " + i);
-          };
+          }
           done();
         },
         error: function(error) {
@@ -1798,7 +1797,7 @@ describe('Parse.Query testing', () => {
       equal(seen.length, COUNT);
       for (var i = 0; i < COUNT; i++) {
         equal(seen[i], 1, "Should have seen object number " + i);
-      };
+      }
       done();
     });
   });
@@ -1826,7 +1825,7 @@ describe('Parse.Query testing', () => {
     }).then(function() {
       ok(false, "This should have failed.");
       done();
-    }, function(error) {
+    }, function() {
       done();
     });
   });
@@ -1854,7 +1853,7 @@ describe('Parse.Query testing', () => {
     }).then(function() {
       ok(false, "This should have failed.");
       done();
-    }, function(error) {
+    }, function() {
       done();
     });
   });
@@ -1884,7 +1883,7 @@ describe('Parse.Query testing', () => {
     }).then(function() {
       ok(false, "This should have failed.");
       done();
-    }, function(error) {
+    }, function() {
       done();
     });
   });
@@ -2018,7 +2017,6 @@ describe('Parse.Query testing', () => {
   });
 
   it('query within dictionary', (done) => {
-    var objs = [];
     var promises = [];
     for (var i = 0; i < 2; i++) {
       var proc = (iter) => {
@@ -2051,7 +2049,7 @@ describe('Parse.Query testing', () => {
       console.log('results:', results);
       fail('Should have failed to query.');
       done();
-    }, (error) => {
+    }, () => {
       done();
     });
   });

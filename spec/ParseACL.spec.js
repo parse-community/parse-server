@@ -58,7 +58,7 @@ describe('Parse.ACL', () => {
             // Get
             var query = new Parse.Query(TestObject);
             query.get(object.id, {
-              success: function(model) {
+              success: function() {
                 fail('Should not have retrieved the object.');
                 done();
               },
@@ -1097,7 +1097,7 @@ describe('Parse.ACL', () => {
       ACL: new Parse.ACL(),
       foo: "bar"
     }, {
-      success: function(user) {
+      success: function() {
         Parse.User.logOut();
         Parse.User.logIn("tdurden", "mayhem", {
           success: function(user) {

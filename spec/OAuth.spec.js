@@ -88,7 +88,7 @@ describe('OAuth', function() {
     var options = {
       host: "api.twitter.com", 
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     };
     var path = "/1.1/help/configuration.json";
     var params = {"lang": "en"};
@@ -102,7 +102,7 @@ describe('OAuth', function() {
     var options = {
       host: "api.twitter.com", 
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     };
     var body = {
       lang: "en"
@@ -119,7 +119,7 @@ describe('OAuth', function() {
     var options = {
       host: "localhost", 
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
     };
     var body = {
       lang: "en"
@@ -127,7 +127,7 @@ describe('OAuth', function() {
     var path = "/";
 
     var oauthClient = new OAuth(options);
-    oauthClient.post(path, null, body).then(function(data){
+    oauthClient.post(path, null, body).then(function(){
       jequal(false, true);
       done();
     }).catch(function(){
@@ -152,7 +152,7 @@ describe('OAuth', function() {
       authData: {
         id: "12345",
         access_token: "12345",
-        expiration_date: new Date().toJSON(),
+        expiration_date: new Date().toJSON()
       },
       shouldError: false,
       loggedOut: false,
@@ -191,21 +191,12 @@ describe('OAuth', function() {
     };
   };
 
-  var ExtendedUser = Parse.User.extend({
-    extended: function() {
-      return true;
-    }
-  });
-
   var createOAuthUser = function(callback) {
     var jsonBody = {
       authData: {
         myoauth: getMockMyOauthProvider().authData
       }
     };
-    var headers = {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest', 
-          'Content-Type': 'application/json' }
 
     var options = {
         headers: {'X-Parse-Application-Id': 'test',
@@ -284,19 +275,19 @@ describe('OAuth', function() {
                    "User should be linked to myoauth");
                 done();
               },
-              error: function(model, error) {
+              error: function() {
                 ok(false, "linking again should succeed");
                 done();
               }
             });
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "unlinking should succeed");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "linking should have worked");
         done();
       }

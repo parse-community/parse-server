@@ -2,7 +2,6 @@
 
 var Config = require('../src/Config');
 var Schema = require('../src/Schema');
-var dd = require('deep-diff');
 
 var config = new Config('test');
 
@@ -23,7 +22,7 @@ describe('Schema', () => {
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
       fail(error);
@@ -34,7 +33,7 @@ describe('Schema', () => {
   it('can validate one object with dot notation', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObjectWithSubDoc', {x: false, y: 'YY', z: 1, 'aObject.k1': 'newValue'});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
       fail(error);
@@ -47,7 +46,7 @@ describe('Schema', () => {
       return schema.validateObject('Foo', {x: true, y: 'yyy', z: 0});
     }).then((schema) => {
       return schema.validateObject('Foo', {x: false, y: 'YY', z: 1});
-    }).then((schema) => {
+    }).then(() => {
       done();
     });
   });
@@ -84,13 +83,13 @@ describe('Schema', () => {
       return schema.setPermissions('Stuff', {
         'find': {}
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail('Class permissions should have rejected this query.');
       done();
-    }, (e) => {
+    }, () => {
       done();
     });
   });
@@ -109,12 +108,12 @@ describe('Schema', () => {
       return schema.setPermissions('Stuff', {
         'find': find
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       done();
-    }, (e) => {
+    }, () => {
       fail('Class permissions should have allowed this query.');
       done();
     });
@@ -137,7 +136,7 @@ describe('Schema', () => {
         'find': find,
         'get': get
       });
-    }).then((schema) => {
+    }).then(() => {
       obj = new Parse.Object('Stuff');
       obj.set('foo', 'bar');
       return obj.save();
@@ -145,14 +144,14 @@ describe('Schema', () => {
       obj = o;
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail('Class permissions should have rejected this query.');
       done();
-    }, (e) => {
+    }, () => {
       var query = new Parse.Query('Stuff');
-      return query.get(obj.id).then((o) => {
+      return query.get(obj.id).then(() => {
         done();
-      }, (e) => {
+      }, () => {
         fail('Class permissions should have allowed this get query');
       });
     });
@@ -169,7 +168,7 @@ describe('Schema', () => {
         objectId: 'string',
         updatedAt: 'string',
         createdAt: 'string',
-        foo: 'string',
+        foo: 'string'
       })
       done();
     })
@@ -210,7 +209,7 @@ describe('Schema', () => {
           objectId: 'string',
           updatedAt: 'string',
           createdAt: 'string',
-          foo: 'string',
+          foo: 'string'
         });
       });
       Promise.all([p1,p2])
@@ -292,7 +291,7 @@ describe('Schema', () => {
   it('refuses to add fields with invalid pointer target', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Pointer', targetClass: 7},
+      foo: {type: 'Pointer', targetClass: 7}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_JSON);
@@ -304,7 +303,7 @@ describe('Schema', () => {
   it('refuses to add fields with invalid Relation type', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Relation', uselessKey: 7},
+      foo: {type: 'Relation', uselessKey: 7}
     }))
     .catch(error => {
       expect(error.code).toEqual(135);
@@ -316,7 +315,7 @@ describe('Schema', () => {
   it('refuses to add fields with invalid relation target', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Relation', targetClass: 7},
+      foo: {type: 'Relation', targetClass: 7}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_JSON);
@@ -328,7 +327,7 @@ describe('Schema', () => {
   it('refuses to add fields with uncreatable pointer target class', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Pointer', targetClass: 'not a valid class name'},
+      foo: {type: 'Pointer', targetClass: 'not a valid class name'}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
@@ -340,7 +339,7 @@ describe('Schema', () => {
   it('refuses to add fields with uncreatable relation target class', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Relation', targetClass: 'not a valid class name'},
+      foo: {type: 'Relation', targetClass: 'not a valid class name'}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
@@ -352,7 +351,7 @@ describe('Schema', () => {
   it('refuses to add fields with unknown types', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'Unknown'},
+      foo: {type: 'Unknown'}
     }))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
@@ -373,7 +372,7 @@ describe('Schema', () => {
       aGeoPoint: {type: 'GeoPoint'},
       aFile: {type: 'File'},
       aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
-      aRelation: {type: 'Relation', targetClass: 'NewClass'},
+      aRelation: {type: 'Relation', targetClass: 'NewClass'}
     }))
     .then(mongoObj => {
       expect(mongoObj).toEqual({
@@ -390,7 +389,7 @@ describe('Schema', () => {
         aGeoPoint: 'geopoint',
         aFile: 'file',
         aPointer: '*ThisClassDoesNotExistYet',
-        aRelation: 'relation<NewClass>',
+        aRelation: 'relation<NewClass>'
       });
       done();
     });
@@ -399,7 +398,7 @@ describe('Schema', () => {
   it('creates the default fields for non-custom classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Installation', {
-      foo: {type: 'Number'},
+      foo: {type: 'Number'}
     }))
     .then(mongoObj => {
       expect(mongoObj).toEqual({
@@ -416,7 +415,7 @@ describe('Schema', () => {
         GCMSenderId: 'string',
         timeZone: 'string',
         localeIdentifier: 'string',
-        badge: 'number',
+        badge: 'number'
       });
       done();
     });
@@ -459,7 +458,7 @@ describe('Schema', () => {
         fail(error);
       });
     })
-    .catch(error => fail('Couldn\'t load schema'));
+    .catch(() => fail('Couldn\'t load schema'));
   });
 
   it('refuses to delete fields from invalid class names', done => {
@@ -545,7 +544,7 @@ describe('Schema', () => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
-    var p = Parse.Object.saveAll([obj1, obj2])
+    Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
@@ -599,7 +598,7 @@ describe('Schema', () => {
       newType: {type: 'Number'}
     })).toEqual({
       someType: {type: 'Number'},
-      newType: {type: 'Number'},
+      newType: {type: 'Number'}
     });
     done();
   });
@@ -608,13 +607,13 @@ describe('Schema', () => {
     expect(Schema.buildMergedSchemaObject({
       _id: 'SomeClass',
       someType: 'number',
-      outDatedType: 'string',
+      outDatedType: 'string'
     },{
       newType: {type: 'GeoPoint'},
-      outDatedType: {__op: 'Delete'},
+      outDatedType: {__op: 'Delete'}
     })).toEqual({
       someType: {type: 'Number'},
-      newType: {type: 'GeoPoint'},
+      newType: {type: 'GeoPoint'}
     });
     done();
   });

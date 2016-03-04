@@ -9,7 +9,7 @@ var definitions = {
   "arg2": {
     env: "PROGRAM_ARG_2",
     action: function(value) {
-      var value = parseInt(value);
+      value = parseInt(value);
       if (!Number.isInteger(value)) {
         throw "port is invalid";
       }
@@ -50,7 +50,7 @@ describe("commander additions", () => {
     commander.parse([], {
       "PROGRAM_ARG_0": "arg0ENVValue",
       "PROGRAM_ARG_1": "arg1ENVValue",
-      "PROGRAM_ARG_2": "3",
+      "PROGRAM_ARG_2": "3"
     });
     expect(commander.arg0).toEqual("arg0ENVValue");
     expect(commander.arg1).toEqual("arg1ENVValue");
@@ -64,7 +64,7 @@ describe("commander additions", () => {
     commander.parse(["node","./CLI.spec.js","--arg0", "arg0Value", "--arg4", "anotherArg4"], {
       "PROGRAM_ARG_0": "arg0ENVValue",
       "PROGRAM_ARG_1": "arg1ENVValue",
-      "PROGRAM_ARG_2": "4",
+      "PROGRAM_ARG_2": "4"
     });
     expect(commander.arg0).toEqual("arg0Value");
     expect(commander.arg1).toEqual("arg1ENVValue");
@@ -79,7 +79,7 @@ describe("commander additions", () => {
       commander.parse(["node","./CLI.spec.js","--arg0", "arg0Value"], {
         "PROGRAM_ARG_0": "arg0ENVValue",
         "PROGRAM_ARG_1": "arg1ENVValue",
-        "PROGRAM_ARG_2": "hello",
+        "PROGRAM_ARG_2": "hello"
       });
     }).toThrow("port is invalid");
     done();

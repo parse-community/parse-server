@@ -22,7 +22,7 @@ describe('Parse.File testing', () => {
       request.post({
         headers: headers,
         url: 'http://localhost:8378/1/files/file.txt',
-        body: 'argle bargle',
+        body: 'argle bargle'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -44,7 +44,7 @@ describe('Parse.File testing', () => {
       request.post({
         headers: headers,
         url: 'http://localhost:8378/1/files/file.txt',
-        body: 'argle bargle',
+        body: 'argle bargle'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -68,7 +68,7 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/testfile.txt',
-      body: 'check one two',
+      body: 'check one two'
     }, (error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
@@ -84,7 +84,7 @@ describe('Parse.File testing', () => {
             'X-Parse-Master-Key': 'test'
           },
           url: 'http://localhost:8378/1/files/' + b.name
-        }, (error, response, body) => {
+        }, (error, response) => {
           expect(error).toBe(null);
           expect(response.statusCode).toEqual(200);
           request.get({
@@ -93,7 +93,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest'
             },
             url: b.url
-          }, (error, response, body) => {
+          }, (error, response) => {
             expect(error).toBe(null);
             expect(response.statusCode).toEqual(404);
             done();
@@ -157,7 +157,7 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/file.jpg',
-      body: 'argle bargle',
+      body: 'argle bargle'
     }, (error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
@@ -337,7 +337,7 @@ describe('Parse.File testing', () => {
     object.save({
       file: file
     }, expectSuccess({
-      success: function(obj) {
+      success: function() {
         ok(object.toJSON().file.url);
         done();
       }
@@ -353,12 +353,12 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/file',
-      body: 'fee fi fo',
+      body: 'fee fi fo'
     }, (error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
       expect(b.name).toMatch(/\.html$/);
-      request.get(b.url, (error, response, body) => {
+      request.get(b.url, (error, response) => {
         expect(response.headers['content-type']).toMatch(/^text\/html/);
         done();
       });
@@ -374,7 +374,7 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/hello world.txt',
-      body: 'oh emm gee',
+      body: 'oh emm gee'
     }, (error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
@@ -413,7 +413,7 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/di$avowed.txt',
-      body: 'will fail',
+      body: 'will fail'
     }, (error, response, body) => {
       var b = JSON.parse(body);
       expect(b.code).toEqual(122);
@@ -434,7 +434,7 @@ describe('Parse.File testing', () => {
     request.post({
       headers: headers,
       url: 'http://localhost:8378/1/files/' + fileName,
-      body: 'will fail',
+      body: 'will fail'
     }, (error, response, body) => {
       var b = JSON.parse(body);
       expect(b.code).toEqual(122);

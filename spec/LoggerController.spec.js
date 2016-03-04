@@ -79,7 +79,7 @@ describe('LoggerController', () => {
     
 
     expect(() => {
-      var loggerController = new LoggerController();
+      new LoggerController();
     }).toThrow();
     done();
   });

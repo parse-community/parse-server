@@ -152,7 +152,7 @@ describe("test validate_receipt endpoint", () => {
         receipt: {
           __type: "Bytes",
           base64: new Buffer("receipt", "utf-8").toString("base64")
-        },
+        }
       }
     }, function(err, res, body){
       if (typeof body != "object") {
@@ -196,7 +196,7 @@ describe("test validate_receipt endpoint", () => {
       query.first().then(function(product){
         product.unset("title");
         return product.save();
-      }).then(function(productAgain){
+      }).then(function(){
         fail("Should not succeed");
         done();
       }).fail(function(err){

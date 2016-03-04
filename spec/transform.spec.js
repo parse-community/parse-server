@@ -41,7 +41,7 @@ describe('transformCreate', () => {
     var pointer = {
       __type: 'Pointer',
       objectId: 'myId',
-      className: 'Blah',
+      className: 'Blah'
     };
     var out = transform.transformCreate(dummySchema, null, {pointers: [pointer]});
     jequal([pointer], out.pointers);
@@ -57,7 +57,7 @@ describe('transformCreate', () => {
 
   it('basic ACL', (done) => {
     var input = {ACL: {'0123': {'read': true, 'write': true}}};
-    var output = transform.transformCreate(dummySchema, null, input);
+    transform.transformCreate(dummySchema, null, input);
     // This just checks that it doesn't crash, but it should check format.
     done();
   });
@@ -95,7 +95,7 @@ describe('transformWhere', () => {
 
   it('objectId in a list', (done) => {
     var input = {
-      objectId: {'$in': ['one', 'two', 'three']},
+      objectId: {'$in': ['one', 'two', 'three']}
     };
     var output = transform.transformWhere(dummySchema, null, input);
     jequal(input.objectId, output._id);

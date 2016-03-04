@@ -32,7 +32,7 @@ describe("AdaptableController", ()=>{
   });
   
   it("should fail setting the wrong adapter to the controller", (done) => {
-    function WrongAdapter() {};
+    function WrongAdapter() {}
     var adapter = new FilesAdapter();
     var controller = new FilesController(adapter);
     var otherAdapter = new WrongAdapter();
@@ -43,7 +43,7 @@ describe("AdaptableController", ()=>{
   });
   
   it("should fail to instantiate a controller with wrong adapter", (done) => {
-    function WrongAdapter() {};
+    function WrongAdapter() {}
     var adapter = new WrongAdapter();
     expect(() => {
       new FilesController(adapter);
@@ -60,10 +60,10 @@ describe("AdaptableController", ()=>{
   
   it("should accept an object adapter", (done) => {
     var adapter = {
-      createFile: function(config, filename, data) { },
-      deleteFile: function(config, filename) { },
-      getFileData: function(config, filename) { },
-      getFileLocation: function(config, filename) { },
+      createFile: function() { },
+      deleteFile: function() { },
+      getFileData: function() { },
+      getFileLocation: function() { }
     }
     expect(() => {
       new FilesController(adapter);
@@ -72,11 +72,11 @@ describe("AdaptableController", ()=>{
   });
   
   it("should accept an object adapter", (done) => {
-    function AGoodAdapter() {};
-    AGoodAdapter.prototype.createFile = function(config, filename, data) { };
-    AGoodAdapter.prototype.deleteFile = function(config, filename) { };
-    AGoodAdapter.prototype.getFileData = function(config, filename) { };
-    AGoodAdapter.prototype.getFileLocation = function(config, filename) { };
+    function AGoodAdapter() {}
+    AGoodAdapter.prototype.createFile = function() { };
+    AGoodAdapter.prototype.deleteFile = function() { };
+    AGoodAdapter.prototype.getFileData = function() { };
+    AGoodAdapter.prototype.getFileLocation = function() { };
     
     var adapter = new AGoodAdapter();
     expect(() => {

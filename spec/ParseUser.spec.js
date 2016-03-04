@@ -51,7 +51,7 @@ describe('Parse.User testing', () => {
 
   it("user login wrong username", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
-      success: function(user) {
+      success: function() {
         Parse.User.logIn("non_existent_user", "asdf3",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       }, 
@@ -65,7 +65,7 @@ describe('Parse.User testing', () => {
 
   it("user login wrong password", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
-      success: function(user) {
+      success: function() {
         Parse.User.logIn("asdf", "asdfWrong",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       }
@@ -74,7 +74,7 @@ describe('Parse.User testing', () => {
 
   it("user login", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
-      success: function(user) {
+      success: function() {
         Parse.User.logIn("asdf", "zxcv", {
           success: function(user) {
             equal(user.get("username"), "asdf");
@@ -270,7 +270,7 @@ describe('Parse.User testing', () => {
                     object.save({
                       user: userNotAuthedNotChanged
                     }, {
-                      success: function(object) {
+                      success: function() {
                         var item1 = new TestObject();
                         item1.save({
                           number: 0
@@ -462,7 +462,7 @@ describe('Parse.User testing', () => {
       });
 
       // Save all the messages.
-      Parse.Object.saveAll(messageList, function(messages) {
+      Parse.Object.saveAll(messageList, function() {
 
         // Assemble an "in" list.
         var inList = [users[0], users[3], users[3]];  // Intentional dupe
@@ -647,7 +647,7 @@ describe('Parse.User testing', () => {
       return Parse.User.logOut();
     }).then(() => {
       return Parse.User.logIn("alice", "password");
-    }).then((user) => {
+    }).then(() => {
       // Force the current user to read from disk
       delete Parse.User._currentUser;
       delete Parse.User._currentUserMatchesDisk;
@@ -663,7 +663,7 @@ describe('Parse.User testing', () => {
   });
 
   it("saving user after browser refresh", (done) => {
-    var _ = Parse._;
+
     var id;
 
     Parse.User.signUp("alice", "password", null).then(function(alice) {
@@ -812,7 +812,7 @@ describe('Parse.User testing', () => {
 
   it("user on disk gets updated after save", (done) => {
 
-    var SuperUser = Parse.User.extend({
+    Parse.User.extend({
       isSuper: function() {
         return true;
       }
@@ -866,7 +866,7 @@ describe('Parse.User testing', () => {
       authData: {
         id: "8675309",
         access_token: "jenny",
-        expiration_date: new Date().toJSON(),
+        expiration_date: new Date().toJSON()
       },
       shouldError: false,
       loggedOut: false,
@@ -905,7 +905,7 @@ describe('Parse.User testing', () => {
     };
   };
 
-  var ExtendedUser = Parse.User.extend({
+  Parse.User.extend({
     extended: function() {
       return true;
     }
@@ -1006,7 +1006,7 @@ describe('Parse.User testing', () => {
     provider.shouldError = true;
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
-      success: function(model) {
+      success: function() {
         ok(false, "logIn should not have succeeded");
       },
       error: function(model, error) {
@@ -1021,7 +1021,7 @@ describe('Parse.User testing', () => {
     provider.shouldCancel = true;
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
-      success: function(model) {
+      success: function() {
         ok(false, "logIn should not have succeeded");
       },
       error: function(model, error) {
@@ -1035,7 +1035,7 @@ describe('Parse.User testing', () => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
-      success: function(model) {
+      success: function() {
         Parse.User.logOut();
 
         Parse.Cloud.beforeSave(Parse.User, function(req, res) {
@@ -1043,7 +1043,7 @@ describe('Parse.User testing', () => {
         });
 
         Parse.User._logInWith("facebook", {
-          success: function(innerModel) {
+          success: function() {
             Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
             done();
           },
@@ -1064,7 +1064,7 @@ describe('Parse.User testing', () => {
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
     user.signUp(null, {
-      success: function(model) {
+      success: function() {
         user._linkWith("facebook", {
           success: function(model) {
             ok(model instanceof Parse.User, "Model should be a Parse.User");
@@ -1075,13 +1075,13 @@ describe('Parse.User testing', () => {
             ok(model._isLinked("facebook"), "User should be linked");
             done();
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "linking should have succeeded");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "signup should not have failed");
         done();
       }
@@ -1097,7 +1097,7 @@ describe('Parse.User testing', () => {
     user.set("username", "testLinkWithProviderToAlreadyLinkedUser");
     user.set("password", "mypass");
     user.signUp(null, {
-      success: function(model) {
+      success: function() {
         user._linkWith("facebook", {
           success: function(model) {
             ok(model instanceof Parse.User, "Model should be a Parse.User");
@@ -1110,29 +1110,29 @@ describe('Parse.User testing', () => {
             user2.set("username", "testLinkWithProviderToAlreadyLinkedUser2");
             user2.set("password", "mypass");
             user2.signUp(null, {
-              success: function(model) {
+              success: function() {
                 user2._linkWith('facebook', {
                   success: fail,
                   error: function(model, error) {
                     expect(error.code).toEqual(
                       Parse.Error.ACCOUNT_ALREADY_LINKED);
                     done();
-                  },
+                  }
                 });
               },
-              error: function(model, error) {
+              error: function() {
                 ok(false, "linking should have failed");
                 done();
               }
             });
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "linking should have succeeded");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "signup should not have failed");
         done();
       }
@@ -1147,9 +1147,9 @@ describe('Parse.User testing', () => {
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
     user.signUp(null, {
-      success: function(model) {
+      success: function() {
         user._linkWith("facebook", {
-          success: function(model) {
+          success: function() {
             ok(false, "linking should fail");
             done();
           },
@@ -1161,7 +1161,7 @@ describe('Parse.User testing', () => {
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "signup should not have failed");
         done();
       }
@@ -1176,9 +1176,9 @@ describe('Parse.User testing', () => {
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
     user.signUp(null, {
-      success: function(model) {
+      success: function() {
         user._linkWith("facebook", {
-          success: function(model) {
+          success: function() {
             ok(false, "linking should fail");
             done();
           },
@@ -1190,7 +1190,7 @@ describe('Parse.User testing', () => {
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "signup should not have failed");
         done();
       }
@@ -1220,13 +1220,13 @@ describe('Parse.User testing', () => {
                "Expiration should be cleared.");
             done();
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "unlinking should succeed");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "linking should have worked");
         done();
       }
@@ -1266,19 +1266,19 @@ describe('Parse.User testing', () => {
                    "User should be linked to facebook");
                 done();
               },
-              error: function(model, error) {
+              error: function() {
                 ok(false, "linking again should succeed");
                 done();
               }
             });
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "unlinking should succeed");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "linking should have worked");
         done();
       }
@@ -1306,7 +1306,7 @@ describe('Parse.User testing', () => {
     user.set("password", "onetwothreefour");
     ok(!user.authenticated());
     user.signUp(null, expectSuccess({
-      success: function(result) {
+      success: function() {
         ok(user.authenticated());
         done();
       }
@@ -1443,7 +1443,7 @@ describe('Parse.User testing', () => {
       request.get({
         headers: {'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest'},
-        url: 'http://localhost:8378/1/users',
+        url: 'http://localhost:8378/1/users'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -1502,7 +1502,7 @@ describe('Parse.User testing', () => {
     }).then(() => {
       fail('Should not have been able to sign up.');
       done();
-    }, (error) => {
+    }, () => {
       done();
     });
   });
@@ -1523,7 +1523,7 @@ describe('Parse.User testing', () => {
     }).then(() => {
       fail('Should not have been able to sign up.');
       done();
-    }, (error) => {
+    }, () => {
       done();
     });
   });
@@ -1538,7 +1538,7 @@ describe('Parse.User testing', () => {
           'X-Parse-Session-Token': user.getSessionToken(),
           'X-Parse-REST-API-Key': 'rest'
         },
-        url: 'http://localhost:8378/1/sessions',
+        url: 'http://localhost:8378/1/sessions'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -1562,7 +1562,7 @@ describe('Parse.User testing', () => {
           'X-Parse-Session-Token': user.getSessionToken(),
           'X-Parse-REST-API-Key': 'rest'
         },
-        url: 'http://localhost:8378/1/sessions/me',
+        url: 'http://localhost:8378/1/sessions/me'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -1586,7 +1586,7 @@ describe('Parse.User testing', () => {
           'X-Parse-Session-Token': user.getSessionToken(),
           'X-Parse-REST-API-Key': 'rest'
         },
-        url: 'http://localhost:8378/1/sessions/me',
+        url: 'http://localhost:8378/1/sessions/me'
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -1600,6 +1600,7 @@ describe('Parse.User testing', () => {
         }, (error, response, body) => {
           expect(error).toBe(null);
           var b = JSON.parse(body);
+          expect(b).not.toBeUndefined();
           done();
         });
       });
@@ -1655,7 +1656,7 @@ describe('Parse.User testing', () => {
             'X-Parse-REST-API-Key': 'rest'
           },
           url: 'http://localhost:8378/1/sessions/' + objId
-        }, (error, response, body) => {
+        }, (error) => {
           expect(error).toBe(null);
           request.get({
             headers: {
@@ -1681,7 +1682,7 @@ describe('Parse.User testing', () => {
     .then((pass) => {
       expect(pass).toBe(true);
       done();
-    }, (e) => {
+    }, () => {
       fail('Password format did not match.');
       done();
     });
@@ -1700,7 +1701,7 @@ describe('Parse.User testing', () => {
       return newUser.save();
     }).then(function() {
       return Parse.User.become(sessionToken);
-    }).then(function(newUser) {
+    }).then(function() {
       fail('Session should have been invalidated');
       done();
     }, function(err) {
@@ -1725,7 +1726,7 @@ describe('Parse.User testing', () => {
     }).then(function(newUser) {
       equal(newUser.get('foo'), 2);
       done();
-    }, function(e) {
+    }, function() {
       fail('The session should still be valid');
       done();
     });
@@ -1755,9 +1756,9 @@ describe('Parse.User testing', () => {
 
   it('support user/password signup with empty authData block', (done) => {
     // The android SDK can send an empty authData object along with username and password.
-    Parse.User.signUp('artof', 'thedeal', { authData: {} }).then((user) => {
+    Parse.User.signUp('artof', 'thedeal', { authData: {} }).then(() => {
       done();
-    }, (error) => {
+    }, () => {
       fail('Signup should have succeeded.');
       done();
     });

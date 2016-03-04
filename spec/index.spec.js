@@ -20,17 +20,17 @@ describe('server', () => {
       restAPIKey: 'rest',
       masterKey: 'test',
       collectionPrefix: 'test_',
-      fileKey: 'test',
+      fileKey: 'test'
     });
     //Need to use rest api because saving via JS SDK results in fail() not getting called
     request.post({
       url: 'http://localhost:8378/1/classes/NewClass',
       headers: {
         'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-REST-API-Key': 'rest'
       },
       body: {},
-      json: true,
+      json: true
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(500);
       expect(body.code).toEqual(1);
@@ -54,7 +54,7 @@ describe('server', () => {
       verifyUserEmails: true,
       emailAdapter: MockEmailAdapterWithOptions({
         apiKey: 'k',
-        domain: 'd',
+        domain: 'd'
       }),
       publicServerURL: 'http://localhost:8378/1'
     });
@@ -78,7 +78,7 @@ describe('server', () => {
         class: MockEmailAdapterWithOptions,
         options: {
           apiKey: 'k',
-          domain: 'd',
+          domain: 'd'
         }
       },
       publicServerURL: 'http://localhost:8378/1'
@@ -103,7 +103,7 @@ describe('server', () => {
         module: './Email/SimpleMailgunAdapter',
         options: {
           apiKey: 'k',
-          domain: 'd',
+          domain: 'd'
         }
       },
       publicServerURL: 'http://localhost:8378/1'
@@ -146,7 +146,7 @@ describe('server', () => {
       emailAdapter: {
         module: './Email/SimpleMailgunAdapter',
         options: {
-          domain: 'd',
+          domain: 'd'
         }
       },
       publicServerURL: 'http://localhost:8378/1'

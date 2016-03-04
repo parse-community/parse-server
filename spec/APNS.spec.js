@@ -155,8 +155,8 @@ describe('APNS', () => {
 
     APNS.handleTransmissionError(conns, errorCode, notification, device);
 
-    var notification = {};
-    var device = undefined;
+    notification = {};
+    device = undefined;
 
     APNS.handleTransmissionError(conns, errorCode, notification, device);
     done();
@@ -176,7 +176,7 @@ describe('APNS', () => {
       {
         pushNotification: jasmine.createSpy('pushNotification'),
         bundleId: 'bundleId2'
-      },
+      }
     ];
     var errorCode = 1;
     var notification = {};
@@ -248,12 +248,12 @@ describe('APNS', () => {
       {
         pushNotification: jasmine.createSpy('pushNotification'),
         bundleId: 'bundleId3'
-      },
+      }
     ];
     var errorCode = 1;
     var notification = {};
     var apnDevice = {
-      connIndex: 1,
+      connIndex: 1
     };
 
     APNS.handleTransmissionError(conns, errorCode, notification, apnDevice);
@@ -293,13 +293,13 @@ describe('APNS', () => {
       }
     ];
 
-    var promise = apns.send(data, devices);
+    apns.send(data, devices);
     expect(conn.pushNotification).toHaveBeenCalled();
-    var args = conn.pushNotification.calls.first().args;
-    var notification = args[0];
+    var receivedArgs = conn.pushNotification.calls.first().args;
+    var notification = receivedArgs[0];
     expect(notification.alert).toEqual(data.data.alert);
     expect(notification.expiry).toEqual(data['expiration_time']);
-    var apnDevice = args[1]
+    var apnDevice = receivedArgs[1]
     expect(apnDevice.connIndex).toEqual(0);
     expect(apnDevice.appIdentifier).toEqual('bundleId');
     done();

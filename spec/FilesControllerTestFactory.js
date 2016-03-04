@@ -50,12 +50,12 @@ var testAdapter = function(name, adapter) {
         fail("The adapter should get the file");
         console.error(err);
         done();
-      }).then((result) => {
+      }).then(() => {
         
-        filesController.getFileData(config, filename).then((res) => {
+        filesController.getFileData(config, filename).then(() => {
           fail("the file should be deleted");
           done();
-        }, (err) => {
+        }, () => {
           done();  
         });
         

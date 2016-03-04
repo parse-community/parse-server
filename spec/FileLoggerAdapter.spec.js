@@ -1,15 +1,13 @@
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
-var Parse = require('parse/node').Parse;
-var request = require('request');
 var fs = require('fs');
 
 var LOGS_FOLDER = './test_logs/';
 
 var deleteFolderRecursive = function(path) {
-  if( fs.existsSync(path) ) {
-    fs.readdirSync(path).forEach(function(file,index){
+  if ( fs.existsSync(path) ) {
+    fs.readdirSync(path).forEach(function(file){
       var curPath = path + "/" + file;
-      if(fs.lstatSync(curPath).isDirectory()) { // recurse
+      if (fs.lstatSync(curPath).isDirectory()) { // recurse
         deleteFolderRecursive(curPath);
       } else { // delete file
         fs.unlinkSync(curPath);

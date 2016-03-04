@@ -1,6 +1,5 @@
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var rest = require('../src/rest');
 
@@ -125,7 +124,7 @@ describe('rest query', () => {
                          + querystring.stringify({
                              where: '{"foo":{"$ne": "baz"}}',
                              limit: 1
-                         }).replace('=', '%3D'),
+                         }).replace('=', '%3D')
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
@@ -143,7 +142,7 @@ describe('rest query', () => {
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
                              limit: 1
-                         }).replace('=', '%3D'),
+                         }).replace('=', '%3D')
       }, (error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);

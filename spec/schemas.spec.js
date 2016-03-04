@@ -54,27 +54,27 @@ var pointersAndRelationsSchema = {
     //Custom fields
     aPointer: {
       type: 'Pointer',
-      targetClass: 'HasAllPOD',
+      targetClass: 'HasAllPOD'
     },
     aRelation: {
       type: 'Relation',
-      targetClass: 'HasAllPOD',
-    },
-  },
+      targetClass: 'HasAllPOD'
+    }
+  }
 }
 
 var noAuthHeaders = {
-  'X-Parse-Application-Id': 'test',
+  'X-Parse-Application-Id': 'test'
 };
 
 var restKeyHeaders = {
   'X-Parse-Application-Id': 'test',
-  'X-Parse-REST-API-Key': 'rest',
+  'X-Parse-REST-API-Key': 'rest'
 };
 
 var masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
-  'X-Parse-Master-Key': 'test',
+  'X-Parse-Master-Key': 'test'
 };
 
 describe('schemas', () => {
@@ -82,7 +82,7 @@ describe('schemas', () => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
-      headers: noAuthHeaders,
+      headers: noAuthHeaders
     }, (error, response, body) => {
       //api.parse.com uses status code 401, but due to the lack of keys
       //being necessary in parse-server, 403 makes more sense
@@ -96,7 +96,7 @@ describe('schemas', () => {
     request.get({
       url: 'http://localhost:8378/1/schemas/SomeSchema',
       json: true,
-      headers: restKeyHeaders,
+      headers: restKeyHeaders
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
       expect(body.error).toEqual('unauthorized: master key is required');
@@ -108,7 +108,7 @@ describe('schemas', () => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
-      headers: restKeyHeaders,
+      headers: restKeyHeaders
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
       expect(body.error).toEqual('unauthorized: master key is required');
@@ -120,7 +120,7 @@ describe('schemas', () => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
-      headers: masterKeyHeaders,
+      headers: masterKeyHeaders
     }, (error, response, body) => {
       expect(body.results).toEqual([]);
       done();
@@ -139,7 +139,7 @@ describe('schemas', () => {
       request.get({
         url: 'http://localhost:8378/1/schemas',
         json: true,
-        headers: masterKeyHeaders,
+        headers: masterKeyHeaders
       }, (error, response, body) => {
         var expected = {
           results: [plainOldDataSchema,pointersAndRelationsSchema]
@@ -156,7 +156,7 @@ describe('schemas', () => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HasAllPOD',
         json: true,
-        headers: masterKeyHeaders,
+        headers: masterKeyHeaders
       }, (error, response, body) => {
         expect(body).toEqual(plainOldDataSchema);
         done();
@@ -170,12 +170,12 @@ describe('schemas', () => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HASALLPOD',
         json: true,
-        headers: masterKeyHeaders,
+        headers: masterKeyHeaders
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: 103,
-          error: 'class HASALLPOD does not exist',
+          error: 'class HASALLPOD does not exist'
         });
         done();
       });
@@ -188,7 +188,7 @@ describe('schemas', () => {
       json: true,
       headers: noAuthHeaders,
       body: {
-        className: 'MyClass',
+        className: 'MyClass'
       }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
@@ -203,8 +203,8 @@ describe('schemas', () => {
       json: true,
       headers: restKeyHeaders,
       body: {
-        className: 'MyClass',
-      },
+        className: 'MyClass'
+      }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
       expect(body.error).toEqual('unauthorized: master key is required');
@@ -218,13 +218,13 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {
-        className: 'B',
+        className: 'B'
       }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class name mismatch between B and A',
+        error: 'class name mismatch between B and A'
       });
       done();
     });
@@ -235,12 +235,12 @@ describe('schemas', () => {
       url: 'http://localhost:8378/1/schemas',
       headers: masterKeyHeaders,
       json: true,
-      body: {},
+      body: {}
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: 135,
-        error: 'POST /schemas needs class name',
+        error: 'POST /schemas needs class name'
       });
       done();
     })
@@ -252,22 +252,22 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {
-        className: 'A',
-      },
-    }, (error, response, body) => {
+        className: 'A'
+      }
+    }, (error) => {
       expect(error).toEqual(null);
       request.post({
         url: 'http://localhost:8378/1/schemas',
         headers: masterKeyHeaders,
         json: true,
         body: {
-          className: 'A',
+          className: 'A'
         }
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class A already exists',
+          error: 'class A already exists'
         });
         done();
       });
@@ -295,7 +295,7 @@ describe('schemas', () => {
           updatedAt: {type: 'Date'},
           objectId: {type: 'String'},
           foo: {type: 'Number'},
-          ptr: {type: 'Pointer', targetClass: 'SomeClass'},
+          ptr: {type: 'Pointer', targetClass: 'SomeClass'}
         }
       });
       done();
@@ -308,7 +308,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {
-        className: "NewClass",
+        className: "NewClass"
       }
     }, (error, response, body) => {
       expect(body).toEqual({
@@ -317,7 +317,7 @@ describe('schemas', () => {
           ACL: {type: 'ACL'},
           createdAt: {type: 'Date'},
           updatedAt: {type: 'Date'},
-          objectId: {type: 'String'},
+          objectId: {type: 'String'}
         }
       });
       done();
@@ -329,13 +329,13 @@ describe('schemas', () => {
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
       json: true,
-      body: {},
-    }, (error, response, body) => {
+      body: {}
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: noAuthHeaders,
         json: true,
-        body: {},
+        body: {}
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(403);
         expect(body.error).toEqual('unauthorized');
@@ -408,7 +408,7 @@ describe('schemas', () => {
         json: true,
         body: {
           fields: {
-            nonExistentKey: {__op: "Delete"},
+            nonExistentKey: {__op: "Delete"}
           }
         }
       }, (error, response, body) => {
@@ -454,7 +454,7 @@ describe('schemas', () => {
         body: {
           fields: {
             newGeo1: {type: 'GeoPoint'},
-            newGeo2: {type: 'GeoPoint'},
+            newGeo2: {type: 'GeoPoint'}
           }
         }
       }, (error, response, body) => {
@@ -489,7 +489,7 @@ describe('schemas', () => {
             "createdAt": {"type": "Date"},
             "objectId": {"type": "String"},
             "updatedAt": {"type": "Date"},
-            "geo2": {"type": "GeoPoint"},
+            "geo2": {"type": "GeoPoint"}
           }
         })).toEqual(undefined);
         done();
@@ -505,7 +505,7 @@ describe('schemas', () => {
         url: 'http://localhost:8378/1/schemas/HasAllPOD',
         headers: masterKeyHeaders,
         json: true,
-        body: {},
+        body: {}
       }, (error, response, body) => {
         expect(body).toEqual(plainOldDataSchema);
         done();
@@ -518,8 +518,8 @@ describe('schemas', () => {
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
       json: true,
-      body: {},
-    }, (error, response, body) => {
+      body: {}
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
@@ -537,13 +537,13 @@ describe('schemas', () => {
             "createdAt": {"type": "Date"},
             "objectId": {"type": "String"},
             "updatedAt": {"type": "Date"},
-            "newField": {"type": "String"},
-          },
+            "newField": {"type": "String"}
+          }
         })).toEqual(undefined);
         request.get({
           url: 'http://localhost:8378/1/schemas/NewClass',
           headers: masterKeyHeaders,
-          json: true,
+          json: true
         }, (error, response, body) => {
           expect(body).toEqual({
             className: 'NewClass',
@@ -552,7 +552,7 @@ describe('schemas', () => {
               createdAt: {type: 'Date'},
               updatedAt: {type: 'Date'},
               objectId: {type: 'String'},
-              newField: {type: 'String'},
+              newField: {type: 'String'}
             }
           });
           done();
@@ -576,7 +576,7 @@ describe('schemas', () => {
             aNewString: {type: 'String'},
             aNewNumber: {type: 'Number'},
             aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
-            aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
+            aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'}
           }
         }
       }, (error, response, body) => {
@@ -598,7 +598,7 @@ describe('schemas', () => {
             aNewNumber: {type: 'Number'},
             aNewString: {type: 'String'},
             aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
-            aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
+            aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'}
           }
         });
         var obj2 = new Parse.Object('HasAllPOD');
@@ -630,8 +630,8 @@ describe('schemas', () => {
         request.get({
           url: 'http://localhost:8378/1/schemas/HasAllPOD',
           headers: masterKeyHeaders,
-          json: true,
-        }, (error, response, body) => {
+          json: true
+        }, (error, response) => {
           expect(response.body).toEqual(plainOldDataSchema);
           done();
         });
@@ -643,7 +643,7 @@ describe('schemas', () => {
     request.del({
       url: 'http://localhost:8378/1/schemas/DoesntMatter',
       headers: noAuthHeaders,
-      json: true,
+      json: true
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
       expect(body.error).toEqual('unauthorized');
@@ -658,7 +658,7 @@ describe('schemas', () => {
       request.del({
         url: 'http://localhost:8378/1/schemas/HasAllPOD',
         headers: masterKeyHeaders,
-        json: true,
+        json: true
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
@@ -673,7 +673,7 @@ describe('schemas', () => {
     request.del({
       url: 'http://localhost:8378/1/schemas/_GlobalConfig',
       headers: masterKeyHeaders,
-      json: true,
+      json: true
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
@@ -686,7 +686,7 @@ describe('schemas', () => {
     request.del({
       url: 'http://localhost:8378/1/schemas/Missing',
       headers: masterKeyHeaders,
-      json: true,
+      json: true
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(200);
       expect(body).toEqual({});
@@ -709,8 +709,8 @@ describe('schemas', () => {
       request.del({
         url: 'http://localhost:8378/1/schemas/MyOtherClass',
         headers: masterKeyHeaders,
-        json: true,
-      }, (error, response, body) => {
+        json: true
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         config.database.collectionExists('_Join:aRelation:MyOtherClass').then(exists => {
@@ -728,7 +728,7 @@ describe('schemas', () => {
           request.get({
             url: 'http://localhost:8378/1/schemas/MyOtherClass',
             headers: masterKeyHeaders,
-            json: true,
+            json: true
           }, (error, response, body) => {
             //Expect _SCHEMA entry to be gone.
             expect(response.statusCode).toEqual(400);

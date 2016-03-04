@@ -18,8 +18,8 @@ describe('a GlobalConfig', () => {
       json: true,
       headers: {
         'X-Parse-Application-Id': 'test',
-        'X-Parse-Master-Key': 'test',
-      },
+        'X-Parse-Master-Key': 'test'
+      }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(200);
       expect(body.params.companies).toEqual(['US', 'DK']);
@@ -35,7 +35,7 @@ describe('a GlobalConfig', () => {
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-Master-Key': 'test'
-      },
+      }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(200);
       expect(body.result).toEqual(true);
@@ -51,7 +51,7 @@ describe('a GlobalConfig', () => {
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
-      },
+      }
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(403);
       expect(body.error).toEqual('unauthorized: master key is required');
@@ -63,14 +63,14 @@ describe('a GlobalConfig', () => {
     let config = new Config('test');
     config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
-      .then(_ => {
+      .then( () => {
         request.get({
           url: 'http://localhost:8378/1/config',
           json: true,
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
+            'X-Parse-Master-Key': 'test'
+          }
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(404);
           expect(body.code).toEqual(Parse.Error.INVALID_KEY_NAME);

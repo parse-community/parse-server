@@ -3,10 +3,8 @@
 // Ported from installation_collection_test.go
 
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var DatabaseAdapter = require('../src/DatabaseAdapter');
-var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 
 var config = new Config('test');
@@ -174,7 +172,7 @@ describe('Installations', () => {
   it('merging when installationId already exists', (done) => {
     var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var installId2 = '12345678-abcd-abcd-abcd-123456789abd';
+
     var input = {
       'deviceToken': t,
       'deviceType': 'ios',

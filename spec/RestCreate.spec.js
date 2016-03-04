@@ -1,6 +1,5 @@
 // These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var Parse = require('parse/node').Parse;
@@ -27,7 +26,7 @@ describe('rest create', () => {
     var obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
-      date: Parse._encode(new Date()),
+      date: Parse._encode(new Date())
     };
     rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
       return database.mongoFind('MyClass', {}, {});
@@ -43,7 +42,7 @@ describe('rest create', () => {
 
   it('handles object and subdocument', (done) => {
     var obj = {
-      subdoc: {foo: 'bar', wu: 'tan'},
+      subdoc: {foo: 'bar', wu: 'tan'}
     };
     rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
       return database.mongoFind('MyClass', {}, {});
@@ -56,7 +55,7 @@ describe('rest create', () => {
       expect(typeof mob._id).toEqual('string');
 
       var obj = {
-        'subdoc.wu': 'clan',
+        'subdoc.wu': 'clan'
       };
 
       rest.update(config, auth.nobody(config), 'MyClass', mob._id, obj).then(() => {
@@ -91,7 +90,7 @@ describe('rest create', () => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
-      foo: 'bar',
+      foo: 'bar'
     };
     rest.create(config, auth.nobody(config), '_User', user)
       .then((r) => {
@@ -200,7 +199,7 @@ describe('rest create', () => {
       }
     };
     rest.create(config, auth.nobody(config), 'APointerDarkly', obj)
-      .then((r) => {
+      .then(() => {
         return database.mongoFind('APointerDarkly', {});
       }).then((results) => {
         expect(results.length).toEqual(1);

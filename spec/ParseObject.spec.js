@@ -13,7 +13,7 @@
 
 describe('Parse.Object testing', () => {
   it("create", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       ok(model.id, "Should have an objectId set");
       equal(model.get("test"), "test", "Should have the right attribute");
       done();
@@ -21,11 +21,11 @@ describe('Parse.Object testing', () => {
   });
 
   it("update", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       var t2 = new TestObject({ objectId: model.id });
       t2.set("test", "changed");
       t2.save(null, {
-        success: function(model, response) {
+        success: function(model) {
           equal(model.get("test"), "changed", "Update should have succeeded");
           done();
         }
@@ -71,10 +71,10 @@ describe('Parse.Object testing', () => {
   });
 
   it("get", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       var t2 = new TestObject({ objectId: model.id });
       t2.fetch({
-        success: function(model2, response) {
+        success: function(model2) {
           equal(model2.get("test"), "test", "Update should have succeeded");
           ok(model2.id);
           equal(model2.id, model.id, "Ids should match");
@@ -316,11 +316,11 @@ describe('Parse.Object testing', () => {
   it("invalid class name", function(done) {
     var item = new Parse.Object("Foo^bar");
     item.save(null, {
-      success: function(item) {
+      success: function() {
         ok(false, "The name should have been invalid.");
         done();
       },
-      error: function(item, error) {
+      error: function() {
         // Because the class name is invalid, the router will not be able to route
         // it, so it will actually return a -1 error code.
         // equal(error.code, Parse.Error.INVALID_CLASS_NAME);
@@ -589,7 +589,7 @@ describe('Parse.Object testing', () => {
 
         done();
       },
-      error: function(object, error) {
+      error: function() {
         ok(false, "This should have saved.");
         done();
       }
@@ -980,7 +980,7 @@ describe('Parse.Object testing', () => {
     parent.set('children', [child1, child2]);
 
     parent.save(null, {
-      success: function(parent) {
+      success: function() {
         var query = new Parse.Query(Child);
         query.ascending('name');
         query.find({
@@ -1100,8 +1100,7 @@ describe('Parse.Object testing', () => {
   });
 
   it("toJSON saved object", function(done) {
-    var _ = Parse._;
-    create({ "foo" : "bar" }, function(model, response) {
+    create({ "foo" : "bar" }, function(model) {
       var objJSON = model.toJSON();
       ok(objJSON.foo, "expected json to contain key 'foo'");
       ok(objJSON.objectId, "expected json to contain key 'objectId'");
@@ -1175,7 +1174,7 @@ describe('Parse.Object testing', () => {
       return bryan.save({
         meal: "tomatoes"
       });
-    }, function(error) {
+    }, function() {
       ok(false, "Save should have succeeded.");
     }).then(function() {
       ok(false, "Save should have failed.");
@@ -1375,7 +1374,7 @@ describe('Parse.Object testing', () => {
           });
           done();
         },
-        error: function(error) {
+        error: function() {
           ok(false, "Failed to fetchAll");
           done();
         }
@@ -1408,8 +1407,6 @@ describe('Parse.Object testing', () => {
 
   it("fetchAll error on deleted object", function(done) {
     var numItems = 11;
-    var container = new Container();
-    var subContainer = new Container();
     var items = [];
     for (var i = 0; i < numItems; i++) {
       var item = new Item();
@@ -1540,7 +1537,7 @@ describe('Parse.Object testing', () => {
           done();
         },
 
-        error: function(error) {
+        error: function() {
           ok(false, "Failed to fetchAll");
           done();
         }
@@ -1664,7 +1661,7 @@ describe('Parse.Object testing', () => {
       var obj2 = new TestObject();
       obj2.increment('astring');
       return obj2.save();
-    }).then((obj2) => {
+    }).then(() => {
       fail('Should not have saved.');
       done();
     }, (error) => {
@@ -1751,7 +1748,7 @@ describe('Parse.Object testing', () => {
     object.save().then( res => {
       ok(res);
       return res.fetch();
-    }).then( res => {
+    }).then( res => {
       const foo = res.get("foo");
       expect(foo["_bar"]).toEqual("_");
       expect(foo["baz_bar"]).toEqual(1);

@@ -5,7 +5,6 @@ jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
 var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
-var facebook = require('../src/oauth/facebook');
 var ParseServer = require('../src/index').ParseServer;
 
 var databaseURI = process.env.DATABASE_URI;
@@ -147,7 +146,7 @@ function expectSuccess(params) {
     error: function(e) {
       console.log('got error', e);
       fail('failure happened in expectSuccess');
-    },
+    }
   }
 }
 function expectError(errorCode, callback) {
@@ -167,7 +166,7 @@ function expectError(errorCode, callback) {
       if (callback) {
         callback(e);
       }
-    },
+    }
   }
 }
 

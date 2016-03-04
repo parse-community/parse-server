@@ -45,10 +45,10 @@ describe('Parse.Relation testing', () => {
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
       childObjects.push(new ChildObject({x:i}));
-    };
+    }
 
     Parse.Object.saveAll(childObjects, expectSuccess({
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -83,7 +83,7 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects, {
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -105,7 +105,7 @@ describe('Parse.Relation testing', () => {
                        "The relation should not be dirty");
                     done();
                   },
-                  error: function(list) {
+                  error: function() {
                     ok(false, "This shouldn't have failed");
                     done();
                   }
@@ -130,7 +130,7 @@ describe('Parse.Relation testing', () => {
     var parent;
     var relation;
 
-    Parse.Object.saveAll(childObjects).then(function(list) {
+    Parse.Object.saveAll(childObjects).then(function() {
       var ParentObject = Parse.Object.extend('ParentObject');
       parent = new ParentObject();
       parent.set('x', 4);
