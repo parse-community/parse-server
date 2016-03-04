@@ -56,7 +56,7 @@
     "dev": "npm run build && bin/dev",
     "build": "./node_modules/.bin/babel src/ -d lib/",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
-    "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $(if [ \"$CODE_COVERAGE\" = \"1\" ]; then echo './node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'; fi;) ./node_modules/jasmine/bin/jasmine.js",
+    "test": "cross-env NODE_ENV=test TESTING=1 VERBOSE=1 ./node_modules/.bin/babel-node $(if [ \"$CODE_COVERAGE\" = \"1\" ]; then echo './node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'; fi;) ./node_modules/jasmine/bin/jasmine.js",
     "posttest": "mongodb-runner stop",
     "start": "./bin/parse-server",
     "prepublish": "npm run build"

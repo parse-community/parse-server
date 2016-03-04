@@ -43,33 +43,33 @@ describe('Parse.GeoPoint testing', () => {
 // This test is disabled, since it's extremely flaky on Travis-CI.
 // Tracking issue: https://github.com/ParsePlatform/parse-server/issues/572
 //
-//  it('geo line', (done) => {
-//     var line = [];
-//     for (var i = 0; i < 10; ++i) {
-//       var obj = new TestObject();
-//       var point = new Parse.GeoPoint(i * 4.0 - 12.0, i * 3.2 - 11.0);
-//       obj.set('location', point);
-//       obj.set('construct', 'line');
-//       obj.set('seq', i);
-//       line.push(obj);
-//     }
-//     Parse.Object.saveAll(line, {
-//       success: function() {
-//         var query = new Parse.Query(TestObject);
-//         var point = new Parse.GeoPoint(24, 19);
-//         query.equalTo('construct', 'line');
-//         query.withinMiles('location', point, 10000);
-//         query.find({
-//           success: function(results) {
-//             equal(results.length, 10);
-//             equal(results[0].get('seq'), 9);
-//             equal(results[3].get('seq'), 6);
-//             done();
-//           }
-//         });
-//       }
-//     });
-//   });
+ it('geo line', (done) => {
+    var line = [];
+    for (var i = 0; i < 10; ++i) {
+      var obj = new TestObject();
+      var point = new Parse.GeoPoint(i * 4.0 - 12.0, i * 3.2 - 11.0);
+      obj.set('location', point);
+      obj.set('construct', 'line');
+      obj.set('seq', i);
+      line.push(obj);
+    }
+    Parse.Object.saveAll(line, {
+      success: function() {
+        var query = new Parse.Query(TestObject);
+        var point = new Parse.GeoPoint(24, 19);
+        query.equalTo('construct', 'line');
+        query.withinMiles('location', point, 10000);
+        query.find({
+          success: function(results) {
+            equal(results.length, 10);
+            equal(results[0].get('seq'), 9);
+            equal(results[3].get('seq'), 6);
+            done();
+          }
+        });
+      }
+    });
+  });
 
   it('geo max distance large', (done) => {
     var objects = [];
