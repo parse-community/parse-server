@@ -5,8 +5,11 @@ language: node_js
 node_js:
   - "4.3"
 env:
-  - MONGODB_VERSION=2.6.11
-  - MONGODB_VERSION=3.0.8
+  global: 
+    - CODE_COVERAGE=1
+  matrix:
+    - MONGODB_VERSION=2.6.11
+    - MONGODB_VERSION=3.0.8
 cache:
   directories:
     - $HOME/.mongodb/versions/downloads

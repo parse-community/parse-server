@@ -3,8 +3,17 @@ import PromiseRouter from '../PromiseRouter';
 import rest from '../rest';
 import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
+import deepcopy from 'deepcopy';
+import features from '../features';
+
+const FEATURE_NAME = 'push';
+const UNSUPPORTED_BADGE_KEY = "unsupported";
 
 export class PushController extends AdaptableController {
+
+  setFeature() {
+    features.setFeature(FEATURE_NAME, this.adapter.feature || {});
+  }
 
   /**
    * Check whether the deviceType parameter in qury condition is valid or not.
@@ -51,7 +60,55 @@ export class PushController extends AdaptableController {
     body['expiration_time'] = PushController.getExpirationTime(body);
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
-    rest.find(config, auth, '_Installation', where).then(function(response) {
+    let badgeUpdate = Promise.resolve();
+
+    if (body.badge) {
+      var op = {};
+      if (body.badge == "Increment") {
+        op = {'$inc': {'badge': 1}}
+      } else if (Number(body.badge)) {
+        op = {'$set': {'badge': body.badge } }
+      } else {
+        throw "Invalid value for badge, expected number or 'Increment'";
+      }
+      let updateWhere = deepcopy(where);
+
+      // Only on iOS!
+      updateWhere.deviceType = 'ios';
+
+      // TODO: @nlutsenko replace with better thing
+      badgeUpdate = config.database.rawCollection("_Installation").then((coll) => {
+        return coll.update(updateWhere, op, { multi: true });
+      });
+    }
+
+    return badgeUpdate.then(() => {
+      return rest.find(config, auth, '_Installation', where)
+    }).then((response) => {
+      if (body.badge && body.badge == "Increment") {
+        // Collect the badges to reduce the # of calls
+        let badgeInstallationsMap = response.results.reduce((map, installation) => {
+          let badge = installation.badge;
+          if (installation.deviceType != "ios") {
+            badge = UNSUPPORTED_BADGE_KEY;
+          }
+          map[badge] = map[badge] || [];
+          map[badge].push(installation);
+          return map;
+        }, {});
+ 
+        // Map the on the badges count and return the send result
+        let promises = Object.keys(badgeInstallationsMap).map((badge) => {
+          let payload = deepcopy(body);
+          if (badge == UNSUPPORTED_BADGE_KEY) {
+            delete payload.badge;
+          } else {
+            payload.badge = parseInt(badge);
+          }
+          return pushAdapter.send(payload, badgeInstallationsMap[badge]); 
+        });
+        return Promise.all(promises);
+      }
       return pushAdapter.send(body, response.results);
     });
   }

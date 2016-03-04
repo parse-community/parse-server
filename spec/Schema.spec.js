@@ -1,3 +1,5 @@
+'use strict';
+
 var Config = require('../src/Config');
 var Schema = require('../src/Schema');
 var dd = require('deep-diff');
@@ -186,8 +188,8 @@ describe('Schema', () => {
           foo: {type: 'String'}
         }))
         .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME)
-          expect(error.error).toEqual('class NewClass already exists');
+          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+          expect(error.message).toEqual('Class NewClass already exists.');
           done();
         });
       });
@@ -214,7 +216,7 @@ describe('Schema', () => {
       Promise.all([p1,p2])
       .catch(error => {
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-        expect(error.error).toEqual('class NewClass already exists');
+        expect(error.message).toEqual('Class NewClass already exists.');
         done();
       });
     });
@@ -420,6 +422,43 @@ describe('Schema', () => {
     });
   });
 
+  it('creates non-custom classes which include relation field', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('_Role', {}))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: '_Role',
+        createdAt: 'string',
+        updatedAt: 'string',
+        objectId: 'string',
+        name: 'string',
+        users: 'relation<_User>',
+        roles: 'relation<_Role>',
+      });
+      done();
+    });
+  });
+
+  it('creates non-custom classes which include pointer field', done => {
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('_Session', {}))
+    .then(mongoObj => {
+      expect(mongoObj).toEqual({
+        _id: '_Session',
+        createdAt: 'string',
+        updatedAt: 'string',
+        objectId: 'string',
+        restricted: 'boolean',
+        user: '*_User',
+        installationId: 'string',
+        sessionToken: 'string',
+        expiresAt: 'date',
+        createdWith: 'object'
+      });
+      done();
+    });
+  });
+
   it('refuses to create two geopoints', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
@@ -483,7 +522,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('installationId', '_Installation'))
     .catch(error => {
       expect(error.code).toEqual(136);
-      expect(error.error).toEqual('field installationId cannot be changed');
+      expect(error.message).toEqual('field installationId cannot be changed');
       done();
     });
   });
@@ -493,7 +532,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('field', 'NoClass'))
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(error.error).toEqual('class NoClass does not exist');
+      expect(error.message).toEqual('Class NoClass does not exist.');
       done();
     });
   });
@@ -504,7 +543,7 @@ describe('Schema', () => {
     .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
     .fail(error => {
       expect(error.code).toEqual(255);
-      expect(error.error).toEqual('field missingField does not exist, cannot delete');
+      expect(error.message).toEqual('Field missingField does not exist, cannot delete.');
       done();
     });
   });
@@ -512,24 +551,32 @@ describe('Schema', () => {
   it('drops related collection when deleting relation field', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
-    .then(savedObj1 => {
-      var obj2 = new Parse.Object('HasPointersAndRelations');
-      obj2.set('aPointer', savedObj1);
-      var relation = obj2.relation('aRelation');
-      relation.add(obj1);
-      return obj2.save();
-    })
-    .then(() => {
-      config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
-        expect(err).toEqual(null);
-        config.database.loadSchema()
-        .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database.db, 'test_'))
-        .then(() => config.database.db.collection('test__Join:aRelation:HasPointersAndRelations', { strict: true }, (err, coll) => {
-          expect(err).not.toEqual(null);
-          done();
-        }))
+      .then(savedObj1 => {
+        var obj2 = new Parse.Object('HasPointersAndRelations');
+        obj2.set('aPointer', savedObj1);
+        var relation = obj2.relation('aRelation');
+        relation.add(obj1);
+        return obj2.save();
+      })
+      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
+      .then(exists => {
+        if (!exists) {
+          fail('Relation collection ' +
+            'should exist after save.');
+        }
+      })
+      .then(() => config.database.loadSchema())
+      .then(schema => schema.deleteField('aRelation', 'HasPointersAndRelations', config.database))
+      .then(() => config.database.collectionExists('_Join:aRelation:HasPointersAndRelations'))
+      .then(exists => {
+        if (exists) {
+          fail('Relation collection should not exist after deleting relation field.');
+        }
+        done();
+      }, error => {
+        fail(error);
+        done();
       });
-    })
   });
 
   it('can delete string fields and resave as number field', done => {
@@ -538,7 +585,7 @@ describe('Schema', () => {
     var obj2 = hasAllPODobject();
     var p = Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database.db, 'test_'))
+    .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
     .then(obj1Reloaded => {
       expect(obj1Reloaded.get('aString')).toEqual(undefined);
@@ -568,7 +615,7 @@ describe('Schema', () => {
       expect(obj1.get('aPointer').id).toEqual(obj1.id);
     })
     .then(() => config.database.loadSchema())
-    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database.db, 'test_'))
+    .then(schema => schema.deleteField('aPointer', 'NewClass', config.database))
     .then(() => new Parse.Query('NewClass').get(obj1.id))
     .then(obj1 => {
       expect(obj1.get('aPointer')).toEqual(undefined);
@@ -606,6 +653,23 @@ describe('Schema', () => {
     })).toEqual({
       someType: {type: 'Number'},
       newType: {type: 'GeoPoint'},
+    });
+    done();
+  });
+
+  it('ignore default field when merge with system class', done => {
+    expect(Schema.buildMergedSchemaObject({
+      _id: '_User',
+      username: 'string',
+      password: 'string',
+      authData: 'object',
+      email: 'string',
+      emailVerified: 'boolean'
+    },{
+      authData: {type: 'string'},
+      customField: {type: 'string'},
+    })).toEqual({
+      customField: {type: 'string'}
     });
     done();
   });

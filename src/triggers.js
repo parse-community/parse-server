@@ -110,12 +110,11 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   if (auth.user) {
     request['user'] = auth.user;
   }
-  // TODO: Add installation to Auth?
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
   }
   return request;
-};
+}
 
 // Creates the response object, and uses the request object to pass data
 // The API will call this with REST API formatted objects, this will
@@ -157,8 +156,8 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var response = getResponseObject(request, resolve, reject);
     // Force the current Parse app before the trigger
     Parse.applicationId = applicationId;
-    Parse.javascriptKey = cache.apps[applicationId].javascriptKey || '';
-    Parse.masterKey = cache.apps[applicationId].masterKey;
+    Parse.javascriptKey = cache.apps.get(applicationId).javascriptKey || '';
+    Parse.masterKey = cache.apps.get(applicationId).masterKey;
     trigger(request, response);
   });
 };

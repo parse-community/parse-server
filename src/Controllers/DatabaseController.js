@@ -2,18 +2,17 @@
 // Parse database.
 
 var mongodb = require('mongodb');
-var MongoClient = mongodb.MongoClient;
 var Parse = require('parse/node').Parse;
 
-var Schema = require('./Schema');
-var transform = require('./transform');
+var Schema = require('./../Schema');
+var transform = require('./../transform');
 
 // options can contain:
 //   collectionPrefix: the string to put in front of every collection name.
-function ExportAdapter(mongoURI, options = {}) {
-  this.mongoURI = mongoURI;
+function DatabaseController(adapter, { collectionPrefix } = {}) {
+  this.adapter = adapter;
 
-  this.collectionPrefix = options.collectionPrefix;
+  this.collectionPrefix = collectionPrefix;
 
   // We don't want a mutable this.schema, because then you could have
   // one request that uses different schemas for different parts of
@@ -25,25 +24,13 @@ function ExportAdapter(mongoURI, options = {}) {
 
 // Connects to the database. Returns a promise that resolves when the
 // connection is successful.
-// this.db will be populated with a Mongo "Db" object when the
-// promise resolves successfully.
-ExportAdapter.prototype.connect = function() {
-  if (this.connectionPromise) {
-    // There's already a connection in progress.
-    return this.connectionPromise;
-  }
-
-  this.connectionPromise = Promise.resolve().then(() => {
-    return MongoClient.connect(this.mongoURI);
-  }).then((db) => {
-    this.db = db;
-  });
-  return this.connectionPromise;
+DatabaseController.prototype.connect = function() {
+  return this.adapter.connect();
 };
 
 // Returns a promise for a Mongo collection.
 // Generally just for internal use.
-ExportAdapter.prototype.collection = function(className) {
+DatabaseController.prototype.collection = function(className) {
   if (!Schema.classNameIsValid(className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
@@ -51,10 +38,20 @@ ExportAdapter.prototype.collection = function(className) {
   return this.rawCollection(className);
 };
 
-ExportAdapter.prototype.rawCollection = function(className) {
-  return this.connect().then(() => {
-    return this.db.collection(this.collectionPrefix + className);
-  });
+DatabaseController.prototype.adaptiveCollection = function(className) {
+  return this.adapter.adaptiveCollection(this.collectionPrefix + className);
+};
+
+DatabaseController.prototype.collectionExists = function(className) {
+  return this.adapter.collectionExists(this.collectionPrefix + className);
+};
+
+DatabaseController.prototype.rawCollection = function(className) {
+  return this.adapter.collection(this.collectionPrefix + className);
+};
+
+DatabaseController.prototype.dropCollection = function(className) {
+  return this.adapter.dropCollection(this.collectionPrefix + className);
 };
 
 function returnsTrue() {
@@ -64,7 +61,7 @@ function returnsTrue() {
 // Returns a promise for a schema object.
 // If we are provided a acceptor, then we run it on the schema.
 // If the schema isn't accepted, we reload it at most once.
-ExportAdapter.prototype.loadSchema = function(acceptor = returnsTrue) {
+DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 
   if (!this.schemaPromise) {
     this.schemaPromise = this.collection('_SCHEMA').then((coll) => {
@@ -88,8 +85,8 @@ ExportAdapter.prototype.loadSchema = function(acceptor = returnsTrue) {
 
 // Returns a promise for the classname that is related to the given
 // classname through the key.
-// TODO: make this not in the ExportAdapter interface
-ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
+// TODO: make this not in the DatabaseController interface
+DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
     var match = t.match(/^relation<(.*)>$/);
@@ -105,7 +102,7 @@ ExportAdapter.prototype.redirectClassNameForKey = function(className, key) {
 // Returns a promise that resolves to the new schema.
 // This does not update this.schema, because in a situation like a
 // batch request, that could confuse other users of the schema.
-ExportAdapter.prototype.validateObject = function(className, object, query) {
+DatabaseController.prototype.validateObject = function(className, object, query) {
   return this.loadSchema().then((schema) => {
     return schema.validateObject(className, object, query);
   });
@@ -113,7 +110,7 @@ ExportAdapter.prototype.validateObject = function(className, object, query) {
 
 // Like transform.untransformObject but you need to provide a className.
 // Filters out any data that shouldn't be on this REST-formatted object.
-ExportAdapter.prototype.untransformObject = function(
+DatabaseController.prototype.untransformObject = function(
   schema, isMaster, aclGroup, className, mongoObject) {
   var object = transform.untransformObject(schema, className, mongoObject);
 
@@ -138,65 +135,59 @@ ExportAdapter.prototype.untransformObject = function(
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-ExportAdapter.prototype.update = function(className, query, update, options) {
+DatabaseController.prototype.update = function(className, query, update, options) {
   var acceptor = function(schema) {
     return schema.hasKeys(className, Object.keys(query));
   };
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
   var mongoUpdate, schema;
-  return this.loadSchema(acceptor).then((s) => {
-    schema = s;
-    if (!isMaster) {
-      return schema.validatePermission(className, aclGroup, 'update');
-    }
-    return Promise.resolve();
-  }).then(() => {
-
-    return this.handleRelationUpdates(className, query.objectId, update);
-  }).then(() => {
-    return this.collection(className);
-  }).then((coll) => {
-    var mongoWhere = transform.transformWhere(schema, className, query);
-    if (options.acl) {
-      var writePerms = [
-        {_wperm: {'$exists': false}}
-      ];
-      for (var entry of options.acl) {
-        writePerms.push({_wperm: {'$in': [entry]}});
+  return this.loadSchema(acceptor)
+    .then(s => {
+      schema = s;
+      if (!isMaster) {
+        return schema.validatePermission(className, aclGroup, 'update');
       }
-      mongoWhere = {'$and': [mongoWhere, {'$or': writePerms}]};
-    }
-
-    mongoUpdate = transform.transformUpdate(schema, className, update);
-
-    return coll.findAndModify(mongoWhere, {}, mongoUpdate, {});
-  }).then((result) => {
-    if (!result.value) {
-      return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                                            'Object not found.'));
-    }
-    if (result.lastErrorObject.n != 1) {
-      return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                                            'Object not found.'));
-    }
-
-    var response = {};
-    var inc = mongoUpdate['$inc'];
-    if (inc) {
-      for (var key in inc) {
-        response[key] = (result.value[key] || 0) + inc[key];
+      return Promise.resolve();
+    })
+    .then(() => this.handleRelationUpdates(className, query.objectId, update))
+    .then(() => this.adaptiveCollection(className))
+    .then(collection => {
+      var mongoWhere = transform.transformWhere(schema, className, query);
+      if (options.acl) {
+        var writePerms = [
+          {_wperm: {'$exists': false}}
+        ];
+        for (var entry of options.acl) {
+          writePerms.push({_wperm: {'$in': [entry]}});
+        }
+        mongoWhere = {'$and': [mongoWhere, {'$or': writePerms}]};
       }
-    }
-    return response;
-  });
+      mongoUpdate = transform.transformUpdate(schema, className, update);
+      return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+    })
+    .then(result => {
+      if (!result) {
+        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+          'Object not found.'));
+      }
+
+      let response = {};
+      let inc = mongoUpdate['$inc'];
+      if (inc) {
+        Object.keys(inc).forEach(key => {
+          response[key] = result[key];
+        });
+      }
+      return response;
+    });
 };
 
 // Processes relation-updating operations from a REST-format update.
 // Returns a promise that resolves successfully when these are
 // processed.
 // This mutates update.
-ExportAdapter.prototype.handleRelationUpdates = function(className,
+DatabaseController.prototype.handleRelationUpdates = function(className,
                                                          objectId,
                                                          update) {
   var pending = [];
@@ -243,7 +234,7 @@ ExportAdapter.prototype.handleRelationUpdates = function(className,
 
 // Adds a relation.
 // Returns a promise that resolves successfully iff the add was successful.
-ExportAdapter.prototype.addRelation = function(key, fromClassName,
+DatabaseController.prototype.addRelation = function(key, fromClassName,
                                                fromId, toId) {
   var doc = {
     relatedId: toId,
@@ -258,7 +249,7 @@ ExportAdapter.prototype.addRelation = function(key, fromClassName,
 // Removes a relation.
 // Returns a promise that resolves successfully iff the remove was
 // successful.
-ExportAdapter.prototype.removeRelation = function(key, fromClassName,
+DatabaseController.prototype.removeRelation = function(key, fromClassName,
                                                   fromId, toId) {
   var doc = {
     relatedId: toId,
@@ -277,7 +268,7 @@ ExportAdapter.prototype.removeRelation = function(key, fromClassName,
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-ExportAdapter.prototype.destroy = function(className, query, options = {}) {
+DatabaseController.prototype.destroy = function(className, query, options = {}) {
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
 
@@ -320,7 +311,7 @@ ExportAdapter.prototype.destroy = function(className, query, options = {}) {
 
 // Inserts an object into the database.
 // Returns a promise that resolves successfully iff the object saved.
-ExportAdapter.prototype.create = function(className, object, options) {
+DatabaseController.prototype.create = function(className, object, options) {
   var schema;
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
@@ -346,28 +337,21 @@ ExportAdapter.prototype.create = function(className, object, options) {
 // This should only be used for testing - use 'find' for normal code
 // to avoid Mongo-format dependencies.
 // Returns a promise that resolves to a list of items.
-ExportAdapter.prototype.mongoFind = function(className, query, options = {}) {
-  return this.collection(className).then((coll) => {
-    return coll.find(query, options).toArray();
-  });
+DatabaseController.prototype.mongoFind = function(className, query, options = {}) {
+  return this.adaptiveCollection(className)
+    .then(collection => collection.find(query, options));
 };
 
 // Deletes everything in the database matching the current collectionPrefix
 // Won't delete collections in the system namespace
 // Returns a promise.
-ExportAdapter.prototype.deleteEverything = function() {
+DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
 
-  return this.connect().then(() => {
-    return this.db.collections();
-  }).then((colls) => {
-    var promises = [];
-    for (var coll of colls) {
-      if (!coll.namespace.match(/\.system\./) &&
-          coll.collectionName.indexOf(this.collectionPrefix) === 0) {
-        promises.push(coll.drop());
-      }
-    }
+  return this.adapter.collectionsContaining(this.collectionPrefix).then(collections => {
+    let promises = collections.map(collection => {
+      return collection.drop();
+    });
     return Promise.all(promises);
   });
 };
@@ -376,13 +360,11 @@ ExportAdapter.prototype.deleteEverything = function() {
 function keysForQuery(query) {
   var sublist = query['$and'] || query['$or'];
   if (sublist) {
-    var answer = new Set();
-    for (var subquery of sublist) {
-      for (var key of keysForQuery(subquery)) {
-        answer.add(key);
-      }
-    }
-    return answer;
+    let answer = sublist.reduce((memo, subquery) => {
+      return memo.concat(keysForQuery(subquery));
+    }, []);
+
+    return new Set(answer);
   }
 
   return new Set(Object.keys(query));
@@ -390,59 +372,74 @@ function keysForQuery(query) {
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
-ExportAdapter.prototype.relatedIds = function(className, key, owningId) {
-  var joinTable = '_Join:' + key + ':' + className;
-  return this.collection(joinTable).then((coll) => {
-    return coll.find({owningId: owningId}).toArray();
-  }).then((results) => {
-    return results.map(r => r.relatedId);
-  });
+DatabaseController.prototype.relatedIds = function(className, key, owningId) {
+  return this.adaptiveCollection(joinTableName(className, key))
+    .then(coll => coll.find({owningId : owningId}))
+    .then(results => results.map(r => r.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
-ExportAdapter.prototype.owningIds = function(className, key, relatedIds) {
-  var joinTable = '_Join:' + key + ':' + className;
-  return this.collection(joinTable).then((coll) => {
-    return coll.find({relatedId: {'$in': relatedIds}}).toArray();
-  }).then((results) => {
-    return results.map(r => r.owningId);
-  });
+DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
+  return this.adaptiveCollection(joinTableName(className, key))
+    .then(coll => coll.find({ relatedId: { '$in': relatedIds } }))
+    .then(results => results.map(r => r.owningId));
 };
 
 // Modifies query so that it no longer has $in on relation fields, or
 // equal-to-pointer constraints on relation fields.
 // Returns a promise that resolves when query is mutated
-// TODO: this only handles one of these at a time - make it handle more
-ExportAdapter.prototype.reduceInRelation = function(className, query, schema) {
+DatabaseController.prototype.reduceInRelation = function(className, query, schema) {
+  
   // Search for an in-relation or equal-to-relation
-  for (var key in query) {
-    if (query[key] &&
-        (query[key]['$in'] || query[key].__type == 'Pointer')) {
-      var t = schema.getExpectedType(className, key);
-      var match = t ? t.match(/^relation<(.*)>$/) : false;
+  // Make it sequential for now, not sure of paralleization side effects
+  if (query['$or']) {
+    let ors = query['$or'];
+    return Promise.all(ors.map((aQuery, index) => {
+      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
+        query['$or'][index] = aQuery; 
+      })
+    }));
+  }
+
+  let promises = Object.keys(query).map((key) => {
+    if (query[key] && (query[key]['$in'] || query[key].__type == 'Pointer')) {
+      let t = schema.getExpectedType(className, key);
+      let match = t ? t.match(/^relation<(.*)>$/) : false;
       if (!match) {
-        continue;
+        return Promise.resolve(query);
       }
-      var relatedClassName = match[1];
-      var relatedIds;
+      let relatedClassName = match[1];
+      let relatedIds;
       if (query[key]['$in']) {
         relatedIds = query[key]['$in'].map(r => r.objectId);
       } else {
         relatedIds = [query[key].objectId];
       }
       return this.owningIds(className, key, relatedIds).then((ids) => {
-        delete query[key];
-        query.objectId = {'$in': ids};
+        delete query[key]; 
+        this.addInObjectIdsIds(ids, query);
+        return Promise.resolve(query);
       });
     }
-  }
-  return Promise.resolve();
+    return Promise.resolve(query);
+  })
+  
+  return Promise.all(promises).then(() => {
+    return Promise.resolve(query);
+  })
 };
 
 // Modifies query so that it no longer has $relatedTo
 // Returns a promise that resolves when query is mutated
-ExportAdapter.prototype.reduceRelationKeys = function(className, query) {
+DatabaseController.prototype.reduceRelationKeys = function(className, query) {
+  
+  if (query['$or']) {
+    return Promise.all(query['$or'].map((aQuery) => {
+      return this.reduceRelationKeys(className, aQuery);
+    }));
+  }
+  
   var relatedTo = query['$relatedTo'];
   if (relatedTo) {
     return this.relatedIds(
@@ -450,43 +447,22 @@ ExportAdapter.prototype.reduceRelationKeys = function(className, query) {
       relatedTo.key,
       relatedTo.object.objectId).then((ids) => {
         delete query['$relatedTo'];
-        query['objectId'] = {'$in': ids};
+        this.addInObjectIdsIds(ids, query);
         return this.reduceRelationKeys(className, query);
       });
   }
 };
 
-// Does a find with "smart indexing".
-// Currently this just means, if it needs a geoindex and there is
-// none, then build the geoindex.
-// This could be improved a lot but it's not clear if that's a good
-// idea. Or even if this behavior is a good idea.
-ExportAdapter.prototype.smartFind = function(coll, where, options) {
-  return coll.find(where, options).toArray()
-    .then((result) => {
-      return result;
-    }, (error) => {
-      // Check for "no geoindex" error
-      if (!error.message.match(/unable to find index for .geoNear/) ||
-          error.code != 17007) {
-        throw error;
-      }
-
-      // Figure out what key needs an index
-      var key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
-      if (!key) {
-        throw error;
-      }
-
-      var index = {};
-      index[key] = '2d';
-      //TODO: condiser moving index creation logic into Schema.js
-      return coll.createIndex(index).then(() => {
-        // Retry, but just once.
-        return coll.find(where, options).toArray();
-      });
-    });
-};
+DatabaseController.prototype.addInObjectIdsIds = function(ids, query) {
+  if (typeof query.objectId == 'string') {
+    query.objectId = {'$in': [query.objectId]};
+  }
+   query.objectId = query.objectId || {};
+   let queryIn =  [].concat(query.objectId['$in'] || [], ids || []);
+   // make a set and spread to remove duplicates
+   query.objectId = {'$in': [...new Set(queryIn)]};
+   return query;
+}
 
 // Runs a query on the database.
 // Returns a promise that resolves to a list of items.
@@ -502,7 +478,7 @@ ExportAdapter.prototype.smartFind = function(coll, where, options) {
 // TODO: make userIds not needed here. The db adapter shouldn't know
 // anything about users, ideally. Then, improve the format of the ACL
 // arg to work like the others.
-ExportAdapter.prototype.find = function(className, query, options = {}) {
+DatabaseController.prototype.find = function(className, query, options = {}) {
   var mongoOptions = {};
   if (options.skip) {
     mongoOptions.skip = options.skip;
@@ -541,8 +517,8 @@ ExportAdapter.prototype.find = function(className, query, options = {}) {
   }).then(() => {
     return this.reduceInRelation(className, query, schema);
   }).then(() => {
-    return this.collection(className);
-  }).then((coll) => {
+    return this.adaptiveCollection(className);
+  }).then(collection => {
     var mongoWhere = transform.transformWhere(schema, className, query);
     if (!isMaster) {
       var orParts = [
@@ -555,9 +531,10 @@ ExportAdapter.prototype.find = function(className, query, options = {}) {
       mongoWhere = {'$and': [mongoWhere, {'$or': orParts}]};
     }
     if (options.count) {
-      return coll.count(mongoWhere, mongoOptions);
+      delete mongoOptions.limit;
+      return collection.count(mongoWhere, mongoOptions);
     } else {
-      return this.smartFind(coll, mongoWhere, mongoOptions)
+      return collection.find(mongoWhere, mongoOptions)
         .then((mongoResults) => {
           return mongoResults.map((r) => {
             return this.untransformObject(
@@ -568,4 +545,8 @@ ExportAdapter.prototype.find = function(className, query, options = {}) {
   });
 };
 
-module.exports = ExportAdapter;
+function joinTableName(className, key) {
+  return `_Join:${key}:${className}`;
+}
+
+module.exports = DatabaseController;

@@ -1,3 +1,5 @@
+'use strict';
+
 var Parse = require('parse/node').Parse;
 var request = require('request');
 var dd = require('deep-diff');
@@ -96,8 +98,8 @@ describe('schemas', () => {
       json: true,
       headers: restKeyHeaders,
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -108,8 +110,8 @@ describe('schemas', () => {
       json: true,
       headers: restKeyHeaders,
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -173,7 +175,7 @@ describe('schemas', () => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: 103,
-          error: 'class HASALLPOD does not exist',
+          error: 'Class HASALLPOD does not exist.',
         });
         done();
       });
@@ -204,8 +206,8 @@ describe('schemas', () => {
         className: 'MyClass',
       },
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('master key not specified');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });
@@ -222,7 +224,7 @@ describe('schemas', () => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class name mismatch between B and A',
+        error: 'Class name mismatch between B and A.',
       });
       done();
     });
@@ -238,7 +240,7 @@ describe('schemas', () => {
       expect(response.statusCode).toEqual(400);
       expect(body).toEqual({
         code: 135,
-        error: 'POST /schemas needs class name',
+        error: 'POST /schemas needs a class name.',
       });
       done();
     })
@@ -265,7 +267,7 @@ describe('schemas', () => {
         expect(response.statusCode).toEqual(400);
         expect(body).toEqual({
           code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class A already exists',
+          error: 'Class A already exists.'
         });
         done();
       });
@@ -351,7 +353,7 @@ describe('schemas', () => {
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(body.error).toEqual('class name mismatch between WrongClassName and NewClass');
+      expect(body.error).toEqual('Class name mismatch between WrongClassName and NewClass.');
       done();
     });
   });
@@ -369,7 +371,7 @@ describe('schemas', () => {
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(400);
       expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-      expect(body.error).toEqual('class NoClass does not exist');
+      expect(body.error).toEqual('Class NoClass does not exist.');
       done();
     });
   });
@@ -390,13 +392,13 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('field aString exists, cannot update');
+        expect(body.error).toEqual('Field aString exists, cannot update.');
         done();
       });
     })
   });
 
-  it('refuses to delete non-existant fields', done => {
+  it('refuses to delete non-existent fields', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -406,13 +408,13 @@ describe('schemas', () => {
         json: true,
         body: {
           fields: {
-            nonExistantKey: {__op: "Delete"},
+            nonExistentKey: {__op: "Delete"},
           }
         }
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('field nonExistantKey does not exist, cannot delete');
+        expect(body.error).toEqual('Field nonExistentKey does not exist, cannot delete.');
         done();
       });
     });
@@ -660,7 +662,8 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(400);
         expect(body.code).toEqual(255);
-        expect(body.error).toEqual('class HasAllPOD not empty, contains 1 objects, cannot drop schema');
+        expect(body.error).toMatch(/HasAllPOD/);
+        expect(body.error).toMatch(/contains 1/);
         done();
       });
     });
@@ -710,28 +713,106 @@ describe('schemas', () => {
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
-        config.database.db.collection('test__Join:aRelation:MyOtherClass', { strict: true }, (err, coll) => {
-          //Expect Join table to be gone
-          expect(err).not.toEqual(null);
-          config.database.db.collection('test_MyOtherClass', { strict: true }, (err, coll) => {
-            // Expect data table to be gone
-            expect(err).not.toEqual(null);
-            request.get({
-              url: 'http://localhost:8378/1/schemas/MyOtherClass',
-              headers: masterKeyHeaders,
-              json: true,
-            }, (error, response, body) => {
-              //Expect _SCHEMA entry to be gone.
-              expect(response.statusCode).toEqual(400);
-              expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-              expect(body.error).toEqual('class MyOtherClass does not exist');
-              done();
+        config.database.collectionExists('_Join:aRelation:MyOtherClass').then(exists => {
+          if (exists) {
+            fail('Relation collection should be deleted.');
+            done();
+          }
+          return config.database.collectionExists('MyOtherClass');
+        }).then(exists => {
+          if (exists) {
+            fail('Class collection should be deleted.');
+            done();
+          }
+        }).then(() => {
+          request.get({
+            url: 'http://localhost:8378/1/schemas/MyOtherClass',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            //Expect _SCHEMA entry to be gone.
+            expect(response.statusCode).toEqual(400);
+            expect(body.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+            expect(body.error).toEqual('Class MyOtherClass does not exist.');
+            done();
+          });
+        });
+      });
+    }).then(() => {
+    }, error => {
+      fail(error);
+      done();
+    });
+  });
+
+  it('deletes schema when actual collection does not exist', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForDelete'
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      expect(response.body.className).toEqual('NewClassForDelete');
+      request.del({
+        url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(200);
+        expect(response.body).toEqual({});
+        config.database.loadSchema().then(schema => {
+          schema.hasClass('NewClassForDelete').then(exist => {
+            expect(exist).toEqual(false);
+            done();
+          });
+        })
+      });
+    });
+  });
+
+  it('deletes schema when actual collection exists', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: 'NewClassForDelete'
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      expect(response.body.className).toEqual('NewClassForDelete');
+      request.post({
+        url: 'http://localhost:8378/1/classes/NewClassForDelete',
+        headers: restKeyHeaders,
+        json: true
+      }, (error, response, body) => {
+        expect(error).toEqual(null);
+        expect(typeof response.body.objectId).toEqual('string');
+        request.del({
+          url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.body.objectId,
+          headers: restKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(error).toEqual(null);
+          request.del({
+            url: 'http://localhost:8378/1/schemas/NewClassForDelete',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            expect(response.statusCode).toEqual(200);
+            expect(response.body).toEqual({});
+            config.database.loadSchema().then(schema => {
+              schema.hasClass('NewClassForDelete').then(exist => {
+                expect(exist).toEqual(false);
+                done();
+              });
             });
           });
         });
       });
-    }, error => {
-      fail(error);
     });
   });
 });

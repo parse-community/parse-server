@@ -1,16 +1,18 @@
 // GCSAdapter
 // Store Parse Files in Google Cloud Storage: https://cloud.google.com/storage
-import * as gcloud from 'gcloud';
+import { storage } from 'gcloud';
 import { FilesAdapter } from './FilesAdapter';
+import requiredParameter from '../../requiredParameter';
 
 export class GCSAdapter extends FilesAdapter {
   // GCS Project ID and the name of a corresponding Keyfile are required.
+  // Unlike the S3 adapter, you must create a new Cloud Storage bucket, as this is not created automatically.
   // See https://googlecloudplatform.github.io/gcloud-node/#/docs/master/guides/authentication
   // for more details.
   constructor(
-    projectId,
-    keyFilename,
-    bucket,
+    projectId = requiredParameter('GCSAdapter requires a GCP Project ID'),
+    keyFilename = requiredParameter('GCSAdapter requires a GCP keyfile'),
+    bucket = requiredParameter('GCSAdapter requires a GCS bucket name'),
     { bucketPrefix = '',
       directAccess = false } = {}
   ) {
@@ -20,21 +22,25 @@ export class GCSAdapter extends FilesAdapter {
     this._bucketPrefix = bucketPrefix;
     this._directAccess = directAccess;
 
-    let gcsOptions = {
+    let options = {
       projectId: projectId,
       keyFilename: keyFilename
     };
 
-    this._gcsClient = new gcloud.storage(gcsOptions);
+    this._gcsClient = new storage(options);
   }
 
   // For a given config object, filename, and data, store a file in GCS.
   // Resolves the promise or fails with an error.
-  createFile(config, filename, data) {
+  createFile(config, filename, data, contentType) {
+    let params = {
+      contentType: contentType || 'application/octet-stream'
+    };
+
     return new Promise((resolve, reject) => {
       let file = this._gcsClient.bucket(this._bucket).file(this._bucketPrefix + filename);
       // gcloud supports upload(file) not upload(bytes), so we need to stream.
-      var uploadStream = file.createWriteStream();
+      var uploadStream = file.createWriteStream(params);
       uploadStream.on('error', (err) => {
         return reject(err);
       }).on('finish', () => {
@@ -61,6 +67,7 @@ export class GCSAdapter extends FilesAdapter {
     return new Promise((resolve, reject) => {
       let file = this._gcsClient.bucket(this._bucket).file(this._bucketPrefix + filename);
       file.delete((err, res) => {
+        console.log("delete: ", filename, err, res);
         if(err !== null) {
           return reject(err);
         }
@@ -74,11 +81,19 @@ export class GCSAdapter extends FilesAdapter {
   getFileData(config, filename) {
     return new Promise((resolve, reject) => {
       let file = this._gcsClient.bucket(this._bucket).file(this._bucketPrefix + filename);
-      file.download((err, data) => {
-        if (err !== null) {
-          return reject(err);
+      // Check for existence, since gcloud-node seemed to be caching the result
+      file.exists((err, exists) => {
+        if (exists) {
+          file.download((err, data) => {
+            console.log("get: ", filename, err, data);
+            if (err !== null) {
+              return reject(err);
+            }
+            return resolve(data);
+          });
+        } else {
+          reject(err);
         }
-        resolve(data);
       });
     });
   }

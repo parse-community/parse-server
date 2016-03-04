@@ -10,12 +10,19 @@ based on the parameters passed
 
 // _adapter is private, use Symbol
 var _adapter = Symbol();
+import Config from '../Config';
 
 export class AdaptableController {
 
-  constructor(adapter) {
+  constructor(adapter, appId, options) {
+    this.options = options;
+    this.appId = appId;
     this.adapter = adapter;
+    this.setFeature();
   }
+
+  // sets features for Dashboard to consume from features router
+  setFeature() {}
 
   set adapter(adapter) {
     this.validateAdapter(adapter);
@@ -26,12 +33,15 @@ export class AdaptableController {
     return this[_adapter];
   }
   
+  get config() {
+    return new Config(this.appId);
+  }
+  
   expectedAdapterType() {
     throw new Error("Subclasses should implement expectedAdapterType()");
   }
   
   validateAdapter(adapter) {
-    
     if (!adapter) {
       throw new Error(this.constructor.name+" requires an adapter");
     }
@@ -56,8 +66,7 @@ export class AdaptableController {
     }, {});
    
     if (Object.keys(mismatches).length > 0) {
-      console.error(adapter, mismatches);
-      throw new Error("Adapter prototype don't match expected prototype");
+      throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
     }
   }
 }

@@ -2,6 +2,8 @@
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
+var Auth = require("../src/Auth").Auth;
+var Config = require("../src/Config");
 
 describe('Parse Role testing', () => {
 
@@ -56,6 +58,65 @@ describe('Parse Role testing', () => {
       done();
     });
 
+  });
+
+  it("should recursively load roles", (done) => {
+
+    var rolesNames = ["FooRole", "BarRole", "BazRole"];
+
+    var createRole = function(name, parent, user) {
+      var role = new Parse.Role(name, new Parse.ACL());
+      if (user) {
+        var users = role.relation('users');
+        users.add(user);
+      }
+      if (parent) {
+        role.relation('roles').add(parent);
+      }
+      return role.save({}, { useMasterKey: true });
+    }
+    var roleIds = {};
+     createTestUser().then( (user) => {
+
+       return createRole(rolesNames[0], null, null).then( (aRole) => {
+         roleIds[aRole.get("name")] = aRole.id;
+          return createRole(rolesNames[1], aRole, null);
+       }).then( (anotherRole) => {
+         roleIds[anotherRole.get("name")] = anotherRole.id;
+         return createRole(rolesNames[2], anotherRole, user);
+       }).then( (lastRole) => {
+         roleIds[lastRole.get("name")] = lastRole.id;
+         var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+         return auth._loadRoles();
+       })
+     }).then( (roles) => {
+       expect(roles.length).toEqual(3);
+       rolesNames.forEach( (name) => {
+        expect(roles.indexOf('role:'+name)).not.toBe(-1);
+       })
+       done();
+     }, function(err){
+       fail("should succeed")
+       done();
+     });
+  });
+
+  it("_Role object should not save without name.", (done) => {
+    var role = new Parse.Role();
+    role.save(null,{useMasterKey:true})
+    .then((r) => {
+      fail("_Role object should not save without name.");
+    }, (error) => {
+      expect(error.code).toEqual(111);
+      role.set('name','testRole');
+      role.save(null,{useMasterKey:true})
+      .then((r2)=>{
+        fail("_Role object should not save without ACL.");
+      }, (error2) =>{
+        expect(error2.code).toEqual(111);
+        done();
+      });
+    });
   });
 
 });

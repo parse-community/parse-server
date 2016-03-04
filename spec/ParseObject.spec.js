@@ -1,3 +1,4 @@
+"use strict";
 // This is a port of the test suite:
 // hungry/js/test/parse_object_test.js
 //
@@ -334,6 +335,34 @@ describe('Parse.Object testing', () => {
     ok(!item.set({"foo^bar": "baz"}),
        'Item should not be updated with invalid key.');
     item.save({ "foo^bar": "baz" }).then(fail, done);
+  });
+
+  it("invalid __type", function(done) {
+    var item = new Parse.Object("Item");
+    var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes'];
+    var Error = Parse.Error;
+    var tests = types.map(type => {
+      var test = new Parse.Object("Item");
+      test.set('foo', {
+        __type: type
+      });
+      return test;
+    });
+    var next = function(index) {
+      if (index < tests.length) {
+        tests[index].save().then(fail, error => {
+          expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
+          next(index + 1);
+        });
+      } else {
+        done();
+      }
+    }
+    item.save({
+      "foo": {
+        __type: "IvalidName"
+      }
+    }).then(fail, err => next(0));
   });
 
   it("simple field deletion", function(done) {
@@ -1763,6 +1792,55 @@ describe('Parse.Object testing', () => {
       console.error(err);
       fail("should not fail");
       done();
+    });
+  });
+  
+  it('should have undefined includes when object is missing', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 =  new Parse.Object("AnObject");
+    
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      obj1.set("obj", obj2);
+      // Save the pointer, delete the pointee 
+      return obj1.save().then(() => { return obj2.destroy() });
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("obj");
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get("obj")).toBe(undefined);
+      let query = new Parse.Query("AnObject");
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get("obj")).not.toBe(undefined);
+      return res[0].get("obj").fetch();
+    }).then(() => {
+      fail("Should not fetch a deleted object");
+    }, (err) => {
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
     })
-  })
+  });
+  
+  it('should have undefined includes when object is missing on deeper path', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 =  new Parse.Object("AnObject");
+    let obj3 = new Parse.Object("AnObject");
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      obj1.set("obj", obj2);
+      obj2.set("obj", obj3);
+      // Save the pointer, delete the pointee 
+      return Parse.Object.saveAll([obj1, obj2]).then(() => { return obj3.destroy() });
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("obj.obj");
+      return query.get(obj1.id);
+    }).then((res) => {
+      expect(res.get("obj")).not.toBe(undefined);
+      expect(res.get("obj").get("obj")).toBe(undefined);
+      done();
+    });
+  });
 });

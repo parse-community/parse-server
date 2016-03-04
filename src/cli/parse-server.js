@@ -42,14 +42,6 @@ if (program.args.length > 0 ) {
   console.log(`Configuation loaded from ${jsonPath}`)
 } 
 
-if (!program.appId || !program.masterKey || !program.serverURL) {
-  program.outputHelp();
-  console.error("");
-  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
-  console.error("");
-  process.exit(1);
-}
-
 options = Object.keys(definitions).reduce(function (options, key) {
   if (program[key]) {
     options[key] = program[key];
@@ -59,6 +51,14 @@ options = Object.keys(definitions).reduce(function (options, key) {
 
 if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+}
+
+if (!options.appId || !options.masterKey || !options.serverURL) {
+  program.outputHelp();
+  console.error("");
+  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
+  console.error("");
+  process.exit(1);
 }
 
 const app = express();

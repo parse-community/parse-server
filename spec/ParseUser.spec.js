@@ -54,6 +54,11 @@ describe('Parse.User testing', () => {
       success: function(user) {
         Parse.User.logIn("non_existent_user", "asdf3",
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+      },
+      error: function(err) {
+        console.error(err);
+        fail("Shit should not fail");
+        done();
       }
     });
   });
@@ -1026,6 +1031,32 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("login with provider should not call beforeSave trigger", (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.User.logOut();
+
+        Parse.Cloud.beforeSave(Parse.User, function(req, res) {
+          res.error("Before save shouldn't be called on login");
+        });
+
+        Parse.User._logInWith("facebook", {
+          success: function(innerModel) {
+            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+            done();
+          },
+          error: function(model, error) {
+            ok(undefined, error);
+            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+            done();
+          }
+        });
+      }
+    });
+  });
+
   it("link with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1678,7 +1709,7 @@ describe('Parse.User testing', () => {
       done();
     });
   });
-  
+
   it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {
@@ -1732,5 +1763,22 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it("session expiresAt correct format", (done) => {
+    Parse.User.signUp("asdf", "zxcv", null, {
+      success: function(user) {
+        request.get({
+          url: 'http://localhost:8378/1/classes/_Session',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+        }, (error, response, body) => {
+          expect(body.results[0].expiresAt.__type).toEqual('Date');
+          done();
+        })
+      }
+    });
+  });
 });
 

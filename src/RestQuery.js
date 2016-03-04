@@ -165,7 +165,9 @@ RestQuery.prototype.redirectClassNameForKey = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestQuery.prototype.validateClientClassCreation = function() {
-  if (this.config.allowClientClassCreation === false && !this.auth.isMaster) {
+  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  if (this.config.allowClientClassCreation === false && !this.auth.isMaster
+      && sysClass.indexOf(this.className) === -1) {
     return this.config.database.loadSchema().then((schema) => {
       return schema.hasClass(this.className)
     }).then((hasClass) => {
@@ -212,7 +214,11 @@ RestQuery.prototype.replaceInQuery = function() {
       });
     }
     delete inQueryObject['$inQuery'];
-    inQueryObject['$in'] = values;
+    if (Array.isArray(inQueryObject['$in'])) {
+      inQueryObject['$in'] = inQueryObject['$in'].concat(values);
+    } else {
+      inQueryObject['$in'] = values;
+    }
 
     // Recurse to repeat
     return this.replaceInQuery();
@@ -249,7 +255,11 @@ RestQuery.prototype.replaceNotInQuery = function() {
       });
     }
     delete notInQueryObject['$notInQuery'];
-    notInQueryObject['$nin'] = values;
+    if (Array.isArray(notInQueryObject['$nin'])) {
+      notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
+    } else {
+      notInQueryObject['$nin'] = values;
+    }
 
     // Recurse to repeat
     return this.replaceNotInQuery();
@@ -269,11 +279,11 @@ RestQuery.prototype.replaceSelect = function() {
 
   // The select value must have precisely two keys - query and key
   var selectValue = selectObject['$select'];
+  // iOS SDK don't send where if not set, let it pass
   if (!selectValue.query ||
       !selectValue.key ||
       typeof selectValue.query !== 'object' ||
       !selectValue.query.className ||
-      !selectValue.query.where ||
       Object.keys(selectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $select');
@@ -288,7 +298,11 @@ RestQuery.prototype.replaceSelect = function() {
       values.push(result[selectValue.key]);
     }
     delete selectObject['$select'];
-    selectObject['$in'] = values;
+    if (Array.isArray(selectObject['$in'])) {
+      selectObject['$in'] = selectObject['$in'].concat(values);
+    } else {
+      selectObject['$in'] = values;
+    }
 
     // Keep replacing $select clauses
     return this.replaceSelect();
@@ -327,7 +341,11 @@ RestQuery.prototype.replaceDontSelect = function() {
       values.push(result[dontSelectValue.key]);
     }
     delete dontSelectObject['$dontSelect'];
-    dontSelectObject['$nin'] = values;
+    if (Array.isArray(dontSelectObject['$nin'])) {
+      dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
+    } else {
+      dontSelectObject['$nin'] = values;
+    }
 
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
@@ -507,7 +525,7 @@ function replacePointers(object, path, replace) {
   }
 
   if (path.length == 0) {
-    if (object.__type == 'Pointer' && replace[object.objectId]) {
+    if (object.__type == 'Pointer') {
       return replace[object.objectId];
     }
     return object;

@@ -10,7 +10,7 @@
 // keeping it this way for now.
 //
 // In API-handling code, you should only use the Schema class via the
-// ExportAdapter. This will let us replace the schema logic for
+// DatabaseController. This will let us replace the schema logic for
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
 
@@ -48,13 +48,13 @@ var defaultColumns = {
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
-    "users": {type:'Relation',className:'_User'},
-    "roles": {type:'Relation',className:'_Role'}
+    "users": {type:'Relation', targetClass:'_User'},
+    "roles": {type:'Relation', targetClass:'_Role'}
   },
   // The additional default columns for the _User collection (in addition to DefaultCols)
   _Session: {
     "restricted":     {type:'Boolean'},
-    "user":           {type:'Pointer', className:'_User'},
+    "user":           {type:'Pointer', targetClass:'_User'},
     "installationId": {type:'String'},
     "sessionToken":   {type:'String'},
     "expiresAt":      {type:'Date'},
@@ -73,7 +73,8 @@ var defaultColumns = {
 
 
 var requiredColumns = {
-  _Product: ["productIdentifier", "icon", "order", "title", "subtitle"]
+  _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
+  _Role: ["name", "ACL"]
 }
 
 // Valid classes must:
@@ -307,8 +308,12 @@ function mongoFieldTypeToSchemaAPIType(type) {
 // is done in mongoSchemaFromFieldsAndClassName.
 function buildMergedSchemaObject(mongoObject, putRequest) {
   var newSchema = {};
+  let sysSchemaField = Object.keys(defaultColumns).indexOf(mongoObject._id) === -1 ? [] : Object.keys(defaultColumns[mongoObject._id]);
   for (var oldField in mongoObject) {
     if (oldField !== '_id' && oldField !== 'ACL' &&  oldField !== 'updatedAt' && oldField !== 'createdAt' && oldField !== 'objectId') {
+      if (sysSchemaField.length > 0 && sysSchemaField.indexOf(oldField) !== -1) {
+        continue;
+      }
       var fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
       if (!fieldIsDeleted) {
         newSchema[oldField] = mongoFieldTypeToSchemaAPIType(mongoObject[oldField]);
@@ -317,6 +322,9 @@ function buildMergedSchemaObject(mongoObject, putRequest) {
   }
   for (var newField in putRequest) {
     if (newField !== 'objectId' && putRequest[newField].__op !== 'Delete') {
+      if (sysSchemaField.length > 0 && sysSchemaField.indexOf(newField) !== -1) {
+        continue;
+      }
       newSchema[newField] = putRequest[newField];
     }
   }
@@ -332,29 +340,22 @@ function buildMergedSchemaObject(mongoObject, putRequest) {
 // enabled) before calling this function.
 Schema.prototype.addClassIfNotExists = function(className, fields) {
   if (this.data[className]) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: 'class ' + className + ' already exists',
-    });
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
   }
 
-  var mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
-
+  let mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
   if (!mongoObject.result) {
     return Promise.reject(mongoObject);
   }
 
   return this.collection.insertOne(mongoObject.result)
-  .then(result => result.ops[0])
-  .catch(error => {
-    if (error.code === 11000) { //Mongo's duplicate key error
-      return Promise.reject({
-        code: Parse.Error.INVALID_CLASS_NAME,
-        error: 'class ' + className + ' already exists',
-      });
-    }
-    return Promise.reject(error);
-  });
+    .then(result => result.ops[0])
+    .catch(error => {
+      if (error.code === 11000) { //Mongo's duplicate key error
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      }
+      return Promise.reject(error);
+    });
 };
 
 // Returns a promise that resolves successfully to the new schema
@@ -500,80 +501,47 @@ Schema.prototype.validateField = function(className, key, type, freeze) {
 
 // Passing the database and prefix is necessary in order to drop relation collections
 // and remove fields from objects. Ideally the database would belong to
-// a database adapter and this fuction would close over it or access it via member.
-Schema.prototype.deleteField = function(fieldName, className, database, prefix) {
+// a database adapter and this function would close over it or access it via member.
+Schema.prototype.deleteField = function(fieldName, className, database) {
   if (!classNameIsValid(className)) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: invalidClassNameMessage(className),
-    });
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(className));
   }
-
   if (!fieldNameIsValid(fieldName)) {
-    return Promise.reject({
-      code: Parse.Error.INVALID_KEY_NAME,
-      error: 'invalid field name: ' + fieldName,
-    });
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
   }
-
   //Don't allow deleting the default fields.
   if (!fieldNameIsValidForClass(fieldName, className)) {
-    return Promise.reject({
-      code: 136,
-      error: 'field ' + fieldName + ' cannot be changed',
-    });
+    throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
   }
 
   return this.reload()
-  .then(schema => {
-    return schema.hasClass(className)
-    .then(hasClass => {
-      if (!hasClass) {
-        return Promise.reject({
-          code: Parse.Error.INVALID_CLASS_NAME,
-          error: 'class ' + className + ' does not exist',
-        });
-      }
+    .then(schema => {
+      return schema.hasClass(className)
+        .then(hasClass => {
+          if (!hasClass) {
+            throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+          }
+          if (!schema.data[className][fieldName]) {
+            throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+          }
 
-      if (!schema.data[className][fieldName]) {
-        return Promise.reject({
-          code: 255,
-          error: 'field ' + fieldName + ' does not exist, cannot delete',
-        });
-      }
+          if (schema.data[className][fieldName].startsWith('relation<')) {
+            //For relations, drop the _Join table
+            return database.dropCollection(`_Join:${fieldName}:${className}`);
+          }
 
-      if (schema.data[className][fieldName].startsWith('relation<')) {
-        //For relations, drop the _Join table
-        return database.dropCollection(prefix + '_Join:' + fieldName + ':' + className)
-        //Save the _SCHEMA object
+          // for non-relations, remove all the data.
+          // This is necessary to ensure that the data is still gone if they add the same field.
+          return database.collection(className)
+            .then(collection => {
+              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ? '_p_' + fieldName : fieldName;
+              return collection.update({}, { "$unset": { [mongoFieldName] : null } }, { multi: true });
+            });
+        })
+        // Save the _SCHEMA object
         .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}));
-      } else {
-        //for non-relations, remove all the data. This is necessary to ensure that the data is still gone
-        //if they add the same field.
-        return new Promise((resolve, reject) => {
-          database.collection(prefix + className, (err, coll) => {
-            if (err) {
-              reject(err);
-            } else {
-              var mongoFieldName = schema.data[className][fieldName].startsWith('*') ?
-                '_p_' + fieldName :
-                fieldName;
-              return coll.update({}, {
-                "$unset": { [mongoFieldName] : null },
-              }, {
-                multi: true,
-              })
-              //Save the _SCHEMA object
-              .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}))
-              .then(resolve)
-              .catch(reject);
-            }
-          });
-        });
-      }
     });
-  });
-}
+};
 
 // Given a schema promise, construct another schema promise that
 // validates this field once the schema loads.
@@ -626,7 +594,7 @@ Schema.prototype.validateRequiredColumns = function(className, object, query) {
   if (!columns || columns.length == 0) {
     return Promise.resolve(this);
   }
-    
+
   var missingColumns = columns.filter(function(column){
     if (query && query.objectId) {
       if (object[column] && typeof object[column] === "object") {
@@ -636,15 +604,15 @@ Schema.prototype.validateRequiredColumns = function(className, object, query) {
       // Not trying to do anything there
       return false;
     }
-    return !object[column] 
+    return !object[column]
   });
-  
+
   if (missingColumns.length > 0) {
    throw new Parse.Error(
         Parse.Error.INCORRECT_TYPE,
         missingColumns[0]+' is required.');
   }
-  
+
   return Promise.resolve(this);
 }
 
@@ -731,19 +699,31 @@ function getObjectType(obj) {
   if (obj instanceof Array) {
     return 'array';
   }
-  if (obj.__type === 'Pointer' && obj.className) {
-    return '*' + obj.className;
-  }
-  if (obj.__type === 'File' && obj.name) {
-    return 'file';
-  }
-  if (obj.__type === 'Date' && obj.iso) {
-    return 'date';
-  }
-  if (obj.__type == 'GeoPoint' &&
-      obj.latitude != null &&
-      obj.longitude != null) {
-    return 'geopoint';
+  if (obj.__type){
+    switch(obj.__type) {
+      case 'Pointer' :
+        if(obj.className) {
+          return '*' + obj.className;
+        }
+      case 'File' :
+        if(obj.name) {
+          return 'file';
+        }
+      case 'Date' :
+        if(obj.iso) {
+          return 'date';
+        }
+      case 'GeoPoint' :
+        if(obj.latitude != null && obj.longitude != null) {
+          return 'geopoint';
+        }
+      case 'Bytes' :
+        if(obj.base64) {
+          return;
+        }
+      default:
+        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
+    }
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);

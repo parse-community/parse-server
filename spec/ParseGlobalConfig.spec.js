@@ -2,13 +2,12 @@
 
 var request = require('request');
 var Parse = require('parse/node').Parse;
-var DatabaseAdapter = require('../src/DatabaseAdapter');
-
-let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
+let Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
   beforeEach(function(done) {
-    database.rawCollection('_GlobalConfig')
+    let config = new Config('test');
+    config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.updateOne({ '_id': 1}, { $set: { params: { companies: ['US', 'DK'] } } }, { upsert: true }))
       .then(done());
   });
@@ -54,14 +53,15 @@ describe('a GlobalConfig', () => {
         'X-Parse-REST-API-Key': 'rest'
       },
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(401);
-      expect(body.error).toEqual('unauthorized');
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
       done();
     });
   });  
 
   it('failed getting config when it is missing', (done) => {
-    database.rawCollection('_GlobalConfig')
+    let config = new Config('test');
+    config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
       .then(_ => {
         request.get({

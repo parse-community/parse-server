@@ -85,10 +85,7 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleUpdate(req) {
-    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body)
-      .then((response) => {
-        return {response: response};
-      });
+    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body);
   }
 
   handleDelete(req) {
