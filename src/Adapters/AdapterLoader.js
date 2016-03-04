@@ -28,13 +28,6 @@ export function loadAdapter(adapter, defaultAdapter, options) {
     return loadAdapter(adapter.class, undefined, adapter.options);
   } else if (adapter.adapter) {
     return loadAdapter(adapter.adapter, undefined, adapter.options);
-  } else {
-    // Try to load the defaultAdapter with the options
-    // The default adapter should throw if the options are
-    // incompatible
-    try {
-      return loadAdapter(defaultAdapter, undefined, adapter);
-    } catch (e) {};
   }
   // return the adapter as is as it's unusable otherwise
   return adapter;     
