@@ -1,6 +1,8 @@
 
 var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
 var FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
+var ParsePushAdapter = require("../src/Adapters/Push/ParsePushAdapter");
+var S3Adapter = require("../src/Adapters/Files/S3Adapter").default;
 
 describe("AdapterLoader", ()=>{
     
@@ -84,4 +86,27 @@ describe("AdapterLoader", ()=>{
     }).not.toThrow("foo is required for that adapter");
     done();
   });
+  
+  it("should load push adapter from options", (done) => {
+    var options = {
+      ios: {
+        bundleId: 'bundle.id'
+      }
+    }
+    expect(() => {
+      var adapter = loadAdapter(undefined, ParsePushAdapter, options);
+      expect(adapter.constructor).toBe(ParsePushAdapter);
+      expect(adapter).not.toBe(undefined);
+    }).not.toThrow();
+    done();
+  });
+  
+  it("should load S3Adapter from direct passing", (done) => {
+    var s3Adapter = new S3Adapter("key", "secret", "bucket")
+    expect(() => {
+      var adapter = loadAdapter(s3Adapter, FilesAdapter);
+      expect(adapter).toBe(s3Adapter);
+    }).not.toThrow();
+    done();
+  })
 });

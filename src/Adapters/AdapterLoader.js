@@ -29,7 +29,7 @@ export function loadAdapter(adapter, defaultAdapter, options) {
   } else if (adapter.adapter) {
     return loadAdapter(adapter.adapter, undefined, adapter.options);
   }
-  // return the adapter as is as it's unusable otherwise
+  // return the adapter as provided
   return adapter;     
 }
 
