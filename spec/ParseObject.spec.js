@@ -404,7 +404,7 @@ describe('Parse.Object testing', () => {
         done();
       }
     });
-  }, 3000);
+  });
 
   it("field deletion before first save", function(done) {
     var simple = new Parse.Object("SimpleObject");

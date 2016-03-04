@@ -366,7 +366,6 @@ describe('Parse.File testing', () => {
         } else {
           fail("failed...");
         }
-
         done();
       });
     });

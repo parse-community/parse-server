@@ -1,5 +1,6 @@
 // testing-routes.js
 import cache from './cache';
+var ParseServer = require("./index").ParseServer;
 
 var express = require('express'),
     middlewares = require('./middlewares'),
@@ -11,9 +12,11 @@ var router = express.Router();
 function createApp(req, res) {
   var appId = cryptoUtils.randomHexString(32);
   // TODO: (nlutsenko) This doesn't work and should die, since there are no controllers on this configuration.
-  cache.apps.set(appId, {
+  new ParseServer({
+    appId: appId,
     'collectionPrefix': appId + '_',
-    'masterKey': 'master'
+    'masterKey': 'master',
+    'serverURL': Parse.serverURL
   });
   var keys = {
     'application_id': appId,

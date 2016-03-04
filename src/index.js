@@ -166,7 +166,8 @@ class ParseServer {
     this.publicServerURL = publicServerURL;
     this.customPages = customPages;
     this.maxUploadSize = maxUploadSize;
-    this.database = DatabaseAdapter.getDatabaseConnection(appId, collectionPrefix);
+    this._mutable = {};
+    
     cache.apps.set(appId, this);
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
@@ -175,7 +176,26 @@ class ParseServer {
     }
 
     ParseServer.validate(cache.apps.get(appId));
-
+    this.hooksController.load();
+  }
+  
+  get database() {
+    return DatabaseAdapter.getDatabaseConnection(this.appId, this.collectionPrefix);
+  }
+  
+  get app() {
+    return ParseServer.expressApp(this.maxUploadSize);
+  }
+  
+  set mount(value) {
+    this._mutable.mount = value;
+  }
+  
+  get mount() {
+    return this._mutable.mount;
+  }
+  
+  static expressApp({maxUploadSize}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -243,8 +263,6 @@ class ParseServer {
         throw err;
       }
     });
-    this.hooksController.load();
-
     return api;
   }
   

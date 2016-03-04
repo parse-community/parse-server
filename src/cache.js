@@ -4,7 +4,7 @@ export function CacheStore<KeyType, ValueType>() {
   let dataStore: {[id:KeyType]:ValueType} = {};
   return {
     get: (key: KeyType): ValueType => {
-      return dataStore[key];
+      return Object.freeze(dataStore[key]);
     },
     set(key: KeyType, value: ValueType): void {
       dataStore[key] = value;
@@ -13,7 +13,7 @@ export function CacheStore<KeyType, ValueType>() {
       delete dataStore[key];
     },
     clear(): void {
-      //dataStore = {};
+      dataStore = {};
     }
   };
 }

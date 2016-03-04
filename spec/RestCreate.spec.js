@@ -74,6 +74,8 @@ describe('rest create', () => {
 
   it('handles create on non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    // database is a getter to prevent that kind of thing...
+    customConfig.database = config.database;
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');
@@ -148,6 +150,7 @@ describe('rest create', () => {
   
   it('handles no anonymous users config', (done) => {
      var NoAnnonConfig = Object.assign({}, config, {enableAnonymousUsers: false});
+     NoAnnonConfig.database = config.database;
      var data1 = {
       authData: {
         anonymous: {

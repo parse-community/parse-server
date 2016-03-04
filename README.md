@@ -25,7 +25,7 @@ var app = express();
 
 // Specify the connection string for your mongodb database
 // and the location to your Parse cloud code
-var api = new ParseServer({
+var parseServer = new ParseServer({
   databaseURI: 'mongodb://localhost:27017/dev',
   cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
   appId: 'myAppId',
@@ -35,7 +35,7 @@ var api = new ParseServer({
 });
 
 // Serve the Parse API on the /parse URL prefix
-app.use('/parse', api);
+app.use('/parse', parseServer.app);
 
 app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');

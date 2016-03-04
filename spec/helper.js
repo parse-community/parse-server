@@ -44,7 +44,7 @@ var defaultConfiguration = {
 // Set up a default API server for testing with default configuration.
 var api = new ParseServer(defaultConfiguration);
 var app = express();
-app.use('/1', api);
+app.use('/1', api.app);
 var server = app.listen(port);
 
 // Prevent reinitializing the server from clobbering Cloud Code
@@ -56,7 +56,7 @@ var setServerConfiguration = configuration => {
   cache.clearCache();
   app = express();
   api = new ParseServer(configuration);
-  app.use('/1', api);
+  app.use('/1', api.app);
   server = app.listen(port);
 };
 

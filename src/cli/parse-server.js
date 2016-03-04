@@ -62,8 +62,8 @@ if (!options.appId || !options.masterKey || !options.serverURL) {
 }
 
 const app = express();
-const api = new ParseServer(options);
-app.use(options.mountPath, api);
+const server = new ParseServer(options);
+app.use(options.mountPath, server.app);
 
 app.listen(options.port, function() {
   

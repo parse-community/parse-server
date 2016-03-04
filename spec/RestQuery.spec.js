@@ -96,6 +96,7 @@ describe('rest query', () => {
 
   it('query non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    customConfig.database = config.database;
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');
