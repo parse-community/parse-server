@@ -85,7 +85,7 @@ function modifySchema(req) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${req.params.className} does not exist.`);
       }
 
-      let existingFields = schema.data[className];
+      let existingFields = Object.assign(schema.data[className], {_id: className});
       Object.keys(submittedFields).forEach(name => {
         let field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {

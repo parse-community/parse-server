@@ -561,6 +561,63 @@ describe('schemas', () => {
     })
   });
 
+  it('lets you add fields to system schema', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/_User',
+      headers: masterKeyHeaders,
+      json: true
+    }, (error, response, body) => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/_User',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newField: {type: 'String'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(body).toEqual({
+          className: '_User',
+          fields: {
+            objectId: {type: 'String'},
+            updatedAt: {type: 'Date'},
+            createdAt: {type: 'Date'},
+            username: {type: 'String'},
+            password: {type: 'String'},
+            authData: {type: 'Object'},
+            email: {type: 'String'},
+            emailVerified: {type: 'Boolean'},
+            newField: {type: 'String'},
+            ACL: {type: 'ACL'}
+          }
+        });
+        request.get({
+          url: 'http://localhost:8378/1/schemas/_User',
+          headers: masterKeyHeaders,
+          json: true
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: '_User',
+            fields: {
+              objectId: {type: 'String'},
+              updatedAt: {type: 'Date'},
+              createdAt: {type: 'Date'},
+              username: {type: 'String'},
+              password: {type: 'String'},
+              authData: {type: 'Object'},
+              email: {type: 'String'},
+              emailVerified: {type: 'Boolean'},
+              newField: {type: 'String'},
+              ACL: {type: 'ACL'}
+            }
+          });
+          done();
+        });
+      });
+    })
+  });
+
   it('lets you delete multiple fields and add fields', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
