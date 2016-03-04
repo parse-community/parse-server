@@ -1,6 +1,8 @@
 var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+var ParseServer = require("../src/index");
+var express = require('express');
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -167,5 +169,35 @@ describe('server', () => {
       expect(body.parseServerVersion).toEqual(parseServerPackage.version);
       done();
     })
+  });
+  
+  it('can create a parse-server', done => {
+
+    var server = new ParseServer({
+      appId: "aTestApp",
+      masterKey: "aTestMasterKey",
+      serverURL: "http://localhost:12666/parse"
+    });
+    
+    expect(Parse.applicationId).toEqual("aTestApp");
+    var app = express();
+    app.use('/parse', server.app);
+    
+    var server = app.listen(12666);
+    var obj  = new Parse.Object("AnObject");
+    var objId;
+    obj.save().then((obj) => {
+      objId = obj.id;
+      var q = new Parse.Query("AnObject");
+      return q.first();
+    }).then((obj) => {
+      expect(obj.id).toEqual(objId);
+      server.close();
+      done();
+    }).fail((err) => {
+      server.close();
+      done();
+    })
+    
   });
 });
