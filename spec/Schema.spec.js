@@ -180,20 +180,18 @@ describe('Schema', () => {
 
   it('will fail to create a class if that class was already created by an object', done => {
     config.database.loadSchema()
-    .then(schema => {
-      schema.validateObject('NewClass', {foo: 7})
-      .then(() => {
-        schema.reload()
-        .then(schema => schema.addClassIfNotExists('NewClass', {
-          foo: {type: 'String'}
-        }))
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-          expect(error.message).toEqual('Class NewClass already exists.');
-          done();
-        });
+      .then(schema => {
+        schema.validateObject('NewClass', { foo: 7 })
+          .then(() => schema.reloadData())
+          .then(() => schema.addClassIfNotExists('NewClass', {
+            foo: { type: 'String' }
+          }))
+          .catch(error => {
+            expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+            expect(error.message).toEqual('Class NewClass already exists.');
+            done();
+          });
       });
-    })
   });
 
   it('will resolve class creation races appropriately', done => {
