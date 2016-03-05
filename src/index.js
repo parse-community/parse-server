@@ -232,15 +232,18 @@ function ParseServer({
 
   api.use(middlewares.handleParseErrors);
 
-  process.on('uncaughtException', (err) => {
-    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-      console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
-      process.exit(0);
-    }
-    else {
-      throw err;
-    }
-  });
+  //This causes tests to spew some useless warnings, so disable in test
+  if (!process.env.TESTING) {
+    process.on('uncaughtException', (err) => {
+      if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+        console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+        process.exit(0);
+      }
+      else {
+        throw err;
+      }
+    });
+  }
   hooksController.load();
 
   return api;
