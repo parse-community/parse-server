@@ -126,20 +126,23 @@ describe('Parse Role testing', () => {
   it("Should properly resolve roles", (done) => {
     let admin = new Parse.Role("Admin", new Parse.ACL());
     let moderator = new Parse.Role("Moderator", new Parse.ACL());
-    let contentCreator = new Parse.Role('ContentManager', new Parse.ACL());
-    
-    Parse.Object.saveAll([admin, moderator, contentCreator], {useMasterKey: true}).then(() => {
-      contentCreator.getRoles().add(moderator);
-      moderator.getRoles().add(admin);
-      return Parse.Object.saveAll([admin, moderator, contentCreator], {useMasterKey: true});
+    let superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
+    let contentManager = new Parse.Role('ContentManager', new Parse.ACL());
+    let superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
+      contentManager.getRoles().add([moderator, superContentManager]);
+      moderator.getRoles().add([admin, superModerator]);
+      superContentManager.getRoles().add(superModerator);
+      return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => { 
       var auth = new Auth({ config: new Config("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
-      let promises = [admin, moderator, contentCreator].map((role) => {
+      let promises = [admin, moderator, contentManager, superModerator].map((role) => {
         return auth._getAllRoleNamesForId(role.id).then((result) => {
           return Parse.Promise.as({
             id: role.id,
+            name: role.get('name'),
             roleIds: result
           });
         })
@@ -147,19 +150,23 @@ describe('Parse Role testing', () => {
       
       return Parse.Promise.when(promises);
     }).then((results) => {
-
       results.forEach((result) => {
         let id = result.id;
         let roleIds = result.roleIds;
         if (id == admin.id) {
           expect(roleIds.length).toBe(2);
           expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
-          expect(roleIds.indexOf(contentCreator.id)).not.toBe(-1);
+          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
         } else if (id == moderator.id) {
           expect(roleIds.length).toBe(1);
-          expect(roleIds.indexOf(contentCreator.id)).toBe(0);
-        } else if (id == contentCreator.id) {
+          expect(roleIds.indexOf(contentManager.id)).toBe(0);
+        } else if (id == contentManager.id) {
           expect(roleIds.length).toBe(0);
+        } else if (id == superModerator.id) {
+          expect(roleIds.length).toBe(3);
+          expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
+          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
+          expect(roleIds.indexOf(superContentManager.id)).not.toBe(-1);
         }
       });
       done();

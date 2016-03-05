@@ -173,14 +173,9 @@ Auth.prototype._getAllRoleNamesForId = function(roleID) {
   }).then(function(results){
     // Flatten
     let roleIDs = results.reduce( (memo, result) => {
-      if (typeof result == "object") {
-        memo = memo.concat(result);
-      } else {
-        memo.push(result);
-      }
-      return memo;
+      return memo.concat(result);
     }, []);
-    return Promise.resolve(roleIDs);
+    return Promise.resolve([...new Set(roleIDs)]);
   });
 };
 
