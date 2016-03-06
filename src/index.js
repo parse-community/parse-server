@@ -182,7 +182,7 @@ function ParseServer({
   var api = express();
   //api.use("/apps", express.static(__dirname + "/public"));
   // File handling needs to be before default middlewares are applied
-  api.use('/', new FilesRouter().getExpressRouter({
+  api.use('/', middlewares.allowCrossDomain, new FilesRouter().getExpressRouter({
     maxUploadSize: maxUploadSize
   }));
 
