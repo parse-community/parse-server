@@ -409,7 +409,11 @@ class Schema {
 
             if (this.data[className][fieldName].startsWith('relation<')) {
               //For relations, drop the _Join table
-              return database.dropCollection(`_Join:${fieldName}:${className}`);
+              return database.collectionExists(`_Join:${fieldName}:${className}`).then(exist => {
+                if (exist) {
+                  return database.dropCollection(`_Join:${fieldName}:${className}`);
+                }
+              });
             }
 
             // for non-relations, remove all the data.

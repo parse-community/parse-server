@@ -577,6 +577,38 @@ describe('Schema', () => {
       });
   });
 
+  it('can delete relation field when related _Join collection not exist', done => {
+    config.database.loadSchema()
+    .then(schema => {
+      schema.addClassIfNotExists('NewClass', {
+        relationField: {type: 'Relation', targetClass: '_User'}
+      })
+      .then(mongoObj => {
+        expect(mongoObj).toEqual({
+          _id: 'NewClass',
+          objectId: 'string',
+          updatedAt: 'string',
+          createdAt: 'string',
+          relationField: 'relation<_User>',
+        });
+      })
+      .then(() => config.database.collectionExists('_Join:relationField:NewClass'))
+      .then(exist => {
+        expect(exist).toEqual(false);
+      })
+      .then(() => schema.deleteField('relationField', 'NewClass', config.database))
+      .then(() => schema.reloadData())
+      .then(() => {
+        expect(schema['data']['NewClass']).toEqual({
+          objectId: 'string',
+          updatedAt: 'string',
+          createdAt: 'string'
+        });
+        done();
+      });
+    });
+  });
+
   it('can delete string fields and resave as number field', done => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
