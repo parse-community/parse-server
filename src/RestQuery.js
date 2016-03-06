@@ -396,6 +396,7 @@ RestQuery.prototype.runCount = function() {
   }
   this.findOptions.count = true;
   delete this.findOptions.skip;
+  delete this.findOptions.limit;
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((c) => {
       this.response.count = c;
