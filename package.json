@@ -69,5 +69,40 @@
   },
   "bin": {
     "parse-server": "./bin/parse-server"
+  },
+  "features": {
+    "globalConfig": {
+      "create": false,
+      "read": false,
+      "update": false,
+      "delete": false
+    },
+    "hooks": {
+      "create": false,
+      "read": false,
+      "update": false,
+      "delete": false
+    },
+    "logs": {
+      "level": false,
+      "size": false,
+      "order": false,
+      "until": false,
+      "from": false
+    },
+    "push": {
+      "immediatePush": false,
+      "scheduledPush": false,
+      "storedPushData": false,
+      "pushAudiences": false
+    },
+    "schemas": {
+      "addField": true,
+      "removeField": true,
+      "addClass": true,
+      "removeClass": true,
+      "clearAllDataFromClass": false,
+      "exportClass": false
+    }
   }
 }

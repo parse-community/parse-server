@@ -20,41 +20,7 @@
  */
 
 // default features
-let features = {
-  globalConfig: {
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-  },
-  hooks: {
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-  },
-  logs: {
-    level: false,
-    size: false,
-    order: false,
-    until: false,
-    from: false,
-  },
-  push: {
-    immediatePush: false,
-    scheduledPush: false,
-    storedPushData: false,
-    pushAudiences: false,
-  },
-  schemas: {
-    addField: true,
-    removeField: true,
-    addClass: true,
-    removeClass: true,
-    clearAllDataFromClass: false,
-    exportClass: false,
-  },
-};
+let features = require('../package.json').features;
 
 // master switch for features
 let featuresSwitch = {
@@ -76,13 +42,12 @@ function setFeature(key, value) {
  * get feature config options
  */
 function getFeatures() {
-  let result = {};
-  Object.keys(features).forEach((key) => {
+  return Object.keys(features).reduce((result, key) => {
     if (featuresSwitch[key] && features[key]) {
       result[key] = features[key];
     }
-  });
-  return result;
+    return result;
+  }, {});
 }
 
 module.exports = {
