@@ -967,6 +967,23 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('beforeSave change propagates through the save response', (done) => {
+    Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
+      request.object.set('foo', 'baz');
+      response.success();
+    });
+    let obj = new Parse.Object('ChangingObject');
+    obj.save({ foo: 'bar' }).then((objAgain) => {
+      expect(objAgain.get('foo')).toEqual('baz');
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
+      done();
+    }, (e) => {
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
+      fail('Should not have failed to save.');
+      done();
+    });
+  });
+
   it('dedupes an installation properly and returns updatedAt', (done) => {
     let headers = {
       'Content-Type': 'application/json',

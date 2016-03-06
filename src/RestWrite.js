@@ -164,6 +164,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
+      this.storage['changedByTrigger'] = true;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
         delete this.data.objectId
@@ -806,6 +807,9 @@ RestWrite.prototype.runDatabaseOperation = function() {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
         };
+        if (this.storage['changedByTrigger']) {
+          Object.assign(resp, this.data);
+        }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
         }
