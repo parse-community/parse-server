@@ -10,6 +10,8 @@
   "files": [
     "bin/",
     "lib/",
+    "public_html/",
+    "views/",
     "LICENSE",
     "PATENTS",
     "README.md"
@@ -54,12 +56,13 @@
     "nodemon": "^1.8.1"
   },
   "scripts": {
-    "dev": "npm run build && bin/dev",
+    "dev": "npm run build && node bin/dev",
     "build": "./node_modules/.bin/babel src/ -d lib/",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
-    "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $(if [ \"$CODE_COVERAGE\" = \"1\" ]; then echo './node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'; fi;) ./node_modules/jasmine/bin/jasmine.js",
-    "posttest": "mongodb-runner stop",
-    "start": "./bin/parse-server",
+    "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
+    "posttest": "./node_modules/.bin/mongodb-runner stop",
+    "coverage": "cross-env COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**' npm test",
+    "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },
   "engines": {

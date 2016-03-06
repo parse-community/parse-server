@@ -175,17 +175,26 @@ describe('rest create', () => {
         }
       }
     };
+    var newUserSignedUpByFacebookObjectId;
     rest.create(config, auth.nobody(config), '_User', data)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.sessionToken).toEqual('string');
+        newUserSignedUpByFacebookObjectId = r.response.objectId;
         return rest.create(config, auth.nobody(config), '_User', data);
       }).then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.username).toEqual('string');
         expect(typeof r.response.updatedAt).toEqual('string');
+        expect(r.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        expect(response.results.length).toEqual(1);
+        var output = response.results[0];
+        expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
       });
   });

@@ -135,6 +135,20 @@ PARSE_SERVER_MAX_UPLOAD_SIZE
 
 ```
 
+##### Configuring S3 Adapter
+
+You can use the following environment variable setup the S3 adapter
+
+```js
+S3_ACCESS_KEY
+S3_SECRET_KEY
+S3_BUCKET
+S3_REGION
+S3_BUCKET_PREFIX
+S3_DIRECT_ACCESS
+
+```
+
 ## Contributing
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).

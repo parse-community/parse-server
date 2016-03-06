@@ -134,7 +134,8 @@ function ParseServer({
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
     return new GridStoreAdapter(databaseURI);
   });
-  const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
+  // Pass the push options too as it works with the default
+  const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
   const emailControllerAdapter = loadAdapter(emailAdapter);
   // We pass the options and the base class for the adatper,
@@ -233,15 +234,18 @@ function ParseServer({
 
   api.use(middlewares.handleParseErrors);
 
-  process.on('uncaughtException', (err) => {
-    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-      console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
-      process.exit(0);
-    }
-    else {
-      throw err;
-    }
-  });
+  //This causes tests to spew some useless warnings, so disable in test
+  if (!process.env.TESTING) {
+    process.on('uncaughtException', (err) => {
+      if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+        console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+        process.exit(0);
+      }
+      else {
+        throw err;
+      }
+    });
+  }
   hooksController.load();
 
   return api;

@@ -180,20 +180,18 @@ describe('Schema', () => {
 
   it('will fail to create a class if that class was already created by an object', done => {
     config.database.loadSchema()
-    .then(schema => {
-      schema.validateObject('NewClass', {foo: 7})
-      .then(() => {
-        schema.reload()
-        .then(schema => schema.addClassIfNotExists('NewClass', {
-          foo: {type: 'String'}
-        }))
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
-          expect(error.message).toEqual('Class NewClass already exists.');
-          done();
-        });
+      .then(schema => {
+        schema.validateObject('NewClass', { foo: 7 })
+          .then(() => schema.reloadData())
+          .then(() => schema.addClassIfNotExists('NewClass', {
+            foo: { type: 'String' }
+          }))
+          .catch(error => {
+            expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
+            expect(error.message).toEqual('Class NewClass already exists.');
+            done();
+          });
       });
-    })
   });
 
   it('will resolve class creation races appropriately', done => {
@@ -577,6 +575,38 @@ describe('Schema', () => {
         fail(error);
         done();
       });
+  });
+
+  it('can delete relation field when related _Join collection not exist', done => {
+    config.database.loadSchema()
+    .then(schema => {
+      schema.addClassIfNotExists('NewClass', {
+        relationField: {type: 'Relation', targetClass: '_User'}
+      })
+      .then(mongoObj => {
+        expect(mongoObj).toEqual({
+          _id: 'NewClass',
+          objectId: 'string',
+          updatedAt: 'string',
+          createdAt: 'string',
+          relationField: 'relation<_User>',
+        });
+      })
+      .then(() => config.database.collectionExists('_Join:relationField:NewClass'))
+      .then(exist => {
+        expect(exist).toEqual(false);
+      })
+      .then(() => schema.deleteField('relationField', 'NewClass', config.database))
+      .then(() => schema.reloadData())
+      .then(() => {
+        expect(schema['data']['NewClass']).toEqual({
+          objectId: 'string',
+          updatedAt: 'string',
+          createdAt: 'string'
+        });
+        done();
+      });
+    });
   });
 
   it('can delete string fields and resave as number field', done => {

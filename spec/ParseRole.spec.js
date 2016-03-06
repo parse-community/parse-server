@@ -1,4 +1,4 @@
-
+"use strict";
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
@@ -64,26 +64,30 @@ describe('Parse Role testing', () => {
 
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
 
-    var createRole = function(name, parent, user) {
+    var createRole = function(name, sibling, user) {
       var role = new Parse.Role(name, new Parse.ACL());
       if (user) {
         var users = role.relation('users');
         users.add(user);
       }
-      if (parent) {
-        role.relation('roles').add(parent);
+      if (sibling) {
+        role.relation('roles').add(sibling);
       }
       return role.save({}, { useMasterKey: true });
     }
     var roleIds = {};
      createTestUser().then( (user) => {
-
-       return createRole(rolesNames[0], null, null).then( (aRole) => {
+       // Put the user on the 1st role
+       return createRole(rolesNames[0], null, user).then( (aRole) => {
          roleIds[aRole.get("name")] = aRole.id;
+         // set the 1st role as a sibling of the second
+         // user will should have 2 role now
           return createRole(rolesNames[1], aRole, null);
        }).then( (anotherRole) => {
          roleIds[anotherRole.get("name")] = anotherRole.id;
-         return createRole(rolesNames[2], anotherRole, user);
+         // set this role as a sibling of the last
+         // the user should now have 3 roles
+         return createRole(rolesNames[2], anotherRole, null);
        }).then( (lastRole) => {
          roleIds[lastRole.get("name")] = lastRole.id;
          var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
@@ -117,6 +121,80 @@ describe('Parse Role testing', () => {
         done();
       });
     });
+  });
+  
+  it("Should properly resolve roles", (done) => {
+    let admin = new Parse.Role("Admin", new Parse.ACL());
+    let moderator = new Parse.Role("Moderator", new Parse.ACL());
+    let superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
+    let contentManager = new Parse.Role('ContentManager', new Parse.ACL());
+    let superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
+      contentManager.getRoles().add([moderator, superContentManager]);
+      moderator.getRoles().add([admin, superModerator]);
+      superContentManager.getRoles().add(superModerator);
+      return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
+    }).then(() => { 
+      var auth = new Auth({ config: new Config("test"), isMaster: true });
+      // For each role, fetch their sibling, what they inherit
+      // return with result and roleId for later comparison
+      let promises = [admin, moderator, contentManager, superModerator].map((role) => {
+        return auth._getAllRoleNamesForId(role.id).then((result) => {
+          return Parse.Promise.as({
+            id: role.id,
+            name: role.get('name'),
+            roleIds: result
+          });
+        })
+      });
+      
+      return Parse.Promise.when(promises);
+    }).then((results) => {
+      results.forEach((result) => {
+        let id = result.id;
+        let roleIds = result.roleIds;
+        if (id == admin.id) {
+          expect(roleIds.length).toBe(2);
+          expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
+          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
+        } else if (id == moderator.id) {
+          expect(roleIds.length).toBe(1);
+          expect(roleIds.indexOf(contentManager.id)).toBe(0);
+        } else if (id == contentManager.id) {
+          expect(roleIds.length).toBe(0);
+        } else if (id == superModerator.id) {
+          expect(roleIds.length).toBe(3);
+          expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
+          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
+          expect(roleIds.indexOf(superContentManager.id)).not.toBe(-1);
+        }
+      });
+      done();
+    }).fail((err) => {
+      console.error(err);
+      done();
+    })
+    
+  });
+
+  it('can create role and query empty users', (done)=> {
+    var roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    var role = new Parse.Role('subscribers', roleACL);
+    role.save({}, {useMasterKey : true})
+      .then((x)=>{
+        var query = role.relation('users').query();
+        query.find({useMasterKey : true})
+          .then((users)=>{
+            done();
+          }, (e)=>{
+            fail('should not have errors');
+            done();
+          });
+      }, (e) => {
+        console.log(e);
+        fail('should not have errored');
+      });
   });
 
 });

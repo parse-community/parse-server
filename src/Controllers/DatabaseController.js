@@ -89,7 +89,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
-    var match = t.match(/^relation<(.*)>$/);
+    var match = t ? t.match(/^relation<(.*)>$/) : false;
     if (match) {
       return match[1];
     } else {

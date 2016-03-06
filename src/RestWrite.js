@@ -164,6 +164,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
+      this.storage['changedByTrigger'] = true;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
         delete this.data.objectId
@@ -178,7 +179,11 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
     this.data.updatedAt = this.updatedAt;
     if (!this.query) {
       this.data.createdAt = this.updatedAt;
-      this.data.objectId = cryptoUtils.newObjectId();
+
+      // Only assign new objectId if we are creating new object
+      if (!this.data.objectId) {
+        this.data.objectId = cryptoUtils.newObjectId();
+      }
     }
   }
   return Promise.resolve();
@@ -802,6 +807,9 @@ RestWrite.prototype.runDatabaseOperation = function() {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
         };
+        if (this.storage['changedByTrigger']) {
+          Object.assign(resp, this.data);
+        }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
         }
