@@ -133,7 +133,8 @@ function ParseServer({
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
     return new GridStoreAdapter(databaseURI);
   });
-  const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
+  // Pass the push options too as it works with the default
+  const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
   const emailControllerAdapter = loadAdapter(emailAdapter);
   // We pass the options and the base class for the adatper,
