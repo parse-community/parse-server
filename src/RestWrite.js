@@ -6,7 +6,6 @@ import cache from './cache';
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var oauth = require("./oauth");

@@ -1,6 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 import UserController from '../Controllers/UserController';
-import Config from '../Config';
+import cache from '../cache';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
@@ -13,7 +13,7 @@ export class PublicAPIRouter extends PromiseRouter {
   verifyEmail(req) {
     let { token, username }= req.query;
     let appId = req.params.appId;
-    let config = new Config(appId);
+    let config = cache.apps.get(appId);
     
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -36,7 +36,7 @@ export class PublicAPIRouter extends PromiseRouter {
   
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      let config = new Config(req.query.id);
+      let config = cache.apps.get(req.query.id);
       if (!config.publicServerURL) {
         return resolve({
           status: 404,
@@ -127,7 +127,7 @@ export class PublicAPIRouter extends PromiseRouter {
   }
   
   setConfig(req) {
-    req.config = new Config(req.params.appId);
+    req.config = cache.apps.get(req.params.appId);
     return Promise.resolve();
   }
   

@@ -1,7 +1,6 @@
 var FilesController = require('../src/Controllers/FilesController').FilesController;
 var GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
 var S3Adapter = require("../src/Adapters/Files/S3Adapter").S3Adapter;
-var Config = require("../src/Config");
 
 var FCTestFactory = require("./FilesControllerTestFactory");
 

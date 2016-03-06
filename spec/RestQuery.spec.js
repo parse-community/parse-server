@@ -1,13 +1,12 @@
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
-var Config = require('../src/Config');
 var rest = require('../src/rest');
 
 var querystring = require('querystring');
 var request = require('request');
 
-var config = new Config('test');
+var config = cache.apps.get('test');
 var nobody = auth.nobody(config);
 
 describe('rest query', () => {
@@ -97,6 +96,7 @@ describe('rest query', () => {
 
   it('query non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    customConfig.database = config.database;
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');

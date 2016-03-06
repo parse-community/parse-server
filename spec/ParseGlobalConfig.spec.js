@@ -2,11 +2,11 @@
 
 var request = require('request');
 var Parse = require('parse/node').Parse;
-let Config = require('../src/Config');
+let cache = require('../src/cache');
 
 describe('a GlobalConfig', () => {
   beforeEach(function(done) {
-    let config = new Config('test');
+    let config = cache.apps.get('test');
     config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.updateOne({ '_id': 1}, { $set: { params: { companies: ['US', 'DK'] } } }, { upsert: true }))
       .then(done());
@@ -60,7 +60,7 @@ describe('a GlobalConfig', () => {
   });  
 
   it('failed getting config when it is missing', (done) => {
-    let config = new Config('test');
+    let config = cache.apps.get('test');
     config.database.rawCollection('_GlobalConfig')
       .then(coll => coll.deleteOne({ '_id': 1}, {}, {}))
       .then(_ => {

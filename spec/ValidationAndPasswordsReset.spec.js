@@ -1,7 +1,7 @@
 "use strict";
 
 var request = require('request');
-var Config = require("../src/Config");
+var cache = require("../src/cache");
 describe("Custom Pages Configuration", () => {
   it("should set the custom pages", (done) => {
     setServerConfiguration({
@@ -24,7 +24,7 @@ describe("Custom Pages Configuration", () => {
       publicServerURL: "https://my.public.server.com/1"
     });
     
-    var config = new Config("test");
+    var config = cache.apps.get("test");
     
     expect(config.invalidLinkURL).toEqual("myInvalidLink");
     expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");

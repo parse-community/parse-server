@@ -1,6 +1,6 @@
 import path from 'path';
 import express from 'express';
-import { ParseServer } from '../index';
+import ParseServer from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import colors from 'colors';
@@ -62,8 +62,8 @@ if (!options.appId || !options.masterKey || !options.serverURL) {
 }
 
 const app = express();
-const api = new ParseServer(options);
-app.use(options.mountPath, api);
+const server = new ParseServer(options);
+app.use(options.mountPath, server.app);
 
 app.listen(options.port, function() {
   

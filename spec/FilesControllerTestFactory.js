@@ -1,11 +1,11 @@
 
 var FilesController = require('../src/Controllers/FilesController').FilesController;
-var Config = require("../src/Config");
+var cache = require("../src/cache");
 
 var testAdapter = function(name, adapter) {
   // Small additional tests to improve overall coverage
   
-  var config = new Config(Parse.applicationId);
+  var config = cache.apps.get(Parse.applicationId);
   var filesController = new FilesController(adapter);
 
   describe("FilesController with "+name,()=>{

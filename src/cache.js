@@ -4,7 +4,7 @@ export function CacheStore<KeyType, ValueType>() {
   let dataStore: {[id:KeyType]:ValueType} = {};
   return {
     get: (key: KeyType): ValueType => {
-      return dataStore[key];
+      return Object.freeze(dataStore[key]);
     },
     set(key: KeyType, value: ValueType): void {
       dataStore[key] = value;
@@ -18,8 +18,8 @@ export function CacheStore<KeyType, ValueType>() {
   };
 }
 
-const apps = CacheStore();
-const users = CacheStore();
+export const apps = CacheStore();
+export const users = CacheStore();
 
 //So far used only in tests
 export function clearCache(): void {

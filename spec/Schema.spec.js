@@ -1,10 +1,10 @@
 'use strict';
 
-var Config = require('../src/Config');
+var cache = require('../src/cache');
 var Schema = require('../src/Schema');
 var dd = require('deep-diff');
 
-var config = new Config('test');
+var config = cache.apps.get('test');
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');
