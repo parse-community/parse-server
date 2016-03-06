@@ -177,5 +177,25 @@ describe('Parse Role testing', () => {
     
   });
 
+  it('can create role and query empty users', (done)=> {
+    var roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    var role = new Parse.Role('subscribers', roleACL);
+    role.save({}, {useMasterKey : true})
+      .then((x)=>{
+        var query = role.relation('users').query();
+        query.find({useMasterKey : true})
+          .then((users)=>{
+            done();
+          }, (e)=>{
+            fail('should not have errors');
+            done();
+          });
+      }, (e) => {
+        console.log(e);
+        fail('should not have errored');
+      });
+  });
+
 });
 
