@@ -20,7 +20,25 @@
  */
 
 // default features
-let features = require('../package.json').features;
+const packageFeatures = require('../package.json').features;
+
+const adapterFeatures = {
+  logs: {
+    level: false,
+    size: false,
+    order: false,
+    until: false,
+    from: false,
+  },
+  push: {
+    immediatePush: false,
+    scheduledPush: false,
+    storedPushData: false,
+    pushAudiences: false,
+  }
+};
+
+let features = Object.assign({}, packageFeatures, adapterFeatures);
 
 // master switch for features
 let featuresSwitch = {
@@ -42,12 +60,13 @@ function setFeature(key, value) {
  * get feature config options
  */
 function getFeatures() {
-  return Object.keys(features).reduce((result, key) => {
+  let result = {};
+  Object.keys(features).forEach((key) => {
     if (featuresSwitch[key] && features[key]) {
       result[key] = features[key];
     }
-    return result;
-  }, {});
+  });
+  return result;
 }
 
 module.exports = {

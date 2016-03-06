@@ -83,19 +83,6 @@
       "update": false,
       "delete": false
     },
-    "logs": {
-      "level": false,
-      "size": false,
-      "order": false,
-      "until": false,
-      "from": false
-    },
-    "push": {
-      "immediatePush": false,
-      "scheduledPush": false,
-      "storedPushData": false,
-      "pushAudiences": false
-    },
     "schemas": {
       "addField": true,
       "removeField": true,
