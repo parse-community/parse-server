@@ -76,6 +76,14 @@ var requiredColumns = {
   _Role: ["name", "ACL"]
 }
 
+let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete'];
+function validateCLP(perms) {
+  Object.keys(perms).forEach((key) => {
+    if (CLPValidKeys.indexOf(key) == -1) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `${key} is not a valid operation for class level permissions`);
+    }
+  });
+}
 // Valid classes must:
 // Be one of _User, _Installation, _Role, _Session OR
 // Be a join table OR
@@ -288,6 +296,7 @@ class Schema {
 
   // Sets the Class-level permissions for a given className, which must exist.
   setPermissions(className, perms) {
+    validateCLP(perms);
     var update = {
       _metadata: {
         class_permissions: perms

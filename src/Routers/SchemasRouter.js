@@ -106,6 +106,24 @@ function modifySchema(req) {
     });
 }
 
+function setSchemaPermissions(req) {
+  var className = req.params.className;
+  return req.config.database.loadSchema()
+    .then(schema => {
+      return schema.setPermissions(className, req.body);
+  }).then((res) => {
+    return Promise.resolve({response: {}});
+  });
+}
+
+function getSchemaPermissions(req) {
+  var className = req.params.className;
+  return req.config.database.loadSchema()
+    .then(schema => {
+      return Promise.resolve({response: schema.perms[className]});
+  });
+}
+
 // A helper function that removes all join tables for a schema. Returns a promise.
 var removeJoinTables = (database, mongoSchema) => {
   return Promise.all(Object.keys(mongoSchema)
@@ -171,6 +189,8 @@ export class SchemasRouter extends PromiseRouter {
     this.route('POST', '/schemas', middleware.promiseEnforceMasterKeyAccess, createSchema);
     this.route('POST', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, createSchema);
     this.route('PUT', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, modifySchema);
+    this.route('GET', '/schemas/:className/permissions', middleware.promiseEnforceMasterKeyAccess, getSchemaPermissions);
+    this.route('PUT', '/schemas/:className/permissions', middleware.promiseEnforceMasterKeyAccess, setSchemaPermissions);
     this.route('DELETE', '/schemas/:className', middleware.promiseEnforceMasterKeyAccess, deleteSchema);
   }
 }

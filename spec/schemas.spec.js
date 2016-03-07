@@ -872,4 +872,70 @@ describe('schemas', () => {
       });
     });
   });
+
+  it('should set/get schema permissions', done => {
+
+    let object = new Parse.Object('AClass');
+    object.save().then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/AClass/permissions',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          find: {
+            '*': true
+          },
+          create: {
+            'role:admin': true
+          }
+        }
+      }, (error, response, body) => {
+        expect(error).toEqual(null);
+        request.get({
+          url: 'http://localhost:8378/1/schemas/AClass/permissions',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(200);
+          expect(response.body).toEqual({
+            find: {
+              '*': true
+            },
+            create: {
+              'role:admin': true
+            }
+          });
+          done();
+        });
+      });
+    });
+  });
+
+  it('should fail setting schema permissions with invalid key', done => {
+
+    let object = new Parse.Object('AClass');
+    object.save().then(() => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/AClass/permissions',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          find: {
+            '*': true
+          },
+          create: {
+            'role:admin': true
+          },
+          dummy: {
+            'some': true
+          }
+        }
+      }, (error, response, body) => {
+        expect(error).toEqual(null);
+        expect(body.code).toEqual(107);
+        expect(body.error).toEqual('dummy is not a valid operation for class level permissions');
+        done();
+      });
+    });
+  });
 });
