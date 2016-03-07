@@ -2,7 +2,7 @@
 AdaptableController.js
 
 AdaptableController is the base class for all controllers
-that support adapter, 
+that support adapter,
 The super class takes care of creating the right instance for the adapter
 based on the parameters passed
 
@@ -28,30 +28,30 @@ export class AdaptableController {
     this.validateAdapter(adapter);
     this[_adapter] = adapter;
   }
-  
+
   get adapter() {
     return this[_adapter];
   }
-  
+
   get config() {
     return new Config(this.appId);
   }
-  
+
   expectedAdapterType() {
     throw new Error("Subclasses should implement expectedAdapterType()");
   }
-  
+
   validateAdapter(adapter) {
     if (!adapter) {
       throw new Error(this.constructor.name+" requires an adapter");
     }
-    
+
     let Type = this.expectedAdapterType();
     // Allow skipping for testing
-    if (!Type) { 
+    if (!Type) {
       return;
     }
-    
+
     // Makes sure the prototype matches
     let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce( (obj, key) => {
        const adapterType = typeof adapter[key];
@@ -64,7 +64,7 @@ export class AdaptableController {
        }
        return obj;
     }, {});
-   
+
     if (Object.keys(mismatches).length > 0) {
       throw new Error("Adapter prototype don't match expected prototype", adapter, mismatches);
     }

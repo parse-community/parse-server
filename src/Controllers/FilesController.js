@@ -13,11 +13,11 @@ export class FilesController extends AdaptableController {
   }
 
   createFile(config, filename, data, contentType) {
-    
+
     let extname = path.extname(filename);
-    
+
     const hasExtension = extname.length > 0;
-    
+
     if (!hasExtension && contentType && mime.extension(contentType)) {
       filename = filename + '.' + mime.extension(contentType);
     } else if (hasExtension && !contentType) {
@@ -27,6 +27,8 @@ export class FilesController extends AdaptableController {
     filename = randomHexString(32) + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
+    console.log(this.adapter);
+    console.log(location);
     return this.adapter.createFile(config, filename, data, contentType).then(() => {
       return Promise.resolve({
         url: location,

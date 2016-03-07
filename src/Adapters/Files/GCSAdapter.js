@@ -4,18 +4,33 @@ import { storage } from 'gcloud';
 import { FilesAdapter } from './FilesAdapter';
 import requiredParameter from '../../requiredParameter';
 
+function requiredOrFromEnvironment(env, name) {
+  let environmentVariable = process.env[env];
+  if (!environmentVariable) {
+    requiredParameter(`GCSAdapter requires an ${name}`);
+  }
+  return environmentVariable;
+}
+
+function fromEnvironmentOrDefault(env, defaultValue) {
+  let environmentVariable = process.env[env];
+  if (environmentVariable) {
+    return environmentVariable;
+  }
+  return defaultValue;
+}
+
 export class GCSAdapter extends FilesAdapter {
   // GCS Project ID and the name of a corresponding Keyfile are required.
   // Unlike the S3 adapter, you must create a new Cloud Storage bucket, as this is not created automatically.
   // See https://googlecloudplatform.github.io/gcloud-node/#/docs/master/guides/authentication
   // for more details.
   constructor(
-    projectId = requiredParameter('GCSAdapter requires a GCP Project ID'),
-    keyFilename = requiredParameter('GCSAdapter requires a GCP keyfile'),
-    bucket = requiredParameter('GCSAdapter requires a GCS bucket name'),
-    { bucketPrefix = '',
-      directAccess = false } = {}
-  ) {
+    projectId = requiredOrFromEnvironment('GCP_PROJECT_ID', 'projectId'),
+    keyFilename = requiredOrFromEnvironment('GCP_KEYFILE_PATH', 'keyfile path'),
+    bucket = requiredOrFromEnvironment('GCS_BUCKET_NAME', 'bucket name'),
+    { bucketPrefix = fromEnvironmentOrDefault('GCS_BUCKET_PREFIX', ''),
+      directAccess = fromEnvironmentOrDefault('GCS_DIRECT_ACCESS', false) } = {}) {
     super();
 
     this._bucket = bucket;
