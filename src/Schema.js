@@ -409,10 +409,14 @@ class Schema {
 
             if (this.data[className][fieldName].startsWith('relation<')) {
               //For relations, drop the _Join table
-              return database.collectionExists(`_Join:${fieldName}:${className}`).then(exist => {
-                if (exist) {
-                  return database.dropCollection(`_Join:${fieldName}:${className}`);
+              return database.dropCollection(`_Join:${fieldName}:${className}`)
+              .then(() => {
+                return Promise.resolve();
+              }, error => {
+                if (error.message == 'ns not found') {
+                  return Promise.resolve();
                 }
+                return Promise.reject(error);
               });
             }
 
