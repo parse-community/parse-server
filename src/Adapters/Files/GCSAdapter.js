@@ -28,7 +28,7 @@ export class GCSAdapter extends FilesAdapter {
   constructor(
     projectId = requiredOrFromEnvironment('GCP_PROJECT_ID', 'projectId'),
     keyFilename = requiredOrFromEnvironment('GCP_KEYFILE_PATH', 'keyfile path'),
-    bucket = requiredOrFromEnvironment('GCS_BUCKET_NAME', 'bucket name'),
+    bucket = requiredOrFromEnvironment('GCS_BUCKET', 'bucket name'),
     { bucketPrefix = fromEnvironmentOrDefault('GCS_BUCKET_PREFIX', ''),
       directAccess = fromEnvironmentOrDefault('GCS_DIRECT_ACCESS', false) } = {}) {
     super();

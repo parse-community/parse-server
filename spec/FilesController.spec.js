@@ -32,21 +32,21 @@ describe("FilesController",()=>{
     console.log("set S3_ACCESS_KEY and S3_SECRET_KEY to test S3Adapter")
   }
 
-  if (process.env.GCP_PROJECT_ID && process.env.GCP_KEYFILE_PATH && process.env.GCS_BUCKET_NAME) {
+  if (process.env.GCP_PROJECT_ID && process.env.GCP_KEYFILE_PATH && process.env.GCS_BUCKET) {
 
     // Test the GCS Adapter
-    var gcsAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET_NAME);
+    var gcsAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET);
 
     FCTestFactory.testAdapter("GCSAdapter", gcsAdapter);
 
     // Test GCS with direct access
-    var gcsDirectAccessAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET_NAME, {
+    var gcsDirectAccessAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET, {
       directAccess: true
     });
 
     FCTestFactory.testAdapter("GCSAdapterDirect", gcsDirectAccessAdapter);
 
   } else if (!process.env.TRAVIS) {
-    console.log("set GCP_PROJECT_ID, GCP_KEYFILE_PATH, and GCS_BUCKET_NAME to test GCSAdapter")
+    console.log("set GCP_PROJECT_ID, GCP_KEYFILE_PATH, and GCS_BUCKET to test GCSAdapter")
   }
 });
