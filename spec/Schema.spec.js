@@ -703,4 +703,33 @@ describe('Schema', () => {
     });
     done();
   });
+
+  it('handles legacy _client_permissions keys without crashing', done => {
+    Schema.mongoSchemaToSchemaAPIResponse({
+      "_id":"_Installation",
+      "_client_permissions":{
+        "get":true,
+        "find":true,
+        "update":true,
+        "create":true,
+        "delete":true,
+      },
+      "_metadata":{
+        "class_permissions":{
+          "get":{"*":true},
+          "find":{"*":true},
+          "update":{"*":true},
+          "create":{"*":true},
+          "delete":{"*":true},
+          "addField":{"*":true},
+        }
+      },
+      "installationId":"string",
+      "deviceToken":"string",
+      "deviceType":"string",
+      "channels":"array",
+      "user":"*_User",
+    });
+    done();
+  });
 });
