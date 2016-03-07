@@ -5,11 +5,11 @@ var Parse = require('parse/node').Parse;
 let Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
-  beforeEach(function (done) {
+  beforeEach(done => {
     let config = new Config('test');
     config.database.adaptiveCollection('_GlobalConfig')
       .then(coll => coll.upsertOne({ '_id': 1 }, { $set: { params: { companies: ['US', 'DK'] } } }))
-      .then(done());
+      .then(() => { done(); });
   });
 
   it('can be retrieved', (done) => {
