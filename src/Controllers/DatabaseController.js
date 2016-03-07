@@ -455,13 +455,18 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 
 DatabaseController.prototype.addInObjectIdsIds = function(ids, query) {
   if (typeof query.objectId == 'string') {
-    query.objectId = {'$in': [query.objectId]};
+    // Add equality op as we are sure 
+    // we had a constraint on that one
+    query.objectId = {'$eq': query.objectId};
   }
-   query.objectId = query.objectId || {};
-   let queryIn =  [].concat(query.objectId['$in'] || [], ids || []);
-   // make a set and spread to remove duplicates
-   query.objectId = {'$in': [...new Set(queryIn)]};
-   return query;
+  query.objectId = query.objectId || {};
+  let queryIn =  [].concat(query.objectId['$in'] || [], ids || []);
+  // make a set and spread to remove duplicates
+  // replace the $in operator as other constraints
+  // may be set
+  query.objectId['$in'] = [...new Set(queryIn)];
+
+  return query;
 }
 
 // Runs a query on the database.
