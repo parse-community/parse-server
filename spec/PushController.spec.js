@@ -3,31 +3,6 @@ var PushController = require('../src/Controllers/PushController').PushController
 var Config = require('../src/Config');
 
 describe('PushController', () => {
-  it('can check valid master key of request', (done) => {
-    // Make mock request
-    var auth = {
-      isMaster: true
-    }
-
-    expect(() => {
-      PushController.validateMasterKey(auth);
-    }).not.toThrow();
-    done();
-  });
-
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var auth = {
-      isMaster: false
-    }
-
-    expect(() => {
-      PushController.validateMasterKey(auth);
-    }).toThrow();
-    done();
-  });
-
-
   it('can validate device type when no device type is set', (done) => {
     // Make query condition
     var where = {

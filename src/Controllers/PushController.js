@@ -36,17 +36,6 @@ export class PushController extends AdaptableController {
       }
     }
   }
-  
-  /**
-   * Check whether the api call has master key or not.
-   * @param {Object} request A request object
-   */ 
-  static validateMasterKey(auth = {}) {
-    if (!auth.isMaster) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Master key is invalid, you should only use master key to send push');
-    }
-  }
 
   sendPush(body = {}, where = {}, config, auth) {
     var pushAdapter = this.adapter;
@@ -54,7 +43,6 @@ export class PushController extends AdaptableController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
-    PushController.validateMasterKey(auth);
     PushController.validatePushType(where, pushAdapter.getValidPushTypes());
     // Replace the expiration_time with a valid Unix epoch milliseconds time
     body['expiration_time'] = PushController.getExpirationTime(body);
@@ -140,6 +128,6 @@ export class PushController extends AdaptableController {
   expectedAdapterType() {
     return PushAdapter;
   }
-};
+}
 
 export default PushController;
