@@ -75,6 +75,10 @@ export default class MongoCollection {
     });
   }
 
+  deleteOne(query) {
+    return this._mongoCollection.deleteOne(query);
+  }
+
   remove(query) {
     return this._mongoCollection.remove(query);
   }
