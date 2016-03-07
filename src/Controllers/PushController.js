@@ -63,23 +63,19 @@ export class PushController extends AdaptableController {
     let badgeUpdate = Promise.resolve();
 
     if (body.badge) {
-      var op = {};
+      let op = {};
       if (body.badge == "Increment") {
-        op = {'$inc': {'badge': 1}}
+        op = { $inc: { badge: 1 } }
       } else if (Number(body.badge)) {
-        op = {'$set': {'badge': body.badge } }
+        op = { $set: { badge: body.badge } }
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
       let updateWhere = deepcopy(where);
+      updateWhere.deviceType = 'ios'; // Only on iOS!
 
-      // Only on iOS!
-      updateWhere.deviceType = 'ios';
-
-      // TODO: @nlutsenko replace with better thing
-      badgeUpdate = config.database.rawCollection("_Installation").then((coll) => {
-        return coll.update(updateWhere, op, { multi: true });
-      });
+      badgeUpdate = config.database.adaptiveCollection("_Installation")
+        .then(coll => coll.updateMany(updateWhere, op));
     }
 
     return badgeUpdate.then(() => {

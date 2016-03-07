@@ -35,7 +35,7 @@ DatabaseController.prototype.collection = function(className) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
                           'invalid className: ' + className);
   }
-  return this.rawCollection(className);
+  return this.adapter.collection(this.collectionPrefix + className);
 };
 
 DatabaseController.prototype.adaptiveCollection = function(className) {
@@ -44,10 +44,6 @@ DatabaseController.prototype.adaptiveCollection = function(className) {
 
 DatabaseController.prototype.collectionExists = function(className) {
   return this.adapter.collectionExists(this.collectionPrefix + className);
-};
-
-DatabaseController.prototype.rawCollection = function(className) {
-  return this.adapter.collection(this.collectionPrefix + className);
 };
 
 DatabaseController.prototype.dropCollection = function(className) {
