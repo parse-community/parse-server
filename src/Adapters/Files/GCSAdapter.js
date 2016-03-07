@@ -82,7 +82,6 @@ export class GCSAdapter extends FilesAdapter {
     return new Promise((resolve, reject) => {
       let file = this._gcsClient.bucket(this._bucket).file(this._bucketPrefix + filename);
       file.delete((err, res) => {
-        console.log("delete: ", filename, err, res);
         if(err !== null) {
           return reject(err);
         }
@@ -100,7 +99,6 @@ export class GCSAdapter extends FilesAdapter {
       file.exists((err, exists) => {
         if (exists) {
           file.download((err, data) => {
-            console.log("get: ", filename, err, data);
             if (err !== null) {
               return reject(err);
             }

@@ -27,8 +27,6 @@ export class FilesController extends AdaptableController {
     filename = randomHexString(32) + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
-    console.log(this.adapter);
-    console.log(location);
     return this.adapter.createFile(config, filename, data, contentType).then(() => {
       return Promise.resolve({
         url: location,
