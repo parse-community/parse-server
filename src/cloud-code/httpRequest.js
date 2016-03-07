@@ -2,25 +2,36 @@ var request = require("request"),
   querystring = require('querystring'),
   Parse = require('parse/node').Parse;
 
-var encodeBody = function(body, headers = {}) {
+var encodeBody = function(options = {}) {
+  let body = options.body;
+  let headers = options.headers || {};
   if (typeof body !== 'object') {
-    return body;
+    return options;
   }
   var contentTypeKeys = Object.keys(headers).filter((key) => {
     return key.match(/content-type/i) != null;
   });
 
-  if (contentTypeKeys.length == 1) {
+  if (contentTypeKeys.length == 0) {
+    // no content type
+    try {
+      options.body = JSON.stringify(body);
+      options.headers = options.headers || {};
+      options.headers['Content-Type'] = 'application/json';
+    } catch(e) {
+      // do nothing;
+    }
+  } else if (contentTypeKeys.length == 1) {
     var contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
-      body = JSON.stringify(body);
+      options.body = JSON.stringify(body);
     } else if(headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
-      body = Object.keys(body).map(function(key){
+      options.body = Object.keys(body).map(function(key){
         return `${key}=${encodeURIComponent(body[key])}`
       }).join("&");
     }
   }
-  return body;
+  return options;
 }
 
 module.exports = function(options) {
@@ -32,7 +43,7 @@ module.exports = function(options) {
   delete options.success;
   delete options.error;
   delete options.uri; // not supported
-  options.body = encodeBody(options.body, options.headers);
+  options = encodeBody(options);
   // set follow redirects to false by default
   options.followRedirect = options.followRedirects == true;
   // support params options
