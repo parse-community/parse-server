@@ -771,6 +771,26 @@ export default class SchemaController {
       return true;
     }
     let classPerms = this.perms[className];
+    let perms = classPerms[operation];
+
+    // If only for authenticated users
+    // make sure we have an aclGroup
+    if (perms['requiresAuthentication']) {
+      // If aclGroup has * (public)
+      if (!aclGroup || aclGroup.length == 0) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+        'Permission denied, user needs to be authenticated.');
+      } else if (aclGroup.indexOf('*') > -1 && aclGroup.length == 1) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+        'Permission denied, user needs to be authenticated.');
+      }
+      // no other CLP than requiresAuthentication
+      // let's resolve that!
+      if (Object.keys(perms).length == 1) {
+        return Promise.resolve();
+      }
+    }
+
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
