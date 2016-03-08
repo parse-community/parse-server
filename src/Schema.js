@@ -78,6 +78,9 @@ var requiredColumns = {
 
 let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete'];
 function validateCLP(perms) {
+  if (!perms) {
+    return;
+  }
   Object.keys(perms).forEach((key) => {
     if (CLPValidKeys.indexOf(key) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${key} is not a valid operation for class level permissions`);
@@ -229,14 +232,22 @@ class Schema {
   // on success, and rejects with an error on fail. Ensure you
   // have authorization (master key, or client class creation
   // enabled) before calling this function.
-  addClassIfNotExists(className, fields) {
+  addClassIfNotExists(className, fields, classLevelPermissions) {
     if (this.data[className]) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+    }
+    if (classLevelPermissions) {
+      validateCLP(classLevelPermissions);
     }
 
     let mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
     if (!mongoObject.result) {
       return Promise.reject(mongoObject);
+    }
+    
+    if (classLevelPermissions) {
+      mongoObject.result._metadata = mongoObject.result._metadata || {};
+      mongoObject.result._metadata.class_permissions = classLevelPermissions;
     }
 
     return this._collection.addSchema(className, mongoObject.result)
@@ -247,6 +258,56 @@ class Schema {
         }
         return Promise.reject(error);
       });
+  }
+  
+  updateClass(className, submittedFields, classLevelPermissions, database) {
+    if (!this.data[className]) {
+      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+    }
+    let existingFields = Object.assign(this.data[className], {_id: className});
+    Object.keys(submittedFields).forEach(name => {
+      let field = submittedFields[name];
+      if (existingFields[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
+      }
+      if (!existingFields[name] && field.__op === 'Delete') {
+        throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
+      }
+    });
+    
+    validateCLP(classLevelPermissions);
+    let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
+    let mongoObject = mongoSchemaFromFieldsAndClassName(newSchema, className);
+    if (!mongoObject.result) {
+      throw new Parse.Error(mongoObject.code, mongoObject.error);
+    }
+    // set the class permissions
+    if (classLevelPermissions) {
+      mongoObject.result._metadata = mongoObject.result._metadata || {};
+      mongoObject.result._metadata.class_permissions = classLevelPermissions;
+    }
+    // Finally we have checked to make sure the request is valid and we can start deleting fields.
+    // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
+    let deletePromises = [];
+    let insertedFields = [];
+    Object.keys(submittedFields).forEach(fieldName => {
+      if (submittedFields[fieldName].__op === 'Delete') {
+        const promise = this.deleteField(fieldName, className, database);
+        deletePromises.push(promise);
+      } else {
+        insertedFields.push(fieldName);
+      }
+    });
+    return Promise.all(deletePromises) // Delete Everything
+      .then(() => this.reloadData()) // Reload our Schema, so we have all the new values
+      .then(() => {
+        let promises = insertedFields.map(fieldName => {
+          const mongoType = mongoObject.result[fieldName];
+          return this.validateField(className, fieldName, mongoType);
+        });
+        return Promise.all(promises);
+      })
+      .then(() => { return mongoSchemaToSchemaAPIResponse(mongoObject.result) });
   }
 
 
@@ -785,10 +846,14 @@ function mongoSchemaAPIResponseFields(schema) {
 }
 
 function mongoSchemaToSchemaAPIResponse(schema) {
-  return {
+  let result = {
     className: schema._id,
     fields: mongoSchemaAPIResponseFields(schema),
   };
+  if (schema._metadata && schema._metadata.class_permissions) {
+    result.classLevelPermissions = schema._metadata.class_permissions;
+  }
+  return result;
 }
 
 module.exports = {
