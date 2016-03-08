@@ -52,6 +52,8 @@ module.exports = function(options) {
   } else if (typeof options.params === 'string') {
     options.qs = querystring.parse(options.params);
   }
+  // force the response as a buffer
+  options.encoding = null;
 
   request(options, (error, response, body) => {
     if (error) {
@@ -63,11 +65,11 @@ module.exports = function(options) {
     var httpResponse = {};
     httpResponse.status = response.statusCode;
     httpResponse.headers = response.headers;
-    httpResponse.buffer = new Buffer(response.body);
+    httpResponse.buffer = response.body;
     httpResponse.cookies = response.headers["set-cookie"];
-    httpResponse.text = response.body;
+    httpResponse.text = response.body.toString('utf-8');
     try {
-      httpResponse.data = JSON.parse(response.body);
+      httpResponse.data = JSON.parse(httpResponse.text);
     } catch (e) {}
     // Consider <200 && >= 400 as errors 
     if (httpResponse.status < 200 || httpResponse.status >= 400) {

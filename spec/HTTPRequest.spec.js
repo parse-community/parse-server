@@ -217,6 +217,17 @@ describe("httpRequest", () => {
         done();
       }
     });
+  });
+  
+  it('should get a cat image', (done) => {
+    httpRequest({
+      url: 'http://thecatapi.com/api/images/get?format=src&type=jpg',
+      followRedirects: true
+    }).then((res) => {
+      expect(res.buffer).not.toBe(null);
+      expect(res.text).not.toBe(null);
+      done();
+    })
   })
 
   it("should params object to query string", (done) => {
