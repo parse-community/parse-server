@@ -938,4 +938,62 @@ describe('schemas', () => {
       });
     });
   });
+  
+  it('should not be able to add a field', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '*': true
+          },
+          addField: {
+            'role:admin': true
+          }
+        }
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      let object = new Parse.Object('AClass');
+      object.set('hello', 'world');
+      return object.save().then(() => {
+        fail('should not be able to add a field');
+        done();
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        done();
+      })
+    })
+  });
+  
+  it('should not be able to add a field', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '*': true
+          },
+          addField: {
+            '*': true
+          }
+        }
+      }
+    }, (error, response, body) => {
+      expect(error).toEqual(null);
+      let object = new Parse.Object('AClass');
+      object.set('hello', 'world');
+      return object.save().then(() => {
+        done();
+      }, (err) => {
+        fail('should be able to add a field');
+        done();
+      })
+    })
+  });
+  
 });
