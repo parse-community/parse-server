@@ -13,7 +13,7 @@ export default class HTTPResponse {
   get data() {
     if (!this._data) {
       try {
-      this._data = JSON.parse(this.text);
+        this._data = JSON.parse(this.text);
       } catch (e) {}
     }
     return this._data;

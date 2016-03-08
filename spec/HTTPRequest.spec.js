@@ -160,13 +160,12 @@ describe("httpRequest", () => {
       done();
     })
   });
+  
   it("should encode a JSON body by default", (done) => {
-    
     let options = {
       body: {"foo": "bar"}, 
     }
-    
-    var result = httpRequest.encodeBody(options);
+    let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('{"foo":"bar"}');
     expect(result.headers['Content-Type']).toEqual('application/json');
     done();
@@ -174,13 +173,11 @@ describe("httpRequest", () => {
   })
   
   it("should encode a JSON body", (done) => {
-    
     let options = {
       body: {"foo": "bar"}, 
       headers: {'Content-Type': 'application/json'}
     }
-    
-    var result = httpRequest.encodeBody(options);
+    let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('{"foo":"bar"}');
     done();
     
@@ -190,7 +187,7 @@ describe("httpRequest", () => {
       body: {"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'application/x-www-form-urlencoded'}
     }
-    var result = httpRequest.encodeBody(options);
+    let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual("foo=bar&bar=baz");
     done();
   });
@@ -199,7 +196,7 @@ describe("httpRequest", () => {
       body:{"foo": "bar", "bar": "baz"}, 
       headers: {'cOntent-tYpe': 'mime/jpeg'}
     }
-    var result = httpRequest.encodeBody(options);
+    let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual({"foo": "bar", "bar": "baz"});
     done();
   });

@@ -1,13 +1,11 @@
-var request = require("request"),
-  querystring = require('querystring'),
-  Parse = require('parse/node').Parse;
-  HTTPResponse = require('./HTTPResponse').HTTPResponse;
+import request from 'request';
+import Parse from 'parse/node';
+import HTTPResponse from './HTTPResponse';
+import querystring from 'querystring';
 
-var encodeBody = function(options = {}) {
-  let body = options.body;
-  let headers = options.headers || {};
+var encodeBody = function({body, headers = {}}) {
   if (typeof body !== 'object') {
-    return options;
+    return {body, headers};
   }
   var contentTypeKeys = Object.keys(headers).filter((key) => {
     return key.match(/content-type/i) != null;
@@ -16,23 +14,27 @@ var encodeBody = function(options = {}) {
   if (contentTypeKeys.length == 0) {
     // no content type
     try {
-      options.body = JSON.stringify(body);
-      options.headers = options.headers || {};
-      options.headers['Content-Type'] = 'application/json';
+      body = JSON.stringify(body);
+      headers['Content-Type'] = 'application/json';
     } catch(e) {
       // do nothing;
     }
-  } else if (contentTypeKeys.length == 1) {
+  } else {
+    /* istanbul ignore next */
+    if (contentTypeKeys.length > 1) {
+      console.error('multiple content-type headers are set.');
+    }
+    // There maybe many, we'll just take the 1st one
     var contentType = contentTypeKeys[0];
     if (headers[contentType].match(/application\/json/i)) {
-      options.body = JSON.stringify(body);
+      body = JSON.stringify(body);
     } else if(headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
-      options.body = Object.keys(body).map(function(key){
+      body = Object.keys(body).map(function(key){
         return `${key}=${encodeURIComponent(body[key])}`
       }).join("&");
     }
   }
-  return options;
+  return {body, headers};
 }
 
 module.exports = function(options) {
@@ -44,7 +46,7 @@ module.exports = function(options) {
   delete options.success;
   delete options.error;
   delete options.uri; // not supported
-  options = encodeBody(options);
+  options = Object.assign(options,  encodeBody(options));
   // set follow redirects to false by default
   options.followRedirect = options.followRedirects == true;
   // support params options
