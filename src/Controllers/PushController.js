@@ -36,17 +36,6 @@ export class PushController extends AdaptableController {
       }
     }
   }
-  
-  /**
-   * Check whether the api call has master key or not.
-   * @param {Object} request A request object
-   */ 
-  static validateMasterKey(auth = {}) {
-    if (!auth.isMaster) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Master key is invalid, you should only use master key to send push');
-    }
-  }
 
   sendPush(body = {}, where = {}, config, auth) {
     var pushAdapter = this.adapter;
@@ -54,7 +43,6 @@ export class PushController extends AdaptableController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
-    PushController.validateMasterKey(auth);
     PushController.validatePushType(where, pushAdapter.getValidPushTypes());
     // Replace the expiration_time with a valid Unix epoch milliseconds time
     body['expiration_time'] = PushController.getExpirationTime(body);
@@ -63,23 +51,19 @@ export class PushController extends AdaptableController {
     let badgeUpdate = Promise.resolve();
 
     if (body.badge) {
-      var op = {};
+      let op = {};
       if (body.badge == "Increment") {
-        op = {'$inc': {'badge': 1}}
+        op = { $inc: { badge: 1 } }
       } else if (Number(body.badge)) {
-        op = {'$set': {'badge': body.badge } }
+        op = { $set: { badge: body.badge } }
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
       let updateWhere = deepcopy(where);
+      updateWhere.deviceType = 'ios'; // Only on iOS!
 
-      // Only on iOS!
-      updateWhere.deviceType = 'ios';
-
-      // TODO: @nlutsenko replace with better thing
-      badgeUpdate = config.database.rawCollection("_Installation").then((coll) => {
-        return coll.update(updateWhere, op, { multi: true });
-      });
+      badgeUpdate = config.database.adaptiveCollection("_Installation")
+        .then(coll => coll.updateMany(updateWhere, op));
     }
 
     return badgeUpdate.then(() => {
@@ -144,6 +128,6 @@ export class PushController extends AdaptableController {
   expectedAdapterType() {
     return PushAdapter;
   }
-};
+}
 
 export default PushController;

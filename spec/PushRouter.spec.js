@@ -2,40 +2,6 @@ var PushRouter = require('../src/Routers/PushRouter').PushRouter;
 var request = require('request');
 
 describe('PushRouter', () => {
-    it('can check valid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      info: {
-        masterKey: 'masterKey'
-      },
-      config: {
-        masterKey: 'masterKey'
-      }
-    }
-
-    expect(() => {
-      PushRouter.validateMasterKey(request);
-    }).not.toThrow();
-    done();
-  });
-
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      info: {
-        masterKey: 'masterKey'
-      },
-      config: {
-        masterKey: 'masterKeyAgain'
-      }
-    }
-
-    expect(() => {
-      PushRouter.validateMasterKey(request);
-    }).toThrow();
-    done();
-  });
-
   it('can get query condition when channels is set', (done) => {
     // Make mock request
     var request = {
