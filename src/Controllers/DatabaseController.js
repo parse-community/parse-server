@@ -28,16 +28,6 @@ DatabaseController.prototype.connect = function() {
   return this.adapter.connect();
 };
 
-// Returns a promise for a Mongo collection.
-// Generally just for internal use.
-DatabaseController.prototype.collection = function(className) {
-  if (!Schema.classNameIsValid(className)) {
-    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME,
-                          'invalid className: ' + className);
-  }
-  return this.adapter.collection(this.collectionPrefix + className);
-};
-
 DatabaseController.prototype.adaptiveCollection = function(className) {
   return this.adapter.adaptiveCollection(this.collectionPrefix + className);
 };
@@ -68,9 +58,9 @@ DatabaseController.prototype.validateClassName = function(className) {
 DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 
   if (!this.schemaPromise) {
-    this.schemaPromise = this.collection('_SCHEMA').then((coll) => {
+    this.schemaPromise = this.adaptiveCollection('_SCHEMA').then(collection => {
       delete this.schemaPromise;
-      return Schema.load(coll);
+      return Schema.load(collection);
     });
     return this.schemaPromise;
   }
@@ -79,9 +69,9 @@ DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
     if (acceptor(schema)) {
       return schema;
     }
-    this.schemaPromise = this.collection('_SCHEMA').then((coll) => {
+    this.schemaPromise = this.adaptiveCollection('_SCHEMA').then(collection => {
       delete this.schemaPromise;
-      return Schema.load(coll);
+      return Schema.load(collection);
     });
     return this.schemaPromise;
   });
