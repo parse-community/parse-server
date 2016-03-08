@@ -24,6 +24,7 @@ import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
+import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
 import { GlobalConfigRouter }  from './Routers/GlobalConfigRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { HooksController }     from './Controllers/HooksController';
@@ -259,4 +260,5 @@ function addParseCloud() {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
+  GCSAdapter: GCSAdapter
 };

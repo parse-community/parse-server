@@ -1,35 +1,34 @@
-
 var FilesController = require('../src/Controllers/FilesController').FilesController;
 var Config = require("../src/Config");
 
 var testAdapter = function(name, adapter) {
   // Small additional tests to improve overall coverage
-  
+
   var config = new Config(Parse.applicationId);
   var filesController = new FilesController(adapter);
 
   describe("FilesController with "+name,()=>{
-    
+
     it("should properly expand objects", (done) => {
-      
+
       var result = filesController.expandFilesInObject(config, function(){});
-      
+
       expect(result).toBeUndefined();
-      
+
       var fullFile = {
         type: '__type',
         url: "http://an.url"
       }
-      
+
       var anObject = {
         aFile: fullFile
       }
       filesController.expandFilesInObject(config, anObject);
       expect(anObject.aFile.url).toEqual("http://an.url");
-      
+
       done();
-    }) 
-    
+    })
+
     it("should properly create, read, delete files", (done) => {
       var filename;
       filesController.createFile(config, "file.txt", "hello world").then( (result) => {
@@ -51,14 +50,14 @@ var testAdapter = function(name, adapter) {
         console.error(err);
         done();
       }).then((result) => {
-        
+
         filesController.getFileData(config, filename).then((res) => {
           fail("the file should be deleted");
           done();
         }, (err) => {
-          done();  
+          done();
         });
-        
+
       }, (err) => {
         fail("The adapter should delete the file");
         console.error(err);

@@ -13,11 +13,11 @@ export class FilesController extends AdaptableController {
   }
 
   createFile(config, filename, data, contentType) {
-    
+
     let extname = path.extname(filename);
-    
+
     const hasExtension = extname.length > 0;
-    
+
     if (!hasExtension && contentType && mime.extension(contentType)) {
       filename = filename + '.' + mime.extension(contentType);
     } else if (hasExtension && !contentType) {
