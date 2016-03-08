@@ -13,12 +13,10 @@ var encodeBody = function({body, headers = {}}) {
 
   if (contentTypeKeys.length == 0) {
     // no content type
-    try {
-      body = JSON.stringify(body);
-      headers['Content-Type'] = 'application/json';
-    } catch(e) {
-      // do nothing;
-    }
+    //  As per https://parse.com/docs/cloudcode/guide#cloud-code-advanced-sending-a-post-request the default encoding is supposedly x-www-form-urlencoded
+    
+    body = querystring.stringify(body);
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
   } else {
     /* istanbul ignore next */
     if (contentTypeKeys.length > 1) {
@@ -29,9 +27,7 @@ var encodeBody = function({body, headers = {}}) {
     if (headers[contentType].match(/application\/json/i)) {
       body = JSON.stringify(body);
     } else if(headers[contentType].match(/application\/x-www-form-urlencoded/i)) {
-      body = Object.keys(body).map(function(key){
-        return `${key}=${encodeURIComponent(body[key])}`
-      }).join("&");
+      body = querystring.stringify(body);
     }
   }
   return {body, headers};

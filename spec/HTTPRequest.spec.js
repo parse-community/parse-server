@@ -161,13 +161,13 @@ describe("httpRequest", () => {
     })
   });
   
-  it("should encode a JSON body by default", (done) => {
+  it("should encode a query string body by default", (done) => {
     let options = {
       body: {"foo": "bar"}, 
     }
     let result = httpRequest.encodeBody(options);
-    expect(result.body).toEqual('{"foo":"bar"}');
-    expect(result.headers['Content-Type']).toEqual('application/json');
+    expect(result.body).toEqual('foo=bar');
+    expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
     done();
     
   })
