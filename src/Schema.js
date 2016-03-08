@@ -76,7 +76,7 @@ var requiredColumns = {
   _Role: ["name", "ACL"]
 }
 
-let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete'];
+let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete', 'addField'];
 function validateCLP(perms) {
   if (!perms) {
     return;
