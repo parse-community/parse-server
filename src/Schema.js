@@ -448,9 +448,12 @@ class Schema {
         geocount++;
       }
       if (geocount > 1) {
-        throw new Parse.Error(
-          Parse.Error.INCORRECT_TYPE,
-          'there can only be one geopoint field in a class');
+        // Make sure all field validation operations run before we return.
+        // If not - we are continuing to run logic, but already provided response from the server.
+        return promise.then(() => {
+          return Promise.reject(new Parse.Error(Parse.Error.INCORRECT_TYPE,
+            'there can only be one geopoint field in a class'));
+        });
       }
       if (!expected) {
         continue;
