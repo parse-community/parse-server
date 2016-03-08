@@ -107,10 +107,10 @@ describe('PushController', () => {
   
   it('properly increment badges', (done) => {
     
-   var payload = {
+   var payload = {data:{
      alert: "Hello World!",
      badge: "Increment",
-   }
+   }}
    var installations = [];
    while(installations.length != 10) {
      var installation = new Parse.Object("_Installation");
@@ -132,7 +132,7 @@ describe('PushController', () => {
    
    var pushAdapter = {
     send: function(body, installations) {
-      var badge = body.badge;
+      var badge = body.data.badge;
       installations.forEach((installation) => {
         if (installation.deviceType == "ios") {
           expect(installation.badge).toEqual(badge);
@@ -171,10 +171,10 @@ describe('PushController', () => {
   
   it('properly set badges to 1', (done) => {
     
-   var payload = {
+   var payload = {data: {
      alert: "Hello World!",
      badge: 1,
-   }
+   }}
    var installations = [];
    while(installations.length != 10) {
      var installation = new Parse.Object("_Installation");
@@ -188,7 +188,7 @@ describe('PushController', () => {
    
    var pushAdapter = {
     send: function(body, installations) {
-      var badge = body.badge;
+      var badge = body.data.badge;
       installations.forEach((installation) => {
         expect(installation.badge).toEqual(badge);
         expect(1).toEqual(installation.badge);
@@ -219,6 +219,6 @@ describe('PushController', () => {
      done();
    });
    
-  })
+  });
 
 });

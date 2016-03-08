@@ -48,55 +48,60 @@ export class PushController extends AdaptableController {
     body['expiration_time'] = PushController.getExpirationTime(body);
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
-    let badgeUpdate = Promise.resolve();
+    let badgeUpdate = () => {
+      return Promise.resolve();
+    }
 
-    if (body.badge) {
+    if (body.data && body.data.badge) {
+      let badge = body.data.badge;
       let op = {};
-      if (body.badge == "Increment") {
+      if (badge == "Increment") {
         op = { $inc: { badge: 1 } }
-      } else if (Number(body.badge)) {
-        op = { $set: { badge: body.badge } }
+      } else if (Number(badge)) {
+        op = { $set: { badge: badge } }
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
       let updateWhere = deepcopy(where);
       updateWhere.deviceType = 'ios'; // Only on iOS!
 
-      badgeUpdate = config.database.adaptiveCollection("_Installation")
+      badgeUpdate = () => { 
+       return config.database.adaptiveCollection("_Installation")
         .then(coll => coll.updateMany(updateWhere, op));
+      }
     }
 
-    return badgeUpdate.then(() => {
-      return rest.find(config, auth, '_Installation', where)
+    return badgeUpdate().then(() => {
+      return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
-      if (body.badge && body.badge == "Increment") {
+      if (body.data && body.data.badge && body.data.badge == "Increment") {
         // Collect the badges to reduce the # of calls
         let badgeInstallationsMap = response.results.reduce((map, installation) => {
           let badge = installation.badge;
           if (installation.deviceType != "ios") {
             badge = UNSUPPORTED_BADGE_KEY;
           }
-          map[badge] = map[badge] || [];
-          map[badge].push(installation);
+          map[badge+''] = map[badge+''] || [];
+          map[badge+''].push(installation);
           return map;
         }, {});
- 
+
         // Map the on the badges count and return the send result
         let promises = Object.keys(badgeInstallationsMap).map((badge) => {
           let payload = deepcopy(body);
           if (badge == UNSUPPORTED_BADGE_KEY) {
-            delete payload.badge;
+            delete payload.data.badge;
           } else {
-            payload.badge = parseInt(badge);
+            payload.data.badge = parseInt(badge);
           }
-          return pushAdapter.send(payload, badgeInstallationsMap[badge]); 
+          return pushAdapter.send(payload, badgeInstallationsMap[badge]);
         });
         return Promise.all(promises);
       }
       return pushAdapter.send(body, response.results);
     });
   }
-  
+
   /**
    * Get expiration time from the request body.
    * @param {Object} request A request object
