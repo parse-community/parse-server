@@ -1,6 +1,7 @@
 var request = require("request"),
   querystring = require('querystring'),
   Parse = require('parse/node').Parse;
+  HTTPResponse = require('./HTTPResponse').HTTPResponse;
 
 var encodeBody = function(options = {}) {
   let body = options.body;
@@ -62,15 +63,8 @@ module.exports = function(options) {
       }
       return promise.reject(error);
     }
-    var httpResponse = {};
-    httpResponse.status = response.statusCode;
-    httpResponse.headers = response.headers;
-    httpResponse.buffer = response.body;
-    httpResponse.cookies = response.headers["set-cookie"];
-    httpResponse.text = response.body.toString('utf-8');
-    try {
-      httpResponse.data = JSON.parse(httpResponse.text);
-    } catch (e) {}
+    let httpResponse = new HTTPResponse(response);
+    
     // Consider <200 && >= 400 as errors 
     if (httpResponse.status < 200 || httpResponse.status >= 400) {
       if (callbacks.error) {
