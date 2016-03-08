@@ -4,7 +4,7 @@ var express = require('express'),
   Parse = require('parse/node').Parse,
   Schema = require('../Schema');
 
-import PromiseRouter from '../PromiseRouter';
+import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
 
 function classNameMismatchResponse(bodyClass, pathClass) {
@@ -14,30 +14,10 @@ function classNameMismatchResponse(bodyClass, pathClass) {
   );
 }
 
-function mongoSchemaAPIResponseFields(schema) {
-  var fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
-  var response = fieldNames.reduce((obj, fieldName) => {
-    obj[fieldName] = Schema.mongoFieldTypeToSchemaAPIType(schema[fieldName])
-    return obj;
-  }, {});
-  response.ACL = {type: 'ACL'};
-  response.createdAt = {type: 'Date'};
-  response.updatedAt = {type: 'Date'};
-  response.objectId = {type: 'String'};
-  return response;
-}
-
-function mongoSchemaToSchemaAPIResponse(schema) {
-  return {
-    className: schema._id,
-    fields: mongoSchemaAPIResponseFields(schema),
-  };
-}
-
 function getAllSchemas(req) {
   return req.config.database.adaptiveCollection('_SCHEMA')
     .then(collection => collection.find({}))
-    .then(schemas => schemas.map(mongoSchemaToSchemaAPIResponse))
+    .then(schemas => schemas.map(Schema.mongoSchemaToSchemaAPIResponse))
     .then(schemas => ({ response: { results: schemas }}));
 }
 
@@ -51,7 +31,7 @@ function getOneSchema(req) {
       }
       return results[0];
     })
-    .then(schema => ({ response: mongoSchemaToSchemaAPIResponse(schema) }));
+    .then(schema => ({ response: Schema.mongoSchemaToSchemaAPIResponse(schema) }));
 }
 
 function createSchema(req) {
@@ -68,7 +48,7 @@ function createSchema(req) {
 
   return req.config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists(className, req.body.fields))
-    .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }));
+    .then(result => ({ response: Schema.mongoSchemaToSchemaAPIResponse(result) }));
 }
 
 function modifySchema(req) {
@@ -118,7 +98,7 @@ function modifySchema(req) {
             if (err) {
               reject(err);
             }
-            resolve({ response: mongoSchemaToSchemaAPIResponse(mongoObject.result)});
+            resolve({ response: Schema.mongoSchemaToSchemaAPIResponse(mongoObject.result)});
           })
         }));
     });

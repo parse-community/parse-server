@@ -760,6 +760,27 @@ function getObjectType(obj) {
   return 'object';
 }
 
+const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
+function mongoSchemaAPIResponseFields(schema) {
+  var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
+  var response = fieldNames.reduce((obj, fieldName) => {
+    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
+    return obj;
+  }, {});
+  response.ACL = {type: 'ACL'};
+  response.createdAt = {type: 'Date'};
+  response.updatedAt = {type: 'Date'};
+  response.objectId = {type: 'String'};
+  return response;
+}
+
+function mongoSchemaToSchemaAPIResponse(schema) {
+  return {
+    className: schema._id,
+    fields: mongoSchemaAPIResponseFields(schema),
+  };
+}
+
 module.exports = {
   load: load,
   classNameIsValid: classNameIsValid,
@@ -768,4 +789,5 @@ module.exports = {
   schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject: buildMergedSchemaObject,
   mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
+  mongoSchemaToSchemaAPIResponse,
 };
