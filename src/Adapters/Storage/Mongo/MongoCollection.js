@@ -57,6 +57,10 @@ export default class MongoCollection {
     })
   }
 
+  insertOne(object) {
+    return this._mongoCollection.insertOne(object);
+  }
+
   // Atomically updates data in the database for a single (first) object that matched the query
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
@@ -83,8 +87,8 @@ export default class MongoCollection {
     return this._mongoCollection.deleteOne(query);
   }
 
-  remove(query) {
-    return this._mongoCollection.remove(query);
+  deleteMany(query) {
+    return this._mongoCollection.deleteMany(query);
   }
 
   drop() {
