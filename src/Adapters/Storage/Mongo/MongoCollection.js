@@ -54,7 +54,11 @@ export default class MongoCollection {
     return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
       // Value is the object where mongo returns multiple fields.
       return document.value;
-    })
+    });
+  }
+
+  insertOne(object) {
+    return this._mongoCollection.insertOne(object);
   }
 
   // Atomically updates data in the database for a single (first) object that matched the query
@@ -62,6 +66,10 @@ export default class MongoCollection {
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
   upsertOne(query, update) {
     return this._mongoCollection.update(query, update, { upsert: true });
+  }
+
+  updateOne(query, update) {
+    return this._mongoCollection.updateOne(query, update);
   }
 
   updateMany(query, update) {
@@ -83,8 +91,8 @@ export default class MongoCollection {
     return this._mongoCollection.deleteOne(query);
   }
 
-  remove(query) {
-    return this._mongoCollection.remove(query);
+  deleteMany(query) {
+    return this._mongoCollection.deleteMany(query);
   }
 
   drop() {

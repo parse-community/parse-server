@@ -71,7 +71,7 @@ export class HooksController {
 
   _removeHooks(query) {
     return this.getCollection().then(collection => {
-      return collection.remove(query);
+      return collection.deleteMany(query);
     }).then(() => {
       return {};
     });
