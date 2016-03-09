@@ -168,12 +168,12 @@ function schemaAPITypeToMongoFieldType(type) {
 // '_metadata' is ignored for now
 // Everything else is expected to be a userspace field.
 class Schema {
-  collection;
+  _collection;
   data;
   perms;
 
   constructor(collection) {
-    this.collection = collection;
+    this._collection = collection;
 
     // this.data[className][fieldName] tells you the type of that field
     this.data = {};
@@ -184,8 +184,8 @@ class Schema {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this.collection.find({}, {}).toArray().then(mongoSchema => {
-      for (let obj of mongoSchema) {
+    return this._collection.find({}).then(results => {
+      for (let obj of results) {
         let className = null;
         let classData = {};
         let permsData = null;
@@ -231,7 +231,7 @@ class Schema {
       return Promise.reject(mongoObject);
     }
 
-    return this.collection.insertOne(mongoObject.result)
+    return this._collection.insertOne(mongoObject.result)
       .then(result => result.ops[0])
       .catch(error => {
         if (error.code === 11000) { //Mongo's duplicate key error
@@ -268,7 +268,7 @@ class Schema {
         'schema is frozen, cannot add: ' + className);
     }
     // We don't have this class. Update the schema
-    return this.collection.insert([{_id: className}]).then(() => {
+    return this._collection.insertOne({ _id: className }).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -280,10 +280,9 @@ class Schema {
     }).then(() => {
       // Ensure that the schema now validates
       return this.validateClassName(className, true);
-    }, (error) => {
+    }, () => {
       // The schema still doesn't validate. Give up
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-        'schema class name does not revalidate');
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
   }
 
@@ -296,7 +295,7 @@ class Schema {
       }
     };
     update = {'$set': update};
-    return this.collection.findAndModify(query, {}, update, {}).then(() => {
+    return this._collection.updateOne(query, update).then(() => {
       // The update succeeded. Reload the schema
       return this.reloadData();
     });
@@ -354,12 +353,12 @@ class Schema {
     // We don't have this field. Update the schema.
     // Note that we use the $exists guard and $set to avoid race
     // conditions in the database. This is important!
-    var query = {_id: className};
-    query[key] = {'$exists': false};
+    var query = { _id: className };
+    query[key] = { '$exists': false };
     var update = {};
     update[key] = type;
     update = {'$set': update};
-    return this.collection.findAndModify(query, {}, update, {}).then(() => {
+    return this._collection.upsertOne(query, update).then(() => {
       // The update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -422,14 +421,14 @@ class Schema {
 
             // for non-relations, remove all the data.
             // This is necessary to ensure that the data is still gone if they add the same field.
-            return database.collection(className)
+            return database.adaptiveCollection(className)
               .then(collection => {
-                var mongoFieldName = this.data[className][fieldName].startsWith('*') ? '_p_' + fieldName : fieldName;
-                return collection.update({}, { "$unset": { [mongoFieldName] : null } }, { multi: true });
+                let mongoFieldName = this.data[className][fieldName].startsWith('*') ? `_p_${fieldName}` : fieldName;
+                return collection.updateMany({}, { "$unset": { [mongoFieldName]: null } });
               });
           })
           // Save the _SCHEMA object
-          .then(() => this.collection.update({ _id: className }, { $unset: {[fieldName]: null }}));
+          .then(() => this._collection.updateOne({ _id: className }, { $unset: { [fieldName]: null } }));
       });
   }
 
@@ -448,9 +447,12 @@ class Schema {
         geocount++;
       }
       if (geocount > 1) {
-        throw new Parse.Error(
-          Parse.Error.INCORRECT_TYPE,
-          'there can only be one geopoint field in a class');
+        // Make sure all field validation operations run before we return.
+        // If not - we are continuing to run logic, but already provided response from the server.
+        return promise.then(() => {
+          return Promise.reject(new Parse.Error(Parse.Error.INCORRECT_TYPE,
+            'there can only be one geopoint field in a class'));
+        });
       }
       if (!expected) {
         continue;
@@ -760,6 +762,27 @@ function getObjectType(obj) {
   return 'object';
 }
 
+const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
+function mongoSchemaAPIResponseFields(schema) {
+  var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
+  var response = fieldNames.reduce((obj, fieldName) => {
+    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
+    return obj;
+  }, {});
+  response.ACL = {type: 'ACL'};
+  response.createdAt = {type: 'Date'};
+  response.updatedAt = {type: 'Date'};
+  response.objectId = {type: 'String'};
+  return response;
+}
+
+function mongoSchemaToSchemaAPIResponse(schema) {
+  return {
+    className: schema._id,
+    fields: mongoSchemaAPIResponseFields(schema),
+  };
+}
+
 module.exports = {
   load: load,
   classNameIsValid: classNameIsValid,
@@ -768,4 +791,5 @@ module.exports = {
   schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject: buildMergedSchemaObject,
   mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
+  mongoSchemaToSchemaAPIResponse,
 };

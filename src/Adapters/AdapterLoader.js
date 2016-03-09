@@ -1,6 +1,5 @@
 export function loadAdapter(adapter, defaultAdapter, options) {
-
-  if (!adapter)  
+  if (!adapter)
   {
     if (!defaultAdapter) {
       return options;
@@ -20,7 +19,7 @@ export function loadAdapter(adapter, defaultAdapter, options) {
     if (adapter.default) {
       adapter = adapter.default;
     }
-    
+
     return loadAdapter(adapter, undefined, options);
   } else if (adapter.module) {
     return loadAdapter(adapter.module, undefined, adapter.options);
@@ -30,7 +29,7 @@ export function loadAdapter(adapter, defaultAdapter, options) {
     return loadAdapter(adapter.adapter, undefined, adapter.options);
   }
   // return the adapter as provided
-  return adapter;     
+  return adapter;
 }
 
 export default loadAdapter;

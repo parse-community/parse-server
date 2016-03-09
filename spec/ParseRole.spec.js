@@ -197,5 +197,84 @@ describe('Parse Role testing', () => {
       });
   });
 
+  // Based on various scenarios described in issues #827 and #683,
+  it('should properly handle role permissions on objects', (done) => {
+    var user, user2, user3;
+    var role, role2, role3;
+    var obj, obj2;
+
+    var prACL = new Parse.ACL();
+    prACL.setPublicReadAccess(true);
+    var adminACL, superACL, customerACL;
+
+    createTestUser().then((x) => {
+      user = x;
+      user2 = new Parse.User();
+      return user2.save({ username: 'user2', password: 'omgbbq' });
+    }).then((x) => {
+      user3 = new Parse.User();
+      return user3.save({ username: 'user3', password: 'omgbbq' });
+    }).then((x) => {
+      role = new Parse.Role('Admin', prACL);
+      role.getUsers().add(user);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      adminACL = new Parse.ACL();
+      adminACL.setRoleReadAccess("Admin", true);
+      adminACL.setRoleWriteAccess("Admin", true);
+
+      role2 = new Parse.Role('Super', prACL);
+      role2.getUsers().add(user2);
+      return role2.save({}, { useMasterKey: true });
+    }).then(() => {
+      superACL = new Parse.ACL();
+      superACL.setRoleReadAccess("Super", true);
+      superACL.setRoleWriteAccess("Super", true);
+
+      role.getRoles().add(role2);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      role3 = new Parse.Role('Customer', prACL);
+      role3.getUsers().add(user3);
+      role3.getRoles().add(role);
+      return role3.save({}, { useMasterKey: true });
+    }).then(() => {
+      customerACL = new Parse.ACL();
+      customerACL.setRoleReadAccess("Customer", true);
+      customerACL.setRoleWriteAccess("Customer", true);
+
+      var query = new Parse.Query('_Role');
+      return query.find({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.length).toEqual(3);
+
+      obj = new Parse.Object('TestObjectRoles');
+      obj.set('ACL', customerACL);
+      return obj.save(null, { useMasterKey: true });
+    }).then(() => {
+      // Above, the Admin role was added to the Customer role.
+      // An object secured by the Customer ACL should be able to be edited by the Admin user.
+      obj.set('changedByAdmin', true);
+      return obj.save(null, { sessionToken: user.getSessionToken() });
+    }).then(() => {
+      obj2 = new Parse.Object('TestObjectRoles');
+      obj2.set('ACL', adminACL);
+      return obj2.save(null, { useMasterKey: true });
+    }, (e) => {
+      fail('Admin user should have been able to save.');
+      done();
+    }).then(() => {
+      // An object secured by the Admin ACL should not be able to be edited by a Customer role user.
+      obj2.set('changedByCustomer', true);
+      return obj2.save(null, { sessionToken: user3.getSessionToken() });
+    }).then(() => {
+      fail('Customer user should not have been able to save.');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(101);
+      done();
+    })
+  });
+
 });
 
