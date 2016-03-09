@@ -324,12 +324,10 @@ RestQuery.prototype.replaceDontSelect = function() {
       !dontSelectValue.key ||
       typeof dontSelectValue.query !== 'object' ||
       !dontSelectValue.query.className ||
-      !dontSelectValue.query.where ||
       Object.keys(dontSelectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
-
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
     dontSelectValue.query.where);
