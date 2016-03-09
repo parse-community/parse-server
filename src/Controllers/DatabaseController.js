@@ -6,6 +6,7 @@ var Parse = require('parse/node').Parse;
 
 var Schema = require('./../Schema');
 var transform = require('./../transform');
+const deepcopy = require('deepcopy');
 
 // options can contain:
 //   collectionPrefix: the string to put in front of every collection name.
@@ -130,6 +131,9 @@ DatabaseController.prototype.untransformObject = function(
 //         one of the provided strings must provide the caller with
 //         write permissions.
 DatabaseController.prototype.update = function(className, query, update, options) {
+  // Make a copy of the object, so we don't mutate the incoming data.
+  update = deepcopy(update);
+
   var acceptor = function(schema) {
     return schema.hasKeys(className, Object.keys(query));
   };
@@ -300,6 +304,9 @@ DatabaseController.prototype.destroy = function(className, query, options = {}) 
 // Inserts an object into the database.
 // Returns a promise that resolves successfully iff the object saved.
 DatabaseController.prototype.create = function(className, object, options) {
+  // Make a copy of the object, so we don't mutate the incoming data.
+  object = deepcopy(object);
+
   var schema;
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
