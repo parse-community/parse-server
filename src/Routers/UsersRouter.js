@@ -57,7 +57,7 @@ export class UsersRouter extends ClassesRouter {
     let sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
       { _session_token: sessionToken },
-      { include: 'user' })
+      { include: '_p_user' })
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||

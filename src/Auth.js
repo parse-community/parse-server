@@ -50,7 +50,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
   }
   var restOptions = {
     limit: 1,
-    include: 'user'
+    include: '_p_user'
   };
   var restWhere = {
     _session_token: sessionToken
