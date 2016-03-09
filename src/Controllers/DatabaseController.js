@@ -63,7 +63,7 @@ DatabaseController.prototype.validateClassName = function(className) {
 DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 
   if (!this.schemaPromise) {
-    this.schemaPromise = this.adaptiveCollection('_SCHEMA').then(collection => {
+    this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
       return Schema.load(collection);
     });
@@ -74,7 +74,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
     if (acceptor(schema)) {
       return schema;
     }
-    this.schemaPromise = this.adaptiveCollection('_SCHEMA').then(collection => {
+    this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
       return Schema.load(collection);
     });
