@@ -585,17 +585,22 @@ class Schema {
       return Promise.resolve();
     }
     var perms = this.perms[className][operation];
-    // Handle the public scenario quickly
-    if (perms['*']) {
-      return Promise.resolve();
-    }
-    // Check permissions against the aclGroup provided (array of userId/roles)
-    var found = false;
-    for (var i = 0; i < aclGroup.length && !found; i++) {
-      if (perms[aclGroup[i]]) {
-        found = true;
+
+    // Check permissions against the aclGroup provided (array of userId/roles) 
+    // if perms has a public, check the blacklist
+    let startfound = perms['*'] ? true : undefined;
+    let found = aclGroup.reduce((memo, acl) => {
+      let perm = perms[acl];
+      // We have a black listed permission
+      if (perm === false) {
+        return false;
       }
-    }
+      // the memo is not blacklisted
+      if (perm === true && memo !== false) {
+        return true;
+      }
+      return memo;
+    }, startfound);
     if (!found) {
       // TODO: Verify correct error code
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
