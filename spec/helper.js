@@ -252,3 +252,22 @@ global.jequal = jequal;
 global.range = range;
 global.setServerConfiguration = setServerConfiguration;
 global.defaultConfiguration = defaultConfiguration;
+
+// LiveQuery test setting
+require('../src/LiveQuery/PLog').logLevel = 'NONE';
+var libraryCache = {};
+jasmine.mockLibrary = function(library, name, mock) {
+  var original = require(library)[name];
+  if (!libraryCache[library]) {
+    libraryCache[library] = {};
+  }
+  require(library)[name] = mock;
+  libraryCache[library][name] = original;
+}
+
+jasmine.restoreLibrary = function(library, name) {
+  if (!libraryCache[library] || !libraryCache[library][name]) {
+    throw 'Can not find library ' + library + ' ' + name;
+  }
+  require(library)[name] = libraryCache[library][name];
+}

@@ -3,6 +3,7 @@ import cache from './cache';
 import * as middlewares from './middlewares';
 import { ParseServer } from './index';
 import { Parse } from 'parse/node';
+
 var express = require('express'),
   cryptoUtils = require('./cryptoUtils');
 
