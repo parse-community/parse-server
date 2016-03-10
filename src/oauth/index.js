@@ -13,5 +13,13 @@ module.exports = {
 	instagram: instagram,
 	linkedin: linkedin, 
 	meetup: meetup,
-	twitter: twitter
+	twitter: twitter,
+  anonymous: {
+    validateAuthData: function() {
+      return Promise.resolve();
+    },
+    validateAppId: function() {
+      return Promise.resolve();
+    }
+  }
 }

@@ -211,17 +211,15 @@ RestWrite.prototype.validateAuthData = function() {
   }
 
   var authData = this.data.authData;
-  var anonData = this.data.authData.anonymous;
-  
-  if (this.config.enableAnonymousUsers === true && (anonData === null ||
-    (anonData && anonData.id))) {
-    return this.handleAnonymousAuthData();
-  } 
-
-  // Not anon, try other providers
   var providers = Object.keys(authData);
-  if (!anonData && providers.length == 1) {
+  if (providers.length == 1) {
+    
     var provider = providers[0];
+    if (provider == 'anonymous' && !this.config.enableAnonymousUsers) {
+      throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
+                          'This authentication method is unsupported.');
+    } 
+    
     var providerAuthData = authData[provider];
     var hasToken = (providerAuthData && providerAuthData.id);
     if (providerAuthData === null || hasToken) {
@@ -232,55 +230,8 @@ RestWrite.prototype.validateAuthData = function() {
                           'This authentication method is unsupported.');
 };
 
-RestWrite.prototype.handleAnonymousAuthData = function() {
-  var anonData = this.data.authData.anonymous;
-  if (anonData === null && this.query) {
-    // We are unlinking the user from the anonymous provider
-    this.data._auth_data_anonymous = null;
-    return;
-  }
-
-  // Check if this user already exists
-  return this.config.database.find(
-    this.className,
-    {'authData.anonymous.id': anonData.id}, {})
-  .then((results) => {
-    if (results.length > 0) {
-      if (!this.query) {
-        // We're signing up, but this user already exists. Short-circuit
-        delete results[0].password;
-        this.response = {
-          response: results[0],
-          location: this.location()
-        };
-        return;
-      }
-
-      // If this is a PUT for the same user, allow the linking
-      if (results[0].objectId === this.query.objectId) {
-        // Delete the rest format key before saving
-        delete this.data.authData;
-        return;
-      }
-
-      // We're trying to create a duplicate account.  Forbid it
-      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
-    }
-
-    // This anonymous user does not already exist, so transform it
-    // to a saveable format
-    this.data._auth_data_anonymous = anonData;
-
-    // Delete the rest format key before saving
-    delete this.data.authData;
-  })
-
-};
-
 RestWrite.prototype.handleOAuthAuthData = function(provider) {
   var authData = this.data.authData[provider];
-
   if (authData === null && this.query) {
     // We are unlinking from the provider.
     this.data["_auth_data_" + provider ] = null;
@@ -297,7 +248,6 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
 
   var validateAuthData;
   var validateAppId;
-
 
   if (oauth[provider]) {
     validateAuthData = oauth[provider].validateAuthData;
@@ -343,37 +293,36 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
         query, {});
     }).then((results) => {
       this.storage['authProvider'] = provider;
-      if (results.length > 0) {
-        if (!this.query) {
-          // We're signing up, but this user already exists. Short-circuit
-          delete results[0].password;
-          this.response = {
-            response: results[0],
-            location: this.location()
-          };
-          this.data.objectId = results[0].objectId;
-          return;
-        }
-
-        // If this is a PUT for the same user, allow the linking
-        if (results[0].objectId === this.query.objectId) {
-          // Delete the rest format key before saving
-          delete this.data.authData;
-          return;
-        }
-        // We're trying to create a duplicate oauth auth. Forbid it
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                              'this auth is already used');
-      } else {
-        this.data.username = cryptoUtils.newToken();
-      }
-
-      // This FB auth does not already exist, so transform it to a
-      // saveable format
+      
+      // Put the data in the proper format
       this.data["_auth_data_" + provider ] = authData;
-
-      // Delete the rest format key before saving
-      delete this.data.authData;
+      
+      if (results.length == 0) {
+        // this a new user
+        this.data.username = cryptoUtils.newToken();
+      } else if (!this.query) {
+        // Login with auth data
+        // Short circuit
+        delete results[0].password;
+        this.response = {
+          response: results[0],
+          location: this.location()
+        };
+        this.data.objectId = results[0].objectId;
+      } else if (this.query && this.query.objectId) {
+        // Trying to update auth data but users
+        // are different
+        if (results[0].objectId !== this.query.objectId) {
+          delete this.data["_auth_data_" + provider ];
+          console.log("alerady linked!");
+          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                              'this auth is already used');
+        }
+      } else {
+        
+        delete this.data["_auth_data_" + provider ];
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'THis should not be reached...');
+      }
     });
 }
 
@@ -779,6 +728,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
   //       their own user record.
   if (this.data.ACL && this.data.ACL['*unresolved']) {
     throw new Parse.Error(Parse.Error.INVALID_ACL, 'Invalid ACL.');
+  }
+  
+  if (this.className === '_User') {
+    delete this.data.authData;
   }
 
   if (this.query) {
