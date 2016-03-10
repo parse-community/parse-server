@@ -1,8 +1,11 @@
 
 import MongoCollection from './MongoCollection';
+import MongoSchemaCollection from './MongoSchemaCollection';
 
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
+
+const MongoSchemaCollectionName = '_SCHEMA';
 
 export class MongoStorageAdapter {
   // Private
@@ -36,6 +39,12 @@ export class MongoStorageAdapter {
     return this.connect()
       .then(() => this.database.collection(name))
       .then(rawCollection => new MongoCollection(rawCollection));
+  }
+
+  schemaCollection(collectionPrefix: string) {
+    return this.connect()
+      .then(() => this.adaptiveCollection(collectionPrefix + MongoSchemaCollectionName))
+      .then(collection => new MongoSchemaCollection(collection));
   }
 
   collectionExists(name: string) {

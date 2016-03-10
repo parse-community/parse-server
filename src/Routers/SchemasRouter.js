@@ -15,23 +15,22 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.adaptiveCollection('_SCHEMA')
-    .then(collection => collection.find({}))
+  return req.config.database.schemaCollection()
+    .then(collection => collection.getAllSchemas())
     .then(schemas => schemas.map(Schema.mongoSchemaToSchemaAPIResponse))
     .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.adaptiveCollection('_SCHEMA')
-    .then(collection => collection.find({ '_id': className }, { limit: 1 }))
-    .then(results => {
-      if (results.length != 1) {
+  return req.config.database.schemaCollection()
+    .then(collection => collection.findSchema(className))
+    .then(mongoSchema => {
+      if (!mongoSchema) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       }
-      return results[0];
-    })
-    .then(schema => ({ response: Schema.mongoSchemaToSchemaAPIResponse(schema) }));
+      return { response: Schema.mongoSchemaToSchemaAPIResponse(mongoSchema) };
+    });
 }
 
 function createSchema(req) {
@@ -142,8 +141,8 @@ function deleteSchema(req) {
     .then(() => {
       // We've dropped the collection now, so delete the item from _SCHEMA
       // and clear the _Join collections
-      return req.config.database.adaptiveCollection('_SCHEMA')
-        .then(coll => coll.findOneAndDelete({ _id: req.params.className }))
+      return req.config.database.schemaCollection()
+        .then(coll => coll.findAndDeleteSchema(req.params.className))
         .then(document => {
           if (document === null) {
             //tried to delete non-existent class
