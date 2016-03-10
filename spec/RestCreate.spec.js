@@ -199,6 +199,57 @@ describe('rest create', () => {
       });
   });
 
+  it('test facebook login that is already have account and is logged with a anonymous user', (done) => {
+    var dataAnonymous = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    var data = {
+      authData: {
+        facebook: {
+          id: '8675309',
+          access_token: 'jenny'
+        }
+      }
+    };
+    var newUserSignedUpByFacebookObjectId;
+    var anonymousResponse;
+    rest.create(config, auth.nobody(config), '_User', data)
+      .then((r) => {
+        console.log('facebook user', r.response);
+        // facebook user sign up
+        newUserSignedUpByFacebookObjectId = r.response.objectId;
+        return rest.create(config, auth.nobody(config), '_User', dataAnonymous);
+      }).then((r) => {
+        console.log('anonymous user:', r.response);
+        // logged anonymous
+        var anonymousResponse = r.response;
+        data.authData.objectId = r.response.objectId;
+        data.authData.anonymous = null;
+        return rest.update(config, auth.nobody(config), '_User', data.authData.objectId, data);
+      }).then((r) => {
+        console.log('login', r);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(r.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        expect(response.results.length).toEqual(1);
+        var output = response.results[0];
+        expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
+        done();
+      })
+      .catch((err) => {
+        console.log('err', err);
+      });
+  });
+
   it('stores pointers with a _p_ prefix', (done) => {
     var obj = {
       foo: 'bar',
