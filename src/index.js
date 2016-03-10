@@ -84,6 +84,7 @@ function ParseServer({
   push,
   loggerAdapter,
   databaseURI = DatabaseAdapter.defaultDatabaseURI,
+  databaseOptions,
   cloud,
   collectionPrefix = '',
   clientKey,
@@ -118,6 +119,10 @@ function ParseServer({
 
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
+  }
+
+  if (databaseOptions) {
+    DatabaseAdapter.setAppDatabaseOptions(appId, databaseOptions);
   }
 
   if (cloud) {

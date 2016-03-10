@@ -24,6 +24,7 @@ let adapter = MongoStorageAdapter;
 let dbConnections = {};
 let databaseURI = DefaultDatabaseURI;
 let appDatabaseURIs = {};
+let appDatabaseOptions = {};
 
 function setAdapter(databaseAdapter) {
   adapter = databaseAdapter;
@@ -35,6 +36,10 @@ function setDatabaseURI(uri) {
 
 function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
+}
+
+function setAppDatabaseOptions(appId: string, options: Object) {
+  appDatabaseOptions[appId] = options;
 }
 
 //Used by tests
@@ -50,7 +55,7 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
 
   var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
 
-  let storageAdapter = new adapter(dbURI);
+  let storageAdapter = new adapter(dbURI, appDatabaseOptions[appId]);
   dbConnections[appId] = new DatabaseController(storageAdapter, {
     collectionPrefix: collectionPrefix
   });
@@ -62,6 +67,7 @@ module.exports = {
   getDatabaseConnection: getDatabaseConnection,
   setAdapter: setAdapter,
   setDatabaseURI: setDatabaseURI,
+  setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseURIs: clearDatabaseURIs,
   defaultDatabaseURI: databaseURI
