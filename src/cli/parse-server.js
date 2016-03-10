@@ -65,7 +65,7 @@ const app = express();
 const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-app.listen(options.port, function() {
+var server = app.listen(options.port, function() {
   
   for (let key in options) {
     let value = options[key];
@@ -77,3 +77,12 @@ app.listen(options.port, function() {
   console.log('');
   console.log('parse-server running on '+options.serverURL);
 });
+
+var handleShutdown = function() {
+  console.log('Termination signal received. Shutting down.');
+  server.close(function () {
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', handleShutdown);
+process.on('SIGINT', handleShutdown);
