@@ -112,9 +112,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
   let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
-    return this.config.database.loadSchema().then((schema) => {
-      return schema.hasClass(this.className)
-    }).then((hasClass) => {
+    return this.config.database.collectionExists(this.className).then((hasClass) => {
       if (hasClass === true) {
         return Promise.resolve();
       }
@@ -164,6 +162,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
+      this.storage['changedByTrigger'] = true;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
         delete this.data.objectId
@@ -178,7 +177,11 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
     this.data.updatedAt = this.updatedAt;
     if (!this.query) {
       this.data.createdAt = this.updatedAt;
-      this.data.objectId = cryptoUtils.newObjectId();
+
+      // Only assign new objectId if we are creating new object
+      if (!this.data.objectId) {
+        this.data.objectId = cryptoUtils.newObjectId();
+      }
     }
   }
   return Promise.resolve();
@@ -802,6 +805,9 @@ RestWrite.prototype.runDatabaseOperation = function() {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
         };
+        if (this.storage['changedByTrigger']) {
+          Object.assign(resp, this.data);
+        }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
         }

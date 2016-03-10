@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.1.4",
+  "version": "2.1.5",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -10,6 +10,8 @@
   "files": [
     "bin/",
     "lib/",
+    "public_html/",
+    "views/",
     "LICENSE",
     "PATENTS",
     "README.md"
@@ -26,6 +28,7 @@
     "commander": "^2.9.0",
     "deepcopy": "^0.6.1",
     "express": "^4.13.4",
+    "gcloud": "^0.28.0",
     "mailgun-js": "^0.7.7",
     "mime": "^1.3.4",
     "mongodb": "~2.1.0",
@@ -53,11 +56,11 @@
     "nodemon": "^1.8.1"
   },
   "scripts": {
-    "dev": "npm run build && bin/dev",
+    "dev": "npm run build && node bin/dev",
     "build": "./node_modules/.bin/babel src/ -d lib/",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
     "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
-    "posttest": "mongodb-runner stop",
+    "posttest": "./node_modules/.bin/mongodb-runner stop",
     "coverage": "cross-env COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**' npm test",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"

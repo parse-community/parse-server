@@ -24,6 +24,7 @@ import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
+import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
 import { GlobalConfigRouter }  from './Routers/GlobalConfigRouter';
 import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
 import { HooksController }     from './Controllers/HooksController';
@@ -133,7 +134,8 @@ function ParseServer({
   const filesControllerAdapter = loadAdapter(filesAdapter, () => {
     return new GridStoreAdapter(databaseURI);
   });
-  const pushControllerAdapter = loadAdapter(push, ParsePushAdapter);
+  // Pass the push options too as it works with the default
+  const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push);
   const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
   const emailControllerAdapter = loadAdapter(emailAdapter);
   // We pass the options and the base class for the adatper,
@@ -181,7 +183,7 @@ function ParseServer({
   var api = express();
   //api.use("/apps", express.static(__dirname + "/public"));
   // File handling needs to be before default middlewares are applied
-  api.use('/', new FilesRouter().getExpressRouter({
+  api.use('/', middlewares.allowCrossDomain, new FilesRouter().getExpressRouter({
     maxUploadSize: maxUploadSize
   }));
 
@@ -232,15 +234,18 @@ function ParseServer({
 
   api.use(middlewares.handleParseErrors);
 
-  process.on('uncaughtException', (err) => {
-    if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-      console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
-      process.exit(0);
-    }
-    else {
-      throw err;
-    }
-  });
+  //This causes tests to spew some useless warnings, so disable in test
+  if (!process.env.TESTING) {
+    process.on('uncaughtException', (err) => {
+      if( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+        console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+        process.exit(0);
+      }
+      else {
+        throw err;
+      }
+    });
+  }
   hooksController.load();
 
   return api;
@@ -255,4 +260,5 @@ function addParseCloud() {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
+  GCSAdapter: GCSAdapter
 };

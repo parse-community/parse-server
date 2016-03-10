@@ -3,31 +3,6 @@ var PushController = require('../src/Controllers/PushController').PushController
 var Config = require('../src/Config');
 
 describe('PushController', () => {
-  it('can check valid master key of request', (done) => {
-    // Make mock request
-    var auth = {
-      isMaster: true
-    }
-
-    expect(() => {
-      PushController.validateMasterKey(auth);
-    }).not.toThrow();
-    done();
-  });
-
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var auth = {
-      isMaster: false
-    }
-
-    expect(() => {
-      PushController.validateMasterKey(auth);
-    }).toThrow();
-    done();
-  });
-
-
   it('can validate device type when no device type is set', (done) => {
     // Make query condition
     var where = {
@@ -132,10 +107,10 @@ describe('PushController', () => {
   
   it('properly increment badges', (done) => {
     
-   var payload = {
+   var payload = {data:{
      alert: "Hello World!",
      badge: "Increment",
-   }
+   }}
    var installations = [];
    while(installations.length != 10) {
      var installation = new Parse.Object("_Installation");
@@ -157,7 +132,7 @@ describe('PushController', () => {
    
    var pushAdapter = {
     send: function(body, installations) {
-      var badge = body.badge;
+      var badge = body.data.badge;
       installations.forEach((installation) => {
         if (installation.deviceType == "ios") {
           expect(installation.badge).toEqual(badge);
@@ -196,10 +171,10 @@ describe('PushController', () => {
   
   it('properly set badges to 1', (done) => {
     
-   var payload = {
+   var payload = {data: {
      alert: "Hello World!",
      badge: 1,
-   }
+   }}
    var installations = [];
    while(installations.length != 10) {
      var installation = new Parse.Object("_Installation");
@@ -213,7 +188,7 @@ describe('PushController', () => {
    
    var pushAdapter = {
     send: function(body, installations) {
-      var badge = body.badge;
+      var badge = body.data.badge;
       installations.forEach((installation) => {
         expect(installation.badge).toEqual(badge);
         expect(1).toEqual(installation.badge);
@@ -244,6 +219,6 @@ describe('PushController', () => {
      done();
    });
    
-  })
+  });
 
 });

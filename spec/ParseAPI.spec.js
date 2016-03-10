@@ -4,6 +4,7 @@
 
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
+const Parse = require("parse/node");
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -372,8 +373,8 @@ describe('miscellaneous', function() {
       done();
     });
   });
-  
-  it('test cloud function shoud echo keys', function(done) {
+
+  it('test cloud function should echo keys', function(done) {
     Parse.Cloud.run('echoKeys').then((result) => {
       expect(result.applicationId).toEqual(Parse.applicationId);
       expect(result.masterKey).toEqual(Parse.masterKey);
@@ -399,7 +400,7 @@ describe('miscellaneous', function() {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail( err => {
+    }).fail(err => {
       fail(err);
       done();
     })
@@ -415,9 +416,9 @@ describe('miscellaneous', function() {
       // Make sure the required mock for all tests is unset.
       Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
-   });
-   
-   it('object is set on create and update', done => {
+    });
+
+    it('object is set on create and update', done => {
       let triggerTime = 0;
       // Register a mock beforeSave hook
       Parse.Cloud.beforeSave('GameScore', (req, res) => {
@@ -683,7 +684,7 @@ describe('miscellaneous', function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
       // Clear mock afterSave
-       Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
+      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, function(error) {
       console.error(error);
@@ -718,6 +719,90 @@ describe('miscellaneous', function() {
     obj.increment('yolo', 1);
     obj.save().then(() => {
       obj.increment('yolo', 1);
+      return obj.save();
+    }).then(() => {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      // Clear mock afterSave
+      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
+      done();
+    }, error => {
+      console.error(error);
+      fail(error);
+      done();
+    });
+  });
+
+  it('beforeSave receives ACL', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', function(req, res) {
+      let object = req.object;
+      if (triggerTime == 0) {
+        let acl = object.getACL();
+        expect(acl.getPublicReadAccess()).toBeTruthy();
+        expect(acl.getPublicWriteAccess()).toBeTruthy();
+      } else if (triggerTime == 1) {
+        let acl = object.getACL();
+        expect(acl.getPublicReadAccess()).toBeFalsy();
+        expect(acl.getPublicWriteAccess()).toBeTruthy();
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    let obj = new Parse.Object('GameScore');
+    let acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setPublicWriteAccess(true);
+    obj.setACL(acl);
+    obj.save().then(() => {
+      acl.setPublicReadAccess(false);
+      obj.setACL(acl);
+      return obj.save();
+    }).then(() => {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      // Clear mock afterSave
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
+      done();
+    }, error => {
+      console.error(error);
+      fail(error);
+      done();
+    });
+  });
+
+  it('afterSave receives ACL', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.afterSave('GameScore', function(req, res) {
+      let object = req.object;
+      if (triggerTime == 0) {
+        let acl = object.getACL();
+        expect(acl.getPublicReadAccess()).toBeTruthy();
+        expect(acl.getPublicWriteAccess()).toBeTruthy();
+      } else if (triggerTime == 1) {
+        let acl = object.getACL();
+        expect(acl.getPublicReadAccess()).toBeFalsy();
+        expect(acl.getPublicWriteAccess()).toBeTruthy();
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    let obj = new Parse.Object('GameScore');
+    let acl = new Parse.ACL();
+    acl.setPublicReadAccess(true);
+    acl.setPublicWriteAccess(true);
+    obj.setACL(acl);
+    obj.save().then(() => {
+      acl.setPublicReadAccess(false);
+      obj.setACL(acl);
       return obj.save();
     }).then(() => {
       // Make sure the checking has been triggered
@@ -967,6 +1052,23 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('beforeSave change propagates through the save response', (done) => {
+    Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
+      request.object.set('foo', 'baz');
+      response.success();
+    });
+    let obj = new Parse.Object('ChangingObject');
+    obj.save({ foo: 'bar' }).then((objAgain) => {
+      expect(objAgain.get('foo')).toEqual('baz');
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
+      done();
+    }, (e) => {
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
+      fail('Should not have failed to save.');
+      done();
+    });
+  });
+
   it('dedupes an installation properly and returns updatedAt', (done) => {
     let headers = {
       'Content-Type': 'application/json',
@@ -990,6 +1092,34 @@ describe('miscellaneous', function() {
         expect(error).toBe(null);
         let b = JSON.parse(body);
         expect(typeof b.updatedAt).toEqual('string');
+        done();
+      });
+    });
+  });
+
+  it('android login providing empty authData block works', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    let data = {
+      username: 'pulse1989',
+      password: 'password1234',
+      authData: {}
+    };
+    let requestOptions = {
+      headers: headers,
+      url: 'http://localhost:8378/1/users',
+      body: JSON.stringify(data)
+    };
+    request.post(requestOptions, (error, response, body) => {
+      expect(error).toBe(null);
+      requestOptions.url = 'http://localhost:8378/1/login';
+      request.get(requestOptions, (error, response, body) => {
+        expect(error).toBe(null);
+        let b = JSON.parse(body);
+        expect(typeof b['sessionToken']).toEqual('string');
         done();
       });
     });

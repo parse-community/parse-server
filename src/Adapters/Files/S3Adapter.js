@@ -8,19 +8,20 @@ import requiredParameter from '../../requiredParameter';
 
 const DEFAULT_S3_REGION = "us-east-1";
 
-function parseS3AdapterOptions(...options) {
-  if (options.length === 1 && typeof options[0] == "object") {
-    return options;
+function requiredOrFromEnvironment(env, name) {
+  let environmentVariable = process.env[env];
+  if (!environmentVariable) {
+    requiredParameter(`S3Adapter requires an ${name}`);
   }
-  
-  const additionalOptions = options[3] || {};
-  
-  return {
-    accessKey: options[0],
-    secretKey: options[1],
-    bucket: options[2],
-    region: additionalOptions.region
+  return environmentVariable;
+}
+
+function fromEnvironmentOrDefault(env, defaultValue) {
+  let environmentVariable = process.env[env];
+  if (environmentVariable) {
+    return environmentVariable;
   }
+  return defaultValue;
 }
 
 export class S3Adapter extends FilesAdapter {
@@ -28,12 +29,12 @@ export class S3Adapter extends FilesAdapter {
   // Providing AWS access and secret keys is mandatory
   // Region and bucket will use sane defaults if omitted
   constructor(
-     accessKey = requiredParameter('S3Adapter requires an accessKey'),
-     secretKey = requiredParameter('S3Adapter requires a secretKey'),
-     bucket,
-     { region = DEFAULT_S3_REGION,
-       bucketPrefix = '',
-       directAccess = false } = {}) {
+     accessKey = requiredOrFromEnvironment('S3_ACCESS_KEY', 'accessKey'),
+     secretKey = requiredOrFromEnvironment('S3_SECRET_KEY', 'secretKey'),
+     bucket = fromEnvironmentOrDefault('S3_BUCKET', undefined),
+     { region = fromEnvironmentOrDefault('S3_REGION', DEFAULT_S3_REGION),
+       bucketPrefix = fromEnvironmentOrDefault('S3_BUCKET_PREFIX', ''),
+       directAccess =  fromEnvironmentOrDefault('S3_DIRECT_ACCESS', false) } = {}) {
     super();
     
     this._region = region;

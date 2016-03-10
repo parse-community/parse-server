@@ -168,9 +168,7 @@ RestQuery.prototype.validateClientClassCreation = function() {
   let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
-    return this.config.database.loadSchema().then((schema) => {
-      return schema.hasClass(this.className)
-    }).then((hasClass) => {
+    return this.config.database.collectionExists(this.className).then((hasClass) => {
       if (hasClass === true) {
         return Promise.resolve();
       }
@@ -326,12 +324,10 @@ RestQuery.prototype.replaceDontSelect = function() {
       !dontSelectValue.key ||
       typeof dontSelectValue.query !== 'object' ||
       !dontSelectValue.query.className ||
-      !dontSelectValue.query.where ||
       Object.keys(dontSelectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
-
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
     dontSelectValue.query.where);
@@ -396,6 +392,7 @@ RestQuery.prototype.runCount = function() {
   }
   this.findOptions.count = true;
   delete this.findOptions.skip;
+  delete this.findOptions.limit;
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((c) => {
       this.response.count = c;

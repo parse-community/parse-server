@@ -4,7 +4,7 @@ var express = require('express'),
   Parse = require('parse/node').Parse,
   Schema = require('../Schema');
 
-import PromiseRouter from '../PromiseRouter';
+import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
 
 function classNameMismatchResponse(bodyClass, pathClass) {
@@ -14,44 +14,23 @@ function classNameMismatchResponse(bodyClass, pathClass) {
   );
 }
 
-function mongoSchemaAPIResponseFields(schema) {
-  var fieldNames = Object.keys(schema).filter(key => key !== '_id' && key !== '_metadata');
-  var response = fieldNames.reduce((obj, fieldName) => {
-    obj[fieldName] = Schema.mongoFieldTypeToSchemaAPIType(schema[fieldName])
-    return obj;
-  }, {});
-  response.ACL = {type: 'ACL'};
-  response.createdAt = {type: 'Date'};
-  response.updatedAt = {type: 'Date'};
-  response.objectId = {type: 'String'};
-  return response;
-}
-
-function mongoSchemaToSchemaAPIResponse(schema) {
-  return {
-    className: schema._id,
-    fields: mongoSchemaAPIResponseFields(schema),
-  };
-}
-
 function getAllSchemas(req) {
-  return req.config.database.adaptiveCollection('_SCHEMA')
-    .then(collection => collection.find({}))
-    .then(schemas => schemas.map(mongoSchemaToSchemaAPIResponse))
-    .then(schemas => ({ response: { results: schemas }}));
+  return req.config.database.schemaCollection()
+    .then(collection => collection.getAllSchemas())
+    .then(schemas => schemas.map(Schema.mongoSchemaToSchemaAPIResponse))
+    .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.adaptiveCollection('_SCHEMA')
-    .then(collection => collection.find({ '_id': className }, { limit: 1 }))
-    .then(results => {
-      if (results.length != 1) {
+  return req.config.database.schemaCollection()
+    .then(collection => collection.findSchema(className))
+    .then(mongoSchema => {
+      if (!mongoSchema) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       }
-      return results[0];
-    })
-    .then(schema => ({ response: mongoSchemaToSchemaAPIResponse(schema) }));
+      return { response: Schema.mongoSchemaToSchemaAPIResponse(mongoSchema) };
+    });
 }
 
 function createSchema(req) {
@@ -68,7 +47,7 @@ function createSchema(req) {
 
   return req.config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists(className, req.body.fields))
-    .then(result => ({ response: mongoSchemaToSchemaAPIResponse(result) }));
+    .then(result => ({ response: Schema.mongoSchemaToSchemaAPIResponse(result) }));
 }
 
 function modifySchema(req) {
@@ -85,7 +64,7 @@ function modifySchema(req) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${req.params.className} does not exist.`);
       }
 
-      let existingFields = Object.assign(schema.data[className], {_id: className});
+      let existingFields = Object.assign(schema.data[className], { _id: className });
       Object.keys(submittedFields).forEach(name => {
         let field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {
@@ -103,24 +82,27 @@ function modifySchema(req) {
       }
 
       // Finally we have checked to make sure the request is valid and we can start deleting fields.
-      // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
-      let deletionPromises = [];
-      Object.keys(submittedFields).forEach(submittedFieldName => {
-        if (submittedFields[submittedFieldName].__op === 'Delete') {
-          let promise = schema.deleteField(submittedFieldName, className, req.config.database);
-          deletionPromises.push(promise);
+      // Do all deletions first, then add fields to avoid duplicate geopoint error.
+      let deletePromises = [];
+      let insertedFields = [];
+      Object.keys(submittedFields).forEach(fieldName => {
+        if (submittedFields[fieldName].__op === 'Delete') {
+          const promise = schema.deleteField(fieldName, className, req.config.database);
+          deletePromises.push(promise);
+        } else {
+          insertedFields.push(fieldName);
         }
       });
-
-      return Promise.all(deletionPromises)
-        .then(() => new Promise((resolve, reject) => {
-          schema.collection.update({_id: className}, mongoObject.result, {w: 1}, (err, docs) => {
-            if (err) {
-              reject(err);
-            }
-            resolve({ response: mongoSchemaToSchemaAPIResponse(mongoObject.result)});
-          })
-        }));
+      return Promise.all(deletePromises) // Delete Everything
+        .then(() => schema.reloadData()) // Reload our Schema, so we have all the new values
+        .then(() => {
+          let promises = insertedFields.map(fieldName => {
+            const mongoType = mongoObject.result[fieldName];
+            return schema.validateField(className, fieldName, mongoType);
+          });
+          return Promise.all(promises);
+        })
+        .then(() => ({ response: Schema.mongoSchemaToSchemaAPIResponse(mongoObject.result) }));
     });
 }
 
@@ -159,8 +141,8 @@ function deleteSchema(req) {
     .then(() => {
       // We've dropped the collection now, so delete the item from _SCHEMA
       // and clear the _Join collections
-      return req.config.database.adaptiveCollection('_SCHEMA')
-        .then(coll => coll.findOneAndDelete({_id: req.params.className}))
+      return req.config.database.schemaCollection()
+        .then(coll => coll.findAndDeleteSchema(req.params.className))
         .then(document => {
           if (document === null) {
             //tried to delete non-existent class

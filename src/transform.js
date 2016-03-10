@@ -412,6 +412,7 @@ function transformConstraint(constraint, inArray) {
     case '$gte':
     case '$exists':
     case '$ne':
+    case '$eq':
       answer[key] = transformAtom(constraint[key], true,
                                   {inArray: inArray});
       break;

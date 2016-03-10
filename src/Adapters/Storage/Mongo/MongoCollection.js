@@ -1,4 +1,3 @@
-
 let mongodb = require('mongodb');
 let Collection = mongodb.Collection;
 
@@ -18,8 +17,7 @@ export default class MongoCollection {
     return this._rawFind(query, { skip, limit, sort })
       .catch(error => {
         // Check for "no geoindex" error
-        if (error.code != 17007 ||
-          !error.message.match(/unable to find index for .geoNear/)) {
+        if (error.code != 17007 || !error.message.match(/unable to find index for .geoNear/)) {
           throw error;
         }
         // Figure out what key needs an index
@@ -56,18 +54,34 @@ export default class MongoCollection {
     return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
       // Value is the object where mongo returns multiple fields.
       return document.value;
-    })
+    });
   }
 
-  // Atomically find and delete an object based on query.
-  // The result is the promise with an object that was in the database before deleting.
-  // Postgres Note: Translates directly to `DELETE * FROM ... RETURNING *`, which will return data after delete is done.
-  findOneAndDelete(query) {
-    // arguments: query, sort
-    return this._mongoCollection.findAndRemove(query, []).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
+  insertOne(object) {
+    return this._mongoCollection.insertOne(object);
+  }
+
+  // Atomically updates data in the database for a single (first) object that matched the query
+  // If there is nothing that matches the query - does insert
+  // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
+  upsertOne(query, update) {
+    return this._mongoCollection.update(query, update, { upsert: true });
+  }
+
+  updateOne(query, update) {
+    return this._mongoCollection.updateOne(query, update);
+  }
+
+  updateMany(query, update) {
+    return this._mongoCollection.updateMany(query, update);
+  }
+
+  deleteOne(query) {
+    return this._mongoCollection.deleteOne(query);
+  }
+
+  deleteMany(query) {
+    return this._mongoCollection.deleteMany(query);
   }
 
   drop() {
