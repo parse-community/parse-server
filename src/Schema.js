@@ -76,15 +76,41 @@ var requiredColumns = {
   _Role: ["name", "ACL"]
 }
 
+// 10 alpha numberic chars + uppercase
+const userIdRegex = /^[a-zA-Z0-9]{10}$/;
+// Anything that start with role
+const roleRegex = /^role:.*/;
+// * permission
+const publicRegex = /^\*$/
+
+const permissionKeyRegex = [userIdRegex, roleRegex, publicRegex];
+
+function verifyPermissionKey(key) {
+  let result = permissionKeyRegex.reduce((isGood, regEx) => {
+    isGood = isGood || key.match(regEx) != null;
+    return isGood;
+  }, false);
+  if (!result) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid key for class level permissions`);
+  }
+}
+
 let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete', 'addField'];
 function validateCLP(perms) {
   if (!perms) {
     return;
   }
-  Object.keys(perms).forEach((key) => {
-    if (CLPValidKeys.indexOf(key) == -1) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, `${key} is not a valid operation for class level permissions`);
+  Object.keys(perms).forEach((operation) => {
+    if (CLPValidKeys.indexOf(operation) == -1) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+    Object.keys(perms[operation]).forEach((key) => {
+      verifyPermissionKey(key);
+      let perm = perms[operation][key];
+      if (perm !== true && perm !== false) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perm}' is not a valid value for class level permissions ${operation}:${key}:${perm}`);
+      }
+    });
   });
 }
 // Valid classes must:

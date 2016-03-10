@@ -996,4 +996,130 @@ describe('schemas', () => {
     })
   });
   
+  it('should throw with invalid userId (>10 chars)', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '1234567890A': true
+          },
+        }
+      }
+    }, (error, response, body) => {
+     expect(body.error).toEqual("'1234567890A' is not a valid key for class level permissions");
+      done();
+    })
+  });
+  
+  it('should throw with invalid userId (<10 chars)', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            'a12345678': true
+          },
+        }
+      }
+    }, (error, response, body) => {
+      expect(body.error).toEqual("'a12345678' is not a valid key for class level permissions");
+      done();
+    })
+  });
+  
+  it('should throw with invalid userId (invalid char)', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '12345_6789': true
+          },
+        }
+      }
+    }, (error, response, body) => {
+      expect(body.error).toEqual("'12345_6789' is not a valid key for class level permissions");
+      done();
+    })
+  });
+  
+  it('should throw with invalid * (spaces)', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            ' *': true
+          },
+        }
+      }
+    }, (error, response, body) => {
+      expect(body.error).toEqual("' *' is not a valid key for class level permissions");
+      done();
+    })
+  });
+  
+  it('should throw with invalid * (spaces)', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '* ': true
+          },
+        }
+      }
+    }, (error, response, body) => {
+      expect(body.error).toEqual("'* ' is not a valid key for class level permissions");
+      done();
+    })
+  });
+  
+  it('should throw with invalid value', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '*': 1
+          },
+        }
+      }
+    }, (error, response, body) => {
+      expect(body.error).toEqual("'1' is not a valid value for class level permissions find:*:1");
+      done();
+    })
+  });
+  
+  it('should throw with invalid value', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/AClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: {
+          find: {
+            '*': ""
+          },
+        }
+      }
+    }, (error, response, body) => {
+       expect(body.error).toEqual("'' is not a valid value for class level permissions find:*:");
+      done();
+    })
+  });
+  
 });
