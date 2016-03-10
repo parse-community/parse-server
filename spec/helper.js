@@ -7,6 +7,7 @@ var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
 var facebook = require('../src/oauth/facebook');
 var ParseServer = require('../src/index').ParseServer;
+var path = require('path');
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || '../spec/cloud/main.js';
@@ -36,7 +37,7 @@ var defaultConfiguration = {
   oauth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
-      module: "../spec/myoauth" // relative path as it's run from src
+      module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
   }
 };

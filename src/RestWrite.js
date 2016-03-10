@@ -9,7 +9,6 @@ var Auth = require('./Auth');
 var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
-var oauth = require("./oauth");
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 
@@ -213,13 +212,7 @@ RestWrite.prototype.validateAuthData = function() {
   var authData = this.data.authData;
   var providers = Object.keys(authData);
   if (providers.length == 1) {
-    
-    var provider = providers[0];
-    if (provider == 'anonymous' && !this.config.enableAnonymousUsers) {
-      throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
-                          'This authentication method is unsupported.');
-    } 
-    
+    var provider = providers[0];    
     var providerAuthData = authData[provider];
     var hasToken = (providerAuthData && providerAuthData.id);
     if (providerAuthData === null || hasToken) {
@@ -238,52 +231,15 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
     return;
   }
 
-  var appIds;
-  var oauthOptions = this.config.oauth[provider];
-  if (oauthOptions) {
-    appIds = oauthOptions.appIds;
-  } else if (provider == "facebook") {
-    appIds = this.config.facebookAppIds;
-  }
+  let validateAuthData = this.config.oauth.getValidatorForProvider(provider);
 
-  var validateAuthData;
-  var validateAppId;
-
-  if (oauth[provider]) {
-    validateAuthData = oauth[provider].validateAuthData;
-    validateAppId = oauth[provider].validateAppId;
-  }
-
-  // Try the configuration methods
-  if (oauthOptions) {
-    if (oauthOptions.module) {
-      validateAuthData = require(oauthOptions.module).validateAuthData;
-      validateAppId = require(oauthOptions.module).validateAppId;
-    };
-
-    if (oauthOptions.validateAuthData) {
-      validateAuthData = oauthOptions.validateAuthData;
-    }
-    if (oauthOptions.validateAppId) {
-      validateAppId = oauthOptions.validateAppId;
-    }
-  }
-  // try the custom provider first, fallback on the oauth implementation
-
-  if (!validateAuthData || !validateAppId) {
-    return false;
+  if (!validateAuthData) {
+    throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
+                          'This authentication method is unsupported.');
   };
 	
-  return validateAuthData(authData, oauthOptions)
+  return validateAuthData(authData)
     .then(() => {
-      if (appIds && typeof validateAppId === "function") {
-        return validateAppId(appIds, authData, oauthOptions);
-      }
-
-      // No validation required by the developer
-      return Promise.resolve();
-
-    }).then(() => {
       // Check if this user already exists
       // TODO: does this handle re-linking correctly?
       var query = {};
@@ -314,7 +270,6 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
         // are different
         if (results[0].objectId !== this.query.objectId) {
           delete this.data["_auth_data_" + provider ];
-          console.log("alerady linked!");
           throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
         }
