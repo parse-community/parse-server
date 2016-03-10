@@ -184,7 +184,7 @@ class Schema {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this._collection.find({}).then(results => {
+    return this._collection.getAllSchemas().then(results => {
       for (let obj of results) {
         let className = null;
         let classData = {};
@@ -231,7 +231,7 @@ class Schema {
       return Promise.reject(mongoObject);
     }
 
-    return this._collection.insertOne(mongoObject.result)
+    return this._collection.addSchema(className, mongoObject.result)
       .then(result => result.ops[0])
       .catch(error => {
         if (error.code === 11000) { //Mongo's duplicate key error
@@ -268,7 +268,7 @@ class Schema {
         'schema is frozen, cannot add: ' + className);
     }
     // We don't have this class. Update the schema
-    return this._collection.insertOne({ _id: className }).then(() => {
+    return this._collection.addSchema(className).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -288,14 +288,13 @@ class Schema {
 
   // Sets the Class-level permissions for a given className, which must exist.
   setPermissions(className, perms) {
-    var query = {_id: className};
     var update = {
       _metadata: {
         class_permissions: perms
       }
     };
     update = {'$set': update};
-    return this._collection.updateOne(query, update).then(() => {
+    return this._collection.updateSchema(className, update).then(() => {
       // The update succeeded. Reload the schema
       return this.reloadData();
     });
@@ -353,12 +352,12 @@ class Schema {
     // We don't have this field. Update the schema.
     // Note that we use the $exists guard and $set to avoid race
     // conditions in the database. This is important!
-    var query = { _id: className };
+    let query = {};
     query[key] = { '$exists': false };
     var update = {};
     update[key] = type;
     update = {'$set': update};
-    return this._collection.upsertOne(query, update).then(() => {
+    return this._collection.upsertSchema(className, query, update).then(() => {
       // The update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -428,7 +427,7 @@ class Schema {
               });
           })
           // Save the _SCHEMA object
-          .then(() => this._collection.updateOne({ _id: className }, { $unset: { [fieldName]: null } }));
+          .then(() => this._collection.updateSchema(className, { $unset: { [fieldName]: null } }));
       });
   }
 
