@@ -1122,4 +1122,282 @@ describe('schemas', () => {
     })
   });
   
+  function setPermissionsOnClass(className, permissions, doPut) {
+    let op = request.post;
+    if (doPut)  
+    {
+      op = request.put;
+    }
+    return new Promise((resolve, reject) => {
+     op({
+      url: 'http://localhost:8378/1/schemas/'+className,
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        classLevelPermissions: permissions
+      }
+    }, (error, response, body) => {
+      if (error) {
+        return reject(error);
+      }
+      if (body.error) {
+        return reject(body);
+      }
+      return resolve(body);
+    })
+    });
+  }
+  
+  it('validate CLP 1', done => {
+    let user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    
+    let admin = new Parse.User();
+    admin.setUsername('admin');
+    admin.setPassword('admin');
+    
+    let role = new Parse.Role('admin', new Parse.ACL());
+    
+    setPermissionsOnClass('AClass', {
+      'find': {
+        'role:admin': true
+      }
+    }).then(() => {
+      return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
+    }).then(()=> {
+      role.relation('users').add(admin);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+     return Parse.User.logIn('user', 'user').then(() => {
+        let obj = new Parse.Object('AClass');
+        return obj.save();
+      })
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        fail('Use should hot be able to find!')
+      }, (err) => {
+        return Promise.resolve();
+      })
+    }).then(() => {
+      return Parse.User.logIn('admin', 'admin');
+    }).then( () => {
+      let query = new Parse.Query('AClass');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      done();
+    }, () => {
+      fail("should not fail!");
+      done();
+    }).catch( (err) => {
+      console.error(err);
+      done();
+    })
+  });
+  
+  it('validate CLP 2', done => {
+    let user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    
+    let admin = new Parse.User();
+    admin.setUsername('admin');
+    admin.setPassword('admin');
+    
+    let role = new Parse.Role('admin', new Parse.ACL());
+    
+    setPermissionsOnClass('AClass', {
+      'find': {
+        'role:admin': true
+      }
+    }).then(() => {
+      return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
+    }).then(()=> {
+      role.relation('users').add(admin);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+     return Parse.User.logIn('user', 'user').then(() => {
+        let obj = new Parse.Object('AClass');
+        return obj.save();
+      })
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        fail('User should not be able to find!')
+      }, (err) => {
+        return Promise.resolve();
+      })
+    }).then(() => {
+      // let everyone see it now
+      return setPermissionsOnClass('AClass', {
+        'find': {
+          'role:admin': true,
+          '*': true
+        }
+      }, true);
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((result) => {
+        expect(result.length).toBe(1);
+      }, (err) => {
+        console.error(err);
+        expect(err.message).toEqual('Permission denied for this action.');
+        fail('User should be able to find!')
+        done();
+      });
+    }).then(() => {
+      return Parse.User.logIn('admin', 'admin');
+    }).then( () => {
+      let query = new Parse.Query('AClass');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      done();
+    }, (err) => {
+      console.error(err);
+      fail("should not fail!");
+      done();
+    }).catch( (err) => {
+      console.error(err);
+      done();
+    })
+  });
+  
+  it('validate CLP 3', done => {
+    let user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    
+    let admin = new Parse.User();
+    admin.setUsername('admin');
+    admin.setPassword('admin');
+    
+    let role = new Parse.Role('admin', new Parse.ACL());
+    
+    setPermissionsOnClass('AClass', {
+      'find': {
+        'role:admin': true
+      }
+    }).then(() => {
+      return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
+    }).then(()=> {
+      role.relation('users').add(admin);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+     return Parse.User.logIn('user', 'user').then(() => {
+        let obj = new Parse.Object('AClass');
+        return obj.save();
+      })
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        fail('User should not be able to find!')
+      }, (err) => {
+        return Promise.resolve();
+      })
+    }).then(() => {
+      // delete all CLP
+      return setPermissionsOnClass('AClass', null, true);
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((result) => {
+        expect(result.length).toBe(1);
+      }, (err) => {
+        console.error(err);
+        fail('User should be able to find!')
+        done();
+      });
+    }).then(() => {
+      return Parse.User.logIn('admin', 'admin');
+    }).then( () => {
+      let query = new Parse.Query('AClass');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      done();
+    }, (err) => {
+      console.error(err);
+      fail("should not fail!");
+      done();
+    }).catch( (err) => {
+      console.error(err);
+      done();
+    })
+  });
+  
+  it('validate CLP 4', done => {
+    let user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    
+    let admin = new Parse.User();
+    admin.setUsername('admin');
+    admin.setPassword('admin');
+    
+    let role = new Parse.Role('admin', new Parse.ACL());
+    
+    setPermissionsOnClass('AClass', {
+      'find': {
+        'role:admin': true
+      }
+    }).then(() => {
+      return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
+    }).then(()=> {
+      role.relation('users').add(admin);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+     return Parse.User.logIn('user', 'user').then(() => {
+        let obj = new Parse.Object('AClass');
+        return obj.save();
+      })
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        fail('User should not be able to find!')
+      }, (err) => {
+        return Promise.resolve();
+      })
+    }).then(() => {
+      // borked CLP should not affec security
+      return setPermissionsOnClass('AClass', {
+        'found': {
+          'role:admin': true 
+        }
+      }, true).then(() => {
+        fail("Should not be able to save a borked CLP");
+      }, () => {
+        return Promise.resolve();
+      })
+    }).then(() => {
+      let query = new Parse.Query('AClass');
+      return query.find().then((result) => {
+        fail('User should not be able to find!')
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for this action.');
+        return Promise.resolve();
+      });
+    }).then(() => {
+      return Parse.User.logIn('admin', 'admin');
+    }).then( () => {
+      let query = new Parse.Query('AClass');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      done();
+    }, (err) => {
+      console.error(err);
+      fail("should not fail!");
+      done();
+    }).catch( (err) => {
+      console.error(err);
+      done();
+    })
+  });
+  
 });

@@ -262,18 +262,10 @@ class Schema {
     if (this.data[className]) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
     }
-    if (classLevelPermissions) {
-      validateCLP(classLevelPermissions);
-    }
 
-    let mongoObject = mongoSchemaFromFieldsAndClassName(fields, className);
+    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions);
     if (!mongoObject.result) {
       return Promise.reject(mongoObject);
-    }
-    
-    if (classLevelPermissions) {
-      mongoObject.result._metadata = mongoObject.result._metadata || {};
-      mongoObject.result._metadata.class_permissions = classLevelPermissions;
     }
 
     return this._collection.addSchema(className, mongoObject.result)
@@ -301,17 +293,12 @@ class Schema {
       }
     });
     
-    validateCLP(classLevelPermissions);
     let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-    let mongoObject = mongoSchemaFromFieldsAndClassName(newSchema, className);
+    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions);
     if (!mongoObject.result) {
       throw new Parse.Error(mongoObject.code, mongoObject.error);
     }
-    // set the class permissions
-    if (classLevelPermissions) {
-      mongoObject.result._metadata = mongoObject.result._metadata || {};
-      mongoObject.result._metadata.class_permissions = classLevelPermissions;
-    }
+
     // Finally we have checked to make sure the request is valid and we can start deleting fields.
     // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
     let deletePromises = [];
@@ -332,6 +319,9 @@ class Schema {
           return this.validateField(className, fieldName, mongoType);
         });
         return Promise.all(promises);
+      })
+      .then(() => { 
+        return this.setPermissions(className, classLevelPermissions)
       })
       .then(() => { return mongoSchemaToSchemaAPIResponse(mongoObject.result) });
   }
@@ -383,6 +373,9 @@ class Schema {
 
   // Sets the Class-level permissions for a given className, which must exist.
   setPermissions(className, perms) {
+    if (typeof perms === 'undefined') {
+      return Promise.resolve();
+    }
     validateCLP(perms);
     var update = {
       _metadata: {
@@ -644,7 +637,7 @@ function load(collection) {
 
 // Returns { code, error } if invalid, or { result }, an object
 // suitable for inserting into _SCHEMA collection, otherwise
-function mongoSchemaFromFieldsAndClassName(fields, className) {
+function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions) {
   if (!classNameIsValid(className)) {
     return {
       code: Parse.Error.INVALID_CLASS_NAME,
@@ -696,6 +689,16 @@ function mongoSchemaFromFieldsAndClassName(fields, className) {
       code: Parse.Error.INCORRECT_TYPE,
       error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
     };
+  }
+  
+  validateCLP(classLevelPermissions);
+  if (typeof classLevelPermissions !== 'undefined') {
+    mongoObject._metadata = mongoObject._metadata || {};
+    if (!classLevelPermissions) {
+      delete mongoObject._metadata.class_permissions;
+    } else {
+      mongoObject._metadata.class_permissions = classLevelPermissions;
+    }
   }
 
   return { result: mongoObject };
@@ -886,7 +889,6 @@ module.exports = {
   load: load,
   classNameIsValid: classNameIsValid,
   invalidClassNameMessage: invalidClassNameMessage,
-  mongoSchemaFromFieldsAndClassName: mongoSchemaFromFieldsAndClassName,
   schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject: buildMergedSchemaObject,
   mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
