@@ -32,7 +32,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
                           'is an invalid field name.');
   }
-
+  
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -211,74 +211,98 @@ RestWrite.prototype.validateAuthData = function() {
 
   var authData = this.data.authData;
   var providers = Object.keys(authData);
-  if (providers.length == 1) {
-    var provider = providers[0];    
+  if (providers.length > 0) {
+    var provider = providers[providers.length-1];    
     var providerAuthData = authData[provider];
     var hasToken = (providerAuthData && providerAuthData.id);
     if (providerAuthData === null || hasToken) {
-      return this.handleOAuthAuthData(provider);
+      return this.handleAuthData(authData);
     }
   }
   throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
                           'This authentication method is unsupported.');
 };
 
-RestWrite.prototype.handleOAuthAuthData = function(provider) {
-  var authData = this.data.authData[provider];
-  if (authData === null && this.query) {
-    // We are unlinking from the provider.
-    this.data["_auth_data_" + provider ] = null;
-    return;
-  }
+RestWrite.prototype.handleAuthDataValidation = function(authData) {
+  let validations = Object.keys(authData).map((provider) => {
+    if (authData[provider] === null) {
+      return Promise.resolve();
+    }
+    let validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
+    if (!validateAuthData) {
+      throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
+                            'This authentication method is unsupported.');
+    };
+    return validateAuthData(authData[provider]);
+  });
+  return Promise.all(validations);
+}
 
-  let validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
-
-  if (!validateAuthData) {
-    throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
-                          'This authentication method is unsupported.');
-  };
-	
-  return validateAuthData(authData)
-    .then(() => {
-      // Check if this user already exists
-      // TODO: does this handle re-linking correctly?
-      var query = {};
-      query['authData.' + provider + '.id'] = authData.id;
-      return this.config.database.find(
+RestWrite.prototype.findUsersWithAuthData = function(authData) {
+  let providers = Object.keys(authData);
+  let query = providers.reduce((memo, provider) => {
+    if (!authData[provider]) {
+      return memo;
+    }
+    let queryKey = `authData.${provider}.id`;
+    let query = {};
+    query[queryKey] = authData[provider].id;
+    memo.push(query);
+    return memo;
+  }, []).filter((q) => {
+    return typeof q !== undefined;
+  });
+  
+  let findPromise = Promise.resolve([]);
+  if (query.length > 0) {
+     findPromise = this.config.database.find(
         this.className,
-        query, {});
-    }).then((results) => {
-      this.storage['authProvider'] = provider;
-      
-      // Put the data in the proper format
-      this.data["_auth_data_" + provider ] = authData;
-      
-      if (results.length == 0) {
-        // this a new user
-        this.data.username = cryptoUtils.newToken();
-      } else if (!this.query) {
-        // Login with auth data
-        // Short circuit
-        delete results[0].password;
-        this.response = {
-          response: results[0],
-          location: this.location()
-        };
-        this.data.objectId = results[0].objectId;
-      } else if (this.query && this.query.objectId) {
-        // Trying to update auth data but users
-        // are different
-        if (results[0].objectId !== this.query.objectId) {
-          delete this.data["_auth_data_" + provider ];
-          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+        {'$or': query}, {})
+  }
+  
+  return findPromise;
+}
+
+RestWrite.prototype.handleAuthData = function(authData) {
+  let results;
+  return this.handleAuthDataValidation(authData).then(() => {
+     return this.findUsersWithAuthData(authData);
+  }).then((r) => {
+    results = r;
+    if (results.length > 1) {
+      // More than 1 user with the passed id's
+      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
-        }
-      } else {
-        
-        delete this.data["_auth_data_" + provider ];
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'THis should not be reached...');
-      }
+    }
+    // set the proper keys
+    Object.keys(authData).forEach((provider) => {
+      this.data[`_auth_data_${provider}`] = authData[provider];
     });
+
+    if (results.length == 0) {
+      this.data.username = cryptoUtils.newToken();
+    } else if (!this.query) {
+      // Login with auth data
+      // Short circuit
+      delete results[0].password;
+      this.response = {
+        response: results[0],
+        location: this.location()
+      };
+      this.data.objectId = results[0].objectId;
+    } else if (this.query && this.query.objectId) {
+      // Trying to update auth data but users
+      // are different
+      if (results[0].objectId !== this.query.objectId) {
+        Object.keys(authData).forEach((provider) => {
+          delete this.data[`_auth_data_${provider}`];
+        });
+        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                            'this auth is already used');
+      }
+    }
+    return Promise.resolve();
+  });
 }
 
 // The non-third-party parts of User transformation

@@ -163,6 +163,7 @@ describe('rest create', () => {
     }, (err) => {
       expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
       expect(err.message).toEqual('This authentication method is unsupported.');
+      NoAnnonConfig.authDataManager.setEnableAnonymousUsers(true);
       done();
     })
   });
@@ -199,7 +200,7 @@ describe('rest create', () => {
         done();
       });
   });
-
+  
   it('stores pointers with a _p_ prefix', (done) => {
     var obj = {
       foo: 'bar',
