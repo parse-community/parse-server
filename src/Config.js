@@ -33,7 +33,7 @@ export class Config {
     this.pushController = cacheInfo.pushController;
     this.loggerController = cacheInfo.loggerController;
     this.userController = cacheInfo.userController;
-    this.oauth = cacheInfo.oauth;
+    this.authDataManager = cacheInfo.authDataManager;
     this.customPages = cacheInfo.customPages || {};
     this.mount = mount;
   }

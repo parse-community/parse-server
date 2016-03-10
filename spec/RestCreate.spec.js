@@ -149,7 +149,7 @@ describe('rest create', () => {
   
   it('handles no anonymous users config', (done) => {
      var NoAnnonConfig = Object.assign({}, config);
-     NoAnnonConfig.oauth.setEnableAnonymousUsers(false);
+     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
      var data1 = {
       authData: {
         anonymous: {

@@ -9,7 +9,7 @@ var batch = require('./batch'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
-    oauthManager = require('./oauth');
+    authDataManager = require('./authDataManager');
 
 //import passwordReset           from './passwordReset';
 import cache                   from './cache';
@@ -165,7 +165,7 @@ function ParseServer({
     userController: userController,
     verifyUserEmails: verifyUserEmails,
     allowClientClassCreation: allowClientClassCreation,
-    oauth: oauthManager(oauth, enableAnonymousUsers),
+    authDataManager: authDataManager(oauth, enableAnonymousUsers),
     appName: appName,
     publicServerURL: publicServerURL,
     customPages: customPages,

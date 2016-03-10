@@ -231,7 +231,7 @@ RestWrite.prototype.handleOAuthAuthData = function(provider) {
     return;
   }
 
-  let validateAuthData = this.config.oauth.getValidatorForProvider(provider);
+  let validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
 
   if (!validateAuthData) {
     throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
