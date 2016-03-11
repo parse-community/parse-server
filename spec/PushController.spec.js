@@ -1,3 +1,4 @@
+"use strict";
 var PushController = require('../src/Controllers/PushController').PushController;
 
 var Config = require('../src/Config');
@@ -219,6 +220,46 @@ describe('PushController', () => {
      done();
    });
    
+  });
+  
+  it('should support full RESTQuery for increment', (done) => {
+    var payload = {data: {
+     alert: "Hello World!",
+     badge: 'Increment',
+   }}
+   
+   var pushAdapter = {
+    send: function(body, installations) {
+      return Promise.resolve();
+    },
+    getValidPushTypes: function() {
+      return ["ios"];
+    }
+  }
+  
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+   
+   let where = {
+     'deviceToken': {
+       '$inQuery': {
+         'where': {
+           'deviceType': 'ios'
+         },
+         className: '_Installation'
+       }
+     }
+   }
+
+   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   pushController.sendPush(payload, where, config, auth).then((result) => {
+      done();
+    }).catch((err) => {
+      fail('should not fail');
+      done();
+    });
   });
 
 });
