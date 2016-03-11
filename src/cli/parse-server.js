@@ -38,7 +38,15 @@ let options = {};
 if (program.args.length > 0 ) {
   let jsonPath = program.args[0];
   jsonPath = path.resolve(jsonPath);
-  options = require(jsonPath);
+  let jsonConfig = require(jsonPath);
+  if (jsonConfig.apps) {
+    if (jsonConfig.apps.length > 1) {
+      throw 'Multiple apps are not supported';
+    }
+    options = jsonConfig.apps[0];
+  } else {
+    options = jsonConfig;
+  }
   console.log(`Configuation loaded from ${jsonPath}`)
 } 
 
