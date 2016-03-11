@@ -9,6 +9,7 @@
 
 var request = require('request');
 var passwordCrypto = require('../src/password');
+var Config = require('../src/Config');
 
 function verifyACL(user) {
   const ACL = user.getACL();
@@ -904,6 +905,50 @@ describe('Parse.User testing', () => {
       }
     };
   };
+  
+  var getMockMyOauthProvider = function() {
+    return {
+      authData: {
+        id: "12345",
+        access_token: "12345",
+        expiration_date: new Date().toJSON(),
+      },
+      shouldError: false,
+      loggedOut: false,
+      synchronizedUserId: null,
+      synchronizedAuthToken: null,
+      synchronizedExpiration: null,
+
+      authenticate: function(options) {
+        if (this.shouldError) {
+          options.error(this, "An error occurred");
+        } else if (this.shouldCancel) {
+          options.error(this, null);
+        } else {
+          options.success(this, this.authData);
+        }
+      },
+      restoreAuthentication: function(authData) {
+        if (!authData) {
+          this.synchronizedUserId = null;
+          this.synchronizedAuthToken = null;
+          this.synchronizedExpiration = null;
+          return true;
+        }
+        this.synchronizedUserId = authData.id;
+        this.synchronizedAuthToken = authData.access_token;
+        this.synchronizedExpiration = authData.expiration_date;
+        return true;
+      },
+      getAuthType: function() {
+        return "myoauth";
+      },
+      deauthenticate: function() {
+        this.loggedOut = true;
+        this.restoreAuthentication(null);
+      }
+    };
+  };
 
   var ExtendedUser = Parse.User.extend({
     extended: function() {
@@ -1280,6 +1325,151 @@ describe('Parse.User testing', () => {
       },
       error: function(model, error) {
         ok(false, "linking should have worked");
+        done();
+      }
+    });
+  });
+  
+  it("link multiple providers", (done) => {
+    var provider = getMockFacebookProvider();
+    var mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        ok(model instanceof Parse.User, "Model should be a Parse.User");
+        strictEqual(Parse.User.current(), model);
+        ok(model.extended(), "Should have used the subclass.");
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+        ok(model._isLinked("facebook"), "User should be linked to facebook");
+        Parse.User._registerAuthenticationProvider(mockProvider);
+        let objectId = model.id;
+        model._linkWith("myoauth", {
+          success: function(model) {
+            expect(model.id).toEqual(objectId);
+            ok(model._isLinked("facebook"), "User should be linked to facebook");
+            ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+            done();
+          }, 
+          error: function(error) {
+            console.error(error);
+            fail('SHould not fail');
+            done();
+          }
+        })
+      },
+      error: function(model, error) {
+        ok(false, "linking should have worked");
+        done();
+      }
+    });
+  });
+
+  it("link multiple providers and update token", (done) => {
+    var provider = getMockFacebookProvider();
+    var mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        ok(model instanceof Parse.User, "Model should be a Parse.User");
+        strictEqual(Parse.User.current(), model);
+        ok(model.extended(), "Should have used the subclass.");
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+        ok(model._isLinked("facebook"), "User should be linked to facebook");
+        Parse.User._registerAuthenticationProvider(mockProvider);
+        let objectId = model.id;
+        model._linkWith("myoauth", {
+          success: function(model) {
+            expect(model.id).toEqual(objectId);
+            ok(model._isLinked("facebook"), "User should be linked to facebook");
+            ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+            model._linkWith("facebook", {
+              success: () => {
+                ok(model._isLinked("facebook"), "User should be linked to facebook");
+                ok(model._isLinked("myoauth"), "User should be linked to myoauth");
+                done();
+              },
+              error: () => {
+                fail('should link again');
+                done();
+              }
+            })
+          },
+          error: function(error) {
+            console.error(error);
+            fail('SHould not fail');
+            done();
+          }
+        })
+      },
+      error: function(model, error) {
+        ok(false, "linking should have worked");
+        done();
+      }
+    });
+  });
+
+  it('should fail linking with existing', (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.User.logOut().then(() => {
+          let user = new Parse.User();
+          user.setUsername('user');
+          user.setPassword('password');
+          return user.signUp().then(() => {
+            // try to link here
+            user._linkWith('facebook', {
+              success: () => {
+                fail('should not succeed');
+                done();
+              },
+              error: (err) => {
+                done();
+              }
+            });
+          });
+        });
+      }
+    });
+  });
+  
+  it('should have authData in beforeSave and afterSave', (done) => {
+    
+    Parse.Cloud.beforeSave('_User', (request, response) => {
+      let authData = request.object.get('authData');
+      expect(authData).not.toBeUndefined();
+      if (authData) {
+        expect(authData.facebook.id).toEqual('8675309');
+        expect(authData.facebook.access_token).toEqual('jenny');
+      } else {
+        fail('authData should be set');
+      }
+      response.success();
+    });
+    
+    Parse.Cloud.afterSave('_User', (request, response) => {
+      let authData = request.object.get('authData');
+      expect(authData).not.toBeUndefined();
+      if (authData) {
+        expect(authData.facebook.id).toEqual('8675309');
+        expect(authData.facebook.access_token).toEqual('jenny');
+      } else {
+        fail('authData should be set');
+      }
+      response.success();
+    });
+    
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+        Parse.Cloud._removeHook('Triggers', 'afterSave', Parse.User.className);
         done();
       }
     });
@@ -1779,6 +1969,42 @@ describe('Parse.User testing', () => {
         })
       }
     });
+  });
+  
+  // Sometimes the authData still has null on that keys
+  // https://github.com/ParsePlatform/parse-server/issues/935 
+  it('should cleanup null authData keys', (done) => {
+    let database = new Config(Parse.applicationId).database;
+    database.create('_User', {
+      username: 'user',
+      password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
+      _auth_data_facebook: null
+    }, {}).then(() => {
+      return new Promise((resolve, reject) => {
+        request.get({
+          url: 'http://localhost:8378/1/login?username=user&password=test',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+          json: true
+        }, (err, res, body) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        })
+      })
+    }).then((user) => {
+      let authData = user.authData;
+      expect(user.username).toEqual('user');
+      expect(authData).toBeUndefined();
+      done();
+    }).catch((err) => {
+      fail('this should not fail');
+      done();  
+    })
   });
 });
 
