@@ -9,6 +9,7 @@
 
 var request = require('request');
 var passwordCrypto = require('../src/password');
+var Config = require('../src/Config');
 
 function verifyACL(user) {
   const ACL = user.getACL();
@@ -1779,6 +1780,42 @@ describe('Parse.User testing', () => {
         })
       }
     });
+  });
+  
+  // Sometimes the authData still has null on that keys
+  // https://github.com/ParsePlatform/parse-server/issues/935 
+  it('should cleanup null authData keys', (done) => {
+    let database = new Config(Parse.applicationId).database;
+    database.create('_User', {
+      username: 'user',
+      password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
+      _auth_data_facebook: null
+    }, {}).then(() => {
+      return new Promise((resolve, reject) => {
+        request.get({
+          url: 'http://localhost:8378/1/login?username=user&password=test',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+          json: true
+        }, (err, res, body) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        })
+      })
+    }).then((user) => {
+      let authData = user.authData;
+      expect(user.username).toEqual('user');
+      expect(authData).toBeUndefined();
+      done();
+    }).catch((err) => {
+      fail('this should not fail');
+      done();  
+    })
   });
 });
 
