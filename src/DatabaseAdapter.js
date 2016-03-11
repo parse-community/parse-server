@@ -43,9 +43,10 @@ function setAppDatabaseOptions(appId: string, options: Object) {
 }
 
 //Used by tests
-function clearDatabaseURIs() {
+function clearDatabaseSettings() {
   appDatabaseURIs = {};
   dbConnections = {};
+  appDatabaseOptions = {};
 }
 
 function getDatabaseConnection(appId: string, collectionPrefix: string) {
@@ -69,6 +70,6 @@ module.exports = {
   setDatabaseURI: setDatabaseURI,
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
-  clearDatabaseURIs: clearDatabaseURIs,
+  clearDatabaseSettings: clearDatabaseSettings,
   defaultDatabaseURI: databaseURI
 };
