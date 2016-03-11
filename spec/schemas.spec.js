@@ -23,6 +23,27 @@ var hasAllPODobject = () => {
   return obj;
 };
 
+let defaultClassLevelPermissions = {
+  find: {
+    '*': true
+  },
+  create: {
+    '*': true
+  },
+  get: {
+    '*': true
+  },
+  update: {
+    '*': true
+  },
+  addField: {
+    '*': true
+  },
+  delete: {
+    '*': true
+  }
+}
+
 var plainOldDataSchema = {
   className: 'HasAllPOD',
   fields: {
@@ -40,7 +61,8 @@ var plainOldDataSchema = {
     aArray: {type: 'Array'},
     aGeoPoint: {type: 'GeoPoint'},
     aFile: {type: 'File'}
-  }
+  },
+  classLevelPermissions: defaultClassLevelPermissions
 };
 
 var pointersAndRelationsSchema = {
@@ -61,6 +83,7 @@ var pointersAndRelationsSchema = {
       targetClass: 'HasAllPOD',
     },
   },
+  classLevelPermissions: defaultClassLevelPermissions
 }
 
 var noAuthHeaders = {
@@ -296,7 +319,8 @@ describe('schemas', () => {
           objectId: {type: 'String'},
           foo: {type: 'Number'},
           ptr: {type: 'Pointer', targetClass: 'SomeClass'},
-        }
+        },
+        classLevelPermissions: defaultClassLevelPermissions
       });
       done();
     });
@@ -318,7 +342,8 @@ describe('schemas', () => {
           createdAt: {type: 'Date'},
           updatedAt: {type: 'Date'},
           objectId: {type: 'String'},
-        }
+        },
+        classLevelPermissions: defaultClassLevelPermissions
       });
       done();
     });
@@ -490,7 +515,8 @@ describe('schemas', () => {
             "objectId": {"type": "String"},
             "updatedAt": {"type": "Date"},
             "geo2": {"type": "GeoPoint"},
-          }
+          },
+          classLevelPermissions: defaultClassLevelPermissions
         })).toEqual(undefined);
         done();
       });
@@ -539,6 +565,7 @@ describe('schemas', () => {
             "updatedAt": {"type": "Date"},
             "newField": {"type": "String"},
           },
+          classLevelPermissions: defaultClassLevelPermissions
         })).toEqual(undefined);
         request.get({
           url: 'http://localhost:8378/1/schemas/NewClass',
@@ -553,7 +580,8 @@ describe('schemas', () => {
               updatedAt: {type: 'Date'},
               objectId: {type: 'String'},
               newField: {type: 'String'},
-            }
+            },
+            classLevelPermissions: defaultClassLevelPermissions
           });
           done();
         });
@@ -590,7 +618,8 @@ describe('schemas', () => {
             emailVerified: {type: 'Boolean'},
             newField: {type: 'String'},
             ACL: {type: 'ACL'}
-          }
+          },
+          classLevelPermissions: defaultClassLevelPermissions
         });
         request.get({
           url: 'http://localhost:8378/1/schemas/_User',
@@ -610,7 +639,8 @@ describe('schemas', () => {
               emailVerified: {type: 'Boolean'},
               newField: {type: 'String'},
               ACL: {type: 'ACL'}
-            }
+            },
+            classLevelPermissions: defaultClassLevelPermissions
           });
           done();
         });
@@ -656,7 +686,8 @@ describe('schemas', () => {
             aNewString: {type: 'String'},
             aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
             aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
-          }
+          },
+          classLevelPermissions: defaultClassLevelPermissions
         });
         var obj2 = new Parse.Object('HasAllPOD');
         obj2.set('aNewPointer', obj1);
@@ -902,6 +933,18 @@ describe('schemas', () => {
           },
           create: {
             'role:admin': true
+          },
+          get: {
+            '*': true
+          },
+          update: {
+            '*': true
+          },
+          addField: {
+            '*': true
+          },
+          delete: {
+            '*': true
           }
         });
         done();

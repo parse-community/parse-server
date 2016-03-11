@@ -96,6 +96,13 @@ function verifyPermissionKey(key) {
 }
 
 let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete', 'addField'];
+let DefaultClassLevelPermissions = CLPValidKeys.reduce((perms, key) => {
+    perms[key] = {
+      '*': true
+    };
+    return perms;
+  }, {});
+
 function validateCLP(perms) {
   if (!perms) {
     return;
@@ -879,9 +886,12 @@ function mongoSchemaToSchemaAPIResponse(schema) {
     className: schema._id,
     fields: mongoSchemaAPIResponseFields(schema),
   };
+  
+  let classLevelPermissions = DefaultClassLevelPermissions;
   if (schema._metadata && schema._metadata.class_permissions) {
-    result.classLevelPermissions = schema._metadata.class_permissions;
-  }
+    classLevelPermissions = Object.assign(classLevelPermissions, schema._metadata.class_permissions);
+  } 
+  result.classLevelPermissions = classLevelPermissions;
   return result;
 }
 
