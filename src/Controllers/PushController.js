@@ -5,6 +5,7 @@ import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
 import deepcopy from 'deepcopy';
 import features from '../features';
+import RestQuery from '../RestQuery';
 
 const FEATURE_NAME = 'push';
 const UNSUPPORTED_BADGE_KEY = "unsupported";
@@ -63,11 +64,21 @@ export class PushController extends AdaptableController {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
       let updateWhere = deepcopy(where);
-      updateWhere.deviceType = 'ios'; // Only on iOS!
 
       badgeUpdate = () => { 
-       return config.database.adaptiveCollection("_Installation")
-        .then(coll => coll.updateMany(updateWhere, op));
+        let badgeQuery = new RestQuery(config, auth, '_Installation', updateWhere);
+        return badgeQuery.buildRestWhere().then(() => {
+          let restWhere = deepcopy(badgeQuery.restWhere);
+          // Force iOS only devices
+          if (!restWhere['$and']) {
+            restWhere['$and'] = [badgeQuery.restWhere];
+          }
+          restWhere['$and'].push({
+            'deviceType': 'ios'
+          });
+          return config.database.adaptiveCollection("_Installation")
+            .then(coll => coll.updateMany(restWhere, op));
+        })
       }
     }
 
