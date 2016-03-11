@@ -9,7 +9,6 @@ var Auth = require('./Auth');
 var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
-var oauth = require("./oauth");
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 
@@ -33,7 +32,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
                           'is an invalid field name.');
   }
-
+  
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -211,170 +210,96 @@ RestWrite.prototype.validateAuthData = function() {
   }
 
   var authData = this.data.authData;
-  var anonData = this.data.authData.anonymous;
-  
-  if (this.config.enableAnonymousUsers === true && (anonData === null ||
-    (anonData && anonData.id))) {
-    return this.handleAnonymousAuthData();
-  } 
-
-  // Not anon, try other providers
   var providers = Object.keys(authData);
-  if (!anonData && providers.length == 1) {
-    var provider = providers[0];
-    var providerAuthData = authData[provider];
-    var hasToken = (providerAuthData && providerAuthData.id);
-    if (providerAuthData === null || hasToken) {
-      return this.handleOAuthAuthData(provider);
+  if (providers.length > 0) {
+    let canHandleAuthData = providers.reduce((canHandle, provider) => {
+      var providerAuthData = authData[provider];
+      var hasToken = (providerAuthData && providerAuthData.id);
+      return canHandle && (hasToken || providerAuthData == null);
+    }, true);
+    if (canHandleAuthData) {
+      return this.handleAuthData(authData);
     }
   }
   throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
                           'This authentication method is unsupported.');
 };
 
-RestWrite.prototype.handleAnonymousAuthData = function() {
-  var anonData = this.data.authData.anonymous;
-  if (anonData === null && this.query) {
-    // We are unlinking the user from the anonymous provider
-    this.data._auth_data_anonymous = null;
-    return;
-  }
-
-  // Check if this user already exists
-  return this.config.database.find(
-    this.className,
-    {'authData.anonymous.id': anonData.id}, {})
-  .then((results) => {
-    if (results.length > 0) {
-      if (!this.query) {
-        // We're signing up, but this user already exists. Short-circuit
-        delete results[0].password;
-        this.response = {
-          response: results[0],
-          location: this.location()
-        };
-        return;
-      }
-
-      // If this is a PUT for the same user, allow the linking
-      if (results[0].objectId === this.query.objectId) {
-        // Delete the rest format key before saving
-        delete this.data.authData;
-        return;
-      }
-
-      // We're trying to create a duplicate account.  Forbid it
-      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
-    }
-
-    // This anonymous user does not already exist, so transform it
-    // to a saveable format
-    this.data._auth_data_anonymous = anonData;
-
-    // Delete the rest format key before saving
-    delete this.data.authData;
-  })
-
-};
-
-RestWrite.prototype.handleOAuthAuthData = function(provider) {
-  var authData = this.data.authData[provider];
-
-  if (authData === null && this.query) {
-    // We are unlinking from the provider.
-    this.data["_auth_data_" + provider ] = null;
-    return;
-  }
-
-  var appIds;
-  var oauthOptions = this.config.oauth[provider];
-  if (oauthOptions) {
-    appIds = oauthOptions.appIds;
-  } else if (provider == "facebook") {
-    appIds = this.config.facebookAppIds;
-  }
-
-  var validateAuthData;
-  var validateAppId;
-
-
-  if (oauth[provider]) {
-    validateAuthData = oauth[provider].validateAuthData;
-    validateAppId = oauth[provider].validateAppId;
-  }
-
-  // Try the configuration methods
-  if (oauthOptions) {
-    if (oauthOptions.module) {
-      validateAuthData = require(oauthOptions.module).validateAuthData;
-      validateAppId = require(oauthOptions.module).validateAppId;
-    };
-
-    if (oauthOptions.validateAuthData) {
-      validateAuthData = oauthOptions.validateAuthData;
-    }
-    if (oauthOptions.validateAppId) {
-      validateAppId = oauthOptions.validateAppId;
-    }
-  }
-  // try the custom provider first, fallback on the oauth implementation
-
-  if (!validateAuthData || !validateAppId) {
-    return false;
-  };
-	
-  return validateAuthData(authData, oauthOptions)
-    .then(() => {
-      if (appIds && typeof validateAppId === "function") {
-        return validateAppId(appIds, authData, oauthOptions);
-      }
-
-      // No validation required by the developer
+RestWrite.prototype.handleAuthDataValidation = function(authData) {
+  let validations = Object.keys(authData).map((provider) => {
+    if (authData[provider] === null) {
       return Promise.resolve();
+    }
+    let validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
+    if (!validateAuthData) {
+      throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
+                            'This authentication method is unsupported.');
+    };
+    return validateAuthData(authData[provider]);
+  });
+  return Promise.all(validations);
+}
 
-    }).then(() => {
-      // Check if this user already exists
-      // TODO: does this handle re-linking correctly?
-      var query = {};
-      query['authData.' + provider + '.id'] = authData.id;
-      return this.config.database.find(
+RestWrite.prototype.findUsersWithAuthData = function(authData) {
+  let providers = Object.keys(authData);
+  let query = providers.reduce((memo, provider) => {
+    if (!authData[provider]) {
+      return memo;
+    }
+    let queryKey = `authData.${provider}.id`;
+    let query = {};
+    query[queryKey] = authData[provider].id;
+    memo.push(query);
+    return memo;
+  }, []).filter((q) => {
+    return typeof q !== undefined;
+  });
+  
+  let findPromise = Promise.resolve([]);
+  if (query.length > 0) {
+     findPromise = this.config.database.find(
         this.className,
-        query, {});
-    }).then((results) => {
-      this.storage['authProvider'] = provider;
-      if (results.length > 0) {
-        if (!this.query) {
-          // We're signing up, but this user already exists. Short-circuit
-          delete results[0].password;
-          this.response = {
-            response: results[0],
-            location: this.location()
-          };
-          this.data.objectId = results[0].objectId;
-          return;
-        }
+        {'$or': query}, {})
+  }
+  
+  return findPromise;
+}
 
-        // If this is a PUT for the same user, allow the linking
-        if (results[0].objectId === this.query.objectId) {
-          // Delete the rest format key before saving
-          delete this.data.authData;
-          return;
-        }
-        // We're trying to create a duplicate oauth auth. Forbid it
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+RestWrite.prototype.handleAuthData = function(authData) {
+  let results;
+  return this.handleAuthDataValidation(authData).then(() => {
+     return this.findUsersWithAuthData(authData);
+  }).then((r) => {
+    results = r;
+    if (results.length > 1) {
+      // More than 1 user with the passed id's
+      throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
-      } else {
-        this.data.username = cryptoUtils.newToken();
+    }
+    
+    this.storage['authProvider'] = Object.keys(authData).join(',');
+    
+    if (results.length == 0) {
+      this.data.username = cryptoUtils.newToken();
+    } else if (!this.query) {
+      // Login with auth data
+      // Short circuit
+      delete results[0].password;
+      this.response = {
+        response: results[0],
+        location: this.location()
+      };
+      this.data.objectId = results[0].objectId;
+    } else if (this.query && this.query.objectId) {
+      // Trying to update auth data but users
+      // are different
+      if (results[0].objectId !== this.query.objectId) {
+        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                            'this auth is already used');
       }
-
-      // This FB auth does not already exist, so transform it to a
-      // saveable format
-      this.data["_auth_data_" + provider ] = authData;
-
-      // Delete the rest format key before saving
-      delete this.data.authData;
-    });
+    }
+    return Promise.resolve();
+  });
 }
 
 // The non-third-party parts of User transformation

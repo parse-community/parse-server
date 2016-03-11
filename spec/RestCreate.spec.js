@@ -148,7 +148,8 @@ describe('rest create', () => {
   });
   
   it('handles no anonymous users config', (done) => {
-     var NoAnnonConfig = Object.assign({}, config, {enableAnonymousUsers: false});
+     var NoAnnonConfig = Object.assign({}, config);
+     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
      var data1 = {
       authData: {
         anonymous: {
@@ -162,6 +163,7 @@ describe('rest create', () => {
     }, (err) => {
       expect(err.code).toEqual(Parse.Error.UNSUPPORTED_SERVICE);
       expect(err.message).toEqual('This authentication method is unsupported.');
+      NoAnnonConfig.authDataManager.setEnableAnonymousUsers(true);
       done();
     })
   });
