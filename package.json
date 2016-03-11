@@ -36,6 +36,7 @@
     "node-gcm": "^0.14.0",
     "parse": "^1.7.0",
     "request": "^2.65.0",
+    "sendgrid": "^2.0.0",
     "winston": "^2.1.1"
   },
   "devDependencies": {
