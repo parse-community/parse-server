@@ -101,8 +101,12 @@ DatabaseController.prototype.redirectClassNameForKey = function(className, key) 
 // Returns a promise that resolves to the new schema.
 // This does not update this.schema, because in a situation like a
 // batch request, that could confuse other users of the schema.
-DatabaseController.prototype.validateObject = function(className, object, query) {
-  return this.loadSchema().then((schema) => {
+DatabaseController.prototype.validateObject = function(className, object, query, options) {
+  let schema;
+  return this.loadSchema().then(s => {
+    schema = s;
+    return this.canAddField(schema, className, object, options.acl || []);
+  }).then(() => {
     return schema.validateObject(className, object, query);
   });
 };
@@ -331,6 +335,22 @@ DatabaseController.prototype.create = function(className, object, options) {
       return coll.insertOne(mongoObject);
     });
 };
+
+DatabaseController.prototype.canAddField = function(schema, className, object, aclGroup) {
+  let classSchema = schema.data[className];
+  if (!classSchema) {
+    return Promise.resolve();
+  }
+  let fields = Object.keys(object);
+  let schemaFields = Object.keys(classSchema);
+  let newKeys = fields.filter((field) => {
+    return schemaFields.indexOf(field) < 0;
+  })
+  if (newKeys.length > 0) {
+    return schema.validatePermission(className, aclGroup, 'addField');
+  }
+  return Promise.resolve();
+}
 
 // Runs a mongo query on the database.
 // This should only be used for testing - use 'find' for normal code

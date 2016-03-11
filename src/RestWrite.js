@@ -128,7 +128,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
 
 // Validates this operation against the schema.
 RestWrite.prototype.validateSchema = function() {
-  return this.config.database.validateObject(this.className, this.data, this.query);
+  return this.config.database.validateObject(this.className, this.data, this.query, this.runOptions);
 };
 
 // Runs any beforeSave triggers against this operation.

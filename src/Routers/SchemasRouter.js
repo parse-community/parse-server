@@ -46,7 +46,7 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
     .then(result => ({ response: Schema.mongoSchemaToSchemaAPIResponse(result) }));
 }
 
@@ -60,50 +60,18 @@ function modifySchema(req) {
 
   return req.config.database.loadSchema()
     .then(schema => {
-      if (!schema.data[className]) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${req.params.className} does not exist.`);
-      }
-
-      let existingFields = Object.assign(schema.data[className], { _id: className });
-      Object.keys(submittedFields).forEach(name => {
-        let field = submittedFields[name];
-        if (existingFields[name] && field.__op !== 'Delete') {
-          throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
-        }
-        if (!existingFields[name] && field.__op === 'Delete') {
-          throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
-        }
-      });
-
-      let newSchema = Schema.buildMergedSchemaObject(existingFields, submittedFields);
-      let mongoObject = Schema.mongoSchemaFromFieldsAndClassName(newSchema, className);
-      if (!mongoObject.result) {
-        throw new Parse.Error(mongoObject.code, mongoObject.error);
-      }
-
-      // Finally we have checked to make sure the request is valid and we can start deleting fields.
-      // Do all deletions first, then add fields to avoid duplicate geopoint error.
-      let deletePromises = [];
-      let insertedFields = [];
-      Object.keys(submittedFields).forEach(fieldName => {
-        if (submittedFields[fieldName].__op === 'Delete') {
-          const promise = schema.deleteField(fieldName, className, req.config.database);
-          deletePromises.push(promise);
-        } else {
-          insertedFields.push(fieldName);
-        }
-      });
-      return Promise.all(deletePromises) // Delete Everything
-        .then(() => schema.reloadData()) // Reload our Schema, so we have all the new values
-        .then(() => {
-          let promises = insertedFields.map(fieldName => {
-            const mongoType = mongoObject.result[fieldName];
-            return schema.validateField(className, fieldName, mongoType);
-          });
-          return Promise.all(promises);
-        })
-        .then(() => ({ response: Schema.mongoSchemaToSchemaAPIResponse(mongoObject.result) }));
+      return schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database);
+    }).then((result) => {
+        return Promise.resolve({response: result});
     });
+}
+
+function getSchemaPermissions(req) {
+  var className = req.params.className;
+  return req.config.database.loadSchema()
+    .then(schema => {
+      return Promise.resolve({response: schema.perms[className]});
+  });
 }
 
 // A helper function that removes all join tables for a schema. Returns a promise.
