@@ -1436,6 +1436,43 @@ describe('Parse.User testing', () => {
       }
     });
   });
+  
+  it('should have authData in beforeSave and afterSave', (done) => {
+    
+    Parse.Cloud.beforeSave('_User', (request, response) => {
+      let authData = request.object.get('authData');
+      expect(authData).not.toBeUndefined();
+      if (authData) {
+        expect(authData.facebook.id).toEqual('8675309');
+        expect(authData.facebook.access_token).toEqual('jenny');
+      } else {
+        fail('authData should be set');
+      }
+      response.success();
+    });
+    
+    Parse.Cloud.afterSave('_User', (request, response) => {
+      let authData = request.object.get('authData');
+      expect(authData).not.toBeUndefined();
+      if (authData) {
+        expect(authData.facebook.id).toEqual('8675309');
+        expect(authData.facebook.access_token).toEqual('jenny');
+      } else {
+        fail('authData should be set');
+      }
+      response.success();
+    });
+    
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
+        Parse.Cloud._removeHook('Triggers', 'afterSave', Parse.User.className);
+        done();
+      }
+    });
+  });
 
   it('set password then change password', (done) => {
     Parse.User.signUp('bob', 'barker').then((bob) => {

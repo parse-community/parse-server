@@ -200,7 +200,7 @@ describe('rest create', () => {
         done();
       });
   });
-  
+
   it('stores pointers with a _p_ prefix', (done) => {
     var obj = {
       foo: 'bar',

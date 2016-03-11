@@ -212,10 +212,12 @@ RestWrite.prototype.validateAuthData = function() {
   var authData = this.data.authData;
   var providers = Object.keys(authData);
   if (providers.length > 0) {
-    var provider = providers[providers.length-1];    
-    var providerAuthData = authData[provider];
-    var hasToken = (providerAuthData && providerAuthData.id);
-    if (providerAuthData === null || hasToken) {
+    let canHandleAuthData = providers.reduce((canHandle, provider) => {
+      var providerAuthData = authData[provider];
+      var hasToken = (providerAuthData && providerAuthData.id);
+      return canHandle && (hasToken || providerAuthData == null);
+    }, true);
+    if (canHandleAuthData) {
       return this.handleAuthData(authData);
     }
   }
@@ -274,11 +276,9 @@ RestWrite.prototype.handleAuthData = function(authData) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
     }
-    // set the proper keys
-    Object.keys(authData).forEach((provider) => {
-      this.data[`_auth_data_${provider}`] = authData[provider];
-    });
-
+    
+    this.storage['authProvider'] = Object.keys(authData).join(',');
+    
     if (results.length == 0) {
       this.data.username = cryptoUtils.newToken();
     } else if (!this.query) {
@@ -294,9 +294,6 @@ RestWrite.prototype.handleAuthData = function(authData) {
       // Trying to update auth data but users
       // are different
       if (results[0].objectId !== this.query.objectId) {
-        Object.keys(authData).forEach((provider) => {
-          delete this.data[`_auth_data_${provider}`];
-        });
         throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                             'this auth is already used');
       }
@@ -707,10 +704,6 @@ RestWrite.prototype.runDatabaseOperation = function() {
   //       their own user record.
   if (this.data.ACL && this.data.ACL['*unresolved']) {
     throw new Parse.Error(Parse.Error.INVALID_ACL, 'Invalid ACL.');
-  }
-  
-  if (this.className === '_User') {
-    delete this.data.authData;
   }
 
   if (this.query) {
