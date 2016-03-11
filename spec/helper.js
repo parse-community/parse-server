@@ -26,7 +26,7 @@ var defaultConfiguration = {
   collectionPrefix: 'test_',
   fileKey: 'test',
   push: {
-    'ios': {      
+    'ios': {
       cert: 'prodCert.pem',
       key: 'prodKey.pem',
       production: true,
@@ -81,7 +81,7 @@ afterEach(function(done) {
   Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
-    DatabaseAdapter.clearDatabaseURIs();
+    DatabaseAdapter.clearDatabaseSettings();
     done();
   }, (error) => {
     console.log('error in clearData', error);
