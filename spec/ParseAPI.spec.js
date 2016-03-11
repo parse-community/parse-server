@@ -643,6 +643,7 @@ describe('miscellaneous', function() {
   it('test afterSave get original object on update', function(done) {
     var triggerTime = 0;
     // Register a mock beforeSave hook
+
     Parse.Cloud.afterSave('GameScore', function(req, res) {
       var object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
@@ -676,6 +677,56 @@ describe('miscellaneous', function() {
     var obj = new Parse.Object('GameScore');
     obj.set('foo', 'bar');
     obj.set('fooAgain', 'barAgain');
+    obj.save().then(function() {
+      // We only update foo
+      obj.set('foo', 'baz');
+      return obj.save();
+    }).then(function() {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      // Clear mock afterSave
+      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
+      done();
+    }, function(error) {
+      console.error(error);
+      fail(error);
+      done();
+    });
+  });
+
+  it('test afterSave get full original object even req auth can not query it', (done) => {
+    var triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.afterSave('GameScore', function(req, res) {
+      var object = req.object;
+      var originalObject = req.original;
+      if (triggerTime == 0) {
+        // Create
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.get('foo')).toEqual('baz');
+        // Make sure we get the full originalObject
+        expect(originalObject instanceof Parse.Object).toBeTruthy();
+        expect(originalObject.get('fooAgain')).toEqual('barAgain');
+        expect(originalObject.id).not.toBeUndefined();
+        expect(originalObject.createdAt).not.toBeUndefined();
+        expect(originalObject.updatedAt).not.toBeUndefined();
+        expect(originalObject.get('foo')).toEqual('bar');
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    var obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
+    var acl = new Parse.ACL();
+    // Make sure our update request can not query the object
+    acl.setPublicReadAccess(false);
+    acl.setPublicWriteAccess(true);
+    obj.setACL(acl);
     obj.save().then(function() {
       // We only update foo
       obj.set('foo', 'baz');
