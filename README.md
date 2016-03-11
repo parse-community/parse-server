@@ -136,7 +136,7 @@ PARSE_SERVER_MAX_UPLOAD_SIZE
 ```
 
 ##### Configuring File Adapters
-Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/).
+Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB - available on [IBM Bluemix](https://developer.ibm.com/bluemix/2016/02/01/migrating-from-parse-to-bluemix/); the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/).
 
 `GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, additional configuration information is available below.
 
