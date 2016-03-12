@@ -7,6 +7,7 @@ import { FilesAdapter } from './FilesAdapter';
 import colors from 'colors';
 var fs = require('fs');
 var path = require('path');
+var pathSep = require('path').sep;
 
 export class FileSystemAdapter extends FilesAdapter {
 
@@ -73,7 +74,7 @@ export class FileSystemAdapter extends FilesAdapter {
    --------------- */
    _getApplicationDir() {
     if (this._filesDir) {
-      return 'files/' + this._filesDir;
+      return path.join('files', this._filesDir);
     } else {
       return 'files';
     }
@@ -88,26 +89,33 @@ export class FileSystemAdapter extends FilesAdapter {
     if (!fs.existsSync(applicationDir)) {
       this._mkdir(applicationDir);
     }
-    return (applicationDir + '/' + encodeURIComponent(filename));
+    return path.join(applicationDir, encodeURIComponent(filename));
   }
 
-  _mkdir(path, root) {
-    // snippet found on -> http://stackoverflow.com/a/10600228
-    var dirs = path.split('/'), dir = dirs.shift(), root = (root || '') + dir + '/';
+  _mkdir(path) {
+    // snippet found on -> https://gist.github.com/danherbert-epam/3960169
+    var dirs = path.split(pathSep);
+    var root = "";
 
-    try {
-      fs.mkdirSync(root);
-    }
-    catch (e) {
-      if ( e.code == 'EACCES' ) {
-          console.error("");
-          console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
-          console.error("");
+    while (dirs.length > 0) {
+      var dir = dirs.shift();
+      if (dir === "") { // If directory starts with a /, the first path will be an empty string.
+        root = pathSep;
       }
-      //dir wasn't made, something went wrong
-      if(!fs.statSync(root).isDirectory()) throw new Error(e);
+      if (!fs.existsSync(root + dir)) {
+        try {
+          fs.mkdirSync(root + dir);
+        } 
+        catch (e) {
+          if ( e.code == 'EACCES' ) {
+              console.error("");
+              console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
+              console.error("");
+          }
+        }
+      }
+      root += dir + pathSep;
     }
-    return !dirs.length || this._mkdir(dirs.join('/'), root);
   }
 }
 
