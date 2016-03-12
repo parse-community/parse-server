@@ -40,14 +40,6 @@ if (program.args.length > 0 ) {
   jsonPath = path.resolve(jsonPath);
   options = require(jsonPath);
   console.log(`Configuation loaded from ${jsonPath}`)
-} 
-
-if (!program.appId || !program.masterKey || !program.serverURL) {
-  program.outputHelp();
-  console.error("");
-  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
-  console.error("");
-  process.exit(1);
 }
 
 options = Object.keys(definitions).reduce(function (options, key) {
@@ -59,6 +51,14 @@ options = Object.keys(definitions).reduce(function (options, key) {
 
 if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+}
+
+if (!program.appId || !program.masterKey || !program.serverURL) {
+  program.outputHelp();
+  console.error("");
+  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
+  console.error("");
+  process.exit(1);
 }
 
 const app = express();
@@ -77,3 +77,12 @@ app.listen(options.port, function() {
   console.log('');
   console.log('parse-server running on '+options.serverURL);
 });
+
+var handleShutdown = function() {
+  console.log('Termination signal received. Shutting down.');
+  server.close(function () {
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', handleShutdown);
+process.on('SIGINT', handleShutdown);
