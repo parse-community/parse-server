@@ -3,6 +3,7 @@
 // This could be either a "create" or an "update".
 
 import cache from './cache';
+var Schema = require('./Schema');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
@@ -32,7 +33,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
                           'is an invalid field name.');
   }
-  
+
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -108,7 +109,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestWrite.prototype.validateClientClassCreation = function() {
-  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  let sysClass = Schema.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
@@ -136,7 +137,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   if (this.response) {
     return;
   }
-  
+
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
   if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
@@ -254,14 +255,14 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   }, []).filter((q) => {
     return typeof q !== undefined;
   });
-  
+
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
      findPromise = this.config.database.find(
         this.className,
         {'$or': query}, {})
   }
-  
+
   return findPromise;
 }
 
@@ -276,9 +277,9 @@ RestWrite.prototype.handleAuthData = function(authData) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
     }
-    
+
     this.storage['authProvider'] = Object.keys(authData).join(',');
-    
+
     if (results.length == 0) {
       this.data.username = cryptoUtils.newToken();
     } else if (!this.query) {
@@ -404,7 +405,7 @@ RestWrite.prototype.transformUser = function() {
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
-  
+
   if (this.storage && this.storage['clearSessions']) {
     var sessionQuery = {
       user: {
@@ -417,7 +418,7 @@ RestWrite.prototype.handleFollowup = function() {
     this.config.database.destroy('_Session', sessionQuery)
     .then(this.handleFollowup.bind(this));
   }
-  
+
   if (this.storage && this.storage['sendVerificationEmail']) {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
@@ -695,7 +696,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
-  
+
   if (this.className === '_Product' && this.data.download) {
     this.data.downloadName = this.data.download.name;
   }
@@ -722,7 +723,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL[this.data.objectId] = { read: true, write: true };
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
-    } 
+    }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then(() => {
