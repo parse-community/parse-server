@@ -1,6 +1,7 @@
 
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
+import {parse as parseUrl, format as formatUrl} from 'url';
 
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
@@ -25,7 +26,11 @@ export class MongoStorageAdapter {
       return this.connectionPromise;
     }
 
-    this.connectionPromise = MongoClient.connect(this._uri, this._options).then(database => {
+    // parsing and re-formatting causes the auth value (if there) to get URI
+    // encoded
+    const encodedUri = formatUrl(parseUrl(this._uri));
+
+    this.connectionPromise = MongoClient.connect(encodedUri, this._options).then(database => {
       this.database = database;
     });
     return this.connectionPromise;
