@@ -142,7 +142,9 @@ The hosted version of Parse will be fully retired on January 28th, 2017. If you 
 
 ## Configuration
 
-Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`. Alternatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to the JSON of your configuration, If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
+Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`, or by loading a configuration file in JSON format using `parse-server path/to/configuration.json`. If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
+
+For the full list of configuration options, run `parse-server --help`.
 
 #### Basic options
 
@@ -174,12 +176,6 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
 
-### Using a JSON file to configure Parse Server
-
-The standalone API server supports loading a configuration file in JSON format:
-
-```
-$ parse-server path/to/your/config.json
 ```
 
 ### Using environment variables to configure Parse Server
