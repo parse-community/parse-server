@@ -128,9 +128,15 @@ function handleParseHeaders(req, res, next) {
       }
     })
     .catch((error) => {
-      // TODO: Determine the correct error scenario.
-      log.error('error getting auth for sessionToken', error);
-      throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+      if(error instanceof Parse.Error) {
+        next(error);
+        return;
+      }
+      else {
+        // TODO: Determine the correct error scenario.
+        log.error('error getting auth for sessionToken', error);
+        throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+      }
     });
 }
 

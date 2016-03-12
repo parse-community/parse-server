@@ -319,8 +319,7 @@ RestWrite.prototype.transformUser = function() {
     var token = 'r:' + cryptoUtils.newToken();
     this.storage['token'] = token;
     promise = promise.then(() => {
-      var expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      var expiresAt = this.config.generateSessionExpiresAt();
       var sessionData = {
         sessionToken: token,
         user: {
@@ -474,8 +473,7 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.query && !this.auth.isMaster) {
     var token = 'r:' + cryptoUtils.newToken();
-    var expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    var expiresAt = this.config.generateSessionExpiresAt();
     var sessionData = {
       sessionToken: token,
       user: {
@@ -739,6 +737,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
     }
+
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then((resp) => {

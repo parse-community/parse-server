@@ -26,6 +26,7 @@ function verifyACL(user) {
 }
 
 describe('Parse.User testing', () => {
+
   it("user sign up class method", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function(user) {
@@ -2160,4 +2161,44 @@ describe('Parse.User testing', () => {
     });
 
   });
+
+  it('should fail to become user with expired token', (done) => {
+    Parse.User.signUp("auser", "somepass", null, {
+      success: function(user) {
+        request.get({
+          url: 'http://localhost:8378/1/classes/_Session',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+        }, (error, response, body) => {
+          var id = body.results[0].objectId;
+          var expiresAt = new Date((new Date()).setYear(2015));
+          var token = body.results[0].sessionToken;
+          request.put({
+            url: "http://localhost:8378/1/classes/_Session/" + id,
+            json: true,
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-Master-Key': 'test',
+            },
+            body: {
+              expiresAt: { __type: "Date", iso: expiresAt.toISOString() },
+            },
+          }, (error, response, body) => {
+            Parse.User.become(token)
+            .then(() => { fail("Should not have succeded"); })
+            .fail((err) => {
+              expect(err.code).toEqual(209);
+              expect(err.message).toEqual("Session token is expired.");
+              Parse.User.logOut() // Logout to prevent polluting CLI with messages
+              .then(done());
+            });
+          });
+        });
+      }
+    });
+  });
+
 });

@@ -47,17 +47,21 @@ export class Config {
     this.customPages = cacheInfo.customPages || {};
     this.mount = removeTrailingSlash(mount);
     this.liveQueryController = cacheInfo.liveQueryController;
+    this.sessionLength = cacheInfo.sessionLength;
+    this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
   }
 
   static validate(options) {
-    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails,
-                                appName: options.appName,
+    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
+                                appName: options.appName, 
                                 publicServerURL: options.publicServerURL})
     if (options.publicServerURL) {
       if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
         throw "publicServerURL should be a valid HTTPS URL starting with https://"
       }
     }
+
+    this.validateSessionLength(options.sessionLength);
   }
 
   static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
@@ -81,6 +85,20 @@ export class Config {
 
   set mount(newValue) {
     this._mount = newValue;
+  }
+
+  static validateSessionLength(sessionLength) {
+    if(isNaN(sessionLength)) {
+      throw 'Session length must be a valid number.';
+    }
+    else if(sessionLength <= 0) {
+      throw 'Session length must be a value greater than 0.'
+    }
+  }
+
+  generateSessionExpiresAt() {
+    var now = new Date();
+    return new Date(now.getTime() + (this.sessionLength*1000));
   }
 
   get invalidLinkURL() {

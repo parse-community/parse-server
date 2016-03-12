@@ -75,6 +75,7 @@ addParseCloud();
 // "restAPIKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
+// "sessionLength": optional length in seconds for how long Sessions should be valid for
 
 class ParseServer {
 
@@ -111,7 +112,8 @@ class ParseServer {
       choosePassword: undefined,
       passwordResetSuccess: undefined
     },
-    liveQuery = {}
+    liveQuery = {},
+    sessionLength = 31536000, // 1 Year in seconds
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -185,7 +187,8 @@ class ParseServer {
       publicServerURL: publicServerURL,
       customPages: customPages,
       maxUploadSize: maxUploadSize,
-      liveQueryController: liveQueryController
+      liveQueryController: liveQueryController,
+      sessionLength : Number(sessionLength),
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
