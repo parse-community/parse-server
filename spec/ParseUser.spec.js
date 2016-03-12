@@ -905,7 +905,7 @@ describe('Parse.User testing', () => {
       }
     };
   };
-  
+
   var getMockMyOauthProvider = function() {
     return {
       authData: {
@@ -1329,7 +1329,7 @@ describe('Parse.User testing', () => {
       }
     });
   });
-  
+
   it("link multiple providers", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
@@ -1351,7 +1351,7 @@ describe('Parse.User testing', () => {
             ok(model._isLinked("facebook"), "User should be linked to facebook");
             ok(model._isLinked("myoauth"), "User should be linked to myoauth");
             done();
-          }, 
+          },
           error: function(error) {
             console.error(error);
             fail('SHould not fail');
@@ -1437,9 +1437,9 @@ describe('Parse.User testing', () => {
       }
     });
   });
-  
+
   it('should have authData in beforeSave and afterSave', (done) => {
-    
+
     Parse.Cloud.beforeSave('_User', (request, response) => {
       let authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
@@ -1451,7 +1451,7 @@ describe('Parse.User testing', () => {
       }
       response.success();
     });
-    
+
     Parse.Cloud.afterSave('_User', (request, response) => {
       let authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
@@ -1463,7 +1463,7 @@ describe('Parse.User testing', () => {
       }
       response.success();
     });
-    
+
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1970,9 +1970,9 @@ describe('Parse.User testing', () => {
       }
     });
   });
-  
+
   // Sometimes the authData still has null on that keys
-  // https://github.com/ParsePlatform/parse-server/issues/935 
+  // https://github.com/ParsePlatform/parse-server/issues/935
   it('should cleanup null authData keys', (done) => {
     let database = new Config(Parse.applicationId).database;
     database.create('_User', {
@@ -2003,8 +2003,26 @@ describe('Parse.User testing', () => {
       done();
     }).catch((err) => {
       fail('this should not fail');
-      done();  
+      done();
     })
   });
-});
 
+  it('should aftersave with full object', (done) => {
+    var hit = 0;
+    Parse.Cloud.afterSave('_User', (req, res) => {
+      hit++;
+      expect(req.object.get('username')).toEqual('User');
+      res.success();
+    });
+    let user = new Parse.User()
+    user.setUsername('User');
+    user.setPassword('pass');
+    user.signUp().then(()=> {
+      user.set('hello', 'world');
+      return user.save();
+    }).then(() => {
+      Parse.Cloud._removeHook('Triggers', 'afterSave', '_User');
+      done();
+    });
+  })
+});

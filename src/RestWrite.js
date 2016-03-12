@@ -32,7 +32,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
                           'is an invalid field name.');
   }
-  
+
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -136,7 +136,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   if (this.response) {
     return;
   }
-  
+
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
   if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
@@ -154,7 +154,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
-  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config.applicationId);
@@ -254,14 +254,14 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   }, []).filter((q) => {
     return typeof q !== undefined;
   });
-  
+
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
      findPromise = this.config.database.find(
         this.className,
         {'$or': query}, {})
   }
-  
+
   return findPromise;
 }
 
@@ -276,9 +276,9 @@ RestWrite.prototype.handleAuthData = function(authData) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
     }
-    
+
     this.storage['authProvider'] = Object.keys(authData).join(',');
-    
+
     if (results.length == 0) {
       this.data.username = cryptoUtils.newToken();
     } else if (!this.query) {
@@ -404,7 +404,7 @@ RestWrite.prototype.transformUser = function() {
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
-  
+
   if (this.storage && this.storage['clearSessions']) {
     var sessionQuery = {
       user: {
@@ -417,7 +417,7 @@ RestWrite.prototype.handleFollowup = function() {
     this.config.database.destroy('_Session', sessionQuery)
     .then(this.handleFollowup.bind(this));
   }
-  
+
   if (this.storage && this.storage['sendVerificationEmail']) {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
@@ -695,7 +695,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
-  
+
   if (this.className === '_Product' && this.data.download) {
     this.data.downloadName = this.data.download.name;
   }
@@ -722,7 +722,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL[this.data.objectId] = { read: true, write: true };
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
-    } 
+    }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then(() => {
@@ -770,7 +770,7 @@ RestWrite.prototype.runAfterTrigger = function() {
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
   let updatedObject = triggers.inflate(extraData, this.originalData);
-  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
@@ -788,6 +788,18 @@ RestWrite.prototype.location = function() {
 RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
+
+// Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
+RestWrite.prototype.sanitizedData = function() {
+  let data = Object.keys(this.data).reduce((data, key) => {
+    // Regexp comes from Parse.Object.prototype.validate
+    if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+      delete data[key];
+    }
+    return data;
+  }, deepcopy(this.data));
+  return Parse._decode(undefined, data);
+}
 
 export default RestWrite;
 module.exports = RestWrite;
