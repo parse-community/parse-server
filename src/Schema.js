@@ -71,7 +71,7 @@ var defaultColumns = {
   },
   _PushStatus: {
     "pushTime":     {type:'String'},
-    "source":       {type:'String'}, // rest or web
+    "source":       {type:'String'}, // rest or webui
     "query":        {type:'String'}, // the stringified JSON query
     "payload":      {type:'Object'}, // the JSON payload,
     "title":        {type:'String'},

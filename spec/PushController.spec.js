@@ -105,9 +105,9 @@ describe('PushController', () => {
     }).toThrow();
     done();
   });
-  
+
   it('properly increment badges', (done) => {
-    
+
    var payload = {data:{
      alert: "Hello World!",
      badge: "Increment",
@@ -122,7 +122,7 @@ describe('PushController', () => {
      installation.set("deviceType", "ios");
      installations.push(installation);
    }
-   
+
    while(installations.length != 15) {
      var installation = new Parse.Object("_Installation");
      installation.set("installationId", "installation_"+installations.length);
@@ -130,7 +130,7 @@ describe('PushController', () => {
      installation.set("deviceType", "android");
      installations.push(installation);
    }
-   
+
    var pushAdapter = {
     send: function(body, installations) {
       var badge = body.data.badge;
@@ -151,14 +151,14 @@ describe('PushController', () => {
       return ["ios", "android"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
    var pushController = new PushController(pushAdapter, Parse.applicationId);
-   Parse.Object.saveAll(installations).then((installations) => {     
+   Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -167,11 +167,11 @@ describe('PushController', () => {
      fail("should not fail");
      done();
    });
-   
+
   });
-  
+
   it('properly set badges to 1', (done) => {
-    
+
    var payload = {data: {
      alert: "Hello World!",
      badge: 1,
@@ -186,7 +186,7 @@ describe('PushController', () => {
      installation.set("deviceType", "ios");
      installations.push(installation);
    }
-   
+
    var pushAdapter = {
     send: function(body, installations) {
       var badge = body.data.badge;
@@ -203,14 +203,14 @@ describe('PushController', () => {
       return ["ios"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
    var pushController = new PushController(pushAdapter, Parse.applicationId);
-   Parse.Object.saveAll(installations).then((installations) => {     
+   Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -219,15 +219,56 @@ describe('PushController', () => {
      fail("should not fail");
      done();
    });
-   
+
   });
-  
+
+  it('properly creates _PushStatus', (done) => {
+
+   var payload = {data: {
+     alert: "Hello World!",
+     badge: 1,
+   }}
+
+   var pushAdapter = {
+    send: function(body, installations) {
+      var badge = body.data.badge;
+      return Promise.resolve({
+        body: body,
+        installations: installations
+      })
+    },
+    getValidPushTypes: function() {
+      return ["ios"];
+    }
+  }
+
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+
+   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   pushController.sendPush(payload, {}, config, auth).then((result) => {
+     let query = new Parse.Query('_PushStatus');
+     return query.find({useMasterKey: true});
+   }).then((results) => {
+     expect(results.length).toBe(1);
+     let result = results[0];
+     expect(result.get('source')).toEqual('rest');
+     expect(result.get('query')).toEqual(JSON.stringify({}));
+     expect(result.get('payload')).toEqual(payload.data);
+     expect(result.get('status')).toEqual("running");
+     done();
+   });
+
+  });
+
   it('should support full RESTQuery for increment', (done) => {
     var payload = {data: {
      alert: "Hello World!",
      badge: 'Increment',
    }}
-   
+
    var pushAdapter = {
     send: function(body, installations) {
       return Promise.resolve();
@@ -236,12 +277,12 @@ describe('PushController', () => {
       return ["ios"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
    let where = {
      'deviceToken': {
        '$inQuery': {

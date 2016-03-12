@@ -4,8 +4,10 @@ import rest from '../rest';
 import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
 import deepcopy from 'deepcopy';
+import { md5Hash } from '../cryptoUtils';
 import features from '../features';
 import RestQuery from '../RestQuery';
+import RestWrite from '../RestWrite';
 
 const FEATURE_NAME = 'push';
 const UNSUPPORTED_BADGE_KEY = "unsupported";
@@ -65,7 +67,7 @@ export class PushController extends AdaptableController {
       }
       let updateWhere = deepcopy(where);
 
-      badgeUpdate = () => { 
+      badgeUpdate = () => {
         let badgeQuery = new RestQuery(config, auth, '_Installation', updateWhere);
         return badgeQuery.buildRestWhere().then(() => {
           let restWhere = deepcopy(badgeQuery.restWhere);
@@ -81,8 +83,13 @@ export class PushController extends AdaptableController {
         })
       }
     }
-
-    return badgeUpdate().then(() => {
+    let pushStatus;
+    return Promise.resolve().then(() => {
+      return this.saveInitialPushStatus(body, where, config);
+    }).then((res) => {
+      pushStatus = res.response;
+      return badgeUpdate();
+    }).then(() => {
       return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
       if (body.data && body.data.badge && body.data.badge == "Increment") {
@@ -105,12 +112,36 @@ export class PushController extends AdaptableController {
           } else {
             payload.data.badge = parseInt(badge);
           }
-          return pushAdapter.send(payload, badgeInstallationsMap[badge]);
+          return pushAdapter.send(payload, badgeInstallationsMap[badge], pushStatus);
         });
         return Promise.all(promises);
       }
-      return pushAdapter.send(body, response.results);
+      return pushAdapter.send(body, response.results, pushStatus);
+    }).then(() => {
+      return this.updatePushStatus({status: "running"}, pushStatus, config);
     });
+  }
+
+  saveInitialPushStatus(body, where, config, options = {source: 'rest'}) {
+    let pushStatus = {
+      pushTime: (new Date()).toISOString(),
+      query: JSON.stringify(where),
+      payload: body.data,
+      source: options.source,
+      title: options.title,
+      expiry: body.expiration_time,
+      status: "pending",
+      numSent: 0,
+      pushHash: md5Hash(JSON.stringify(body.data)),
+      ACL: new Parse.ACL() // lockdown!
+    }
+    let restWrite = new RestWrite(config, {isMaster: true},'_PushStatus',null, pushStatus);
+    return restWrite.execute();
+  }
+
+  updatePushStatus(update, pushStatus, config) {
+    let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', {objectId: pushStatus.objectId, "status": "pending"}, update);
+    return restWrite.execute();
   }
 
   /**
