@@ -176,8 +176,6 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
 
-```
-
 ### Using environment variables to configure Parse Server
 
 You may configure the Parse Server using environment variables:
