@@ -14,7 +14,7 @@ export class FileSystemAdapter extends FilesAdapter {
     super();
 
     this._filesDir = filesSubDirectory;
-    this._mkdir(filesSubDirectory);
+    this._mkdir(this._getApplicationDir());
   }
 
   // For a given config object, filename, and data, store a file
@@ -68,10 +68,20 @@ export class FileSystemAdapter extends FilesAdapter {
   /*
     Helpers
    --------------- */
+   _getApplicationDir() {
+    if (this._filesDir) {
+      return 'files/' + this._filesDir;
+    } else {
+      return 'files';
+    }
+   }
+
+  _applicationDirExist() {
+    return fs.existsSync(this._getApplicationDir());
+  }
 
   _getLocalFilePath(filename) {
-    let filesDir = 'files';
-    let applicationDir = filesDir + '/' + this._filesDir;
+    let applicationDir = this._getApplicationDir();
     if (!fs.existsSync(applicationDir)) {
       this._mkdir(applicationDir);
     }
