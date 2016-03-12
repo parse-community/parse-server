@@ -194,6 +194,18 @@ describe('SNSPushAdapter', () => {
         });
     });
 
+    it('errors sending SNS Payload to Android and iOS', (done) => {
+        // Mock out Amazon SNS token exchange
+        var snsSender = jasmine.createSpyObj('sns', ['publish', 'createPlatformEndpoint']);
+
+        snsSender.createPlatformEndpoint.and.callFake(function (object, callback) {
+            callback("error", {});
+        });
+
+        var promise = snsSender.getPlatformArn(makeDevice("android"), "android", function(err, data));
+        done();
+    });
+
     it('can send SNS Payload to Android and iOS', (done) => {
         // Mock out Amazon SNS token exchange
         var snsSender = jasmine.createSpyObj('sns', ['publish', 'createPlatformEndpoint']);
@@ -222,7 +234,6 @@ describe('SNSPushAdapter', () => {
 
         var promise = snsPushAdapter.send({"test": "hello"}, installations);
 
-        var callback = jasmine.createSpy();
         promise.then(function () {
             expect(snsSender.publish).toHaveBeenCalled();
             expect(snsSender.publish.calls.count()).toEqual(2);
