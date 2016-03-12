@@ -134,7 +134,42 @@ export class OneSignalPushAdapter extends PushAdapter {
     if(data['uri']) {
       post['url'] = data['uri'];
     }
-
+    if(data['android_background_data'])
+    {
+      post['android_background_data'] = data['android_background_data'];
+      delete data['android_background_data']; 
+    }
+    
+    if(data['android_sound'])
+    {
+      post['android_sound'] = data['android_sound'];
+      delete data['android_sound']; 
+    }
+    
+    if(data['small_icon'])
+    {
+      post['small_icon'] = data['small_icon'];
+      delete data['small_icon'];
+    }
+    
+    if(data['large_icon'])
+    {
+      post['large_icon'] = data['large_icon'];
+      delete data['large_icon']; 
+    }
+    
+    if(data['big_picture'])
+    {
+      post['big_picture'] = data['big_picture'];
+      delete data['big_picture']; 
+    }
+    
+     if(data['android_led_color'])
+    {
+      post['android_led_color'] = data['android_led_color'];
+      delete data['android_led_color']; 
+    }
+    
     post['data'] = data;
 
     let promise = new Parse.Promise();
