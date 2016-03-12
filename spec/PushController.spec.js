@@ -143,8 +143,8 @@ describe('PushController', () => {
         }
       })
       return Promise.resolve({
-        body: body,
-        installations: installations
+        error: null
+        payload: body,
       })
     },
     getValidPushTypes: function() {
@@ -195,8 +195,8 @@ describe('PushController', () => {
         expect(1).toEqual(installation.badge);
       })
       return Promise.resolve({
-        body: body,
-        installations: installations
+        payload: body,
+        error: null
       })
     },
     getValidPushTypes: function() {
@@ -233,9 +233,10 @@ describe('PushController', () => {
     send: function(body, installations) {
       var badge = body.data.badge;
       return Promise.resolve({
-        body: body,
-        installations: installations
-      })
+        error: null,
+        response: "OK!",
+        payload: body
+      });
     },
     getValidPushTypes: function() {
       return ["ios"];
@@ -271,7 +272,9 @@ describe('PushController', () => {
 
    var pushAdapter = {
     send: function(body, installations) {
-      return Promise.resolve();
+      return Promise.resolve({
+        error:null
+      });
     },
     getValidPushTypes: function() {
       return ["ios"];

@@ -92,6 +92,7 @@ export class PushController extends AdaptableController {
     }).then(() => {
       return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
+      this.updatePushStatus({status: "running"}, {status:"pending", objectId: pushStatus.objectId}, config);
       if (body.data && body.data.badge && body.data.badge == "Increment") {
         // Collect the badges to reduce the # of calls
         let badgeInstallationsMap = response.results.reduce((map, installation) => {
@@ -117,8 +118,9 @@ export class PushController extends AdaptableController {
         return Promise.all(promises);
       }
       return pushAdapter.send(body, response.results, pushStatus);
-    }).then(() => {
-      return this.updatePushStatus({status: "running"}, pushStatus, config);
+    }).then((results) => {
+      console.log(results);
+      return Promise.resolve(results);
     });
   }
 
@@ -139,8 +141,8 @@ export class PushController extends AdaptableController {
     return restWrite.execute();
   }
 
-  updatePushStatus(update, pushStatus, config) {
-    let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', {objectId: pushStatus.objectId, "status": "pending"}, update);
+  updatePushStatus(update, where, config) {
+    let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', where, update);
     return restWrite.execute();
   }
 

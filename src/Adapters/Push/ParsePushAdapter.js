@@ -19,7 +19,7 @@ export class ParsePushAdapter extends PushAdapter {
       immediatePush: true
     };
     let pushTypes = Object.keys(pushConfig);
-    
+
     for (let pushType of pushTypes) {
       if (this.validPushTypes.indexOf(pushType) < 0) {
         throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
@@ -35,7 +35,7 @@ export class ParsePushAdapter extends PushAdapter {
       }
     }
   }
-  
+
   getValidPushTypes() {
     return this.validPushTypes;
   }
@@ -43,7 +43,7 @@ export class ParsePushAdapter extends PushAdapter {
   static classifyInstallations(installations, validTypes) {
     return classifyInstallations(installations, validTypes)
   }
-  
+
   send(data, installations) {
     let deviceMap = classifyInstallations(installations, this.validPushTypes);
     let sendPromises = [];

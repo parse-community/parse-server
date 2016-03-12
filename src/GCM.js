@@ -21,7 +21,7 @@ function GCM(args) {
  * @param {Array} devices A array of devices
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
-GCM.prototype.send = function(data, devices) {
+GCM.prototype.send = function(data, devices, callback) {
   let pushId = cryptoUtils.newObjectId();
   let timeStamp = Date.now();
   let expirationTime;
@@ -52,7 +52,12 @@ GCM.prototype.send = function(data, devices) {
         request: message,
         response: response
       });
-      sendPromise.resolve();
+      sendPromise.resolve({
+        error: error,
+        response: response,
+        payload: message,
+        deviceType: 'android'
+      });
     });
     sendPromises.push(sendPromise);
   }
