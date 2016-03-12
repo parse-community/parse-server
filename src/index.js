@@ -22,7 +22,6 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { FeaturesRouter }      from './Routers/FeaturesRouter';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
-import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
