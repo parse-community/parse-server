@@ -15,6 +15,9 @@ export class FileSystemAdapter extends FilesAdapter {
 
     this._filesDir = filesSubDirectory;
     this._mkdir(this._getApplicationDir());
+    if (!this._applicationDirExist()) {
+      throw "Files directory doesn't exist.";
+    }
   }
 
   // For a given config object, filename, and data, store a file
@@ -100,7 +103,6 @@ export class FileSystemAdapter extends FilesAdapter {
           console.error("");
           console.error(colors.red("ERROR: In order to use the FileSystemAdapter, write access to the server's file system is required"));
           console.error("");
-          process.exit(1);
       }
       //dir wasn't made, something went wrong
       if(!fs.statSync(root).isDirectory()) throw new Error(e);
