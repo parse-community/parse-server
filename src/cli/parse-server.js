@@ -56,7 +56,7 @@ if (!options.serverURL) {
 if (!options.appId || !options.masterKey || !options.serverURL) {
   program.outputHelp();
   console.error("");
-  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
+  console.error(colors.red("ERROR: appId and masterKey are required"));
   console.error("");
   process.exit(1);
 }
