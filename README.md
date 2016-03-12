@@ -8,9 +8,97 @@ Parse Server is an [open source version of the Parse backend](http://blog.parse.
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
-## Getting Started
+# Getting Started
 
-The fastest and easiest way to get started is to run MongoDB and Parse Server locally. Once you have a better understanding of how the project works, please refer to the Parse Server guide for in-depth guides to deploy Parse Server to major infrastructure providers.
+The fastest and easiest way to get started is to run MongoDB and Parse Server locally:
+
+```
+$ npm install -g parse-server mongodb-runner
+$ mongodb-runner start
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+```
+
+You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
+
+That's it! You are now running a standalone version of Parse Server on your machine.
+
+**Using a remote MongoDB?** Pass the  `--databaseURL DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration).
+
+### Saving your first object
+
+Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](https://parse.com/docs/rest/guide), but you can easily do the same using any of the [Parse SDKs](https://parseplatform.github.io/#sdks). Run the following:
+
+```bash
+curl -X POST \
+-H "X-Parse-Application-Id: APPLICATION_ID" \
+-H "Content-Type: application/json" \
+-d '{"score":1337,"playerName":"Sean Plott","cheatMode":false}' \
+http://localhost:1337/parse/classes/GameScore
+```
+
+You should get a response similar to this:
+
+```js
+{
+  "objectId": "2ntvSpRGIK",
+  "createdAt": "2016-03-11T23:51:48.050Z"
+}
+```
+
+You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` with the actual `objectId` you received when the object was created):
+
+```bash
+$ curl -X GET \
+  -H "X-Parse-Application-Id: APPLICATION_ID" \
+  http://localhost:1337/parse/classes/GameScore/2ntvSpRGIK
+```
+```json
+// Response
+{
+  "objectId": "2ntvSpRGIK",
+  "score": 1337,
+  "playerName": "Sean Plott",
+  "cheatMode": false,
+  "updatedAt": "2016-03-11T23:51:48.050Z",
+  "createdAt": "2016-03-11T23:51:48.050Z"
+}
+```
+
+Keeping tracks of individual object ids is not ideal, however. In most cases you will want to run a query over the collection, like so:
+
+```
+$ curl -X GET \
+  -H "X-Parse-Application-Id: APPLICATION_ID" \
+  http://localhost:1337/parse/classes/GameScore
+```
+```json
+// The response will provide all the matching objects within the `results` array:
+{
+  "results": [
+    {
+      "objectId": "2ntvSpRGIK",
+      "score": 1337,
+      "playerName": "Sean Plott",
+      "cheatMode": false,
+      "updatedAt": "2016-03-11T23:51:48.050Z",
+      "createdAt": "2016-03-11T23:51:48.050Z"
+    }
+  ]
+}
+
+```
+
+To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](https://parse.com/docs).
+
+### Connect your app to Parse Server
+
+Parse provides SDKs for all the major platforms. Refer to the Parse Server guide to [learn how to connect your app to Parse Server](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#using-parse-sdks-with-parse-server).
+
+## Running Parse Server elsewhere
+
+Once you have a better understanding of how the project works, please refer to the [Parse Server wiki](https://github.com/ParsePlatform/parse-server/wiki) for in-depth guides to deploy Parse Server to major infrastructure providers. Read on to learn more about additional ways of running Parse Server.
+
+### Parse Server Sample Application
 
 We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed using any of the following buttons:
 
@@ -44,55 +132,24 @@ app.listen(1337, function() {
 });
 ```
 
-### Standalone Parse Server
-
-Parse Server can also run as a standalone API server.
-You can configure Parse Server with a configuration file, arguments and environment variables.
-
-To start the server:
-
-`npm start -- --appId MYAPP --masterKey MASTER_KEY --serverURL http://localhost:1337/parse`.
-
-To get more help for running the parse-server standalone, you can run:
-
-`$ npm start -- --help`
-
-The standalone API server supports loading a configuration file in JSON format:
-
-`$ npm start -- path/to/your/config.json`
-
-The default port is 1337, to use a different port set the PORT environment variable:
-
-`$ PORT=8080 npm start -- path/to/your/config.json`
-
-The standalone Parse Server can be configured using [environment variables](#configuration).
-
-You can also install Parse Server globally:
-
-`$ npm install -g parse-server`
-
-Now you can just run `$ parse-server` from your command line.
-
-
-## Documentation
+# Documentation
 
 The full documentation for Parse Server is available in the [wiki](https://github.com/ParsePlatform/parse-server/wiki). The [Parse Server guide](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide) is a good place to get started. If you're interested in developing for Parse Server, the [Development guide](https://github.com/ParsePlatform/parse-server/wiki/Development-Guide) will help you get set up.
 
-#### Migrating an Existing Parse App
+## Migrating an Existing Parse App
 
 The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. There are a few areas where Parse Server does not provide compatibility with the hosted version of Parse. Learn more in the [Migration guide](https://github.com/ParsePlatform/parse-server/wiki/Migrating-an-Existing-Parse-App).
 
-### Configuration
+## Configuration
 
-The following options can be passed to the `ParseServer` object during initialization. Alternatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to the JSON of your configuration.
+Parse Server can be configured using the following options. You may pass these as parameters when running a standalone `parse-server`. Alternatively, you can use the `PARSE_SERVER_OPTIONS` environment variable set to the JSON of your configuration, If you're using Parse Server on Express, you may also pass these to the `ParseServer` object as options.
 
 #### Basic options
 
-* `databaseURI` (required) - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`
-* `appId` (required) - The application id to host with this server instance
-* `masterKey` (required) - The master key to use for overriding ACL security
-* `cloud` - The absolute path to your cloud code main.js file
-* `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
+* `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
+* `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
+* `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`.
+* `cloud` - The absolute path to your cloud code `main.js` file.
 * `facebookAppIds` - An array of valid Facebook application IDs.
 * `serverURL` - URL which will be used by Cloud Code functions to make requests against.
 * `push` - Configuration options for APNS and GCM push. See the [wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
@@ -108,36 +165,44 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 
 #### Advanced options
 
-* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js))
-* `databaseAdapter` (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`)
-* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js))
-* `enableAnonymousUsers` - Defaults to true. Set to false to disable anonymous users.
-* `allowClientClassCreation` - Defaults to true. Set to false to disable client class creation.
+* `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
+* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
+* `maxUploadSize` - Max file size for uploads. Defaults to 20mb.
+* `databaseAdapter` (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`).
+* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
+* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
+* `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
-* `maxUploadSize` - Defaults to 20mb. Max file size for uploads
 
-#### Using environment variables
+### Using a JSON file to configure Parse Server
 
-You may also configure the Parse Server using environment variables:
-
-```js
-PARSE_SERVER_DATABASE_URI
-PARSE_SERVER_CLOUD_CODE_MAIN
-PARSE_SERVER_COLLECTION_PREFIX
-PARSE_SERVER_APPLICATION_ID // required
-PARSE_SERVER_MASTER_KEY // required
-PARSE_SERVER_CLIENT_KEY
-PARSE_SERVER_REST_API_KEY
-PARSE_SERVER_DOTNET_KEY
-PARSE_SERVER_JAVASCRIPT_KEY
-PARSE_SERVER_DOTNET_KEY
-PARSE_SERVER_FILE_KEY
-PARSE_SERVER_FACEBOOK_APP_IDS // string of comma separated list
-PARSE_SERVER_MAX_UPLOAD_SIZE
+The standalone API server supports loading a configuration file in JSON format:
 
 ```
+$ parse-server path/to/your/config.json
+```
+
+### Using environment variables to configure Parse Server
+
+You may configure the Parse Server using environment variables:
+
+```
+PORT
+PARSE_SERVER_APPLICATION_ID
+PARSE_SERVER_MASTER_KEY
+PARSE_SERVER_DATABASE_URI
+PARSE_SERVER_URL
+PARSE_SERVER_CLOUD_CODE_MAIN
+```
+
+The default port is 1337, to use a different port set the PORT environment variable:
+
+`$ PORT=8080 parse-server --appId=APPLICATION_ID --masterKey=MASTER_KEY`
+
+For the full list of configurable environment variables, run `parse-server --help`.
 
 ##### Configuring File Adapters
+
 Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/).
 
 `GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, additional configuration information is available below.
