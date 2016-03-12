@@ -10,7 +10,7 @@ export default {
     required: true
   },
   "port": {
-     port: "PORT",
+     env: "PORT",
      help: "The port to run the ParseServer. defaults to 1337.",
      default: 1337,
      action: function(opt) {
