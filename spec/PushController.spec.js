@@ -143,7 +143,7 @@ describe('PushController', () => {
         }
       })
       return Promise.resolve({
-        error: null
+        error: null,
         payload: body,
       })
     },

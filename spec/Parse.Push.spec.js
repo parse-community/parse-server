@@ -3,18 +3,20 @@ describe('Parse.Push', () => {
       var pushAdapter = {
         send: function(body, installations) {
           var badge = body.data.badge;
-          installations.forEach((installation) => {
+          let promises = installations.map((installation) => {
             if (installation.deviceType == "ios") {
               expect(installation.badge).toEqual(badge);
               expect(installation.originalBadge+1).toEqual(installation.badge);
             } else {
               expect(installation.badge).toBeUndefined();
             }
+            return Promise.resolve({
+              err: null,
+              deviceType: installation.deviceType,
+              result: true
+            })
           });
-          return Promise.resolve({
-            body: body,
-            installations: installations
-          });
+          return Promise.all(promises)
         },
         getValidPushTypes: function() {
           return ["ios", "android"];

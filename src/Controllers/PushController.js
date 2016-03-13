@@ -119,7 +119,7 @@ export class PushController extends AdaptableController {
       }
       return pushAdapter.send(body, response.results, pushStatus);
     }).then((results) => {
-      console.log(results);
+      // TODO: handle push results
       return Promise.resolve(results);
     });
   }
