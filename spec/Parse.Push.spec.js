@@ -1,3 +1,4 @@
+'use strict';
 describe('Parse.Push', () => {
   it('should properly send push', (done) => {
       var pushAdapter = {
