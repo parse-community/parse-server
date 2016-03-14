@@ -112,6 +112,20 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}) {
 // TODO: consolidate the replaceX functions
 RestQuery.prototype.execute = function() {
   return Promise.resolve().then(() => {
+    return this.buildRestWhere();
+  }).then(() => {
+    return this.runFind();
+  }).then(() => {
+    return this.runCount();
+  }).then(() => {
+    return this.handleInclude();
+  }).then(() => {
+    return this.response;
+  });
+};
+
+RestQuery.prototype.buildRestWhere = function() {
+  return Promise.resolve().then(() => {
     return this.getUserAndRoleACL();
   }).then(() => {
     return this.redirectClassNameForKey();
@@ -125,16 +139,8 @@ RestQuery.prototype.execute = function() {
     return this.replaceInQuery();
   }).then(() => {
     return this.replaceNotInQuery();
-  }).then(() => {
-    return this.runFind();
-  }).then(() => {
-    return this.runCount();
-  }).then(() => {
-    return this.handleInclude();
-  }).then(() => {
-    return this.response;
   });
-};
+}
 
 // Uses the Auth object to get the list of roles, adds the user id
 RestQuery.prototype.getUserAndRoleACL = function() {

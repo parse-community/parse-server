@@ -9,6 +9,7 @@
 
 var Parse = require('parse/node').Parse;
 import cache from './cache';
+import Auth from './Auth';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
@@ -42,7 +43,7 @@ function del(config, auth, className, objectId) {
     if (triggers.getTrigger(className, triggers.Types.beforeDelete, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterDelete, config.applicationId) ||
         className == '_Session') {
-      return find(config, auth, className, {objectId: objectId})
+      return find(config, Auth.master(config), className, {objectId: objectId})
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
@@ -97,7 +98,7 @@ function update(config, auth, className, objectId, restObject) {
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId)) {
-      return find(config, auth, className, {objectId: objectId});
+      return find(config, Auth.master(config), className, {objectId: objectId});
     }
     return Promise.resolve({});
   }).then((response) => {

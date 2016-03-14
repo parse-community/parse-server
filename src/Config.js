@@ -20,7 +20,6 @@ export class Config {
     this.restAPIKey = cacheInfo.restAPIKey;
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
-    this.enableAnonymousUsers = cacheInfo.enableAnonymousUsers;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
     
@@ -34,7 +33,7 @@ export class Config {
     this.pushController = cacheInfo.pushController;
     this.loggerController = cacheInfo.loggerController;
     this.userController = cacheInfo.userController;
-    this.oauth = cacheInfo.oauth;
+    this.authDataManager = cacheInfo.authDataManager;
     this.customPages = cacheInfo.customPages || {};
     this.mount = mount;
   }

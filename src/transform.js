@@ -87,7 +87,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       return transformWhere(schema, className, s);
     });
     return {key: '$and', value: mongoSubqueries};
-  default:
+  default:  
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
@@ -203,6 +203,9 @@ function transformWhere(schema, className, restWhere) {
 // restCreate is the "create" clause in REST API form.
 // Returns the mongo form of the object.
 function transformCreate(schema, className, restCreate) {
+  if (className == '_User') {
+     restCreate = transformAuthData(restCreate);
+  }
   var mongoCreate = transformACL(restCreate);
   for (var restKey in restCreate) {
     var out = transformKeyValue(schema, className, restKey, restCreate[restKey]);
@@ -218,6 +221,10 @@ function transformUpdate(schema, className, restUpdate) {
   if (!restUpdate) {
     throw 'got empty restUpdate';
   }
+  if (className == '_User') {
+    restUpdate = transformAuthData(restUpdate);
+  }
+  
   var mongoUpdate = {};
   var acl = transformACL(restUpdate);
   if (acl._rperm || acl._wperm) {
@@ -248,6 +255,16 @@ function transformUpdate(schema, className, restUpdate) {
   }
 
   return mongoUpdate;
+}
+
+function transformAuthData(restObject) {
+  if (restObject.authData) {
+    Object.keys(restObject.authData).forEach((provider) => {
+      restObject[`_auth_data_${provider}`] = restObject.authData[provider];
+    });
+    delete restObject.authData;
+  }
+  return restObject;
 }
 
 // Transforms a REST API formatted ACL object to our two-field mongo format.
