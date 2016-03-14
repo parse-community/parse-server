@@ -91,7 +91,7 @@ var requiredColumns = {
   _Role: ["name", "ACL"]
 }
 
-const systemClasses = ['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus'];
+const systemClasses = ['_User', '_Installation', '_Role', '_Session', '_Product'];
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;

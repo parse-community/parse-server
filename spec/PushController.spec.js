@@ -283,11 +283,18 @@ describe('PushController', () => {
    Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
+     return new Promise((resolve, reject) => {
+       setTimeout(() => {
+         resolve();
+       }, 1000);
+     });
+   }).then(() => {
      let query = new Parse.Query('_PushStatus');
      return query.find({useMasterKey: true});
    }).then((results) => {
      expect(results.length).toBe(1);
      let result = results[0];
+     expect(result.createdAt instanceof Date).toBe(true);
      expect(result.get('source')).toEqual('rest');
      expect(result.get('query')).toEqual(JSON.stringify({}));
      expect(result.get('payload')).toEqual(payload.data);
@@ -300,6 +307,11 @@ describe('PushController', () => {
      expect(result.get('failedPerType')).toEqual({
        'android': 5 // android
      });
+     // Try to get it without masterKey
+     let query = new Parse.Query('_PushStatus');
+     return query.find();
+   }).then((results) => {
+     expect(results.length).toBe(0);
      done();
    });
 

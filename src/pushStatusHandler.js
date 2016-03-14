@@ -1,13 +1,20 @@
-import RestWrite from './RestWrite';
-import { md5Hash } from './cryptoUtils';
+import { md5Hash, newObjectId } from './cryptoUtils';
 
 export default function pushStatusHandler(config) {
 
   let initialPromise;
   let pushStatus;
+
+  let collection = function() {
+    return config.database.adaptiveCollection('_PushStatus');
+  }
+
   let setInitial = function(body, where, options = {source: 'rest'}) {
+    let now = new Date();
     let object = {
-      pushTime: (new Date()).toISOString(),
+      objectId: newObjectId(),
+      pushTime: now.toISOString(),
+      _created_at: now,
       query: JSON.stringify(where),
       payload: body.data,
       source: options.source,
@@ -16,21 +23,27 @@ export default function pushStatusHandler(config) {
       status: "pending",
       numSent: 0,
       pushHash: md5Hash(JSON.stringify(body.data)),
-      ACL: new Parse.ACL() // lockdown!
+      // lockdown!
+      _wperm: [],
+      _rperm: []
     }
-    let restWrite = new RestWrite(config, {isMaster: true},'_PushStatus',null, object);
-    initialPromise = restWrite.execute().then((res) => {
-      pushStatus = res.response;
+    initialPromise = collection().then((collection) => {
+      return collection.insertOne(object);
+    }).then((res) => {
+      pushStatus = {
+        objectId: object.objectId
+      };
       return Promise.resolve(pushStatus);
-    });
+    })
     return initialPromise;
   }
 
   let setRunning = function() {
     return initialPromise.then(() => {
-      let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', {status:"pending", objectId: pushStatus.objectId}, {status: "running"});
-      return restWrite.execute();
-    })
+      return collection();
+    }).then((collection) => {
+      return collection.updateOne({status:"pending", objectId: pushStatus.objectId}, {$set: {status: "running"}});
+   });
   }
 
   let complete = function(results) {
@@ -63,9 +76,10 @@ export default function pushStatusHandler(config) {
     }
 
     return initialPromise.then(() => {
-      let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', {status:"running", objectId: pushStatus.objectId}, update);
-      return restWrite.execute();
-    })
+      return collection();
+    }).then((collection) => {
+      return collection.updateOne({status:"running", objectId: pushStatus.objectId}, {$set: update});
+    });
   }
 
   return Object.freeze({
