@@ -1,4 +1,4 @@
-var OAuth = require("../src/oauth/OAuth1Client");
+var OAuth = require("../src/authDataManager/OAuth1Client");
 var request = require('request');
 
 describe('OAuth', function() {
@@ -138,7 +138,7 @@ describe('OAuth', function() {
 
   ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter"].map(function(providerName){
     it("Should validate structure of "+providerName, (done) => {
-      var provider = require("../src/oauth/"+providerName);
+      var provider = require("../src/authDataManager/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
       jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor); 

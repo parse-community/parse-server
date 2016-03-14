@@ -1,5 +1,19 @@
 ## Parse Server Changelog
 
+### 2.1.6 (3/11/2016)
+
+* Improvement: Full query support for badge Increment \(\#931\) [\#983](https://github.com/ParsePlatform/parse-server/pull/983) (flovilmart)
+* Improvement: Shutdown standalone parse server gracefully [\#958](https://github.com/ParsePlatform/parse-server/pull/958) (raulr)
+* Improvement: Add database options to ParseServer constructor and pass to MongoStorageAdapter [\#956](https://github.com/ParsePlatform/parse-server/pull/956) (steven-supersolid)
+* Improvement: AuthData logic refactor [\#952](https://github.com/ParsePlatform/parse-server/pull/952) (flovilmart)
+* Improvement: Changed FileLoggerAdapterSpec to fail gracefully on Windows [\#946](https://github.com/ParsePlatform/parse-server/pull/946) (aneeshd16)
+* Improvement: Add new schema collection type and replace all usages of direct mongo collection for schema operations. [\#943](https://github.com/ParsePlatform/parse-server/pull/943) (nlutsenko)
+* Improvement: Adds CLP API to Schema router [\#898](https://github.com/ParsePlatform/parse-server/pull/898) (flovilmart)
+* Fix: Cleans up authData null keys on login for android crash [\#978](https://github.com/ParsePlatform/parse-server/pull/978) (flovilmart)
+* Fix: Do master query for before/afterSaveHook [\#959](https://github.com/ParsePlatform/parse-server/pull/959) (wangmengyan95)
+* Fix: re-add shebang [\#944](https://github.com/ParsePlatform/parse-server/pull/944) (flovilmart)
+* Fix: Added test command for Windows support [\#886](https://github.com/ParsePlatform/parse-server/pull/886) (aneeshd16)
+
 ### 2.1.5 (3/9/2016)
 
 * New: FileAdapter for Google Cloud Storage [\#708](https://github.com/ParsePlatform/parse-server/pull/708) (mcdonamp)

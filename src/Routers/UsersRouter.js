@@ -102,7 +102,20 @@ export class UsersRouter extends ClassesRouter {
         let token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
-
+        
+        // Sometimes the authData still has null on that keys
+        // https://github.com/ParsePlatform/parse-server/issues/935 
+        if (user.authData) {
+          Object.keys(user.authData).forEach((provider) => {
+            if (user.authData[provider] === null) {
+              delete user.authData[provider];
+            }
+          });
+          if (Object.keys(user.authData).length == 0) {
+            delete user.authData;
+          }
+        }
+        
         req.config.filesController.expandFilesInObject(req.config, user);
 
         let expiresAt = new Date();

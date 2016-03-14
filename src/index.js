@@ -8,7 +8,8 @@ var batch = require('./batch'),
     express = require('express'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
-    Parse = require('parse/node').Parse;
+    Parse = require('parse/node').Parse,
+    authDataManager = require('./authDataManager');
 
 //import passwordReset           from './passwordReset';
 import cache                   from './cache';
@@ -85,6 +86,7 @@ function ParseServer({
   push,
   loggerAdapter,
   databaseURI = DatabaseAdapter.defaultDatabaseURI,
+  databaseOptions,
   cloud,
   collectionPrefix = '',
   clientKey,
@@ -119,6 +121,10 @@ function ParseServer({
 
   if (databaseURI) {
     DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
+  }
+
+  if (databaseOptions) {
+    DatabaseAdapter.setAppDatabaseOptions(appId, databaseOptions);
   }
 
   if (cloud) {
@@ -164,9 +170,8 @@ function ParseServer({
     hooksController: hooksController,
     userController: userController,
     verifyUserEmails: verifyUserEmails,
-    enableAnonymousUsers: enableAnonymousUsers,
     allowClientClassCreation: allowClientClassCreation,
-    oauth: oauth,
+    authDataManager: authDataManager(oauth, enableAnonymousUsers),
     appName: appName,
     publicServerURL: publicServerURL,
     customPages: customPages,

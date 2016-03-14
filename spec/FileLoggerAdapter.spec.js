@@ -35,8 +35,13 @@ describe('info logs', () => {
         size: 1,
         level: 'info'
       }, (results) => {
-        expect(results[0].message).toEqual('testing info logs');
-        done();
+        if(results.length == 0) {
+          fail('The adapter should return non-empty results');
+          done();
+        } else {
+          expect(results[0].message).toEqual('testing info logs');
+          done();
+        }
       });
     });
   });
@@ -56,8 +61,14 @@ describe('error logs', () => {
         size: 1,
         level: 'error'
       }, (results) => {
-        expect(results[0].message).toEqual('testing error logs');
-        done();
+        if(results.length == 0) {
+          fail('The adapter should return non-empty results');
+          done();
+        }
+        else {
+          expect(results[0].message).toEqual('testing error logs');
+          done();
+        }
       });
     });
   });
