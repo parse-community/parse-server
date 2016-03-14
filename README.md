@@ -22,7 +22,7 @@ You can use any arbitrary string as your application id and master key. These wi
 
 That's it! You are now running a standalone version of Parse Server on your machine.
 
-**Using a remote MongoDB?** Pass the  `--databaseURL DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
+**Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
 ### Saving your first object
 
