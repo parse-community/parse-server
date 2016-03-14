@@ -227,7 +227,7 @@ describe('rest create', () => {
         console.log('anonymous user:', r.response);
         // logged anonymous
         var anonymousResponse = r.response;
-        data.authData.objectId = r.response.objectId;
+        data.objectId = r.response.objectId;
         data.authData.anonymous = null;
         return rest.update(config, auth.nobody(config), '_User', data.authData.objectId, data);
       }).then((r) => {
