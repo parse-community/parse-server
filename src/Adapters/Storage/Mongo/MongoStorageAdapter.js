@@ -1,7 +1,7 @@
 
 import MongoCollection from './MongoCollection';
 import MongoSchemaCollection from './MongoSchemaCollection';
-import {parse as parseUrl, format as formatUrl} from 'url';
+import {parse as parseUrl, format as formatUrl} from './mongodbUrl';
 
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
