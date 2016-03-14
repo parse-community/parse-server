@@ -197,36 +197,7 @@ For the full list of configurable environment variables, run `parse-server --hel
 
 ##### Configuring File Adapters
 
-Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/).
-
-`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, additional configuration information is available below.
-
-###### Configuring `S3Adapter`
-
-You can use the following environment variable setup to enable the S3 adapter:
-
-```js
-S3_ACCESS_KEY
-S3_SECRET_KEY
-S3_BUCKET
-S3_REGION
-S3_BUCKET_PREFIX
-S3_DIRECT_ACCESS
-
-```
-
-###### Configuring `GCSAdapter`
-
-You can use the following environment variable setup to enable the GCS adapter:
-
-```js
-GCP_PROJECT_ID
-GCP_KEYFILE_PATH
-GCS_BUCKET
-GCS_BUCKET_PREFIX
-GCS_DIRECT_ACCESS
-
-```
+Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/). `GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, [additional configuration information is available](https://github.com/ParsePlatform/parse-server/wiki/Configuring-File-Adapters).
 
 ## Contributing
 
