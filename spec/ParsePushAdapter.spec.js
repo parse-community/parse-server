@@ -29,9 +29,7 @@ describe('ParsePushAdapter', () => {
     var parsePushAdapter = new ParsePushAdapter(pushConfig);
     // Check ios
     var iosSender = parsePushAdapter.senderMap['ios'];
-    expect(iosSender).not.toBe(undefined);
-    expect(typeof iosSender.send).toEqual('function');
-    expect(typeof iosSender.getConfiguration).toEqual('function');
+    expect(iosSender instanceof APNS).toBe(true);
     // Check android
     var androidSender = parsePushAdapter.senderMap['android'];
     expect(androidSender instanceof GCM).toBe(true);
