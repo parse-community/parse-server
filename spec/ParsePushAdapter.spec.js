@@ -1,5 +1,5 @@
 var ParsePushAdapter = require('../src/Adapters/Push/ParsePushAdapter');
-var APNS = require('../src/APNS');
+var APNS = require('../src/APNS').APNS;
 var GCM = require('../src/GCM').GCM;
 
 describe('ParsePushAdapter', () => {

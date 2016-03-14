@@ -7,8 +7,8 @@ describe('SNSPushAdapter', () => {
     beforeEach(function() {
         pushConfig = {
             pushTypes: {
-                ios: "APNS_ID",
-                android: "GCM_ID"
+                ios: {ARN : "APNS_ID", production: false, bundleId: 'com.parseplatform.myapp'},
+                android: {ARN: "GCM_ID"}
             },
             accessKey: "accessKey",
             secretKey: "secretKey",
@@ -19,10 +19,9 @@ describe('SNSPushAdapter', () => {
 
     it('can be initialized', (done) => {
         // Make mock config
-        var arnMap = snsPushAdapter.arnMap;
+        var snsPushConfig = snsPushAdapter.snsConfig;
 
-        expect(arnMap.ios).toEqual("APNS_ID");
-        expect(arnMap.android).toEqual("GCM_ID");
+        expect(snsPushConfig).toEqual(pushConfig.pushTypes);
 
         done();
     });
@@ -126,13 +125,17 @@ describe('SNSPushAdapter', () => {
     });
 
     it('can generate the right iOS payload', (done) => {
-        var data = {"aps": {"alert": "Check out these awesome deals!"}};
+        var data = {data : {"alert": "Check out these awesome deals!"}};
         var pushId = '123';
         var timeStamp = 1456728000;
 
-        var returnedData = SNSPushAdapter.generateiOSPayload(data);
+        var returnedData = SNSPushAdapter.generateiOSPayload(data, true);
         var expectedData = {APNS: '{"aps":{"alert":"Check out these awesome deals!"}}'};
-        expect(returnedData).toEqual(expectedData)
+
+        var returnedData = SNSPushAdapter.generateiOSPayload(data, false);
+        var expectedData = {APNS_SANDBOX: '{"aps":{"alert":"Check out these awesome deals!"}}'};
+
+        expect(returnedData).toEqual(expectedData);
         done();
     });
 
@@ -153,11 +156,11 @@ describe('SNSPushAdapter', () => {
             callback(null, {'EndpointArn' : 'ARN'});
         });
 
-        var promise = snsPushAdapter.exchangeTokenPromise(makeDevice("androidToken"), "android");
+        var promise = snsPushAdapter.exchangeTokenPromise(makeDevice("androidToken"), "GCM_ID");
 
         promise.then(function() {
             expect(snsSender.createPlatformEndpoint).toHaveBeenCalled();
-            args = snsSender.createPlatformEndpoint.calls.first().args;
+            var args = snsSender.createPlatformEndpoint.calls.first().args;
             expect(args[0].PlatformApplicationArn).toEqual("GCM_ID");
             expect(args[0].Token).toEqual("androidToken");
             done();
@@ -186,7 +189,7 @@ describe('SNSPushAdapter', () => {
         var callback = jasmine.createSpy();
         promise.then(function () {
             expect(snsSender.publish).toHaveBeenCalled();
-            args = snsSender.publish.calls.first().args;
+            var args = snsSender.publish.calls.first().args;
             expect(args[0].MessageStructure).toEqual("json");
             expect(args[0].TargetArn).toEqual("123");
             expect(args[0].Message).toEqual('{"test":"hello"}');
@@ -202,8 +205,10 @@ describe('SNSPushAdapter', () => {
             callback("error", {});
         });
 
-        var promise = snsSender.getPlatformArn(makeDevice("android"), "android", function(err, data));
-        done();
+        snsPushAdapter.getPlatformArn(makeDevice("android"), "android", function(err, data) {
+            expect(err).not.toBe(null);
+            done();
+        });
     });
 
     it('can send SNS Payload to Android and iOS', (done) => {
@@ -237,6 +242,83 @@ describe('SNSPushAdapter', () => {
         promise.then(function () {
             expect(snsSender.publish).toHaveBeenCalled();
             expect(snsSender.publish.calls.count()).toEqual(2);
+            done();
+        });
+    });
+
+    it('can send to APNS with known identifier', (done) => {
+        var snsSender = jasmine.createSpyObj('sns', ['publish', 'createPlatformEndpoint']);
+
+        snsSender.createPlatformEndpoint.and.callFake(function (object, callback) {
+            callback(null, {'EndpointArn': 'ARN'});
+        });
+
+        snsSender.publish.and.callFake(function (object, callback) {
+            callback(null, '123');
+        });
+
+        snsPushAdapter.sns = snsSender;
+
+        var promises = snsPushAdapter.sendToAPNS({"test": "hello"}, [makeDevice("ios", "com.parseplatform.myapp")]);
+        expect(promises.length).toEqual(1);
+
+        Promise.all(promises).then(function ()  {
+            expect(snsSender.publish).toHaveBeenCalled();
+            done();
+        });
+
+    });
+
+    it('can send to APNS with unknown identifier', (done) => {
+        var snsSender = jasmine.createSpyObj('sns', ['publish', 'createPlatformEndpoint']);
+
+        snsSender.createPlatformEndpoint.and.callFake(function (object, callback) {
+            callback(null, {'EndpointArn': 'ARN'});
+        });
+
+        snsSender.publish.and.callFake(function (object, callback) {
+            callback(null, '123');
+        });
+
+        snsPushAdapter.sns = snsSender;
+
+        var promises = snsPushAdapter.sendToAPNS({"test": "hello"}, [makeDevice("ios", "com.parseplatform.unknown")]);
+        expect(promises.length).toEqual(0);
+        done();
+    });
+
+    it('can send to APNS with multiple identifiers', (done) => {
+        pushConfig = {
+            pushTypes: {
+                ios: [{ARN : "APNS_SANDBOX_ID", production: false, bundleId: 'beta.parseplatform.myapp'},
+                      {ARN : "APNS_PROD_ID", production: true, bundleId: 'com.parseplatform.myapp'}],
+                android: {ARN: "GCM_ID"}
+            },
+            accessKey: "accessKey",
+            secretKey: "secretKey",
+            region: "region"
+        };
+
+        snsPushAdapter = new SNSPushAdapter(pushConfig);
+
+        var snsSender = jasmine.createSpyObj('sns', ['publish', 'createPlatformEndpoint']);
+
+        snsSender.createPlatformEndpoint.and.callFake(function (object, callback) {
+            callback(null, {'EndpointArn': 'APNS_PROD_ID'});
+        });
+
+        snsSender.publish.and.callFake(function (object, callback) {
+            callback(null, '123');
+        });
+
+        snsPushAdapter.sns = snsSender;
+
+        var promises = snsPushAdapter.sendToAPNS({"test": "hello"}, [makeDevice("ios", "beta.parseplatform.myapp")]);
+        expect(promises.length).toEqual(1);
+        Promise.all(promises).then(function () {
+            expect(snsSender.publish).toHaveBeenCalled();
+            var args = snsSender.publish.calls.first().args[0];
+            expect(args.Message).toEqual("{\"APNS_SANDBOX\":\"{}\"}");
             done();
         });
     });

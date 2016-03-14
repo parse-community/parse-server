@@ -6,6 +6,7 @@ import PushAdapter from './PushAdapter';
 
 const Parse = require('parse/node').Parse;
 const GCM = require('../../GCM');
+const APNS = require('../../APNS');
 
 const AWS = require('aws-sdk');
 
@@ -21,7 +22,7 @@ export class SNSPushAdapter extends PushAdapter {
         super(pushConfig);
         this.validPushTypes = ['ios', 'android'];
         this.availablePushTypes = [];
-        this.arnMap = {};
+        this.snsConfig = pushConfig.pushTypes;
         this.senderMap = {};
 
         if (!pushConfig.accessKey || !pushConfig.secretKey) {
@@ -40,11 +41,9 @@ export class SNSPushAdapter extends PushAdapter {
                 switch (pushType) {
                     case 'ios':
                         this.senderMap[pushType] = this.sendToAPNS.bind(this);
-                        this.arnMap[pushType] = pushConfig.pushTypes[pushType];
                         break;
                     case 'android':
                         this.senderMap[pushType] = this.sendToGCM.bind(this);
-                        this.arnMap[pushType] = pushConfig.pushTypes[pushType];
                         break;
                 }
             }
@@ -69,10 +68,20 @@ export class SNSPushAdapter extends PushAdapter {
     }
 
     //Generate proper json for APNS message
-    static generateiOSPayload(data) {
-        return {
-            'APNS': JSON.stringify(data)
-        };
+    static generateiOSPayload(data, production) {
+        var prefix = "";
+
+        if (production) {
+            prefix = "APNS";
+        } else {
+            prefix = "APNS_SANDBOX"
+        }
+
+        var notification = APNS.generateNotification(data.data, data.expirationTime);
+
+        var payload = {};
+        payload[prefix] = notification.compile();
+        return payload;
     }
 
     // Generate proper json for GCM message
@@ -86,20 +95,55 @@ export class SNSPushAdapter extends PushAdapter {
     }
 
     sendToAPNS(data, devices) {
-        var payload = SNSPushAdapter.generateiOSPayload(data);
 
-        return this.sendToSNS(payload, devices, 'ios');
+        var iosPushConfig = this.snsConfig['ios'];
+
+        let iosConfigs = [];
+        if (Array.isArray(iosPushConfig)) {
+            iosConfigs = iosConfigs.concat(iosPushConfig);
+        } else {
+            iosConfigs.push(iosPushConfig)
+        }
+
+        let promises = [];
+
+        for (let iosConfig of iosConfigs) {
+
+            let production = iosConfig.production || false;
+            var payload = SNSPushAdapter.generateiOSPayload(data, production);
+
+            var deviceSends = [];
+            for (let device of devices) {
+
+                // Follow the same logic as APNS service.  If no appIdentifier, send it!
+                if (!device.appIdentifier || device.appIdentifier === '') {
+                    deviceSends.push(device);
+                }
+
+                else if (device.appIdentifier === iosConfig.bundleId) {
+                    deviceSends.push(device);
+                }
+            }
+            if (deviceSends.length > 0) {
+                promises.push(this.sendToSNS(payload, deviceSends, iosConfig.ARN));
+            }
+        }
+
+        return promises;
     }
 
     sendToGCM(data, devices) {
         var payload = SNSPushAdapter.generateAndroidPayload(data);
-        return this.sendToSNS(payload, devices, 'android');
+        var pushConfig = this.snsConfig['android'];
+
+        return this.sendToSNS(payload, devices, pushConfig.ARN);
     }
 
-    sendToSNS(payload, devices, pushType) {
+    sendToSNS(payload, devices, platformArn) {
         // Exchange the device token for the Amazon resource ID
+
         let exchangePromises = devices.map((device) => {
-            return this.exchangeTokenPromise(device, pushType);
+            return this.exchangeTokenPromise(device, platformArn);
         });
 
         // Publish off to SNS!
@@ -117,9 +161,9 @@ export class SNSPushAdapter extends PushAdapter {
     /**
      * Request a Amazon Resource Identifier if one is not set.
      */
-    getPlatformArn(device, pushType, callback) {
+    getPlatformArn(device, arn, callback) {
         var params = {
-            PlatformApplicationArn: this.arnMap[pushType],
+            PlatformApplicationArn: arn,
             Token: device.deviceToken
         };
 
@@ -129,9 +173,10 @@ export class SNSPushAdapter extends PushAdapter {
     /**
      * Exchange the device token for an ARN
      */
-    exchangeTokenPromise(device, pushType) {
+    exchangeTokenPromise(device, platformARN) {
         return new Parse.Promise((resolve, reject) => {
-            this.getPlatformArn(device, pushType, (err, data) => {
+
+            this.getPlatformArn(device, platformARN, (err, data) => {
                 if (data.EndpointArn) {
                     resolve(data.EndpointArn);
                 } else {
@@ -174,6 +219,7 @@ export class SNSPushAdapter extends PushAdapter {
 
         let sendPromises = Object.keys(deviceMap).forEach((pushType) => {
             var devices = deviceMap[pushType];
+
             var sender = this.senderMap[pushType];
             return sender(data, devices);
         });

@@ -5,7 +5,7 @@
 
 const Parse = require('parse/node').Parse;
 const GCM = require('../../GCM').GCM;
-const APNS = require('../../APNS');
+const APNS = require('../../APNS').APNS;
 import PushAdapter from './PushAdapter';
 import { classifyInstallations } from './PushAdapterUtils';
 
