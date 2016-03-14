@@ -4,10 +4,9 @@ import rest from '../rest';
 import AdaptableController from './AdaptableController';
 import { PushAdapter } from '../Adapters/Push/PushAdapter';
 import deepcopy from 'deepcopy';
-import { md5Hash } from '../cryptoUtils';
 import features from '../features';
 import RestQuery from '../RestQuery';
-import RestWrite from '../RestWrite';
+import pushStatusHandler from '../pushStatusHandler';
 
 const FEATURE_NAME = 'push';
 const UNSUPPORTED_BADGE_KEY = "unsupported";
@@ -40,7 +39,7 @@ export class PushController extends AdaptableController {
     }
   }
 
-  sendPush(body = {}, where = {}, config, auth) {
+  sendPush(body = {}, where = {}, config, auth, wait) {
     var pushAdapter = this.adapter;
     if (!pushAdapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
@@ -83,67 +82,56 @@ export class PushController extends AdaptableController {
         })
       }
     }
-    let pushStatus;
+    let pushStatus = pushStatusHandler(config);
     return Promise.resolve().then(() => {
-      return this.saveInitialPushStatus(body, where, config);
-    }).then((res) => {
-      pushStatus = res.response;
+      return pushStatus.setInitial(body, where);
+    }).then(() => {
       return badgeUpdate();
     }).then(() => {
       return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
-      this.updatePushStatus({status: "running"}, {status:"pending", objectId: pushStatus.objectId}, config);
-      if (body.data && body.data.badge && body.data.badge == "Increment") {
-        // Collect the badges to reduce the # of calls
-        let badgeInstallationsMap = response.results.reduce((map, installation) => {
-          let badge = installation.badge;
-          if (installation.deviceType != "ios") {
-            badge = UNSUPPORTED_BADGE_KEY;
-          }
-          map[badge+''] = map[badge+''] || [];
-          map[badge+''].push(installation);
-          return map;
-        }, {});
-
-        // Map the on the badges count and return the send result
-        let promises = Object.keys(badgeInstallationsMap).map((badge) => {
-          let payload = deepcopy(body);
-          if (badge == UNSUPPORTED_BADGE_KEY) {
-            delete payload.data.badge;
-          } else {
-            payload.data.badge = parseInt(badge);
-          }
-          return pushAdapter.send(payload, badgeInstallationsMap[badge], pushStatus);
-        });
-        return Promise.all(promises);
-      }
-      return pushAdapter.send(body, response.results, pushStatus);
+      pushStatus.setRunning();
+      return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
-      // TODO: handle push results
-      return Promise.resolve(results);
+      return pushStatus.complete(results);
     });
   }
 
-  saveInitialPushStatus(body, where, config, options = {source: 'rest'}) {
-    let pushStatus = {
-      pushTime: (new Date()).toISOString(),
-      query: JSON.stringify(where),
-      payload: body.data,
-      source: options.source,
-      title: options.title,
-      expiry: body.expiration_time,
-      status: "pending",
-      numSent: 0,
-      pushHash: md5Hash(JSON.stringify(body.data)),
-      ACL: new Parse.ACL() // lockdown!
-    }
-    let restWrite = new RestWrite(config, {isMaster: true},'_PushStatus',null, pushStatus);
-    return restWrite.execute();
-  }
+  sendToAdapter(body, installations, pushStatus, config) {
+    if (body.data && body.data.badge && body.data.badge == "Increment") {
+      // Collect the badges to reduce the # of calls
+      let badgeInstallationsMap = installations.reduce((map, installation) => {
+        let badge = installation.badge;
+        if (installation.deviceType != "ios") {
+          badge = UNSUPPORTED_BADGE_KEY;
+        }
+        map[badge+''] = map[badge+''] || [];
+        map[badge+''].push(installation);
+        return map;
+      }, {});
 
-  updatePushStatus(update, where, config) {
-    let restWrite = new RestWrite(config, {isMaster: true}, '_PushStatus', where, update);
-    return restWrite.execute();
+      // Map the on the badges count and return the send result
+      let promises = Object.keys(badgeInstallationsMap).map((badge) => {
+        let payload = deepcopy(body);
+        if (badge == UNSUPPORTED_BADGE_KEY) {
+          delete payload.data.badge;
+        } else {
+          payload.data.badge = parseInt(badge);
+        }
+        return this.adapter.send(payload, badgeInstallationsMap[badge]);
+      });
+      // Flatten the promises results
+      return Promise.all(promises).then((results) => {
+        if (Array.isArray(results)) {
+          return Promise.resolve(results.reduce((memo, result) => {
+            return memo.concat(result);
+          },[]));
+        } else {
+          return Promise.resolve(results);
+        }
+      })
+    }
+    return this.adapter.send(body, installations);
   }
 
   /**

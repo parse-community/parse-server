@@ -3,6 +3,30 @@ var PushController = require('../src/Controllers/PushController').PushController
 
 var Config = require('../src/Config');
 
+const successfulTransmissions = function(body, installations) {
+
+  let promises = installations.map((device) => {
+    return Promise.resolve({
+      transmitted: true,
+      device: device,
+    })
+  });
+
+  return Promise.all(promises);
+}
+
+const successfulIOS = function(body, installations) {
+
+  let promises = installations.map((device) => {
+    return Promise.resolve({
+      transmitted: device.deviceType == "ios",
+      device: device,
+    })
+  });
+
+  return Promise.all(promises);
+}
+
 describe('PushController', () => {
   it('can validate device type when no device type is set', (done) => {
     // Make query condition
@@ -142,10 +166,7 @@ describe('PushController', () => {
           expect(installation.badge).toBeUndefined();
         }
       })
-      return Promise.resolve({
-        error: null,
-        payload: body,
-      })
+      return successfulTransmissions(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios", "android"];
@@ -194,10 +215,7 @@ describe('PushController', () => {
         expect(installation.badge).toEqual(badge);
         expect(1).toEqual(installation.badge);
       })
-      return Promise.resolve({
-        payload: body,
-        error: null
-      })
+      return successfulTransmissions(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios"];
@@ -224,6 +242,24 @@ describe('PushController', () => {
 
   it('properly creates _PushStatus', (done) => {
 
+    var installations = [];
+    while(installations.length != 10) {
+      var installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_"+installations.length);
+      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    while(installations.length != 15) {
+      var installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_"+installations.length);
+      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("deviceType", "android");
+      installations.push(installation);
+    }
    var payload = {data: {
      alert: "Hello World!",
      badge: 1,
@@ -231,12 +267,7 @@ describe('PushController', () => {
 
    var pushAdapter = {
     send: function(body, installations) {
-      var badge = body.data.badge;
-      return Promise.resolve({
-        error: null,
-        response: "OK!",
-        payload: body
-      });
+      return successfulIOS(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios"];
@@ -249,7 +280,9 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId);
-   pushController.sendPush(payload, {}, config, auth).then((result) => {
+   Parse.Object.saveAll(installations).then(() => {
+     return pushController.sendPush(payload, {}, config, auth);
+   }).then((result) => {
      let query = new Parse.Query('_PushStatus');
      return query.find({useMasterKey: true});
    }).then((results) => {
@@ -258,7 +291,15 @@ describe('PushController', () => {
      expect(result.get('source')).toEqual('rest');
      expect(result.get('query')).toEqual(JSON.stringify({}));
      expect(result.get('payload')).toEqual(payload.data);
-     expect(result.get('status')).toEqual("running");
+     expect(result.get('status')).toEqual('succeeded');
+     expect(result.get('numSent')).toEqual(10);
+     expect(result.get('sentPerType')).toEqual({
+       'ios': 10 // 10 ios
+     });
+     expect(result.get('numFailed')).toEqual(5);
+     expect(result.get('failedPerType')).toEqual({
+       'android': 5 // android
+     });
      done();
    });
 
@@ -272,9 +313,7 @@ describe('PushController', () => {
 
    var pushAdapter = {
     send: function(body, installations) {
-      return Promise.resolve({
-        error:null
-      });
+      return successfulTransmissions(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios"];

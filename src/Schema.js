@@ -78,9 +78,11 @@ var defaultColumns = {
     "expiry":       {type:'Number'},
     "status":       {type:'String'},
     "numSent":      {type:'Number'},
+    "numFailed":    {type:'Number'},
     "pushHash":     {type:'String'},
     "errorMessage": {type:'Object'},
-    "sentPerType":  {type:'Object'}
+    "sentPerType":  {type:'Object'},
+    "failedPerType":{type:'Object'},
   }
 };
 

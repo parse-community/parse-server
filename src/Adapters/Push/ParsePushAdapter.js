@@ -10,6 +10,9 @@ import PushAdapter from './PushAdapter';
 import { classifyInstallations } from './PushAdapterUtils';
 
 export class ParsePushAdapter extends PushAdapter {
+
+  supportsPushTracking = true;
+
   constructor(pushConfig = {}) {
     super(pushConfig);
     this.validPushTypes = ['ios', 'android'];
@@ -56,7 +59,7 @@ export class ParsePushAdapter extends PushAdapter {
         }))
       } else {
         let devices = deviceMap[pushType];
-        sendPromises.push(sender.send(data, devices));  
+        sendPromises.push(sender.send(data, devices));
       }
     }
     return Parse.Promise.when(sendPromises);
