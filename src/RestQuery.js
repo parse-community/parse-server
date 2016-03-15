@@ -20,7 +20,6 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}) {
   this.className = className;
   this.restWhere = restWhere;
   this.response = null;
-
   this.findOptions = {};
   if (!this.auth.isMaster) {
     this.findOptions.acl = this.auth.user ? [this.auth.user.id] : null;
@@ -205,15 +204,19 @@ RestQuery.prototype.replaceInQuery = function() {
                           'improper usage of $inQuery');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: inQueryValue.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, inQueryValue.className,
-    inQueryValue.where);
+    inQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
       values.push({
         __type: 'Pointer',
-        className: inQueryValue.className,
+        className: subquery.className,
         objectId: result.objectId
       });
     }
@@ -223,7 +226,6 @@ RestQuery.prototype.replaceInQuery = function() {
     } else {
       inQueryObject['$in'] = values;
     }
-
     // Recurse to repeat
     return this.replaceInQuery();
   });
@@ -246,15 +248,19 @@ RestQuery.prototype.replaceNotInQuery = function() {
                           'improper usage of $notInQuery');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, notInQueryValue.className,
-    notInQueryValue.where);
+    notInQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
       values.push({
         __type: 'Pointer',
-        className: notInQueryValue.className,
+        className: subquery.className,
         objectId: result.objectId
       });
     }
@@ -385,7 +391,6 @@ RestQuery.prototype.runFind = function() {
         r.className = this.redirectClassName;
       }
     }
-
     this.response = {results: results};
   });
 };
@@ -423,7 +428,7 @@ RestQuery.prototype.handleInclude = function() {
     this.include = this.include.slice(1);
     return this.handleInclude();
   }
-  
+
   return pathResponse;
 };
 

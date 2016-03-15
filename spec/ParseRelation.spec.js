@@ -1,3 +1,4 @@
+'use strict';
 // This is a port of the test suite:
 // hungry/js/test/parse_relation_test.js
 
@@ -501,7 +502,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  notWorking('should properly get related objects with unfetched queries', (done) => {
+  it('should properly get related objects with unfetched queries', (done) => {
     let objects = [];
     let owners = [];
     let allObjects = [];
@@ -544,7 +545,30 @@ describe('Parse.Relation testing', () => {
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(5);
+      results.forEach((result) => {
+        expect(result.get('key').get('even')).toBe(true);
+      });
+      return Promise.resolve();
+    }).then(() => {
+      console.log('');
+      // Query on the relation of another owner
+      let object = new Parse.Object('AnotherOwner');
+      object.id = anotherOwner.id;
+      let relationQuery = object.relation('relationKey').query();
+      // Just get the even ones
+      relationQuery.equalTo('even', true);
+      // Make the query on anOwner
+      let query = new Parse.Query('AnOwner');
+      // where key match the relation query.
+      query.doesNotMatchQuery('key', relationQuery);
+      query.include('key');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(5);
+      results.forEach((result) => {
+        expect(result.get('key').get('even')).toBe(false);
+      });
       done();
-    });
+    })
   });
 });
