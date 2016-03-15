@@ -20,19 +20,9 @@
  */
 
 // default features
-let features = {
-  globalConfig: {
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-  },
-  hooks: {
-    create: false,
-    read: false,
-    update: false,
-    delete: false,
-  },
+const packageFeatures = require('../package.json').features;
+
+const adapterFeatures = {
   logs: {
     level: false,
     size: false,
@@ -45,16 +35,10 @@ let features = {
     scheduledPush: false,
     storedPushData: false,
     pushAudiences: false,
-  },
-  schemas: {
-    addField: true,
-    removeField: true,
-    addClass: true,
-    removeClass: true,
-    clearAllDataFromClass: false,
-    exportClass: false,
-  },
+  }
 };
+
+let features = Object.assign({}, packageFeatures, adapterFeatures);
 
 // master switch for features
 let featuresSwitch = {
