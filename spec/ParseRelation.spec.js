@@ -1,3 +1,4 @@
+'use strict';
 // This is a port of the test suite:
 // hungry/js/test/parse_relation_test.js
 
@@ -237,7 +238,7 @@ describe('Parse.Relation testing', () => {
               success: function(list) {
                 equal(list.length, 1, "There should be only one result");
                 equal(list[0].id, parent2.id,
-                      "Should have gotten back the right result"); 
+                      "Should have gotten back the right result");
                 done();
               }
             });
@@ -246,7 +247,7 @@ describe('Parse.Relation testing', () => {
       }
     });
   });
-  
+
   it("queries on relation fields with multiple ins", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -268,7 +269,7 @@ describe('Parse.Relation testing', () => {
       relation2.add(childObjects[4]);
       relation2.add(childObjects[5]);
       relation2.add(childObjects[6]);
-      
+
       var otherChild2 = parent2.relation("otherChild");
       otherChild2.add(childObjects[0]);
       otherChild2.add(childObjects[1]);
@@ -290,7 +291,7 @@ describe('Parse.Relation testing', () => {
       done();
     });
   });
-  
+
   it("query on pointer and relation fields with equal", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -306,21 +307,21 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects[0]);
         relation.add(childObjects[1]);
         relation.add(childObjects[2]);
-        
+
         var parent2 = new ParentObject();
         parent2.set("x", 3);
         parent2.set("toChild", childObjects[2]);
-        
+
         var parents = [];
         parents.push(parent);
         parents.push(parent2);
         parents.push(new ParentObject());
-        
+
        return Parse.Object.saveAll(parents).then(() => {
           var query = new Parse.Query(ParentObject);
           query.equalTo("objectId", parent.id);
           query.equalTo("toChilds", childObjects[2]);
-         
+
           return query.find().then((list) => {
             equal(list.length, 1, "There should be 1 result");
             done();
@@ -328,7 +329,7 @@ describe('Parse.Relation testing', () => {
         });
     });
   });
-  
+
   it("query on pointer and relation fields with equal bis", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -344,23 +345,23 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects[0]);
         relation.add(childObjects[1]);
         relation.add(childObjects[2]);
-        
+
         var parent2 = new ParentObject();
         parent2.set("x", 3);
         parent2.relation("toChilds").add(childObjects[2]);
-        
+
         var parents = [];
         parents.push(parent);
         parents.push(parent2);
         parents.push(new ParentObject());
-        
+
        return Parse.Object.saveAll(parents).then(() => {
           var query = new Parse.Query(ParentObject);
           query.equalTo("objectId", parent2.id);
           // childObjects[2] is in 2 relations
           // before the fix, that woul yield 2 results
           query.equalTo("toChilds", childObjects[2]);
-         
+
           return query.find().then((list) => {
             equal(list.length, 1, "There should be 1 result");
             done();
@@ -368,7 +369,7 @@ describe('Parse.Relation testing', () => {
         });
     });
   });
-  
+
   it("or queries on pointer and relation fields", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -384,16 +385,16 @@ describe('Parse.Relation testing', () => {
         relation.add(childObjects[0]);
         relation.add(childObjects[1]);
         relation.add(childObjects[2]);
-        
+
         var parent2 = new ParentObject();
         parent2.set("x", 3);
         parent2.set("toChild", childObjects[2]);
-        
+
         var parents = [];
         parents.push(parent);
         parents.push(parent2);
         parents.push(new ParentObject());
-        
+
        return Parse.Object.saveAll(parents).then(() => {
           var query1 = new Parse.Query(ParentObject);
           query1.containedIn("toChilds", [childObjects[2]]);
@@ -501,5 +502,154 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-});
+  it('should properly get related objects with unfetched queries', (done) => {
+    let objects = [];
+    let owners = [];
+    let allObjects = [];
+    // Build 10 Objects and 10 owners
+    while (objects.length != 10) {
+      let object = new Parse.Object('AnObject');
+      object.set({
+        index: objects.length,
+        even: objects.length % 2 == 0
+      });
+      objects.push(object);
+      let owner = new Parse.Object('AnOwner');
+      owners.push(owner);
+      allObjects.push(object);
+      allObjects.push(owner);
+    }
 
+    let anotherOwner = new Parse.Object('AnotherOwner');
+
+    return Parse.Object.saveAll(allObjects.concat([anotherOwner])).then(() => {
+      // put all the AnObject into the anotherOwner relationKey
+      anotherOwner.relation('relationKey').add(objects);
+      // Set each object[i] into owner[i];
+      owners.forEach((owner,i) => {
+        owner.set('key', objects[i]);
+      });
+      return Parse.Object.saveAll(owners.concat([anotherOwner]));
+    }).then(() => {
+      // Query on the relation of another owner
+      let object = new Parse.Object('AnotherOwner');
+      object.id = anotherOwner.id;
+      let relationQuery = object.relation('relationKey').query();
+      // Just get the even ones
+      relationQuery.equalTo('even', true);
+      // Make the query on anOwner
+      let query = new Parse.Query('AnOwner');
+      // where key match the relation query.
+      query.matchesQuery('key', relationQuery);
+      query.include('key');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(5);
+      results.forEach((result) => {
+        expect(result.get('key').get('even')).toBe(true);
+      });
+      return Promise.resolve();
+    }).then(() => {
+      // Query on the relation of another owner
+      let object = new Parse.Object('AnotherOwner');
+      object.id = anotherOwner.id;
+      let relationQuery = object.relation('relationKey').query();
+      // Just get the even ones
+      relationQuery.equalTo('even', true);
+      // Make the query on anOwner
+      let query = new Parse.Query('AnOwner');
+      // where key match the relation query.
+      query.doesNotMatchQuery('key', relationQuery);
+      query.include('key');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(5);
+      results.forEach((result) => {
+        expect(result.get('key').get('even')).toBe(false);
+      });
+      done();
+    })
+  });
+
+  it("select query", function(done) {
+    var RestaurantObject = Parse.Object.extend("Restaurant");
+    var PersonObject = Parse.Object.extend("Person");
+    var OwnerObject = Parse.Object.extend('Owner');
+    var restaurants = [
+      new RestaurantObject({ ratings: 5, location: "Djibouti" }),
+      new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
+    ];
+    let persons = [
+      new PersonObject({ name: "Bob", hometown: "Djibouti" }),
+      new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
+      new PersonObject({ name: "Billy", hometown: "Detroit" }),
+    ];
+    let owner = new OwnerObject({name: 'Joe'});
+    let ownerId;
+    let allObjects = [owner].concat(restaurants).concat(persons);
+    expect(allObjects.length).toEqual(6);
+    Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
+      ownerId = owner.id;
+      owner.relation('restaurants').add(restaurants);
+      return owner.save()
+    }).then(() => {
+      let unfetchedOwner = new OwnerObject();
+      unfetchedOwner.id = owner.id;
+      var query = unfetchedOwner.relation('restaurants').query();
+      query.greaterThan("ratings", 4);
+      var mainQuery = new Parse.Query(PersonObject);
+      mainQuery.matchesKeyInQuery("hometown", "location", query);
+      mainQuery.find(expectSuccess({
+        success: function(results) {
+          equal(results.length, 1);
+          if (results.length > 0) {
+            equal(results[0].get('name'), 'Bob');
+          }
+          done();
+        }
+      }));
+    });
+  });
+
+  it("dontSelect query", function(done) {
+    var RestaurantObject = Parse.Object.extend("Restaurant");
+    var PersonObject = Parse.Object.extend("Person");
+    var OwnerObject = Parse.Object.extend('Owner');
+    var restaurants = [
+      new RestaurantObject({ ratings: 5, location: "Djibouti" }),
+      new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
+    ];
+    let persons = [
+      new PersonObject({ name: "Bob", hometown: "Djibouti" }),
+      new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
+      new PersonObject({ name: "Billy", hometown: "Detroit" }),
+    ];
+    let owner = new OwnerObject({name: 'Joe'});
+    let ownerId;
+    let allObjects = [owner].concat(restaurants).concat(persons);
+    expect(allObjects.length).toEqual(6);
+    Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
+      ownerId = owner.id;
+      owner.relation('restaurants').add(restaurants);
+      return owner.save()
+    }).then(() => {
+      let unfetchedOwner = new OwnerObject();
+      unfetchedOwner.id = owner.id;
+      var query = unfetchedOwner.relation('restaurants').query();
+      query.greaterThan("ratings", 4);
+      var mainQuery = new Parse.Query(PersonObject);
+      mainQuery.doesNotMatchKeyInQuery("hometown", "location", query);
+      mainQuery.ascending('name');
+      mainQuery.find(expectSuccess({
+        success: function(results) {
+          equal(results.length, 2);
+          if (results.length > 0) {
+            equal(results[0].get('name'), 'Billy');
+            equal(results[1].get('name'), 'Tom');
+          }
+          done();
+        }
+      }));
+    });
+  });
+});
