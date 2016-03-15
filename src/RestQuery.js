@@ -299,9 +299,13 @@ RestQuery.prototype.replaceSelect = function() {
                           'improper usage of $select');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: selectValue.query.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, selectValue.query.className,
-    selectValue.query.where);
+    selectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
@@ -340,9 +344,13 @@ RestQuery.prototype.replaceDontSelect = function() {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
+  let additionalOptions = {
+    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
-    dontSelectValue.query.where);
+    dontSelectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {

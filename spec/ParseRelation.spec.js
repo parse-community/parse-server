@@ -550,7 +550,6 @@ describe('Parse.Relation testing', () => {
       });
       return Promise.resolve();
     }).then(() => {
-      console.log('');
       // Query on the relation of another owner
       let object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
@@ -570,5 +569,87 @@ describe('Parse.Relation testing', () => {
       });
       done();
     })
+  });
+
+  it("select query", function(done) {
+    var RestaurantObject = Parse.Object.extend("Restaurant");
+    var PersonObject = Parse.Object.extend("Person");
+    var OwnerObject = Parse.Object.extend('Owner');
+    var restaurants = [
+      new RestaurantObject({ ratings: 5, location: "Djibouti" }),
+      new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
+    ];
+    let persons = [
+      new PersonObject({ name: "Bob", hometown: "Djibouti" }),
+      new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
+      new PersonObject({ name: "Billy", hometown: "Detroit" }),
+    ];
+    let owner = new OwnerObject({name: 'Joe'});
+    let ownerId;
+    let allObjects = [owner].concat(restaurants).concat(persons);
+    expect(allObjects.length).toEqual(6);
+    Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
+      ownerId = owner.id;
+      owner.relation('restaurants').add(restaurants);
+      return owner.save()
+    }).then(() => {
+      let unfetchedOwner = new OwnerObject();
+      unfetchedOwner.id = owner.id;
+      var query = unfetchedOwner.relation('restaurants').query();
+      query.greaterThan("ratings", 4);
+      var mainQuery = new Parse.Query(PersonObject);
+      mainQuery.matchesKeyInQuery("hometown", "location", query);
+      mainQuery.find(expectSuccess({
+        success: function(results) {
+          equal(results.length, 1);
+          if (results.length > 0) {
+            equal(results[0].get('name'), 'Bob');
+          }
+          done();
+        }
+      }));
+    });
+  });
+
+  it("dontSelect query", function(done) {
+    var RestaurantObject = Parse.Object.extend("Restaurant");
+    var PersonObject = Parse.Object.extend("Person");
+    var OwnerObject = Parse.Object.extend('Owner');
+    var restaurants = [
+      new RestaurantObject({ ratings: 5, location: "Djibouti" }),
+      new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
+    ];
+    let persons = [
+      new PersonObject({ name: "Bob", hometown: "Djibouti" }),
+      new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
+      new PersonObject({ name: "Billy", hometown: "Detroit" }),
+    ];
+    let owner = new OwnerObject({name: 'Joe'});
+    let ownerId;
+    let allObjects = [owner].concat(restaurants).concat(persons);
+    expect(allObjects.length).toEqual(6);
+    Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
+      ownerId = owner.id;
+      owner.relation('restaurants').add(restaurants);
+      return owner.save()
+    }).then(() => {
+      let unfetchedOwner = new OwnerObject();
+      unfetchedOwner.id = owner.id;
+      var query = unfetchedOwner.relation('restaurants').query();
+      query.greaterThan("ratings", 4);
+      var mainQuery = new Parse.Query(PersonObject);
+      mainQuery.doesNotMatchKeyInQuery("hometown", "location", query);
+      mainQuery.ascending('name');
+      mainQuery.find(expectSuccess({
+        success: function(results) {
+          equal(results.length, 2);
+          if (results.length > 0) {
+            equal(results[0].get('name'), 'Billy');
+            equal(results[1].get('name'), 'Tom');
+          }
+          done();
+        }
+      }));
+    });
   });
 });
