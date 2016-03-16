@@ -9,7 +9,7 @@ program.loadDefinitions(definitions);
 
 program
   .usage('[options] <path/to/configuration.json>');
-    
+
 program.on('--help', function(){
   console.log('  Get Started guide:');
   console.log('');
@@ -31,7 +31,7 @@ program.on('--help', function(){
   console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
   console.log('');
 });
-  
+
 program.parse(process.argv, process.env);
 
 let options = {};
@@ -48,10 +48,10 @@ if (program.args.length > 0 ) {
     options = jsonConfig;
   }
   console.log(`Configuation loaded from ${jsonPath}`)
-} 
+}
 
 options = Object.keys(definitions).reduce(function (options, key) {
-  if (program[key]) {
+  if (typeof program[key] !== 'undefined') {
     options[key] = program[key];
   }
   return options;
@@ -74,7 +74,7 @@ const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
 var server = app.listen(options.port, function() {
-  
+
   for (let key in options) {
     let value = options[key];
     if (key == "masterKey") {
