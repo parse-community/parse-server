@@ -40,7 +40,7 @@ if (program.args.length > 0 ) {
   jsonPath = path.resolve(jsonPath);
   options = require(jsonPath);
   console.log(`Configuation loaded from ${jsonPath}`)
-} 
+}
 
 options = Object.keys(definitions).reduce(function (options, key) {
   if (program[key]) {
@@ -53,7 +53,7 @@ if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
 }
 
-if (!options.appId || !options.masterKey || !options.serverURL) {
+if (!program.appId || !program.masterKey || !program.serverURL) {
   program.outputHelp();
   console.error("");
   console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
@@ -65,7 +65,7 @@ const app = express();
 const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-var server = app.listen(options.port, function() {
+app.listen(options.port, function() {
   
   for (let key in options) {
     let value = options[key];

@@ -2,6 +2,7 @@ var FilesController = require('../src/Controllers/FilesController').FilesControl
 var GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
 var S3Adapter = require("../src/Adapters/Files/S3Adapter").S3Adapter;
 var GCSAdapter = require("../src/Adapters/Files/GCSAdapter").GCSAdapter;
+var FileSystemAdapter = require("../src/Adapters/Files/FileSystemAdapter").FileSystemAdapter;
 var Config = require("../src/Config");
 
 var FCTestFactory = require("./FilesControllerTestFactory");
@@ -48,5 +49,16 @@ describe("FilesController",()=>{
 
   } else if (!process.env.TRAVIS) {
     console.log("set GCP_PROJECT_ID, GCP_KEYFILE_PATH, and GCS_BUCKET to test GCSAdapter")
+  }
+
+  try {
+    // Test the file system adapter
+    var fsAdapter = new FileSystemAdapter({
+      filesSubDirectory: 'sub1/sub2'
+    });
+
+    FCTestFactory.testAdapter("FileSystemAdapter", fsAdapter);
+  } catch (e) {
+    console.log("Give write access to the file system to test the FileSystemAdapter. Error: " + e);
   }
 });

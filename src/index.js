@@ -22,7 +22,6 @@ import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
 import { ClassesRouter }       from './Routers/ClassesRouter';
 import { FeaturesRouter }      from './Routers/FeaturesRouter';
 import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
-import { FilesController }     from './Controllers/FilesController';
 import { FilesRouter }         from './Routers/FilesRouter';
 import { FunctionsRouter }     from './Routers/FunctionsRouter';
 import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
@@ -46,6 +45,8 @@ import { SessionsRouter }      from './Routers/SessionsRouter';
 import { setFeature }          from './features';
 import { UserController }      from './Controllers/UserController';
 import { UsersRouter }         from './Routers/UsersRouter';
+import { FilesController }     from './Controllers/FilesController';
+import { FileSystemAdapter }   from './Adapters/Files/FileSystemAdapter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -265,5 +266,6 @@ function addParseCloud() {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
-  GCSAdapter: GCSAdapter
+  GCSAdapter: GCSAdapter,
+  FileSystemAdapter: FileSystemAdapter
 };
