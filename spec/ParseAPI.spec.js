@@ -868,6 +868,50 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('should return the updated fields on PUT', (done) => {
+    let obj = new Parse.Object('GameScore');
+    obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
+      var headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo'
+      };
+      request.put({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/GameScore/'+obj.id,
+        body: JSON.stringify({
+          a: 'b',
+          c: {"__op":"Increment","amount":2},
+          d: {"__op":"Add", objects: ['2']},
+          e: {"__op":"AddUnique", objects: ['1', '2']},
+          f: {"__op":"Remove", objects: ['2']},
+          selfThing: {"__type":"Pointer","className":"GameScore","objectId":obj.id},
+        })
+      }, (error, response, body) => {
+        body = JSON.parse(body);
+        expect(body.a).toBeUndefined();
+        expect(body.c).toEqual(3); // 2+1
+        expect(body.d.length).toBe(2);
+        expect(body.d.indexOf('1') > -1).toBe(true);
+        expect(body.d.indexOf('2') > -1).toBe(true);
+        expect(body.e.length).toBe(2);
+        expect(body.e.indexOf('1') > -1).toBe(true);
+        expect(body.e.indexOf('2') > -1).toBe(true);
+        expect(body.f.length).toBe(1);
+        expect(body.f.indexOf('1') > -1).toBe(true);
+        // return nothing on other self
+        expect(body.selfThing).toBeUndefined();
+        // updatedAt is always set
+        expect(body.updatedAt).not.toBeUndefined();
+        done();
+      });
+    }).fail((err) => {
+      fail('Should not fail');
+      done();
+    })
+  })
+
   it('test cloud function error handling', (done) => {
     // Register a function which will fail
     Parse.Cloud.define('willFail', (req, res) => {

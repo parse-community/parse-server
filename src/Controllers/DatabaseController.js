@@ -139,6 +139,8 @@ DatabaseController.prototype.untransformObject = function(
 //         one of the provided strings must provide the caller with
 //         write permissions.
 DatabaseController.prototype.update = function(className, query, update, options) {
+
+  const originalUpdate = update;
   // Make a copy of the object, so we don't mutate the incoming data.
   update = deepcopy(update);
 
@@ -179,12 +181,15 @@ DatabaseController.prototype.update = function(className, query, update, options
       }
 
       let response = {};
-      let inc = mongoUpdate['$inc'];
-      if (inc) {
-        Object.keys(inc).forEach(key => {
+      Object.keys(originalUpdate).forEach(key => {
+        let keyUpdate = originalUpdate[key];
+        // determine if that was an op
+        if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
+          && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
+          // only valid ops that produce an actionable result
           response[key] = result[key];
-        });
-      }
+        }
+      });
       return response;
     });
 };
@@ -474,7 +479,7 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 
 DatabaseController.prototype.addInObjectIdsIds = function(ids, query) {
   if (typeof query.objectId == 'string') {
-    // Add equality op as we are sure 
+    // Add equality op as we are sure
     // we had a constraint on that one
     query.objectId = {'$eq': query.objectId};
   }
