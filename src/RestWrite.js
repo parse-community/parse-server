@@ -374,7 +374,7 @@ RestWrite.prototype.updateSession = function(objectId) {
       // update user sessionToken with the updated session
       if(that.response && that.response.response) {
         that.response.response.sessionToken = originalSession.sessionToken;
-        that.response.response.authType = "anonymous";
+        // needed by clients to know that needs to update his user
         that.response.response.anonymous = that.response.response.objectId;
         var user = cache.users.get(originalSession.sessionToken);
         user.id = objectId;
