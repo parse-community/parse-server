@@ -66,7 +66,8 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     delete obj.password;
     obj['className'] = '_User';
     obj['sessionToken'] = sessionToken;
-    let userObject = Parse.Object.fromJSON(obj);
+    var userObject = Parse.Object.fromJSON(obj); // this remove sessionToken, why?
+    userObject.sessionToken = sessionToken;
     cache.users.set(sessionToken, userObject);
     return new Auth({ config, isMaster: false, installationId, user: userObject });
   });

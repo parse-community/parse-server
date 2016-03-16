@@ -217,34 +217,46 @@ describe('rest create', () => {
         }
       }
     };
-    var newUserSignedUpByFacebookObjectId;
+    var facebookUserResponse;
     var anonymousResponse;
+    var anonymousSession;
+    var anonymousAuth
     rest.create(config, auth.nobody(config), '_User', data)
       .then((r) => {
-        console.log('facebook user', r.response);
         // facebook user sign up
-        newUserSignedUpByFacebookObjectId = r.response.objectId;
+        facebookUserResponse = r.response;
         return rest.create(config, auth.nobody(config), '_User', dataAnonymous);
       }).then((r) => {
-        console.log('anonymous user:', r.response);
         // logged anonymous
-        var anonymousResponse = r.response;
+        anonymousResponse = r.response;
         data.objectId = r.response.objectId;
         data.authData.anonymous = null;
-        return rest.update(config, auth.nobody(config), '_User', data.authData.objectId, data);
+        return rest.find(config, auth.master(config), '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        // check anonymous token
+        anonymousSession = response.results[0];
+        return auth.getAuthForSessionToken({config: config, sessionToken: anonymousSession.sessionToken, installationId: 'abc'});
       }).then((r) => {
-        console.log('login', r);
+        // get authToken
+        anonymousAuth = r;
+        return rest.update(config, anonymousAuth, '_User', data.objectId, data);
+      }).then((r) => {
+        // logged with facebook using anonymous user token
         expect(typeof r.response.objectId).toEqual('string');
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.username).toEqual('string');
         expect(typeof r.response.updatedAt).toEqual('string');
-        expect(r.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
+        expect(typeof r.response.sessionToken).toEqual('string');
+        expect(r.response.objectId).toEqual(facebookUserResponse.objectId);
+        expect(r.response.sessionToken).toEqual(anonymousSession.sessionToken)
         return rest.find(config, auth.master(config),
                           '_Session', {sessionToken: r.response.sessionToken});
       }).then((response) => {
         expect(response.results.length).toEqual(1);
-        var output = response.results[0];
-        expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
+        var session = response.results[0];
+        expect(session.user.objectId).toEqual(facebookUserResponse.objectId);
+        // should update user session
+        expect(session.objectId).toEqual(anonymousSession.objectId);
         done();
       })
       .catch((err) => {
