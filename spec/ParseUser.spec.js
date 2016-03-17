@@ -1438,6 +1438,32 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should fail linking with existing', (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        let userId = model.id;
+        Parse.User.logOut().then(() => {
+          request.post({
+             url:Parse.serverURL+'/classes/_User',
+             headers: {
+               'X-Parse-Application-Id': Parse.applicationId,
+               'X-Parse-REST-API-Key': 'rest'
+             },
+             json: {authData: {facebook: provider.authData}}
+          }, (err,res, body) => {
+            // make sure the location header is properly set
+            expect(userId).not.toBeUndefined();
+            expect(body.objectId).toEqual(userId);
+            expect(res.headers.location).toEqual(Parse.serverURL+'/users/'+userId);
+            done();
+          });
+        });
+      }
+    });
+  });
+
   it('should have authData in beforeSave and afterSave', (done) => {
 
     Parse.Cloud.beforeSave('_User', (request, response) => {
