@@ -139,6 +139,8 @@ DatabaseController.prototype.untransformObject = function(
 //         one of the provided strings must provide the caller with
 //         write permissions.
 DatabaseController.prototype.update = function(className, query, update, options) {
+
+  const originalUpdate = update;
   // Make a copy of the object, so we don't mutate the incoming data.
   update = deepcopy(update);
 
@@ -177,17 +179,26 @@ DatabaseController.prototype.update = function(className, query, update, options
         return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
           'Object not found.'));
       }
-
-      let response = {};
-      let inc = mongoUpdate['$inc'];
-      if (inc) {
-        Object.keys(inc).forEach(key => {
-          response[key] = result[key];
-        });
-      }
-      return response;
+      return sanitizeDatabaseResult(originalUpdate, result);
     });
 };
+
+function sanitizeDatabaseResult(originalObject, result) {
+  let response = {};
+  if (!result) {
+    return Promise.resolve(response);
+  }
+  Object.keys(originalObject).forEach(key => {
+    let keyUpdate = originalObject[key];
+    // determine if that was an op
+    if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
+      && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
+      // only valid ops that produce an actionable result
+      response[key] = result[key];
+    }
+  });
+  return Promise.resolve(response);
+}
 
 // Processes relation-updating operations from a REST-format update.
 // Returns a promise that resolves successfully when these are
@@ -313,6 +324,7 @@ DatabaseController.prototype.destroy = function(className, query, options = {}) 
 // Returns a promise that resolves successfully iff the object saved.
 DatabaseController.prototype.create = function(className, object, options) {
   // Make a copy of the object, so we don't mutate the incoming data.
+  let originalObject = object;
   object = deepcopy(object);
 
   var schema;
@@ -333,6 +345,9 @@ DatabaseController.prototype.create = function(className, object, options) {
     .then(coll => {
       var mongoObject = transform.transformCreate(schema, className, object);
       return coll.insertOne(mongoObject);
+    })
+    .then(result => {
+      return sanitizeDatabaseResult(originalObject, result.ops[0]);
     });
 };
 
@@ -474,7 +489,7 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 
 DatabaseController.prototype.addInObjectIdsIds = function(ids, query) {
   if (typeof query.objectId == 'string') {
-    // Add equality op as we are sure 
+    // Add equality op as we are sure
     // we had a constraint on that one
     query.objectId = {'$eq': query.objectId};
   }
