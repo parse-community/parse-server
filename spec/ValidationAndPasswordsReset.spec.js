@@ -23,9 +23,9 @@ describe("Custom Pages Configuration", () => {
       },
       publicServerURL: "https://my.public.server.com/1"
     });
-    
+
     var config = new Config("test");
-    
+
     expect(config.invalidLinkURL).toEqual("myInvalidLink");
     expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
     expect(config.choosePasswordURL).toEqual("myChoosePassword");
@@ -78,7 +78,7 @@ describe("Email Verification", () => {
       }
     });
   });
-  
+
   it('does not send verification email when verification is enabled and email is not set', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -119,7 +119,7 @@ describe("Email Verification", () => {
       }
     });
   });
-  
+
   it('does send a validation email when updating the email', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -169,7 +169,7 @@ describe("Email Verification", () => {
       }
     });
   });
-  
+
   it('does send with a simple adapter', done => {
     var calls = 0;
     var emailAdapter = {
@@ -311,7 +311,7 @@ describe("Email Verification", () => {
           followRedirect: false,
         }, (error, response, body) => {
           expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=zxcv');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
           user.fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(true);
@@ -342,7 +342,7 @@ describe("Email Verification", () => {
       publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
-    user.setUsername("zxcv");
+    user.setUsername("user");
     user.set('email', 'user@parse.com');
     user.signUp();
   });
@@ -453,7 +453,7 @@ describe("Email Verification", () => {
 });
 
 describe("Password Reset", () => {
-  
+
   it('should send a password reset link', done => {
     var user = new Parse.User();
     var emailAdapter = {
@@ -468,7 +468,7 @@ describe("Password Reset", () => {
             return;
           }
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=zxcv/;
+          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=zxcv%2Bzxcv/;
           expect(response.body.match(re)).not.toBe(null);
           done();
         });
@@ -491,7 +491,7 @@ describe("Password Reset", () => {
       publicServerURL: "http://localhost:8378/1"
     });
     user.setPassword("asdf");
-    user.setUsername("zxcv");
+    user.setUsername("zxcv+zxcv");
     user.set('email', 'user@parse.com');
     user.signUp().then(() => {
       Parse.User.requestPasswordReset('user@parse.com', {
@@ -503,7 +503,7 @@ describe("Password Reset", () => {
       });
     });
   });
-  
+
   it('redirects you to invalid link if you try to request password for a nonexistant users email', done => {
     setServerConfiguration({
       serverURL: 'http://localhost:8378/1',
@@ -555,8 +555,8 @@ describe("Password Reset", () => {
             return;
           }
           var token = match[1];
-          
-          request.post({ 
+
+          request.post({
             url: "http://localhost:8378/1/apps/test/request_password_reset" ,
             body: `new_password=hello&token=${token}&username=zxcv`,
             headers: {
@@ -571,7 +571,7 @@ describe("Password Reset", () => {
             }
             expect(response.statusCode).toEqual(302);
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
-            
+
             Parse.User.logIn("zxcv", "hello").then(function(user){
               done();
             }, (err) => {
@@ -579,7 +579,7 @@ describe("Password Reset", () => {
               fail("should login with new password");
               done();
             });
-            
+
           });
         });
       },
@@ -613,6 +613,5 @@ describe("Password Reset", () => {
       });
     });
   });
-  
-})
 
+})
