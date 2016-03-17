@@ -115,18 +115,16 @@ describe('SNSPushAdapter', () => {
 
     it('can generate the right Android payload', (done) => {
         var data = {"action": "com.example.UPDATE_STATUS"};
-        var pushId = '123';
         var timeStamp = 1456728000;
 
-        var returnedData = SNSPushAdapter.generateAndroidPayload(data, pushId, timeStamp);
-        var expectedData = {GCM: '{"priority":"normal","data":{"time":"1970-01-17T20:38:48.000Z","push_id":"123"}}'};
+        var returnedData = SNSPushAdapter.generateAndroidPayload(data, timeStamp);
+        var expectedData = {GCM: '{"priority":"normal","data":{"time":"1970-01-17T20:38:48.000Z"}}'};
         expect(returnedData).toEqual(expectedData)
         done();
     });
 
     it('can generate the right iOS payload', (done) => {
         var data = {data : {"alert": "Check out these awesome deals!"}};
-        var pushId = '123';
         var timeStamp = 1456728000;
 
         var returnedData = SNSPushAdapter.generateiOSPayload(data, true);
