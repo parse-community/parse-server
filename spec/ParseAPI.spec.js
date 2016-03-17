@@ -224,6 +224,19 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test beforeSave returns value on create and update', (done) => {
+    var obj = new Parse.Object('BeforeSaveChanged');
+    obj.set('foo', 'bing');
+    obj.save().then(() => {
+      expect(obj.get('foo')).toEqual('baz');
+      obj.set('foo', 'bar');
+      return obj.save().then(() => {
+        expect(obj.get('foo')).toEqual('baz');
+        done();
+      })
+    })
+  });
+
   it('test afterSave ran and created an object', function(done) {
     var obj = new Parse.Object('AfterSaveTest');
     obj.save();

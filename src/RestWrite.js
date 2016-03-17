@@ -711,6 +711,12 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
         resp.updatedAt = this.updatedAt;
+        if (this.storage['changedByTrigger']) {
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
+        }
         this.response = {
           response: resp
         };
@@ -725,13 +731,16 @@ RestWrite.prototype.runDatabaseOperation = function() {
     }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
-      .then(() => {
-        var resp = {
+      .then((resp) => {
+        Object.assign(resp, {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
-        };
+        });
         if (this.storage['changedByTrigger']) {
-          Object.assign(resp, this.data);
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
         }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
