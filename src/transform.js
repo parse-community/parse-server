@@ -87,7 +87,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       return transformWhere(schema, className, s);
     });
     return {key: '$and', value: mongoSubqueries};
-  default:  
+  default:
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
@@ -224,7 +224,7 @@ function transformUpdate(schema, className, restUpdate) {
   if (className == '_User') {
     restUpdate = transformAuthData(restUpdate);
   }
-  
+
   var mongoUpdate = {};
   var acl = transformACL(restUpdate);
   if (acl._rperm || acl._wperm) {
@@ -260,7 +260,14 @@ function transformUpdate(schema, className, restUpdate) {
 function transformAuthData(restObject) {
   if (restObject.authData) {
     Object.keys(restObject.authData).forEach((provider) => {
-      restObject[`_auth_data_${provider}`] = restObject.authData[provider];
+      let providerData = restObject.authData[provider];
+      if (providerData == null) {
+        restObject[`_auth_data_${provider}`] = {
+          __op: 'Delete'
+        }
+      } else {
+        restObject[`_auth_data_${provider}`] = providerData;
+      }
     });
     delete restObject.authData;
   }
@@ -823,4 +830,3 @@ module.exports = {
   transformWhere: transformWhere,
   untransformObject: untransformObject
 };
-
