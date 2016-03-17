@@ -396,6 +396,13 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('should properly create an object in before save', (done) => {
+    Parse.Cloud.run('createBeforeSaveChangedObject').then((res) => {
+      expect(res.get('foo')).toEqual('baz');
+      done();
+    });
+  })
+
   it('test rest_create_app', function(done) {
     var appId;
     Parse._request('POST', 'rest_create_app').then((res) => {

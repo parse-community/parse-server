@@ -108,3 +108,10 @@ Parse.Cloud.define('echoKeys', function(req, res){
     javascriptKey: Parse.javascriptKey
   })
 });
+
+Parse.Cloud.define('createBeforeSaveChangedObject', function(req, res){
+  var obj = new Parse.Object('BeforeSaveChanged');
+  obj.save().then(() => {
+    res.success(obj);
+  })
+})
