@@ -3,6 +3,30 @@ var PushController = require('../src/Controllers/PushController').PushController
 
 var Config = require('../src/Config');
 
+const successfulTransmissions = function(body, installations) {
+
+  let promises = installations.map((device) => {
+    return Promise.resolve({
+      transmitted: true,
+      device: device,
+    })
+  });
+
+  return Promise.all(promises);
+}
+
+const successfulIOS = function(body, installations) {
+
+  let promises = installations.map((device) => {
+    return Promise.resolve({
+      transmitted: device.deviceType == "ios",
+      device: device,
+    })
+  });
+
+  return Promise.all(promises);
+}
+
 describe('PushController', () => {
   it('can validate device type when no device type is set', (done) => {
     // Make query condition
@@ -105,9 +129,9 @@ describe('PushController', () => {
     }).toThrow();
     done();
   });
-  
+
   it('properly increment badges', (done) => {
-    
+
    var payload = {data:{
      alert: "Hello World!",
      badge: "Increment",
@@ -122,7 +146,7 @@ describe('PushController', () => {
      installation.set("deviceType", "ios");
      installations.push(installation);
    }
-   
+
    while(installations.length != 15) {
      var installation = new Parse.Object("_Installation");
      installation.set("installationId", "installation_"+installations.length);
@@ -130,7 +154,7 @@ describe('PushController', () => {
      installation.set("deviceType", "android");
      installations.push(installation);
    }
-   
+
    var pushAdapter = {
     send: function(body, installations) {
       var badge = body.data.badge;
@@ -142,23 +166,20 @@ describe('PushController', () => {
           expect(installation.badge).toBeUndefined();
         }
       })
-      return Promise.resolve({
-        body: body,
-        installations: installations
-      })
+      return successfulTransmissions(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios", "android"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
    var pushController = new PushController(pushAdapter, Parse.applicationId);
-   Parse.Object.saveAll(installations).then((installations) => {     
+   Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -167,11 +188,11 @@ describe('PushController', () => {
      fail("should not fail");
      done();
    });
-   
+
   });
-  
+
   it('properly set badges to 1', (done) => {
-    
+
    var payload = {data: {
      alert: "Hello World!",
      badge: 1,
@@ -186,7 +207,7 @@ describe('PushController', () => {
      installation.set("deviceType", "ios");
      installations.push(installation);
    }
-   
+
    var pushAdapter = {
     send: function(body, installations) {
       var badge = body.data.badge;
@@ -194,23 +215,20 @@ describe('PushController', () => {
         expect(installation.badge).toEqual(badge);
         expect(1).toEqual(installation.badge);
       })
-      return Promise.resolve({
-        body: body,
-        installations: installations
-      })
+      return successfulTransmissions(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
    var pushController = new PushController(pushAdapter, Parse.applicationId);
-   Parse.Object.saveAll(installations).then((installations) => {     
+   Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -219,29 +237,106 @@ describe('PushController', () => {
      fail("should not fail");
      done();
    });
-   
+
   });
-  
-  it('should support full RESTQuery for increment', (done) => {
-    var payload = {data: {
+
+  it('properly creates _PushStatus', (done) => {
+
+    var installations = [];
+    while(installations.length != 10) {
+      var installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_"+installations.length);
+      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    while(installations.length != 15) {
+      var installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_"+installations.length);
+      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("deviceType", "android");
+      installations.push(installation);
+    }
+   var payload = {data: {
      alert: "Hello World!",
-     badge: 'Increment',
+     badge: 1,
    }}
-   
+
    var pushAdapter = {
     send: function(body, installations) {
-      return Promise.resolve();
+      return successfulIOS(body, installations);
     },
     getValidPushTypes: function() {
       return ["ios"];
     }
   }
-  
+
    var config = new Config(Parse.applicationId);
    var auth = {
     isMaster: true
    }
-   
+
+   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   Parse.Object.saveAll(installations).then(() => {
+     return pushController.sendPush(payload, {}, config, auth);
+   }).then((result) => {
+     return new Promise((resolve, reject) => {
+       setTimeout(() => {
+         resolve();
+       }, 1000);
+     });
+   }).then(() => {
+     let query = new Parse.Query('_PushStatus');
+     return query.find({useMasterKey: true});
+   }).then((results) => {
+     expect(results.length).toBe(1);
+     let result = results[0];
+     expect(result.createdAt instanceof Date).toBe(true);
+     expect(result.get('source')).toEqual('rest');
+     expect(result.get('query')).toEqual(JSON.stringify({}));
+     expect(result.get('payload')).toEqual(payload.data);
+     expect(result.get('status')).toEqual('succeeded');
+     expect(result.get('numSent')).toEqual(10);
+     expect(result.get('sentPerType')).toEqual({
+       'ios': 10 // 10 ios
+     });
+     expect(result.get('numFailed')).toEqual(5);
+     expect(result.get('failedPerType')).toEqual({
+       'android': 5 // android
+     });
+     // Try to get it without masterKey
+     let query = new Parse.Query('_PushStatus');
+     return query.find();
+   }).then((results) => {
+     expect(results.length).toBe(0);
+     done();
+   });
+
+  });
+
+  it('should support full RESTQuery for increment', (done) => {
+    var payload = {data: {
+     alert: "Hello World!",
+     badge: 'Increment',
+   }}
+
+   var pushAdapter = {
+    send: function(body, installations) {
+      return successfulTransmissions(body, installations);
+    },
+    getValidPushTypes: function() {
+      return ["ios"];
+    }
+  }
+
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+
    let where = {
      'deviceToken': {
        '$inQuery': {

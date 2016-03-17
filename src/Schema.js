@@ -67,7 +67,22 @@ var defaultColumns = {
     "icon":               {type:'File'},
     "order":              {type:'Number'},
     "title":              {type:'String'},
-    "subtitle":            {type:'String'},
+    "subtitle":           {type:'String'},
+  },
+  _PushStatus: {
+    "pushTime":     {type:'String'},
+    "source":       {type:'String'}, // rest or webui
+    "query":        {type:'String'}, // the stringified JSON query
+    "payload":      {type:'Object'}, // the JSON payload,
+    "title":        {type:'String'},
+    "expiry":       {type:'Number'},
+    "status":       {type:'String'},
+    "numSent":      {type:'Number'},
+    "numFailed":    {type:'Number'},
+    "pushHash":     {type:'String'},
+    "errorMessage": {type:'Object'},
+    "sentPerType":  {type:'Object'},
+    "failedPerType":{type:'Object'},
   }
 };
 
@@ -75,6 +90,8 @@ var requiredColumns = {
   _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
   _Role: ["name", "ACL"]
 }
+
+const systemClasses = ['_User', '_Installation', '_Role', '_Session', '_Product'];
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -127,13 +144,8 @@ function validateCLP(perms) {
 var joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 var classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 function classNameIsValid(className) {
-  return (
-    className === '_User' ||
-    className === '_Installation' ||
-    className === '_Session' ||
+  return (systemClasses.indexOf(className) > -1 ||
     className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
-    className === '_Role' ||
-    className === '_Product' ||
     joinClassRegex.test(className) ||
     //Class names have the same constraints as field names, but also allow the previous additional names.
     fieldNameIsValid(className)
@@ -284,7 +296,7 @@ class Schema {
         return Promise.reject(error);
       });
   }
-  
+
   updateClass(className, submittedFields, classLevelPermissions, database) {
     if (!this.data[className]) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
@@ -299,7 +311,7 @@ class Schema {
         throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
       }
     });
-    
+
     let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
     let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions);
     if (!mongoObject.result) {
@@ -327,7 +339,7 @@ class Schema {
         });
         return Promise.all(promises);
       })
-      .then(() => { 
+      .then(() => {
         return this.setPermissions(className, classLevelPermissions)
       })
       .then(() => { return mongoSchemaToSchemaAPIResponse(mongoObject.result) });
@@ -697,7 +709,7 @@ function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPe
       error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
     };
   }
-  
+
   validateCLP(classLevelPermissions);
   if (typeof classLevelPermissions !== 'undefined') {
     mongoObject._metadata = mongoObject._metadata || {};
@@ -886,11 +898,11 @@ function mongoSchemaToSchemaAPIResponse(schema) {
     className: schema._id,
     fields: mongoSchemaAPIResponseFields(schema),
   };
-  
+
   let classLevelPermissions = DefaultClassLevelPermissions;
   if (schema._metadata && schema._metadata.class_permissions) {
     classLevelPermissions = Object.assign(classLevelPermissions, schema._metadata.class_permissions);
-  } 
+  }
   result.classLevelPermissions = classLevelPermissions;
   return result;
 }
@@ -903,4 +915,5 @@ module.exports = {
   buildMergedSchemaObject: buildMergedSchemaObject,
   mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
   mongoSchemaToSchemaAPIResponse,
+  systemClasses,
 };

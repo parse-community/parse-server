@@ -3,6 +3,7 @@
 // This could be either a "create" or an "update".
 
 import cache from './cache';
+var Schema = require('./Schema');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
@@ -108,7 +109,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestWrite.prototype.validateClientClassCreation = function() {
-  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  let sysClass = Schema.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {

@@ -1,6 +1,6 @@
 /* @flow */
 
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 
 // Returns a new random hex string of the given even size.
 export function randomHexString(size: number): string {
@@ -43,4 +43,8 @@ export function newObjectId(): string {
 // Returns a new random hex string suitable for secure tokens.
 export function newToken(): string {
   return randomHexString(32);
+}
+
+export function md5Hash(string: string): string {
+  return createHash('md5').update(string).digest('hex');
 }
