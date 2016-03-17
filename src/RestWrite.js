@@ -285,11 +285,12 @@ RestWrite.prototype.handleAuthData = function(authData) {
       // Login with auth data
       // Short circuit
       delete results[0].password;
+      // need to set the objectId first otherwise location has trailing undefined
+      this.data.objectId = results[0].objectId;
       this.response = {
         response: results[0],
         location: this.location()
       };
-      this.data.objectId = results[0].objectId;
     } else if (this.query && this.query.objectId) {
       // Trying to update auth data but users
       // are different
