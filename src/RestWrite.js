@@ -341,6 +341,11 @@ RestWrite.prototype.transformUser = function() {
     });
   }
 
+  // If we're updating a _User object, clear the user cache for the session
+  if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
+    cache.users.remove(this.auth.user.getSessionToken());
+  }
+
   return promise.then(() => {
     // Transform the password
     if (!this.data.password) {
