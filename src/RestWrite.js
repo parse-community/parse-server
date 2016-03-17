@@ -247,6 +247,10 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
     if (!authData[provider]) {
       return memo;
     }
+    // anonymous user trying to login with third provider
+    if(provider === 'anonymous' && providers.length > 1) {
+      return memo;
+    }
     let queryKey = `authData.${provider}.id`;
     let query = {};
     query[queryKey] = authData[provider].id;
@@ -254,8 +258,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
     return memo;
   }, []).filter((q) => {
     return typeof q !== undefined;
-  });
-
+  })
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
      findPromise = this.config.database.find(
@@ -296,11 +299,90 @@ RestWrite.prototype.handleAuthData = function(authData) {
       // Trying to update auth data but users
       // are different
       if (results[0].objectId !== this.query.objectId) {
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
+        // this can be the user trying to login when still logged with anonymous
+        // TODO: check if still needs to check for errors
+        this.response = {
+          response: results[0],
+          location: this.location(results[0].objectId)
+        }
       }
     }
     return Promise.resolve();
+  });
+}
+
+RestWrite.prototype.generateSession = function() {
+  var token = 'r:' + cryptoUtils.newToken();
+  this.storage['token'] = token;
+  var objectId = this.response && this.response.response.objectId ? this.response.response.objectId : this.objectId();
+  var expiresAt = new Date();
+  expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+  var sessionData = {
+    sessionToken: token,
+    user: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: objectId
+    },
+    createdWith: {
+      'action': 'login',
+      'authProvider': this.storage['authProvider'] || 'password'
+    },
+    restricted: false,
+    installationId: this.data.installationId,
+    expiresAt: Parse._encode(expiresAt)
+  };
+  if (this.response && this.response.response) {
+    this.response.response.sessionToken = token;
+  }
+  var create = new RestWrite(this.config, Auth.master(this.config),
+                             '_Session', null, sessionData);
+  return create.execute();
+}
+
+/**
+ * Update a session from a user who is logged anonymous and needs to 
+ * update his session for the logged objectId
+ *
+ * objectId: String - User objectId
+ */
+RestWrite.prototype.updateSession = function(objectId) {
+  var that = this;
+  if(!this.auth.user || ! this.auth.user.sessionToken) {
+    return this.generateSession();
+  }
+  
+  return this.config.database.find('_Session', {
+    '_session_token': this.auth.user.sessionToken
+  }, {limit: 1}).then((results) => {
+    if(!results || results.length === 0) {
+      return that.generateSession();
+    }
+    var originalSession = results[0];
+    var expiresAt = new Date();
+    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    var session = {
+      user: {
+        __type: 'Pointer',
+        className: '_User',
+        objectId: objectId
+      },
+      expiresAt: Parse._encode(expiresAt)
+    }
+
+    var create = new RestWrite(this.config, Auth.master(this.config), 
+                                '_Session', {objectId: originalSession.objectId}, session);
+    return create.execute().then(function(r) {
+      // update user sessionToken with the updated session
+      if(that.response && that.response.response) {
+        that.response.response.sessionToken = originalSession.sessionToken;
+        // needed by clients to know that needs to update his user
+        that.response.response.anonymous = that.response.response.objectId;
+        var user = cache.users.get(originalSession.sessionToken);
+        user.id = objectId;
+        cache.users.set(originalSession.sessionToken, user);
+      }
+    });
   });
 }
 
@@ -313,33 +395,13 @@ RestWrite.prototype.transformUser = function() {
   var promise = Promise.resolve();
 
   if (!this.query) {
-    var token = 'r:' + cryptoUtils.newToken();
-    this.storage['token'] = token;
-    promise = promise.then(() => {
-      var expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-      var sessionData = {
-        sessionToken: token,
-        user: {
-          __type: 'Pointer',
-          className: '_User',
-          objectId: this.objectId()
-        },
-        createdWith: {
-          'action': 'login',
-          'authProvider': this.storage['authProvider'] || 'password'
-        },
-        restricted: false,
-        installationId: this.data.installationId,
-        expiresAt: Parse._encode(expiresAt)
-      };
-      if (this.response && this.response.response) {
-        this.response.response.sessionToken = token;
-      }
-      var create = new RestWrite(this.config, Auth.master(this.config),
-                                 '_Session', null, sessionData);
-      return create.execute();
-    });
+    // should generate a new Session
+    promise = this.generateSession()
+  }
+
+  if(this.response && this.response.response.objectId) {
+    // should update a old session from user
+    promise = this.updateSession(this.response.response.objectId);
   }
 
   return promise.then(() => {
@@ -788,10 +850,11 @@ RestWrite.prototype.runAfterTrigger = function() {
 };
 
 // A helper to figure out what location this operation happens at.
-RestWrite.prototype.location = function() {
+RestWrite.prototype.location = function(objectId) {
   var middle = (this.className === '_User' ? '/users/' :
                 '/classes/' + this.className + '/');
-  return this.config.mount + middle + this.data.objectId;
+  var objId = objectId || this.data.objectId;
+  return this.config.mount + middle + objId;
 };
 
 // A helper to get the object id for this operation.

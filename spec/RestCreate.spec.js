@@ -201,6 +201,69 @@ describe('rest create', () => {
       });
   });
 
+  it('test facebook login that is already have account and is logged with a anonymous user', (done) => {
+    var dataAnonymous = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+    var data = {
+      authData: {
+        facebook: {
+          id: '8675309',
+          access_token: 'jenny'
+        }
+      }
+    };
+    var facebookUserResponse;
+    var anonymousResponse;
+    var anonymousSession;
+    var anonymousAuth
+    rest.create(config, auth.nobody(config), '_User', data)
+      .then((r) => {
+        // facebook user sign up
+        facebookUserResponse = r.response;
+        return rest.create(config, auth.nobody(config), '_User', dataAnonymous);
+      }).then((r) => {
+        // logged anonymous
+        anonymousResponse = r.response;
+        data.objectId = r.response.objectId;
+        data.authData.anonymous = null;
+        return rest.find(config, auth.master(config), '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        // check anonymous token
+        anonymousSession = response.results[0];
+        return auth.getAuthForSessionToken({config: config, sessionToken: anonymousSession.sessionToken, installationId: 'abc'});
+      }).then((r) => {
+        // get authToken
+        anonymousAuth = r;
+        return rest.update(config, anonymousAuth, '_User', data.objectId, data);
+      }).then((r) => {
+        // logged with facebook using anonymous user token
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        expect(r.response.objectId).toEqual(facebookUserResponse.objectId);
+        expect(r.response.sessionToken).toEqual(anonymousSession.sessionToken)
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        expect(response.results.length).toEqual(1);
+        var session = response.results[0];
+        expect(session.user.objectId).toEqual(facebookUserResponse.objectId);
+        // should update user session
+        expect(session.objectId).toEqual(anonymousSession.objectId);
+        done();
+      })
+      .catch((err) => {
+        console.log('err', err);
+      });
+  });
+
   it('stores pointers with a _p_ prefix', (done) => {
     var obj = {
       foo: 'bar',
