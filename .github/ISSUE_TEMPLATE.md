@@ -1,4 +1,4 @@
-For implementation related questions or technical support, please refer to the [stackoverflow](http://stackoverflow.com/questions/tagged/parse.com) community.
+For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
 
 Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
 
