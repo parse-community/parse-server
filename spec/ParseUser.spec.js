@@ -2050,5 +2050,27 @@ describe('Parse.User testing', () => {
       Parse.Cloud._removeHook('Triggers', 'afterSave', '_User');
       done();
     });
-  })
+  });
+
+  it('changes to a user should update the cache', (done) => {
+    Parse.Cloud.define('testUpdatedUser', (req, res) => {
+      expect(req.user.get('han')).toEqual('solo');
+      res.success({});
+    });
+    let user = new Parse.User();
+    user.setUsername('harrison');
+    user.setPassword('ford');
+    user.signUp().then(() => {
+      user.set('han', 'solo');
+      return user.save();
+    }).then(() => {
+      return Parse.Cloud.run('testUpdatedUser');
+    }).then(() => {
+      done();
+    }, (e) => {
+      fail('Should not have failed.');
+      done();
+    });
+
+  });
 });
