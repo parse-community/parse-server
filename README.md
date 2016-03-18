@@ -10,7 +10,9 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
-The fastest and easiest way to get started is to run MongoDB and Parse Server locally:
+The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
+
+## Running Parse Server locally
 
 ```
 $ npm install -g parse-server mongodb-runner
@@ -113,11 +115,9 @@ var express = require('express');
 var ParseServer = require('parse-server').ParseServer;
 var app = express();
 
-// Specify the connection string for your mongodb database
-// and the location to your Parse cloud code
 var api = new ParseServer({
-  databaseURI: 'mongodb://localhost:27017/dev',
-  cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
+  databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
+  cloud: '/home/myApp/cloud/main.js', // Absolute path to your Cloud Code
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
@@ -131,6 +131,8 @@ app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
 });
 ```
+
+For a full list of available options, run `parse-server --help`.
 
 # Documentation
 
@@ -151,10 +153,10 @@ For the full list of available options, run `parse-server --help`.
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
 * `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`.
+* `port` - The default port is 1337, specify this parameter to use a different port.
+* `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `facebookAppIds` - An array of valid Facebook application IDs.
-* `serverURL` - URL which will be used by Cloud Code functions to make requests against.
-* `push` - Configuration options for APNS and GCM push. See the [wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
 
 #### Client key options
 
@@ -168,19 +170,21 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 #### Advanced options
 
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
-* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
-* `maxUploadSize` - Max file size for uploads. Defaults to 20mb.
-* `databaseAdapter` (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`).
-* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
-* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
+* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
+* `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
+* `mountPath` - Mount path for the server. Defaults to `/parse`.
+* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
+* `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
+* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
+* `databaseAdapter` - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`). Defaults to `MongoStorageAdapter`.
 
 ### Using environment variables to configure Parse Server
 
 You may configure the Parse Server using environment variables:
 
-```
+```bash
 PORT
 PARSE_SERVER_APPLICATION_ID
 PARSE_SERVER_MASTER_KEY
@@ -191,14 +195,34 @@ PARSE_SERVER_CLOUD_CODE_MAIN
 
 The default port is 1337, to use a different port set the PORT environment variable:
 
-`$ PORT=8080 parse-server --appId=APPLICATION_ID --masterKey=MASTER_KEY`
+```bash
+$ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+```
 
 For the full list of configurable environment variables, run `parse-server --help`.
 
-##### Configuring File Adapters
+### Configuring File Adapters
 
-Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/). `GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, [additional configuration information is available](https://github.com/ParsePlatform/parse-server/wiki/Configuring-File-Adapters).
+Parse Server allows developers to choose from several options when hosting files:
 
-## Contributing
+* `GridStoreAdapter`, which is backed by MongoDB;
+* `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
+* `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
+
+`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server wiki](https://github.com/ParsePlatform/parse-server/wiki/Configuring-File-Adapters).
+
+# Support
+
+For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
+
+If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/ParsePlatform/parse-server/issues):
+
+- [ ] You've met the [prerequisites](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#prerequisites).
+
+- [ ] You're running the [latest version](https://github.com/ParsePlatform/parse-server/releases) of Parse Server.
+
+- [ ] You've searched through [existing issues](https://github.com/ParsePlatform/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
+
+# Contributing
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
