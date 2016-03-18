@@ -4,7 +4,7 @@ var Config = require("../src/Config");
 var testAdapter = function(name, adapter) {
   // Small additional tests to improve overall coverage
 
-  var config = new Config(Parse.applicationId);
+  var config = new Config(Parse.applicationId, 'testmount');
   var filesController = new FilesController(adapter);
 
   describe("FilesController with "+name,()=>{
