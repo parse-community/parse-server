@@ -266,6 +266,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   return findPromise;
 }
 
+
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.handleAuthDataValidation(authData).then(() => {
@@ -768,7 +769,9 @@ RestWrite.prototype.runAfterTrigger = function() {
   }
 
   // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
-  if (!triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+  let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
+  let hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
+  if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
 
@@ -789,6 +792,10 @@ RestWrite.prototype.runAfterTrigger = function() {
   updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
+  // Notifiy LiveQueryServer if possible
+  this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
+
+  // Run afterSave trigger
   triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
 };
 

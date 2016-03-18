@@ -11,41 +11,43 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse,
     authDataManager = require('./authDataManager');
 
-//import passwordReset           from './passwordReset';
-import cache                   from './cache';
-import Config                  from './Config';
-import parseServerPackage      from '../package.json';
-import ParsePushAdapter        from './Adapters/Push/ParsePushAdapter';
-import PromiseRouter           from './PromiseRouter';
-import requiredParameter       from './requiredParameter';
-import { AnalyticsRouter }     from './Routers/AnalyticsRouter';
-import { ClassesRouter }       from './Routers/ClassesRouter';
-import { FeaturesRouter }      from './Routers/FeaturesRouter';
-import { FileLoggerAdapter }   from './Adapters/Logger/FileLoggerAdapter';
-import { FilesController }     from './Controllers/FilesController';
-import { FilesRouter }         from './Routers/FilesRouter';
-import { FunctionsRouter }     from './Routers/FunctionsRouter';
-import { GCSAdapter }          from './Adapters/Files/GCSAdapter';
-import { GlobalConfigRouter }  from './Routers/GlobalConfigRouter';
-import { GridStoreAdapter }    from './Adapters/Files/GridStoreAdapter';
-import { HooksController }     from './Controllers/HooksController';
-import { HooksRouter }         from './Routers/HooksRouter';
-import { IAPValidationRouter } from './Routers/IAPValidationRouter';
-import { InstallationsRouter } from './Routers/InstallationsRouter';
-import { loadAdapter }         from './Adapters/AdapterLoader';
-import { LoggerController }    from './Controllers/LoggerController';
-import { LogsRouter }          from './Routers/LogsRouter';
-import { PublicAPIRouter }     from './Routers/PublicAPIRouter';
-import { PushController }      from './Controllers/PushController';
-import { PushRouter }          from './Routers/PushRouter';
-import { randomString }        from './cryptoUtils';
-import { RolesRouter }         from './Routers/RolesRouter';
-import { S3Adapter }           from './Adapters/Files/S3Adapter';
-import { SchemasRouter }       from './Routers/SchemasRouter';
-import { SessionsRouter }      from './Routers/SessionsRouter';
-import { setFeature }          from './features';
-import { UserController }      from './Controllers/UserController';
-import { UsersRouter }         from './Routers/UsersRouter';
+//import passwordReset             from './passwordReset';
+import cache                       from './cache';
+import Config                      from './Config';
+import parseServerPackage          from '../package.json';
+import ParsePushAdapter            from './Adapters/Push/ParsePushAdapter';
+import PromiseRouter               from './PromiseRouter';
+import requiredParameter           from './requiredParameter';
+import { AnalyticsRouter }         from './Routers/AnalyticsRouter';
+import { ClassesRouter }           from './Routers/ClassesRouter';
+import { FeaturesRouter }          from './Routers/FeaturesRouter';
+import { FileLoggerAdapter }       from './Adapters/Logger/FileLoggerAdapter';
+import { FilesController }         from './Controllers/FilesController';
+import { FilesRouter }             from './Routers/FilesRouter';
+import { FunctionsRouter }         from './Routers/FunctionsRouter';
+import { GCSAdapter }              from './Adapters/Files/GCSAdapter';
+import { GlobalConfigRouter }      from './Routers/GlobalConfigRouter';
+import { GridStoreAdapter }        from './Adapters/Files/GridStoreAdapter';
+import { HooksController }         from './Controllers/HooksController';
+import { HooksRouter }             from './Routers/HooksRouter';
+import { IAPValidationRouter }     from './Routers/IAPValidationRouter';
+import { InstallationsRouter }     from './Routers/InstallationsRouter';
+import { loadAdapter }             from './Adapters/AdapterLoader';
+import { LiveQueryController }     from './Controllers/LiveQueryController';
+import { LoggerController }        from './Controllers/LoggerController';
+import { LogsRouter }              from './Routers/LogsRouter';
+import { ParseLiveQueryServer }    from './LiveQuery/ParseLiveQueryServer';
+import { PublicAPIRouter }         from './Routers/PublicAPIRouter';
+import { PushController }          from './Controllers/PushController';
+import { PushRouter }              from './Routers/PushRouter';
+import { randomString }            from './cryptoUtils';
+import { RolesRouter }             from './Routers/RolesRouter';
+import { S3Adapter }               from './Adapters/Files/S3Adapter';
+import { SchemasRouter }           from './Routers/SchemasRouter';
+import { SessionsRouter }          from './Routers/SessionsRouter';
+import { setFeature }              from './features';
+import { UserController }          from './Controllers/UserController';
+import { UsersRouter }             from './Routers/UsersRouter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
@@ -108,6 +110,7 @@ function ParseServer({
     choosePassword: undefined,
     passwordResetSuccess: undefined
   },
+  liveQuery = {}
 }) {
   setFeature('serverVersion', parseServerPackage.version);
   // Initialize the node client SDK automatically
@@ -151,6 +154,7 @@ function ParseServer({
   const loggerController = new LoggerController(loggerControllerAdapter, appId);
   const hooksController = new HooksController(appId, collectionPrefix);
   const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
+  const liveQueryController = new LiveQueryController(liveQuery);
 
 
   cache.apps.set(appId, {
@@ -174,6 +178,7 @@ function ParseServer({
     appName: appName,
     publicServerURL: publicServerURL,
     customPages: customPages,
+    liveQueryController: liveQueryController
   });
 
   // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
@@ -260,6 +265,10 @@ function addParseCloud() {
   const ParseCloud = require("./cloud-code/Parse.Cloud");
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
+}
+
+ParseServer.createLiveQueryServer = function(httpServer, config) {
+  return new ParseLiveQueryServer(httpServer, config);
 }
 
 module.exports = {
