@@ -331,7 +331,7 @@ RestWrite.prototype.transformUser = function() {
           'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
-        installationId: this.data.installationId,
+        installationId: this.auth.installationId,
         expiresAt: Parse._encode(expiresAt)
       };
       if (this.response && this.response.response) {
