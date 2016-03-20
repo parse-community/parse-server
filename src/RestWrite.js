@@ -327,7 +327,7 @@ RestWrite.prototype.transformUser = function() {
           objectId: this.objectId()
         },
         createdWith: {
-          'action': 'login',
+          'action': 'signup',
           'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
