@@ -51,8 +51,15 @@ var server = app.listen(port);
 // Prevent reinitializing the server from clobbering Cloud Code
 delete defaultConfiguration.cloud;
 
+var currentConfiguration;
 // Allows testing specific configurations of Parse Server
 var setServerConfiguration = configuration => {
+  // the configuration hasn't changed
+  if (configuration === currentConfiguration) {
+    return;
+  }
+  DatabaseAdapter.clearDatabaseSettings();
+  currentConfiguration = configuration;
   server.close();
   cache.clearCache();
   app = express();
@@ -72,17 +79,17 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
+  restoreServerConfiguration();
   Parse.initialize('test', 'test', 'test');
+  Parse.serverURL = 'http://localhost:' + port + '/1';
   Parse.User.enableUnsafeCurrentUser();
   done();
 });
 
 afterEach(function(done) {
-  restoreServerConfiguration();
   Parse.User.logOut().then(() => {
     return clearData();
   }).then(() => {
-    DatabaseAdapter.clearDatabaseSettings();
     done();
   }, (error) => {
     console.log('error in clearData', error);
