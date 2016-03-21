@@ -327,11 +327,11 @@ RestWrite.prototype.transformUser = function() {
           objectId: this.objectId()
         },
         createdWith: {
-          'action': 'login',
+          'action': 'signup',
           'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
-        installationId: this.data.installationId,
+        installationId: this.auth.installationId,
         expiresAt: Parse._encode(expiresAt)
       };
       if (this.response && this.response.response) {
