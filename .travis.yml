@@ -19,5 +19,5 @@ addons:
     - g++-4.8
 cache:
   directories:
-    - $HOME/.mongodb/versions/downloads
+    - node_modules/
 after_success: ./node_modules/.bin/codecov
