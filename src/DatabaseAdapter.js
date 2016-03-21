@@ -80,6 +80,6 @@ module.exports = {
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
-	clearData: clearData,
+  clearData: clearData,
   defaultDatabaseURI: databaseURI
 };
