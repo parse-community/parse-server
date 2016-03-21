@@ -398,6 +398,9 @@ function transformAtom(atom, force, options) {
     if (FileCoder.isValidJSON(atom)) {
       return (inArray || inObject ? atom : FileCoder.JSONToDatabase(atom));
     }
+    if (inArray || inObject) {
+      return atom;
+    }
 
     if (force) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
