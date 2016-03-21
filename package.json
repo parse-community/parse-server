@@ -57,7 +57,7 @@
     "flow-bin": "^0.22.0",
     "gaze": "^0.5.2",
     "jasmine": "^2.3.2",
-    "mongodb-runner": "3.1.15",
+    "mongodb-runner": "^3.2.0",
     "nodemon": "^1.8.1"
   },
   "scripts": {
