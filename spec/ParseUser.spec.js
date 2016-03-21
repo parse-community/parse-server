@@ -1768,9 +1768,37 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('user get session from token', (done) => {
+  it('user get session from token on signup', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions/me',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(typeof b.sessionToken).toEqual('string');
+        expect(typeof b.createdWith).toEqual('object');
+        expect(b.createdWith.action).toEqual('signup');
+        expect(typeof b.user).toEqual('object');
+        expect(b.user.objectId).toEqual(user.id);
+        done();
+      });
+    });
+  });
+
+  it('user get session from token on login', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      return Parse.User.logOut().then(() => {
+        return Parse.User.logIn("finn", "human");
+      })
     }).then((user) => {
       request.get({
         headers: {

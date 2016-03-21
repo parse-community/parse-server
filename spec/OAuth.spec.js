@@ -204,13 +204,11 @@ describe('OAuth', function() {
         myoauth: getMockMyOauthProvider().authData
       }
     };
-    var headers = {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'Content-Type': 'application/json' }
 
     var options = {
         headers: {'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Installation-Id': 'yolo',
           'Content-Type': 'application/json' },
         url: 'http://localhost:8378/1/users',
         body: JSON.stringify(jsonBody)
@@ -224,9 +222,19 @@ describe('OAuth', function() {
     createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
+        ok(b.sessionToken);
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
-        done();
+        var sessionToken = b.sessionToken;
+        var q = new Parse.Query("_Session");
+        q.equalTo('sessionToken', sessionToken);
+        q.first({useMasterKey: true}).then((res) => {
+          expect(res.get("installationId")).toEqual('yolo');
+          done();
+        }).fail((err) => {
+          fail('should not fail fetching the session');
+          done();
+        })
       });
 
   });
