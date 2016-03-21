@@ -274,5 +274,6 @@ ParseServer.createLiveQueryServer = function(httpServer, config) {
 module.exports = {
   ParseServer: ParseServer,
   S3Adapter: S3Adapter,
-  GCSAdapter: GCSAdapter
+  GCSAdapter: GCSAdapter,
+  DatabaseAdapter: DatabaseAdapter
 };

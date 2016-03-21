@@ -49,6 +49,15 @@ function clearDatabaseSettings() {
   appDatabaseOptions = {};
 }
 
+//Used by tests
+function clearData() {
+  var promises = [];
+  for (var conn in dbConnections) {
+    promises.push(dbConnections[conn].deleteEverything());
+  }
+  return Promise.all(promises);
+}
+
 function getDatabaseConnection(appId: string, collectionPrefix: string) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
@@ -71,5 +80,6 @@ module.exports = {
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
+	clearData: clearData,
   defaultDatabaseURI: databaseURI
 };

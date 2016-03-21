@@ -88,7 +88,7 @@ beforeEach(function(done) {
 
 afterEach(function(done) {
   Parse.User.logOut().then(() => {
-    return clearData();
+    return DatabaseAdapter.clearData();
   }).then(() => {
     done();
   }, (error) => {
@@ -230,14 +230,6 @@ function mockFacebook() {
     return Promise.reject();
   };
   return facebook;
-}
-
-function clearData() {
-  var promises = [];
-  for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
-  }
-  return Promise.all(promises);
 }
 
 // This is polluting, but, it makes it way easier to directly port old tests.
