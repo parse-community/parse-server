@@ -1,6 +1,7 @@
 // An object that encapsulates everything we need to run a 'find'
 // operation, encoded in the REST API format.
 
+var Schema = require('./Schema');
 var Parse = require('parse/node').Parse;
 
 import { default as FilesController } from './Controllers/FilesController';
@@ -20,7 +21,6 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}) {
   this.className = className;
   this.restWhere = restWhere;
   this.response = null;
-
   this.findOptions = {};
   if (!this.auth.isMaster) {
     this.findOptions.acl = this.auth.user ? [this.auth.user.id] : null;
@@ -171,7 +171,7 @@ RestQuery.prototype.redirectClassNameForKey = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestQuery.prototype.validateClientClassCreation = function() {
-  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  let sysClass = Schema.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
@@ -205,15 +205,19 @@ RestQuery.prototype.replaceInQuery = function() {
                           'improper usage of $inQuery');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: inQueryValue.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, inQueryValue.className,
-    inQueryValue.where);
+    inQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
       values.push({
         __type: 'Pointer',
-        className: inQueryValue.className,
+        className: subquery.className,
         objectId: result.objectId
       });
     }
@@ -223,7 +227,6 @@ RestQuery.prototype.replaceInQuery = function() {
     } else {
       inQueryObject['$in'] = values;
     }
-
     // Recurse to repeat
     return this.replaceInQuery();
   });
@@ -246,15 +249,19 @@ RestQuery.prototype.replaceNotInQuery = function() {
                           'improper usage of $notInQuery');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, notInQueryValue.className,
-    notInQueryValue.where);
+    notInQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
       values.push({
         __type: 'Pointer',
-        className: notInQueryValue.className,
+        className: subquery.className,
         objectId: result.objectId
       });
     }
@@ -293,9 +300,13 @@ RestQuery.prototype.replaceSelect = function() {
                           'improper usage of $select');
   }
 
+  let additionalOptions = {
+    redirectClassNameForKey: selectValue.query.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, selectValue.query.className,
-    selectValue.query.where);
+    selectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
@@ -334,9 +345,13 @@ RestQuery.prototype.replaceDontSelect = function() {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
+  let additionalOptions = {
+    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
+  };
+
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
-    dontSelectValue.query.where);
+    dontSelectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
     var values = [];
     for (var result of response.results) {
@@ -385,7 +400,6 @@ RestQuery.prototype.runFind = function() {
         r.className = this.redirectClassName;
       }
     }
-
     this.response = {results: results};
   });
 };
@@ -423,7 +437,7 @@ RestQuery.prototype.handleInclude = function() {
     this.include = this.include.slice(1);
     return this.handleInclude();
   }
-  
+
   return pathResponse;
 };
 

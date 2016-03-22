@@ -3,6 +3,7 @@
 // This could be either a "create" or an "update".
 
 import cache from './cache';
+var Schema = require('./Schema');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
@@ -108,7 +109,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestWrite.prototype.validateClientClassCreation = function() {
-  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  let sysClass = Schema.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
@@ -265,6 +266,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   return findPromise;
 }
 
+
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.handleAuthDataValidation(authData).then(() => {
@@ -285,11 +287,12 @@ RestWrite.prototype.handleAuthData = function(authData) {
       // Login with auth data
       // Short circuit
       delete results[0].password;
+      // need to set the objectId first otherwise location has trailing undefined
+      this.data.objectId = results[0].objectId;
       this.response = {
         response: results[0],
         location: this.location()
       };
-      this.data.objectId = results[0].objectId;
     } else if (this.query && this.query.objectId) {
       // Trying to update auth data but users
       // are different
@@ -324,11 +327,11 @@ RestWrite.prototype.transformUser = function() {
           objectId: this.objectId()
         },
         createdWith: {
-          'action': 'login',
+          'action': 'signup',
           'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
-        installationId: this.data.installationId,
+        installationId: this.auth.installationId,
         expiresAt: Parse._encode(expiresAt)
       };
       if (this.response && this.response.response) {
@@ -338,6 +341,11 @@ RestWrite.prototype.transformUser = function() {
                                  '_Session', null, sessionData);
       return create.execute();
     });
+  }
+
+  // If we're updating a _User object, clear the user cache for the session
+  if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
+    cache.users.remove(this.auth.user.getSessionToken());
   }
 
   return promise.then(() => {
@@ -711,6 +719,12 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
         resp.updatedAt = this.updatedAt;
+        if (this.storage['changedByTrigger']) {
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
+        }
         this.response = {
           response: resp
         };
@@ -725,13 +739,16 @@ RestWrite.prototype.runDatabaseOperation = function() {
     }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
-      .then(() => {
-        var resp = {
+      .then((resp) => {
+        Object.assign(resp, {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
-        };
+        });
         if (this.storage['changedByTrigger']) {
-          Object.assign(resp, this.data);
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
         }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
@@ -752,7 +769,9 @@ RestWrite.prototype.runAfterTrigger = function() {
   }
 
   // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
-  if (!triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+  let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
+  let hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
+  if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
 
@@ -773,6 +792,10 @@ RestWrite.prototype.runAfterTrigger = function() {
   updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
+  // Notifiy LiveQueryServer if possible
+  this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
+
+  // Run afterSave trigger
   triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
 };
 

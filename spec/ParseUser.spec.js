@@ -1438,6 +1438,32 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should fail linking with existing', (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        let userId = model.id;
+        Parse.User.logOut().then(() => {
+          request.post({
+             url:Parse.serverURL+'/classes/_User',
+             headers: {
+               'X-Parse-Application-Id': Parse.applicationId,
+               'X-Parse-REST-API-Key': 'rest'
+             },
+             json: {authData: {facebook: provider.authData}}
+          }, (err,res, body) => {
+            // make sure the location header is properly set
+            expect(userId).not.toBeUndefined();
+            expect(body.objectId).toEqual(userId);
+            expect(res.headers.location).toEqual(Parse.serverURL+'/users/'+userId);
+            done();
+          });
+        });
+      }
+    });
+  });
+
   it('should have authData in beforeSave and afterSave', (done) => {
 
     Parse.Cloud.beforeSave('_User', (request, response) => {
@@ -1742,9 +1768,37 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('user get session from token', (done) => {
+  it('user get session from token on signup', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions/me',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(typeof b.sessionToken).toEqual('string');
+        expect(typeof b.createdWith).toEqual('object');
+        expect(b.createdWith.action).toEqual('signup');
+        expect(typeof b.user).toEqual('object');
+        expect(b.user.objectId).toEqual(user.id);
+        done();
+      });
+    });
+  });
+
+  it('user get session from token on login', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      return Parse.User.logOut().then(() => {
+        return Parse.User.logIn("finn", "human");
+      })
     }).then((user) => {
       request.get({
         headers: {
@@ -2024,5 +2078,27 @@ describe('Parse.User testing', () => {
       Parse.Cloud._removeHook('Triggers', 'afterSave', '_User');
       done();
     });
-  })
+  });
+
+  it('changes to a user should update the cache', (done) => {
+    Parse.Cloud.define('testUpdatedUser', (req, res) => {
+      expect(req.user.get('han')).toEqual('solo');
+      res.success({});
+    });
+    let user = new Parse.User();
+    user.setUsername('harrison');
+    user.setPassword('ford');
+    user.signUp().then(() => {
+      user.set('han', 'solo');
+      return user.save();
+    }).then(() => {
+      return Parse.Cloud.run('testUpdatedUser');
+    }).then(() => {
+      done();
+    }, (e) => {
+      fail('Should not have failed.');
+      done();
+    });
+
+  });
 });

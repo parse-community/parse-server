@@ -1,6 +1,8 @@
 var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+var ParseServer = require("../src/index");
+var express = require('express');
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -165,6 +167,64 @@ describe('server', () => {
       json: true,
     }, (error, response, body) => {
       expect(body.parseServerVersion).toEqual(parseServerPackage.version);
+      done();
+    })
+  });
+
+  it('can create a parse-server', done => {
+    var parseServer = new ParseServer.default({
+      appId: "aTestApp",
+      masterKey: "aTestMasterKey",
+      serverURL: "http://localhost:12666/parse",
+      databaseURI: 'mongodb://localhost:27017/aTestApp'
+    });
+
+    expect(Parse.applicationId).toEqual("aTestApp");
+    var app = express();
+    app.use('/parse', parseServer.app);
+
+    var server = app.listen(12666);
+    var obj  = new Parse.Object("AnObject");
+    var objId;
+    obj.save().then((obj) => {
+      objId = obj.id;
+      var q = new Parse.Query("AnObject");
+      return q.first();
+    }).then((obj) => {
+      expect(obj.id).toEqual(objId);
+      server.close();
+      done();
+    }).fail((err) => {
+      server.close();
+      done();
+    })
+  });
+
+  it('can create a parse-server', done => {
+    var parseServer = ParseServer.ParseServer({
+      appId: "anOtherTestApp",
+      masterKey: "anOtherTestMasterKey",
+      serverURL: "http://localhost:12667/parse",
+      databaseURI: 'mongodb://localhost:27017/anotherTstApp'
+    });
+
+    expect(Parse.applicationId).toEqual("anOtherTestApp");
+    var app = express();
+    app.use('/parse', parseServer);
+
+    var server = app.listen(12667);
+    var obj  = new Parse.Object("AnObject");
+    var objId;
+    obj.save().then((obj) => {
+      objId = obj.id;
+      var q = new Parse.Query("AnObject");
+      return q.first();
+    }).then((obj) => {
+      expect(obj.id).toEqual(objId);
+      server.close();
+      done();
+    }).fail((err) => {
+      server.close();
       done();
     })
   });

@@ -10,6 +10,9 @@ import PushAdapter from './PushAdapter';
 import { classifyInstallations } from './PushAdapterUtils';
 
 export class ParsePushAdapter extends PushAdapter {
+
+  supportsPushTracking = true;
+
   constructor(pushConfig = {}) {
     super(pushConfig);
     this.validPushTypes = ['ios', 'android'];
@@ -19,7 +22,7 @@ export class ParsePushAdapter extends PushAdapter {
       immediatePush: true
     };
     let pushTypes = Object.keys(pushConfig);
-    
+
     for (let pushType of pushTypes) {
       if (this.validPushTypes.indexOf(pushType) < 0) {
         throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
@@ -35,7 +38,7 @@ export class ParsePushAdapter extends PushAdapter {
       }
     }
   }
-  
+
   getValidPushTypes() {
     return this.validPushTypes;
   }
@@ -43,18 +46,21 @@ export class ParsePushAdapter extends PushAdapter {
   static classifyInstallations(installations, validTypes) {
     return classifyInstallations(installations, validTypes)
   }
-  
+
   send(data, installations) {
     let deviceMap = classifyInstallations(installations, this.validPushTypes);
     let sendPromises = [];
     for (let pushType in deviceMap) {
       let sender = this.senderMap[pushType];
       if (!sender) {
-        console.log('Can not find sender for push type %s, %j', pushType, data);
-        continue;
+        sendPromises.push(Promise.resolve({
+          transmitted: false,
+          response: {'error': `Can not find sender for push type ${pushType}, ${data}`}
+        }))
+      } else {
+        let devices = deviceMap[pushType];
+        sendPromises.push(sender.send(data, devices));
       }
-      let devices = deviceMap[pushType];
-      sendPromises.push(sender.send(data, devices));
     }
     return Parse.Promise.when(sendPromises);
   }
