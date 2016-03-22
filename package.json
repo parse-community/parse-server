@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -35,7 +35,7 @@
     "mongodb": "~2.1.0",
     "multer": "^1.1.0",
     "node-gcm": "^0.14.0",
-    "parse": "^1.7.0",
+    "parse": "^1.8.0",
     "redis": "^2.5.0-1",
     "request": "^2.65.0",
     "tv4": "^1.2.7",
