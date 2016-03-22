@@ -1,4 +1,4 @@
-var APNS = require('../src/APNS');
+var APNS = require('../src/APNS').APNS;
 
 describe('APNS', () => {
 
