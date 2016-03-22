@@ -2,7 +2,10 @@
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 NC='\033[0m'
+BOLD='\033[1m'
 CHECK="${GREEN}\xE2\x9C\x93${NC}"
+DEFAULT_MONGODB_URI='mongodb://localhost:127.0.0.1:27017/parse'
+
 confirm() {
   DEFAULT=$1;
   shift
@@ -89,12 +92,18 @@ read -r MASTER_KEY
 
 [[ $MASTER_KEY = '' ]] && MASTER_KEY=$(genstring) && printf "\n$MASTER_KEY\n\n"
 
+printf "Enter your mongodbURI (%s): " $DEFAULT_MONGODB_URI
+read -r MONGODB_URI
+
+[[ $MONGODB_URI = '' ]] && MONGODB_URI="$DEFAULT_MONGODB_URI"
+
 cat > ./config.json << EOF
 {
   "appId": "$APP_ID",
   "masterKey": "$MASTER_KEY",
   "appName": "$APP_NAME",
-  "cloud": "./cloud/main"
+  "cloud": "./cloud/main",
+  "mongodbURI": "$MONGODB_URI"
 }
 EOF
 echo "${CHECK} Created config.json"
@@ -142,8 +151,13 @@ echo "\n${CHECK} running npm install\n"
 
 npm install
 
-confirm 'Y' '\nDo you want to start the server now? (Y/n): '
+CURL_CMD=$(cat << EOF
+curl -X POST -H 'X-Parse-Application-Id: ${APP_ID}' \\
+  -H 'Content-Type: application/json' \\
+  -d '{"foo":"bar"}' http://localhost:1337/parse/classes/TestObject
+EOF)
 
-echo "\n${CHECK} running npm start\n"
-
-npm start
+echo "\n${CHECK} Happy Parsing!\n\n"
+echo "${CHECK} Make sure you have ${BOLD}mongo${NC} listening on ${BOLD}${MONGODB_URI}${NC}"
+echo "${CHECK} start parse-server by running ${BOLD}npm start${NC}"
+echo "${CHECK} Test your setup with:\n\n${CURL_CMD}\n"
