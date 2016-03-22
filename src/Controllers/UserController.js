@@ -173,7 +173,7 @@ export class UserController extends AdaptableController {
       return this.config.database.adaptiveCollection('_User').then(function (collection) {
         // Need direct database access because verification token is not a parse field
         return collection.findOneAndUpdate({ username: username },// query
-          { $set: { _perishable_token: null } } // update
+          { $unset: { _perishable_token: null } } // update
         );
       });
     });
