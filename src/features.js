@@ -53,6 +53,7 @@ let features = {
     removeClass: true,
     clearAllDataFromClass: false,
     exportClass: false,
+    editClassLevelPermissions: true,
   },
 };
 
