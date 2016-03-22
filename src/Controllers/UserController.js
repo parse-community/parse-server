@@ -168,7 +168,15 @@ export class UserController extends AdaptableController {
   updatePassword(username, token, password, config) {
    return this.checkResetTokenValidity(username, token).then((user) => {
      return updateUserPassword(user._id, password, this.config);
-   });
+   }).then(() => {
+      // clear reset password token
+      return this.config.database.adaptiveCollection('_User').then(function (collection) {
+        // Need direct database access because verification token is not a parse field
+        return collection.findOneAndUpdate({ username: username },// query
+          { $set: { _perishable_token: null } } // update
+        );
+      });
+    });
   }
 
   defaultVerificationEmail({link, user, appName, }) {
@@ -195,8 +203,7 @@ export class UserController extends AdaptableController {
 // Mark this private
 function updateUserPassword(userId, password, config) {
     return rest.update(config, Auth.master(config), '_User', userId, {
-      password: password,
-      _perishable_token: null
+      password: password
     });
  }
 
