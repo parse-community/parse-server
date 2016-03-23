@@ -102,9 +102,16 @@ Once you have a better understanding of how the project works, please refer to t
 
 ### Parse Server Sample Application
 
-We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed using any of the following buttons:
+We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:
 
-<a title="Deploy to AWS" href="https://console.aws.amazon.com/elasticbeanstalk/home?region=us-west-2#/newApplication?applicationName=ParseServer&solutionStackName=Node.js&tierName=WebServer&sourceBundleUrl=https://s3.amazonaws.com/elasticbeanstalk-samples-us-east-1/eb-parse-server-sample/parse-server-example.zip" target="_blank"><img src="http://d0.awsstatic.com/product-marketing/Elastic%20Beanstalk/deploy-to-aws.png" height="32"></a> <a title="Deploy to Heroku" href="https://heroku.com/deploy?template=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="https://www.herokucdn.com/deploy/button.png"></a> <a title="Deploy to Azure" href="https://azuredeploy.net/?repository=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"></a>
+* [Heroku and mLab](https://github.com/ParsePlatform/parse-server/wiki/Deploying-Parse-Server#deploying-to-heroku-and-mLab)
+* [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
+* [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
+* [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
+* [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
+* [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/) 
+* [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
+* [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 
 ### Parse Server + Express
 
