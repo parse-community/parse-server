@@ -281,26 +281,26 @@ RestWrite.prototype.handleAuthData = function(authData) {
 
     this.storage['authProvider'] = Object.keys(authData).join(',');
 
-    if (results.length == 0) {
-      this.data.username = cryptoUtils.newToken();
-    } else if (!this.query) {
-      // Login with auth data
-      // Short circuit
-      delete results[0].password;
-      // need to set the objectId first otherwise location has trailing undefined
-      this.data.objectId = results[0].objectId;
-      this.response = {
-        response: results[0],
-        location: this.location()
-      };
-    } else if (this.query && this.query.objectId) {
-      // Trying to update auth data but users
-      // are different
-      if (results[0].objectId !== this.query.objectId) {
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
+    if (results.length > 0) {
+      if (!this.query) {
+        // Login with auth data
+        // Short circuit
+        delete results[0].password;
+        // need to set the objectId first otherwise location has trailing undefined
+        this.data.objectId = results[0].objectId;
+        this.response = {
+          response: results[0],
+          location: this.location()
+        };
+      } else if (this.query && this.query.objectId) {
+        // Trying to update auth data but users
+        // are different
+        if (results[0].objectId !== this.query.objectId) {
+          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                              'this auth is already used');
+        }
       }
-    }
+    } 
     return Promise.resolve();
   });
 }
