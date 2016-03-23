@@ -228,4 +228,12 @@ describe('server', () => {
       done();
     })
   });
+
+  it('has createLiveQueryServer', done => {
+    // original implementation through the factory
+    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
+    // For import calls
+    expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
+    done();
+  });
 });

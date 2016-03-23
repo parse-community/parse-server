@@ -79,7 +79,7 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 
-export default class ParseServer {
+class ParseServer {
 
   constructor({
     appId = requiredParameter('You must provide an appId!'),
@@ -270,15 +270,18 @@ export default class ParseServer {
     return api;
   }
 
-  static ParseServer(options) {
-    let server = new ParseServer(options);
-    return server.app;
-  }
-
   static createLiveQueryServer(httpServer, config) {
     return new ParseLiveQueryServer(httpServer, config);
   }
 }
+
+// Factory function
+let _ParseServer = function(options) {
+  let server = new ParseServer(options);
+  return server.app;
+}
+// Mount the create liveQueryServer
+_ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 
 function addParseCloud() {
   const ParseCloud = require("./cloud-code/Parse.Cloud");
@@ -286,9 +289,6 @@ function addParseCloud() {
   global.Parse = Parse;
 }
 
-let runServer = function(options) {
-  return ParseServer.ParseServer(options);
-}
-
+export default ParseServer;
 export { S3Adapter, GCSAdapter, FileSystemAdapter };
-export { runServer as ParseServer };
+export { _ParseServer as ParseServer };
