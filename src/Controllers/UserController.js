@@ -1,8 +1,8 @@
-import { randomString } from '../cryptoUtils';
-import { inflate } from '../triggers';
+import { randomString }    from '../cryptoUtils';
+import { inflate }         from '../triggers';
 import AdaptableController from './AdaptableController';
-import MailAdapter from '../Adapters/Email/MailAdapter';
-import rest from '../rest';
+import MailAdapter         from '../Adapters/Email/MailAdapter';
+import rest                from '../rest';
 
 var DatabaseAdapter = require('../DatabaseAdapter');
 var RestWrite = require('../RestWrite');
@@ -181,7 +181,7 @@ export class UserController extends AdaptableController {
 
   defaultVerificationEmail({link, user, appName, }) {
     let text = "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
+	      "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
 	      "" +
 	      "Click here to confirm it:\n" + link;
     let to = user.get("email");

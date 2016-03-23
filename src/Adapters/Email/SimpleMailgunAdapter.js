@@ -1,8 +1,8 @@
 import Mailgun from 'mailgun-js';
 
 let SimpleMailgunAdapter = mailgunOptions => {
-	if (!mailgunOptions || !mailgunOptions.apiKey || !mailgunOptions.domain) {
-		throw 'SimpleMailgunAdapter requires an API Key and domain.';
+	if (!mailgunOptions || !mailgunOptions.apiKey || !mailgunOptions.domain || !mailgunOptions.fromAddress) {
+		throw 'SimpleMailgunAdapter requires an API Key, domain, and fromAddress.';
 	}
 	let mailgun = Mailgun(mailgunOptions);
 
