@@ -3,6 +3,7 @@
 // This could be either a "create" or an "update".
 
 import cache from './cache';
+var Schema = require('./Schema');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
@@ -32,7 +33,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
                           'is an invalid field name.');
   }
-  
+
   // When the operation is complete, this.response may have several
   // fields.
   // response: the actual data to be returned
@@ -108,7 +109,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestWrite.prototype.validateClientClassCreation = function() {
-  let sysClass = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+  let sysClass = Schema.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
@@ -136,7 +137,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   if (this.response) {
     return;
   }
-  
+
   // Avoid doing any setup for triggers if there is no 'beforeSave' trigger for this class.
   if (!triggers.triggerExists(this.className, triggers.Types.beforeSave, this.config.applicationId)) {
     return Promise.resolve();
@@ -154,7 +155,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
-  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config.applicationId);
@@ -254,16 +255,17 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   }, []).filter((q) => {
     return typeof q !== undefined;
   });
-  
+
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
      findPromise = this.config.database.find(
         this.className,
         {'$or': query}, {})
   }
-  
+
   return findPromise;
 }
+
 
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
@@ -276,28 +278,29 @@ RestWrite.prototype.handleAuthData = function(authData) {
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
                               'this auth is already used');
     }
-    
+
     this.storage['authProvider'] = Object.keys(authData).join(',');
-    
-    if (results.length == 0) {
-      this.data.username = cryptoUtils.newToken();
-    } else if (!this.query) {
-      // Login with auth data
-      // Short circuit
-      delete results[0].password;
-      this.response = {
-        response: results[0],
-        location: this.location()
-      };
-      this.data.objectId = results[0].objectId;
-    } else if (this.query && this.query.objectId) {
-      // Trying to update auth data but users
-      // are different
-      if (results[0].objectId !== this.query.objectId) {
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
+
+    if (results.length > 0) {
+      if (!this.query) {
+        // Login with auth data
+        // Short circuit
+        delete results[0].password;
+        // need to set the objectId first otherwise location has trailing undefined
+        this.data.objectId = results[0].objectId;
+        this.response = {
+          response: results[0],
+          location: this.location()
+        };
+      } else if (this.query && this.query.objectId) {
+        // Trying to update auth data but users
+        // are different
+        if (results[0].objectId !== this.query.objectId) {
+          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                              'this auth is already used');
+        }
       }
-    }
+    } 
     return Promise.resolve();
   });
 }
@@ -324,11 +327,11 @@ RestWrite.prototype.transformUser = function() {
           objectId: this.objectId()
         },
         createdWith: {
-          'action': 'login',
+          'action': 'signup',
           'authProvider': this.storage['authProvider'] || 'password'
         },
         restricted: false,
-        installationId: this.data.installationId,
+        installationId: this.auth.installationId,
         expiresAt: Parse._encode(expiresAt)
       };
       if (this.response && this.response.response) {
@@ -338,6 +341,11 @@ RestWrite.prototype.transformUser = function() {
                                  '_Session', null, sessionData);
       return create.execute();
     });
+  }
+
+  // If we're updating a _User object, clear the user cache for the session
+  if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
+    cache.users.remove(this.auth.user.getSessionToken());
   }
 
   return promise.then(() => {
@@ -404,7 +412,7 @@ RestWrite.prototype.transformUser = function() {
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
-  
+
   if (this.storage && this.storage['clearSessions']) {
     var sessionQuery = {
       user: {
@@ -417,7 +425,7 @@ RestWrite.prototype.handleFollowup = function() {
     this.config.database.destroy('_Session', sessionQuery)
     .then(this.handleFollowup.bind(this));
   }
-  
+
   if (this.storage && this.storage['sendVerificationEmail']) {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
@@ -695,7 +703,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
                           'cannot modify user ' + this.query.objectId);
   }
-  
+
   if (this.className === '_Product' && this.data.download) {
     this.data.downloadName = this.data.download.name;
   }
@@ -711,6 +719,12 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
         resp.updatedAt = this.updatedAt;
+        if (this.storage['changedByTrigger']) {
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
+        }
         this.response = {
           response: resp
         };
@@ -722,16 +736,19 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL[this.data.objectId] = { read: true, write: true };
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
-    } 
+    }
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
-      .then(() => {
-        var resp = {
+      .then((resp) => {
+        Object.assign(resp, {
           objectId: this.data.objectId,
           createdAt: this.data.createdAt
-        };
+        });
         if (this.storage['changedByTrigger']) {
-          Object.assign(resp, this.data);
+          resp = Object.keys(this.data).reduce((memo, key) => {
+            memo[key] = resp[key] || this.data[key];
+            return memo;
+          }, resp);
         }
         if (this.storage['token']) {
           resp.sessionToken = this.storage['token'];
@@ -752,7 +769,9 @@ RestWrite.prototype.runAfterTrigger = function() {
   }
 
   // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
-  if (!triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId)) {
+  let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
+  let hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
+  if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
 
@@ -770,9 +789,13 @@ RestWrite.prototype.runAfterTrigger = function() {
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
   let updatedObject = triggers.inflate(extraData, this.originalData);
-  updatedObject.set(Parse._decode(undefined, this.data));
+  updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
+  // Notifiy LiveQueryServer if possible
+  this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
+
+  // Run afterSave trigger
   triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
 };
 
@@ -788,6 +811,18 @@ RestWrite.prototype.location = function() {
 RestWrite.prototype.objectId = function() {
   return this.data.objectId || this.query.objectId;
 };
+
+// Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
+RestWrite.prototype.sanitizedData = function() {
+  let data = Object.keys(this.data).reduce((data, key) => {
+    // Regexp comes from Parse.Object.prototype.validate
+    if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+      delete data[key];
+    }
+    return data;
+  }, deepcopy(this.data));
+  return Parse._decode(undefined, data);
+}
 
 export default RestWrite;
 module.exports = RestWrite;

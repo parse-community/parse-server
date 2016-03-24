@@ -1,3 +1,5 @@
+'use strict';
+
 var httpRequest = require("../src/cloud-code/httpRequest"),
     bodyParser = require('body-parser'),
     express = require("express");
@@ -158,31 +160,47 @@ describe("httpRequest", () => {
       done();
     })
   });
-  it("should encode a JSON body", (done) => {
+  
+  it("should encode a query string body by default", (done) => {
+    let options = {
+      body: {"foo": "bar"}, 
+    }
+    let result = httpRequest.encodeBody(options);
+    expect(result.body).toEqual('foo=bar');
+    expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
+    done();
     
-    var result = httpRequest.encodeBody({"foo": "bar"}, {'Content-Type': 'application/json'});
-    expect(result).toEqual('{"foo":"bar"}');
+  })
+  
+  it("should encode a JSON body", (done) => {
+    let options = {
+      body: {"foo": "bar"}, 
+      headers: {'Content-Type': 'application/json'}
+    }
+    let result = httpRequest.encodeBody(options);
+    expect(result.body).toEqual('{"foo":"bar"}');
     done();
     
   })
    it("should encode a www-form body", (done) => {
-    
-    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'cOntent-tYpe': 'application/x-www-form-urlencoded'});
-    expect(result).toEqual("foo=bar&bar=baz");
+    let options = {
+      body: {"foo": "bar", "bar": "baz"},
+      headers: {'cOntent-tYpe': 'application/x-www-form-urlencoded'}
+    }
+    let result = httpRequest.encodeBody(options);
+    expect(result.body).toEqual("foo=bar&bar=baz");
     done();
   });
   it("should not encode a wrong content type", (done) => {
-    
-    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'cOntent-tYpe': 'mime/jpeg'});
-    expect(result).toEqual({"foo": "bar", "bar": "baz"});
+    let options = {
+      body:{"foo": "bar", "bar": "baz"}, 
+      headers: {'cOntent-tYpe': 'mime/jpeg'}
+    }
+    let result = httpRequest.encodeBody(options);
+    expect(result.body).toEqual({"foo": "bar", "bar": "baz"});
     done();
   });
-  it("should not encode when missing content type", (done) => {
-    var result = httpRequest.encodeBody({"foo": "bar", "bar": "baz"}, {'X-Custom-Header': 'my-header'});
-    expect(result).toEqual({"foo": "bar", "bar": "baz"});
-    done();
-  });
-  
+
   it("should fail gracefully", (done) => {
     httpRequest({
       url: "http://not a good url",
@@ -196,6 +214,17 @@ describe("httpRequest", () => {
         done();
       }
     });
+  });
+  
+  it('should get a cat image', (done) => {
+    httpRequest({
+      url: 'http://thecatapi.com/api/images/get?format=src&type=jpg',
+      followRedirects: true
+    }).then((res) => {
+      expect(res.buffer).not.toBe(null);
+      expect(res.text).not.toBe(null);
+      done();
+    })
   })
 
   it("should params object to query string", (done) => {
