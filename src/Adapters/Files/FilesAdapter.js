@@ -14,8 +14,6 @@
 export class FilesAdapter {
   /* this method is responsible to store the file in order to be retrived later by it's file name
    *
-   *
-   * @param config the current config
    * @param filename the filename to save
    * @param data the buffer of data from the file
    * @param contentType the supposed contentType
