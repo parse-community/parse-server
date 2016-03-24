@@ -16,7 +16,7 @@ const apn = require('apn');
  * @param {String} args.bundleId The bundleId for cert
  * @param {Boolean} args.production Specifies which environment to connect to: Production (if true) or Sandbox
  */
-function APNS(args) {
+export function APNS(args) {
   // Since for ios, there maybe multiple cert/key pairs,
   // typePushConfig can be an array.
   let apnsArgsList = [];
@@ -187,7 +187,7 @@ function chooseConns(conns, device) {
  * @param {Object} coreData The data field under api request body
  * @returns {Object} A apns notification
  */
-function generateNotification(coreData, expirationTime) {
+export function generateNotification(coreData, expirationTime) {
   let notification = new apn.notification();
   let payload = {};
   for (let key in coreData) {
@@ -224,4 +224,3 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   APNS.chooseConns = chooseConns;
   APNS.handleTransmissionError = handleTransmissionError;
 }
-module.exports = APNS;

@@ -1,4 +1,6 @@
 import ParseServer            from './ParseServer'
+import { PushAdapter }        from './Adapters/Push/PushAdapter';
+import * as PushAdapterUtils  from './Adapters/Push/PushAdapterUtils';
 import { GCSAdapter }         from './Adapters/Files/GCSAdapter';
 import { S3Adapter }          from './Adapters/Files/S3Adapter';
 import { FileSystemAdapter }  from './Adapters/Files/FileSystemAdapter';
@@ -12,4 +14,4 @@ let _ParseServer = function(options) {
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, _ParseServer as ParseServer };
+export { S3Adapter, GCSAdapter, FileSystemAdapter, _ParseServer as ParseServer, PushAdapter, PushAdapterUtils };
