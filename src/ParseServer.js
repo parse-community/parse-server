@@ -25,7 +25,6 @@ import { FileLoggerAdapter }       from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }         from './Controllers/FilesController';
 import { FilesRouter }             from './Routers/FilesRouter';
 import { FunctionsRouter }         from './Routers/FunctionsRouter';
-import { GCSAdapter }              from './Adapters/Files/GCSAdapter';
 import { GlobalConfigRouter }      from './Routers/GlobalConfigRouter';
 import { GridStoreAdapter }        from './Adapters/Files/GridStoreAdapter';
 import { HooksController }         from './Controllers/HooksController';
@@ -42,13 +41,11 @@ import { PushController }          from './Controllers/PushController';
 import { PushRouter }              from './Routers/PushRouter';
 import { randomString }            from './cryptoUtils';
 import { RolesRouter }             from './Routers/RolesRouter';
-import { S3Adapter }               from './Adapters/Files/S3Adapter';
 import { SchemasRouter }           from './Routers/SchemasRouter';
 import { SessionsRouter }          from './Routers/SessionsRouter';
 import { setFeature }              from './features';
 import { UserController }          from './Controllers/UserController';
 import { UsersRouter }             from './Routers/UsersRouter';
-import { FileSystemAdapter }       from './Adapters/Files/FileSystemAdapter';
 
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
