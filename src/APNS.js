@@ -66,6 +66,13 @@ function APNS(args) {
     });
 
     conn.on('transmitted', function(notification, device) {
+      if (device.callback) {
+        device.callback({
+          notification: notification,
+          transmitted: true,
+          device: device
+        });
+      }
       console.log('APNS Connection %d Notification transmitted to %s', conn.index, device.token.toString('hex'));
     });
 
@@ -91,11 +98,15 @@ APNS.prototype.send = function(data, devices) {
   let coreData = data.data;
   let expirationTime = data['expiration_time'];
   let notification = generateNotification(coreData, expirationTime);
-  for (let device of devices) {
+
+  let promises = devices.map((device) => {
     let qualifiedConnIndexs = chooseConns(this.conns, device);
     // We can not find a valid conn, just ignore this device
     if (qualifiedConnIndexs.length == 0) {
-      continue;
+      return Promise.resolve({
+        transmitted: false,
+        result: {error: 'No connection available'}
+      });
     }
     let conn = this.conns[qualifiedConnIndexs[0]];
     let apnDevice = new apn.Device(device.deviceToken);
@@ -104,13 +115,15 @@ APNS.prototype.send = function(data, devices) {
     if (device.appIdentifier) {
       apnDevice.appIdentifier = device.appIdentifier;
     }
-    conn.pushNotification(notification, apnDevice);
-  }
-  return Parse.Promise.as();
+    return new Promise((resolve, reject) => {
+      apnDevice.callback = resolve;
+      conn.pushNotification(notification, apnDevice);
+    });
+  });
+  return Parse.Promise.when(promises);
 }
 
 function handleTransmissionError(conns, errCode, notification, apnDevice) {
-  console.error('APNS Notification caused error: ' + errCode + ' for device ', apnDevice, notification);
   // This means the error notification is not in the cache anymore or the recepient is missing,
   // we just ignore this case
   if (!notification || !apnDevice) {
@@ -133,7 +146,13 @@ function handleTransmissionError(conns, errCode, notification, apnDevice) {
   }
   // There is no more available conns, we give up in this case
   if (newConnIndex < 0 || newConnIndex >= conns.length) {
-    console.log('APNS can not find vaild connection for %j', apnDevice.token);
+    if (apnDevice.callback) {
+      apnDevice.callback({
+        response: {error: `APNS can not find vaild connection for ${apnDevice.token}`, code: errCode},
+        status: errCode,
+        transmitted: false
+      });
+    }
     return;
   }
 

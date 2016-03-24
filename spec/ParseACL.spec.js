@@ -1153,7 +1153,6 @@ describe('Parse.ACL', () => {
       var query = new Parse.Query("TestClassMasterACL");
       return query.find();
     }).then((results) => {
-      console.log(JSON.stringify(results[0]));
       ok(!results.length, 'Should not have returned object with secure ACL.');
       done();
     });

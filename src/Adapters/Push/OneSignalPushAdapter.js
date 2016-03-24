@@ -10,11 +10,11 @@ var deepcopy = require('deepcopy');
 import PushAdapter from './PushAdapter';
 
 export class OneSignalPushAdapter extends PushAdapter {
-  
+
   constructor(pushConfig = {}) {
     super(pushConfig);
     this.https = require('https');
-    
+
     this.validPushTypes = ['ios', 'android'];
     this.senderMap = {};
     this.OneSignalConfig = {};
@@ -24,13 +24,12 @@ export class OneSignalPushAdapter extends PushAdapter {
     }
     this.OneSignalConfig['appId'] = pushConfig['oneSignalAppId'];
     this.OneSignalConfig['apiKey'] = pushConfig['oneSignalApiKey'];
-    
+
     this.senderMap['ios'] = this.sendToAPNS.bind(this);
     this.senderMap['android'] = this.sendToGCM.bind(this);
   }
-  
+
   send(data, installations) {
-    console.log("Sending notification to "+installations.length+" devices.")
     let deviceMap = classifyInstallations(installations, this.validPushTypes);
 
     let sendPromises = [];
@@ -48,15 +47,15 @@ export class OneSignalPushAdapter extends PushAdapter {
     }
     return Parse.Promise.when(sendPromises);
   }
-  
+
   static classifyInstallations(installations, validTypes) {
     return classifyInstallations(installations, validTypes)
   }
-  
+
   getValidPushTypes() {
     return this.validPushTypes;
   }
-  
+
   sendToAPNS(data,tokens) {
 
     data= deepcopy(data['data']);
@@ -117,19 +116,19 @@ export class OneSignalPushAdapter extends PushAdapter {
 
     return promise;
   }
-  
+
   sendToGCM(data,tokens) {
     data= deepcopy(data['data']);
 
     var post = {};
-    
+
     if(data['alert']) {
       post['contents'] = {en: data['alert']};
       delete data['alert'];
     }
     if(data['title']) {
       post['title'] = {en: data['title']};
-      delete data['title']; 
+      delete data['title'];
     }
     if(data['uri']) {
       post['url'] = data['uri'];
@@ -155,7 +154,7 @@ export class OneSignalPushAdapter extends PushAdapter {
       }
     }.bind(this);
 
-    this.sendNext = function() {    
+    this.sendNext = function() {
       post['include_android_reg_ids'] = [];
       tokens.slice(offset,offset+chunk).forEach(function(i) {
         post['include_android_reg_ids'].push(i['deviceToken'])
@@ -168,7 +167,7 @@ export class OneSignalPushAdapter extends PushAdapter {
     this.sendNext();
     return promise;
   }
-  
+
   sendToOneSignal(data, cb) {
     let headers = {
       "Content-Type": "application/json",
@@ -188,7 +187,7 @@ export class OneSignalPushAdapter extends PushAdapter {
         cb(true);
       } else {
         console.log('OneSignal Error');
-        res.on('data', function(chunk) { 
+        res.on('data', function(chunk) {
           console.log(chunk.toString())
         });
         cb(false)

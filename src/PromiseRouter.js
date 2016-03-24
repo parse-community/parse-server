@@ -21,18 +21,18 @@ export default class PromiseRouter {
     this.routes = routes;
     this.mountRoutes();
   }
-  
+
   // Leave the opportunity to
   // subclasses to mount their routes by overriding
   mountRoutes() {}
-  
+
   // Merge the routes into this one
   merge(router) {
     for (var route of router.routes) {
       this.routes.push(route);
     }
   };
-  
+
   route(method, path, ...handlers) {
     switch(method) {
     case 'POST':
@@ -45,7 +45,7 @@ export default class PromiseRouter {
     }
 
     let handler = handlers[0];
-  
+
     if (handlers.length > 1) {
       const length = handlers.length;
       handler = function(req) {
@@ -63,7 +63,7 @@ export default class PromiseRouter {
       handler: handler
     });
   };
-  
+
   // Returns an object with:
   //   handler: the handler that should deal with this request
   //   params: any :-params that got parsed from the path
@@ -99,7 +99,7 @@ export default class PromiseRouter {
       return {params: params, handler: route.handler};
     }
   };
-  
+
   // Mount the routes on this router onto an express app (or express router)
   mountOnto(expressApp) {
     for (var route of this.routes) {
@@ -121,7 +121,7 @@ export default class PromiseRouter {
       }
     }
   };
-  
+
   expressApp() {
     var expressApp = express();
     for (var route of this.routes) {
@@ -168,19 +168,21 @@ function makeExpressHandler(promiseHandler) {
         if (PromiseRouter.verbose) {
           console.log('response:', JSON.stringify(result, null, 2));
         }
-        
+
         var status = result.status || 200;
         res.status(status);
-        
+
         if (result.text) {
           return res.send(result.text);
         }
-        
-        if (result.location && !result.response) {
-          return res.redirect(result.location);
-        }
+
         if (result.location) {
           res.set('Location', result.location);
+          // Override the default expressjs response
+          // as it double encodes %encoded chars in URL
+          if (!result.response) {
+            return res.send('Found. Redirecting to '+result.location);
+          }
         }
         res.json(result.response);
       }, (e) => {

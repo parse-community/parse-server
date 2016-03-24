@@ -10,7 +10,9 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
-The fastest and easiest way to get started is to run MongoDB and Parse Server locally:
+The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
+
+## Running Parse Server locally
 
 ```
 $ npm install -g parse-server mongodb-runner
@@ -22,7 +24,7 @@ You can use any arbitrary string as your application id and master key. These wi
 
 That's it! You are now running a standalone version of Parse Server on your machine.
 
-**Using a remote MongoDB?** Pass the  `--databaseURL DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
+**Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
 ### Saving your first object
 
@@ -100,9 +102,16 @@ Once you have a better understanding of how the project works, please refer to t
 
 ### Parse Server Sample Application
 
-We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed using any of the following buttons:
+We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:
 
-<a title="Deploy to AWS" href="https://console.aws.amazon.com/elasticbeanstalk/home?region=us-west-2#/newApplication?applicationName=ParseServer&solutionStackName=Node.js&tierName=WebServer&sourceBundleUrl=https://s3.amazonaws.com/elasticbeanstalk-samples-us-east-1/eb-parse-server-sample/parse-server-example.zip" target="_blank"><img src="http://d0.awsstatic.com/product-marketing/Elastic%20Beanstalk/deploy-to-aws.png" height="32"></a> <a title="Deploy to Heroku" href="https://heroku.com/deploy?template=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="https://www.herokucdn.com/deploy/button.png"></a> <a title="Deploy to Azure" href="https://azuredeploy.net/?repository=https://github.com/parseplatform/parse-server-example" target="_blank"><img src="http://azuredeploy.net/deploybutton.png"></a>
+* [Heroku and mLab](https://github.com/ParsePlatform/parse-server/wiki/Deploying-Parse-Server#deploying-to-heroku-and-mLab)
+* [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
+* [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
+* [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
+* [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
+* [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/) 
+* [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
+* [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 
 ### Parse Server + Express
 
@@ -113,11 +122,9 @@ var express = require('express');
 var ParseServer = require('parse-server').ParseServer;
 var app = express();
 
-// Specify the connection string for your mongodb database
-// and the location to your Parse cloud code
 var api = new ParseServer({
-  databaseURI: 'mongodb://localhost:27017/dev',
-  cloud: '/home/myApp/cloud/main.js', // Provide an absolute path
+  databaseURI: 'mongodb://localhost:27017/dev', // Connection string for your MongoDB database
+  cloud: '/home/myApp/cloud/main.js', // Absolute path to your Cloud Code
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
@@ -131,6 +138,8 @@ app.listen(1337, function() {
   console.log('parse-server-example running on port 1337.');
 });
 ```
+
+For a full list of available options, run `parse-server --help`.
 
 # Documentation
 
@@ -151,10 +160,10 @@ For the full list of available options, run `parse-server --help`.
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
 * `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`.
+* `port` - The default port is 1337, specify this parameter to use a different port.
+* `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `facebookAppIds` - An array of valid Facebook application IDs.
-* `serverURL` - URL which will be used by Cloud Code functions to make requests against.
-* `push` - Configuration options for APNS and GCM push. See the [wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications wiki entry](https://github.com/ParsePlatform/parse-server/wiki/Push).
 
 #### Client key options
 
@@ -168,21 +177,21 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 #### Advanced options
 
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
-* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
-* `maxUploadSize` - Max file size for uploads. Defaults to 20mb.
-* `databaseAdapter` (unfinished) - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`).
-* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
-* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
+* `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
-
-```
+* `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
+* `mountPath` - Mount path for the server. Defaults to `/parse`.
+* `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
+* `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
+* `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
+* `databaseAdapter` - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`). Defaults to `MongoStorageAdapter`.
 
 ### Using environment variables to configure Parse Server
 
 You may configure the Parse Server using environment variables:
 
-```
+```bash
 PORT
 PARSE_SERVER_APPLICATION_ID
 PARSE_SERVER_MASTER_KEY
@@ -193,43 +202,34 @@ PARSE_SERVER_CLOUD_CODE_MAIN
 
 The default port is 1337, to use a different port set the PORT environment variable:
 
-`$ PORT=8080 parse-server --appId=APPLICATION_ID --masterKey=MASTER_KEY`
+```bash
+$ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+```
 
 For the full list of configurable environment variables, run `parse-server --help`.
 
-##### Configuring File Adapters
+### Configuring File Adapters
 
-Parse Server allows developers to choose from several options when hosting files: the `GridStoreAdapter`, which backed by MongoDB; the `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or the `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/).
+Parse Server allows developers to choose from several options when hosting files:
 
-`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or GCS, additional configuration information is available below.
+* `GridStoreAdapter`, which is backed by MongoDB;
+* `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
+* `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
-###### Configuring `S3Adapter`
+`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server wiki](https://github.com/ParsePlatform/parse-server/wiki/Configuring-File-Adapters).
 
-You can use the following environment variable setup to enable the S3 adapter:
+# Support
 
-```js
-S3_ACCESS_KEY
-S3_SECRET_KEY
-S3_BUCKET
-S3_REGION
-S3_BUCKET_PREFIX
-S3_DIRECT_ACCESS
+For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
 
-```
+If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/ParsePlatform/parse-server/issues):
 
-###### Configuring `GCSAdapter`
+- [ ] You've met the [prerequisites](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#prerequisites).
 
-You can use the following environment variable setup to enable the GCS adapter:
+- [ ] You're running the [latest version](https://github.com/ParsePlatform/parse-server/releases) of Parse Server.
 
-```js
-GCP_PROJECT_ID
-GCP_KEYFILE_PATH
-GCS_BUCKET
-GCS_BUCKET_PREFIX
-GCS_DIRECT_ACCESS
+- [ ] You've searched through [existing issues](https://github.com/ParsePlatform/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
 
-```
-
-## Contributing
+# Contributing
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).

@@ -21,10 +21,7 @@ export function classifyInstallations(installations, validPushTypes) {
         deviceToken: installation.deviceToken,
         appIdentifier: installation.appIdentifier
       });
-    } else {
-      console.log('Unknown push type from installation %j', installation);
     }
   }
   return deviceMap;
 }
-
