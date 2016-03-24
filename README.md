@@ -203,7 +203,7 @@ var server = ParseServer({
   appName: 'Parse App',
   // The email adapter
   emailAdapter: {
-    module: 'parse-server/lib/Adapters/Email/SimpleMailgunAdapter',
+    module: 'parse-server-simple-mailgun-adapter',
     options: {
       // The addres that your emails come from
       fromAddress: 'parse@example.com',
