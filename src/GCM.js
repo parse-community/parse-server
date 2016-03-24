@@ -22,6 +22,7 @@ function GCM(args) {
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
 GCM.prototype.send = function(data, devices) {
+  let pushId = cryptoUtils.newObjectId();
   // Make a new array
   devices = new Array(...devices);
   let timestamp = Date.now();
@@ -52,7 +53,8 @@ GCM.prototype.send = function(data, devices) {
     expirationTime = data['expiration_time'];
   }
   // Generate gcm payload
-  let gcmPayload = generateGCMPayload(data.data, timestamp, expirationTime);
+  // PushId is not a formal field of GCM, but Parse Android SDK uses this field to deduplicate push notifications
+  let gcmPayload = generateGCMPayload(data.data, pushId, timestamp, expirationTime);
   // Make and send gcm request
   let message = new gcm.Message(gcmPayload);
 
@@ -107,9 +109,10 @@ GCM.prototype.send = function(data, devices) {
  * @param {Number|undefined} expirationTime A number whose format is the Unix Epoch or undefined
  * @returns {Object} A promise which is resolved after we get results from gcm
  */
-function generateGCMPayload(coreData, timeStamp, expirationTime) {
+function generateGCMPayload(coreData, pushId, timeStamp, expirationTime) {
   let payloadData =  {
     'time': new Date(timeStamp).toISOString(),
+    'push_id': pushId,
     'data': JSON.stringify(coreData)
   }
   let payload = {
