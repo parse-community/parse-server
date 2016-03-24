@@ -573,7 +573,15 @@ describe("Password Reset", () => {
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
 
             Parse.User.logIn("zxcv", "hello").then(function(user){
-              done();
+              let config = new Config('test');
+              config.database.adaptiveCollection('_User')
+              .then(coll => coll.find({ 'username': 'zxcv' }, { limit: 1 }))
+              .then((results) => {
+                // _perishable_token should be unset after reset password
+                expect(results.length).toEqual(1);
+                expect(results[0]['_perishable_token']).toEqual(undefined);
+                done();
+              });
             }, (err) => {
               console.error(err);
               fail("should login with new password");

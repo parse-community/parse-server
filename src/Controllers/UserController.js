@@ -2,6 +2,7 @@ import { randomString } from '../cryptoUtils';
 import { inflate } from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter from '../Adapters/Email/MailAdapter';
+import rest from '../rest';
 
 var DatabaseAdapter = require('../DatabaseAdapter');
 var RestWrite = require('../RestWrite');
@@ -165,9 +166,17 @@ export class UserController extends AdaptableController {
   }
 
   updatePassword(username, token, password, config) {
-   return this.checkResetTokenValidity(username, token).then(() => {
-     return updateUserPassword(username, token, password, this.config);
-   });
+   return this.checkResetTokenValidity(username, token).then((user) => {
+     return updateUserPassword(user._id, password, this.config);
+   }).then(() => {
+      // clear reset password token
+      return this.config.database.adaptiveCollection('_User').then(function (collection) {
+        // Need direct database access because verification token is not a parse field
+        return collection.findOneAndUpdate({ username: username },// query
+          { $unset: { _perishable_token: null } } // update
+        );
+      });
+    });
   }
 
   defaultVerificationEmail({link, user, appName, }) {
@@ -192,12 +201,10 @@ export class UserController extends AdaptableController {
 }
 
 // Mark this private
-function updateUserPassword(username, token, password, config) {
-    var write = new RestWrite(config, Auth.master(config), '_User', {
-            username: username,
-            _perishable_token: token
-          }, {password: password, _perishable_token: null }, undefined);
-    return write.execute();
+function updateUserPassword(userId, password, config) {
+    return rest.update(config, Auth.master(config), '_User', userId, {
+      password: password
+    });
  }
 
 export default UserController;
