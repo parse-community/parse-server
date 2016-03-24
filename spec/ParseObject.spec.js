@@ -600,6 +600,49 @@ describe('Parse.Object testing', () => {
     });
   });
 
+  it("addUnique with object", function(done) {
+    var x1 = new Parse.Object('X');
+    x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
+    x1.save().then(() => {
+      var objectId = x1.id;
+      var x2 = new Parse.Object('X', {objectId: objectId});
+      x2.addUnique('stuff', {'hello': 'world'});
+      x2.addUnique('stuff', {'bar': 'baz'});
+      expect(x2.get('stuff')).toEqual([{'hello': 'world'}, {'bar': 'baz'}]);
+      return x2.save();
+    }).then(() => {
+      var query = new Parse.Query('X');
+      return query.get(x1.id);
+    }).then((x3) => {
+      expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
+      done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
+  it("removes with object", function(done) {
+    var x1 = new Parse.Object('X');
+    x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
+    x1.save().then(() => {
+      var objectId = x1.id;
+      var x2 = new Parse.Object('X', {objectId: objectId});
+      x2.remove('stuff', {'hello': 'world'});
+      expect(x2.get('stuff')).toEqual([]);
+      return x2.save();
+    }).then(() => {
+      var query = new Parse.Query('X');
+      return query.get(x1.id);
+    }).then((x3) => {
+      expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
+      done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
   it("dirty attributes", function(done) {
     var object = new Parse.Object("TestObject");
     object.set("cat", "good");
@@ -1794,14 +1837,14 @@ describe('Parse.Object testing', () => {
       done();
     });
   });
-  
+
   it('should have undefined includes when object is missing', (done) => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
-    
+
     Parse.Object.saveAll([obj1, obj2]).then(() => {
       obj1.set("obj", obj2);
-      // Save the pointer, delete the pointee 
+      // Save the pointer, delete the pointee
       return obj1.save().then(() => { return obj2.destroy() });
     }).then(() => {
       let query = new Parse.Query("AnObject");
@@ -1823,7 +1866,7 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
-  
+
   it('should have undefined includes when object is missing on deeper path', (done) => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
@@ -1831,7 +1874,7 @@ describe('Parse.Object testing', () => {
     Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
       obj1.set("obj", obj2);
       obj2.set("obj", obj3);
-      // Save the pointer, delete the pointee 
+      // Save the pointer, delete the pointee
       return Parse.Object.saveAll([obj1, obj2]).then(() => { return obj3.destroy() });
     }).then(() => {
       let query = new Parse.Query("AnObject");

@@ -1,5 +1,6 @@
 var OAuth = require("../src/authDataManager/OAuth1Client");
 var request = require('request');
+var Config = require("../src/Config");
 
 describe('OAuth', function() {
 
@@ -28,7 +29,7 @@ describe('OAuth', function() {
 
   it("Should properly generate request signature", (done) => {
     var request = {
-      host: "dummy.com", 
+      host: "dummy.com",
       path: "path"
     };
 
@@ -48,7 +49,7 @@ describe('OAuth', function() {
 
   it("Should properly build request", (done) => {
     var options = {
-      host: "dummy.com", 
+      host: "dummy.com",
       consumer_key: "hello",
       consumer_secret: "world",
       auth_token: "token",
@@ -86,7 +87,7 @@ describe('OAuth', function() {
 
   it("Should fail a GET request", (done) => {
     var options = {
-      host: "api.twitter.com", 
+      host: "api.twitter.com",
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
       consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     };
@@ -100,7 +101,7 @@ describe('OAuth', function() {
 
   it("Should fail a POST request", (done) => {
     var options = {
-      host: "api.twitter.com", 
+      host: "api.twitter.com",
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
       consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     };
@@ -117,7 +118,7 @@ describe('OAuth', function() {
 
   it("Should fail a request", (done) => {
     var options = {
-      host: "localhost", 
+      host: "localhost",
       consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
       consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
     };
@@ -141,8 +142,8 @@ describe('OAuth', function() {
       var provider = require("../src/authDataManager/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
-      jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor); 
-      jequal(provider.validateAppId("app", "key", {}).constructor, Promise.prototype.constructor); 
+      jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);
+      jequal(provider.validateAppId("app", "key", {}).constructor, Promise.prototype.constructor);
       done();
     });
   });
@@ -203,13 +204,11 @@ describe('OAuth', function() {
         myoauth: getMockMyOauthProvider().authData
       }
     };
-    var headers = {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest', 
-          'Content-Type': 'application/json' }
 
     var options = {
         headers: {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest', 
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Installation-Id': 'yolo',
           'Content-Type': 'application/json' },
         url: 'http://localhost:8378/1/users',
         body: JSON.stringify(jsonBody)
@@ -223,9 +222,19 @@ describe('OAuth', function() {
     createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
+        ok(b.sessionToken);
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
-        done();
+        var sessionToken = b.sessionToken;
+        var q = new Parse.Query("_Session");
+        q.equalTo('sessionToken', sessionToken);
+        q.first({useMasterKey: true}).then((res) => {
+          expect(res.get("installationId")).toEqual('yolo');
+          done();
+        }).fail((err) => {
+          fail('should not fail fetching the session');
+          done();
+        })
       });
 
   });
@@ -248,7 +257,7 @@ describe('OAuth', function() {
           done();
         });
       });
-    
+
   });
 
   it("unlink and link with custom provider", (done) => {
@@ -266,28 +275,38 @@ describe('OAuth', function() {
 
         model._unlinkFrom("myoauth", {
           success: function(model) {
+
             ok(!model._isLinked("myoauth"),
                "User should not be linked to myoauth");
             ok(!provider.synchronizedUserId, "User id should be cleared");
             ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
             ok(!provider.synchronizedExpiration,
                "Expiration should be cleared");
+            // make sure the auth data is properly deleted
+            var config = new Config(Parse.applicationId);
+            config.database.mongoFind('_User', {
+              _id: model.id
+            }).then((res) => {
+              expect(res.length).toBe(1);
+              expect(res[0]._auth_data_myoauth).toBeUndefined();
+              expect(res[0]._auth_data_myoauth).not.toBeNull();
 
-            model._linkWith("myoauth", {
-              success: function(model) {
-                ok(provider.synchronizedUserId, "User id should have a value");
-                ok(provider.synchronizedAuthToken,
-                   "Auth token should have a value");
-                ok(provider.synchronizedExpiration,
-                   "Expiration should have a value");
-                ok(model._isLinked("myoauth"),
-                   "User should be linked to myoauth");
-                done();
-              },
-              error: function(model, error) {
-                ok(false, "linking again should succeed");
-                done();
-              }
+              model._linkWith("myoauth", {
+                success: function(model) {
+                  ok(provider.synchronizedUserId, "User id should have a value");
+                  ok(provider.synchronizedAuthToken,
+                     "Auth token should have a value");
+                  ok(provider.synchronizedExpiration,
+                     "Expiration should have a value");
+                  ok(model._isLinked("myoauth"),
+                     "User should be linked to myoauth");
+                  done();
+                },
+                error: function(model, error) {
+                  ok(false, "linking again should succeed");
+                  done();
+                }
+              });
             });
           },
           error: function(model, error) {

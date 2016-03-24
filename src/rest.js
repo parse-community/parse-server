@@ -42,6 +42,7 @@ function del(config, auth, className, objectId) {
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeDelete, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterDelete, config.applicationId) ||
+        (config.liveQueryController && config.liveQueryController.hasLiveQuery(className)) ||
         className == '_Session') {
       return find(config, Auth.master(config), className, {objectId: objectId})
       .then((response) => {
@@ -49,6 +50,8 @@ function del(config, auth, className, objectId) {
           response.results[0].className = className;
           cache.users.remove(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
+          // Notify LiveQuery server if possible
+          config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
           return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
@@ -97,7 +100,8 @@ function update(config, auth, className, objectId, restObject) {
 
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
-        triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId)) {
+        triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId) ||
+        (config.liveQueryController && config.liveQueryController.hasLiveQuery(className))) {
       return find(config, Auth.master(config), className, {objectId: objectId});
     }
     return Promise.resolve({});
@@ -115,11 +119,6 @@ function update(config, auth, className, objectId, restObject) {
 
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
-  if (className === '_Role' && !auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                          'Clients aren\'t allowed to perform the ' +
-                          method + ' operation on the role collection.');
-  }
   if (method === 'delete' && className === '_Installation' && !auth.isMaster) {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
                           'Clients aren\'t allowed to perform the ' +

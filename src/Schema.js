@@ -17,7 +17,7 @@
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
 
-var defaultColumns = {
+const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
   _Default: {
     "objectId":  {type:'String'},
@@ -67,14 +67,31 @@ var defaultColumns = {
     "icon":               {type:'File'},
     "order":              {type:'Number'},
     "title":              {type:'String'},
-    "subtitle":            {type:'String'},
+    "subtitle":           {type:'String'},
+  },
+  _PushStatus: {
+    "pushTime":     {type:'String'},
+    "source":       {type:'String'}, // rest or webui
+    "query":        {type:'String'}, // the stringified JSON query
+    "payload":      {type:'Object'}, // the JSON payload,
+    "title":        {type:'String'},
+    "expiry":       {type:'Number'},
+    "status":       {type:'String'},
+    "numSent":      {type:'Number'},
+    "numFailed":    {type:'Number'},
+    "pushHash":     {type:'String'},
+    "errorMessage": {type:'Object'},
+    "sentPerType":  {type:'Object'},
+    "failedPerType":{type:'Object'},
   }
-};
+});
 
-var requiredColumns = {
+const requiredColumns = Object.freeze({
   _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
   _Role: ["name", "ACL"]
-}
+});
+
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -83,7 +100,7 @@ const roleRegex = /^role:.*/;
 // * permission
 const publicRegex = /^\*$/
 
-const permissionKeyRegex = [userIdRegex, roleRegex, publicRegex];
+const permissionKeyRegex = Object.freeze([userIdRegex, roleRegex, publicRegex]);
 
 function verifyPermissionKey(key) {
   let result = permissionKeyRegex.reduce((isGood, regEx) => {
@@ -95,13 +112,15 @@ function verifyPermissionKey(key) {
   }
 }
 
-let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete', 'addField'];
-let DefaultClassLevelPermissions = CLPValidKeys.reduce((perms, key) => {
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
+let DefaultClassLevelPermissions = () => {
+  return CLPValidKeys.reduce((perms, key) => {
     perms[key] = {
       '*': true
     };
     return perms;
   }, {});
+}
 
 function validateCLP(perms) {
   if (!perms) {
@@ -127,13 +146,8 @@ function validateCLP(perms) {
 var joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 var classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 function classNameIsValid(className) {
-  return (
-    className === '_User' ||
-    className === '_Installation' ||
-    className === '_Session' ||
+  return (systemClasses.indexOf(className) > -1 ||
     className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
-    className === '_Role' ||
-    className === '_Product' ||
     joinClassRegex.test(className) ||
     //Class names have the same constraints as field names, but also allow the previous additional names.
     fieldNameIsValid(className)
@@ -284,7 +298,7 @@ class Schema {
         return Promise.reject(error);
       });
   }
-  
+
   updateClass(className, submittedFields, classLevelPermissions, database) {
     if (!this.data[className]) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
@@ -299,7 +313,7 @@ class Schema {
         throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
       }
     });
-    
+
     let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
     let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions);
     if (!mongoObject.result) {
@@ -327,7 +341,7 @@ class Schema {
         });
         return Promise.all(promises);
       })
-      .then(() => { 
+      .then(() => {
         return this.setPermissions(className, classLevelPermissions)
       })
       .then(() => { return mongoSchemaToSchemaAPIResponse(mongoObject.result) });
@@ -697,7 +711,7 @@ function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPe
       error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
     };
   }
-  
+
   validateCLP(classLevelPermissions);
   if (typeof classLevelPermissions !== 'undefined') {
     mongoObject._metadata = mongoObject._metadata || {};
@@ -886,21 +900,22 @@ function mongoSchemaToSchemaAPIResponse(schema) {
     className: schema._id,
     fields: mongoSchemaAPIResponseFields(schema),
   };
-  
-  let classLevelPermissions = DefaultClassLevelPermissions;
+
+  let classLevelPermissions = DefaultClassLevelPermissions();
   if (schema._metadata && schema._metadata.class_permissions) {
-    classLevelPermissions = Object.assign(classLevelPermissions, schema._metadata.class_permissions);
-  } 
+    classLevelPermissions = Object.assign({}, classLevelPermissions, schema._metadata.class_permissions);
+  }
   result.classLevelPermissions = classLevelPermissions;
   return result;
 }
 
-module.exports = {
-  load: load,
-  classNameIsValid: classNameIsValid,
-  invalidClassNameMessage: invalidClassNameMessage,
-  schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
-  buildMergedSchemaObject: buildMergedSchemaObject,
-  mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
+export {
+  load,
+  classNameIsValid,
+  invalidClassNameMessage,
+  schemaAPITypeToMongoFieldType,
+  buildMergedSchemaObject,
+  mongoFieldTypeToSchemaAPIType,
   mongoSchemaToSchemaAPIResponse,
+  systemClasses,
 };
