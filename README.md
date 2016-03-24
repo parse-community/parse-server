@@ -205,7 +205,7 @@ var server = ParseServer({
   emailAdapter: {
     module: 'parse-server-simple-mailgun-adapter',
     options: {
-      // The addres that your emails come from
+      // The address that your emails come from
       fromAddress: 'parse@example.com',
       // Your domain from mailgun.com
       domain: 'example.com',
