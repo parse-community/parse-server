@@ -1,7 +1,7 @@
 import ParseServer            from './ParseServer'
-import { GCSAdapter }         from './Adapters/Files/GCSAdapter';
-import { S3Adapter }          from './Adapters/Files/S3Adapter';
-import { FileSystemAdapter }  from './Adapters/Files/FileSystemAdapter';
+import { GCSAdapter }         from 'parse-server-gcs-adapter';
+import { S3Adapter }          from 'parse-server-s3-adapter';
+import { FileSystemAdapter }  from 'parse-server-fs-adapter';
 
 // Factory function
 let _ParseServer = function(options) {

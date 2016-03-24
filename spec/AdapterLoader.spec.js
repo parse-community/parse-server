@@ -1,9 +1,9 @@
 
 var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
-var FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
+var FilesAdapter = require("parse-server-fs-adapter").default;
+var S3Adapter = require("parse-server-s3-adapter").default;
+var GCSAdapter = require("parse-server-gcs-adapter").default;
 var ParsePushAdapter = require("../src/Adapters/Push/ParsePushAdapter");
-var S3Adapter = require("../src/Adapters/Files/S3Adapter").default;
-var GCSAdapter = require("../src/Adapters/Files/GCSAdapter").default;
 
 describe("AdapterLoader", ()=>{
 
