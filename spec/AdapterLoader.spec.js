@@ -38,7 +38,11 @@ describe("AdapterLoader", ()=>{
       adapter: adapterPath
     });
 
-    expect(adapter instanceof FilesAdapter).toBe(true);
+    expect(typeof adapter).toBe('object');
+    expect(typeof adapter.createFile).toBe('function');
+    expect(typeof adapter.deleteFile).toBe('function');
+    expect(typeof adapter.getFileData).toBe('function');
+    expect(typeof adapter.getFileLocation).toBe('function');
     done();
   });
 
