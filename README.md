@@ -109,7 +109,7 @@ We have provided a basic [Node.js application](https://github.com/ParsePlatform/
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
 * [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
-* [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/) 
+* [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 
@@ -186,6 +186,36 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
 * `databaseAdapter` - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`). Defaults to `MongoStorageAdapter`.
+
+##### Email verification and password reset
+
+Verifying user email addresses and enabling password reset via email requries an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
+
+```js
+var server = ParseServer({
+  ...otherOptions,
+  // Enable email verification
+  verifyUserEmails: true,
+  // The public URL of your app.
+  // This will appear in the link that is used to verify email addresses and reset passwords.
+  publicServerURL: 'https://example.com',
+  // Your apps name. This will appear in the subject and body of the emails that are sent.
+  appName: 'Parse App',
+  // The email adapter
+  emailAdapter: {
+    module: 'parse-server-simple-mailgun-adapter',
+    options: {
+      // The address that your emails come from
+      fromAddress: 'parse@example.com',
+      // Your domain from mailgun.com
+      domain: 'example.com',
+      // Your API key from mailgun.com
+      apiKey: 'key-mykey',
+    }
+  }
+});
+
+You can also use other email adapters contributed by the community such as [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter).
 
 ### Using environment variables to configure Parse Server
 

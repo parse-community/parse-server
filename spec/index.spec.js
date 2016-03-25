@@ -56,6 +56,7 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
         apiKey: 'k',
         domain: 'd',
       }),
@@ -80,6 +81,7 @@ describe('server', () => {
       emailAdapter: {
         class: MockEmailAdapterWithOptions,
         options: {
+          fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
         }
@@ -103,8 +105,9 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
-        module: './Email/SimpleMailgunAdapter',
+        module: 'parse-server-simple-mailgun-adapter',
         options: {
+          fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
         }
@@ -127,9 +130,9 @@ describe('server', () => {
       collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
-      emailAdapter: './Email/SimpleMailgunAdapter',
+      emailAdapter: 'parse-server-simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
     done();
   });
 
@@ -147,13 +150,13 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
-        module: './Email/SimpleMailgunAdapter',
+        module: 'parse-server-simple-mailgun-adapter',
         options: {
           domain: 'd',
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
     done();
   });
 
