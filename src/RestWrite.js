@@ -84,6 +84,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.runAfterTrigger();
   }).then(() => {
+    return this.cleanUserAuthData();
+  }).then(() => {
     return this.response;
   });
 };
@@ -823,6 +825,22 @@ RestWrite.prototype.sanitizedData = function() {
   }, deepcopy(this.data));
   return Parse._decode(undefined, data);
 }
+
+RestWrite.prototype.cleanUserAuthData = function() {
+  if (this.response && this.response.response && this.className === '_User') {
+    let user = this.response.response;
+    if (user.authData) {
+      Object.keys(user.authData).forEach((provider) => {
+        if (user.authData[provider] === null) {
+          delete user.authData[provider];
+        }
+      });
+      if (Object.keys(user.authData).length == 0) {
+        delete user.authData;
+      }
+    }
+  }
+};
 
 export default RestWrite;
 module.exports = RestWrite;
