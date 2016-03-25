@@ -14,7 +14,6 @@ var batch = require('./batch'),
 import cache                    from './cache';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
-import ParsePushAdapter         from './Adapters/Push/ParsePushAdapter';
 import PromiseRouter            from './PromiseRouter';
 import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
@@ -45,6 +44,7 @@ import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 
+import ParsePushAdapter         from 'parse-server-push-adapter';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
