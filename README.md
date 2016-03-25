@@ -214,6 +214,7 @@ var server = ParseServer({
     }
   }
 });
+```
 
 You can also use other email adapters contributed by the community such as [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter).
 
