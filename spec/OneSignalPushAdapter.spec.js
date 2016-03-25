@@ -1,7 +1,7 @@
 'use strict';
 
 var OneSignalPushAdapter = require('../src/Adapters/Push/OneSignalPushAdapter');
-var classifyInstallations = require('../src/Adapters/Push/PushAdapterUtils').classifyInstallations;
+var classifyInstallations = require('parse-server-push-adapter').utils.classifyInstallations;
 
 // Make mock config
 var pushConfig = {
@@ -20,7 +20,7 @@ describe('OneSignalPushAdapter', () => {
     expect(senderMap.android instanceof Function).toBe(true);
     done();
   });
-  
+
   it('cannot be initialized if options are missing', (done) => {
 
     expect(() => {
@@ -239,5 +239,5 @@ describe('OneSignalPushAdapter', () => {
       appIdentifier: appIdentifier
     };
   }
-  
+
 });
