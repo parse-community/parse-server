@@ -34,13 +34,13 @@ export class PushController extends AdaptableController {
     }
   }
 
-  pushIsAvailable() {
+  get pushIsAvailable() {
     return !!this.adapter;
   }
 
   sendPush(body = {}, where = {}, config, auth, wait) {
     var pushAdapter = this.adapter;
-    if (!this.pushIsAvailable()) {
+    if (!this.pushIsAvailable) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
