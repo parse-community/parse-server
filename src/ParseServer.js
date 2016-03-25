@@ -42,7 +42,6 @@ import { randomString }         from './cryptoUtils';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
-import { setFeature }           from './features';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 
@@ -111,7 +110,6 @@ class ParseServer {
     },
     liveQuery = {}
   }) {
-    setFeature('serverVersion', parseServerPackage.version);
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
