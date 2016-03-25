@@ -2170,4 +2170,43 @@ describe('Parse.Query testing', () => {
 
   });
 
+  it('should find objects with array of pointers', (done) => {
+    var objects = [];
+    while(objects.length != 5) {
+      var object = new Parse.Object('ContainedObject');
+      object.set('index', objects.length);
+      objects.push(object);
+    }
+
+    Parse.Object.saveAll(objects).then((objects) => {
+      var container = new Parse.Object('Container');
+      var pointers = objects.map((obj) => {
+        return {
+           __type: 'Pointer',
+           className: 'ContainedObject',
+           objectId: obj.id
+        }
+      })
+      container.set('objects', pointers);
+      let container2 = new Parse.Object('Container');
+      container2.set('objects', pointers.slice(2, 3));
+      return Parse.Object.saveAll([container, container2]);
+    }).then(() => {
+      let inQuery = new Parse.Query('ContainedObject');
+      inQuery.greaterThanOrEqualTo('index', 1);
+      let query = new Parse.Query('Container');
+      query.matchesQuery('objects', inQuery);
+      return query.find();
+    }).then((results) => {
+      if (results) {
+        expect(results.length).toBe(2);
+      }
+      done();
+    }).fail((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  })
+
 });

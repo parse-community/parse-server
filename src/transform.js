@@ -452,7 +452,7 @@ function transformConstraint(constraint, inArray) {
                               'bad ' + key + ' value');
       }
       answer[key] = arr.map((v) => {
-        return transformAtom(v, true);
+        return transformAtom(v, true, { inArray: inArray });
       });
       break;
 
