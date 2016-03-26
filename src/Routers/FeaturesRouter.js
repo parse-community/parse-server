@@ -2,15 +2,17 @@ import { version }     from '../../package.json';
 import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
 
+const isGlobalConfigEnabled = !!(process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING)
+
 export class FeaturesRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET','/serverInfo', middleware.promiseEnforceMasterKeyAccess, req => {
       const features = {
         globalConfig: {
-          create: false,
-          read: false,
-          update: false,
-          delete: false,
+          create: isGlobalConfigEnabled,
+          read: isGlobalConfigEnabled,
+          update: isGlobalConfigEnabled,
+          delete: isGlobalConfigEnabled,
         },
         hooks: {
           create: false,
