@@ -1,3 +1,4 @@
+import log from 'npmlog';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -691,13 +692,13 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             expected = schema.getExpectedType(className, newKey);
           }
           if (!expected) {
-            console.log(
+            log.info('parse-server', 'transform.js',
               'Found a pointer column not in the schema, dropping it.',
               className, newKey);
             break;
           }
           if (expected && expected[0] != '*') {
-            console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
+            log.info('parse-server', 'transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
           if (mongoObject[key] === null) {

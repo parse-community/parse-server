@@ -1,41 +1,25 @@
-let LogLevel = {
-  'VERBOSE': 0,
-  'DEBUG': 1,
-  'INFO': 2,
-  'ERROR': 3,
-  'NONE': 4
-}
+import log from 'npmlog';
 
-function getCurrentLogLevel() {
-  if (PLog.logLevel && PLog.logLevel in LogLevel) {
-    return LogLevel[PLog.logLevel];
-  }
-  return LogLevel['ERROR'];
-}
+let logger = log.newGroup('parse-live-query-server');
 
 function verbose(): void {
-  if (getCurrentLogLevel() <= LogLevel['VERBOSE']) {
-    console.log.apply(console, arguments)
-  }
+  logger.verbose('parse-live-query-server', ...arguments)
 }
 
-function log(): void {
-  if (getCurrentLogLevel() <= LogLevel['INFO']) {
-    console.log.apply(console, arguments)
-  }
+function info(): void {
+  logger.info('parse-live-query-server', ...arguments);
 }
 
 function error(): void {
-  if (getCurrentLogLevel() <= LogLevel['ERROR']) {
-    console.error.apply(console, arguments)
-  }
+  logger.error('parse-live-query-server', ...arguments);
 }
 
 let PLog = {
-  log: log,
+  log: info,
+  info: info,
   error: error,
   verbose: verbose,
-  logLevel: 'INFO'
+  logger: logger
 };
 
 module.exports = PLog;
