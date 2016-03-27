@@ -19,8 +19,19 @@ export class GlobalConfigRouter extends PromiseRouter {
 
   updateGlobalConfig(req) {
     return req.config.database.adaptiveCollection('_GlobalConfig')
-      .then(coll => coll.upsertOne({ _id: 1 }, { $set: req.body }))
-      .then(() => ({ response: { result: true } }));
+      .then(coll => coll.find({ '_id': 1 }, { limit: 1 }))
+      .then(results => {
+        const previousConfig = results && results[0] && results[0].params || {};
+        const newConfig = Object.assign({}, previousConfig, req.body.params);
+        for (var key in newConfig) {
+          if (newConfig[key] && newConfig[key].__op && newConfig[key].__op === "Delete") {
+            delete newConfig[key];
+          }
+        }
+        return req.config.database.adaptiveCollection('_GlobalConfig')
+          .then(coll => coll.upsertOne({ _id: 1 }, { $set: { params: newConfig } }))
+          .then(() => ({ response: { result: true } }));
+      })
   }
 
   mountRoutes() {
