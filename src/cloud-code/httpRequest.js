@@ -2,6 +2,7 @@ import request from 'request';
 import Parse from 'parse/node';
 import HTTPResponse from './HTTPResponse';
 import querystring from 'querystring';
+import log from 'npmlog';
 
 var encodeBody = function({body, headers = {}}) {
   if (typeof body !== 'object') {
@@ -14,13 +15,13 @@ var encodeBody = function({body, headers = {}}) {
   if (contentTypeKeys.length == 0) {
     // no content type
     //  As per https://parse.com/docs/cloudcode/guide#cloud-code-advanced-sending-a-post-request the default encoding is supposedly x-www-form-urlencoded
-    
+
     body = querystring.stringify(body);
     headers['Content-Type'] = 'application/x-www-form-urlencoded';
   } else {
     /* istanbul ignore next */
     if (contentTypeKeys.length > 1) {
-      console.error('multiple content-type headers are set.');
+      log.error('parse-server', 'Parse.Cloud.httpRequest', 'multiple content-type headers are set.');
     }
     // There maybe many, we'll just take the 1st one
     var contentType = contentTypeKeys[0];
@@ -62,8 +63,8 @@ module.exports = function(options) {
       return promise.reject(error);
     }
     let httpResponse = new HTTPResponse(response);
-    
-    // Consider <200 && >= 400 as errors 
+
+    // Consider <200 && >= 400 as errors
     if (httpResponse.status < 200 || httpResponse.status >= 400) {
       if (callbacks.error) {
         callbacks.error(httpResponse);
