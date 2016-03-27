@@ -7,7 +7,6 @@ var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
 var Schema = require('./../Schema');
-var transform = require('./../transform');
 const deepcopy = require('deepcopy');
 
 function DatabaseController(adapter) {
@@ -113,7 +112,7 @@ DatabaseController.prototype.validateObject = function(className, object, query,
 // Filters out any data that shouldn't be on this REST-formatted object.
 DatabaseController.prototype.untransformObject = function(
   schema, isMaster, aclGroup, className, mongoObject) {
-  var object = transform.untransformObject(schema, className, mongoObject);
+  var object = this.adapter.transform.untransformObject(schema, className, mongoObject);
 
   if (className !== '_User') {
     return object;
@@ -159,17 +158,11 @@ DatabaseController.prototype.update = function(className, query, update, options
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
     .then(() => this.adaptiveCollection(className))
     .then(collection => {
-      var mongoWhere = transform.transformWhere(schema, className, query);
+      var mongoWhere = this.adapter.transform.transformWhere(schema, className, query);
       if (options.acl) {
-        var writePerms = [
-          {_wperm: {'$exists': false}}
-        ];
-        for (var entry of options.acl) {
-          writePerms.push({_wperm: {'$in': [entry]}});
-        }
-        mongoWhere = {'$and': [mongoWhere, {'$or': writePerms}]};
+        mongoWhere = this.adapter.transform.addWriteACL(mongoWhere, options.acl);
       }
-      mongoUpdate = transform.transformUpdate(schema, className, update);
+      mongoUpdate = this.adapter.transform.transformUpdate(schema, className, update);
       return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
     })
     .then(result => {
@@ -296,16 +289,9 @@ DatabaseController.prototype.destroy = function(className, query, options = {}) 
     })
     .then(() => this.adaptiveCollection(className))
     .then(collection => {
-      let mongoWhere = transform.transformWhere(schema, className, query);
-
+      let mongoWhere = this.adapter.transform.transformWhere(schema, className, query, options);
       if (options.acl) {
-        var writePerms = [
-          { _wperm: { '$exists': false } }
-        ];
-        for (var entry of options.acl) {
-          writePerms.push({ _wperm: { '$in': [entry] } });
-        }
-        mongoWhere = { '$and': [mongoWhere, { '$or': writePerms }] };
+        mongoWhere = this.adapter.transform.addWriteACL(mongoWhere, options.acl);
       }
       return collection.deleteMany(mongoWhere);
     })
@@ -341,7 +327,7 @@ DatabaseController.prototype.create = function(className, object, options) {
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => this.adaptiveCollection(className))
     .then(coll => {
-      var mongoObject = transform.transformCreate(schema, className, object);
+      var mongoObject = this.adapter.transform.transformCreate(schema, className, object);
       return coll.insertOne(mongoObject);
     })
     .then(result => {
@@ -596,7 +582,7 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
     if (options.sort) {
       mongoOptions.sort = {};
       for (let key in options.sort) {
-        let mongoKey = transform.transformKey(schema, className, key);
+        let mongoKey = this.adapter.transform.transformKey(schema, className, key);
         mongoOptions.sort[mongoKey] = options.sort[key];
       }
     }
@@ -613,16 +599,9 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   .then(() => this.reduceInRelation(className, query, schema))
   .then(() => this.adaptiveCollection(className))
   .then(collection => {
-    let mongoWhere = transform.transformWhere(schema, className, query);
+    let mongoWhere = this.adapter.transform.transformWhere(schema, className, query);
     if (!isMaster) {
-      let orParts = [
-        {"_rperm" : { "$exists": false }},
-        {"_rperm" : { "$in" : ["*"]}}
-      ];
-      for (let acl of aclGroup) {
-        orParts.push({"_rperm" : { "$in" : [acl]}});
-      }
-      mongoWhere = {'$and': [mongoWhere, {'$or': orParts}]};
+      mongoWhere = this.adapter.transform.addReadACL(mongoWhere, aclGroup);
     }
     if (options.count) {
       delete mongoOptions.limit;

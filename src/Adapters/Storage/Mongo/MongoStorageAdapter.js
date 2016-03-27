@@ -1,6 +1,7 @@
 import MongoCollection                          from './MongoCollection';
 import MongoSchemaCollection                    from './MongoSchemaCollection';
 import {parse as parseUrl, format as formatUrl} from '../../../vendor/mongodbUrl';
+import * as transform                           from './MongoTransform';
 import _                                        from 'lodash';
 
 let mongodb = require('mongodb');
@@ -124,6 +125,10 @@ export class MongoStorageAdapter {
     .then(collection => collection.updateMany({}, collectionUpdate))
     .then(updateResult => this.schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
+  }
+
+  get transform() {
+    return transform;
   }
 }
 

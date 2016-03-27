@@ -767,6 +767,27 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   }
 }
 
+function addWriteACL(mongoWhere, acl) {
+  var writePerms = [
+    {_wperm: {'$exists': false}}
+  ];
+  for (var entry of acl) {
+    writePerms.push({_wperm: {'$in': [entry]}});
+  }
+  return {'$and': [mongoWhere, {'$or': writePerms}]};
+}
+
+function addReadACL(mongoWhere, acl) {
+  var orParts = [
+    {"_rperm" : { "$exists": false }},
+    {"_rperm" : { "$in" : ["*"]}}
+  ];
+  for (var entry of acl) {
+    orParts.push({"_rperm" : { "$in" : [entry]}});
+  }
+  return {'$and': [mongoWhere, {'$or': orParts}]};
+}
+
 var DateCoder = {
   JSONToDatabase(json) {
     return new Date(json.iso);
@@ -860,5 +881,7 @@ module.exports = {
   transformCreate: transformCreate,
   transformUpdate: transformUpdate,
   transformWhere: transformWhere,
+  addReadACL: addReadACL,
+  addWriteACL: addWriteACL,
   untransformObject: untransformObject
 };
