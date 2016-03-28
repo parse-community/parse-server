@@ -15,6 +15,7 @@ export class HooksController {
   constructor(applicationId:string, collectionPrefix:string = '') {
     this._applicationId = applicationId;
     this._collectionPrefix = collectionPrefix;
+    this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).Unsafe();
   }
 
   load() {
@@ -23,18 +24,6 @@ export class HooksController {
       hooks.forEach((hook) => {
         this.addHookToTriggers(hook);
       });
-    });
-  }
-
-  getCollection() {
-    if (this._collection) {
-      return Promise.resolve(this._collection)
-    }
-
-    let database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix);
-    return database.adaptiveCollection(DefaultHooksCollectionName).then(collection => {
-      this._collection = collection;
-      return collection;
     });
   }
 
@@ -64,17 +53,13 @@ export class HooksController {
     return this._removeHooks({ className: className, triggerName: triggerName });
   }
 
-  _getHooks(query, limit) {
+  _getHooks(query = {}, limit) {
     let options = limit ? { limit: limit } : undefined;
-    return this.getCollection().then(collection => collection.find(query, options));
+    return this.database.find(DefaultHooksCollectionName, query);
   }
 
   _removeHooks(query) {
-    return this.getCollection().then(collection => {
-      return collection.deleteMany(query);
-    }).then(() => {
-      return {};
-    });
+    return this.database.destroy(DefaultHooksCollectionName, query);
   }
 
   saveHook(hook) {
@@ -86,11 +71,9 @@ export class HooksController {
     } else {
       throw new Parse.Error(143, "invalid hook declaration");
     }
-    return this.getCollection()
-      .then(collection => collection.upsertOne(query, hook))
-      .then(() => {
-        return hook;
-      });
+    return this.database.update(DefaultHooksCollectionName, query, hook, {upsert: true}).then(() => {
+      return Promise.resolve(hook);
+    })
   }
 
   addHookToTriggers(hook) {

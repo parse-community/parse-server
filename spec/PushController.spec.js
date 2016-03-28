@@ -184,7 +184,6 @@ describe('PushController', () => {
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });
@@ -233,7 +232,6 @@ describe('PushController', () => {
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });

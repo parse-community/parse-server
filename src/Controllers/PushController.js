@@ -5,6 +5,8 @@ import AdaptableController from './AdaptableController';
 import { PushAdapter }     from '../Adapters/Push/PushAdapter';
 import deepcopy            from 'deepcopy';
 import RestQuery           from '../RestQuery';
+import RestWrite           from '../RestWrite';
+import { master }          from '../Auth';
 import pushStatusHandler   from '../pushStatusHandler';
 
 const FEATURE_NAME = 'push';
@@ -54,30 +56,25 @@ export class PushController extends AdaptableController {
     }
     if (body.data && body.data.badge) {
       let badge = body.data.badge;
-      let op = {};
+      let restUpdate = {};
       if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
-        op = { $inc: { badge: 1 } }
+        restUpdate = { badge: { __op: 'Increment', amount: 1 } }
       } else if (Number(badge)) {
-        op = { $set: { badge: badge } }
+        restUpdate = { badge: badge }
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
       let updateWhere = deepcopy(where);
 
       badgeUpdate = () => {
-        let badgeQuery = new RestQuery(config, auth, '_Installation', updateWhere);
-        return badgeQuery.buildRestWhere().then(() => {
-          let restWhere = deepcopy(badgeQuery.restWhere);
-          // Force iOS only devices
-          if (!restWhere['$and']) {
-            restWhere['$and'] = [badgeQuery.restWhere];
-          }
-          restWhere['$and'].push({
-            'deviceType': 'ios'
-          });
-          return config.database.adaptiveCollection("_Installation")
-            .then(coll => coll.updateMany(restWhere, op));
-        })
+        updateWhere.deviceType = 'ios';
+        // Build a real RestQuery so we can use it in RestWrite
+        let restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
+        return restQuery.buildRestWhere().then(() => {
+          let write = new RestWrite(config, master(config), '_Installation', restQuery.restWhere, restUpdate);
+          write.runOptions.many = true;
+          return write.execute();
+        });
       }
     }
     let pushStatus = pushStatusHandler(config);

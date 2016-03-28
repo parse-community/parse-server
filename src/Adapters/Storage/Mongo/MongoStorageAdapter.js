@@ -58,7 +58,7 @@ export class MongoStorageAdapter {
 
   schemaCollection() {
     return this.connect()
-      .then(() => this.adaptiveCollection(this._collectionPrefix + MongoSchemaCollectionName))
+      .then(() => this.adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
   }
 
