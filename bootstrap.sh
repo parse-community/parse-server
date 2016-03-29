@@ -51,53 +51,54 @@ check_npm() {
   fi
 }
 
+function runsetup {
 
-echo ''
-echo 'This will setup parse-server in the current directory'
-confirm 'Y' 'Do you want to continue? (Y/n): '
+  echo ''
+  echo 'This will setup parse-server in the current directory'
+  confirm 'Y' 'Do you want to continue? (Y/n): '
 
-check_node
-check_npm
+  check_node
+  check_npm
 
-echo "Setting up parse-server in $PWD"
+  echo "Setting up parse-server in $PWD"
 
-if [ -f './package.json' ]; then
-  echo "\n${RED}package.json exists${NC}"
-  confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
-fi
+  if [ -f './package.json' ]; then
+    echo "\n${RED}package.json exists${NC}"
+    confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
+  fi
 
 
-if [ -f 'config.json' ]; then
-  echo "\n${RED}config.json exists${NC}"
-  confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
-fi
+  if [ -f 'config.json' ]; then
+    echo "\n${RED}config.json exists${NC}"
+    confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
+  fi
 
-APP_NAME=''
-i=0
-while [ "$APP_NAME" = "" ]
-do
-  [[ $i != 0 ]] && printf "${RED}An application name is required!${NC}\n"
-  printf 'Enter your Application Name: '
-  read -r APP_NAME
-  i=$(($i+1))
-done
+  APP_NAME=''
+  i=0
+  while [ "$APP_NAME" = "" ]
+  do
+    [[ $i != 0 ]] && printf "${RED}An application name is required!${NC}\n"
+    printf 'Enter your Application Name: '
+    read -r APP_NAME
+    i=$(($i+1))
+  done
 
-printf 'Enter your appId (leave empty to generate): '
-read -r APP_ID
+  printf 'Enter your appId (leave empty to generate): '
+  read -r APP_ID
 
-[[ $APP_ID = '' ]] && APP_ID=$(genstring) && printf "\n$APP_ID\n\n"
+  [[ $APP_ID = '' ]] && APP_ID=$(genstring) && printf "\n$APP_ID\n\n"
 
-printf 'Enter your masterKey (leave empty to generate): '
-read -r MASTER_KEY
+  printf 'Enter your masterKey (leave empty to generate): '
+  read -r MASTER_KEY
 
-[[ $MASTER_KEY = '' ]] && MASTER_KEY=$(genstring) && printf "\n$MASTER_KEY\n\n"
+  [[ $MASTER_KEY = '' ]] && MASTER_KEY=$(genstring) && printf "\n$MASTER_KEY\n\n"
 
-printf "Enter your mongodbURI (%s): " $DEFAULT_MONGODB_URI
-read -r MONGODB_URI
+  printf "Enter your mongodbURI (%s): " $DEFAULT_MONGODB_URI
+  read -r MONGODB_URI
 
-[[ $MONGODB_URI = '' ]] && MONGODB_URI="$DEFAULT_MONGODB_URI"
+  [[ $MONGODB_URI = '' ]] && MONGODB_URI="$DEFAULT_MONGODB_URI"
 
-cat > ./config.json << EOF
+  cat > ./config.json << EOF
 {
   "appId": "$APP_ID",
   "masterKey": "$MASTER_KEY",
@@ -106,11 +107,11 @@ cat > ./config.json << EOF
   "mongodbURI": "$MONGODB_URI"
 }
 EOF
-echo "${CHECK} Created config.json"
+  echo "${CHECK} Created config.json"
 
-# Make a proper npm app name
-NPM_APP_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
-cat > ./package.json << EOF
+  # Make a proper npm app name
+  NPM_APP_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
+  cat > ./package.json << EOF
 {
   "name": "$NPM_APP_NAME",
   "scripts": {
@@ -121,43 +122,46 @@ cat > ./package.json << EOF
   }
 }
 EOF
-echo "${CHECK} Created package.json"
+  echo "${CHECK} Created package.json"
 
-if [ -d "./cloud/" ]; then
-  echo "${CHECK} cloud/ exists"
-else
-  mkdir -p ./cloud
-  echo "${CHECK} Created cloud/"
-fi
+  if [ -d "./cloud/" ]; then
+    echo "${CHECK} cloud/ exists"
+  else
+    mkdir -p ./cloud
+    echo "${CHECK} Created cloud/"
+  fi
 
-if [ -e "./cloud/main.js" ]; then
-  echo "${CHECK} cloud/main.js exists"
-else
-  echo "${CHECK} Created cloud/main.js"
-  cat > ./cloud/main.js << EOF
+  if [ -e "./cloud/main.js" ]; then
+    echo "${CHECK} cloud/main.js exists"
+  else
+    echo "${CHECK} Created cloud/main.js"
+    cat > ./cloud/main.js << EOF
 // Cloud Code entry point
 
 EOF
-fi
+  fi
 
-if [ -d "./public/" ]; then
-  echo "${CHECK} public/ exists"
-else
-  mkdir -p ./public
-  echo "${CHECK} Created public/"
-fi
+  if [ -d "./public/" ]; then
+    echo "${CHECK} public/ exists"
+  else
+    mkdir -p ./public
+    echo "${CHECK} Created public/"
+  fi
 
-echo "\n${CHECK} running npm install\n"
+  echo "\n${CHECK} running npm install\n"
 
-npm install
+  npm install
 
-CURL_CMD=$(cat << EOF
+  CURL_CMD=$(cat << EOF
 curl -X POST -H 'X-Parse-Application-Id: ${APP_ID}' \\
   -H 'Content-Type: application/json' \\
   -d '{"foo":"bar"}' http://localhost:1337/parse/classes/TestObject
 EOF)
 
-echo "\n${CHECK} Happy Parsing!\n\n"
-echo "${CHECK} Make sure you have ${BOLD}mongo${NC} listening on ${BOLD}${MONGODB_URI}${NC}"
-echo "${CHECK} start parse-server by running ${BOLD}npm start${NC}"
-echo "${CHECK} Test your setup with:\n\n${CURL_CMD}\n"
+  echo "\n${CHECK} Happy Parsing!\n\n"
+  echo "${CHECK} Make sure you have ${BOLD}mongo${NC} listening on ${BOLD}${MONGODB_URI}${NC}"
+  echo "${CHECK} start parse-server by running ${BOLD}npm start${NC}"
+  echo "${CHECK} Test your setup with:\n\n${CURL_CMD}\n"
+}
+
+runsetup
