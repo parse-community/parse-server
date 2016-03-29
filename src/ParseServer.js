@@ -263,7 +263,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       process.on('uncaughtException', (err) => {
         if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-          log.error(`Unable to listen on port ${err.port}. The port is already in use.`);
+          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
           throw err;
