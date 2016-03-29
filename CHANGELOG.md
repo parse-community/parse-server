@@ -1,5 +1,9 @@
 ## Parse Server Changelog
 
+### 2.2.4 (3/29/2016)
+
+* Hotfix: fixed imports issue for S3Adapter, GCSAdapter, FileSystemAdapter
+
 ### 2.2.3 (3/29/2016)
 
 * Fixed bug with invalid email verification link on email update. [\#1253](https://github.com/ParsePlatform/parse-server/pull/1253) ([kzielonka](https://github.com/kzielonka))
