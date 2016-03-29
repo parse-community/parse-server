@@ -228,11 +228,8 @@ class ParseServer {
       new LogsRouter(),
       new IAPValidationRouter(),
       new FeaturesRouter(),
+      new GlobalConfigRouter(),
     ];
-
-    if (process.env.PARSE_EXPERIMENTAL_CONFIG_ENABLED || process.env.TESTING) {
-      routers.push(new GlobalConfigRouter());
-    }
 
     if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
       routers.push(new HooksRouter());
