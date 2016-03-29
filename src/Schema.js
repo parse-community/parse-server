@@ -17,7 +17,7 @@
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
 
-var defaultColumns = {
+const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
   _Default: {
     "objectId":  {type:'String'},
@@ -84,14 +84,14 @@ var defaultColumns = {
     "sentPerType":  {type:'Object'},
     "failedPerType":{type:'Object'},
   }
-};
+});
 
-var requiredColumns = {
+const requiredColumns = Object.freeze({
   _Product: ["productIdentifier", "icon", "order", "title", "subtitle"],
   _Role: ["name", "ACL"]
-}
+});
 
-const systemClasses = ['_User', '_Installation', '_Role', '_Session', '_Product'];
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -100,7 +100,7 @@ const roleRegex = /^role:.*/;
 // * permission
 const publicRegex = /^\*$/
 
-const permissionKeyRegex = [userIdRegex, roleRegex, publicRegex];
+const permissionKeyRegex = Object.freeze([userIdRegex, roleRegex, publicRegex]);
 
 function verifyPermissionKey(key) {
   let result = permissionKeyRegex.reduce((isGood, regEx) => {
@@ -112,13 +112,15 @@ function verifyPermissionKey(key) {
   }
 }
 
-let CLPValidKeys = ['find', 'get', 'create', 'update', 'delete', 'addField'];
-let DefaultClassLevelPermissions = CLPValidKeys.reduce((perms, key) => {
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
+let DefaultClassLevelPermissions = () => {
+  return CLPValidKeys.reduce((perms, key) => {
     perms[key] = {
       '*': true
     };
     return perms;
   }, {});
+}
 
 function validateCLP(perms) {
   if (!perms) {
@@ -899,21 +901,21 @@ function mongoSchemaToSchemaAPIResponse(schema) {
     fields: mongoSchemaAPIResponseFields(schema),
   };
 
-  let classLevelPermissions = DefaultClassLevelPermissions;
+  let classLevelPermissions = DefaultClassLevelPermissions();
   if (schema._metadata && schema._metadata.class_permissions) {
-    classLevelPermissions = Object.assign(classLevelPermissions, schema._metadata.class_permissions);
+    classLevelPermissions = Object.assign({}, classLevelPermissions, schema._metadata.class_permissions);
   }
   result.classLevelPermissions = classLevelPermissions;
   return result;
 }
 
-module.exports = {
-  load: load,
-  classNameIsValid: classNameIsValid,
-  invalidClassNameMessage: invalidClassNameMessage,
-  schemaAPITypeToMongoFieldType: schemaAPITypeToMongoFieldType,
-  buildMergedSchemaObject: buildMergedSchemaObject,
-  mongoFieldTypeToSchemaAPIType: mongoFieldTypeToSchemaAPIType,
+export {
+  load,
+  classNameIsValid,
+  invalidClassNameMessage,
+  schemaAPITypeToMongoFieldType,
+  buildMergedSchemaObject,
+  mongoFieldTypeToSchemaAPIType,
   mongoSchemaToSchemaAPIResponse,
   systemClasses,
 };

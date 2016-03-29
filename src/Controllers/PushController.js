@@ -1,21 +1,16 @@
-import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
+import { Parse }           from 'parse/node';
+import PromiseRouter       from '../PromiseRouter';
+import rest                from '../rest';
 import AdaptableController from './AdaptableController';
-import { PushAdapter } from '../Adapters/Push/PushAdapter';
-import deepcopy from 'deepcopy';
-import features from '../features';
-import RestQuery from '../RestQuery';
-import pushStatusHandler from '../pushStatusHandler';
+import { PushAdapter }     from '../Adapters/Push/PushAdapter';
+import deepcopy            from 'deepcopy';
+import RestQuery           from '../RestQuery';
+import pushStatusHandler   from '../pushStatusHandler';
 
 const FEATURE_NAME = 'push';
 const UNSUPPORTED_BADGE_KEY = "unsupported";
 
 export class PushController extends AdaptableController {
-
-  setFeature() {
-    features.setFeature(FEATURE_NAME, this.adapter.feature || {});
-  }
 
   /**
    * Check whether the deviceType parameter in qury condition is valid or not.
@@ -39,9 +34,13 @@ export class PushController extends AdaptableController {
     }
   }
 
+  get pushIsAvailable() {
+    return !!this.adapter;
+  }
+
   sendPush(body = {}, where = {}, config, auth, wait) {
     var pushAdapter = this.adapter;
-    if (!pushAdapter) {
+    if (!this.pushIsAvailable) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
@@ -120,16 +119,7 @@ export class PushController extends AdaptableController {
         }
         return this.adapter.send(payload, badgeInstallationsMap[badge]);
       });
-      // Flatten the promises results
-      return Promise.all(promises).then((results) => {
-        if (Array.isArray(results)) {
-          return Promise.resolve(results.reduce((memo, result) => {
-            return memo.concat(result);
-          },[]));
-        } else {
-          return Promise.resolve(results);
-        }
-      })
+      return Promise.all(promises);
     }
     return this.adapter.send(body, installations);
   }

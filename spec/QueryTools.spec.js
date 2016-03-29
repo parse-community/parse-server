@@ -151,7 +151,7 @@ describe('matchesQuery', function() {
     q = new Parse.Query('Person');
     q.equalTo('birthday', day);
     expect(matchesQuery(obj, q)).toBe(true);
-    q.equalTo('birthday', new Date());
+    q.equalTo('birthday', new Date(1990, 1));
     expect(matchesQuery(obj, q)).toBe(false);
 
     q = new Parse.Query('Person');

@@ -1,5 +1,24 @@
 ## Parse Server Changelog
 
+### 2.2.2 (3/23/2016)
+
+* Important Fix: Mounts createLiveQueryServer, fix babel induced problem [\#1153](https://github.com/ParsePlatform/parse-server/pull/1153) (flovilmart)
+* Move ParseServer to it's own file [\#1166](https://github.com/ParsePlatform/parse-server/pull/1166) (flovilmart)
+* Update README.md - remove deploy buttons - replace with community links [\#1139](https://github.com/ParsePlatform/parse-server/pull/1139) (drew-gross)
+* Adds bootstrap.sh [\#1138](https://github.com/ParsePlatform/parse-server/pull/1138) (flovilmart)
+* Fix: Do not override username [\#1142](https://github.com/ParsePlatform/parse-server/pull/1142) (flovilmart)
+* Fix: Add pushId back to GCM payload [\#1168](https://github.com/ParsePlatform/parse-server/pull/1168) (wangmengyan95)
+
+### 2.2.1 (3/22/2016)
+
+* New: Add FileSystemAdapter file adapter [\#1098](https://github.com/ParsePlatform/parse-server/pull/1098) (dtsolis)
+* New: Enabled CLP editing [\#1128](https://github.com/ParsePlatform/parse-server/pull/1128) (drew-gross)
+* Improvement: Reduces the number of connections to mongo created [\#1111](https://github.com/ParsePlatform/parse-server/pull/1111) (flovilmart)
+* Improvement: Make ParseServer a class [\#980](https://github.com/ParsePlatform/parse-server/pull/980) (flovilmart)
+* Fix: Adds support for plain object in $add, $addUnique, $remove [\#1114](https://github.com/ParsePlatform/parse-server/pull/1114) (flovilmart)
+* Fix: Generates default CLP, freezes objects [\#1132](https://github.com/ParsePlatform/parse-server/pull/1132) (flovilmart)
+* Fix: Properly sets installationId on creating session with 3rd party auth [\#1110](https://github.com/ParsePlatform/parse-server/pull/1110) (flovilmart)
+
 ### 2.2.0 (3/18/2016)
 
 * New Feature: Real-time functionality with Live Queries! [\#1092](https://github.com/ParsePlatform/parse-server/pull/1092) (wangmengyan95)
