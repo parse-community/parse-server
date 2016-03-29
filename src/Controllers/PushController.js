@@ -56,7 +56,7 @@ export class PushController extends AdaptableController {
     if (body.data && body.data.badge) {
       let badge = body.data.badge;
       let op = {};
-      if (badge == "Increment") {
+      if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
         op = { $inc: { badge: 1 } }
       } else if (Number(badge)) {
         op = { $set: { badge: badge } }
@@ -97,7 +97,7 @@ export class PushController extends AdaptableController {
   }
 
   sendToAdapter(body, installations, pushStatus, config) {
-    if (body.data && body.data.badge && body.data.badge == "Increment") {
+    if (body.data && body.data.badge && typeof body.data.badge == 'string' && body.data.badge.toLowerCase() == "increment") {
       // Collect the badges to reduce the # of calls
       let badgeInstallationsMap = installations.reduce((map, installation) => {
         let badge = installation.badge;
