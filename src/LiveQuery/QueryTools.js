@@ -206,7 +206,9 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$exists':
-        if (typeof object[key] === 'undefined') {
+        let propertyExists = typeof object[key] !== 'undefined';
+        let existenceIsRequired = constraints['$exists'];
+        if ((!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired)) {
           return false;
         }
         break;
