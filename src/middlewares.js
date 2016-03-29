@@ -1,4 +1,5 @@
 import cache from './cache';
+import log from './logger';
 
 var Parse = require('parse/node').Parse;
 
@@ -128,7 +129,7 @@ function handleParseHeaders(req, res, next) {
     })
     .catch((error) => {
       // TODO: Determine the correct error scenario.
-      console.log(error);
+      log.error('error getting auth for sessionToken', error);
       throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
     });
 }
@@ -178,7 +179,7 @@ var handleParseErrors = function(err, req, res, next) {
     res.status(err.status);
     res.json({error: err.message});
   } else {
-    console.log('Uncaught internal server error.', err, err.stack);
+    log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
     res.json({code: Parse.Error.INTERNAL_SERVER_ERROR,
               message: 'Internal server error.'});

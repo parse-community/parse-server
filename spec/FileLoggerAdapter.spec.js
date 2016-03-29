@@ -1,35 +1,10 @@
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 var Parse = require('parse/node').Parse;
-var request = require('request');
-var fs = require('fs');
-
-var LOGS_FOLDER = './test_logs/';
-
-var deleteFolderRecursive = function(path) {
-  if( fs.existsSync(path) ) {
-    fs.readdirSync(path).forEach(function(file,index){
-      var curPath = path + "/" + file;
-      if(fs.lstatSync(curPath).isDirectory()) { // recurse
-        deleteFolderRecursive(curPath);
-      } else { // delete file
-        fs.unlinkSync(curPath);
-      }
-    });
-    fs.rmdirSync(path);
-  }
-};
 
 describe('info logs', () => {
 
-  afterEach((done) => {
-    deleteFolderRecursive(LOGS_FOLDER);
-    done();
-  });
-
   it("Verify INFO logs", (done) => {
-    var fileLoggerAdapter = new FileLoggerAdapter({
-      logsFolder: LOGS_FOLDER
-    });
+    var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.info('testing info logs', () => {
       fileLoggerAdapter.query({
         size: 1,
@@ -48,11 +23,6 @@ describe('info logs', () => {
 });
 
 describe('error logs', () => {
-
-  afterEach((done) => {
-    deleteFolderRecursive(LOGS_FOLDER);
-    done();
-  });
 
   it("Verify ERROR logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();

@@ -3,7 +3,6 @@ import PromiseRouter from '../PromiseRouter';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
-const Promise = Parse.Promise;
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
 export const LogLevel = {
@@ -17,21 +16,21 @@ export const LogOrder = {
 }
 
 export class LoggerController extends AdaptableController {
-  
+
   // check that date input is valid
   static validDateTime(date) {
     if (!date) {
-      return null; 
+      return null;
     }
     date = new Date(date);
-    
+
     if (!isNaN(date.getTime())) {
       return date;
     }
 
     return null;
   }
-  
+
   static parseOptions(options = {}) {
     let from = LoggerController.validDateTime(options.from) ||
       new Date(Date.now() - 7 * MILLISECONDS_IN_A_DAY);
@@ -39,7 +38,7 @@ export class LoggerController extends AdaptableController {
     let size = Number(options.size) || 10;
     let order = options.order || LogOrder.DESCENDING;
     let level = options.level || LogLevel.INFO;
-    
+
     return {
       from,
       until,
@@ -61,17 +60,10 @@ export class LoggerController extends AdaptableController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Logger adapter is not availabe');
     }
-
-    let promise = new Parse.Promise();
-    
     options = LoggerController.parseOptions(options);
-    
-    this.adapter.query(options, (result) => {
-      promise.resolve(result);
-    });
-    return promise;
+    return this.adapter.query(options);
   }
-  
+
   expectedAdapterType() {
     return LoggerAdapter;
   }

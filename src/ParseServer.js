@@ -11,6 +11,8 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse,
     authDataManager = require('./authDataManager');
 
+import { logger,
+      configureLogger }       from './logger';
 import cache                    from './cache';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
@@ -84,6 +86,7 @@ class ParseServer {
     filesAdapter,
     push,
     loggerAdapter,
+    logsFolder,
     databaseURI = DatabaseAdapter.defaultDatabaseURI,
     databaseOptions,
     cloud,
@@ -113,6 +116,12 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
+
+    if (logsFolder) {
+      configureLogger({
+        logsFolder
+      })
+    }
 
     if (databaseAdapter) {
       DatabaseAdapter.setAdapter(databaseAdapter);
@@ -251,7 +260,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       process.on('uncaughtException', (err) => {
         if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-          console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
           throw err;
