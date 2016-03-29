@@ -156,7 +156,61 @@ describe("Email Verification", () => {
           return user.fetch();
         }).then(() => {
           expect(user.get('emailVerified')).toEqual(false);
-          // Wait as on update emai, we need to fetch the username
+          // Wait as on update email, we need to fetch the username
+          setTimeout(function(){
+            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+            done();
+          }, 200);
+        });
+      },
+      error: function(userAgain, error) {
+        fail('Failed to save user');
+        done();
+      }
+    });
+  });
+
+  it('does send a validation email with valid verification link when updating the email', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    });
+    spyOn(emailAdapter, 'sendVerificationEmail').and.callFake((options) => {
+      expect(options.link).not.toBeNull();
+      expect(options.link).not.toMatch(/token=undefined/);
+      Promise.resolve();
+    });
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.signUp(null, {
+      success: function(user) {
+        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+        user.fetch()
+        .then((user) => {
+          user.set("email", "cool_guy@parse.com");
+          return user.save();
+        }).then((user) => {
+          return user.fetch();
+        }).then(() => {
+          expect(user.get('emailVerified')).toEqual(false);
+          // Wait as on update email, we need to fetch the username
           setTimeout(function(){
             expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
             done();

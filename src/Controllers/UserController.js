@@ -100,14 +100,13 @@ export class UserController extends AdaptableController {
     })
   }
 
-
   sendVerificationEmail(user) {
     if (!this.shouldVerifyEmails) {
       return;
     }
+    const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
-      const token = encodeURIComponent(user._email_verify_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
       let options = {
