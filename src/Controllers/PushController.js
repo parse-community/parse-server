@@ -119,16 +119,7 @@ export class PushController extends AdaptableController {
         }
         return this.adapter.send(payload, badgeInstallationsMap[badge]);
       });
-      // Flatten the promises results
-      return Promise.all(promises).then((results) => {
-        if (Array.isArray(results)) {
-          return Promise.resolve(results.reduce((memo, result) => {
-            return memo.concat(result);
-          },[]));
-        } else {
-          return Promise.resolve(results);
-        }
-      })
+      return Promise.all(promises);
     }
     return this.adapter.send(body, installations);
   }

@@ -1,5 +1,16 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 
+export function flatten(array) {
+  return array.reduce((memo, element) => {
+    if (Array.isArray(element)) {
+      memo = memo.concat(flatten(element));
+    } else {
+      memo = memo.concat(element);
+    }
+    return memo;
+  }, []);
+}
+
 export default function pushStatusHandler(config) {
 
   let initialPromise;
@@ -53,6 +64,7 @@ export default function pushStatusHandler(config) {
       numFailed: 0,
     };
     if (Array.isArray(results)) {
+      results = flatten(results);
       results.reduce((memo, result) => {
         // Cannot handle that
         if (!result.device || !result.device.deviceType) {
