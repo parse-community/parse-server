@@ -239,4 +239,11 @@ describe('server', () => {
     expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
     done();
   });
+
+  it('exposes all the "core" adapters', done => {
+    expect(ParseServer.S3Adapter).toThrow();
+    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter requires an projectId');
+    expect(ParseServer.FileSystemAdapter).toThrow();
+    done();
+  });
 });
