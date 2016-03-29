@@ -2061,6 +2061,65 @@ describe('Parse.User testing', () => {
     })
   });
 
+  // https://github.com/ParsePlatform/parse-server/issues/1198
+  it('should cleanup null authData keys ParseUser update', (done) => {
+    Parse.Cloud.beforeSave('_User', (req, res) => {
+      req.object.set('foo', 'bar');
+      res.success();
+    });
+
+    // Simulate anonymous user save
+    new Promise((resolve, reject) => {
+      request.post({
+        url: 'http://localhost:8378/1/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }, (err, res, body) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(body);
+        }
+      });
+    }).then((user) => {
+      // Simulate registration
+      return new Promise((resolve, reject) => {
+        request.put({
+          url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Session-Token': user.sessionToken,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            authData: {anonymous: null},
+            user: 'user',
+            password: 'password',
+          }
+        }, (err, res, body) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        });
+      });
+    }).then((user) => {
+      expect(typeof user).toEqual('object');
+      expect(user.authData).toBeUndefined();
+      Parse.Cloud._removeHook('Triggers', 'beforeSave', '_User');
+      done();
+    }).catch((err) => {
+      fail('no request should fail: ' + JSON.stringify(err));
+      Parse.Cloud._removeHook('Triggers', 'beforeSave', '_User');
+      done();
+    });
+  });
+
+
   it('should aftersave with full object', (done) => {
     var hit = 0;
     Parse.Cloud.afterSave('_User', (req, res) => {
