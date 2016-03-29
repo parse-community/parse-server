@@ -87,8 +87,8 @@ if (!process.env.MONGODB_VERSION) {
 }
 
 // Start MongoDB before running the test suite and stop it afterwards.
-before(require('mongodb-runner/mocha/before'));
-after(require('mongodb-runner/mocha/after'));
+beforeAll(require('mongodb-runner/mocha/before'));
+afterAll(require('mongodb-runner/mocha/after'));
 
 beforeEach(function(done) {
   restoreServerConfiguration();
