@@ -652,4 +652,31 @@ describe('Parse.Relation testing', () => {
       }));
     });
   });
+
+  it('relations are not bidirectional (regression test for #871)', done => {
+    let PersonObject = Parse.Object.extend("Person");
+    let p1 = new PersonObject();
+    let p2 = new PersonObject();
+    Parse.Object.saveAll([p1, p2]).then(results => {
+      let p1 = results[0];
+      let p2 = results[1];
+      let relation = p1.relation('relation');
+      relation.add(p2);
+      p1.save().then(() => {
+        let query = new Parse.Query(PersonObject);
+        query.equalTo('relation', p1);
+        query.find().then(results => {
+          expect(results.length).toEqual(0);
+
+          let query = new Parse.Query(PersonObject);
+          query.equalTo('relation', p2);
+          query.find().then(results => {
+            expect(results.length).toEqual(1);
+            expect(results[0].objectId).toEqual(p1.objectId);
+            done();
+          });
+        });
+      })
+    });
+  });
 });
