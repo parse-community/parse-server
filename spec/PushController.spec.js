@@ -317,6 +317,45 @@ describe('PushController', () => {
 
   });
 
+  it('should properly report failures in _PushStatus', (done) => {
+    var pushAdapter = {
+     send: function(body, installations) {
+       return installations.map((installation) => {
+         return Promise.resolve({
+           deviceType: installation.deviceType
+         })
+       })
+     },
+     getValidPushTypes: function() {
+       return ["ios"];
+     }
+   }
+   let where = { 'channels': {
+     '$ins': ['Giants', 'Mets']
+   }};
+   var payload = {data: {
+     alert: "Hello World!",
+     badge: 1,
+   }}
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   pushController.sendPush(payload, where, config, auth).then(() => {
+     fail('should not succeed');
+     done();
+   }).catch(() => {
+     let query = new Parse.Query('_PushStatus');
+     query.find({useMasterKey: true}).then((results) => {
+       expect(results.length).toBe(1);
+       let pushStatus = results[0];
+       expect(pushStatus.get('status')).toBe('failed');
+       done();
+     });
+   })
+  });
+
   it('should support full RESTQuery for increment', (done) => {
     var payload = {data: {
      alert: "Hello World!",
