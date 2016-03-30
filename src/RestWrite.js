@@ -805,7 +805,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 RestWrite.prototype.location = function() {
   var middle = (this.className === '_User' ? '/users/' :
                 '/classes/' + this.className + '/');
-  return this.config.mount + middle + this.data.objectId;
+  return this.config.publicServerURLOrMount + middle + this.data.objectId;
 };
 
 // A helper to get the object id for this operation.
