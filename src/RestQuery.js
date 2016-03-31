@@ -449,39 +449,42 @@ function includePath(config, auth, response, path) {
   if (pointers.length == 0) {
     return response;
   }
+  let pointersHash = {};
   var className = null;
   var objectIds = {};
   for (var pointer of pointers) {
-    if (className === null) {
-      className = pointer.className;
-    } else {
-      if (className != pointer.className) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON,
-                              'inconsistent type data for include');
-      }
+    let className = pointer.className;
+    // only include the good pointers
+    if (className) {
+      pointersHash[className] = pointersHash[className] || [];
+      pointersHash[className].push(pointer.objectId);
     }
-    objectIds[pointer.objectId] = true;
   }
-  if (!className) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON,
-                          'bad pointers');
-  }
+
+  let queryPromises = Object.keys(pointersHash).map((className) => {
+    var where = {'objectId': {'$in': pointersHash[className]}};
+    var query = new RestQuery(config, auth, className, where);
+    return query.execute().then((results) => {
+      results.className = className;
+      return Promise.resolve(results);
+    })
+  })
 
   // Get the objects for all these object ids
-  var where = {'objectId': {'$in': Object.keys(objectIds)}};
-  var query = new RestQuery(config, auth, className, where);
-  return query.execute().then((includeResponse) => {
-    var replace = {};
-    for (var obj of includeResponse.results) {
-      obj.__type = 'Object';
-      obj.className = className;
+  return Promise.all(queryPromises).then((responses) => {
+    var replace = responses.reduce((replace, includeResponse) => {
+      for (var obj of includeResponse.results) {
+        obj.__type = 'Object';
+        obj.className = includeResponse.className;
 
-      if(className == "_User"){
-        delete obj.sessionToken;
+        if(className == "_User"){
+          delete obj.sessionToken;
+        }
+        replace[obj.objectId] = obj;
       }
+      return replace;
+    }, {})
 
-      replace[obj.objectId] = obj;
-    }
     var resp = {
       results: replacePointers(response.results, path, replace)
     };
