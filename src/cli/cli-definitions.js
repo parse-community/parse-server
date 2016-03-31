@@ -29,6 +29,10 @@ export default {
     env: "PARSE_SERVER_URL",
     help: "URL to your parse server with http:// or https://.",
   },
+  "publicServerURL": {
+    env: "PARSE_PUBLIC_SERVER_URL",
+    help: "Public URL to your parse server with http:// or https://.",
+  },
   "clientKey": {
     env: "PARSE_SERVER_CLIENT_KEY",
     help: "Key for iOS, MacOS, tvOS clients"
@@ -143,6 +147,26 @@ export default {
         return JSON.parse(opt);
       } catch(e) {}
       return opt;
+    }
+  },
+  "liveQuery": {
+    env: "PARSE_SERVER_LIVE_QUERY_OPTIONS",
+    help: "liveQuery options",
+    action: function action(opt) {
+      if (typeof opt == 'object')  {
+        return opt;
+      }
+      return JSON.parse(opt);
+    }
+  },
+  "customPages": {
+    env: "PARSE_SERVER_CUSTOM_PAGES",
+    help: "custom pages for pasword validation and reset",
+    action: function action(opt) {
+      if (typeof opt == 'object')  {
+        return opt;
+      }
+      return JSON.parse(opt);
     }
   },
   "maxUploadSize": {
