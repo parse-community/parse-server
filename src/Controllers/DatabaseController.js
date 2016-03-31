@@ -504,7 +504,9 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
     idsIntersection = intersect(allIds);
   }
 
-  // Need to make sure we don't clobber existing $lt or other constraints on objectId
+  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
+  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
+  // is expected though.
   if (!('objectId' in query) || typeof query.objectId === 'string') {
     query.objectId = {};
   }
