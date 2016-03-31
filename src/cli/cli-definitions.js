@@ -1,10 +1,10 @@
 export default {
-  "appId": { 
+  "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
     help: "Your Parse Application ID",
     required: true
   },
-  "masterKey": { 
+  "masterKey": {
     env: "PARSE_SERVER_MASTER_KEY",
     help: "Your Parse Master Key",
     required: true
@@ -21,53 +21,59 @@ export default {
        return opt;
      }
   },
-  "databaseURI": { 
+  "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",
     help: "The full URI to your mongodb database"
   },
-  "serverURL": { 
+  "serverURL": {
     env: "PARSE_SERVER_URL",
     help: "URL to your parse server with http:// or https://.",
   },
-  "clientKey": { 
+  "clientKey": {
     env: "PARSE_SERVER_CLIENT_KEY",
     help: "Key for iOS, MacOS, tvOS clients"
   },
-  "javascriptKey": { 
+  "javascriptKey": {
     env: "PARSE_SERVER_JAVASCRIPT_KEY",
     help: "Key for the Javascript SDK"
-  }, 
-  "restAPIKey": { 
+  },
+  "restAPIKey": {
     env: "PARSE_SERVER_REST_API_KEY",
     help: "Key for REST calls"
-  }, 
-  "dotNetKey": { 
+  },
+  "dotNetKey": {
     env: "PARSE_SERVER_DOT_NET_KEY",
     help: "Key for Unity and .Net SDK"
-  }, 
-  "cloud": { 
+  },
+  "cloud": {
     env: "PARSE_SERVER_CLOUD_CODE_MAIN",
     help: "Full path to your cloud code main.js"
-  }, 
+  },
   "push": {
     env: "PARSE_SERVER_PUSH",
     help: "Configuration for push, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Push",
     action: function(opt) {
+      if (typeof opt == 'object') {
+        return opt;
+      }
       return JSON.parse(opt)
     }
   },
-  "oauth": { 
+  "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
     help: "Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
     action: function(opt) {
+      if (typeof opt == 'object') {
+        return opt;
+      }
       return JSON.parse(opt)
     }
   },
-  "fileKey": { 
+  "fileKey": {
     env: "PARSE_SERVER_FILE_KEY",
     help: "Key for your files",
-  }, 
-  "facebookAppIds": { 
+  },
+  "facebookAppIds": {
     env: "PARSE_SERVER_FACEBOOK_APP_IDS",
     help: "Comma separated list for your facebook app Ids",
     type: "list",
@@ -81,7 +87,7 @@ export default {
     action: function(opt) {
       if (opt == "true" || opt == "1") {
         return true;
-      } 
+      }
       return false;
     }
   },
@@ -95,22 +101,49 @@ export default {
       return false;
     }
   },
-  "mountPath": { 
+  "mountPath": {
     env: "PARSE_SERVER_MOUNT_PATH",
     help: "Mount path for the server, defaults to /parse",
     default: "/parse"
   },
-  "databaseAdapter": {
-    env: "PARSE_SERVER_DATABASE_ADAPTER",
-    help: "Adapter module for the database sub-system"
-  },
   "filesAdapter": {
     env: "PARSE_SERVER_FILES_ADAPTER",
-    help: "Adapter module for the files sub-system"
+    help: "Adapter module for the files sub-system",
+    action: function action(opt) {
+      if (typeof opt == 'object')  {
+        return opt;
+      }
+      try {
+        return JSON.parse(opt);
+      } catch(e) {}
+      return opt;
+    }
+  },
+  "emailAdapter": {
+    env: "PARSE_SERVER_EMAIL_ADAPTER",
+    help: "Adapter module for the email sending",
+    action: function action(opt) {
+      if (typeof opt == 'object')  {
+        return opt;
+      }
+      try {
+        return JSON.parse(opt);
+      } catch(e) {}
+      return opt;
+    }
   },
   "loggerAdapter": {
     env: "PARSE_SERVER_LOGGER_ADAPTER",
-    help: "Adapter module for the logging sub-system"
+    help: "Adapter module for the logging sub-system",
+    action: function action(opt) {
+      if (typeof opt == 'object')  {
+        return opt;
+      }
+      try {
+        return JSON.parse(opt);
+      } catch(e) {}
+      return opt;
+    }
   },
   "maxUploadSize": {
     env: "PARSE_SERVER_MAX_UPLOAD_SIZE",
