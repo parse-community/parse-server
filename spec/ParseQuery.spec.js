@@ -2228,4 +2228,22 @@ describe('Parse.Query testing', () => {
       });
     });
   });
+
+  it('objectId containedIn with multiple large array', done => {
+    let obj = new Parse.Object('MyClass');
+    obj.save().then(obj => {
+      let longListOfStrings = [];
+      for (let i = 0; i < 130; i++) {
+        longListOfStrings.push(i.toString());
+      }
+      longListOfStrings.push(obj.id);
+      let q = new Parse.Query('MyClass');
+      q.containedIn('objectId', longListOfStrings);
+      q.containedIn('objectId', longListOfStrings);
+      return q.find();
+    }).then(results => {
+      expect(results.length).toEqual(1);
+      done();
+    });
+  });
 });
