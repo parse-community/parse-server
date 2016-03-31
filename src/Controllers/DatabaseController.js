@@ -103,9 +103,14 @@ DatabaseController.prototype.redirectClassNameForKey = function(className, key) 
 // batch request, that could confuse other users of the schema.
 DatabaseController.prototype.validateObject = function(className, object, query, options) {
   let schema;
+  let isMaster = !('acl' in options);
+  var aclGroup = options.acl || [];
   return this.loadSchema().then(s => {
     schema = s;
-    return this.canAddField(schema, className, object, options.acl || []);
+    if (isMaster) {
+      return Promise.resolve();
+    }
+    return this.canAddField(schema, className, object, aclGroup);
   }).then(() => {
     return schema.validateObject(className, object, query);
   });
