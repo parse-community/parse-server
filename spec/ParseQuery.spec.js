@@ -2209,4 +2209,23 @@ describe('Parse.Query testing', () => {
     })
   })
 
+  it('query with two OR subqueries (regression test #1259)', done => {
+    let relatedObject = new Parse.Object('Class2');
+    relatedObject.save().then(relatedObject => {
+      let anObject = new Parse.Object('Class1');
+      let relation = anObject.relation('relation');
+      relation.add(relatedObject);
+      return anObject.save();
+    }).then(anObject => {
+      let q1 = anObject.relation('relation').query();
+      q1.doesNotExist('nonExistantKey1');
+      let q2 = anObject.relation('relation').query();
+      q2.doesNotExist('nonExistantKey2');
+      let orQuery = Parse.Query.or(q1, q2).find().then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(q1.objectId);
+        done();
+      });
+    });
+  });
 });
