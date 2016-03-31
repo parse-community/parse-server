@@ -102,10 +102,15 @@ DatabaseController.prototype.redirectClassNameForKey = function(className, key) 
 // This does not update this.schema, because in a situation like a
 // batch request, that could confuse other users of the schema.
 DatabaseController.prototype.validateObject = function(className, object, query, options) {
+  var isMaster = !('acl' in options);
   let schema;
   return this.loadSchema().then(s => {
     schema = s;
-    return this.canAddField(schema, className, object, options.acl || []);
+
+    // If we are using the master key, we can always add fields
+    if (!isMaster) {
+      return this.canAddField(schema, className, object, options.acl || []);
+    }
   }).then(() => {
     return schema.validateObject(className, object, query);
   });
