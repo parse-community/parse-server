@@ -2209,4 +2209,41 @@ describe('Parse.Query testing', () => {
     })
   })
 
+  it('query with two OR subqueries (regression test #1259)', done => {
+    let relatedObject = new Parse.Object('Class2');
+    relatedObject.save().then(relatedObject => {
+      let anObject = new Parse.Object('Class1');
+      let relation = anObject.relation('relation');
+      relation.add(relatedObject);
+      return anObject.save();
+    }).then(anObject => {
+      let q1 = anObject.relation('relation').query();
+      q1.doesNotExist('nonExistantKey1');
+      let q2 = anObject.relation('relation').query();
+      q2.doesNotExist('nonExistantKey2');
+      let orQuery = Parse.Query.or(q1, q2).find().then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(q1.objectId);
+        done();
+      });
+    });
+  });
+
+  it('objectId containedIn with multiple large array', done => {
+    let obj = new Parse.Object('MyClass');
+    obj.save().then(obj => {
+      let longListOfStrings = [];
+      for (let i = 0; i < 130; i++) {
+        longListOfStrings.push(i.toString());
+      }
+      longListOfStrings.push(obj.id);
+      let q = new Parse.Query('MyClass');
+      q.containedIn('objectId', longListOfStrings);
+      q.containedIn('objectId', longListOfStrings);
+      return q.find();
+    }).then(results => {
+      expect(results.length).toEqual(1);
+      done();
+    });
+  });
 });

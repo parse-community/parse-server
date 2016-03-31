@@ -187,13 +187,12 @@ export function transformKeyValue(schema, className, restKey, restValue, options
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
 function transformWhere(schema, className, restWhere) {
-  var mongoWhere = {};
+  let mongoWhere = {};
   if (restWhere['ACL']) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'Cannot query on ACL.');
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
-  for (var restKey in restWhere) {
-    var out = transformKeyValue(schema, className, restKey, restWhere[restKey],
+  for (let restKey in restWhere) {
+    let out = transformKeyValue(schema, className, restKey, restWhere[restKey],
                                 {query: true, validate: true});
     mongoWhere[out.key] = out.value;
   }
