@@ -1422,6 +1422,78 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('properly includes array', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, () => {
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly includes array of mixed objects', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(10);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+  })
+
   it("result object creation uses current extension", function(done) {
     var ParentObject = Parse.Object.extend({ className: "ParentObject" });
     // Add a foo() method to ChildObject.
