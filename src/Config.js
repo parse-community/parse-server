@@ -79,6 +79,11 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
+  
+  // provide the public server URL if the mount differs from how the parse server is accessed from outside
+  get publicServerURLOrMount() {
+    return this.publicServerURL !== '' ? this.publicServerURL : this.mount;
+  }
 };
 
 export default Config;

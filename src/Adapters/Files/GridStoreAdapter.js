@@ -63,7 +63,7 @@ export class GridStoreAdapter extends FilesAdapter {
   }
 
   getFileLocation(config, filename) {
-    return (config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename));
+    return (config.publicServerURLOrMount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename));
   }
 }
 
