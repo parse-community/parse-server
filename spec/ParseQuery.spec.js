@@ -2393,4 +2393,44 @@ describe('Parse.Query testing', () => {
       done();
     });
   });
+
+  it('include for specific object', function(done){
+    var child = new Parse.Object('Child');
+    var parent = new Parse.Object('Parent');
+    child.set('foo', 'bar');
+    parent.set('child', child);
+    Parse.Object.saveAll([child, parent], function(response){
+      var savedParent = response[1];
+      var parentQuery = new Parse.Query('Parent');
+      parentQuery.include('child');
+      parentQuery.get(savedParent.id, {
+        success: function(parentObj) {
+          var childPointer = parentObj.get('child');
+          ok(childPointer);
+          equal(childPointer.get('foo'), 'bar');
+          done();
+        }
+      });
+    });
+  });
+
+  it('select keys for specific object', function(done){
+    var Foobar = new Parse.Object('Foobar');
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.save({
+      success: function(savedFoobar){
+        var foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.select('fizz');
+        foobarQuery.get(savedFoobar.id,{
+          success: function(foobarObj){
+            equal(foobarObj.get('fizz'), 'buzz');
+            equal(foobarObj.get('foo'), undefined);
+            done();
+          }
+        });
+      }
+    })
+  });
+
 });
