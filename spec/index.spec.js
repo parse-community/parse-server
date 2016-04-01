@@ -2,6 +2,7 @@ var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 var ParseServer = require("../src/index");
+var Config = require('../src/Config');
 var express = require('express');
 
 describe('server', () => {
@@ -244,6 +245,39 @@ describe('server', () => {
     expect(ParseServer.S3Adapter).toThrow();
     expect(ParseServer.GCSAdapter).toThrow('GCSAdapter requires an projectId');
     expect(ParseServer.FileSystemAdapter).toThrow();
+    done();
+  });
+
+  it('properly gives publicServerURL when set', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      publicServerURL: 'https://myserver.com/1'
+    });
+    var config = new Config('test', 'http://localhost:8378/1');
+    expect(config.mount).toEqual('https://myserver.com/1');
+    done();
+  });
+
+  it('properly removes trailing slash in mount', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test'
+    });
+    var config = new Config('test', 'http://localhost:8378/1/');
+    expect(config.mount).toEqual('http://localhost:8378/1');
+    done();
+  });
+
+  it('should throw when getting invalid mount', done => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      publicServerURL: 'blabla:/some'
+    }) ).toThrow("publicServerURL should be a valid HTTPS URL starting with https://");
     done();
   });
 });

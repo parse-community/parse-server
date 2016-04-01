@@ -981,7 +981,7 @@ describe('schemas', () => {
       });
     });
   });
-  
+
   it('should not be able to add a field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1010,7 +1010,7 @@ describe('schemas', () => {
       })
     })
   });
-  
+
   it('should not be able to add a field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1038,7 +1038,7 @@ describe('schemas', () => {
       })
     })
   });
-  
+
   it('should throw with invalid userId (>10 chars)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1056,7 +1056,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid userId (<10 chars)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1074,7 +1074,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid userId (invalid char)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1092,7 +1092,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid * (spaces)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1110,7 +1110,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid * (spaces)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1128,7 +1128,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid value', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1146,7 +1146,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid value', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1164,10 +1164,10 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   function setPermissionsOnClass(className, permissions, doPut) {
     let op = request.post;
-    if (doPut)  
+    if (doPut)
     {
       op = request.put;
     }
@@ -1190,18 +1190,18 @@ describe('schemas', () => {
     })
     });
   }
-  
+
   it('validate CLP 1', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
+
     let admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
+
     let role = new Parse.Role('admin', new Parse.ACL());
-    
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
@@ -1239,18 +1239,18 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('validate CLP 2', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
+
     let admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
+
     let role = new Parse.Role('admin', new Parse.ACL());
-    
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
@@ -1304,18 +1304,18 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('validate CLP 3', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
+
     let admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
+
     let role = new Parse.Role('admin', new Parse.ACL());
-    
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
@@ -1362,18 +1362,18 @@ describe('schemas', () => {
       done();
     });
   });
-  
+
   it('validate CLP 4', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
+
     let admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
+
     let role = new Parse.Role('admin', new Parse.ACL());
-    
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
@@ -1400,7 +1400,7 @@ describe('schemas', () => {
       // borked CLP should not affec security
       return setPermissionsOnClass('AClass', {
         'found': {
-          'role:admin': true 
+          'role:admin': true
         }
       }, true).then(() => {
         fail("Should not be able to save a borked CLP");
@@ -1430,21 +1430,21 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('validate CLP 5', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
+
     let user2 = new Parse.User();
     user2.setUsername('user2');
     user2.setPassword('user2');
     let admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
+
     let role = new Parse.Role('admin', new Parse.ACL());
-    
+
     Promise.resolve().then(() => {
       return Parse.Object.saveAll([user, user2, admin, role], {useMasterKey: true});
     }).then(()=> {
@@ -1495,5 +1495,21 @@ describe('schemas', () => {
     }).then(() => {
       done();
     });
-  });  
+  });
+
+  it('can add field as master (issue #1257)', (done) => {
+    setPermissionsOnClass('AClass', {
+      'addField': {}
+    }).then(() => {
+      var obj = new Parse.Object('AClass');
+      obj.set('key', 'value');
+      return obj.save(null, {useMasterKey: true})
+    }).then((obj) => {
+      expect(obj.get('key')).toEqual('value');
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    });
+  })
 });

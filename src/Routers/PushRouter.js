@@ -1,6 +1,6 @@
-import PromiseRouter from '../PromiseRouter';
+import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
-import { Parse } from "parse/node";
+import { Parse }       from "parse/node";
 
 export class PushRouter extends PromiseRouter {
 
@@ -46,8 +46,7 @@ export class PushRouter extends PromiseRouter {
         }
       }
     } else {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        'Channels and query should be set at least one.');
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Sending a push requires either "channels" or a "where" query.');
     }
     return where;
   }
