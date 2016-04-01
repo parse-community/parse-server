@@ -1492,7 +1492,82 @@ describe('Parse.Query testing', () => {
       fail('should not fail');
       done();
     })
-  })
+  });
+
+  it('properly nested array of mixed objects with bad ids', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      for (var i=0; i<objects.length; i++) {
+        if (i%2 == 0) {
+          objects[i].id = 'randomThing'
+        } else {
+          total += objects[i].get('key');
+        }
+      }
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly fetches nested pointers', (done) =>  {
+    let color = new Parse.Object('Color');
+    color.set('hex','#133733');
+    let circle = new Parse.Object('Circle');
+    circle.set('radius', 1337);
+
+    Parse.Object.saveAll([color, circle]).then(() => {
+      circle.set('color', color);
+      let badCircle = new Parse.Object('Circle');
+      badCircle.id = 'badId';
+      let complexFigure = new Parse.Object('ComplexFigure');
+      complexFigure.set('consistsOf', [circle, badCircle]);
+      return complexFigure.save();
+    }).then(() => {
+      let q = new Parse.Query('ComplexFigure');
+      q.include('consistsOf.color');
+      return q.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let figure = results[0];
+      expect(figure.get('consistsOf').length).toBe(1);
+      expect(figure.get('consistsOf')[0].get('color').get('hex')).toBe('#133733');
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+
+  });
 
   it("result object creation uses current extension", function(done) {
     var ParentObject = Parse.Object.extend({ className: "ParentObject" });
