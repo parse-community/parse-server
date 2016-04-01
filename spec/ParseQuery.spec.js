@@ -1494,6 +1494,36 @@ describe('Parse.Query testing', () => {
     })
   })
 
+  it('properly fetches nested pointers', (done) =>  {
+    let color = new Parse.Object('Color');
+    color.set('hex','#133733');
+    let circle = new Parse.Object('Circle');
+    circle.set('radius', 1337);
+
+    Parse.Object.saveAll([color, circle]).then(() => {
+      circle.set('color', color);
+      let badCircle = new Parse.Object('Circle');
+      badCircle.id = 'badId';
+      let complexFigure = new Parse.Object('ComplexFigure');
+      complexFigure.set('consistsOf', [circle, badCircle]);
+      return complexFigure.save();
+    }).then(() => {
+      let q = new Parse.Query('ComplexFigure');
+      q.include('consistsOf.color');
+      return q.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let figure = results[0];
+      expect(figure.get('consistsOf').length).toBe(1);
+      expect(figure.get('consistsOf')[0].get('color').get('hex')).toBe('#133733');
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+
+  });
+
   it("result object creation uses current extension", function(done) {
     var ParentObject = Parse.Object.extend({ className: "ParentObject" });
     // Add a foo() method to ChildObject.
