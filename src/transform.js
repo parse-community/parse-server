@@ -33,6 +33,9 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   case '_id':
     key = '_id';
     break;
+  case 'master':
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, "Master is an invalid field name");
+    break;
   case 'createdAt':
   case '_created_at':
     key = '_created_at';
