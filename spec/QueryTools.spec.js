@@ -112,6 +112,20 @@ describe('matchesQuery', function() {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
+  it('matches queries with doesNotExist constraint', function() {
+    var obj = {
+      id: new Id('Item', 'O1'),
+      count: 15
+    };
+    var q = new Parse.Query('Item');
+    q.doesNotExist('name');
+    expect(matchesQuery(obj, q)).toBe(true);
+
+    q = new Parse.Query('Item');
+    q.doesNotExist('count');
+    expect(matchesQuery(obj, q)).toBe(false);
+  });
+
   it('matches on equality queries', function() {
     var day = new Date();
     var location = new Parse.GeoPoint({
