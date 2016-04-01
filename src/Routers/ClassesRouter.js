@@ -4,6 +4,8 @@ import rest from '../rest';
 
 import url from 'url';
 
+const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
+
 export class ClassesRouter extends PromiseRouter {
   
   handleFind(req) {
@@ -61,10 +63,9 @@ export class ClassesRouter extends PromiseRouter {
   handleGet(req) {
     let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     let options = {};
-    let allowConstraints = ['keys', 'include'];
 
     for (let key of Object.keys(body)) {
-      if (allowConstraints.indexOf(key) === -1) {
+      if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
     }
