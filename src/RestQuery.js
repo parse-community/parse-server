@@ -537,7 +537,8 @@ function findPointers(object, path) {
 // pointers inflated.
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
-    return object.map((obj) => replacePointers(obj, path, replace));
+    return object.map((obj) => replacePointers(obj, path, replace))
+              .filter((obj) => obj != null && obj != undefined);
   }
 
   if (typeof object !== 'object') {
