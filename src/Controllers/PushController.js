@@ -52,7 +52,6 @@ export class PushController extends AdaptableController {
     let badgeUpdate = () => {
       return Promise.resolve();
     }
-
     if (body.data && body.data.badge) {
       let badge = body.data.badge;
       let op = {};
@@ -89,10 +88,16 @@ export class PushController extends AdaptableController {
     }).then(() => {
       return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
-      pushStatus.setRunning();
+      if (!response.results) {
+        return Promise.reject({error: 'PushController: no results in query'})
+      }
+      pushStatus.setRunning(response.results);
       return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
       return pushStatus.complete(results);
+    }).catch((err) => {
+      pushStatus.fail(err);
+      return Promise.reject(err);
     });
   }
 
