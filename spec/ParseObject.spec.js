@@ -1887,3 +1887,14 @@ describe('Parse.Object testing', () => {
     });
   });
 });
+
+it('column name master is not allowed', (done) => {
+  let obj = new Parse.Object("SomeObject");
+  obj.set('master', 'hi');
+  obj.save().then((objAgain) => {
+    fail('Object shoult not have saved.');
+  done();
+  }, () => {
+    done(); 
+  }); 
+});
