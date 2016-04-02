@@ -108,9 +108,7 @@ export class UsersRouter extends ClassesRouter {
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        let expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
+        let expiresAt = req.config.generateSessionExpiresAt();
         let sessionData = {
           sessionToken: token,
           user: {

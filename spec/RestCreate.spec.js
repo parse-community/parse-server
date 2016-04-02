@@ -284,4 +284,72 @@ describe('rest create', () => {
     });
   });
 
+  it("test default session length", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar',
+    };
+    var now = new Date();
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        var actual = new Date(session.expiresAt.iso);
+        var expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
+
+        expect(actual.getFullYear()).toEqual(expected.getFullYear());
+        expect(actual.getMonth()).toEqual(expected.getMonth());
+        expect(actual.getDate()).toEqual(expected.getDate());
+        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+
+        done();
+      });
+  });
+
+  it("test specified session length", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar',
+    };
+    var sessionLength = 3600, // 1 Hour ahead
+        now = new Date(); // For reference later
+    config.sessionLength = sessionLength;
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        var actual = new Date(session.expiresAt.iso);
+        var expected = new Date(now.getTime() + (sessionLength*1000));
+
+        expect(actual.getFullYear()).toEqual(expected.getFullYear());
+        expect(actual.getMonth()).toEqual(expected.getMonth());
+        expect(actual.getDate()).toEqual(expected.getDate());
+        expect(actual.getHours()).toEqual(expected.getHours());
+        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+
+        done();
+      });
+  });
 });
