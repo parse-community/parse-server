@@ -78,6 +78,20 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 // TODO: update tests to work in an A+ way
 Parse.Promise.disableAPlusCompliant();
 
+process.env.DEBUG = 'mon*';
+
+// Travis will set this environment variable so we always test against
+// MongoDB 2.6.11 and 3.0.8.  Set the default here so when devs just
+// run `npm test` locally MongoDB@3.0.8 will be installed if needed and
+// used.
+if (!process.env.MONGODB_VERSION) {
+  process.env.MONGODB_VERSION = '3.0.8';
+}
+
+// Start MongoDB before running the test suite and stop it afterwards.
+beforeAll(require('mongodb-runner/mocha/before'));
+afterAll(require('mongodb-runner/mocha/after'));
+
 beforeEach(function(done) {
   restoreServerConfiguration();
   Parse.initialize('test', 'test', 'test');
