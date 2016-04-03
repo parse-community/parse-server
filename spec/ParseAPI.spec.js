@@ -644,6 +644,7 @@ describe('miscellaneous', function() {
       return obj.save();
     }).then((obj) => {
       expect(obj.get('point').id).toEqual(pointId);
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     })
   });
