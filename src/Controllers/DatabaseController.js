@@ -444,7 +444,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   }
 
   let promises = Object.keys(query).map((key) => {
-    if (query[key] && (query[key]['$in'] || query[key].__type == 'Pointer')) {
+    if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
       let t = schema.getExpectedType(className, key);
       let match = t ? t.match(/^relation<(.*)>$/) : false;
       if (!match) {
@@ -452,14 +452,25 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
       }
       let relatedClassName = match[1];
       let relatedIds;
+      let isNegation = false;
       if (query[key]['$in']) {
         relatedIds = query[key]['$in'].map(r => r.objectId);
+      } else if (query[key]['$nin']) {
+        isNegation = true;
+        relatedIds = query[key]['$nin'].map(r => r.objectId);
+      } else if (query[key]['$ne']) {
+        isNegation = true;
+        relatedIds = [query[key]['$ne'].objectId];
       } else {
         relatedIds = [query[key].objectId];
       }
       return this.owningIds(className, key, relatedIds).then((ids) => {
         delete query[key];
-        this.addInObjectIdsIds(ids, query);
+        if (isNegation) {
+          this.addNotInObjectIdsIds(ids, query);
+        } else {
+          this.addInObjectIdsIds(ids, query);
+        }
         return Promise.resolve(query);
       });
     }
@@ -516,6 +527,29 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
     query.objectId = {};
   }
   query.objectId['$in'] = idsIntersection;
+
+  return query;
+}
+
+DatabaseController.prototype.addNotInObjectIdsIds = function(ids = null, query) {
+  let idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : null;
+  let allIds = [idsFromNin, ids].filter(list => list !== null);
+  let totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
+
+  let idsIntersection = [];
+  if (totalLength > 125) {
+    idsIntersection = intersect.big(allIds);
+  } else {
+    idsIntersection = intersect(allIds);
+  }
+
+  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
+  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
+  // is expected though.
+  if (!('objectId' in query) || typeof query.objectId === 'string') {
+    query.objectId = {};
+  }
+  query.objectId['$nin'] = idsIntersection;
 
   return query;
 }

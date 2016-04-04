@@ -102,6 +102,14 @@ describe('Parse.Query testing', () => {
         equal(results.length, 0);
       });
     }).then(function(){
+      var query = new Parse.Query(Cake);
+      // User2 is a hater of everything so we should receive 0
+      query.notContainedIn("liker", [user1]);
+      return query.find().then(function(results){
+        // This test fails on 2.2.4
+        equal(results.length, 1);
+      });
+    }).then(function(){
       done();
     })
 
