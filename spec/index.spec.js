@@ -242,9 +242,9 @@ describe('server', () => {
   });
 
   it('core adapters are not exposed anymore', done => {
-    expect(ParseServer.S3Adapter).toThrow('S3Adapter is not provided by parse-server anymore; please install parse-server-s3-adapter');
+    expect(ParseServer.S3Adapter).toThrow();
     expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
-    expect(ParseServer.FileSystemAdapter).toThrow('FileSystemAdapter is not provided by parse-server anymore; please install parse-server-fs-adapter');
+    expect(ParseServer.FileSystemAdapter).toThrow();
     done();
   });
 
