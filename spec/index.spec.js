@@ -175,6 +175,26 @@ describe('server', () => {
     })
   });
 
+  it('can load absolute cloud code file', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      cloud: __dirname + '/cloud/main.js'
+    });
+    done();
+  });
+
+  it('can load relative cloud code file', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      cloud: './spec/cloud/main.js'
+    });
+    done();
+  });
+
   it('can create a parse-server', done => {
     var parseServer = new ParseServer.default({
       appId: "aTestApp",
