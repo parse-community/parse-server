@@ -62,6 +62,13 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     if (results.length !== 1 || !results[0]['user']) {
       return nobody(config);
     }
+
+    var now = new Date(), 
+        expiresAt = new Date(results[0].expiresAt.iso);
+    if(expiresAt < now) {
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
+            'Session token is expired.');
+    }
     var obj = results[0]['user'];
     delete obj.password;
     obj['className'] = '_User';

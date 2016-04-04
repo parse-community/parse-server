@@ -4,6 +4,8 @@ import rest from '../rest';
 
 import url from 'url';
 
+const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
+
 export class ClassesRouter extends PromiseRouter {
   
   handleFind(req) {
@@ -59,7 +61,23 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    return rest.find(req.config, req.auth, req.params.className, {objectId: req.params.objectId})
+    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    let options = {};
+
+    for (let key of Object.keys(body)) {
+      if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+      }
+    }
+
+    if (typeof body.keys == 'string') {
+      options.keys = body.keys;
+    }
+    if (body.include) {
+      options.include = String(body.include);
+    }
+
+    return rest.find(req.config, req.auth, req.params.className, {objectId: req.params.objectId}, options)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');

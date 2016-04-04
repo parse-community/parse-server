@@ -1422,6 +1422,153 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('properly includes array', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, () => {
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly includes array of mixed objects', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(10);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly nested array of mixed objects with bad ids', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      for (var i=0; i<objects.length; i++) {
+        if (i%2 == 0) {
+          objects[i].id = 'randomThing'
+        } else {
+          total += objects[i].get('key');
+        }
+      }
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly fetches nested pointers', (done) =>  {
+    let color = new Parse.Object('Color');
+    color.set('hex','#133733');
+    let circle = new Parse.Object('Circle');
+    circle.set('radius', 1337);
+
+    Parse.Object.saveAll([color, circle]).then(() => {
+      circle.set('color', color);
+      let badCircle = new Parse.Object('Circle');
+      badCircle.id = 'badId';
+      let complexFigure = new Parse.Object('ComplexFigure');
+      complexFigure.set('consistsOf', [circle, badCircle]);
+      return complexFigure.save();
+    }).then(() => {
+      let q = new Parse.Query('ComplexFigure');
+      q.include('consistsOf.color');
+      return q.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let figure = results[0];
+      expect(figure.get('consistsOf').length).toBe(1);
+      expect(figure.get('consistsOf')[0].get('color').get('hex')).toBe('#133733');
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+
+  });
+
   it("result object creation uses current extension", function(done) {
     var ParentObject = Parse.Object.extend({ className: "ParentObject" });
     // Add a foo() method to ChildObject.
@@ -2168,6 +2315,122 @@ describe('Parse.Query testing', () => {
     });
 
 
+  });
+
+  it('should find objects with array of pointers', (done) => {
+    var objects = [];
+    while(objects.length != 5) {
+      var object = new Parse.Object('ContainedObject');
+      object.set('index', objects.length);
+      objects.push(object);
+    }
+
+    Parse.Object.saveAll(objects).then((objects) => {
+      var container = new Parse.Object('Container');
+      var pointers = objects.map((obj) => {
+        return {
+           __type: 'Pointer',
+           className: 'ContainedObject',
+           objectId: obj.id
+        }
+      })
+      container.set('objects', pointers);
+      let container2 = new Parse.Object('Container');
+      container2.set('objects', pointers.slice(2, 3));
+      return Parse.Object.saveAll([container, container2]);
+    }).then(() => {
+      let inQuery = new Parse.Query('ContainedObject');
+      inQuery.greaterThanOrEqualTo('index', 1);
+      let query = new Parse.Query('Container');
+      query.matchesQuery('objects', inQuery);
+      return query.find();
+    }).then((results) => {
+      if (results) {
+        expect(results.length).toBe(2);
+      }
+      done();
+    }).fail((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  })
+
+  it('query with two OR subqueries (regression test #1259)', done => {
+    let relatedObject = new Parse.Object('Class2');
+    relatedObject.save().then(relatedObject => {
+      let anObject = new Parse.Object('Class1');
+      let relation = anObject.relation('relation');
+      relation.add(relatedObject);
+      return anObject.save();
+    }).then(anObject => {
+      let q1 = anObject.relation('relation').query();
+      q1.doesNotExist('nonExistantKey1');
+      let q2 = anObject.relation('relation').query();
+      q2.doesNotExist('nonExistantKey2');
+      let orQuery = Parse.Query.or(q1, q2).find().then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(q1.objectId);
+        done();
+      });
+    });
+  });
+
+  it('objectId containedIn with multiple large array', done => {
+    let obj = new Parse.Object('MyClass');
+    obj.save().then(obj => {
+      let longListOfStrings = [];
+      for (let i = 0; i < 130; i++) {
+        longListOfStrings.push(i.toString());
+      }
+      longListOfStrings.push(obj.id);
+      let q = new Parse.Query('MyClass');
+      q.containedIn('objectId', longListOfStrings);
+      q.containedIn('objectId', longListOfStrings);
+      return q.find();
+    }).then(results => {
+      expect(results.length).toEqual(1);
+      done();
+    });
+  });
+
+  it('include for specific object', function(done){
+    var child = new Parse.Object('Child');
+    var parent = new Parse.Object('Parent');
+    child.set('foo', 'bar');
+    parent.set('child', child);
+    Parse.Object.saveAll([child, parent], function(response){
+      var savedParent = response[1];
+      var parentQuery = new Parse.Query('Parent');
+      parentQuery.include('child');
+      parentQuery.get(savedParent.id, {
+        success: function(parentObj) {
+          var childPointer = parentObj.get('child');
+          ok(childPointer);
+          equal(childPointer.get('foo'), 'bar');
+          done();
+        }
+      });
+    });
+  });
+
+  it('select keys for specific object', function(done){
+    var Foobar = new Parse.Object('Foobar');
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.save({
+      success: function(savedFoobar){
+        var foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.select('fizz');
+        foobarQuery.get(savedFoobar.id,{
+          success: function(foobarObj){
+            equal(foobarObj.get('fizz'), 'buzz');
+            equal(foobarObj.get('foo'), undefined);
+            done();
+          }
+        });
+      }
+    })
   });
 
 });

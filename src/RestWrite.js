@@ -84,6 +84,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.runAfterTrigger();
   }).then(() => {
+    return this.cleanUserAuthData();
+  }).then(() => {
     return this.response;
   });
 };
@@ -281,26 +283,26 @@ RestWrite.prototype.handleAuthData = function(authData) {
 
     this.storage['authProvider'] = Object.keys(authData).join(',');
 
-    if (results.length == 0) {
-      this.data.username = cryptoUtils.newToken();
-    } else if (!this.query) {
-      // Login with auth data
-      // Short circuit
-      delete results[0].password;
-      // need to set the objectId first otherwise location has trailing undefined
-      this.data.objectId = results[0].objectId;
-      this.response = {
-        response: results[0],
-        location: this.location()
-      };
-    } else if (this.query && this.query.objectId) {
-      // Trying to update auth data but users
-      // are different
-      if (results[0].objectId !== this.query.objectId) {
-        throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                            'this auth is already used');
+    if (results.length > 0) {
+      if (!this.query) {
+        // Login with auth data
+        // Short circuit
+        delete results[0].password;
+        // need to set the objectId first otherwise location has trailing undefined
+        this.data.objectId = results[0].objectId;
+        this.response = {
+          response: results[0],
+          location: this.location()
+        };
+      } else if (this.query && this.query.objectId) {
+        // Trying to update auth data but users
+        // are different
+        if (results[0].objectId !== this.query.objectId) {
+          throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
+                              'this auth is already used');
+        }
       }
-    }
+    } 
     return Promise.resolve();
   });
 }
@@ -317,8 +319,7 @@ RestWrite.prototype.transformUser = function() {
     var token = 'r:' + cryptoUtils.newToken();
     this.storage['token'] = token;
     promise = promise.then(() => {
-      var expiresAt = new Date();
-      expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+      var expiresAt = this.config.generateSessionExpiresAt();
       var sessionData = {
         sessionToken: token,
         user: {
@@ -472,8 +473,7 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.query && !this.auth.isMaster) {
     var token = 'r:' + cryptoUtils.newToken();
-    var expiresAt = new Date();
-    expiresAt.setFullYear(expiresAt.getFullYear() + 1);
+    var expiresAt = this.config.generateSessionExpiresAt();
     var sessionData = {
       sessionToken: token,
       user: {
@@ -737,6 +737,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
     }
+
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
       .then((resp) => {
@@ -823,6 +824,22 @@ RestWrite.prototype.sanitizedData = function() {
   }, deepcopy(this.data));
   return Parse._decode(undefined, data);
 }
+
+RestWrite.prototype.cleanUserAuthData = function() {
+  if (this.response && this.response.response && this.className === '_User') {
+    let user = this.response.response;
+    if (user.authData) {
+      Object.keys(user.authData).forEach((provider) => {
+        if (user.authData[provider] === null) {
+          delete user.authData[provider];
+        }
+      });
+      if (Object.keys(user.authData).length == 0) {
+        delete user.authData;
+      }
+    }
+  }
+};
 
 export default RestWrite;
 module.exports = RestWrite;

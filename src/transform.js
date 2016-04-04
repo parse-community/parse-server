@@ -1,3 +1,4 @@
+import log from './logger';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -186,13 +187,12 @@ export function transformKeyValue(schema, className, restKey, restValue, options
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
 function transformWhere(schema, className, restWhere) {
-  var mongoWhere = {};
+  let mongoWhere = {};
   if (restWhere['ACL']) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'Cannot query on ACL.');
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
-  for (var restKey in restWhere) {
-    var out = transformKeyValue(schema, className, restKey, restWhere[restKey],
+  for (let restKey in restWhere) {
+    let out = transformKeyValue(schema, className, restKey, restWhere[restKey],
                                 {query: true, validate: true});
     mongoWhere[out.key] = out.value;
   }
@@ -452,7 +452,7 @@ function transformConstraint(constraint, inArray) {
                               'bad ' + key + ' value');
       }
       answer[key] = arr.map((v) => {
-        return transformAtom(v, true);
+        return transformAtom(v, true, { inArray: inArray });
       });
       break;
 
@@ -691,13 +691,13 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             expected = schema.getExpectedType(className, newKey);
           }
           if (!expected) {
-            console.log(
+            log.info('transform.js',
               'Found a pointer column not in the schema, dropping it.',
               className, newKey);
             break;
           }
           if (expected && expected[0] != '*') {
-            console.log('Found a pointer in a non-pointer column, dropping it.', className, key);
+            log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
           if (mongoObject[key] === null) {

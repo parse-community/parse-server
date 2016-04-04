@@ -1,64 +1,30 @@
-var FilesController = require('../src/Controllers/FilesController').FilesController;
 var GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
-var S3Adapter = require("../src/Adapters/Files/S3Adapter").S3Adapter;
-var GCSAdapter = require("../src/Adapters/Files/GCSAdapter").GCSAdapter;
-var FileSystemAdapter = require("../src/Adapters/Files/FileSystemAdapter").FileSystemAdapter;
 var Config = require("../src/Config");
-
-var FCTestFactory = require("./FilesControllerTestFactory");
+var FilesController = require('../src/Controllers/FilesController').default;
 
 
 // Small additional tests to improve overall coverage
-describe("FilesController",()=>{
+describe("FilesController",() =>{
+  it("should properly expand objects", (done) => {
 
-  // Test the grid store adapter
-  var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
-  FCTestFactory.testAdapter("GridStoreAdapter", gridStoreAdapter);
+    var config = new Config(Parse.applicationId);
+    var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
+    var filesController = new FilesController(gridStoreAdapter)
+    var result = filesController.expandFilesInObject(config, function(){});
 
-  if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+    expect(result).toBeUndefined();
 
-    // Test the S3 Adapter
-    var s3Adapter = new S3Adapter(process.env.S3_ACCESS_KEY, process.env.S3_SECRET_KEY, 'parse.server.tests');
+    var fullFile = {
+      type: '__type',
+      url: "http://an.url"
+    }
 
-    FCTestFactory.testAdapter("S3Adapter",s3Adapter);
+    var anObject = {
+      aFile: fullFile
+    }
+    filesController.expandFilesInObject(config, anObject);
+    expect(anObject.aFile.url).toEqual("http://an.url");
 
-    // Test S3 with direct access
-    var s3DirectAccessAdapter = new S3Adapter(process.env.S3_ACCESS_KEY, process.env.S3_SECRET_KEY, 'parse.server.tests', {
-      directAccess: true
-    });
-
-    FCTestFactory.testAdapter("S3AdapterDirect", s3DirectAccessAdapter);
-
-  } else if (!process.env.TRAVIS) {
-    console.log("set S3_ACCESS_KEY and S3_SECRET_KEY to test S3Adapter")
-  }
-
-  if (process.env.GCP_PROJECT_ID && process.env.GCP_KEYFILE_PATH && process.env.GCS_BUCKET) {
-
-    // Test the GCS Adapter
-    var gcsAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET);
-
-    FCTestFactory.testAdapter("GCSAdapter", gcsAdapter);
-
-    // Test GCS with direct access
-    var gcsDirectAccessAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET, {
-      directAccess: true
-    });
-
-    FCTestFactory.testAdapter("GCSAdapterDirect", gcsDirectAccessAdapter);
-
-  } else if (!process.env.TRAVIS) {
-    console.log("set GCP_PROJECT_ID, GCP_KEYFILE_PATH, and GCS_BUCKET to test GCSAdapter")
-  }
-
-  try {
-    // Test the file system adapter
-    var fsAdapter = new FileSystemAdapter({
-      filesSubDirectory: 'sub1/sub2'
-    });
-
-    FCTestFactory.testAdapter("FileSystemAdapter", fsAdapter);
-  } catch (e) {
-    console.log("Give write access to the file system to test the FileSystemAdapter. Error: " + e);
-  }
+    done();
+  })
 });

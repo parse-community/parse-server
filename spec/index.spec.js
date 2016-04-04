@@ -2,6 +2,7 @@ var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 var ParseServer = require("../src/index");
+var Config = require('../src/Config');
 var express = require('express');
 
 describe('server', () => {
@@ -56,6 +57,7 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
         apiKey: 'k',
         domain: 'd',
       }),
@@ -80,6 +82,7 @@ describe('server', () => {
       emailAdapter: {
         class: MockEmailAdapterWithOptions,
         options: {
+          fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
         }
@@ -103,8 +106,9 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
-        module: './Email/SimpleMailgunAdapter',
+        module: 'parse-server-simple-mailgun-adapter',
         options: {
+          fromAddress: 'parse@example.com',
           apiKey: 'k',
           domain: 'd',
         }
@@ -127,9 +131,9 @@ describe('server', () => {
       collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
-      emailAdapter: './Email/SimpleMailgunAdapter',
+      emailAdapter: 'parse-server-simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
     done();
   });
 
@@ -147,13 +151,13 @@ describe('server', () => {
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
-        module: './Email/SimpleMailgunAdapter',
+        module: 'parse-server-simple-mailgun-adapter',
         options: {
           domain: 'd',
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key and domain.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
     done();
   });
 
@@ -169,6 +173,26 @@ describe('server', () => {
       expect(body.parseServerVersion).toEqual(parseServerPackage.version);
       done();
     })
+  });
+
+  it('can load absolute cloud code file', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      cloud: __dirname + '/cloud/main.js'
+    });
+    done();
+  });
+
+  it('can load relative cloud code file', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      cloud: './spec/cloud/main.js'
+    });
+    done();
   });
 
   it('can create a parse-server', done => {
@@ -228,4 +252,85 @@ describe('server', () => {
       done();
     })
   });
+
+  it('has createLiveQueryServer', done => {
+    // original implementation through the factory
+    expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
+    // For import calls
+    expect(typeof ParseServer.default.createLiveQueryServer).toEqual('function');
+    done();
+  });
+
+  it('exposes all the "core" adapters', done => {
+    expect(ParseServer.S3Adapter).toThrow();
+    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter requires an projectId');
+    expect(ParseServer.FileSystemAdapter).toThrow();
+    done();
+  });
+
+  it('properly gives publicServerURL when set', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      publicServerURL: 'https://myserver.com/1'
+    });
+    var config = new Config('test', 'http://localhost:8378/1');
+    expect(config.mount).toEqual('https://myserver.com/1');
+    done();
+  });
+
+  it('properly removes trailing slash in mount', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test'
+    });
+    var config = new Config('test', 'http://localhost:8378/1/');
+    expect(config.mount).toEqual('http://localhost:8378/1');
+    done();
+  });
+
+  it('should throw when getting invalid mount', done => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      publicServerURL: 'blabla:/some'
+    }) ).toThrow("publicServerURL should be a valid HTTPS URL starting with https://");
+    done();
+  });
+
+  it('fails if the session length is not a number', (done) => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      masterKey: 'test',
+      sessionLength: 'test'
+    })).toThrow('Session length must be a valid number.');
+    done();
+  });
+
+  it('fails if the session length is less than or equal to 0', (done) => {
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      masterKey: 'test',
+      sessionLength: '-33'
+    })).toThrow('Session length must be a value greater than 0.');
+
+    expect(() => setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      masterKey: 'test',
+      sessionLength: '0'
+    })).toThrow('Session length must be a value greater than 0.');
+    done();
+  })
 });
