@@ -9,6 +9,7 @@ var batch = require('./batch'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
+    path = require('path'),
     authDataManager = require('./authDataManager');
 
 import { logger,
@@ -140,7 +141,7 @@ class ParseServer {
       if (typeof cloud === 'function') {
         cloud(Parse)
       } else if (typeof cloud === 'string') {
-        require(cloud);
+        require(path.resolve(process.cwd(), cloud));
       } else {
         throw "argument 'cloud' must either be a string or a function";
       }
