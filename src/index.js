@@ -1,9 +1,9 @@
-import winston           from 'winston';
-import ParseServer       from './ParseServer';
-import GCSAdapter        from 'parse-server-gcs-adapter';
-import S3Adapter         from 'parse-server-s3-adapter';
-import FileSystemAdapter from 'parse-server-fs-adapter';
-import DatabaseAdapter   from './DatabaseAdapter';
+import winston                      from 'winston';
+import ParseServer                  from './ParseServer';
+import GCSAdapter                   from 'parse-server-gcs-adapter';
+import S3Adapter                    from 'parse-server-s3-adapter';
+import FileSystemAdapter            from 'parse-server-fs-adapter';
+import {destroyAllDataPermanently}  from './DatabaseAdapter';
 
 if (process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
   winston.level = 'silly';
@@ -22,4 +22,4 @@ let _ParseServer = function(options) {
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, DatabaseAdapter, _ParseServer as ParseServer };
+export { S3Adapter, GCSAdapter, FileSystemAdapter, destroyAllDataPermanently, _ParseServer as ParseServer };
