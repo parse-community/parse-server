@@ -263,6 +263,16 @@ class Schema {
           }
         });
         if (className) {
+          // merge with the default schema
+          let defaultClassData = Object.assign({}, defaultColumns._Default, defaultColumns[className]);
+          defaultClassData = Object.keys(defaultClassData).reduce((memo, key) => {
+            let type = schemaAPITypeToMongoFieldType(defaultClassData[key]).result;
+            if (type) {
+              memo[key] = type;
+            }
+            return memo;
+          }, {});
+          classData = Object.assign({}, defaultClassData, classData);
           this.data[className] = classData;
           if (permsData) {
             this.perms[className] = permsData;

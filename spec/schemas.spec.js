@@ -1511,5 +1511,20 @@ describe('schemas', () => {
       fail('should not fail');
       done();
     });
+  });
+
+  it('can login when addFields is false (issue #1355)', (done) => {
+    setPermissionsOnClass('_User', {
+      'addField': {}
+    }).then(() => {
+      return Parse.User.signUp('foo', 'bar');
+    }).then((user) => {
+      expect(user.getUsername()).toBe('foo');
+      done()
+    }, (err) => {
+      console.error(err);
+      fail('should create user');
+      done();
+    })
   })
 });
