@@ -80,7 +80,6 @@ describe('Parse.Query testing', () => {
       // User1 likes two of three cakes
       query.equalTo("liker", user1);
       return query.find().then(function(results){
-        // This test fails on 2.2.4
         // It should return 2 -> cake 1 and cake 2
         equal(results.length, 2);
       });
@@ -89,7 +88,6 @@ describe('Parse.Query testing', () => {
       // We want to know which cake the user1 is not appreciating -> cake3
       query.notEqualTo("liker", user1);
       return query.find().then(function(results){
-        // This test fails on 2.2.4
         // Should return 1 -> the cake 3
         equal(results.length, 1);
       });
@@ -98,21 +96,30 @@ describe('Parse.Query testing', () => {
       // User2 is a hater of everything so we should receive 0
       query.notEqualTo("hater", user2);
       return query.find().then(function(results){
-        // This test fails on 2.2.4
         equal(results.length, 0);
       });
     }).then(function(){
       var query = new Parse.Query(Cake);
-      // User2 is a hater of everything so we should receive 0
+      // Only cake3 is liked by user
       query.notContainedIn("liker", [user1]);
       return query.find().then(function(results){
-        // This test fails on 2.2.4
         equal(results.length, 1);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // All the users
+      query.containedIn("liker", [user, user1, user2]);
+      // Exclude user 1
+      query.notEqualTo("liker", user1);
+      // Only cake3 is liked only by user1
+      return query.find().then(function(results){
+        equal(results.length, 1);
+        let cake = results[0];
+        expect(cake.id).toBe(cake3.id);
       });
     }).then(function(){
       done();
     })
-
   });
 
   it("query with limit", function(done) {
