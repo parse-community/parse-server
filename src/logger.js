@@ -27,7 +27,7 @@ function generateTransports() {
       level: 'error'
     })
   ]
-  if (!process.env.TESTING) {
+  if (!process.env.TESTING || process.env.VERBOSE) {
     transports = [new (winston.transports.Console)({
       colorize: true,
       level:level
