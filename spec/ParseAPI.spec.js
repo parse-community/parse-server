@@ -618,6 +618,37 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('pointer reassign is working properly (#1288)', (done) => {
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+
+      var obj = req.object;
+      if (obj.get('point')) {
+        return res.success();
+      }
+       var TestObject1 = Parse.Object.extend('TestObject1');
+       var newObj = new TestObject1({'key1': 1});
+
+       return newObj.save().then((newObj) => {
+         obj.set('point' , newObj);
+         res.success();
+       });
+    });
+    var pointId;
+    var obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.save().then(() => {
+      expect(obj.get('point')).not.toBeUndefined();
+      pointId = obj.get('point').id;
+      expect(pointId).not.toBeUndefined();
+      obj.set('foo', 'baz');
+      return obj.save();
+    }).then((obj) => {
+      expect(obj.get('point').id).toEqual(pointId);
+      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
+      done();
+    })
+  });
+
   it('test afterSave get full object on create and update', function(done) {
     var triggerTime = 0;
     // Register a mock beforeSave hook
