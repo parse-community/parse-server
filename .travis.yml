@@ -1,16 +1,25 @@
 branches:
   only:
-    - master
+  - master
 language: node_js
 node_js:
-  - "4.3"
+- '4.3'
 env:
-  global: 
-    - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
+  global:
+  - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
   matrix:
-    - MONGODB_VERSION=2.6.11
-    - MONGODB_VERSION=3.0.8
+  - MONGODB_VERSION=2.6.11
+  - MONGODB_VERSION=3.0.8
 cache:
   directories:
-    - $HOME/.mongodb/versions/downloads
-after_success: ./node_modules/.bin/codecov
+  - "$HOME/.mongodb/versions/downloads"
+after_success: "./node_modules/.bin/codecov"
+deploy:
+  provider: npm
+  email:
+    secure: T3LwSJFcu632SDfCoavcKL39NktWLEOOFzonAjeHAglmMyDp9hvU8xHwQ4JJy2CRA03c+ezAe2gH3Va+jfxvh1JtFUan+p88vaCHHKuNwPSp4WZBPt1ZTDmG+ACG6j+ZWHK+eP7hLvtlCi/M9/v4/bVojpm7v01LLiM+MRhnE9E7eLemQC4zb6RVtf2oGQ3mX51kMeya218kEm5bsQPpRJElI9jwletFa8qYK5AFgaCHpll059RRHQTTE9MTNcN58P/Kf6Qb3KGpKNoaHTXoOD4U6LcXLWvdHONVB6AzGefxg2b/dvtaO4nd5lDooMBR3u9kWpopXkyAuf+fO/8je9JTxO6CDUtDjHRcR2mCEXWX6rculIAbNXOv1ccRYCTQ8aFtYnFlMSb1+QIAdyT6HHmeT5ktk3+XJRuEv0PJJvqHTo+j7tPngjiv5sPNutgGFlOFO90omTbzEkIT/D/LsgXbWm2QKYWejbLiuSINg+FiFiZN90doCf4aCpm2y1Q/9GzvK+eXcpqzPCGxOykE7EuPZK3+S/ZU2oaWL2uSpbKPtC0qxebrneR307aVEa7C85HCkTMMBzE4tjUr8h5HhLqtWvqmDcnBo3PfQhf9cEO6jQLd3qhEVJmcwKz/yOCfgPXlCbRqiKk7j94perpNCIalXtMI9ySYjJNjHsB4600=
+  api_key:
+    secure: WLjhHVAdUkDy6UdNWveTpZqphw9olN0alCpyPpU0cJjlN/hk7YxPP+YHOSVnMZaRZoHM0LL11jPKLf970nymBfvJHDWxKk71c/5xyTX8pBtSxmGmGy23a5g2VrHVMd2JxsI7NEAH500tlFz+01t4E3Steo0NpAkHR3Q51kj01gQy8IumsksfhRc9uvjZ7zjm99Yk4L+cxyei79v4esfpx7Bgm0HTfAAAG/19F+r0hvvFiV517SREDU/YtcX/rIjVepEy1uiLKEohnmYtVIRSA3Hjh6VlHVhdj2WDd/dYrxi/Ioysq2zOM9pZVLamO9asB1e6JrTEipWE9jSZXxsbnfFzuNLxcOjKv1wd3OzQKF/7pGKGiWRTv5Xm19D/FrXoE/ULs6bHcC/Ke8Gs2RxPlOCdvAFehCkyf5P4HOPCQdR7o8Yiuvt+5JWKBflElNbSd4nWgwUOo3Yv8vC4Vj53fwmM+Uqfu3IgYFWktYxCm4RWIKMfB/gtmjcF6QYFfjvEMwAvRfBV81kuynCsnubXWzQeBE/b3JOhBfpGciKCjKfy+tS6bZfFjCtQV98hMMiCPre8Y7PahHDYc65wU9Ake+ZE+dDaSbeV3DZ5JeifLJHzKW2J2dWeRANkOaiSwO9VBC9/rht5ulK5qQ1pB2+sKDToAaiKy6RMlB/HgIoYqsU=
+  on:
+    tags: true
+    repo: ParsePlatform/parse-server
