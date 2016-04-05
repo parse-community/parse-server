@@ -3,6 +3,7 @@ import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
+import { mergeWithOptions } from './utils/commander';
 import colors from 'colors';
 
 program.loadDefinitions(definitions);
@@ -34,28 +35,7 @@ program.on('--help', function(){
 
 program.parse(process.argv, process.env);
 
-let options = {};
-if (program.args.length > 0 ) {
-  let jsonPath = program.args[0];
-  jsonPath = path.resolve(jsonPath);
-  let jsonConfig = require(jsonPath);
-  if (jsonConfig.apps) {
-    if (jsonConfig.apps.length > 1) {
-      throw 'Multiple apps are not supported';
-    }
-    options = jsonConfig.apps[0];
-  } else {
-    options = jsonConfig;
-  }
-  console.log(`Configuation loaded from ${jsonPath}`)
-}
-
-options = Object.keys(definitions).reduce(function (options, key) {
-  if (typeof program[key] !== 'undefined') {
-    options[key] = program[key];
-  }
-  return options;
-}, options);
+let options = program.getOptions();
 
 if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
