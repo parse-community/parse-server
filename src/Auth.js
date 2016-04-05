@@ -63,7 +63,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
       return nobody(config);
     }
 
-    var now = new Date(), 
+    var now = new Date(),
         expiresAt = new Date(results[0].expiresAt.iso);
     if(expiresAt < now) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
@@ -117,8 +117,9 @@ Auth.prototype._loadRoles = function() {
 
     var roleIDs = results.map(r => r.objectId);
     var promises = [Promise.resolve(roleIDs)];
+    var queriedRoles = {};
     for (var role of roleIDs) {
-      promises.push(this._getAllRoleNamesForId(role));
+      promises.push(this._getAllRoleNamesForId(role, queriedRoles));
     }
     return Promise.all(promises).then((results) => {
       var allIDs = [];
@@ -146,8 +147,12 @@ Auth.prototype._loadRoles = function() {
 };
 
 // Given a role object id, get any other roles it is part of
-Auth.prototype._getAllRoleNamesForId = function(roleID) {
-  
+Auth.prototype._getAllRoleNamesForId = function(roleID, queriedRoles = {}) {
+  // Don't need to requery this role as it is already being queried for.
+  if (queriedRoles[roleID] != null) {
+      return Promise.resolve([]);
+  }
+  queriedRoles[roleID] = true;
   // As per documentation, a Role inherits AnotherRole
   // if this Role is in the roles pointer of this AnotherRole
   // Let's find all the roles where this role is in a roles relation
@@ -167,13 +172,13 @@ Auth.prototype._getAllRoleNamesForId = function(roleID) {
       return Promise.resolve([]);
     }
     var roleIDs = results.map(r => r.objectId);
-    
+
     // we found a list of roles where the roleID
     // is referenced in the roles relation,
     // Get the roles where those found roles are also
     // referenced the same way
     var parentRolesPromises = roleIDs.map( (roleId) => {
-      return this._getAllRoleNamesForId(roleId);
+      return this._getAllRoleNamesForId(roleId, queriedRoles);
     });
     parentRolesPromises.push(Promise.resolve(roleIDs));
     return Promise.all(parentRolesPromises);
