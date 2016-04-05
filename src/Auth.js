@@ -64,7 +64,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     }
 
     var now = new Date(),
-        expiresAt = new Date(results[0].expiresAt.iso);
+        expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
     if(expiresAt < now) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
             'Session token is expired.');
