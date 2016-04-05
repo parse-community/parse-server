@@ -2,6 +2,7 @@
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
+var RestQuery = require("../src/RestQuery");
 var Auth = require("../src/Auth").Auth;
 var Config = require("../src/Config");
 
@@ -60,21 +61,87 @@ describe('Parse Role testing', () => {
 
   });
 
-  it("should recursively load roles", (done) => {
-
-    var rolesNames = ["FooRole", "BarRole", "BazRole"];
-
-    var createRole = function(name, sibling, user) {
-      var role = new Parse.Role(name, new Parse.ACL());
-      if (user) {
-        var users = role.relation('users');
-        users.add(user);
-      }
-      if (sibling) {
-        role.relation('roles').add(sibling);
-      }
-      return role.save({}, { useMasterKey: true });
+  var createRole = function(name, sibling, user) {
+    var role = new Parse.Role(name, new Parse.ACL());
+    if (user) {
+      var users = role.relation('users');
+      users.add(user);
     }
+    if (sibling) {
+      role.relation('roles').add(sibling);
+    }
+    return role.save({}, { useMasterKey: true });
+  };
+
+  it("should not recursively load the same role multiple times", (done) => {
+    var rootRole = "RootRole";
+    var roleNames = ["FooRole", "BarRole", "BazRole"];
+    var allRoles = [rootRole].concat(roleNames);
+
+    var roleObjs = {};
+    var createAllRoles = function(user) {
+      var promises = allRoles.map(function(roleName) {
+        return createRole(roleName, null, user)
+          .then(function(roleObj) {
+            roleObjs[roleName] = roleObj;
+            return roleObj;
+          });
+      });
+      return Promise.all(promises);
+    };
+
+    var restExecute = spyOn(RestQuery.prototype, "execute").and.callThrough();
+
+    var user,
+      auth,
+      getAllRolesSpy;
+    createTestUser().then( (newUser) => {
+      user = newUser;
+      return createAllRoles(user);
+    }).then ( (roles) => {
+      var rootRoleObj = roleObjs[rootRole];
+      roles.forEach(function(role, i) {
+        // Add all roles to the RootRole
+        if (role.id !== rootRoleObj.id) {
+          role.relation("roles").add(rootRoleObj);
+        }
+        // Add all "roleNames" roles to the previous role
+        if (i > 0) {
+          role.relation("roles").add(roles[i - 1]);
+        }
+      });
+
+      return Parse.Object.saveAll(roles, { useMasterKey: true });
+    }).then( () => {
+      auth = new Auth({config: new Config("test"), isMaster: true, user: user});
+      getAllRolesSpy = spyOn(auth, "_getAllRoleNamesForId").and.callThrough();
+
+      return auth._loadRoles();
+    }).then ( (roles) => {
+      expect(roles.length).toEqual(4);
+
+      allRoles.forEach(function(name) {
+        expect(roles.indexOf("role:"+name)).not.toBe(-1);
+      });
+
+      // 1 Query for the initial setup
+      // 4 Queries for all the specific roles
+      // 1 Query for the final $in
+      expect(restExecute.calls.count()).toEqual(6);
+
+      // 4 One query for each of the roles
+      // 3 Queries for the "RootRole"
+      expect(getAllRolesSpy.calls.count()).toEqual(7);
+      done()
+    }).catch( () =>  {
+      fail("should succeed");
+      done();
+    });
+
+  });
+
+  it("should recursively load roles", (done) => {
+    var rolesNames = ["FooRole", "BarRole", "BazRole"];
     var roleIds = {};
      createTestUser().then( (user) => {
        // Put the user on the 1st role
@@ -97,7 +164,7 @@ describe('Parse Role testing', () => {
        expect(roles.length).toEqual(3);
        rolesNames.forEach( (name) => {
         expect(roles.indexOf('role:'+name)).not.toBe(-1);
-       })
+       });
        done();
      }, function(err){
        fail("should succeed")
@@ -122,7 +189,7 @@ describe('Parse Role testing', () => {
       });
     });
   });
-  
+
   it("Should properly resolve roles", (done) => {
     let admin = new Parse.Role("Admin", new Parse.ACL());
     let moderator = new Parse.Role("Moderator", new Parse.ACL());
@@ -134,7 +201,7 @@ describe('Parse Role testing', () => {
       moderator.getRoles().add([admin, superModerator]);
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
-    }).then(() => { 
+    }).then(() => {
       var auth = new Auth({ config: new Config("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
@@ -147,7 +214,7 @@ describe('Parse Role testing', () => {
           });
         })
       });
-      
+
       return Parse.Promise.when(promises);
     }).then((results) => {
       results.forEach((result) => {
@@ -174,7 +241,7 @@ describe('Parse Role testing', () => {
       console.error(err);
       done();
     })
-    
+
   });
 
   it('can create role and query empty users', (done)=> {
