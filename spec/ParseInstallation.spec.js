@@ -119,6 +119,50 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
+  it('should properly fail queying installations', (done) => {
+    var installId = '12345678-abcd-abcd-abcd-123456789abc';
+    var device = 'android';
+    var input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      return query.find()
+    }).then((results) => {
+      fail('Should not succeed!');
+      done();
+    }).catch((error) => {
+      expect(error.code).toBe(119);
+      expect(error.message).toBe('Clients aren\'t allowed to perform the find operation on the installation collection.')
+      done();
+    });
+  });
+
+  it('should properly queying installations with masterKey', (done) => {
+    var installId = '12345678-abcd-abcd-abcd-123456789abc';
+    var device = 'android';
+    var input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      return query.find({useMasterKey: true});
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      var obj = results[0].toJSON();
+      expect(obj.installationId).toEqual(installId);
+      expect(obj.deviceType).toEqual(device);
+      done();
+    }).catch((error) => {
+      fail('Should not fail');
+      done();
+    });
+  });
+
   it('fails with missing ids', (done) => {
     var input = {
       'deviceType': 'android',
