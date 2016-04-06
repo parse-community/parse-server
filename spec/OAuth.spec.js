@@ -242,22 +242,21 @@ describe('OAuth', function() {
   it("should only create a single user with REST API", (done) => {
     var objectId;
     createOAuthUser((error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.objectId).not.toBeNull();
+      expect(b.objectId).not.toBeUndefined();
+      objectId = b.objectId;
+
+      createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
-        objectId = b.objectId;
-
-        createOAuthUser((error, response, body) => {
-          expect(error).toBe(null);
-          var b = JSON.parse(body);
-          expect(b.objectId).not.toBeNull();
-          expect(b.objectId).not.toBeUndefined();
-          expect(b.objectId).toBe(objectId);
-          done();
-        });
+        expect(b.objectId).toBe(objectId);
+        done();
       });
-
+    });
   });
 
   it("unlink and link with custom provider", (done) => {

@@ -1,5 +1,5 @@
 import cache from './cache';
-import log from './logger';
+import log   from './logger';
 
 var Parse = require('parse/node').Parse;
 
