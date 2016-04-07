@@ -1,7 +1,7 @@
 import winston           from 'winston';
 import ParseServer       from './ParseServer';
 import GCSAdapter        from 'parse-server-gcs-adapter';
-import S3Adapter         from 'parse-server-s3-adapter';
+import S3Adapter         from 'parse-server-s3-adapter-secure';
 import FileSystemAdapter from 'parse-server-fs-adapter';
 
 if (process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
