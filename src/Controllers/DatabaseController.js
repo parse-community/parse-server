@@ -68,6 +68,7 @@ function _loadSchema(db) {
     db.schemaPromise = db.schemaCollection().then(collection => {
       return Schema.load(collection);
     }).then((res) => {
+      delete db.schemaPromise;
       db._schema = res;
       return Promise.resolve(db._schema);
     })
@@ -77,7 +78,6 @@ function _loadSchema(db) {
 
 DatabaseController.prototype.invalidateSchema = function() {
   delete this._schema;
-  delete this.schemaPromise;
 }
 
 // Returns a promise for a schema object.
