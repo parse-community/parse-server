@@ -326,6 +326,38 @@ describe('schemas', () => {
     });
   });
 
+  it('responds with all fields when you create a _User', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: "_User",
+        fields: {
+          foo: {type: 'Number'},
+        }
+      }
+    }, (error, response, body) => {
+      expect(body).toEqual({
+        className: '_User',
+        fields: {
+          ACL: {type: 'ACL'},
+          createdAt: {type: 'Date'},
+          updatedAt: {type: 'Date'},
+          objectId: {type: 'String'},
+          foo: {type: 'Number'},
+          username: { type: 'String' },
+          password: { type: 'String' },
+          authData: { type: 'Object' },
+          email: { type: 'String' },
+          emailVerified: { type: 'Boolean' },
+        },
+        classLevelPermissions: defaultClassLevelPermissions
+      });
+      done();
+    });
+  });
+
   it('lets you specify class name in both places', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',

@@ -848,4 +848,5 @@ export {
   schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject,
   systemClasses,
+  defaultColumns,
 };

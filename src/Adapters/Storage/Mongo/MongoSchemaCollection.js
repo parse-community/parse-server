@@ -1,5 +1,6 @@
 
 import MongoCollection from './MongoCollection';
+import { defaultColumns } from '../../../Schema';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -34,6 +35,12 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
     obj[fieldName] = mongoFieldToParseSchemaField(schema[fieldName])
     return obj;
   }, {});
+  let defaultSchema = defaultColumns[schema];
+  if (defaultSchema) {
+    Object.keys(defaultSchema).forEach((key) => {
+      response[key] = defaultSchema[key];
+    });
+  }
   response.ACL = {type: 'ACL'};
   response.createdAt = {type: 'Date'};
   response.updatedAt = {type: 'Date'};
