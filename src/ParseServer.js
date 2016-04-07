@@ -46,6 +46,7 @@ import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
+import { SettingsRouter }       from './Routers/SettingsRouter';
 
 import ParsePushAdapter         from 'parse-server-push-adapter';
 // Mutate the Parse object to add the Cloud Code handlers
@@ -246,6 +247,7 @@ class ParseServer {
       new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
+      new SettingsRouter(),
     ];
 
     if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
