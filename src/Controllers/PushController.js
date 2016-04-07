@@ -81,10 +81,10 @@ export class PushController extends AdaptableController {
       }
     }
     let pushStatus = pushStatusHandler(config);
-    pushStatusIdCallback(pushStatus.objectId);
     return Promise.resolve().then(() => {
       return pushStatus.setInitial(body, where);
     }).then(() => {
+      pushStatusIdCallback(pushStatus.objectId);
       return badgeUpdate();
     }).then(() => {
       return rest.find(config, auth, '_Installation', where);
