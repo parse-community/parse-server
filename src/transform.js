@@ -633,7 +633,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     if (mongoObject instanceof Array) {
       return mongoObject.map((o) => {
-        return untransformObject(schema, className, o);
+        return untransformObject(schema, className, o, true);
       });
     }
 
