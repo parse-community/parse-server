@@ -147,6 +147,14 @@ describe('untransformObject', () => {
     done();
   });
 
+    it('nested array', (done) => {
+      var input = {arr: [{_testKey: 'testValue' }]};
+      var output = transform.untransformObject(dummySchema, null, input);
+      expect(Array.isArray(output.arr)).toEqual(true);
+      expect(output.arr).toEqual([{ _testKey: 'testValue'}]);
+      done();
+    });
+
 });
 
 describe('transformKey', () => {
