@@ -15,8 +15,14 @@ export class PushRouter extends PromiseRouter {
     }
 
     let where = PushRouter.getQueryCondition(req);
-    pushController.sendPush(req.body, where, req.config, req.auth);
+    let statusId;
+    pushController.sendPush(req.body, where, req.config, req.auth, (pushStatusId) => {
+      statusId = pushStatusId;
+    });
     return Promise.resolve({
+      headers: {
+        'X-Parse-Push-Status-Id': statusId
+      },
       response: {
         'result': true
       }

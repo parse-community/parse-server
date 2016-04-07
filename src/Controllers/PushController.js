@@ -38,7 +38,7 @@ export class PushController extends AdaptableController {
     return !!this.adapter;
   }
 
-  sendPush(body = {}, where = {}, config, auth, wait) {
+  sendPush(body = {}, where = {}, config, auth, pushStatusIdCallback = () => {}) {
     var pushAdapter = this.adapter;
     if (!this.pushIsAvailable) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
@@ -81,6 +81,7 @@ export class PushController extends AdaptableController {
       }
     }
     let pushStatus = pushStatusHandler(config);
+    pushStatusIdCallback(pushStatus.objectId);
     return Promise.resolve().then(() => {
       return pushStatus.setInitial(body, where);
     }).then(() => {
