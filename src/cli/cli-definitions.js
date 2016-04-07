@@ -170,5 +170,9 @@ export default {
     env: "PARSE_SERVER_SESSION_LENGTH",
     help: "Session duration, defaults to 1 year",
     action: numberParser("sessionLength")
+  },
+  "verbose": {
+    env: "VERBOSE",
+    help: "Set the logging to verbose"
   }
 };
