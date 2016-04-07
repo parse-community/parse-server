@@ -132,17 +132,16 @@ function validateCLP(perms) {
     });
   });
 }
-// Valid classes must:
-// Be one of _User, _Installation, _Role, _Session OR
-// Be a join table OR
-// Include only alpha-numeric and underscores, and not start with an underscore or number
 var joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 var classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 function classNameIsValid(className) {
-  return (systemClasses.indexOf(className) > -1 ||
-    className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
+  // Valid classes must:
+  return (
+    // Be one of _User, _Installation, _Role, _Session OR
+    systemClasses.indexOf(className) > -1 ||
+    // Be a join table OR
     joinClassRegex.test(className) ||
-    //Class names have the same constraints as field names, but also allow the previous additional names.
+    // Include only alpha-numeric and underscores, and not start with an underscore or number
     fieldNameIsValid(className)
   );
 }
@@ -272,14 +271,13 @@ class Schema {
     }
 
     return this._collection.addSchema(className, mongoObject.result)
-      //TODO: Move this logic into the database adapter
-      .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
-      .catch(error => {
-        if (error.code === 11000) { //Mongo's duplicate key error
-          throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
-        }
-        return Promise.reject(error);
-      });
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      } else {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      }
+    });
   }
 
   updateClass(className, submittedFields, classLevelPermissions, database) {
