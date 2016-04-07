@@ -1,6 +1,8 @@
 // These tests are unit tests designed to only test transform.js.
+"use strict";
 
-var transform = require('../src/transform');
+let transform = require('../src/transform');
+let dd = require('deep-diff');
 
 var dummySchema = {
     data: {},
@@ -150,14 +152,28 @@ describe('untransformObject', () => {
     done();
   });
 
-    it('nested array', (done) => {
-      var input = {arr: [{_testKey: 'testValue' }]};
-      var output = transform.untransformObject(dummySchema, null, input);
-      expect(Array.isArray(output.arr)).toEqual(true);
-      expect(output.arr).toEqual([{ _testKey: 'testValue'}]);
-      done();
-    });
+  it('nested array', (done) => {
+    var input = {arr: [{_testKey: 'testValue' }]};
+    var output = transform.untransformObject(dummySchema, null, input);
+    expect(Array.isArray(output.arr)).toEqual(true);
+    expect(output.arr).toEqual([{ _testKey: 'testValue'}]);
+    done();
+  });
 
+  it('untransforms objects containing nested special keys', done => {
+    let input = {array: [{
+      _id: "Test ID",
+      _hashed_password: "I Don't know why you would name a key this, but if you do it should work",
+      _tombstone: {
+        _updated_at: "I'm sure people will nest keys like this",
+        _acl: 7,
+        _id: {}
+      },
+    }]}
+    let output = transform.untransformObject(dummySchema, null, input);
+    expect(dd(output, input)).toEqual(undefined);
+    done();
+  });
 });
 
 describe('transformKey', () => {
