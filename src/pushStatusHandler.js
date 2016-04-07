@@ -16,7 +16,7 @@ export default function pushStatusHandler(config) {
 
   let initialPromise;
   let pushStatus;
-
+  let objectId = newObjectId();
   let collection = function() {
     return config.database.adaptiveCollection('_PushStatus');
   }
@@ -25,7 +25,7 @@ export default function pushStatusHandler(config) {
     let now = new Date();
     let data =  body.data || {};
     let object = {
-      objectId: newObjectId(),
+      objectId,
       pushTime: now.toISOString(),
       _created_at: now,
       query: JSON.stringify(where),
@@ -111,6 +111,7 @@ export default function pushStatusHandler(config) {
   }
 
   return Object.freeze({
+    objectId,
     setInitial,
     setRunning,
     complete,
