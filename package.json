@@ -1,6 +1,6 @@
 {
   "name": "parse-server-transform",
-  "version": "2.2.6",
+  "version": "2.2.7",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "files": [
