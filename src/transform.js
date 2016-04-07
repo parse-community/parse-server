@@ -622,11 +622,12 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   case 'number':
   case 'boolean':
     return mongoObject;
-  case 'undefined':
-  case 'symbol':
-  case 'function':
-    throw 'bad value in untransformObject';
-  case 'object':
+    case 'function':
+        return null;
+      case 'undefined':
+      case 'symbol':
+        throw 'bad value in untransformObject';
+      case 'object':
     if (mongoObject === null) {
       return null;
     }
@@ -647,6 +648,10 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
+      if (key === 'lastMessageTimetoken') {
+        restObject['lastMessageTimetoken'] = 0;
+        break;
+      }
       switch(key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];

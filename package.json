@@ -1,12 +1,8 @@
 {
-  "name": "parse-server",
+  "name": "parse-server-transform",
   "version": "2.2.6",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ParsePlatform/parse-server"
-  },
   "files": [
     "bin/",
     "lib/",
