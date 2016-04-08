@@ -15,12 +15,6 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function injectDefaultSchema(schema) {
-  if (Array.isArray(schema)) {
-    let schemas = schema.map((s) => {
-      return injectDefaultSchema(s);
-    });
-    return schemas;
-  }
   let defaultSchema = Schema.defaultColumns[schema.className];
   if (defaultSchema) {
     Object.keys(defaultSchema).forEach((key) => {
@@ -33,7 +27,11 @@ function injectDefaultSchema(schema) {
 function getAllSchemas(req) {
   return req.config.database.schemaCollection()
     .then(collection => collection.getAllSchemas())
-    .then(schemas => injectDefaultSchema(schemas))
+    .then(schemas => {
+      return schemas.map((schema) => {
+        return injectDefaultSchema(schema);
+      })
+    })
     .then(schemas => ({ response: { results: schemas } }));
 }
 
