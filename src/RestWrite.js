@@ -716,6 +716,11 @@ RestWrite.prototype.runDatabaseOperation = function() {
   }
 
   if (this.query) {
+    // Force the user to not lockout
+    // Matched with parse.com
+    if (this.className === '_User' && this.data.ACL) {
+      this.data.ACL[this.query.objectId] = { read: true, write: true };
+    }
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
@@ -732,10 +737,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
       });
   } else {
     // Set the default ACL for the new _User
-    if (!this.data.ACL && this.className === '_User') {
-      var ACL = {};
+    if (this.className === '_User') {
+      var ACL = this.data.ACL;
+      // default public r/w ACL
+      if (!ACL) {
+        ACL = {};
+        ACL['*'] = { read: true, write: false };
+      }
+      // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
-      ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
     }
 
