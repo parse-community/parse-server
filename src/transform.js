@@ -660,7 +660,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
         'expiresAt',
         '_expiresAt',
       ];
-      if (_.includes(specialKeys, key) && isNestedObject) {
+      if (isNestedObject && _.includes(specialKeys, key)) {
         restObject[key] = untransformObject(schema, className, mongoObject[key], true);
         continue;
       }
