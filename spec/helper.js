@@ -8,7 +8,7 @@ var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
-var destroyAllDataPermanently = require('../src/index').destroyAllDataPermanently;
+var TestUtils = require('../src/index').TestUtils;
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './spec/cloud/main.js';
@@ -89,7 +89,7 @@ beforeEach(function(done) {
 
 afterEach(function(done) {
   Parse.User.logOut().then(() => {
-    return destroyAllDataPermanently();
+    return TestUtils.destroyAllDataPermanently();
   }).then(() => {
     done();
   }, (error) => {
