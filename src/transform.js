@@ -1,4 +1,5 @@
 import log from './logger';
+import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -148,8 +149,6 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   if (key === 'ACL') {
     throw 'There was a problem transforming an ACL.';
   }
-
-
 
   // Handle arrays
   if (restValue instanceof Array) {
@@ -646,84 +645,50 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      // TODO: This could use some cleanup. Default case handling still needs to happen for some nested keys.
+      const specialKeys = [
+        '_id',
+        '_hashed_password',
+        '_acl',
+        '_email_verify_token',
+        '_perishable_token',
+        '_tombstone',
+        '_session_token',
+        'updatedAt',
+        '_updated_at',
+        'createdAt',
+        '_created_at',
+        'expiresAt',
+        '_expiresAt',
+      ];
+      if (_.includes(specialKeys, key) && isNestedObject) {
+        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        continue;
+      }
       switch(key) {
       case '_id':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['objectId'] = '' + mongoObject[key];
         break;
       case '_hashed_password':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['password'] = mongoObject[key];
         break;
       case '_acl':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_email_verify_token':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_perishable_token':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_tombstone':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         break;
       case '_session_token':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['sessionToken'] = mongoObject[key];
         break;
       case 'updatedAt':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_updated_at':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['updatedAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
       case 'createdAt':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_created_at':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
         break;
       case 'expiresAt':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
       case '_expiresAt':
-        if (isNestedObject) {
-          restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-          break;
-        }
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
         break;
       default:
