@@ -7,6 +7,9 @@ env:
   matrix:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
+branches:
+  only:
+  - master
 cache:
   directories:
   - "$HOME/.mongodb/versions/downloads"
@@ -19,4 +22,5 @@ deploy:
     secure: WLjhHVAdUkDy6UdNWveTpZqphw9olN0alCpyPpU0cJjlN/hk7YxPP+YHOSVnMZaRZoHM0LL11jPKLf970nymBfvJHDWxKk71c/5xyTX8pBtSxmGmGy23a5g2VrHVMd2JxsI7NEAH500tlFz+01t4E3Steo0NpAkHR3Q51kj01gQy8IumsksfhRc9uvjZ7zjm99Yk4L+cxyei79v4esfpx7Bgm0HTfAAAG/19F+r0hvvFiV517SREDU/YtcX/rIjVepEy1uiLKEohnmYtVIRSA3Hjh6VlHVhdj2WDd/dYrxi/Ioysq2zOM9pZVLamO9asB1e6JrTEipWE9jSZXxsbnfFzuNLxcOjKv1wd3OzQKF/7pGKGiWRTv5Xm19D/FrXoE/ULs6bHcC/Ke8Gs2RxPlOCdvAFehCkyf5P4HOPCQdR7o8Yiuvt+5JWKBflElNbSd4nWgwUOo3Yv8vC4Vj53fwmM+Uqfu3IgYFWktYxCm4RWIKMfB/gtmjcF6QYFfjvEMwAvRfBV81kuynCsnubXWzQeBE/b3JOhBfpGciKCjKfy+tS6bZfFjCtQV98hMMiCPre8Y7PahHDYc65wU9Ake+ZE+dDaSbeV3DZ5JeifLJHzKW2J2dWeRANkOaiSwO9VBC9/rht5ulK5qQ1pB2+sKDToAaiKy6RMlB/HgIoYqsU=
   on:
     tags: true
+    all_branches: true
     repo: ParsePlatform/parse-server
