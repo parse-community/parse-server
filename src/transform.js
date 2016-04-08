@@ -612,6 +612,21 @@ function transformUpdateOperator(operator, flatten) {
   }
 }
 
+const specialKeysForUntransform = [
+  '_id',
+  '_hashed_password',
+  '_acl',
+  '_email_verify_token',
+  '_perishable_token',
+  '_tombstone',
+  '_session_token',
+  'updatedAt',
+  '_updated_at',
+  'createdAt',
+  '_created_at',
+  'expiresAt',
+  '_expiresAt',
+];
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
@@ -645,22 +660,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      const specialKeys = [
-        '_id',
-        '_hashed_password',
-        '_acl',
-        '_email_verify_token',
-        '_perishable_token',
-        '_tombstone',
-        '_session_token',
-        'updatedAt',
-        '_updated_at',
-        'createdAt',
-        '_created_at',
-        'expiresAt',
-        '_expiresAt',
-      ];
-      if (isNestedObject && _.includes(specialKeys, key)) {
+      if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
         restObject[key] = untransformObject(schema, className, mongoObject[key], true);
         continue;
       }
