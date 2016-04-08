@@ -1,4 +1,5 @@
 import log from './logger';
+import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -148,8 +149,6 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   if (key === 'ACL') {
     throw 'There was a problem transforming an ACL.';
   }
-
-
 
   // Handle arrays
   if (restValue instanceof Array) {
@@ -613,6 +612,21 @@ function transformUpdateOperator(operator, flatten) {
   }
 }
 
+const specialKeysForUntransform = [
+  '_id',
+  '_hashed_password',
+  '_acl',
+  '_email_verify_token',
+  '_perishable_token',
+  '_tombstone',
+  '_session_token',
+  'updatedAt',
+  '_updated_at',
+  'createdAt',
+  '_created_at',
+  'expiresAt',
+  '_expiresAt',
+];
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
@@ -630,10 +644,9 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
     if (mongoObject === null) {
       return null;
     }
-
     if (mongoObject instanceof Array) {
-      return mongoObject.map((o) => {
-        return untransformObject(schema, className, o, true);
+      return mongoObject.map(arrayEntry => {
+        return untransformObject(schema, className, arrayEntry, true);
       });
     }
 
@@ -647,6 +660,10 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
+      if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
+        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        continue;
+      }
       switch(key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];
@@ -728,8 +745,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             break;
           }
         }
-        restObject[key] = untransformObject(schema, className,
-                                            mongoObject[key], true);
+        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
       }
     }
 
