@@ -14,9 +14,20 @@ function classNameMismatchResponse(bodyClass, pathClass) {
   );
 }
 
+function injectDefaultSchema(schema) {
+  let defaultSchema = Schema.defaultColumns[schema.className];
+  if (defaultSchema) {
+    Object.keys(defaultSchema).forEach((key) => {
+      schema.fields[key] = defaultSchema[key];
+    });
+  }
+  return schema;
+}
+
 function getAllSchemas(req) {
   return req.config.database.schemaCollection()
     .then(collection => collection.getAllSchemas())
+    .then(schemas => schemas.map(injectDefaultSchema))
     .then(schemas => ({ response: { results: schemas } }));
 }
 
@@ -24,6 +35,7 @@ function getOneSchema(req) {
   const className = req.params.className;
   return req.config.database.schemaCollection()
     .then(collection => collection.findSchema(className))
+    .then(injectDefaultSchema)
     .then(schema => ({ response: schema }))
     .catch(error => {
       if (error === undefined) {
