@@ -1271,4 +1271,33 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('gets relation fields', (done) => {
+    let object = new Parse.Object('AnObject');
+    let relatedObject = new Parse.Object('RelatedObject');
+    Parse.Object.saveAll([object, relatedObject]).then(() => {
+      object.relation('related').add(relatedObject);
+      return object.save();
+    }).then(() => {
+      let headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      let requestOptions = {
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/AnObject',
+        json: true
+      };
+      request.get(requestOptions, (err, res, body) => {
+        expect(body.results.length).toBe(1);
+        let result = body.results[0];
+        expect(result.related).toEqual({
+          __type: "Relation",
+          className: 'RelatedObject'
+        })
+        done();
+      });
+    })
+  })
+
 });

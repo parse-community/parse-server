@@ -634,6 +634,24 @@ class Schema {
     }
     return false;
   };
+
+  getRelationFields(className) {
+    if (this.data && this.data[className]) {
+      let classData = this.data[className];
+      return Object.keys(classData).filter((field) => {
+        return classData[field].startsWith('relation');
+      }).reduce((memo, field) => {
+        let type = classData[field];
+        let className = type.slice('relation<'.length, type.length - 1);
+        memo[field] = {
+          __type: 'Relation',
+          className: className
+        };
+        return memo;
+      }, {});
+    }
+    return {};
+  }
 }
 
 // Returns a promise for a new Schema.
