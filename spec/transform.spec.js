@@ -167,8 +167,10 @@ describe('untransformObject', () => {
       _tombstone: {
         _updated_at: "I'm sure people will nest keys like this",
         _acl: 7,
-        _id: {}
+        _id: { someString: "str", someNumber: 7},
+        regularKey: { moreContents: [1, 2, 3] },
       },
+      regularKey: "some data",
     }]}
     let output = transform.untransformObject(dummySchema, null, input);
     expect(dd(output, input)).toEqual(undefined);
