@@ -88,6 +88,55 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should respect ACL without locking user out', (done) => {
+    let user = new Parse.User();
+    let ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('asdf');
+    user.setPassword('zxcv');
+    user.setACL(ACL);
+    user.signUp().then((user) => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      const ACL = user.getACL();
+      expect(ACL.getReadAccess(user)).toBe(true);
+      expect(ACL.getWriteAccess(user)).toBe(true);
+      expect(ACL.getPublicReadAccess()).toBe(false);
+      expect(ACL.getPublicWriteAccess()).toBe(false);
+      const perms = ACL.permissionsById;
+      expect(Object.keys(perms).length).toBe(1);
+      expect(perms[user.id].read).toBe(true);
+      expect(perms[user.id].write).toBe(true);
+      expect(perms['*']).toBeUndefined();
+      // Try to lock out user
+      let newACL = new Parse.ACL();
+      newACL.setReadAccess(user.id, false);
+      newACL.setWriteAccess(user.id, false);
+      user.setACL(newACL);
+      return user.save();
+    }).then((user) => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      const ACL = user.getACL();
+      expect(ACL.getReadAccess(user)).toBe(true);
+      expect(ACL.getWriteAccess(user)).toBe(true);
+      expect(ACL.getPublicReadAccess()).toBe(false);
+      expect(ACL.getPublicWriteAccess()).toBe(false);
+      const perms = ACL.permissionsById;
+      expect(Object.keys(perms).length).toBe(1);
+      expect(perms[user.id].read).toBe(true);
+      expect(perms[user.id].write).toBe(true);
+      expect(perms['*']).toBeUndefined();
+      done();
+    }).catch((err) => {
+      fail("Should not fail");
+      done();
+    })
+  });
+
   it("user login with files", (done) => {
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
