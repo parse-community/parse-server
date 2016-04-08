@@ -732,6 +732,11 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
                                             mongoObject[key], true);
       }
     }
+
+    if (!isNestedObject) {
+      let relationFields = schema.getRelationFields(className);
+      Object.assign(restObject, relationFields);
+    }
     return restObject;
   default:
     throw 'unknown js type';

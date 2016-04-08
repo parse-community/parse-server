@@ -13,6 +13,9 @@ var dummySchema = {
         return 'geopoint';
       }
       return;
+    },
+    getRelationFields: function() {
+      return {}
     }
 };
 
