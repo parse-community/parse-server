@@ -169,6 +169,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
       if (this.query && this.query.objectId) {
         delete this.data.objectId
       }
+      return this.validateSchema();
     }
   });
 };
@@ -302,7 +303,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
                               'this auth is already used');
         }
       }
-    } 
+    }
     return Promise.resolve();
   });
 }

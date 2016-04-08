@@ -38,7 +38,7 @@ export class PushController extends AdaptableController {
     return !!this.adapter;
   }
 
-  sendPush(body = {}, where = {}, config, auth, wait) {
+  sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
     var pushAdapter = this.adapter;
     if (!this.pushIsAvailable) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
@@ -84,6 +84,7 @@ export class PushController extends AdaptableController {
     return Promise.resolve().then(() => {
       return pushStatus.setInitial(body, where);
     }).then(() => {
+      onPushStatusSaved(pushStatus.objectId);
       return badgeUpdate();
     }).then(() => {
       return rest.find(config, auth, '_Installation', where);

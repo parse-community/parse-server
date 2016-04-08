@@ -261,9 +261,9 @@ describe('server', () => {
     done();
   });
 
-  it('exposes all the "core" adapters', done => {
+  it('core adapters are not exposed anymore', done => {
     expect(ParseServer.S3Adapter).toThrow();
-    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter requires an projectId');
+    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
     done();
   });

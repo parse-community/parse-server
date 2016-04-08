@@ -104,7 +104,7 @@ Once you have a better understanding of how the project works, please refer to t
 
 We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:
 
-* [Heroku and mLab](https://github.com/ParsePlatform/parse-server/wiki/Deploying-Parse-Server#deploying-to-heroku-and-mLab)
+* [Heroku and mLab](https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku)
 * [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
@@ -198,7 +198,8 @@ var server = ParseServer({
   verifyUserEmails: true,
   // The public URL of your app.
   // This will appear in the link that is used to verify email addresses and reset passwords.
-  publicServerURL: 'https://example.com',
+  // Set the mount path as it is in serverURL
+  publicServerURL: 'https://example.com/parse',
   // Your apps name. This will appear in the subject and body of the emails that are sent.
   appName: 'Parse App',
   // The email adapter

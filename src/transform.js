@@ -633,7 +633,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     if (mongoObject instanceof Array) {
       return mongoObject.map((o) => {
-        return untransformObject(schema, className, o);
+        return untransformObject(schema, className, o, true);
       });
     }
 
@@ -731,6 +731,11 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
         restObject[key] = untransformObject(schema, className,
                                             mongoObject[key], true);
       }
+    }
+
+    if (!isNestedObject) {
+      let relationFields = schema.getRelationFields(className);
+      Object.assign(restObject, relationFields);
     }
     return restObject;
   default:

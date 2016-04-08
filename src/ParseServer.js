@@ -115,6 +115,7 @@ class ParseServer {
     },
     liveQuery = {},
     sessionLength = 31536000, // 1 Year in seconds
+    verbose = false,
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -149,6 +150,9 @@ class ParseServer {
       }
     }
 
+    if (verbose || process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
+      configureLogger({level: 'silly'});
+    }
 
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
       return new GridStoreAdapter(databaseURI);

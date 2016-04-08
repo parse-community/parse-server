@@ -67,7 +67,7 @@ describe('PushRouter', () => {
     }).toThrow();
     done();
   });
-  
+
   it('sends a push through REST', (done) => {
     request.post({
       url: Parse.serverURL+"/push",
@@ -82,6 +82,9 @@ describe('PushRouter', () => {
         'X-Parse-Master-Key': Parse.masterKey
       }
     }, function(err, res, body){
+      expect(res.headers['x-parse-push-status-id']).not.toBe(undefined);
+      expect(res.headers['x-parse-push-status-id'].length).toBe(10);
+      expect(res.headers[''])
       expect(body.result).toBe(true);
       done();
     });

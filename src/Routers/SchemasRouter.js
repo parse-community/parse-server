@@ -14,10 +14,20 @@ function classNameMismatchResponse(bodyClass, pathClass) {
   );
 }
 
+function injectDefaultSchema(schema) {
+  let defaultSchema = Schema.defaultColumns[schema.className];
+  if (defaultSchema) {
+    Object.keys(defaultSchema).forEach((key) => {
+      schema.fields[key] = defaultSchema[key];
+    });
+  }
+  return schema;
+}
+
 function getAllSchemas(req) {
   return req.config.database.schemaCollection()
     .then(collection => collection.getAllSchemas())
-    .then(schemas => schemas.map(Schema.mongoSchemaToSchemaAPIResponse))
+    .then(schemas => schemas.map(injectDefaultSchema))
     .then(schemas => ({ response: { results: schemas } }));
 }
 
@@ -25,11 +35,14 @@ function getOneSchema(req) {
   const className = req.params.className;
   return req.config.database.schemaCollection()
     .then(collection => collection.findSchema(className))
-    .then(mongoSchema => {
-      if (!mongoSchema) {
+    .then(injectDefaultSchema)
+    .then(schema => ({ response: schema }))
+    .catch(error => {
+      if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
       }
-      return { response: Schema.mongoSchemaToSchemaAPIResponse(mongoSchema) };
     });
 }
 
@@ -47,7 +60,7 @@ function createSchema(req) {
 
   return req.config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
-    .then(result => ({ response: Schema.mongoSchemaToSchemaAPIResponse(result) }));
+    .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {
@@ -55,8 +68,8 @@ function modifySchema(req) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  var submittedFields = req.body.fields || {};
-  var className = req.params.className;
+  let submittedFields = req.body.fields || {};
+  let className = req.params.className;
 
   return req.config.database.loadSchema()
     .then(schema => {

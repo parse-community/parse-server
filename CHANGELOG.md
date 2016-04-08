@@ -1,5 +1,40 @@
 ## Parse Server Changelog
 
+### 2.2.6 (4/5/2016)
+
+* Important Fix: Disables find on installation from clients [\#1374](https://github.com/ParsePlatform/parse-server/pull/1374) ([flovilmart](https://github.com/flovilmart))
+* Adds missing options to the CLI [\#1368](https://github.com/ParsePlatform/parse-server/pull/1368) ([flovilmart](https://github.com/flovilmart))
+* Removes only master on travis [\#1367](https://github.com/ParsePlatform/parse-server/pull/1367) ([flovilmart](https://github.com/flovilmart))
+* Auth.\_loadRoles should not query the same role twice. [\#1366](https://github.com/ParsePlatform/parse-server/pull/1366) ([blacha](https://github.com/blacha))
+
+### 2.2.5 (4/4/2016)
+
+* Improves config loading and tests [\#1363](https://github.com/ParsePlatform/parse-server/pull/1363) ([flovilmart](https://github.com/flovilmart))
+* Adds travis configuration to deploy NPM on new version tags [\#1361](https://github.com/ParsePlatform/parse-server/pull/1361) ([gfosco](https://github.com/gfosco))
+* Inject the default schemas properties when loading it [\#1357](https://github.com/ParsePlatform/parse-server/pull/1357) ([flovilmart](https://github.com/flovilmart))
+* Adds console transport when testing with VERBOSE=1 [\#1351](https://github.com/ParsePlatform/parse-server/pull/1351) ([flovilmart](https://github.com/flovilmart))
+* Make notEqual work on relations  [\#1350](https://github.com/ParsePlatform/parse-server/pull/1350) ([flovilmart](https://github.com/flovilmart))
+* Accept only bool for $exists in LiveQuery [\#1315](https://github.com/ParsePlatform/parse-server/pull/1315) ([drew-gross](https://github.com/drew-gross))
+* Adds more options when using CLI/config [\#1305](https://github.com/ParsePlatform/parse-server/pull/1305) ([flovilmart](https://github.com/flovilmart))
+* Update error message [\#1297](https://github.com/ParsePlatform/parse-server/pull/1297) ([drew-gross](https://github.com/drew-gross))
+* Properly let masterKey add fields [\#1291](https://github.com/ParsePlatform/parse-server/pull/1291) ([flovilmart](https://github.com/flovilmart))
+* Point to \#1271 as how to write a good issue report [\#1290](https://github.com/ParsePlatform/parse-server/pull/1290) ([drew-gross](https://github.com/drew-gross))
+* Adds ability to override mount with publicServerURL for production uses [\#1287](https://github.com/ParsePlatform/parse-server/pull/1287) ([flovilmart](https://github.com/flovilmart))
+* Single object queries to use include and keys [\#1280](https://github.com/ParsePlatform/parse-server/pull/1280) ([jeremyjackson89](https://github.com/jeremyjackson89))
+* Improves report for Push error in logs and \_PushStatus [\#1269](https://github.com/ParsePlatform/parse-server/pull/1269) ([flovilmart](https://github.com/flovilmart))
+* Removes all stdout/err logs while testing [\#1268](https://github.com/ParsePlatform/parse-server/pull/1268) ([flovilmart](https://github.com/flovilmart))
+* Matching queries with doesNotExist constraint [\#1250](https://github.com/ParsePlatform/parse-server/pull/1250) ([andrecardoso](https://github.com/andrecardoso))
+* Added session length option for session tokens to server configuration [\#997](https://github.com/ParsePlatform/parse-server/pull/997) ([Kenishi](https://github.com/Kenishi))
+* Regression test for \#1259 [\#1286](https://github.com/ParsePlatform/parse-server/pull/1286) ([drew-gross](https://github.com/drew-gross))
+* Regression test for \#871 [\#1283](https://github.com/ParsePlatform/parse-server/pull/1283) ([drew-gross](https://github.com/drew-gross))
+* Add a test to repro \#701 [\#1281](https://github.com/ParsePlatform/parse-server/pull/1281) ([drew-gross](https://github.com/drew-gross))
+* Fix for \#1334: using relative cloud code files broken  [\#1353](https://github.com/ParsePlatform/parse-server/pull/1353) ([airdrummingfool](https://github.com/airdrummingfool))
+* Fix Issue/1288 [\#1346](https://github.com/ParsePlatform/parse-server/pull/1346) ([flovilmart](https://github.com/flovilmart))
+* Fixes \#1271 [\#1295](https://github.com/ParsePlatform/parse-server/pull/1295) ([drew-gross](https://github.com/drew-gross))
+* Fixes issue \#1302 [\#1314](https://github.com/ParsePlatform/parse-server/pull/1314) ([flovilmart](https://github.com/flovilmart))
+* Fixes bug related to include in queries [\#1312](https://github.com/ParsePlatform/parse-server/pull/1312) ([flovilmart](https://github.com/flovilmart))
+
+
 ### 2.2.4 (3/29/2016)
 
 * Hotfix: fixed imports issue for S3Adapter, GCSAdapter, FileSystemAdapter [\#1263](https://github.com/ParsePlatform/parse-server/pull/1263) ([drew-gross](https://github.com/drew-gross)

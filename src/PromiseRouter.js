@@ -178,6 +178,11 @@ function makeExpressHandler(promiseHandler) {
             return res.send('Found. Redirecting to '+result.location);
           }
         }
+        if (result.headers) {
+          Object.keys(result.headers).forEach((header) => {
+            res.set(header, result.headers[header]);
+          })
+        }
         res.json(result.response);
       }, (e) => {
         log.verbose('error:', e);

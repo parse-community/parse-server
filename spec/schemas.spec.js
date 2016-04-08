@@ -326,6 +326,35 @@ describe('schemas', () => {
     });
   });
 
+  it('responds with all fields when getting incomplete schema', done => {
+    config.database.schemaCollection().then((schema) => {
+      return schema.addSchema('_User');
+    }).then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/schemas/_User',
+        headers: masterKeyHeaders,
+        json: true
+      }, (error, response, body) => {
+        expect(body).toEqual({
+          className: '_User',
+          fields: {
+            objectId: {type: 'String'},
+            updatedAt: {type: 'Date'},
+            createdAt: {type: 'Date'},
+            username: {type: 'String'},
+            password: {type: 'String'},
+            authData: {type: 'Object'},
+            email: {type: 'String'},
+            emailVerified: {type: 'Boolean'},
+            ACL: {type: 'ACL'}
+          },
+          classLevelPermissions: defaultClassLevelPermissions
+        });
+        done();
+      });
+    })
+  });
+
   it('lets you specify class name in both places', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
@@ -1511,5 +1540,20 @@ describe('schemas', () => {
       fail('should not fail');
       done();
     });
+  });
+
+  it('can login when addFields is false (issue #1355)', (done) => {
+    setPermissionsOnClass('_User', {
+      'addField': {}
+    }).then(() => {
+      return Parse.User.signUp('foo', 'bar');
+    }).then((user) => {
+      expect(user.getUsername()).toBe('foo');
+      done()
+    }, (err) => {
+      console.error(err);
+      fail('should create user');
+      done();
+    })
   })
 });

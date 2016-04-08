@@ -16,6 +16,8 @@
 
 var Parse = require('parse/node').Parse;
 var transform = require('./transform');
+import MongoSchemaCollection from './Adapters/Storage/Mongo/MongoSchemaCollection';
+import _                     from 'lodash';
 
 const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -113,15 +115,6 @@ function verifyPermissionKey(key) {
 }
 
 const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
-let DefaultClassLevelPermissions = () => {
-  return CLPValidKeys.reduce((perms, key) => {
-    perms[key] = {
-      '*': true
-    };
-    return perms;
-  }, {});
-}
-
 function validateCLP(perms) {
   if (!perms) {
     return;
@@ -139,17 +132,16 @@ function validateCLP(perms) {
     });
   });
 }
-// Valid classes must:
-// Be one of _User, _Installation, _Role, _Session OR
-// Be a join table OR
-// Include only alpha-numeric and underscores, and not start with an underscore or number
 var joinClassRegex = /^_Join:[A-Za-z0-9_]+:[A-Za-z0-9_]+/;
 var classAndFieldRegex = /^[A-Za-z][A-Za-z0-9_]*$/;
 function classNameIsValid(className) {
-  return (systemClasses.indexOf(className) > -1 ||
-    className === '_SCHEMA' || //TODO: remove this, as _SCHEMA is not a valid class name for storing Parse Objects.
+  // Valid classes must:
+  return (
+    // Be one of _User, _Installation, _Role, _Session OR
+    systemClasses.indexOf(className) > -1 ||
+    // Be a join table OR
     joinClassRegex.test(className) ||
-    //Class names have the same constraints as field names, but also allow the previous additional names.
+    // Include only alpha-numeric and underscores, and not start with an underscore or number
     fieldNameIsValid(className)
   );
 }
@@ -220,11 +212,8 @@ function schemaAPITypeToMongoFieldType(type) {
   }
 }
 
-// Create a schema from a Mongo collection and the exported schema format.
-// mongoSchema should be a list of objects, each with:
-// '_id' indicates the className
-// '_metadata' is ignored for now
-// Everything else is expected to be a userspace field.
+// Stores the entire schema of the app in a weird hybrid format somewhere between
+// the mongo format and the Parse format. Soon, this will all be Parse format.
 class Schema {
   _collection;
   data;
@@ -233,7 +222,8 @@ class Schema {
   constructor(collection) {
     this._collection = collection;
 
-    // this.data[className][fieldName] tells you the type of that field
+    // this.data[className][fieldName] tells you the type of that field, in mongo format
+    // TODO: use Parse format
     this.data = {};
     // this.perms[className][operation] tells you the acl-style permissions
     this.perms = {};
@@ -242,33 +232,24 @@ class Schema {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this._collection.getAllSchemas().then(results => {
-      for (let obj of results) {
-        let className = null;
-        let classData = {};
-        let permsData = null;
-        Object.keys(obj).forEach(key => {
-          let value = obj[key];
-          switch (key) {
-            case '_id':
-              className = value;
-              break;
-            case '_metadata':
-              if (value && value['class_permissions']) {
-                permsData = value['class_permissions'];
-              }
-              break;
-            default:
-              classData[key] = value;
-          }
-        });
-        if (className) {
-          this.data[className] = classData;
-          if (permsData) {
-            this.perms[className] = permsData;
-          }
+    return this._collection.getAllSchemas().then(allSchemas => {
+      allSchemas.forEach(schema => {
+        const parseFormatSchema = {
+          ...defaultColumns._Default,
+          ...(defaultColumns[schema.className] || {}),
+          ...schema.fields,
         }
-      }
+        // ACL doesn't show up in mongo, it's implicit
+        delete parseFormatSchema.ACL;
+        // createdAt and updatedAt are wacky and have legacy baggage
+        parseFormatSchema.createdAt = { type: 'String' };
+        parseFormatSchema.updatedAt = { type: 'String' };
+        this.data[schema.className] = _.mapValues(parseFormatSchema, parseField =>
+          schemaAPITypeToMongoFieldType(parseField).result
+        );
+
+        this.perms[schema.className] = schema.classLevelPermissions;
+      });
     });
   }
 
@@ -290,13 +271,13 @@ class Schema {
     }
 
     return this._collection.addSchema(className, mongoObject.result)
-      .then(result => result.ops[0])
-      .catch(error => {
-        if (error.code === 11000) { //Mongo's duplicate key error
-          throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
-        }
-        return Promise.reject(error);
-      });
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+      } else {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      }
+    });
   }
 
   updateClass(className, submittedFields, classLevelPermissions, database) {
@@ -344,7 +325,8 @@ class Schema {
       .then(() => {
         return this.setPermissions(className, classLevelPermissions)
       })
-      .then(() => { return mongoSchemaToSchemaAPIResponse(mongoObject.result) });
+      //TODO: Move this logic into the database adapter
+      .then(() => MongoSchemaCollection._TESTmongoSchemaToParseSchema(mongoObject.result));
   }
 
 
@@ -374,7 +356,7 @@ class Schema {
         'schema is frozen, cannot add: ' + className);
     }
     // We don't have this class. Update the schema
-    return this._collection.addSchema(className).then(() => {
+    return this.addClassIfNotExists(className, []).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -411,20 +393,20 @@ class Schema {
   }
 
   // Returns a promise that resolves successfully to the new schema
-  // object if the provided className-key-type tuple is valid.
+  // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  validateField(className, key, type, freeze) {
-    // Just to check that the key is valid
-    transform.transformKey(this, className, key);
+  validateField(className, fieldName, type, freeze) {
+    // Just to check that the fieldName is valid
+    transform.transformKey(this, className, fieldName);
 
-    if( key.indexOf(".") > 0 ) {
+    if( fieldName.indexOf(".") > 0 ) {
       // subdocument key (x.y) => ok if x is of type 'object'
-      key = key.split(".")[ 0 ];
+      fieldName = fieldName.split(".")[ 0 ];
       type = 'object';
     }
 
-    var expected = this.data[className][key];
+    let expected = this.data[className][fieldName];
     if (expected) {
       expected = (expected === 'map' ? 'object' : expected);
       if (expected === type) {
@@ -432,14 +414,13 @@ class Schema {
       } else {
         throw new Parse.Error(
           Parse.Error.INCORRECT_TYPE,
-          'schema mismatch for ' + className + '.' + key +
-          '; expected ' + expected + ' but got ' + type);
+          `schema mismatch for ${className}.${fieldName}; expected ${expected} but got ${type}`
+        );
       }
     }
 
     if (freeze) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-        'schema is frozen, cannot add ' + key + ' field');
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `schema is frozen, cannot add ${fieldName} field`);
     }
 
     // We don't have this field, but if the value is null or undefined,
@@ -463,9 +444,9 @@ class Schema {
     // Note that we use the $exists guard and $set to avoid race
     // conditions in the database. This is important!
     let query = {};
-    query[key] = { '$exists': false };
+    query[fieldName] = { '$exists': false };
     var update = {};
-    update[key] = type;
+    update[fieldName] = type;
     update = {'$set': update};
     return this._collection.upsertSchema(className, query, update).then(() => {
       // The update succeeded. Reload the schema
@@ -477,7 +458,7 @@ class Schema {
       return this.reloadData();
     }).then(() => {
       // Ensure that the schema now validates
-      return this.validateField(className, key, type, true);
+      return this.validateField(className, fieldName, type, true);
     }, (error) => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON,
@@ -547,11 +528,11 @@ class Schema {
   validateObject(className, object, query) {
     var geocount = 0;
     var promise = this.validateClassName(className);
-    for (var key in object) {
-      if (object[key] === undefined) {
+    for (let fieldName in object) {
+      if (object[fieldName] === undefined) {
         continue;
       }
-      var expected = getType(object[key]);
+      var expected = getType(object[fieldName]);
       if (expected === 'geopoint') {
         geocount++;
       }
@@ -566,7 +547,12 @@ class Schema {
       if (!expected) {
         continue;
       }
-      promise = thenValidateField(promise, className, key, expected);
+      if (fieldName === 'ACL') {
+        // Every object has ACL implicitly.
+        continue;
+      }
+
+      promise = thenValidateField(promise, className, fieldName, expected);
     }
     promise = thenValidateRequiredColumns(promise, className, object, query);
     return promise;
@@ -648,6 +634,24 @@ class Schema {
     }
     return false;
   };
+
+  getRelationFields(className) {
+    if (this.data && this.data[className]) {
+      let classData = this.data[className];
+      return Object.keys(classData).filter((field) => {
+        return classData[field].startsWith('relation');
+      }).reduce((memo, field) => {
+        let type = classData[field];
+        let className = type.slice('relation<'.length, type.length - 1);
+        memo[field] = {
+          __type: 'Relation',
+          className: className
+        };
+        return memo;
+      }, {});
+    }
+    return {};
+  }
 }
 
 // Returns a promise for a new Schema.
@@ -725,32 +729,6 @@ function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPe
   return { result: mongoObject };
 }
 
-function mongoFieldTypeToSchemaAPIType(type) {
-  if (type[0] === '*') {
-    return {
-      type: 'Pointer',
-      targetClass: type.slice(1),
-    };
-  }
-  if (type.startsWith('relation<')) {
-    return {
-      type: 'Relation',
-      targetClass: type.slice('relation<'.length, type.length - 1),
-    };
-  }
-  switch (type) {
-    case 'number':   return {type: 'Number'};
-    case 'string':   return {type: 'String'};
-    case 'boolean':  return {type: 'Boolean'};
-    case 'date':     return {type: 'Date'};
-    case 'map':
-    case 'object':   return {type: 'Object'};
-    case 'array':    return {type: 'Array'};
-    case 'geopoint': return {type: 'GeoPoint'};
-    case 'file':     return {type: 'File'};
-  }
-}
-
 // Builds a new schema (in schema API response format) out of an
 // existing mongo schema + a schemas API put request. This response
 // does not include the default fields, as it is intended to be passed
@@ -766,7 +744,7 @@ function buildMergedSchemaObject(mongoObject, putRequest) {
       }
       var fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
       if (!fieldIsDeleted) {
-        newSchema[oldField] = mongoFieldTypeToSchemaAPIType(mongoObject[oldField]);
+        newSchema[oldField] = MongoSchemaCollection._DONOTUSEmongoFieldToParseSchemaField(mongoObject[oldField]);
       }
     }
   }
@@ -881,41 +859,12 @@ function getObjectType(obj) {
   return 'object';
 }
 
-const nonFieldSchemaKeys = ['_id', '_metadata', '_client_permissions'];
-function mongoSchemaAPIResponseFields(schema) {
-  var fieldNames = Object.keys(schema).filter(key => nonFieldSchemaKeys.indexOf(key) === -1);
-  var response = fieldNames.reduce((obj, fieldName) => {
-    obj[fieldName] = mongoFieldTypeToSchemaAPIType(schema[fieldName])
-    return obj;
-  }, {});
-  response.ACL = {type: 'ACL'};
-  response.createdAt = {type: 'Date'};
-  response.updatedAt = {type: 'Date'};
-  response.objectId = {type: 'String'};
-  return response;
-}
-
-function mongoSchemaToSchemaAPIResponse(schema) {
-  let result = {
-    className: schema._id,
-    fields: mongoSchemaAPIResponseFields(schema),
-  };
-
-  let classLevelPermissions = DefaultClassLevelPermissions();
-  if (schema._metadata && schema._metadata.class_permissions) {
-    classLevelPermissions = Object.assign({}, classLevelPermissions, schema._metadata.class_permissions);
-  }
-  result.classLevelPermissions = classLevelPermissions;
-  return result;
-}
-
 export {
   load,
   classNameIsValid,
   invalidClassNameMessage,
   schemaAPITypeToMongoFieldType,
   buildMergedSchemaObject,
-  mongoFieldTypeToSchemaAPIType,
-  mongoSchemaToSchemaAPIResponse,
   systemClasses,
+  defaultColumns,
 };

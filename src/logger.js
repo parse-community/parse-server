@@ -11,8 +11,7 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
 
 let currentLogsFolder = LOGS_FOLDER;
 
-function generateTransports() {
-  let level = process.env.VERBOSE ? 'verbose': 'info';
+function generateTransports(level) {
   let transports = [
     new (DailyRotateFile)({
       filename: 'parse-server.info',
@@ -27,7 +26,7 @@ function generateTransports() {
       level: 'error'
     })
   ]
-  if (!process.env.TESTING) {
+  if (!process.env.TESTING || process.env.VERBOSE) {
     transports = [new (winston.transports.Console)({
       colorize: true,
       level:level
@@ -38,7 +37,8 @@ function generateTransports() {
 
 const logger = new winston.Logger();
 
-export function configureLogger({logsFolder}) {
+export function configureLogger({logsFolder, level = winston.level}) {
+  winston.level = level;
   logsFolder = logsFolder || currentLogsFolder;
 
   if (!path.isAbsolute(logsFolder)) {
@@ -50,15 +50,14 @@ export function configureLogger({logsFolder}) {
   currentLogsFolder = logsFolder;
 
   logger.configure({
-    transports:  generateTransports()
+    transports:  generateTransports(level)
   })
 }
 
 configureLogger({logsFolder: LOGS_FOLDER});
 
 export function addGroup(groupName) {
-  let level = process.env.VERBOSE ? 'verbose': 'info';
-
+  let level = winston.level;
   let transports =  generateTransports().concat(new (DailyRotateFile)({
     filename: groupName,
     dirname: currentLogsFolder,
