@@ -27,11 +27,7 @@ function injectDefaultSchema(schema) {
 function getAllSchemas(req) {
   return req.config.database.schemaCollection()
     .then(collection => collection.getAllSchemas())
-    .then(schemas => {
-      return schemas.map((schema) => {
-        return injectDefaultSchema(schema);
-      })
-    })
+    .then(schemas => schemas.map(injectDefaultSchema))
     .then(schemas => ({ response: { results: schemas } }));
 }
 
@@ -39,7 +35,7 @@ function getOneSchema(req) {
   const className = req.params.className;
   return req.config.database.schemaCollection()
     .then(collection => collection.findSchema(className))
-    .then(schema => injectDefaultSchema(schema))
+    .then(injectDefaultSchema)
     .then(schema => ({ response: schema }))
     .catch(error => {
       if (error === undefined) {
