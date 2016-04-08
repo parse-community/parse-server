@@ -49,6 +49,18 @@ function clearDatabaseSettings() {
   appDatabaseOptions = {};
 }
 
+//Used by tests
+function destroyAllDataPermanently() {
+  if (process.env.TESTING) {
+    var promises = [];
+    for (var conn in dbConnections) {
+      promises.push(dbConnections[conn].deleteEverything());
+    }
+    return Promise.all(promises);
+  }
+  throw 'Only supported in test environment';
+}
+
 function getDatabaseConnection(appId: string, collectionPrefix: string) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
@@ -71,5 +83,6 @@ module.exports = {
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
+  destroyAllDataPermanently: destroyAllDataPermanently,
   defaultDatabaseURI: databaseURI
 };

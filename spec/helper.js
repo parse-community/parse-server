@@ -8,6 +8,7 @@ var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
+var TestUtils = require('../src/index').TestUtils;
 
 var databaseURI = process.env.DATABASE_URI;
 var cloudMain = process.env.CLOUD_CODE_MAIN || './spec/cloud/main.js';
@@ -88,7 +89,7 @@ beforeEach(function(done) {
 
 afterEach(function(done) {
   Parse.User.logOut().then(() => {
-    return clearData();
+    return TestUtils.destroyAllDataPermanently();
   }).then(() => {
     done();
   }, (error) => {
@@ -230,14 +231,6 @@ function mockFacebook() {
     return Promise.reject();
   };
   return facebook;
-}
-
-function clearData() {
-  var promises = [];
-  for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
-  }
-  return Promise.all(promises);
 }
 
 // This is polluting, but, it makes it way easier to directly port old tests.
