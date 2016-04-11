@@ -477,8 +477,9 @@ function includePath(config, auth, response, path) {
         obj.__type = 'Object';
         obj.className = includeResponse.className;
 
-        if(className == "_User"){
+        if (obj.className == "_User") {
           delete obj.sessionToken;
+          delete obj.authData;
         }
         replace[obj.objectId] = obj;
       }
