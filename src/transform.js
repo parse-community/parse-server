@@ -649,7 +649,11 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
       if (key === 'lastMessageTimetoken') {
-        restObject['lastMessageTimetoken'] = 0;
+        if (typeof mongoObject['lastMessageTimetoken'] === 'number') {
+            restObject['lastMessageTimetoken'] = mongoObject['lastMessageTimetoken'];
+        } else {
+            restObject['lastMessageTimetoken'] = parseInt(mongoObject['lastMessageTimetoken']);
+        }
         break;
       }
       switch(key) {
