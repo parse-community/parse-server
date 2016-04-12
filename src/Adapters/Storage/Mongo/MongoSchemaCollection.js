@@ -76,6 +76,23 @@ function _mongoSchemaObjectFromNameFields(name: string, fields) {
   return object;
 }
 
+// Returns a type suitable for inserting into mongo _SCHEMA collection.
+// Does no validation. That is expected to be done in Parse Server.
+function parseFieldTypeToMongoFieldType({ type, targetClass }) {
+  switch (type) {
+    case 'Pointer':  return `*${targetClass}`;
+    case 'Relation': return `relation<${targetClass}>`;
+    case 'Number':   return 'number';
+    case 'String':   return 'string';
+    case 'Boolean':  return 'boolean';
+    case 'Date':     return 'date';
+    case 'Object':   return 'object';
+    case 'Array':    return 'array';
+    case 'GeoPoint': return 'geopoint';
+    case 'File':     return 'file';
+  }
+}
+
 class MongoSchemaCollection {
   _collection: MongoCollection;
 
@@ -147,5 +164,9 @@ MongoSchemaCollection._TESTmongoSchemaToParseSchema = mongoSchemaToParseSchema
 // Exported because we haven't moved all mongo schema format related logic
 // into the database adapter yet. We will remove this before too long.
 MongoSchemaCollection._DONOTUSEmongoFieldToParseSchemaField = mongoFieldToParseSchemaField
+
+// Exported because we haven't moved all mongo schema format related logic
+// into the database adapter yet. We will remove this before too long.
+MongoSchemaCollection._DONOTUSEparseFieldTypeToMongoFieldType = parseFieldTypeToMongoFieldType;
 
 export default MongoSchemaCollection
