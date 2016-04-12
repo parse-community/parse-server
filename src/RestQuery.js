@@ -450,7 +450,6 @@ function includePath(config, auth, response, path) {
     return response;
   }
   let pointersHash = {};
-  var className = null;
   var objectIds = {};
   for (var pointer of pointers) {
     let className = pointer.className;
