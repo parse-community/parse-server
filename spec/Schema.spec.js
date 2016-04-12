@@ -685,9 +685,10 @@ describe('Schema', () => {
       .then(() => schema.reloadData())
       .then(() => {
         expect(schema['data']['NewClass']).toEqual({
-          objectId: 'string',
-          updatedAt: 'string',
-          createdAt: 'string'
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' }
         });
         done();
       });
@@ -747,7 +748,7 @@ describe('Schema', () => {
   it('can merge schemas', done => {
     expect(Schema.buildMergedSchemaObject({
       _id: 'SomeClass',
-      someType: 'number'
+      someType: { type: 'Number' }
     }, {
       newType: {type: 'Number'}
     })).toEqual({
@@ -760,8 +761,8 @@ describe('Schema', () => {
   it('can merge deletions', done => {
     expect(Schema.buildMergedSchemaObject({
       _id: 'SomeClass',
-      someType: 'number',
-      outDatedType: 'string',
+      someType: { type: 'Number' },
+      outDatedType: { type: 'String' },
     },{
       newType: {type: 'GeoPoint'},
       outDatedType: {__op: 'Delete'},
@@ -775,16 +776,16 @@ describe('Schema', () => {
   it('ignore default field when merge with system class', done => {
     expect(Schema.buildMergedSchemaObject({
       _id: '_User',
-      username: 'string',
-      password: 'string',
-      authData: 'object',
-      email: 'string',
-      emailVerified: 'boolean'
+      username: { type: 'String' },
+      password: { type: 'String' },
+      authData: { type: 'Object' },
+      email: { type: 'String' },
+      emailVerified: { type: 'Boolean' },
     },{
-      authData: {type: 'string'},
-      customField: {type: 'string'},
+      authData: { type: 'String' },
+      customField: { type: 'String' },
     })).toEqual({
-      customField: {type: 'string'}
+      customField: { type: 'String' }
     });
     done();
   });

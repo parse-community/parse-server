@@ -90,9 +90,8 @@ DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
-    var match = t ? t.match(/^relation<(.*)>$/) : false;
-    if (match) {
-      return match[1];
+    if (t.type == 'Relation') {
+      return t.targetClass;
     } else {
       return className;
     }
@@ -446,11 +445,10 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   let promises = Object.keys(query).map((key) => {
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
       let t = schema.getExpectedType(className, key);
-      let match = t ? t.match(/^relation<(.*)>$/) : false;
-      if (!match) {
+      if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
-      let relatedClassName = match[1];
+      let relatedClassName = t.targetClass;
       // Build the list of queries
       let queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
@@ -599,7 +597,6 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   if (options.limit) {
     mongoOptions.limit = options.limit;
   }
-
   let isMaster = !('acl' in options);
   let aclGroup = options.acl || [];
   let acceptor = schema => schema.hasKeys(className, keysForQuery(query))
