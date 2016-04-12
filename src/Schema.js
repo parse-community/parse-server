@@ -451,7 +451,6 @@ class Schema {
         return this.validateField(className, fieldName, type, true);
       }, (error) => {
         // The schema still doesn't validate. Give up
-        console.log(error)
         throw new Parse.Error(Parse.Error.INVALID_JSON,
           'schema key will not revalidate');
       });
