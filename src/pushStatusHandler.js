@@ -19,7 +19,7 @@ export default function pushStatusHandler(config) {
   let initialPromise;
   let pushStatus;
   let objectId = newObjectId();
-  let database = config.database.Unsafe();
+  let database = config.database.WithoutValidation();
 
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
     let now = new Date();

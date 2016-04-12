@@ -15,7 +15,7 @@ export class HooksController {
   constructor(applicationId:string, collectionPrefix:string = '') {
     this._applicationId = applicationId;
     this._collectionPrefix = collectionPrefix;
-    this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).Unsafe();
+    this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).WithoutValidation();
   }
 
   load() {

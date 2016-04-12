@@ -45,7 +45,7 @@ export class UserController extends AdaptableController {
       // TODO: Better error here.
       return Promise.reject();
     }
-    let database = this.config.database.Unsafe();
+    let database = this.config.database.WithoutValidation();
     return database.update('_User', {
       username: username,
       _email_verify_token: token
@@ -58,7 +58,7 @@ export class UserController extends AdaptableController {
   }
 
   checkResetTokenValidity(username, token) {
-    let database = this.config.database.Unsafe();
+    let database = this.config.database.WithoutValidation();
     return database.find('_User', {
       username: username,
       _perishable_token: token
@@ -115,7 +115,7 @@ export class UserController extends AdaptableController {
 
   setPasswordResetToken(email) {
     let token = randomString(25);
-    let database = this.config.database.Unsafe();
+    let database = this.config.database.WithoutValidation();
     return database.update('_User', {email: email}, {_perishable_token: token});
   }
 
@@ -153,7 +153,7 @@ export class UserController extends AdaptableController {
      return updateUserPassword(user.objectId, password, this.config);
    }).then(() => {
       // clear reset password token
-      return this.config.database.Unsafe().update('_User', { username }, {
+      return this.config.database.WithoutValidation().update('_User', { username }, {
         _perishable_token: {__op: 'Delete'}
       });
     });
