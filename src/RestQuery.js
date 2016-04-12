@@ -450,7 +450,6 @@ function includePath(config, auth, response, path) {
     return response;
   }
   let pointersHash = {};
-  var className = null;
   var objectIds = {};
   for (var pointer of pointers) {
     let className = pointer.className;
@@ -477,8 +476,9 @@ function includePath(config, auth, response, path) {
         obj.__type = 'Object';
         obj.className = includeResponse.className;
 
-        if(className == "_User"){
+        if (obj.className == "_User") {
           delete obj.sessionToken;
+          delete obj.authData;
         }
         replace[obj.objectId] = obj;
       }
