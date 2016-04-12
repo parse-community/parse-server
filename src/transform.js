@@ -654,6 +654,14 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
       return Parse._encode(mongoObject);
     }
 
+    if (mongoObject instanceof mongodb.Long) {
+      return mongoObject.toNumber();
+    }
+
+    if (mongoObject instanceof mongodb.Double) {
+      return mongoObject.value;
+    }
+
     if (BytesCoder.isValidDatabaseObject(mongoObject)) {
       return BytesCoder.databaseToJSON(mongoObject);
     }
