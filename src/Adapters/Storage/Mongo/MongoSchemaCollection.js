@@ -117,7 +117,7 @@ function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPe
     }
   }
 
-  return { result: mongoObject };
+  return mongoObject;
 }
 
 class MongoSchemaCollection {
@@ -165,10 +165,7 @@ class MongoSchemaCollection {
   // can't be added for a reason other than it already existing, requirements for rejection reason are TBD.
   addSchema(name: string, fields, classLevelPermissions) {
     let mongoSchema = mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions);
-    if (!mongoSchema.result) {
-      throw new Parse.Error(mongoSchema.code, mongoSchema.error);
-    }
-    let mongoObject = _mongoSchemaObjectFromNameFields(name, mongoSchema.result);
+    let mongoObject = _mongoSchemaObjectFromNameFields(name, mongoSchema);
     return this._collection.insertOne(mongoObject)
     .then(result => mongoSchemaToParseSchema(result.ops[0]))
     .catch(error => {

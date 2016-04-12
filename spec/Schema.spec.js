@@ -687,7 +687,8 @@ describe('Schema', () => {
         expect(schema['data']['NewClass']).toEqual({
           objectId: { type: 'String' },
           updatedAt: { type: 'Date' },
-          createdAt: { type: 'Date' }
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' }
         });
         done();
       });

@@ -228,9 +228,6 @@ class Schema {
           ...(defaultColumns[schema.className] || {}),
           ...schema.fields,
         }
-        // createdAt and updatedAt are wacky and have legacy baggage
-        parseFormatSchema.createdAt = { type: 'Date' };
-        parseFormatSchema.updatedAt = { type: 'Date' };
         this.data[schema.className] = parseFormatSchema;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
