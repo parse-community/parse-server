@@ -213,7 +213,6 @@ class Schema {
     this._collection = collection;
 
     // this.data[className][fieldName] tells you the type of that field, in mongo format
-    // TODO: use Parse format
     this.data = {};
     // this.perms[className][operation] tells you the acl-style permissions
     this.perms = {};
@@ -229,14 +228,10 @@ class Schema {
           ...(defaultColumns[schema.className] || {}),
           ...schema.fields,
         }
-        // ACL doesn't show up in mongo, it's implicit
-        delete parseFormatSchema.ACL;
         // createdAt and updatedAt are wacky and have legacy baggage
-        parseFormatSchema.createdAt = { type: 'String' };
-        parseFormatSchema.updatedAt = { type: 'String' };
-        //Necessary because we still use the mongo type internally here :(
-        this.data[schema.className] = _.mapValues(parseFormatSchema, MongoSchemaCollection._DONOTUSEparseFieldTypeToMongoFieldType);
-
+        parseFormatSchema.createdAt = { type: 'Date' };
+        parseFormatSchema.updatedAt = { type: 'Date' };
+        this.data[schema.className] = parseFormatSchema;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
     });
@@ -249,17 +244,16 @@ class Schema {
   // on success, and rejects with an error on fail. Ensure you
   // have authorization (master key, or client class creation
   // enabled) before calling this function.
-  addClassIfNotExists(className, fields, classLevelPermissions) {
-    if (this.data[className]) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+  addClassIfNotExists(className, fields = {}, classLevelPermissions) {
+    var validationError = this.validateNewClass(className, fields, classLevelPermissions);
+    if (validationError) {
+      return Promise.reject(validationError);
     }
 
-    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions);
-    if (!mongoObject.result) {
-      return Promise.reject(mongoObject);
-    }
-
-    return this._collection.addSchema(className, mongoObject.result)
+    return this._collection.addSchema(className, fields, classLevelPermissions)
+    .then(res => {
+      return Promise.resolve(res);
+    })
     .catch(error => {
       if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -285,9 +279,9 @@ class Schema {
     });
 
     let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(newSchema, className, classLevelPermissions);
-    if (!mongoObject.result) {
-      throw new Parse.Error(mongoObject.code, mongoObject.error);
+    let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions);
+    if (validationError) {
+      throw new Parse.Error(validationError.code, validationError.error);
     }
 
     // Finally we have checked to make sure the request is valid and we can start deleting fields.
@@ -302,12 +296,13 @@ class Schema {
         insertedFields.push(fieldName);
       }
     });
+
     return Promise.all(deletePromises) // Delete Everything
       .then(() => this.reloadData()) // Reload our Schema, so we have all the new values
       .then(() => {
         let promises = insertedFields.map(fieldName => {
-          const mongoType = mongoObject.result[fieldName];
-          return this.validateField(className, fieldName, mongoType);
+          const type = submittedFields[fieldName];
+          return this.validateField(className, fieldName, type);
         });
         return Promise.all(promises);
       })
@@ -315,7 +310,11 @@ class Schema {
         return this.setPermissions(className, classLevelPermissions)
       })
       //TODO: Move this logic into the database adapter
-      .then(() => MongoSchemaCollection._TESTmongoSchemaToParseSchema(mongoObject.result));
+      .then(() => {
+        return { className: className,
+              fields: this.data[className],
+              classLevelPermissions: this.perms[className] }
+      });
   }
 
 
@@ -363,6 +362,51 @@ class Schema {
     });
   }
 
+  validateNewClass(className, fields = {}, classLevelPermissions) {
+    if (this.data[className]) {
+      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
+    }
+    if (!classNameIsValid(className)) {
+      return {
+        code: Parse.Error.INVALID_CLASS_NAME,
+        error: invalidClassNameMessage(className),
+      };
+    }
+    return this.validateSchemaData(className, fields, classLevelPermissions);
+  }
+
+  validateSchemaData(className, fields, classLevelPermissions) {
+    for (let fieldName in fields) {
+      if (!fieldNameIsValid(fieldName)) {
+        return {
+          code: Parse.Error.INVALID_KEY_NAME,
+          error: 'invalid field name: ' + fieldName,
+        };
+      }
+      if (!fieldNameIsValidForClass(fieldName, className)) {
+        return {
+          code: 136,
+          error: 'field ' + fieldName + ' cannot be added',
+        };
+      }
+      const error = fieldTypeIsInvalid(fields[fieldName]);
+      if (error) return { code: error.code, error: error.message };
+    }
+
+    for (let fieldName in defaultColumns[className]) {
+      fields[fieldName] = defaultColumns[className][fieldName];
+    }
+
+    let geoPoints = Object.keys(fields).filter(key => fields[key] && fields[key].type === 'GeoPoint');
+    if (geoPoints.length > 1) {
+      return {
+        code: Parse.Error.INCORRECT_TYPE,
+        error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
+      };
+    }
+    validateCLP(classLevelPermissions);
+  }
+
   // Sets the Class-level permissions for a given className, which must exist.
   setPermissions(className, perms) {
     if (typeof perms === 'undefined') {
@@ -393,13 +437,17 @@ class Schema {
       if( fieldName.indexOf(".") > 0 ) {
         // subdocument key (x.y) => ok if x is of type 'object'
         fieldName = fieldName.split(".")[ 0 ];
-        type = 'object';
+        type = 'Object';
       }
 
       let expected = this.data[className][fieldName];
       if (expected) {
-        expected = (expected === 'map' ? 'object' : expected);
-        if (expected === type) {
+        expected = (expected === 'map' ? 'Object' : expected);
+        if (expected.type && type.type
+            && expected.type == type.type
+            && expected.targetClass == type.targetClass) {
+          return Promise.resolve(this);
+        } else if (expected == type || expected.type == type) {
           return Promise.resolve(this);
         } else {
           throw new Parse.Error(
@@ -419,10 +467,10 @@ class Schema {
         return Promise.resolve(this);
       }
 
-      if (type === 'geopoint') {
+      if (type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
         for (let otherKey in this.data[className]) {
-          if (this.data[className][otherKey] === 'geopoint') {
+          if (this.data[className][otherKey].type === 'GeoPoint') {
             throw new Parse.Error(
               Parse.Error.INCORRECT_TYPE,
               'there can only be one geopoint field in a class');
@@ -430,15 +478,7 @@ class Schema {
         }
       }
 
-      // We don't have this field. Update the schema.
-      // Note that we use the $exists guard and $set to avoid race
-      // conditions in the database. This is important!
-      let query = {};
-      query[fieldName] = { '$exists': false };
-      let update = {};
-      update[fieldName] = type;
-      update = {'$set': update};
-      return this._collection.upsertSchema(className, query, update).then(() => {
+      return this._collection.updateField(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
       }, () => {
@@ -451,7 +491,6 @@ class Schema {
         return this.validateField(className, fieldName, type, true);
       }, (error) => {
         // The schema still doesn't validate. Give up
-        console.log(error)
         throw new Parse.Error(Parse.Error.INVALID_JSON,
           'schema key will not revalidate');
       });
@@ -488,7 +527,7 @@ class Schema {
               throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
             }
 
-            if (this.data[className][fieldName].startsWith('relation<')) {
+            if (this.data[className][fieldName].type == 'Relation') {
               //For relations, drop the _Join table
               return database.dropCollection(`_Join:${fieldName}:${className}`)
               .then(() => {
@@ -505,7 +544,7 @@ class Schema {
             // This is necessary to ensure that the data is still gone if they add the same field.
             return database.adaptiveCollection(className)
               .then(collection => {
-                let mongoFieldName = this.data[className][fieldName].startsWith('*') ? `_p_${fieldName}` : fieldName;
+                let mongoFieldName = this.data[className][fieldName].type === 'Pointer' ? `_p_${fieldName}` : fieldName;
                 return collection.updateMany({}, { "$unset": { [mongoFieldName]: null } });
               });
           })
@@ -525,7 +564,7 @@ class Schema {
         continue;
       }
       let expected = getType(object[fieldName]);
-      if (expected === 'geopoint') {
+      if (expected === 'GeoPoint') {
         geocount++;
       }
       if (geocount > 1) {
@@ -573,7 +612,6 @@ class Schema {
         Parse.Error.INCORRECT_TYPE,
         missingColumns[0]+' is required.');
     }
-
     return Promise.resolve(this);
   }
 
@@ -630,13 +668,12 @@ class Schema {
     if (this.data && this.data[className]) {
       let classData = this.data[className];
       return Object.keys(classData).filter((field) => {
-        return classData[field].startsWith('relation');
+        return classData[field].type === 'Relation';
       }).reduce((memo, field) => {
         let type = classData[field];
-        let className = type.slice('relation<'.length, type.length - 1);
         memo[field] = {
           __type: 'Relation',
-          className: className
+          className: type.targetClass
         };
         return memo;
       }, {});
@@ -651,85 +688,22 @@ function load(collection) {
   return schema.reloadData().then(() => schema);
 }
 
-// Returns { code, error } if invalid, or { result }, an object
-// suitable for inserting into _SCHEMA collection, otherwise.
-function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions) {
-  if (!classNameIsValid(className)) {
-    return {
-      code: Parse.Error.INVALID_CLASS_NAME,
-      error: invalidClassNameMessage(className),
-    };
-  }
-
-  for (let fieldName in fields) {
-    if (!fieldNameIsValid(fieldName)) {
-      return {
-        code: Parse.Error.INVALID_KEY_NAME,
-        error: 'invalid field name: ' + fieldName,
-      };
-    }
-    if (!fieldNameIsValidForClass(fieldName, className)) {
-      return {
-        code: 136,
-        error: 'field ' + fieldName + ' cannot be added',
-      };
-    }
-    const error = fieldTypeIsInvalid(fields[fieldName]);
-    if (error) return { code: error.code, error: error.message };
-  }
-
-  let mongoObject = {
-    _id: className,
-    objectId: 'string',
-    updatedAt: 'string',
-    createdAt: 'string'
-  };
-
-  for (let fieldName in defaultColumns[className]) {
-    mongoObject[fieldName] = MongoSchemaCollection._DONOTUSEparseFieldTypeToMongoFieldType(defaultColumns[className][fieldName]);
-  }
-
-  for (let fieldName in fields) {
-    mongoObject[fieldName] = MongoSchemaCollection._DONOTUSEparseFieldTypeToMongoFieldType(fields[fieldName]);
-  }
-
-  let geoPoints = Object.keys(mongoObject).filter(key => mongoObject[key] === 'geopoint');
-  if (geoPoints.length > 1) {
-    return {
-      code: Parse.Error.INCORRECT_TYPE,
-      error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
-    };
-  }
-
-  validateCLP(classLevelPermissions);
-  if (typeof classLevelPermissions !== 'undefined') {
-    mongoObject._metadata = mongoObject._metadata || {};
-    if (!classLevelPermissions) {
-      delete mongoObject._metadata.class_permissions;
-    } else {
-      mongoObject._metadata.class_permissions = classLevelPermissions;
-    }
-  }
-
-  return { result: mongoObject };
-}
-
 // Builds a new schema (in schema API response format) out of an
 // existing mongo schema + a schemas API put request. This response
 // does not include the default fields, as it is intended to be passed
 // to mongoSchemaFromFieldsAndClassName. No validation is done here, it
 // is done in mongoSchemaFromFieldsAndClassName.
-function buildMergedSchemaObject(mongoObject, putRequest) {
+function buildMergedSchemaObject(existingFields, putRequest) {
   let newSchema = {};
-  let sysSchemaField = Object.keys(defaultColumns).indexOf(mongoObject._id) === -1 ? [] : Object.keys(defaultColumns[mongoObject._id]);
-  for (let oldField in mongoObject) {
+  let sysSchemaField = Object.keys(defaultColumns).indexOf(existingFields._id) === -1 ? [] : Object.keys(defaultColumns[existingFields._id]);
+  for (let oldField in existingFields) {
     if (oldField !== '_id' && oldField !== 'ACL' &&  oldField !== 'updatedAt' && oldField !== 'createdAt' && oldField !== 'objectId') {
       if (sysSchemaField.length > 0 && sysSchemaField.indexOf(oldField) !== -1) {
         continue;
       }
       let fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
       if (!fieldIsDeleted) {
-        newSchema[oldField] = MongoSchemaCollection._DONOTUSEmongoFieldToParseSchemaField(mongoObject[oldField]);
+        newSchema[oldField] = existingFields[oldField];
       }
     }
   }
@@ -769,9 +743,11 @@ function getType(obj) {
   let type = typeof obj;
   switch(type) {
     case 'boolean':
+      return 'Boolean';
     case 'string':
+      return 'String';
     case 'number':
-      return type;
+      return 'Number';
     case 'map':
     case 'object':
       if (!obj) {
@@ -791,25 +767,28 @@ function getType(obj) {
 // Returns null if the type is unknown.
 function getObjectType(obj) {
   if (obj instanceof Array) {
-    return 'array';
+    return 'Array';
   }
   if (obj.__type){
     switch(obj.__type) {
       case 'Pointer' :
         if(obj.className) {
-          return '*' + obj.className;
+          return {
+            type: 'Pointer',
+            targetClass: obj.className
+          }
         }
       case 'File' :
         if(obj.name) {
-          return 'file';
+          return 'File';
         }
       case 'Date' :
         if(obj.iso) {
-          return 'date';
+          return 'Date';
         }
       case 'GeoPoint' :
         if(obj.latitude != null && obj.longitude != null) {
-          return 'geopoint';
+          return 'GeoPoint';
         }
       case 'Bytes' :
         if(obj.base64) {
@@ -825,23 +804,26 @@ function getObjectType(obj) {
   if (obj.__op) {
     switch(obj.__op) {
       case 'Increment':
-        return 'number';
+        return 'Number';
       case 'Delete':
         return null;
       case 'Add':
       case 'AddUnique':
       case 'Remove':
-        return 'array';
+        return 'Array';
       case 'AddRelation':
       case 'RemoveRelation':
-        return 'relation<' + obj.objects[0].className + '>';
+        return {
+          type: 'Relation',
+          targetClass: obj.objects[0].className
+        }
       case 'Batch':
         return getObjectType(obj.ops[0]);
       default:
         throw 'unexpected op: ' + obj.__op;
     }
   }
-  return 'object';
+  return 'Object';
 }
 
 export {

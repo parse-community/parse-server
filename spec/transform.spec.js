@@ -8,11 +8,11 @@ var dummySchema = {
     data: {},
     getExpectedType: function(className, key) {
       if (key == 'userPointer') {
-        return '*_User';
+        return { type: 'Pointer', targetClass: '_User' };
       } else if (key == 'picture') {
-        return 'file';
+        return { type: 'File' };
       } else if (key == 'location') {
-        return 'geopoint';
+        return { type: 'GeoPoint' };
       }
       return;
     },
