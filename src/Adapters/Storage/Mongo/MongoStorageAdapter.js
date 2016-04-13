@@ -7,6 +7,7 @@ let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
 
 const MongoSchemaCollectionName = '_SCHEMA';
+const DefaultMongoURI = 'mongodb://localhost:27017/parse';
 
 export class MongoStorageAdapter {
   // Private
@@ -18,7 +19,7 @@ export class MongoStorageAdapter {
   database;
 
   constructor({
-    uri,
+    uri = DefaultMongoURI,
     collectionPrefix = '',
     mongoOptions = {},
   }) {
