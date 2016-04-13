@@ -7,6 +7,7 @@ let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
 
 const MongoSchemaCollectionName = '_SCHEMA';
+const DefaultMongoURI = 'mongodb://localhost:27017/parse';
 
 export class MongoStorageAdapter {
   // Private
@@ -18,7 +19,7 @@ export class MongoStorageAdapter {
   database;
 
   constructor({
-    uri,
+    uri = DefaultMongoURI,
     collectionPrefix = '',
     mongoOptions = {},
   }) {
@@ -50,29 +51,30 @@ export class MongoStorageAdapter {
 
   adaptiveCollection(name: string) {
     return this.connect()
-      .then(() => this.database.collection(name))
+      .then(() => this.database.collection(this._collectionPrefix + name))
       .then(rawCollection => new MongoCollection(rawCollection));
   }
 
-  schemaCollection(collectionPrefix: string) {
+  schemaCollection() {
     return this.connect()
-      .then(() => this.adaptiveCollection(collectionPrefix + MongoSchemaCollectionName))
+      .then(() => this.adaptiveCollection(this._collectionPrefix + MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
   }
 
   collectionExists(name: string) {
     return this.connect().then(() => {
-      return this.database.listCollections({ name: name }).toArray();
+      return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
     }).then(collections => {
       return collections.length > 0;
     });
   }
 
   dropCollection(name: string) {
-    return this.collection(name).then(collection => collection.drop());
+    return this.collection(this._collectionPrefix + name).then(collection => collection.drop());
   }
+
   // Used for testing only right now.
-  collectionsContaining(match: string) {
+  allCollections() {
     return this.connect().then(() => {
       return this.database.collections();
     }).then(collections => {
@@ -80,7 +82,7 @@ export class MongoStorageAdapter {
         if (collection.namespace.match(/\.system\./)) {
           return false;
         }
-        return (collection.collectionName.indexOf(match) == 0);
+        return (collection.collectionName.indexOf(this._collectionPrefix) == 0);
       });
     });
   }
@@ -105,13 +107,7 @@ export class MongoStorageAdapter {
   // may do so.
 
   // Returns a Promise.
-
-  // This function currently accepts the collectionPrefix and adaptive collection as a paramater because it isn't
-  // actually capable of determining the location of it's own _SCHEMA collection without having
-  // the collectionPrefix. Also, Schemas.js, the caller of this function, only stores the collection
-  // itself, and not the prefix. Eventually Parse Server won't care what a SchemaCollection is and
-  // will just tell the DB adapter to do things and it will do them.
-  deleteFields(className: string, fieldNames, pointerFieldNames, collectionPrefix, adaptiveCollection) {
+  deleteFields(className: string, fieldNames, pointerFieldNames) {
     const nonPointerFieldNames = _.difference(fieldNames, pointerFieldNames);
     const mongoFormatNames = nonPointerFieldNames.concat(pointerFieldNames.map(name => `_p_${name}`));
     const collectionUpdate = { '$unset' : {} };
@@ -124,10 +120,9 @@ export class MongoStorageAdapter {
       schemaUpdate['$unset'][name] = null;
     });
 
-    return adaptiveCollection.updateMany({}, collectionUpdate)
-    .then(updateResult => {
-      return this.schemaCollection(collectionPrefix)
-    })
+    return this.adaptiveCollection(className)
+    .then(collection => collection.updateMany({}, collectionUpdate))
+    .then(updateResult => this.schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
 }

@@ -53,8 +53,6 @@ addParseCloud();
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
-// "databaseAdapter": a class like DatabaseController providing create, find,
-//                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like FileLoggerAdapter providing info, error,
@@ -88,7 +86,7 @@ class ParseServer {
     push,
     loggerAdapter,
     logsFolder,
-    databaseURI = DatabaseAdapter.defaultDatabaseURI,
+    databaseURI,
     databaseOptions,
     cloud,
     collectionPrefix = '',
@@ -130,9 +128,7 @@ class ParseServer {
       DatabaseAdapter.setAppDatabaseOptions(appId, databaseOptions);
     }
 
-    if (databaseURI) {
-      DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
-    }
+    DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
 
     if (cloud) {
       addParseCloud();

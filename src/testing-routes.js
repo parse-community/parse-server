@@ -1,8 +1,8 @@
 // testing-routes.js
-import cache from './cache';
+import cache            from './cache';
 import * as middlewares from './middlewares';
-import { ParseServer } from './index';
-import { Parse } from 'parse/node';
+import { ParseServer }  from './index';
+import { Parse }        from 'parse/node';
 
 var express = require('express'),
   cryptoUtils = require('./cryptoUtils');
@@ -31,7 +31,7 @@ function createApp(req, res) {
   res.status(200).send(keys);
 }
 
-// deletes all collections with the collectionPrefix of the app
+// deletes all collections that belong to the app
 function clearApp(req, res) {
   if (!req.auth.isMaster) {
     return res.status(401).send({ "error": "unauthorized" });
