@@ -684,12 +684,13 @@ describe('Schema', () => {
       .then(() => schema.deleteField('relationField', 'NewClass', config.database))
       .then(() => schema.reloadData())
       .then(() => {
-        expect(schema['data']['NewClass']).toEqual({
+        const expectedSchema = {
           objectId: { type: 'String' },
           updatedAt: { type: 'Date' },
           createdAt: { type: 'Date' },
           ACL: { type: 'ACL' }
-        });
+        };
+        expect(dd(schema.data.NewClass, expectedSchema)).toEqual(undefined);
         done();
       });
     });
@@ -716,6 +717,10 @@ describe('Schema', () => {
         done();
         Parse.Object.enableSingleInstance();
       });
+    })
+    .catch(error => {
+      fail(error);
+      done();
     });
   });
 
