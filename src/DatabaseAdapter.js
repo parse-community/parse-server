@@ -56,10 +56,8 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
 
   let mongoAdapterOptions = {
     collectionPrefix: collectionPrefix,
-    mongoOptions: appDatabaseOptions[appId]
-  }
-  if (appDatabaseURIs[appId]) {
-    mongoAdapterOptions.uri = appDatabaseURIs[appId];
+    mongoOptions: appDatabaseOptions[appId],
+    uri: appDatabaseURIs[appId], //may be undefined if the user didn't supply a URI, in which case the default will be used
   }
 
   dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions));
