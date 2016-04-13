@@ -244,12 +244,12 @@ describe('transform schema key changes', () => {
 
   it('untransforms mongodb number types', (done) => {
     var input = {
-      long: mongodb.Long.fromInt(1234566778),
-      double: new mongodb.Double(1234.3)
+      long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
+      double: new mongodb.Double(Number.MAX_VALUE)
     }
     var output = transform.untransformObject(dummySchema, null, input);
-    expect(output.long).toBe(1234566778);
-    expect(output.double).toBe(1234.3);
+    expect(output.long).toBe(Number.MAX_SAFE_INTEGER);
+    expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
 
