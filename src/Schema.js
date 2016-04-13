@@ -526,7 +526,7 @@ class Schema {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adaptiveCollection(className).then(collection => {
-          return database.adapter.deleteFields(className, [fieldName], [], database.collectionPrefix, collection);
+          return database.adapter.deleteFields(className, [fieldName], [], collection);
         })
         .then(() => database.dropCollection(`_Join:${fieldName}:${className}`))
         .catch(error => {
@@ -542,7 +542,7 @@ class Schema {
       const fieldNames = [fieldName];
       const pointerFieldNames = this.data[className][fieldName].type === 'Pointer' ? [fieldName] : [];
       return database.adaptiveCollection(className)
-      .then(collection => database.adapter.deleteFields(className, fieldNames, pointerFieldNames, database.collectionPrefix, collection));
+      .then(collection => database.adapter.deleteFields(className, fieldNames, pointerFieldNames, collection));
     });
   }
 

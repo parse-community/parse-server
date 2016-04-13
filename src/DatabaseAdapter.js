@@ -21,13 +21,8 @@ import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 const DefaultDatabaseURI = 'mongodb://localhost:27017/parse';
 
 let dbConnections = {};
-let databaseURI = DefaultDatabaseURI;
 let appDatabaseURIs = {};
 let appDatabaseOptions = {};
-
-function setDatabaseURI(uri) {
-  databaseURI = uri;
-}
 
 function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
@@ -61,26 +56,21 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
     return dbConnections[appId];
   }
 
-  var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
-
   let storageAdapter = new MongoStorageAdapter({
-    uri: dbURI,
+    uri: appDatabaseURIs[appId] ? appDatabaseURIs[appId] : DefaultDatabaseURI,
     collectionPrefix: collectionPrefix,
     mongoOptions: appDatabaseOptions[appId]
   });
 
-  dbConnections[appId] = new DatabaseController(storageAdapter, {
-    collectionPrefix: collectionPrefix
-  });
+  dbConnections[appId] = new DatabaseController(storageAdapter);
   return dbConnections[appId];
 }
 
 module.exports = {
   getDatabaseConnection: getDatabaseConnection,
-  setDatabaseURI: setDatabaseURI,
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
   destroyAllDataPermanently: destroyAllDataPermanently,
-  defaultDatabaseURI: databaseURI
+  defaultDatabaseURI: DefaultDatabaseURI
 };
