@@ -374,7 +374,7 @@ DatabaseController.prototype.mongoFind = function(className, query, options = {}
     .then(collection => collection.find(query, options));
 };
 
-// Deletes everything in the database matching the current collectionPrefix
+// Deletes everything in the database that belongs to the current app
 // Won't delete collections in the system namespace
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {
