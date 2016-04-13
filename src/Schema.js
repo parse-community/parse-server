@@ -514,40 +514,36 @@ class Schema {
     }
 
     return this.reloadData()
-      .then(() => {
-        return this.hasClass(className)
-          .then(hasClass => {
-            if (!hasClass) {
-              throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-            }
-            if (!this.data[className][fieldName]) {
-              throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
-            }
+    .then(() => this.hasClass(className))
+    .then(hasClass => {
+      if (!hasClass) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      }
+      if (!this.data[className][fieldName]) {
+        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+      }
 
-            if (this.data[className][fieldName].type == 'Relation') {
-              //For relations, drop the _Join table
-              return database.dropCollection(`_Join:${fieldName}:${className}`)
-              .then(() => {
-                return Promise.resolve();
-              }, error => {
-                if (error.message == 'ns not found') {
-                  return Promise.resolve();
-                }
-                return Promise.reject(error);
-              });
-            }
+      if (this.data[className][fieldName].type == 'Relation') {
+        //For relations, drop the _Join table
+        return database.adaptiveCollection(className).then(collection => {
+          return database.adapter.deleteFields(className, [fieldName], [], database.collectionPrefix, collection);
+        })
+        .then(() => database.dropCollection(`_Join:${fieldName}:${className}`))
+        .catch(error => {
+          // 'ns not found' means collection was already gone. Ignore deletion attempt.
+          // TODO: 'ns not found' is a mongo implementation detail. Move it into mongo adapter.
+          if (error.message == 'ns not found') {
+            return Promise.resolve();
+          }
+          return Promise.reject(error);
+        });
+      }
 
-            // for non-relations, remove all the data.
-            // This is necessary to ensure that the data is still gone if they add the same field.
-            return database.adaptiveCollection(className)
-              .then(collection => {
-                let mongoFieldName = this.data[className][fieldName].type === 'Pointer' ? `_p_${fieldName}` : fieldName;
-                return collection.updateMany({}, { "$unset": { [mongoFieldName]: null } });
-              });
-          })
-          // Save the _SCHEMA object
-          .then(() => this._collection.updateSchema(className, { $unset: { [fieldName]: null } }));
-      });
+      const fieldNames = [fieldName];
+      const pointerFieldNames = this.data[className][fieldName].type === 'Pointer' ? [fieldName] : [];
+      return database.adaptiveCollection(className)
+      .then(collection => database.adapter.deleteFields(className, fieldNames, pointerFieldNames, database.collectionPrefix, collection));
+    });
   }
 
   // Validates an object provided in REST format.
