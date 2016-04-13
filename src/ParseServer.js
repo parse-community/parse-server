@@ -84,7 +84,6 @@ class ParseServer {
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
-    databaseAdapter,
     filesAdapter,
     push,
     loggerAdapter,
@@ -125,10 +124,6 @@ class ParseServer {
       configureLogger({
         logsFolder
       })
-    }
-
-    if (databaseAdapter) {
-      DatabaseAdapter.setAdapter(databaseAdapter);
     }
 
     if (databaseOptions) {
