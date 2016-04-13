@@ -53,6 +53,8 @@ addParseCloud();
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
+// "databaseAdapter": a class like DatabaseController providing create, find,
+//                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like FileLoggerAdapter providing info, error,
@@ -166,6 +168,7 @@ class ParseServer {
     cache.apps.set(appId, {
       masterKey: masterKey,
       serverURL: serverURL,
+      collectionPrefix: collectionPrefix,
       clientKey: clientKey,
       javascriptKey: javascriptKey,
       dotNetKey: dotNetKey,
