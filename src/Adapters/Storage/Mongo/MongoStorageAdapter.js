@@ -11,14 +11,20 @@ const MongoSchemaCollectionName = '_SCHEMA';
 export class MongoStorageAdapter {
   // Private
   _uri: string;
-  _options: Object;
+  _collectionPrefix: string;
+  _mongoOptions: Object;
   // Public
   connectionPromise;
   database;
 
-  constructor(uri: string, options: Object) {
+  constructor({
+    uri,
+    collectionPrefix = '',
+    mongoOptions = {},
+  }) {
     this._uri = uri;
-    this._options = options;
+    this._collectionPrefix = collectionPrefix;
+    this._mongoOptions = mongoOptions;
   }
 
   connect() {
@@ -30,7 +36,7 @@ export class MongoStorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._options).then(database => {
+    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
       this.database = database;
     });
     return this.connectionPromise;
