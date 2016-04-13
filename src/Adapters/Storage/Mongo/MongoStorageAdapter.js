@@ -107,13 +107,7 @@ export class MongoStorageAdapter {
   // may do so.
 
   // Returns a Promise.
-
-  // This function currently accepts the adaptive collection as a paramater because it isn't
-  // actually capable of determining the location of it's own _SCHEMA collection without having
-  // the collectionPrefix. Also, Schemas.js, the caller of this function, only stores the collection
-  // itself, and not the prefix. Eventually Parse Server won't care what a SchemaCollection is and
-  // will just tell the DB adapter to do things and it will do them.
-  deleteFields(className: string, fieldNames, pointerFieldNames, adaptiveCollection) {
+  deleteFields(className: string, fieldNames, pointerFieldNames) {
     const nonPointerFieldNames = _.difference(fieldNames, pointerFieldNames);
     const mongoFormatNames = nonPointerFieldNames.concat(pointerFieldNames.map(name => `_p_${name}`));
     const collectionUpdate = { '$unset' : {} };
@@ -126,7 +120,8 @@ export class MongoStorageAdapter {
       schemaUpdate['$unset'][name] = null;
     });
 
-    return adaptiveCollection.updateMany({}, collectionUpdate)
+    return this.adaptiveCollection(className)
+    .then(collection => collection.updateMany({}, collectionUpdate))
     .then(updateResult => this.schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
