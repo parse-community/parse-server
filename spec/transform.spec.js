@@ -3,6 +3,7 @@
 
 let transform = require('../src/transform');
 let dd = require('deep-diff');
+let mongodb = require('mongodb');
 
 var dummySchema = {
     data: {},
@@ -238,6 +239,17 @@ describe('transform schema key changes', () => {
     expect(output._wperm).toBeUndefined();
     expect(output.ACL['*']['read']).toEqual(true);
     expect(output.ACL['Kevin']['write']).toEqual(true);
+    done();
+  });
+
+  it('untransforms mongodb number types', (done) => {
+    var input = {
+      long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
+      double: new mongodb.Double(Number.MAX_VALUE)
+    }
+    var output = transform.untransformObject(dummySchema, null, input);
+    expect(output.long).toBe(Number.MAX_SAFE_INTEGER);
+    expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
 
