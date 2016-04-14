@@ -19,6 +19,10 @@ function hash(password) {
 // hashed password.
 function compare(password, hashedPassword) {
   return new Promise(function(fulfill, reject) {
+    // Cannot bcrypt compare when one is undefined
+    if (!password || !hashedPassword) {
+      return fulfill(false);
+    }
     bcrypt.compare(password, hashedPassword, function(err, success) {
       if (err) {
         reject(err);

@@ -15,24 +15,12 @@
 //
 // Default is MongoStorageAdapter.
 
-import DatabaseController from './Controllers/DatabaseController';
+import DatabaseController  from './Controllers/DatabaseController';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 
-const DefaultDatabaseURI = 'mongodb://localhost:27017/parse';
-
-let adapter = MongoStorageAdapter;
 let dbConnections = {};
-let databaseURI = DefaultDatabaseURI;
 let appDatabaseURIs = {};
 let appDatabaseOptions = {};
-
-function setAdapter(databaseAdapter) {
-  adapter = databaseAdapter;
-}
-
-function setDatabaseURI(uri) {
-  databaseURI = uri;
-}
 
 function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
@@ -66,23 +54,21 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
     return dbConnections[appId];
   }
 
-  var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
+  let mongoAdapterOptions = {
+    collectionPrefix: collectionPrefix,
+    mongoOptions: appDatabaseOptions[appId],
+    uri: appDatabaseURIs[appId], //may be undefined if the user didn't supply a URI, in which case the default will be used
+  }
 
-  let storageAdapter = new adapter(dbURI, appDatabaseOptions[appId]);
-  dbConnections[appId] = new DatabaseController(storageAdapter, {
-    collectionPrefix: collectionPrefix
-  });
+  dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions));
+
   return dbConnections[appId];
 }
 
 module.exports = {
-  dbConnections: dbConnections,
   getDatabaseConnection: getDatabaseConnection,
-  setAdapter: setAdapter,
-  setDatabaseURI: setDatabaseURI,
   setAppDatabaseOptions: setAppDatabaseOptions,
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
   destroyAllDataPermanently: destroyAllDataPermanently,
-  defaultDatabaseURI: databaseURI
 };

@@ -76,6 +76,50 @@ function _mongoSchemaObjectFromNameFields(name: string, fields) {
   return object;
 }
 
+// Returns a type suitable for inserting into mongo _SCHEMA collection.
+// Does no validation. That is expected to be done in Parse Server.
+function parseFieldTypeToMongoFieldType({ type, targetClass }) {
+  switch (type) {
+    case 'Pointer':  return `*${targetClass}`;
+    case 'Relation': return `relation<${targetClass}>`;
+    case 'Number':   return 'number';
+    case 'String':   return 'string';
+    case 'Boolean':  return 'boolean';
+    case 'Date':     return 'date';
+    case 'Object':   return 'object';
+    case 'Array':    return 'array';
+    case 'GeoPoint': return 'geopoint';
+    case 'File':     return 'file';
+  }
+}
+
+// Returns { code, error } if invalid, or { result }, an object
+// suitable for inserting into _SCHEMA collection, otherwise.
+function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions) {
+
+  let mongoObject = {
+    _id: className,
+    objectId: 'string',
+    updatedAt: 'string',
+    createdAt: 'string'
+  };
+
+  for (let fieldName in fields) {
+    mongoObject[fieldName] = parseFieldTypeToMongoFieldType(fields[fieldName]);
+  }
+
+  if (typeof classLevelPermissions !== 'undefined') {
+    mongoObject._metadata = mongoObject._metadata || {};
+    if (!classLevelPermissions) {
+      delete mongoObject._metadata.class_permissions;
+    } else {
+      mongoObject._metadata.class_permissions = classLevelPermissions;
+    }
+  }
+
+  return mongoObject;
+}
+
 class MongoSchemaCollection {
   _collection: MongoCollection;
 
@@ -119,8 +163,9 @@ class MongoSchemaCollection {
   // later PR. Returns a promise that is expected to resolve with the newly created schema, in Parse format.
   // If the class already exists, returns a promise that rejects with undefined as the reason. If the collection
   // can't be added for a reason other than it already existing, requirements for rejection reason are TBD.
-  addSchema(name: string, fields) {
-    let mongoObject = _mongoSchemaObjectFromNameFields(name, fields);
+  addSchema(name: string, fields, classLevelPermissions) {
+    let mongoSchema = mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions);
+    let mongoObject = _mongoSchemaObjectFromNameFields(name, mongoSchema);
     return this._collection.insertOne(mongoObject)
     .then(result => mongoSchemaToParseSchema(result.ops[0]))
     .catch(error => {
@@ -138,14 +183,27 @@ class MongoSchemaCollection {
   upsertSchema(name: string, query: string, update) {
     return this._collection.upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update);
   }
+
+  updateField(className: string, fieldName: string, type: string) {
+    // We don't have this field. Update the schema.
+    // Note that we use the $exists guard and $set to avoid race
+    // conditions in the database. This is important!
+    let query = {};
+    query[fieldName] = { '$exists': false };
+    let update = {};
+    if (typeof type === 'string') {
+      type = {
+        type: type
+      }
+    }
+    update[fieldName] = parseFieldTypeToMongoFieldType(type);
+    update = {'$set': update};
+    return this.upsertSchema(className, query, update);
+  }
 }
 
 // Exported for testing reasons and because we haven't moved all mongo schema format
 // related logic into the database adapter yet.
 MongoSchemaCollection._TESTmongoSchemaToParseSchema = mongoSchemaToParseSchema
-
-// Exported because we haven't moved all mongo schema format related logic
-// into the database adapter yet. We will remove this before too long.
-MongoSchemaCollection._DONOTUSEmongoFieldToParseSchemaField = mongoFieldToParseSchemaField
 
 export default MongoSchemaCollection

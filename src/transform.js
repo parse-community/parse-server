@@ -115,11 +115,11 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   if (schema && schema.getExpectedType) {
     expected = schema.getExpectedType(className, key);
   }
-  if ((expected && expected[0] == '*') ||
+  if ((expected && expected.type == 'Pointer') ||
       (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var inArray = (expected === 'array');
+  var inArray = (expected && expected.type === 'Array');
 
   // Handle query constraints
   if (options.query) {
@@ -654,6 +654,14 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
       return Parse._encode(mongoObject);
     }
 
+    if (mongoObject instanceof mongodb.Long) {
+      return mongoObject.toNumber();
+    }
+
+    if (mongoObject instanceof mongodb.Double) {
+      return mongoObject.value;
+    }
+
     if (BytesCoder.isValidDatabaseObject(mongoObject)) {
       return BytesCoder.databaseToJSON(mongoObject);
     }
@@ -713,7 +721,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
               className, newKey);
             break;
           }
-          if (expected && expected[0] != '*') {
+          if (expected && expected.type !== 'Pointer') {
             log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
@@ -721,7 +729,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             break;
           }
           var objData = mongoObject[key].split('$');
-          var newClass = (expected ? expected.substring(1) : objData[0]);
+          var newClass = (expected ? expected.targetClass : objData[0]);
           if (objData[0] !== newClass) {
             throw 'pointer to incorrect className';
           }
@@ -736,11 +744,11 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
         } else {
           var expectedType = schema.getExpectedType(className, key);
           var value = mongoObject[key];
-          if (expectedType === 'file' && FileCoder.isValidDatabaseObject(value)) {
+          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
             restObject[key] = FileCoder.databaseToJSON(value);
             break;
           }
-          if (expectedType === 'geopoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }

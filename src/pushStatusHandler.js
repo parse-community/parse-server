@@ -24,18 +24,19 @@ export default function pushStatusHandler(config) {
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
     let now = new Date();
     let data =  body.data || {};
+    let payloadString = JSON.stringify(data);
     let object = {
-      objectId,
+      _id: objectId,
       pushTime: now.toISOString(),
       _created_at: now,
       query: JSON.stringify(where),
-      payload: body.data,
+      payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
       status: "pending",
       numSent: 0,
-      pushHash: md5Hash(JSON.stringify(data)),
+      pushHash: md5Hash(payloadString),
       // lockdown!
       _wperm: [],
       _rperm: []
@@ -44,7 +45,7 @@ export default function pushStatusHandler(config) {
       return collection.insertOne(object);
     }).then((res) => {
       pushStatus = {
-        objectId: object.objectId
+        objectId
       };
       return Promise.resolve(pushStatus);
     })
@@ -56,7 +57,7 @@ export default function pushStatusHandler(config) {
     return initialPromise.then(() => {
       return collection();
     }).then((collection) => {
-      return collection.updateOne({status:"pending", objectId: pushStatus.objectId}, {$set: {status: "running"}});
+      return collection.updateOne({status:"pending", _id: objectId}, {$set: {status: "running"}});
    });
   }
 
@@ -93,7 +94,7 @@ export default function pushStatusHandler(config) {
     return initialPromise.then(() => {
       return collection();
     }).then((collection) => {
-      return collection.updateOne({status:"running", objectId: pushStatus.objectId}, {$set: update});
+      return collection.updateOne({status:"running", _id: objectId}, {$set: update});
     });
   }
 
@@ -106,7 +107,7 @@ export default function pushStatusHandler(config) {
     return initialPromise.then(() => {
       return collection();
     }).then((collection) => {
-      return collection.updateOne({objectId: pushStatus.objectId}, {$set: update});
+      return collection.updateOne({_id: objectId}, {$set: update});
     });
   }
 

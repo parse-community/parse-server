@@ -3,16 +3,17 @@
 
 let transform = require('../src/transform');
 let dd = require('deep-diff');
+let mongodb = require('mongodb');
 
 var dummySchema = {
     data: {},
     getExpectedType: function(className, key) {
       if (key == 'userPointer') {
-        return '*_User';
+        return { type: 'Pointer', targetClass: '_User' };
       } else if (key == 'picture') {
-        return 'file';
+        return { type: 'File' };
       } else if (key == 'location') {
-        return 'geopoint';
+        return { type: 'GeoPoint' };
       }
       return;
     },
@@ -238,6 +239,17 @@ describe('transform schema key changes', () => {
     expect(output._wperm).toBeUndefined();
     expect(output.ACL['*']['read']).toEqual(true);
     expect(output.ACL['Kevin']['write']).toEqual(true);
+    done();
+  });
+
+  it('untransforms mongodb number types', (done) => {
+    var input = {
+      long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
+      double: new mongodb.Double(Number.MAX_VALUE)
+    }
+    var output = transform.untransformObject(dummySchema, null, input);
+    expect(output.long).toBe(Number.MAX_SAFE_INTEGER);
+    expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
 

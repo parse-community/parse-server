@@ -1514,6 +1514,29 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should properly error when password is missing', (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(user) {
+        user.set('username', 'myUser');
+        user.set('email', 'foo@example.com');
+        user.save().then(() => {
+          return Parse.User.logOut();
+        }).then(() => {
+          return Parse.User.logIn('myUser', 'password');
+        }).then(() => {
+          fail('should not succeed');
+          done();
+        }, (err) => {
+          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+          expect(err.message).toEqual('Invalid username/password.');
+          done();
+        })
+      }
+    });
+  });
+
   it('should have authData in beforeSave and afterSave', (done) => {
 
     Parse.Cloud.beforeSave('_User', (request, response) => {

@@ -10,12 +10,8 @@ var Schema = require('./../Schema');
 var transform = require('./../transform');
 const deepcopy = require('deepcopy');
 
-// options can contain:
-//   collectionPrefix: the string to put in front of every collection name.
-function DatabaseController(adapter, { collectionPrefix } = {}) {
+function DatabaseController(adapter) {
   this.adapter = adapter;
-
-  this.collectionPrefix = collectionPrefix;
 
   // We don't want a mutable this.schema, because then you could have
   // one request that uses different schemas for different parts of
@@ -32,24 +28,20 @@ DatabaseController.prototype.connect = function() {
 };
 
 DatabaseController.prototype.adaptiveCollection = function(className) {
-  return this.adapter.adaptiveCollection(this.collectionPrefix + className);
+  return this.adapter.adaptiveCollection(className);
 };
 
 DatabaseController.prototype.schemaCollection = function() {
-  return this.adapter.schemaCollection(this.collectionPrefix);
+  return this.adapter.schemaCollection();
 };
 
 DatabaseController.prototype.collectionExists = function(className) {
-  return this.adapter.collectionExists(this.collectionPrefix + className);
+  return this.adapter.collectionExists(className);
 };
 
 DatabaseController.prototype.dropCollection = function(className) {
-  return this.adapter.dropCollection(this.collectionPrefix + className);
+  return this.adapter.dropCollection(className);
 };
-
-function returnsTrue() {
-  return true;
-}
 
 DatabaseController.prototype.validateClassName = function(className) {
   if (!Schema.classNameIsValid(className)) {
@@ -62,7 +54,7 @@ DatabaseController.prototype.validateClassName = function(className) {
 // Returns a promise for a schema object.
 // If we are provided a acceptor, then we run it on the schema.
 // If the schema isn't accepted, we reload it at most once.
-DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
+DatabaseController.prototype.loadSchema = function(acceptor = () => true) {
 
   if (!this.schemaPromise) {
     this.schemaPromise = this.schemaCollection().then(collection => {
@@ -90,9 +82,8 @@ DatabaseController.prototype.loadSchema = function(acceptor = returnsTrue) {
 DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
-    var match = t ? t.match(/^relation<(.*)>$/) : false;
-    if (match) {
-      return match[1];
+    if (t.type == 'Relation') {
+      return t.targetClass;
     } else {
       return className;
     }
@@ -389,10 +380,8 @@ DatabaseController.prototype.mongoFind = function(className, query, options = {}
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
 
-  return this.adapter.collectionsContaining(this.collectionPrefix).then(collections => {
-    let promises = collections.map(collection => {
-      return collection.drop();
-    });
+  return this.adapter.allCollections().then(collections => {
+    let promises = collections.map(collection => collection.drop());
     return Promise.all(promises);
   });
 };
@@ -446,11 +435,10 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   let promises = Object.keys(query).map((key) => {
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
       let t = schema.getExpectedType(className, key);
-      let match = t ? t.match(/^relation<(.*)>$/) : false;
-      if (!match) {
+      if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
-      let relatedClassName = match[1];
+      let relatedClassName = t.targetClass;
       // Build the list of queries
       let queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
@@ -599,7 +587,6 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   if (options.limit) {
     mongoOptions.limit = options.limit;
   }
-
   let isMaster = !('acl' in options);
   let aclGroup = options.acl || [];
   let acceptor = schema => schema.hasKeys(className, keysForQuery(query))

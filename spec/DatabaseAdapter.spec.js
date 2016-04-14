@@ -8,15 +8,15 @@ describe('DatabaseAdapter', () => {
     DatabaseAdapter.setAppDatabaseOptions('optionsTest', {foo: "bar"});
     let optionsTestDatabaseConnection = DatabaseAdapter.getDatabaseConnection('optionsTest');
 
-    expect(optionsTestDatabaseConnection instanceof Object).toBe(true);
-    expect(optionsTestDatabaseConnection.adapter._options instanceof Object).toBe(true);
-    expect(optionsTestDatabaseConnection.adapter._options.foo).toBe("bar");
+    expect(optionsTestDatabaseConnection).toEqual(jasmine.any(Object));
+    expect(optionsTestDatabaseConnection.adapter._mongoOptions).toEqual(jasmine.any(Object));
+    expect(optionsTestDatabaseConnection.adapter._mongoOptions.foo).toBe("bar");
 
     DatabaseAdapter.setAppDatabaseURI('noOptionsTest', 'mongodb://localhost:27017/noOptionsTest');
     let noOptionsTestDatabaseConnection = DatabaseAdapter.getDatabaseConnection('noOptionsTest');
 
-    expect(noOptionsTestDatabaseConnection instanceof Object).toBe(true);
-    expect(noOptionsTestDatabaseConnection.adapter._options instanceof Object).toBe(false);
+    expect(noOptionsTestDatabaseConnection).toEqual(jasmine.any(Object));
+    expect(noOptionsTestDatabaseConnection.adapter._mongoOptions).toEqual(jasmine.any(Object));
 
     done();
   });
