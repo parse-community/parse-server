@@ -659,10 +659,23 @@ RestWrite.prototype.handleInstallation = function() {
           // device token.
           var delQuery = {
             'deviceToken': this.data.deviceToken,
-            'installationId': {
+          };
+          // We have a unique install Id, use that to preserve
+          // the interesting installation
+          if (this.data.installationId) {
+            delQuery['installationId'] = {
               '$ne': this.data.installationId
             }
-          };
+          } else if (idMatch.objectId && this.data.objectId
+                    && idMatch.objectId == this.data.objectId) {
+            // we passed an objectId, preserve that instalation
+            delQuery['objectId'] = {
+              '$ne': idMatch.objectId
+            }
+          } else {
+            // What to do here? can't really clean up everything...
+            return idMatch.objectId;
+          }
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
