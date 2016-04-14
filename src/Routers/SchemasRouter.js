@@ -103,22 +103,7 @@ function deleteSchema(req) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, Schema.invalidClassNameMessage(req.params.className));
   }
 
-  return req.config.database.collectionExists(req.params.className)
-    .then(exist => {
-      if (!exist) {
-        return Promise.resolve();
-      }
-      return req.config.database.adaptiveCollection(req.params.className)
-        .then(collection => {
-          return collection.count()
-            .then(count => {
-              if (count > 0) {
-                throw new Parse.Error(255, `Class ${req.params.className} is not empty, contains ${count} objects, cannot drop schema.`);
-              }
-              return collection.drop();
-            })
-        })
-    })
+  return req.config.database.deleteSchema(req.params.className)
     .then(() => {
       // We've dropped the collection now, so delete the item from _SCHEMA
       // and clear the _Join collections

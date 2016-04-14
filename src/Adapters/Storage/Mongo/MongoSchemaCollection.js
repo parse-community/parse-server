@@ -1,5 +1,6 @@
 
 import MongoCollection from './MongoCollection';
+import * as transform from './MongoTransform';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -199,6 +200,10 @@ class MongoSchemaCollection {
     update[fieldName] = parseFieldTypeToMongoFieldType(type);
     update = {'$set': update};
     return this.upsertSchema(className, query, update);
+  }
+
+  get transform() {
+    return transform;
   }
 }
 
