@@ -333,7 +333,6 @@ RestQuery.prototype.runFind = function() {
           delete result.password;
         }
       }
-    }
 
       this.config.filesController.expandFilesInObject(this.config, results);
 
@@ -346,7 +345,6 @@ RestQuery.prototype.runFind = function() {
               newObject[key] = object[key];
             }
           }
-        }
         return newObject;
       });
     }
@@ -355,6 +353,7 @@ RestQuery.prototype.runFind = function() {
       for (var r of results) {
         r.className = this.redirectClassName;
       }
+    }
       this.response = {results: results};
     });
   } else {
