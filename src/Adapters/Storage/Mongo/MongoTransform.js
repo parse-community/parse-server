@@ -348,23 +348,20 @@ function CannotTransform() {}
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom, or if force is
 // true, throws an error.
-function transformAtom(atom, force, options) {
-  options = options || {};
-  var inArray = options.inArray;
-  var inObject = options.inObject;
+function transformAtom(atom, force, {
+  inArray,
+  inObject,
+} = {}) {
   switch(typeof atom) {
   case 'string':
   case 'number':
   case 'boolean':
     return atom;
-
   case 'undefined':
     return atom;
   case 'symbol':
   case 'function':
-    throw new Parse.Error(Parse.Error.INVALID_JSON,
-                          'cannot transform value: ' + atom);
-
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
   case 'object':
     if (atom instanceof Date) {
       // Technically dates are not rest format, but, it seems pretty
@@ -379,7 +376,7 @@ function transformAtom(atom, force, options) {
     // TODO: check validity harder for the __type-defined types
     if (atom.__type == 'Pointer') {
       if (!inArray && !inObject) {
-        return atom.className + '$' + atom.objectId;
+        return `${atom.className}$${atom.objectId}`;
       }
       return {
         __type: 'Pointer',
@@ -404,15 +401,13 @@ function transformAtom(atom, force, options) {
     }
 
     if (force) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'bad atom: ' + atom);
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
     }
     return CannotTransform;
 
   default:
     // I don't think typeof can ever let us get here
-    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR,
-                          'really did not expect value: ' + atom);
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, `really did not expect value: ${atom}`);
   }
 }
 

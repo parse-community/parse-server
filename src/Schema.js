@@ -463,18 +463,11 @@ class Schema {
         return Promise.resolve(this);
       }
 
-      if (type === 'GeoPoint') {
-        // Make sure there are not other geopoint fields
-        for (let otherKey in this.data[className]) {
-          if (this.data[className][otherKey].type === 'GeoPoint') {
-            throw new Parse.Error(
-              Parse.Error.INCORRECT_TYPE,
-              'there can only be one geopoint field in a class');
-          }
-        }
+      if (typeof type === 'string') {
+        type = { type };
       }
 
-      return this._collection.updateField(className, fieldName, type).then(() => {
+      return this._collection.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
       }, () => {

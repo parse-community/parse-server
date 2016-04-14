@@ -185,21 +185,45 @@ class MongoSchemaCollection {
     return this._collection.upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update);
   }
 
-  updateField(className: string, fieldName: string, type: string) {
-    // We don't have this field. Update the schema.
-    // Note that we use the $exists guard and $set to avoid race
-    // conditions in the database. This is important!
-    let query = {};
-    query[fieldName] = { '$exists': false };
-    let update = {};
-    if (typeof type === 'string') {
-      type = {
-        type: type
+  // Add a field to the schema. If database does not support the field
+  // type (e.g. mongo doesn't support more than one GeoPoint in a class) reject with an "Incorrect Type"
+  // Parse error with a desciptive message. If the field already exists, this function must
+  // not modify the schema, and must reject with an error. Exact error format is TBD. If this function
+  // is called for a class that doesn't exist, this function must create that class.
+
+  // TODO: throw an error if an unsupported field type is passed. Deciding whether a type is supported
+  // should be the job of the adapter. Some adapters may not support GeoPoint at all. Others may
+  // Support additional types that Mongo doesn't, like Money, or something.
+
+  // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
+  addFieldIfNotExists(className: string, fieldName: string, type: string) {
+    return this.findSchema(className)
+    .then(schema => {
+      // The schema exists. Check for existing GeoPoints.
+      if (type.type === 'GeoPoint') {
+        // Make sure there are not other geopoint fields
+        if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
+          return Promise.reject(new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.'));
+        }
       }
-    }
-    update[fieldName] = parseFieldTypeToMongoFieldType(type);
-    update = {'$set': update};
-    return this.upsertSchema(className, query, update);
+      return Promise.resolve();
+    }, error => {
+      // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
+      // If some other error, reject with it.
+      if (error === undefined) {
+        return Promise.resolve()
+      }
+      throw Promise.reject(error);
+    })
+    .then(() => {
+      // We use $exists and $set to avoid overwriting the field type if it
+      // already exists. (it could have added inbetween the last query and the update)
+      return this.upsertSchema(
+        className,
+        { [fieldName]: { '$exists': false } },
+        { '$set' : { [fieldName]: parseFieldTypeToMongoFieldType(type) } }
+      );
+    });
   }
 
   get transform() {
