@@ -374,7 +374,7 @@ RestQuery.prototype.replaceDontSelect = function() {
 RestQuery.prototype.runFind = function() {
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((results) => {
-    if (this.className == '_User') {
+    if (this.className === '_User') {
       for (var result of results) {
         delete result.password;
       }
@@ -545,8 +545,8 @@ function replacePointers(object, path, replace) {
     return object;
   }
 
-  if (path.length == 0) {
-    if (object.__type == 'Pointer') {
+  if (path.length === 0) {
+    if (object.__type === 'Pointer') {
       return replace[object.objectId];
     }
     return object;
