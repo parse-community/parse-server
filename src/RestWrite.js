@@ -338,6 +338,8 @@ RestWrite.prototype.transformUser = function() {
 
   }).then(() => {
     // Check for username uniqueness
+    //TODO: use a unique index on usernames to check for uniqueness to avoid race conditions
+    //TODO: use a unique index on auth data to fix issue #1488
     if (!this.data.username) {
       if (!this.query) {
         this.data.username = cryptoUtils.randomString(25);

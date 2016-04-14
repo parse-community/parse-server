@@ -2407,4 +2407,27 @@ describe('Parse.User testing', () => {
       })
     });
   })
+
+  it('should not allow you to sign up with facebook twice (regression test for #1488)', done => {
+    const signUpPromise1 = Parse.FacebookUtils.logIn({
+      id: "8675309",
+      access_token: "jenny",
+      expiration_date: new Date().toJSON()
+    }).;st signUpPromise2 = Parse.FacebookUtils.logIn({
+      id: "8675309",
+      access_token: "jenny",
+      expiration_date: new Date().toJSON()
+    });
+    Promise.all([signUpPromise1, signUpPromise2]).then(() => {
+      new Parse.Query(Parse.User)
+      .find({ useMasterKey: true })
+      .then(allUsers => {
+        expect(allUsers.length).toEqual(1);
+        done();
+      });
+    }, e => {
+      console.log(e);
+      done();
+    })
+  });
 });
