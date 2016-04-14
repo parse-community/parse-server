@@ -7,6 +7,9 @@ var rest = require('../src/rest');
 var querystring = require('querystring');
 var request = require('request');
 
+var DatabaseAdapter = require('../src/DatabaseAdapter');
+var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
+
 var config = new Config('test');
 var nobody = auth.nobody(config);
 
@@ -32,6 +35,44 @@ describe('rest query', () => {
       expect(response.results.length).toEqual(1);
       expect(response.results[0].foo).toBeTruthy();
       done();
+    });
+  });
+
+  describe('query for user w/ legacy credentials', () => {
+    var data = {
+      username: 'blah',
+      password: 'pass',
+      sessionToken: 'abc123',
+    }
+    describe('without masterKey', () => {
+      it('has them stripped from results', (done) => {
+        database.adaptiveCollection('_User').then((collection) => {
+          return collection.insertOne(data);
+        }).then(() => {
+          return rest.find(config, nobody, '_User')
+        }).then((result) => {
+          var user = result.results[0];
+          expect(user.username).toEqual('blah');
+          expect(user.sessionToken).toBeUndefined();
+          expect(user.password).toBeUndefined();
+          done();
+        });
+      });
+    });
+    describe('with masterKey', () => {
+      it('has them stripped from results', (done) => {
+        database.adaptiveCollection('_User').then((collection) => {
+          return collection.insertOne(data);
+        }).then(() => {
+          return rest.find(config, {isMaster: true}, '_User')
+        }).then((result) => {
+          var user = result.results[0];
+          expect(user.username).toEqual('blah');
+          expect(user.sessionToken).toBeUndefined();
+          expect(user.password).toBeUndefined();
+          done();
+        });
+      });
     });
   });
 

@@ -119,12 +119,13 @@ DatabaseController.prototype.untransformObject = function(
     return object;
   }
 
+  delete object.authData;
+  delete object.sessionToken;
+
   if (isMaster || (aclGroup.indexOf(object.objectId) > -1)) {
     return object;
   }
 
-  delete object.authData;
-  delete object.sessionToken;
   return object;
 };
 
