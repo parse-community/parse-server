@@ -46,9 +46,7 @@ describe('rest query', () => {
     }
     describe('without masterKey', () => {
       it('has them stripped from results', (done) => {
-        database.adaptiveCollection('_User').then((collection) => {
-          return collection.insertOne(data);
-        }).then(() => {
+        database.create('_User', data).then(() => {
           return rest.find(config, nobody, '_User')
         }).then((result) => {
           var user = result.results[0];
@@ -61,9 +59,7 @@ describe('rest query', () => {
     });
     describe('with masterKey', () => {
       it('has them stripped from results', (done) => {
-        database.adaptiveCollection('_User').then((collection) => {
-          return collection.insertOne(data);
-        }).then(() => {
+        database.create('_User', data).then(() => {
           return rest.find(config, {isMaster: true}, '_User')
         }).then((result) => {
           var user = result.results[0];
