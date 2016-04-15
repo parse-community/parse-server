@@ -325,26 +325,29 @@ RestQuery.prototype.replaceDontSelect = function() {
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function() {
-  if (this.findOptions.limit !== 0) {
-    return this.config.database.find(
-      this.className, this.restWhere, this.findOptions).then((results) => {
-      if (this.className === '_User') {
-        for (var result of results) {
-          delete result.password;
-        }
+  if (this.findOptions.limit === 0) {
+    this.response = {results: []};
+    return Promise.resolve();
+  }
+  return this.config.database.find(
+    this.className, this.restWhere, this.findOptions).then((results) => {
+    if (this.className === '_User') {
+      for (var result of results) {
+        delete result.password;
       }
+    }
 
-      this.config.filesController.expandFilesInObject(this.config, results);
+    this.config.filesController.expandFilesInObject(this.config, results);
 
-      if (this.keys) {
-        var keySet = this.keys;
-        results = results.map((object) => {
-          var newObject = {};
-          for (var key in object) {
-            if (keySet.has(key)) {
-              newObject[key] = object[key];
-            }
+    if (this.keys) {
+      var keySet = this.keys;
+      results = results.map((object) => {
+        var newObject = {};
+        for (var key in object) {
+          if (keySet.has(key)) {
+            newObject[key] = object[key];
           }
+        }
         return newObject;
       });
     }
@@ -354,12 +357,8 @@ RestQuery.prototype.runFind = function() {
         r.className = this.redirectClassName;
       }
     }
-      this.response = {results: results};
-    });
-  } else {
-    this.response = {results: []};
-    return Promise.resolve();
-  }
+    this.response = {results: results};
+  });
 };
 
 // Returns a promise for whether it was successful.
