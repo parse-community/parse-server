@@ -1,12 +1,8 @@
 {
-  "name": "parse-server",
-  "version": "2.2.7",
-  "description": "An express module providing a Parse-compatible API server",
+  "name": "parse-server-transform",
+  "version": "2.2.12",
+  "description": "Parse server that uses a custom parse-server-s3-adapter-secure",
   "main": "lib/index.js",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ParsePlatform/parse-server"
-  },
   "files": [
     "bin/",
     "lib/",
@@ -36,7 +32,7 @@
     "parse": "^1.8.0",
     "parse-server-fs-adapter": "^1.0.0",
     "parse-server-push-adapter": "^1.0.0",
-    "parse-server-s3-adapter": "^1.0.1",
+    "parse-server-s3-adapter-secure": "1.0.2",
     "parse-server-simple-mailgun-adapter": "^1.0.0",
     "redis": "^2.5.0-1",
     "request": "^2.65.0",
