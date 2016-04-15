@@ -191,4 +191,33 @@ describe('rest query', () => {
     });
   });
 
+  it('query with limit = 0', (done) => {
+    rest.create(config, nobody, 'TestObject', {foo: 'baz'}
+    ).then(() => {
+      return rest.create(config, nobody,
+        'TestObject', {foo: 'qux'});
+    }).then(() => {
+      return rest.find(config, nobody,
+        'TestObject', {}, {limit: 0});
+    }).then((response) => {
+      expect(response.results.length).toEqual(0);
+      done();
+    });
+  });
+
+  it('query with limit = 0 and count = 1', (done) => {
+    rest.create(config, nobody, 'TestObject', {foo: 'baz'}
+    ).then(() => {
+      return rest.create(config, nobody,
+        'TestObject', {foo: 'qux'});
+    }).then(() => {
+      return rest.find(config, nobody,
+        'TestObject', {}, {limit: 0, count: 1});
+    }).then((response) => {
+      expect(response.results.length).toEqual(0);
+      expect(response.count).toEqual(2);
+      done();
+    });
+  });
+
 });
