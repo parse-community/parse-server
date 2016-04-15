@@ -213,20 +213,7 @@ RestQuery.prototype.replaceInQuery = function() {
     this.config, this.auth, inQueryValue.className,
     inQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
-    var values = [];
-    for (var result of response.results) {
-      values.push({
-        __type: 'Pointer',
-        className: subquery.className,
-        objectId: result.objectId
-      });
-    }
-    delete inQueryObject['$inQuery'];
-    if (Array.isArray(inQueryObject['$in'])) {
-      inQueryObject['$in'] = inQueryObject['$in'].concat(values);
-    } else {
-      inQueryObject['$in'] = values;
-    }
+    this.config.database.transform.transformInQuery(inQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceInQuery();
   });
@@ -257,21 +244,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
     this.config, this.auth, notInQueryValue.className,
     notInQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
-    var values = [];
-    for (var result of response.results) {
-      values.push({
-        __type: 'Pointer',
-        className: subquery.className,
-        objectId: result.objectId
-      });
-    }
-    delete notInQueryObject['$notInQuery'];
-    if (Array.isArray(notInQueryObject['$nin'])) {
-      notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
-    } else {
-      notInQueryObject['$nin'] = values;
-    }
-
+    this.config.database.transform.transformNotInQuery(notInQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceNotInQuery();
   });
@@ -308,17 +281,7 @@ RestQuery.prototype.replaceSelect = function() {
     this.config, this.auth, selectValue.query.className,
     selectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
-    var values = [];
-    for (var result of response.results) {
-      values.push(result[selectValue.key]);
-    }
-    delete selectObject['$select'];
-    if (Array.isArray(selectObject['$in'])) {
-      selectObject['$in'] = selectObject['$in'].concat(values);
-    } else {
-      selectObject['$in'] = values;
-    }
-
+    this.config.database.transform.transformSelect(selectObject, selectValue.key, response.results);
     // Keep replacing $select clauses
     return this.replaceSelect();
   })
@@ -353,17 +316,7 @@ RestQuery.prototype.replaceDontSelect = function() {
     this.config, this.auth, dontSelectValue.query.className,
     dontSelectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
-    var values = [];
-    for (var result of response.results) {
-      values.push(result[dontSelectValue.key]);
-    }
-    delete dontSelectObject['$dontSelect'];
-    if (Array.isArray(dontSelectObject['$nin'])) {
-      dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
-    } else {
-      dontSelectObject['$nin'] = values;
-    }
-
+    this.config.database.transform.transformDontSelect(dontSelectObject, dontSelectValue.key, response.results);
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
   })
@@ -372,9 +325,13 @@ RestQuery.prototype.replaceDontSelect = function() {
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function() {
+  if (this.findOptions.limit === 0) {
+    this.response = {results: []};
+    return Promise.resolve();
+  }
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((results) => {
-    if (this.className == '_User') {
+    if (this.className === '_User') {
       for (var result of results) {
         delete result.password;
       }
@@ -450,7 +407,6 @@ function includePath(config, auth, response, path) {
     return response;
   }
   let pointersHash = {};
-  var className = null;
   var objectIds = {};
   for (var pointer of pointers) {
     let className = pointer.className;
@@ -477,8 +433,9 @@ function includePath(config, auth, response, path) {
         obj.__type = 'Object';
         obj.className = includeResponse.className;
 
-        if(className == "_User"){
+        if (obj.className == "_User") {
           delete obj.sessionToken;
+          delete obj.authData;
         }
         replace[obj.objectId] = obj;
       }
@@ -545,8 +502,8 @@ function replacePointers(object, path, replace) {
     return object;
   }
 
-  if (path.length == 0) {
-    if (object.__type == 'Pointer') {
+  if (path.length === 0) {
+    if (object.__type === 'Pointer') {
       return replace[object.objectId];
     }
     return object;

@@ -28,7 +28,6 @@ export default class MongoCollection {
 
         var index = {};
         index[key] = '2d';
-        //TODO: condiser moving index creation logic into Schema.js
         return this._mongoCollection.createIndex(index)
           // Retry, but just once.
           .then(() => this._rawFind(query, { skip, limit, sort }));

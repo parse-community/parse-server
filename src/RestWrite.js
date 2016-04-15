@@ -659,10 +659,23 @@ RestWrite.prototype.handleInstallation = function() {
           // device token.
           var delQuery = {
             'deviceToken': this.data.deviceToken,
-            'installationId': {
+          };
+          // We have a unique install Id, use that to preserve
+          // the interesting installation
+          if (this.data.installationId) {
+            delQuery['installationId'] = {
               '$ne': this.data.installationId
             }
-          };
+          } else if (idMatch.objectId && this.data.objectId
+                    && idMatch.objectId == this.data.objectId) {
+            // we passed an objectId, preserve that instalation
+            delQuery['objectId'] = {
+              '$ne': idMatch.objectId
+            }
+          } else {
+            // What to do here? can't really clean up everything...
+            return idMatch.objectId;
+          }
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
@@ -716,6 +729,11 @@ RestWrite.prototype.runDatabaseOperation = function() {
   }
 
   if (this.query) {
+    // Force the user to not lockout
+    // Matched with parse.com
+    if (this.className === '_User' && this.data.ACL) {
+      this.data.ACL[this.query.objectId] = { read: true, write: true };
+    }
     // Run an update
     return this.config.database.update(
       this.className, this.query, this.data, this.runOptions).then((resp) => {
@@ -732,10 +750,15 @@ RestWrite.prototype.runDatabaseOperation = function() {
       });
   } else {
     // Set the default ACL for the new _User
-    if (!this.data.ACL && this.className === '_User') {
-      var ACL = {};
+    if (this.className === '_User') {
+      var ACL = this.data.ACL;
+      // default public r/w ACL
+      if (!ACL) {
+        ACL = {};
+        ACL['*'] = { read: true, write: false };
+      }
+      // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
-      ACL['*'] = { read: true, write: false };
       this.data.ACL = ACL;
     }
 

@@ -1,6 +1,8 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger } from './logger';
 
+const PUSH_STATUS_COLLECTION = '_PushStatus';
+
 export function flatten(array) {
   return array.reduce((memo, element) => {
     if (Array.isArray(element)) {
@@ -16,48 +18,43 @@ export default function pushStatusHandler(config) {
 
   let initialPromise;
   let pushStatus;
-
-  let collection = function() {
-    return config.database.adaptiveCollection('_PushStatus');
-  }
+  let objectId = newObjectId();
+  let database = config.database.WithoutValidation();
 
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
     let now = new Date();
     let data =  body.data || {};
+    let payloadString = JSON.stringify(data);
     let object = {
-      objectId: newObjectId(),
+      _id: objectId,
       pushTime: now.toISOString(),
       _created_at: now,
       query: JSON.stringify(where),
-      payload: body.data,
+      payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
       status: "pending",
       numSent: 0,
-      pushHash: md5Hash(JSON.stringify(data)),
+      pushHash: md5Hash(payloadString),
       // lockdown!
       _wperm: [],
       _rperm: []
     }
-    initialPromise = collection().then((collection) => {
-      return collection.insertOne(object);
-    }).then((res) => {
+
+    return database.create(PUSH_STATUS_COLLECTION, object).then(() => {
       pushStatus = {
-        objectId: object.objectId
+        objectId
       };
       return Promise.resolve(pushStatus);
-    })
-    return initialPromise;
+    });
   }
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-    return initialPromise.then(() => {
-      return collection();
-    }).then((collection) => {
-      return collection.updateOne({status:"pending", objectId: pushStatus.objectId}, {$set: {status: "running"}});
-   });
+    return database.update(PUSH_STATUS_COLLECTION,
+      {status:"pending", objectId: objectId},
+      {status: "running"});
   }
 
   let complete = function(results) {
@@ -90,11 +87,7 @@ export default function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return initialPromise.then(() => {
-      return collection();
-    }).then((collection) => {
-      return collection.updateOne({status:"running", objectId: pushStatus.objectId}, {$set: update});
-    });
+    return database.update('_PushStatus', {status:"running", objectId }, update);
   }
 
   let fail = function(err) {
@@ -103,14 +96,11 @@ export default function pushStatusHandler(config) {
       status: 'failed'
     }
     logger.error('error while sending push', err);
-    return initialPromise.then(() => {
-      return collection();
-    }).then((collection) => {
-      return collection.updateOne({objectId: pushStatus.objectId}, {$set: update});
-    });
+    return database.update('_PushStatus', { objectId }, update);
   }
 
   return Object.freeze({
+    objectId,
     setInitial,
     setRunning,
     complete,

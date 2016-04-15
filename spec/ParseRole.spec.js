@@ -114,7 +114,7 @@ describe('Parse Role testing', () => {
       return Parse.Object.saveAll(roles, { useMasterKey: true });
     }).then( () => {
       auth = new Auth({config: new Config("test"), isMaster: true, user: user});
-      getAllRolesSpy = spyOn(auth, "_getAllRoleNamesForId").and.callThrough();
+      getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
     }).then ( (roles) => {
@@ -125,15 +125,14 @@ describe('Parse Role testing', () => {
       });
 
       // 1 Query for the initial setup
-      // 4 Queries for all the specific roles
-      // 1 Query for the final $in
-      expect(restExecute.calls.count()).toEqual(6);
+      // 1 query for the parent roles
+      expect(restExecute.calls.count()).toEqual(2);
 
-      // 4 One query for each of the roles
-      // 3 Queries for the "RootRole"
-      expect(getAllRolesSpy.calls.count()).toEqual(7);
+      // 1 call for the 1st layer of roles
+      // 1 call for the 2nd layer
+      expect(getAllRolesSpy.calls.count()).toEqual(2);
       done()
-    }).catch( () =>  {
+    }).catch( (err) =>  {
       fail("should succeed");
       done();
     });
@@ -206,11 +205,11 @@ describe('Parse Role testing', () => {
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
       let promises = [admin, moderator, contentManager, superModerator].map((role) => {
-        return auth._getAllRoleNamesForId(role.id).then((result) => {
+        return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
           return Parse.Promise.as({
             id: role.id,
             name: role.get('name'),
-            roleIds: result
+            roleNames: result
           });
         })
       });
@@ -219,26 +218,25 @@ describe('Parse Role testing', () => {
     }).then((results) => {
       results.forEach((result) => {
         let id = result.id;
-        let roleIds = result.roleIds;
+        let roleNames = result.roleNames;
         if (id == admin.id) {
-          expect(roleIds.length).toBe(2);
-          expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
-          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
+          expect(roleNames.length).toBe(2);
+          expect(roleNames.indexOf("Moderator")).not.toBe(-1);
+          expect(roleNames.indexOf("ContentManager")).not.toBe(-1);
         } else if (id == moderator.id) {
-          expect(roleIds.length).toBe(1);
-          expect(roleIds.indexOf(contentManager.id)).toBe(0);
+          expect(roleNames.length).toBe(1);
+          expect(roleNames.indexOf("ContentManager")).toBe(0);
         } else if (id == contentManager.id) {
-          expect(roleIds.length).toBe(0);
+          expect(roleNames.length).toBe(0);
         } else if (id == superModerator.id) {
-          expect(roleIds.length).toBe(3);
-          expect(roleIds.indexOf(moderator.id)).not.toBe(-1);
-          expect(roleIds.indexOf(contentManager.id)).not.toBe(-1);
-          expect(roleIds.indexOf(superContentManager.id)).not.toBe(-1);
+          expect(roleNames.length).toBe(3);
+          expect(roleNames.indexOf("Moderator")).not.toBe(-1);
+          expect(roleNames.indexOf("ContentManager")).not.toBe(-1);
+          expect(roleNames.indexOf("SuperContentManager")).not.toBe(-1);
         }
       });
       done();
     }).fail((err) => {
-      console.error(err);
       done();
     })
 
@@ -259,7 +257,6 @@ describe('Parse Role testing', () => {
             done();
           });
       }, (e) => {
-        console.log(e);
         fail('should not have errored');
       });
   });
@@ -338,10 +335,13 @@ describe('Parse Role testing', () => {
       fail('Customer user should not have been able to save.');
       done();
     }, (e) => {
-      expect(e.code).toEqual(101);
+      if (e) {
+        expect(e.code).toEqual(101);
+      } else {
+        fail('should return an error');
+      }
       done();
     })
   });
 
 });
-

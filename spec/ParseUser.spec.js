@@ -88,6 +88,55 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should respect ACL without locking user out', (done) => {
+    let user = new Parse.User();
+    let ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('asdf');
+    user.setPassword('zxcv');
+    user.setACL(ACL);
+    user.signUp().then((user) => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      const ACL = user.getACL();
+      expect(ACL.getReadAccess(user)).toBe(true);
+      expect(ACL.getWriteAccess(user)).toBe(true);
+      expect(ACL.getPublicReadAccess()).toBe(false);
+      expect(ACL.getPublicWriteAccess()).toBe(false);
+      const perms = ACL.permissionsById;
+      expect(Object.keys(perms).length).toBe(1);
+      expect(perms[user.id].read).toBe(true);
+      expect(perms[user.id].write).toBe(true);
+      expect(perms['*']).toBeUndefined();
+      // Try to lock out user
+      let newACL = new Parse.ACL();
+      newACL.setReadAccess(user.id, false);
+      newACL.setWriteAccess(user.id, false);
+      user.setACL(newACL);
+      return user.save();
+    }).then((user) => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      const ACL = user.getACL();
+      expect(ACL.getReadAccess(user)).toBe(true);
+      expect(ACL.getWriteAccess(user)).toBe(true);
+      expect(ACL.getPublicReadAccess()).toBe(false);
+      expect(ACL.getPublicWriteAccess()).toBe(false);
+      const perms = ACL.permissionsById;
+      expect(Object.keys(perms).length).toBe(1);
+      expect(perms[user.id].read).toBe(true);
+      expect(perms[user.id].write).toBe(true);
+      expect(perms['*']).toBeUndefined();
+      done();
+    }).catch((err) => {
+      fail("Should not fail");
+      done();
+    })
+  });
+
   it("user login with files", (done) => {
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
@@ -1461,6 +1510,29 @@ describe('Parse.User testing', () => {
             done();
           });
         });
+      }
+    });
+  });
+
+  it('should properly error when password is missing', (done) => {
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(user) {
+        user.set('username', 'myUser');
+        user.set('email', 'foo@example.com');
+        user.save().then(() => {
+          return Parse.User.logOut();
+        }).then(() => {
+          return Parse.User.logIn('myUser', 'password');
+        }).then(() => {
+          fail('should not succeed');
+          done();
+        }, (err) => {
+          expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+          expect(err.message).toEqual('Invalid username/password.');
+          done();
+        })
       }
     });
   });

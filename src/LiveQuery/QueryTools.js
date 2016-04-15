@@ -141,6 +141,7 @@ function matchesKeyConstraints(object, key, constraints) {
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
       return (
+        typeof object[key] !== 'undefined' &&
         constraints.className === object[key].className &&
         constraints.objectId === object[key].objectId
       );
