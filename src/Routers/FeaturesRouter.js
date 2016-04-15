@@ -19,11 +19,11 @@ export class FeaturesRouter extends PromiseRouter {
           delete: false,
         },
         logs: {
-          level: false,
-          size: false,
-          order: false,
-          until: false,
-          from: false,
+          level: true,
+          size: true,
+          order: true,
+          until: true,
+          from: true,
         },
         push: {
           immediatePush: req.config.pushController.pushIsAvailable,
