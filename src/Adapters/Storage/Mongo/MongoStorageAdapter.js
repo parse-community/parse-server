@@ -70,8 +70,15 @@ export class MongoStorageAdapter {
     });
   }
 
-  dropCollection(name: string) {
-    return this.collection(this._collectionPrefix + name).then(collection => collection.drop());
+  dropCollection(className: string) {
+    return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
+    .catch(error => {
+      // 'ns not found' means collection was already gone. Ignore deletion attempt.
+      if (error.message == 'ns not found') {
+        return Promise.resolve();
+      }
+      return Promise.reject(error);
+    });
   }
 
   // Used for testing only right now.
