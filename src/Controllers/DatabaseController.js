@@ -67,7 +67,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = () => true) {
   if (!this.schemaPromise) {
     this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
-      return Schema.load(collection);
+      return Schema.load(collection, this.adapter);
     });
     return this.schemaPromise;
   }
@@ -78,7 +78,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = () => true) {
     }
     this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
-      return Schema.load(collection);
+      return Schema.load(collection, this.adapter);
     });
     return this.schemaPromise;
   });

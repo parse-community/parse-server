@@ -15,10 +15,9 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.schemaCollection()
-    .then(collection => collection.getAllSchemas())
-    .then(schemas => schemas.map(Schema.injectDefaultSchema))
-    .then(schemas => ({ response: { results: schemas } }));
+  return req.config.database.loadSchema()
+  .then(schemaController => schemaController.getAllSchemas())
+  .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
