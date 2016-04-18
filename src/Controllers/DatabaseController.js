@@ -344,11 +344,7 @@ DatabaseController.prototype.create = function(className, object, options = {}) 
       return Promise.resolve();
     })
     .then(() => this.handleRelationUpdates(className, null, object))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(coll => {
-      var mongoObject = this.transform.transformCreate(schema, className, object);
-      return coll.insertOne(mongoObject);
-    })
+    .then(() => this.adapter.createObject(className, object, schema))
     .then(result => {
       return sanitizeDatabaseResult(originalObject, result.ops[0]);
     });

@@ -3,8 +3,6 @@ import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-// TODO: Turn this into a helper library for the database adapter.
-
 // Transforms a key-value pair from REST API form to Mongo form.
 // This is the main entry point for converting anything from REST form
 // to Mongo form; no conversion should happen that doesn't pass
@@ -203,7 +201,7 @@ function transformWhere(schema, className, restWhere, options = {validate: true}
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
 // Returns the mongo form of the object.
-function transformCreate(schema, className, restCreate) {
+function parseObjectToMongoObject(schema, className, restCreate) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
@@ -940,7 +938,7 @@ var FileCoder = {
 
 module.exports = {
   transformKey,
-  transformCreate,
+  parseObjectToMongoObject,
   transformUpdate,
   transformWhere,
   transformSelect,
