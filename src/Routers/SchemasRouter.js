@@ -72,19 +72,8 @@ function modifySchema(req) {
   let className = req.params.className;
 
   return req.config.database.loadSchema()
-    .then(schema => {
-      return schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database);
-    }).then((result) => {
-        return Promise.resolve({response: result});
-    });
-}
-
-function getSchemaPermissions(req) {
-  var className = req.params.className;
-  return req.config.database.loadSchema()
-    .then(schema => {
-      return Promise.resolve({response: schema.perms[className]});
-  });
+  .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
+  .then(result => ({response: result}));
 }
 
 // A helper function that removes all join tables for a schema. Returns a promise.
