@@ -313,7 +313,7 @@ describe('server', () => {
     done();
   });
 
-  it('fails if the session length is less than or equal to 0', (done) => {
+  it('fails if the session length is less than 0', (done) => {
     expect(() => setServerConfiguration({
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -321,16 +321,7 @@ describe('server', () => {
       javascriptKey: 'test',
       masterKey: 'test',
       sessionLength: '-33'
-    })).toThrow('Session length must be a value greater than 0.');
-
-    expect(() => setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
-      sessionLength: '0'
-    })).toThrow('Session length must be a value greater than 0.');
+    })).toThrow('Session length must be a value greater than or equal to 0.');
     done();
   })
 });

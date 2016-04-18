@@ -91,12 +91,15 @@ export class Config {
     if(isNaN(sessionLength)) {
       throw 'Session length must be a valid number.';
     }
-    else if(sessionLength <= 0) {
-      throw 'Session length must be a value greater than 0.'
+    else if(sessionLength < 0) {
+      throw 'Session length must be a value greater than or equal to 0.'
     }
   }
 
   generateSessionExpiresAt() {
+    if (this.sessionLength === 0) {
+      return undefined;
+    }
     var now = new Date();
     return new Date(now.getTime() + (this.sessionLength*1000));
   }
