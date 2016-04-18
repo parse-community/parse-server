@@ -1,6 +1,6 @@
 
 import MongoCollection from './MongoCollection';
-import * as transform from './MongoTransform';
+import * as transform  from './MongoTransform';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -211,7 +211,7 @@ class MongoSchemaCollection {
       // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
       // If some other error, reject with it.
       if (error === undefined) {
-        return Promise.resolve()
+        return Promise.resolve();
       }
       throw Promise.reject(error);
     })
