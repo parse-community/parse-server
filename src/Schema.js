@@ -252,9 +252,6 @@ class Schema {
     }
 
     return this._collection.addSchema(className, fields, classLevelPermissions)
-    .then(res => {
-      return Promise.resolve(res);
-    })
     .catch(error => {
       if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
