@@ -246,6 +246,11 @@ class SchemaController {
     .then(allSchemas => allSchemas.map(injectDefaultSchema));
   }
 
+  getOneSchema(className) {
+    return this._dbAdapter.getOneSchema(className)
+    .then(injectDefaultSchema);
+  }
+
   // Create a new class that includes the three default fields.
   // ACL is an implicit column that does not get an entry in the
   // _SCHEMAS database. Returns a promise that resolves with the
@@ -831,5 +836,4 @@ export {
   buildMergedSchemaObject,
   systemClasses,
   defaultColumns,
-  injectDefaultSchema,
 };

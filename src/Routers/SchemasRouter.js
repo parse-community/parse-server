@@ -22,17 +22,17 @@ function getAllSchemas(req) {
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.schemaCollection()
-    .then(collection => collection.findSchema(className))
-    .then(Schema.injectDefaultSchema)
-    .then(schema => ({ response: schema }))
-    .catch(error => {
-      if (error === undefined) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      } else {
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
-      }
-    });
+  return req.config.database.loadSchema()
+  .then(schemaController => schemaController.getOneSchema(className))
+  .then(schema => ({ response: schema }))
+  .catch(error => {
+    console.log(error);
+    if (error === undefined) {
+      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+    } else {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+    }
+  });
 }
 
 function createSchema(req) {

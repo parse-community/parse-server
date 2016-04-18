@@ -133,10 +133,7 @@ class MongoSchemaCollection {
     .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  // Return a promise for the schema with the given name, in Parse format. If
-  // this adapter doesn't know about the schema, return a promise that rejects with
-  // undefined as the reason.
-  findSchema(name: string) {
+  _fechOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
