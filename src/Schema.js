@@ -201,6 +201,16 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
   return undefined;
 }
 
+const injectDefaultSchema = schema => ({
+  className: schema.className,
+  fields: {
+    ...defaultColumns._Default,
+    ...(defaultColumns[schema.className] || {}),
+    ...schema.fields,
+  },
+  classLevelPermissions: schema.classLevelPermissions,
+})
+
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 class Schema {
@@ -221,13 +231,8 @@ class Schema {
     this.data = {};
     this.perms = {};
     return this._collection.getAllSchemas().then(allSchemas => {
-      allSchemas.forEach(schema => {
-        const parseFormatSchema = {
-          ...defaultColumns._Default,
-          ...(defaultColumns[schema.className] || {}),
-          ...schema.fields,
-        }
-        this.data[schema.className] = parseFormatSchema;
+      allSchemas.map(injectDefaultSchema).forEach(schema => {
+        this.data[schema.className] = schema.fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
     });
@@ -822,4 +827,5 @@ export {
   buildMergedSchemaObject,
   systemClasses,
   defaultColumns,
+  injectDefaultSchema,
 };
