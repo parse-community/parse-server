@@ -112,6 +112,7 @@ class ParseServer {
     },
     liveQuery = {},
     sessionLength = 31536000, // 1 Year in seconds
+    expireInactiveSessions = true,
     verbose = false,
   }) {
     // Initialize the node client SDK automatically
@@ -185,6 +186,7 @@ class ParseServer {
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
       sessionLength : Number(sessionLength),
+      expireInactiveSessions: expireInactiveSessions,
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

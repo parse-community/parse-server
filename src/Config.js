@@ -48,20 +48,21 @@ export class Config {
     this.mount = removeTrailingSlash(mount);
     this.liveQueryController = cacheInfo.liveQueryController;
     this.sessionLength = cacheInfo.sessionLength;
+    this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
   }
 
   static validate(options) {
     this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
                                 appName: options.appName, 
-                                publicServerURL: options.publicServerURL})
+                                publicServerURL: options.publicServerURL});
     if (options.publicServerURL) {
       if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
         throw "publicServerURL should be a valid HTTPS URL starting with https://"
       }
     }
 
-    this.validateSessionLength(options.sessionLength);
+    this.validateSessionConfiguration(options.sessionLength, options.expireInactiveSessions);
   }
 
   static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
@@ -87,17 +88,19 @@ export class Config {
     this._mount = newValue;
   }
 
-  static validateSessionLength(sessionLength) {
-    if(isNaN(sessionLength)) {
-      throw 'Session length must be a valid number.';
-    }
-    else if(sessionLength < 0) {
-      throw 'Session length must be a value greater than or equal to 0.'
+  static validateSessionConfiguration(sessionLength, expireInactiveSessions) {
+    if (expireInactiveSessions) {
+      if (isNaN(sessionLength)) {
+        throw 'Session length must be a valid number.';
+      }
+      else if (sessionLength <= 0) {
+        throw 'Session length must be a value greater than 0.'
+      }
     }
   }
 
   generateSessionExpiresAt() {
-    if (this.sessionLength === 0) {
+    if (!this.expireInactiveSessions) {
       return undefined;
     }
     var now = new Date();
@@ -127,7 +130,7 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
-};
+}
 
 export default Config;
 module.exports = Config;

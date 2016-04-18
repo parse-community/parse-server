@@ -359,7 +359,7 @@ describe('rest create', () => {
       password: 'zxcv',
       foo: 'bar'
     };
-    config.sessionLength = 0;
+    config.expireInactiveSessions = false;
 
     rest.create(config, auth.nobody(config), '_User', user)
       .then((r) => {
