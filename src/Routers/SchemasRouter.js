@@ -26,7 +26,6 @@ function getOneSchema(req) {
   .then(schemaController => schemaController.getOneSchema(className))
   .then(schema => ({ response: schema }))
   .catch(error => {
-    console.log(error);
     if (error === undefined) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
     } else {
