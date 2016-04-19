@@ -21,9 +21,13 @@ var Parse = require('parse/node').Parse;
 // validate: true indicates that key names are to be validated.
 //
 // Returns an object with {key: key, value: value}.
-export function transformKeyValue(schema, className, restKey, restValue, options) {
-  options = options || {};
-
+export function transformKeyValue(schema, className, restKey, restValue, {
+  inArray,
+  inObject,
+  query,
+  update,
+  validate,
+} = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -62,7 +66,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     return {key: key, value: restValue};
     break;
   case '$or':
-    if (!options.query) {
+    if (!query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $or in queries');
     }
@@ -75,7 +79,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     });
     return {key: '$or', value: mongoSubqueries};
   case '$and':
-    if (!options.query) {
+    if (!query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $and in queries');
     }
@@ -91,7 +95,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
-      if (options.query) {
+      if (query) {
         var provider = authDataMatch[1];
         // Special-case auth data.
         return {key: '_auth_data_'+provider+'.id', value: restValue};
@@ -100,7 +104,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
                             'can only query on ' + key);
       break;
     };
-    if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'invalid key name: ' + key);
     }
@@ -117,24 +121,24 @@ export function transformKeyValue(schema, className, restKey, restValue, options
       (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var inArray = (expected && expected.type === 'Array');
+  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle query constraints
-  if (options.query) {
-    value = transformConstraint(restValue, inArray);
+  if (query) {
+    value = transformConstraint(restValue, expectedTypeIsArray);
     if (value !== CannotTransform) {
       return {key: key, value: value};
     }
   }
 
-  if (inArray && options.query && !(restValue instanceof Array)) {
+  if (expectedTypeIsArray && query && !(restValue instanceof Array)) {
     return {
       key: key, value: { '$all' : [restValue] }
     };
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, options);
+  var value = transformAtom(restValue, false, { inArray, inObject });
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -150,7 +154,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
 
   // Handle arrays
   if (restValue instanceof Array) {
-    if (options.query) {
+    if (query) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
                             'cannot use array as query param');
     }
@@ -162,7 +166,7 @@ export function transformKeyValue(schema, className, restKey, restValue, options
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, !options.update);
+  value = transformUpdateOperator(restValue, !update);
   if (value !== CannotTransform) {
     return {key: key, value: value};
   }

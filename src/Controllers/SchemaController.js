@@ -642,15 +642,6 @@ class SchemaController {
     return this.reloadData().then(() => !!(this.data[className]));
   }
 
-  // Helper function to check if a field is a pointer, returns true or false.
-  isPointer(className, key) {
-    let expected = this.getExpectedType(className, key);
-    if (expected && expected.charAt(0) == '*') {
-      return true;
-    }
-    return false;
-  };
-
   getRelationFields(className) {
     if (this.data && this.data[className]) {
       let classData = this.data[className];
