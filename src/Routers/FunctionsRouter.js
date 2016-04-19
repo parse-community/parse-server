@@ -4,7 +4,10 @@ var express = require('express'),
     Parse = require('parse/node').Parse,
     triggers = require('../triggers');
 
+import { addGroup } from '../logger';
 import PromiseRouter from '../PromiseRouter';
+
+let logger = addGroup('cloud-code');
 
 export class FunctionsRouter extends PromiseRouter {
   
@@ -38,7 +41,8 @@ export class FunctionsRouter extends PromiseRouter {
         params: params,
         master: req.auth && req.auth.isMaster,
         user: req.auth && req.auth.user,
-        installationId: req.info.installationId
+        installationId: req.info.installationId,
+        logger
       };
 
       if (theValidator && typeof theValidator === "function") {

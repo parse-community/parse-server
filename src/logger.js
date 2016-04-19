@@ -10,6 +10,31 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
 }
 
 let currentLogsFolder = LOGS_FOLDER;
+let clearLogs;
+if (process.env.TESTING) {
+  
+  var rmDirContents = function(dirPath) {
+      try { var files = fs.readdirSync(dirPath); }
+      catch(e) { return; }
+      if (files.length > 0)
+        for (var i = 0; i < files.length; i++) {
+          var filePath = dirPath + '/' + files[i];
+          if (fs.statSync(filePath).isFile())
+            fs.unlinkSync(filePath);
+          else
+            rmDir(filePath);
+        }
+    };
+  clearLogs = function() {
+    let folder = currentLogsFolder;
+    if (!path.isAbsolute(folder)) {
+      folder = path.resolve(process.cwd(), folder);
+    }
+    rmDirContents(folder);
+  }
+}
+
+export { clearLogs };
 
 function generateTransports(level) {
   let transports = [

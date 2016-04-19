@@ -1,6 +1,7 @@
 // triggers.js
 import Parse from 'parse/node';
 import cache  from './cache';
+import { addGroup } from './logger';
 
 export const Types = {
   beforeSave: 'beforeSave',
@@ -113,6 +114,8 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   if (auth.installationId) {
     request['installationId'] = auth.installationId;
   }
+  let ccLogger = addGroup('cloud-code');
+  request.logger = ccLogger;
   return request;
 }
 
