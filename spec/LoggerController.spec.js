@@ -1,7 +1,12 @@
 var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 
+var clearLogs = require('../src/logger').clearLogs;
+
 describe('LoggerController', () => {
+  afterEach(() => {
+    clearLogs();
+  });
   it('can check process a query witout throwing', (done) => {
     // Make mock request
     var query = {};
