@@ -3,7 +3,7 @@
 // This could be either a "create" or an "update".
 
 import cache from './cache';
-var SchemaController = require('./SchemaController');
+var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');

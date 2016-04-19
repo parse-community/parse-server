@@ -1,7 +1,7 @@
 // An object that encapsulates everything we need to run a 'find'
 // operation, encoded in the REST API format.
 
-var SchemaController = require('./SchemaController');
+var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 
 import { default as FilesController } from './Controllers/FilesController';

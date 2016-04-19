@@ -6,7 +6,7 @@ import intersect from 'intersect';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-var SchemaController = require('./../SchemaController');
+var SchemaController = require('./../Controllers/SchemaController');
 const deepcopy = require('deepcopy');
 
 function DatabaseController(adapter, { skipValidation } = {}) {

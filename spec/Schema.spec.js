@@ -1,7 +1,7 @@
 'use strict';
 
 var Config = require('../src/Config');
-var SchemaController = require('../src/SchemaController');
+var SchemaController = require('../src/Controllers/SchemaController');
 var dd = require('deep-diff');
 
 var config = new Config('test');

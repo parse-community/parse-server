@@ -2,7 +2,7 @@
 
 var express = require('express'),
   Parse = require('parse/node').Parse,
-  SchemaController = require('../SchemaController');
+  SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
