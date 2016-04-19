@@ -67,7 +67,7 @@ export default function pushStatusHandler(config) {
       results = flatten(results);
       results.reduce((memo, result) => {
         // Cannot handle that
-        if (!result.device || !result.device.deviceType) {
+        if (!result || !result.device || !result.device.deviceType) {
           return memo;
         }
         let deviceType = result.device.deviceType;
