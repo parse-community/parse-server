@@ -235,4 +235,47 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
+  
+  it('should prevent creating pointer permission on missing field', (done) => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((schema) => {
+      return schema.addClassIfNotExists('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
+    }).then(() => {
+      fail('should not succeed');
+    }).catch((err) => {
+      expect(err.code).toBe(107);
+      expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
+      done();
+    })
+  });
+  
+  it('should prevent creating pointer permission on bad field', (done) => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((schema) => {
+      return schema.addClassIfNotExists('AnObject', {owner: {type: 'String'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
+    }).then(() => {
+      fail('should not succeed');
+    }).catch((err) => {
+      expect(err.code).toBe(107);
+      expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
+      done();
+    })
+  });
+  
+  it('should prevent creating pointer permission on bad field', (done) => {
+    let config = new Config(Parse.applicationId);
+    let object = new Parse.Object('AnObject');
+    object.set('owner', 'value');
+    object.save().then(() => {
+      return config.database.loadSchema();
+    }).then((schema) => {
+      return schema.updateClass('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
+    }).then(() => {
+      fail('should not succeed');
+    }).catch((err) => {
+      expect(err.code).toBe(107);
+      expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
+      done();
+    })
+  });
 });

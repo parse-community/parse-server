@@ -128,7 +128,7 @@ function validateCLP(perms, fields) {
       } else {
         perms[operation].forEach((key) => {
           if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
-             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid value for class level pointer permissions ${operation}`);
+             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
           }
         });
       }
