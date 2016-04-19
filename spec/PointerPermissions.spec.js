@@ -279,10 +279,10 @@ describe('Pointer Permissions', () => {
     })
   });
   
-  it('tests CLP / Pointer Perms / ACL write', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
-      CLP: update lock down ({})
+      CLP: update open ({"*": true})
       PointerPerm: "owner"
       ACL: logged in user has access
       
@@ -310,12 +310,12 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
     }).then(() => {
-      // user1 has ACL read/write but should be block
+      // user1 has ACL read/write but should be blocked by PP
       return obj.save({key: 'value'});
     }).then(() => {
       fail('Should not succeed saving');
@@ -326,10 +326,100 @@ describe('Pointer Permissions', () => {
     });
   });
   
-  it('tests CLP / Pointer Perms / ACL read', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
-      CLP: update lock down ({})
+      CLP: update open ({"*": true})
+      PointerPerm: "owner"
+      ACL: logged in user has access
+     */
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, user2]).then(() => {
+      let ACL = new Parse.ACL();
+      ACL.setReadAccess(user, true);
+      ACL.setWriteAccess(user, true);
+      obj.setACL(ACL);
+      obj.set('owner', user2);
+      return obj.save();
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+      });
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      // user1 has ACL read/write but should be blocked by ACL
+      return obj.save({key: 'value'});
+    }).then(() => {
+      fail('Should not succeed saving');
+      done();
+    }, (err) => {
+      expect(err.code).toBe(101);
+      done();
+    });
+  });
+  
+  it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
+    /*
+      tests:
+      CLP: update open ({"*": true})
+      PointerPerm: "owner"
+      ACL: logged in user has access
+     */
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, user2]).then(() => {
+      let ACL = new Parse.ACL();
+      ACL.setWriteAccess(user, true);
+      ACL.setWriteAccess(user2, true);
+      obj.setACL(ACL);
+      obj.set('owner', user2);
+      return obj.save();
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+      });
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      // user1 has ACL read/write but should be blocked by ACL
+      return obj.save({key: 'value'});
+    }).then((objAgain) => {
+      expect(objAgain.get('key')).toBe('value');
+      done();
+    }, (err) => {
+      fail('Should not fail saving');
+      done();
+    });
+  });
+  
+  it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
+    /*
+      tests:
+      CLP: find/get open ({"*": true})
       PointerPerm: "owner" : read
       ACL: logged in user has access
 
@@ -357,12 +447,104 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {find: {}, get: {}, readUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
     }).then(() => {
       // user1 has ACL read/write but should be block
+      return obj.fetch();
+    }).then(() => {
+      fail('Should not succeed saving');
+      done();
+    }, (err) => {
+      expect(err.code).toBe(101);
+      done();
+    });
+  });
+  
+  it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
+    /*
+      tests:
+      CLP: find/get open ({"*": true})
+      PointerPerm: "owner" : read
+      ACL: logged in user has access
+     */
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, user2]).then(() => {
+      let ACL = new Parse.ACL();
+      ACL.setReadAccess(user, true);
+      ACL.setWriteAccess(user, true);
+      ACL.setReadAccess(user2, true);
+      ACL.setWriteAccess(user2, true);
+      obj.setACL(ACL);
+      obj.set('owner', user2);
+      return obj.save();
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
+      });
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      // user1 has ACL read/write but should be block
+      return obj.fetch();
+    }).then((objAgain) => {
+      expect(objAgain.id).toBe(obj.id);
+      done();
+    }, (err) => {
+      fail('Should not fail fetching');
+      done();
+    });
+  });
+  
+  it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
+    /*
+      tests:
+      CLP: find/get open ({"*": true})
+      PointerPerm: "owner" : read // proper owner
+      ACL: logged in user has not access
+     */
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, user2]).then(() => {
+      let ACL = new Parse.ACL();
+      ACL.setReadAccess(user, true);
+      ACL.setWriteAccess(user, true);
+      obj.setACL(ACL);
+      obj.set('owner', user2);
+      return obj.save();
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
+      });
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      // user2 has ACL read/write but should be block by ACL
       return obj.fetch();
     }).then(() => {
       fail('Should not succeed saving');
