@@ -178,7 +178,7 @@ describe('Pointer Permissions', () => {
     let obj = new Parse.Object('AnObject');
     user.save().then(() => {
       return config.database.loadSchema().then((schema) => {
-        return schema.addClassIfNotExists('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
+        return schema.addClassIfNotExists('AnObject', {owner: {type:'Pointer', targetClass: '_User'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
       });
     }).then(() => {
        return Parse.User.logIn('user1', 'password');

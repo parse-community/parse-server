@@ -113,7 +113,7 @@ function verifyPermissionKey(key) {
 }
 
 const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
-function validateCLP(perms) {
+function validateCLP(perms, fields) {
   if (!perms) {
     return;
   }
@@ -125,6 +125,12 @@ function validateCLP(perms) {
     if (operation === 'readUserFields' || operation === 'writeUserFields') {
       if (!Array.isArray(perms[operation])) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
+      } else {
+        perms[operation].forEach((key) => {
+          if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
+             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid value for class level pointer permissions ${operation}`);
+          }
+        });
       }
       return;
     }
@@ -326,7 +332,7 @@ class SchemaController {
         });
         return Promise.all(promises);
       })
-      .then(() => this.setPermissions(className, classLevelPermissions))
+      .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
       //TODO: Move this logic into the database adapter
       .then(() => ({
         className: className,
@@ -423,15 +429,15 @@ class SchemaController {
         error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
       };
     }
-    validateCLP(classLevelPermissions);
+    validateCLP(classLevelPermissions, fields);
   }
 
   // Sets the Class-level permissions for a given className, which must exist.
-  setPermissions(className, perms) {
+  setPermissions(className, perms, newSchema) {
     if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
-    validateCLP(perms);
+    validateCLP(perms, newSchema);
     let update = {
       _metadata: {
         class_permissions: perms
