@@ -44,10 +44,6 @@ DatabaseController.prototype.collectionExists = function(className) {
   return this.adapter.collectionExists(className);
 };
 
-DatabaseController.prototype.dropCollection = function(className) {
-  return this.adapter.dropCollection(className);
-};
-
 DatabaseController.prototype.validateClassName = function(className) {
   if (this.skipValidation) {
     return Promise.resolve();

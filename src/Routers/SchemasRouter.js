@@ -70,7 +70,7 @@ var removeJoinTables = (database, mongoSchema) => {
     .filter(field => mongoSchema[field].startsWith('relation<'))
     .map(field => {
       let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.dropCollection(collectionName);
+      return database.adapter.dropCollection(collectionName);
     })
   );
 };
@@ -94,17 +94,7 @@ function deleteSchema(req) {
           return removeJoinTables(req.config.database, document);
         });
     })
-    .then(() => {
-      // Success
-      return { response: {} };
-    }, error => {
-      if (error.message == 'ns not found') {
-        // If they try to delete a non-existent class, that's fine, just let them.
-        return { response: {} };
-      }
-
-      return Promise.reject(error);
-    });
+    .then(() => ({ response: {} }));
 }
 
 export class SchemasRouter extends PromiseRouter {

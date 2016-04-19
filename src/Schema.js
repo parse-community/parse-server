@@ -541,15 +541,7 @@ class SchemaController {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adapter.deleteFields(className, [fieldName], [])
-        .then(() => database.dropCollection(`_Join:${fieldName}:${className}`))
-        .catch(error => {
-          // 'ns not found' means collection was already gone. Ignore deletion attempt.
-          // TODO: 'ns not found' is a mongo implementation detail. Move it into mongo adapter.
-          if (error.message == 'ns not found') {
-            return Promise.resolve();
-          }
-          return Promise.reject(error);
-        });
+        .then(() => database.adapter.dropCollection(`_Join:${fieldName}:${className}`));
       }
 
       const fieldNames = [fieldName];
