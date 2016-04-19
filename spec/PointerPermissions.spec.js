@@ -131,7 +131,7 @@ describe('Pointer Permissions', () => {
       return Parse.Object.saveAll([obj, obj2]);
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
-        return schema.updateClass('AnObject', {}, {find: {}, readUserFields: ['owner']})
+        return schema.updateClass('AnObject', {}, {find: {}, get:{}, readUserFields: ['owner']})
       });
     }).then(() => {
       let q = new Parse.Query('AnObject');
@@ -145,6 +145,15 @@ describe('Pointer Permissions', () => {
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(0);
+      let q = new Parse.Query('AnObject');
+      return q.get(obj.id);
+    }).then(() => {
+      fail('User 2 should not get the obj1 object');
+    }, (err) => {
+      expect(err.code).toBe(101);
+      expect(err.message).toBe('Object not found.');
+      return Promise.resolve();
+    }).then(() => {
       return Parse.User.logIn('user1', 'password');
     }).then(() => {
       let q = new Parse.Query('AnObject');
