@@ -630,17 +630,26 @@ class SchemaController {
         found = true;
       }
     }
-    if (!found) {
-      // No matching CLP, let's check the Pointer permissions
-      // An handle those later
-      let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
-      if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
-        return Promise.resolve();
-      }
-      // TODO: Verify correct error code
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+     
+    if (found) {
+      return Promise.resolve();
+    }
+
+    // No matching CLP, let's check the Pointer permissions
+    // And handle those later
+    let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+    
+    // Reject create when write lockdown
+    if (permissionField == 'writeUserFields' && operation == 'create') {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
         'Permission denied for this action.');
     }
+
+    if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
+        return Promise.resolve();
+    }
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        'Permission denied for this action.');
   };
 
   // Returns the expected type for a className+key combination

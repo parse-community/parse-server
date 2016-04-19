@@ -5,7 +5,7 @@ var Config = require('../src/Config');
 
 describe('Pointer Permissions', () => {
   it('should work with find', (done) => {
-    var config = new Config(Parse.applicationId);
+    let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
     user.set({
@@ -44,7 +44,7 @@ describe('Pointer Permissions', () => {
   
   
   it('should work with write', (done) => {
-    var config = new Config(Parse.applicationId);
+    let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
     user.set({
@@ -109,7 +109,7 @@ describe('Pointer Permissions', () => {
   });
   
   it('should let a proper user find', (done) => {
-    var config = new Config(Parse.applicationId);
+    let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
     user.set({
@@ -166,5 +166,31 @@ describe('Pointer Permissions', () => {
       fail('should not fail');
       done();
     })
-  }, 6000);
+  });
+  
+  it('should not allow creating objects', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    user.save().then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.addClassIfNotExists('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
+      });
+    }).then(() => {
+       return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      obj.set('owner', user);
+      return obj.save();
+    }).then(() => {
+       fail('should not succeed');
+       done();
+    }, (err) => {
+      expect(err.code).toBe(119);
+      done();
+    })
+  });
 });
