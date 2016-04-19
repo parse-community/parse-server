@@ -441,6 +441,28 @@ describe('Pointer Permissions', () => {
       fail('master key should destroy the object');
       done();
     })
-  }, 90000);
+  });
+  
+  it('should fail with invalid pointer perms', () => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
+     }).catch((err) => {
+      expect(err.code).toBe(Parse.Error.INVALID_JSON);
+      done();
+     });
+  });
+  
+  it('should fail with invalid pointer perms', () => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
+     }).catch((err) => {
+      expect(err.code).toBe(Parse.Error.INVALID_JSON);
+      done();
+     });
+  })
   
 });
