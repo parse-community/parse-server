@@ -617,7 +617,8 @@ class SchemaController {
     if (!this.perms[className] || !this.perms[className][operation]) {
       return Promise.resolve();
     }
-    let perms = this.perms[className][operation];
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
       return Promise.resolve();
@@ -630,6 +631,12 @@ class SchemaController {
       }
     }
     if (!found) {
+      // No matching CLP, let's check the Pointer permissions
+      // An handle those later
+      let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+      if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
+        return Promise.resolve();
+      }
       // TODO: Verify correct error code
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
         'Permission denied for this action.');

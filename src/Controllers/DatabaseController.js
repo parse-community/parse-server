@@ -598,6 +598,14 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   .then(() => this.adapter.adaptiveCollection(className))
   .then(collection => {
     query = this.addPointerPermissions(schema, className, op, query, aclGroup);
+    if (!query) {
+      if (op == 'get') {
+        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+          'Object not found.'));
+      } else {
+        return Promise.resolve([]);
+      }
+    }
     let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (!isMaster) {
       mongoWhere = this.transform.addReadACL(mongoWhere, aclGroup);
@@ -643,32 +651,25 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
      return acl.indexOf('role:') != 0 && acl != '*';
   });
   // the ACL should have exactly 1 user
-  if (userACL.length != 1) {
-    return query;
-  }
-  let userId = userACL[0];
-  let userPointer =  {
+  if (perms && perms[field] && perms[field].length > 0) {
+    // No user set return undefined
+    if (userACL.length != 1) {
+      return;
+    }
+    let userId = userACL[0];
+    let userPointer =  {
           "__type": "Pointer",
           "className": "_User",
           "objectId": userId
         };
-  if (perms && perms[field]) {
+
     let constraints = {};
     let permFields = perms[field];
     let ors = permFields.map((key) => {
-      let q = Object.assign({}, query);
-      if (!query[key]) {
-        q[key] = userPointer
-      } else {
-        // not sure what to do here?
-        // when a query constraint is set?
-        // In practice, we should ditch that
-        // Unless that a $neq, or $nin
-        // that contains the current user,
-        // And the result would be an empty array
-        // for that part...
-      }
-      return q;
+      let q = {
+        [key]: userPointer
+      };
+      return {'$and': [q, query]};
     });
     if (ors.length > 1) {
       return {'$or': ors};

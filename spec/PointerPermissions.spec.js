@@ -43,7 +43,7 @@ describe('Pointer Permissions', () => {
   });
   
   
-  fit('should work with write', (done) => {
+  it('should work with write', (done) => {
     var config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -107,4 +107,55 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
+  
+  it('should let a proper user find', (done) => {
+    var config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    let obj2 = new Parse.Object('AnObject');
+    user.signUp().then(() => {
+      return user2.signUp()
+    }).then(() => {
+      Parse.User.logOut();
+    }).then(() => {
+      obj.set('owner', user);
+      return Parse.Object.saveAll([obj, obj2]);
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.updateClass('AnObject', {}, {find: {}, readUserFields: ['owner']})
+      });
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }).then((res) => {
+      expect(res.length).toBe(0);     
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }).then((res) => {
+      expect(res.length).toBe(0);
+      return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      done();
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  }, 6000);
 });
