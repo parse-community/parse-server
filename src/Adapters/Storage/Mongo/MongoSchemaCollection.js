@@ -1,6 +1,6 @@
 
 import MongoCollection from './MongoCollection';
-import * as transform from './MongoTransform';
+import * as transform  from './MongoTransform';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -128,18 +128,12 @@ class MongoSchemaCollection {
     this._collection = collection;
   }
 
-  // Return a promise for all schemas known to this adapter, in Parse format. In case the
-  // schemas cannot be retrieved, returns a promise that rejects. Requirements fot the
-  // rejection reason are TBD.
-  getAllSchemas() {
+  _fetchAllSchemasFrom_SCHEMA() {
     return this._collection._rawFind({})
     .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  // Return a promise for the schema with the given name, in Parse format. If
-  // this adapter doesn't know about the schema, return a promise that rejects with
-  // undefined as the reason.
-  findSchema(name: string) {
+  _fechOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);

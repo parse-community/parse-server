@@ -127,6 +127,20 @@ export class MongoStorageAdapter {
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
 
+  // Return a promise for all schemas known to this adapter, in Parse format. In case the
+  // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
+  // rejection reason are TBD.
+  getAllSchemas() {
+    return this.schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
+  }
+
+  // Return a promise for the schema with the given name, in Parse format. If
+  // this adapter doesn't know about the schema, return a promise that rejects with
+  // undefined as the reason.
+  getOneSchema(className) {
+    return this.schemaCollection().then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+  }
+
   // TODO: As yet not particularly well specified. Creates an object. Does it really need the schema?
   // or can it fetch the schema itself? Also the schema is not currently a Parse format schema, and it
   // should be, if we are passing it at all.
