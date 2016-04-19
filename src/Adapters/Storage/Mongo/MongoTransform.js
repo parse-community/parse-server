@@ -208,16 +208,13 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
   var timeField = false;
   switch(key) {
   case 'objectId':
-  case '_id':
     key = '_id';
     break;
   case 'createdAt':
-  case '_created_at':
     key = '_created_at';
     timeField = true;
     break;
   case 'updatedAt':
-  case '_updated_at':
     key = '_updated_at';
     timeField = true;
     break;
@@ -228,11 +225,9 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
     key = "_perishable_token";
     break;
   case 'sessionToken':
-  case '_session_token':
     key = '_session_token';
     break;
   case 'expiresAt':
-  case '_expiresAt':
     key = 'expiresAt';
     timeField = true;
     break;
@@ -240,12 +235,8 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
   case '_wperm':
     return {key: key, value: restValue};
     break;
-  case '$or':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-  case '$and':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
   default:
-    // Other auth data
+    // Auth data should have been transformed already
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
