@@ -191,7 +191,7 @@ class MongoSchemaCollection {
 
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
-    return this.findSchema(className)
+    return this._fechOneSchemaFrom_SCHEMA(className)
     .then(schema => {
       // The schema exists. Check for existing GeoPoints.
       if (type.type === 'GeoPoint') {
