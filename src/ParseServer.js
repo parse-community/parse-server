@@ -15,6 +15,7 @@ var batch = require('./batch'),
 import { logger,
       configureLogger }       from './logger';
 import cache                    from './cache';
+import PersistentSettingsStore  from './PersistentSettingsStore';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
 import PromiseRouter            from './PromiseRouter';
@@ -81,43 +82,48 @@ addParseCloud();
 
 class ParseServer {
 
-  constructor({
-    appId = requiredParameter('You must provide an appId!'),
-    masterKey = requiredParameter('You must provide a masterKey!'),
-    appName,
-    databaseAdapter,
-    filesAdapter,
-    push,
-    loggerAdapter,
-    logsFolder,
-    databaseURI = DatabaseAdapter.defaultDatabaseURI,
-    databaseOptions,
-    cloud,
-    collectionPrefix = '',
-    clientKey,
-    javascriptKey,
-    dotNetKey,
-    restAPIKey,
-    fileKey = 'invalid-file-key',
-    facebookAppIds = [],
-    enableAnonymousUsers = true,
-    allowClientClassCreation = true,
-    oauth = {},
-    serverURL = requiredParameter('You must provide a serverURL!'),
-    maxUploadSize = '20mb',
-    verifyUserEmails = false,
-    emailAdapter,
-    publicServerURL,
-    customPages = {
-      invalidLink: undefined,
-      verifyEmailSuccess: undefined,
-      choosePassword: undefined,
-      passwordResetSuccess: undefined
-    },
-    liveQuery = {},
-    sessionLength = 31536000, // 1 Year in seconds
-    verbose = false,
-  }) {
+  constructor(definedOptions = {}) {
+    let {
+      appId = requiredParameter('You must provide an appId!'),
+      masterKey = requiredParameter('You must provide a masterKey!'),
+      appName,
+      databaseAdapter,
+      filesAdapter,
+      push,
+      loggerAdapter,
+      logsFolder,
+      databaseURI = DatabaseAdapter.defaultDatabaseURI,
+      databaseOptions,
+      cloud,
+      collectionPrefix = '',
+      clientKey,
+      javascriptKey,
+      dotNetKey,
+      restAPIKey,
+      fileKey = 'invalid-file-key',
+      facebookAppIds = [],
+      enableAnonymousUsers = true,
+      allowClientClassCreation = true,
+      oauth = {},
+      serverURL = requiredParameter('You must provide a serverURL!'),
+      maxUploadSize = '20mb',
+      verifyUserEmails = false,
+      emailAdapter,
+      publicServerURL,
+      customPages = {
+        invalidLink: undefined,
+        verifyEmailSuccess: undefined,
+        choosePassword: undefined,
+        passwordResetSuccess: undefined
+      },
+      liveQuery = {},
+      sessionLength = 31536000, // 1 Year in seconds
+      verbose = false,
+      settingsCacheOptions = {
+        lockDefinedSettings: true,
+        freshness: 15
+      }
+    } = definedOptions;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -171,7 +177,11 @@ class ParseServer {
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
 
+    if (settingsCacheOptions) {
+      cache.apps = PersistentSettingsStore(settingsCacheOptions, definedOptions);
+    }
     cache.apps.set(appId, {
+      applicationId: appId,
       masterKey: masterKey,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
@@ -195,6 +205,7 @@ class ParseServer {
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
       sessionLength : Number(sessionLength),
+      settingsCacheOptions: settingsCacheOptions
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
