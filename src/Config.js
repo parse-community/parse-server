@@ -49,6 +49,7 @@ export class Config {
     this.liveQueryController = cacheInfo.liveQueryController;
     this.sessionLength = cacheInfo.sessionLength;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
+    this.settingsCacheOptions = cacheInfo.settingsCacheOptions;
   }
 
   static validate(options) {

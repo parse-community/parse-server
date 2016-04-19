@@ -18,7 +18,7 @@ export function CacheStore<KeyType, ValueType>() {
   };
 }
 
-const apps = CacheStore();
+let apps = CacheStore();
 const users = CacheStore();
 
 //So far used only in tests
