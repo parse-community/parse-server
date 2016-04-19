@@ -112,7 +112,7 @@ function verifyPermissionKey(key) {
   }
 }
 
-const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
 function validateCLP(perms) {
   if (!perms) {
     return;
@@ -121,6 +121,14 @@ function validateCLP(perms) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+
+    if (operation === 'readUserFields' || operation === 'writeUserFields') {
+      if (!Array.isArray(perms[operation])) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
+      }
+      return;
+    }
+    
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
       let perm = perms[operation][key];

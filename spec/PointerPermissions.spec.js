@@ -1,0 +1,110 @@
+'use strict';
+var Schema = require('../src/Controllers/SchemaController');
+
+var Config = require('../src/Config');
+
+describe('Pointer Permissions', () => {
+  it('should work with find', (done) => {
+    var config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    let obj2 = new Parse.Object('AnObject');
+
+    Parse.Object.saveAll([user, user2]).then(() => {
+      obj.set('owner', user);
+      obj2.set('owner', user2);
+      return Parse.Object.saveAll([obj, obj2]);
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.updateClass('AnObject', {}, {readUserFields: ['owner']})
+      });
+    }).then(() => {
+       return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].id).toBe(obj.id);
+      done();
+    }).catch((err) => {
+      fail('Should not fail');
+      done();
+    });
+  });
+  
+  
+  fit('should work with write', (done) => {
+    var config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    let obj2 = new Parse.Object('AnObject');
+
+    Parse.Object.saveAll([user, user2]).then(() => {
+      obj.set('owner', user);
+      obj.set('reader', user2);
+      obj2.set('owner', user2);
+      obj2.set('reader', user);
+      return Parse.Object.saveAll([obj, obj2]);
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.updateClass('AnObject', {}, {writeUserFields: ['owner'], readUserFields: ['reader', 'owner']});
+      });
+    }).then(() => {
+       return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      obj2.set('hello', 'world');
+      return obj2.save();
+    }).then((res) => {
+      fail('User should not be able to update obj2');
+    }, (err) => {
+      // User 1 should not be able to update obj2
+      expect(err.code).toBe(101);
+      return Promise.resolve();
+    }).then(()=> {
+      obj.set('hello', 'world');
+      return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }, (err) => {
+      fail('User should be able to update');
+      return Promise.resolve();
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }, (err) => {
+      fail('should login with user 2');
+    }).then((res) => {
+      expect(res.length).toBe(2);
+      res.forEach((result) => {
+        if (result.id == obj.id) {
+          expect(result.get('hello')).toBe('world');
+        } else {
+          expect(result.id).toBe(obj2.id);
+        }
+      })
+      done();
+    }, (err) =>  {
+      fail("failed");
+      done();
+    })
+  });
+});
