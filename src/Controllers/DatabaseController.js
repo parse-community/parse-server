@@ -6,7 +6,7 @@ import intersect from 'intersect';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-var Schema = require('./../Schema');
+var SchemaController = require('../Controllers/SchemaController');
 const deepcopy = require('deepcopy');
 
 function DatabaseController(adapter, { skipValidation } = {}) {
@@ -48,7 +48,7 @@ DatabaseController.prototype.validateClassName = function(className) {
   if (this.skipValidation) {
     return Promise.resolve();
   }
-  if (!Schema.classNameIsValid(className)) {
+  if (!SchemaController.classNameIsValid(className)) {
     const error = new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className);
     return Promise.reject(error);
   }
@@ -63,7 +63,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = () => true) {
   if (!this.schemaPromise) {
     this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
-      return Schema.load(collection, this.adapter);
+      return SchemaController.load(collection, this.adapter);
     });
     return this.schemaPromise;
   }
@@ -74,7 +74,7 @@ DatabaseController.prototype.loadSchema = function(acceptor = () => true) {
     }
     this.schemaPromise = this.schemaCollection().then(collection => {
       delete this.schemaPromise;
-      return Schema.load(collection, this.adapter);
+      return SchemaController.load(collection, this.adapter);
     });
     return this.schemaPromise;
   });

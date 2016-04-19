@@ -2,7 +2,7 @@
 
 var express = require('express'),
   Parse = require('parse/node').Parse,
-  Schema = require('../Schema');
+  SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
@@ -76,8 +76,8 @@ var removeJoinTables = (database, mongoSchema) => {
 };
 
 function deleteSchema(req) {
-  if (!Schema.classNameIsValid(req.params.className)) {
-    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, Schema.invalidClassNameMessage(req.params.className));
+  if (!SchemaController.classNameIsValid(req.params.className)) {
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
 
   return req.config.database.deleteSchema(req.params.className)

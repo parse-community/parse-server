@@ -1,7 +1,7 @@
 'use strict';
 
 var Config = require('../src/Config');
-var Schema = require('../src/Schema');
+var SchemaController = require('../src/Controllers/SchemaController');
 var dd = require('deep-diff');
 
 var config = new Config('test');
@@ -19,7 +19,7 @@ var hasAllPODobject = () => {
   return obj;
 };
 
-describe('Schema', () => {
+describe('SchemaController', () => {
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});
@@ -751,7 +751,7 @@ describe('Schema', () => {
   });
 
   it('can merge schemas', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: 'SomeClass',
       someType: { type: 'Number' }
     }, {
@@ -764,7 +764,7 @@ describe('Schema', () => {
   });
 
   it('can merge deletions', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: 'SomeClass',
       someType: { type: 'Number' },
       outDatedType: { type: 'String' },
@@ -779,7 +779,7 @@ describe('Schema', () => {
   });
 
   it('ignore default field when merge with system class', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: '_User',
       username: { type: 'String' },
       password: { type: 'String' },

@@ -15,8 +15,7 @@
 // TODO: hide all schema logic inside the database adapter.
 
 const Parse = require('parse/node').Parse;
-import MongoSchemaCollection from './Adapters/Storage/Mongo/MongoSchemaCollection';
-import _                     from 'lodash';
+import _ from 'lodash';
 
 const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
