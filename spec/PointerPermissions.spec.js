@@ -193,4 +193,46 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
+  
+  it('should handle multiple writeUserFields', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, user2]).then(() => {
+      obj.set('owner', user);
+      obj.set('otherOwner', user2);
+      return obj.save();
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']});
+      });
+    }).then(() => {
+      return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      return obj.save({hello: 'fromUser1'});
+    }).then(() => {
+      return Parse.User.logIn('user2', 'password');
+    }).then(() => {
+      return obj.save({hello: 'fromUser2'});
+    }).then(() => {
+      Parse.User.logOut();
+      let q = new Parse.Query('AnObject');
+      return q.first();
+    }).then((result) => {
+      expect(result.get('hello')).toBe('fromUser2');
+      done();
+    }).catch(err => {
+      fail('should not fail');
+      done();
+    })
+  });
 });
