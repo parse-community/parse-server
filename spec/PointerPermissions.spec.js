@@ -325,4 +325,122 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
+  
+  it('should let master key find objects', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let object = new Parse.Object('AnObject');
+    object.set('hello', 'world');
+    return object.save().then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
+      });
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find();
+    }).then(() => {
+      
+    }, (err) => {
+      expect(err.code).toBe(101);
+      return Promise.resolve();
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.find({useMasterKey: true});
+    }).then((objects) => {
+      expect(objects.length).toBe(1);
+      done();
+    }, (err) => {
+      fail('master key should find the object');
+      done();
+    })
+  });
+  
+  it('should let master key get objects', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let object = new Parse.Object('AnObject');
+    object.set('hello', 'world');
+    return object.save().then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
+      });
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.get(object.id);
+    }).then(() => {
+      
+    }, (err) => {
+      expect(err.code).toBe(101);
+      return Promise.resolve();
+    }).then(() => {
+      let q = new Parse.Query('AnObject');
+      return q.get(object.id, {useMasterKey: true});
+    }).then((objectAgain) => {
+      expect(objectAgain).not.toBeUndefined();
+      expect(objectAgain.id).toBe(object.id);
+      done();
+    }, (err) => {
+      fail('master key should find the object');
+      done();
+    })
+  });
+  
+  
+  it('should let master key update objects', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let object = new Parse.Object('AnObject');
+    object.set('hello', 'world');
+    return object.save().then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {update: {}, writeUserFields: ['owner']});
+      });
+    }).then(() => {
+      return object.save({'hello': 'bar'});
+    }).then(() => {
+      
+    }, (err) => {
+      expect(err.code).toBe(101);
+      return Promise.resolve();
+    }).then(() => {
+      return object.save({'hello': 'baz'}, {useMasterKey: true});
+    }).then((objectAgain) => {
+      expect(objectAgain.get('hello')).toBe('baz');
+      done();
+    }, (err) => {
+      fail('master key should save the object');
+      done();
+    })
+  });
+  
+  it('should let master key delete objects', (done) => {
+    let config = new Config(Parse.applicationId);
+    let user = new Parse.User();
+    let object = new Parse.Object('AnObject');
+    object.set('hello', 'world');
+    return object.save().then(() => {
+      return config.database.loadSchema().then((schema) => {
+        // Lock the update, and let only owner write
+        return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner']});
+      });
+    }).then(() => {
+      return object.destroy();
+    }).then(() => {
+      
+    }, (err) => {
+      expect(err.code).toBe(101);
+      return Promise.resolve();
+    }).then(() => {
+      return object.destroy({useMasterKey: true});
+    }).then((objectAgain) => {
+      done();
+    }, (err) => {
+      fail('master key should destroy the object');
+      done();
+    })
+  }, 90000);
+  
 });

@@ -150,7 +150,12 @@ DatabaseController.prototype.update = function(className, query, update, options
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
-      query = this.addPointerPermissions(schema, className, 'update', query, aclGroup);
+      if (!isMaster) {
+        query = this.addPointerPermissions(schema, className, 'update', query, aclGroup); 
+      }
+      if (!query) {
+        return Promise.resolve();
+      }
       var mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       if (options.acl) {
         mongoWhere = this.transform.addWriteACL(mongoWhere, options.acl);
@@ -291,7 +296,12 @@ DatabaseController.prototype.destroy = function(className, query, options = {}) 
     })
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
-      query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup);
+      if (!isMaster) {
+        query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup); 
+        if (!query) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        }
+      }
       let mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       if (options.acl) {
         mongoWhere = this.transform.addWriteACL(mongoWhere, options.acl);
@@ -597,7 +607,9 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   .then(() => this.reduceInRelation(className, query, schema))
   .then(() => this.adapter.adaptiveCollection(className))
   .then(collection => {
-    query = this.addPointerPermissions(schema, className, op, query, aclGroup);
+    if (!isMaster) {
+      query = this.addPointerPermissions(schema, className, op, query, aclGroup); 
+    }
     if (!query) {
       if (op == 'get') {
         return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
