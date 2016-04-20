@@ -2273,4 +2273,36 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
+    Parse.Object.disableSingleInstance();
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    var user = new Parse.User();
+    user.set("username", "testLinkWithProvider");
+    user.set("password", "mypass");
+    user.signUp()
+    .then(user => user._linkWith("facebook", {
+      success: user => {
+        expect(user.get('username')).toEqual('testLinkWithProvider');
+        expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
+        return user._unlinkFrom('facebook')
+        .then(() => user.fetch())
+        .then(user => {
+          expect(user.get('username')).toEqual('testLinkWithProvider');
+          expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
+          done();
+        });
+      },
+      error: e => {
+        fail('Unexpected failure testing linking');
+        fail(error);
+        done();
+      }
+    }))
+    .catch(error => {
+      fail('Unexpected failure testing in unlink user test');
+      fail(error);
+      done();
+    });
+  });
 });
