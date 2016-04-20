@@ -80,6 +80,8 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.runDatabaseOperation();
   }).then(() => {
+    return this.createSessionTokenIfNeeded();
+  }).then(() => {
     return this.handleFollowup();
   }).then(() => {
     return this.runAfterTrigger();
@@ -316,35 +318,6 @@ RestWrite.prototype.transformUser = function() {
 
   var promise = Promise.resolve();
 
-  if (!this.query) {
-    var token = 'r:' + cryptoUtils.newToken();
-    this.storage['token'] = token;
-    promise = promise.then(() => {
-      var expiresAt = this.config.generateSessionExpiresAt();
-      var sessionData = {
-        sessionToken: token,
-        user: {
-          __type: 'Pointer',
-          className: '_User',
-          objectId: this.objectId()
-        },
-        createdWith: {
-          'action': 'signup',
-          'authProvider': this.storage['authProvider'] || 'password'
-        },
-        restricted: false,
-        installationId: this.auth.installationId,
-        expiresAt: Parse._encode(expiresAt)
-      };
-      if (this.response && this.response.response) {
-        this.response.response.sessionToken = token;
-      }
-      var create = new RestWrite(this.config, Auth.master(this.config),
-                                 '_Session', null, sessionData);
-      return create.execute();
-    });
-  }
-
   // If we're updating a _User object, clear the user cache for the session
   if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
     cache.users.remove(this.auth.user.getSessionToken());
@@ -411,6 +384,39 @@ RestWrite.prototype.transformUser = function() {
       })
   });
 };
+
+RestWrite.prototype.createSessionTokenIfNeeded = function() {
+  if (this.className !== '_User') {
+    return;
+  }
+  if (this.query) {
+    return;
+  }
+  var token = 'r:' + cryptoUtils.newToken();
+
+  var expiresAt = this.config.generateSessionExpiresAt();
+  var sessionData = {
+    sessionToken: token,
+    user: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: this.objectId()
+    },
+    createdWith: {
+      'action': 'signup',
+      'authProvider': this.storage['authProvider'] || 'password'
+    },
+    restricted: false,
+    installationId: this.auth.installationId,
+    expiresAt: Parse._encode(expiresAt)
+  };
+  if (this.response && this.response.response) {
+    this.response.response.sessionToken = token;
+  }
+  var create = new RestWrite(this.config, Auth.master(this.config),
+                                 '_Session', null, sessionData);
+  return create.execute();
+}
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
@@ -774,9 +780,6 @@ RestWrite.prototype.runDatabaseOperation = function() {
             memo[key] = resp[key] || this.data[key];
             return memo;
           }, resp);
-        }
-        if (this.storage['token']) {
-          resp.sessionToken = this.storage['token'];
         }
         this.response = {
           status: 201,

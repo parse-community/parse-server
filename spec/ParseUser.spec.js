@@ -2272,6 +2272,31 @@ describe('Parse.User testing', () => {
       }
     });
   });
+  
+  it('should not create extraneous session tokens', (done) => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((s) => {
+      // Lock down the _User class for creation
+      return s.addClassIfNotExists('_User', {}, {create: {}})
+    }).then((res) => {
+      let user  = new Parse.User();
+      return user.save({'username': 'user', 'password': 'pass'});
+    }).then(() => {
+      fail('should not be able to save the user');
+    }, (err) => {
+      return Promise.resolve();
+    }).then(() => {
+      let q = new Parse.Query('_Session');
+      return q.find({useMasterKey: true})
+    }).then((res) => {
+      // We should have no session created
+      expect(res.length).toBe(0);
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    });
+  });
 
   it('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
     Parse.Object.disableSingleInstance();
