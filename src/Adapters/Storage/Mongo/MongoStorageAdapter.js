@@ -145,7 +145,8 @@ export class MongoStorageAdapter {
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   getOneSchema(className) {
-    return this.schemaCollection().then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+    return this.schemaCollection()
+    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Does it really need the schema?
