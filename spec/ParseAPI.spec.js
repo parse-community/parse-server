@@ -1298,6 +1298,52 @@ describe('miscellaneous', function() {
         done();
       });
     })
+  });
+  
+  it('properly returns incremented values (#1554)', (done) => {
+      let headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      let requestOptions = {
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/AnObject',
+        json: true
+      };
+     let object = new Parse.Object('AnObject');;
+     
+     function runIncrement(amount) {
+       let options = Object.assign({}, requestOptions, {
+         body: {
+           "key": {
+            __op: 'Increment', 
+            amount: amount
+           }
+          },
+         url: 'http://localhost:8378/1/classes/AnObject/'+object.id
+       })
+       return new Promise((resolve, reject) => {
+         request.put(options, (err, res, body)  => {
+           if (err) {
+             reject(err);
+           } else {
+             resolve(body);
+           }
+         });
+       })
+     }
+     
+     object.save().then(() => {
+       return runIncrement(1);
+     }).then((res) => {
+       expect(res.key).toBe(1);
+       return runIncrement(-1);
+     }).then((res) => {
+       console.log(res);
+       expect(res.key).toBe(0);
+       done();
+     })
   })
 
 });
