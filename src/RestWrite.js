@@ -160,7 +160,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config.applicationId);
+    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
@@ -821,7 +821,7 @@ RestWrite.prototype.runAfterTrigger = function() {
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
   // Run afterSave trigger
-  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config.applicationId);
+  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
 };
 
 // A helper to figure out what location this operation happens at.
