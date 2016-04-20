@@ -214,6 +214,8 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
+  case '_created_at'://TODO: for some reason, _PushStatus is already transformed when it gets here. For now,
+  // just pass the _created_at through. Later, we should make sure the push status doesn't get transformed inside Parse Server.
   case 'createdAt':
     transformedValue = transformAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
@@ -226,29 +228,34 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
     transformedValue = transformAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: 'expiresAt', value: coercedToDate};
+  case '_id': //TODO: for some reason, _PushStatus is already transformed when it gets here. For now,
+  // just pass the ID through. Later, we should make sure the push status doesn't get transformed inside Parse Server.
   case '_rperm':
   case '_wperm':
   case '_email_verify_token':
+  case '_hashed_password':
   case '_perishable_token': return {key: restKey, value: restValue};
   case 'sessionToken': return {key: '_session_token', value: restValue};
   default:
     // Auth data should have been transformed already
-    var authDataMatch = restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch) {
+    if (restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + restKey);
     }
+    // Trust that the auth data has been transformed and save it directly
+    if (restKey.match(/^_auth_data_[a-zA-Z0-9_]+$/)) {
+      return {key: restKey, value: restValue};
+    }
   }
-
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, restKey);
-  }
-  if ((expected && expected.type == 'Pointer') ||
-      (!expected && restValue && restValue.__type == 'Pointer')) {
-    restKey = '_p_' + restKey;
+  //skip straight to transformAtom for Bytes, they don't show up in the schema for some reason
+  if (restValue && restValue.__type !== 'Bytes') {
+    var expected = undefined;
+    if (schema && schema.getExpectedType) {
+      expected = schema.getExpectedType(className, restKey);
+    }
+    if ((expected && expected.type == 'Pointer') ||
+        (!expected && restValue && restValue.__type == 'Pointer')) {
+      restKey = '_p_' + restKey;
+    }
   }
 
   // Handle atomic values

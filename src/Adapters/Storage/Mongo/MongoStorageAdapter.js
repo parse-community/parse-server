@@ -150,7 +150,9 @@ export class MongoStorageAdapter {
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Shouldn't need the
-  // schemaController, but MongoTransform still needs it :(
+  // schemaController, but MongoTransform still needs it :( maybe shouldn't even need the schema,
+  // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
+  // the schem only for the legacy mongo format. We'll figure that out later.
   createObject(className, object, schemaController, parseFormatSchema) {
     const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
     return this.adaptiveCollection(className)
