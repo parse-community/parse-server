@@ -204,42 +204,41 @@ function transformWhere(schema, className, restWhere, options = {validate: true}
 
 const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, restValue) => {
   // Check if the schema is known since it's a built-in field.
-  var key = restKey;
   var timeField = false;
-  switch(key) {
+  switch(restKey) {
   case 'objectId':
-    key = '_id';
+    restKey = '_id';
     break;
   case 'createdAt':
-    key = '_created_at';
+    restKey = '_created_at';
     timeField = true;
     break;
   case 'updatedAt':
-    key = '_updated_at';
+    restKey = '_updated_at';
     timeField = true;
     break;
   case '_email_verify_token':
-    key = "_email_verify_token";
+    restKey = "_email_verify_token";
     break;
   case '_perishable_token':
-    key = "_perishable_token";
+    restKey = "_perishable_token";
     break;
   case 'sessionToken':
-    key = '_session_token';
+    restKey = '_session_token';
     break;
   case 'expiresAt':
-    key = 'expiresAt';
+    restKey = 'expiresAt';
     timeField = true;
     break;
   case '_rperm':
   case '_wperm':
-    return {key: key, value: restValue};
+    return {key: restKey, value: restValue};
     break;
   default:
     // Auth data should have been transformed already
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+    var authDataMatch = restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + restKey);
     }
   }
 
@@ -248,11 +247,11 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
   // pointer types are missed
   var expected = undefined;
   if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
+    expected = schema.getExpectedType(className, restKey);
   }
   if ((expected && expected.type == 'Pointer') ||
       (!expected && restValue && restValue.__type == 'Pointer')) {
-    key = '_p_' + key;
+    restKey = '_p_' + restKey;
   }
   var expectedTypeIsArray = (expected && expected.type === 'Array');
 
@@ -262,12 +261,12 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
-    return {key: key, value: value};
+    return {key: restKey, value: value};
   }
 
   // ACLs are handled before this method is called
   // If an ACL key still exists here, something is wrong.
-  if (key === 'ACL') {
+  if (restKey === 'ACL') {
     throw 'There was a problem transforming an ACL.';
   }
 
@@ -277,13 +276,13 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
       var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
       return out.value;
     });
-    return {key: key, value: value};
+    return {key: restKey, value: value};
   }
 
   // Handle update operators
   value = transformUpdateOperator(restValue, true);
   if (value !== CannotTransform) {
-    return {key: key, value: value};
+    return {key: restKey, value: value};
   }
 
   // Handle normal objects by recursing
@@ -294,12 +293,11 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
-  return {key: key, value: value};
+  return {key: restKey, value: value};
 }
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-// Returns the mongo form of the object.
 function parseObjectToMongoObjectForCreate(schema, className, restCreate) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
