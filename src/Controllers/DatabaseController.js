@@ -312,24 +312,17 @@ DatabaseController.prototype.create = function(className, object, options = {}) 
   let originalObject = object;
   object = deepcopy(object);
 
-  var schema;
   var isMaster = !('acl' in options);
   var aclGroup = options.acl || [];
 
   return this.validateClassName(className)
     .then(() => this.loadSchema())
-    .then(s => {
-      schema = s;
-      if (!isMaster) {
-        return schema.validatePermission(className, aclGroup, 'create');
-      }
-      return Promise.resolve();
+    .then(schemaController => {
+      return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'create'))
+      .then(() => this.handleRelationUpdates(className, null, object))
+      .then(() => this.adapter.createObject(className, object, schemaController))
+      .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
     })
-    .then(() => this.handleRelationUpdates(className, null, object))
-    .then(() => this.adapter.createObject(className, object, schema))
-    .then(result => {
-      return sanitizeDatabaseResult(originalObject, result.ops[0]);
-    });
 };
 
 DatabaseController.prototype.canAddField = function(schema, className, object, aclGroup) {
