@@ -202,9 +202,14 @@ function transformWhere(schema, className, restWhere, options = {validate: true}
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, restValue) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (
+  schema,
+  className,
+  restKey,
+  restValue,
+  parseFormatSchema
+) => {
   // Check if the schema is known since it's a built-in field.
-  var timeField = false;
   let transformedValue;
   let coercedToDate;
   switch(restKey) {
@@ -287,13 +292,19 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(schema, className, restCreate) {
+function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseFormatSchema) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
   var mongoCreate = transformACL(restCreate);
   for (let restKey in restCreate) {
-    let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(schema, className, restKey, restCreate[restKey]);
+    let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
+      schema,
+      className,
+      restKey,
+      restCreate[restKey],
+      parseFormatSchema
+    );
     if (value !== undefined) {
       mongoCreate[key] = value;
     }

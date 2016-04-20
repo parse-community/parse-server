@@ -320,11 +320,8 @@ DatabaseController.prototype.create = function(className, object, options = {}) 
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'create'))
     .then(() => this.handleRelationUpdates(className, null, object))
-    // enforcing the class exists is necessary because _PushStatus is weird - I'm not 100% sure
-    // what is going on with that, but we definitely get to this point without the _PushStatus
-    // class existing. This should eventually switch to schemaController.getOneSchema(className)
     .then(() => schemaController.enforceClassExists(className))
-    .then(schema => this.adapter.createObject(className, object, schemaController))
+    .then(schema => this.adapter.createObject(className, object, schemaController, schema))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };

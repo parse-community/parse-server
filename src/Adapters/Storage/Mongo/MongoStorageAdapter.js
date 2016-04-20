@@ -149,11 +149,10 @@ export class MongoStorageAdapter {
     .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }
 
-  // TODO: As yet not particularly well specified. Creates an object. Does it really need the schema?
-  // or can it fetch the schema itself? Also the schema is not currently a Parse format schema, and it
-  // should be, if we are passing it at all.
-  createObject(className, object, schema) {
-    const mongoObject = transform.parseObjectToMongoObjectForCreate(schema, className, object);
+  // TODO: As yet not particularly well specified. Creates an object. Shouldn't need the
+  // schemaController, but MongoTransform still needs it :(
+  createObject(className, object, schemaController, parseFormatSchema) {
+    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject));
   }
