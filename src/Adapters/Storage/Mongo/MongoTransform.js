@@ -300,7 +300,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
 // Returns the mongo form of the object.
-function parseObjectToMongoObject(schema, className, restCreate) {
+function parseObjectToMongoObjectForCreate(schema, className, restCreate) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
@@ -1032,7 +1032,7 @@ var FileCoder = {
 
 module.exports = {
   transformKey,
-  parseObjectToMongoObject,
+  parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
   transformSelect,

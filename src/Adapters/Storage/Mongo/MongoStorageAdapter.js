@@ -152,7 +152,7 @@ export class MongoStorageAdapter {
   // or can it fetch the schema itself? Also the schema is not currently a Parse format schema, and it
   // should be, if we are passing it at all.
   createObject(className, object, schema) {
-    const mongoObject = transform.parseObjectToMongoObject(schema, className, object);
+    const mongoObject = transform.parseObjectToMongoObjectForCreate(schema, className, object);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject));
   }
