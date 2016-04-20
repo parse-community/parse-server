@@ -823,24 +823,11 @@ function transformNotInQuery(notInQueryObject, className, results) {
 }
 
 function addWriteACL(mongoWhere, acl) {
-  var writePerms = [
-    {_wperm: {'$exists': false}}
-  ];
-  for (var entry of acl) {
-    writePerms.push({_wperm: {'$in': [entry]}});
-  }
-  return {'$and': [mongoWhere, {'$or': writePerms}]};
+  return {'$and': [mongoWhere, {"_wperm" : { "$in" : [null, ...acl]}}]};
 }
 
 function addReadACL(mongoWhere, acl) {
-  var orParts = [
-    {"_rperm" : { "$exists": false }},
-    {"_rperm" : { "$in" : ["*"]}}
-  ];
-  for (var entry of acl) {
-    orParts.push({"_rperm" : { "$in" : [entry]}});
-  }
-  return {'$and': [mongoWhere, {'$or': orParts}]};
+  return {'$and': [mongoWhere, {"_rperm" : { "$in" : [null, "*", ...acl]}}]};
 }
 
 var DateCoder = {
