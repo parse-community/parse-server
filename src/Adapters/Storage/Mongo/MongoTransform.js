@@ -205,35 +205,27 @@ function transformWhere(schema, className, restWhere, options = {validate: true}
 const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, restValue) => {
   // Check if the schema is known since it's a built-in field.
   var timeField = false;
+  let transformedValue;
+  let coercedToDate;
   switch(restKey) {
-  case 'objectId':
-    restKey = '_id';
-    break;
+  case 'objectId': return {key: '_id', value: restValue};
   case 'createdAt':
-    restKey = '_created_at';
-    timeField = true;
-    break;
+    transformedValue = transformAtom(restValue, false);
+    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
+    return {key: '_created_at', value: coercedToDate};
   case 'updatedAt':
-    restKey = '_updated_at';
-    timeField = true;
-    break;
-  case '_email_verify_token':
-    restKey = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    restKey = "_perishable_token";
-    break;
-  case 'sessionToken':
-    restKey = '_session_token';
-    break;
+    transformedValue = transformAtom(restValue, false);
+    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
+    return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
-    restKey = 'expiresAt';
-    timeField = true;
-    break;
+    transformedValue = transformAtom(restValue, false);
+    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
+    return {key: 'expiresAt', value: coercedToDate};
   case '_rperm':
   case '_wperm':
-    return {key: restKey, value: restValue};
-    break;
+  case '_email_verify_token':
+  case '_perishable_token': return {key: restKey, value: restValue};
+  case 'sessionToken': return {key: '_session_token', value: restValue};
   default:
     // Auth data should have been transformed already
     var authDataMatch = restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -258,9 +250,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (schema, className, restKey, re
   // Handle atomic values
   var value = transformAtom(restValue, false, { inArray: false, inObject: false });
   if (value !== CannotTransform) {
-    if (timeField && (typeof value === 'string')) {
-      value = new Date(value);
-    }
     return {key: restKey, value: value};
   }
 
