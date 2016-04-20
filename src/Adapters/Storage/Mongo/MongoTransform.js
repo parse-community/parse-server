@@ -276,7 +276,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
     return {key: restKey, value: value};
   }
 
-  // Handle update operators
+  // Handle update operators. TODO: handle within Parse Server. DB adapter shouldn't see update operators in creates.
   value = transformUpdateOperator(restValue, true);
   if (value !== CannotTransform) {
     return {key: restKey, value: value};

@@ -1,5 +1,6 @@
 'use strict';
 
+let request = require('request');
 
 describe('Parse.Push', () => {
 
@@ -87,6 +88,59 @@ describe('Parse.Push', () => {
       console.error();
       fail('should not fail sending push')
       done();
+    });
+  });
+
+  it('should not allow clients to query _PushStatus', done => {
+    setup()
+    .then(() => Parse.Push.send({
+      where: {
+        deviceType: 'ios'
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!'
+      }
+    }, {useMasterKey: true}))
+    .then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/classes/_PushStatus',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+        },
+      }, (error, response, body) => {
+        expect(body.results.length).toEqual(0);
+        done();
+      });
+    });
+  });
+
+  it('should allow master key to query _PushStatus', done => {
+    setup()
+    .then(() => Parse.Push.send({
+      where: {
+        deviceType: 'ios'
+      },
+      data: {
+        badge: 'increment',
+        alert: 'Hello world!'
+      }
+    }, {useMasterKey: true}))
+    .then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/classes/_PushStatus',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+      }, (error, response, body) => {
+        expect(body.results.length).toEqual(1);
+        expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
+        expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
+        done();
+      });
     });
   });
 });
