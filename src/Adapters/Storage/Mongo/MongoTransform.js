@@ -195,8 +195,7 @@ function transformWhere(schema, className, restWhere, options = {validate: true}
   let transformKeyOptions = {query: true};
   transformKeyOptions.validate = options.validate;
   for (let restKey in restWhere) {
-    let out = transformKeyValue(schema, className, restKey, restWhere[restKey],
-                                transformKeyOptions);
+    let out = transformKeyValue(schema, className, restKey, restWhere[restKey], transformKeyOptions);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
@@ -333,8 +332,7 @@ function transformUpdate(schema, className, restUpdate) {
   }
 
   for (var restKey in restUpdate) {
-    var out = transformKeyValue(schema, className, restKey, restUpdate[restKey],
-                                {update: true});
+    var out = transformKeyValue(schema, className, restKey, restUpdate[restKey], {update: true});
 
     // If the output value is an object with any $ keys, it's an
     // operator that needs to be lifted onto the top level update
