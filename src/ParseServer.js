@@ -1,7 +1,5 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
-import 'babel-polyfill';
-
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     DatabaseAdapter = require('./DatabaseAdapter'),
@@ -11,6 +9,10 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse,
     path = require('path'),
     authDataManager = require('./authDataManager');
+    
+if (!global._babelPolyfill) {
+  require('babel-polyfill');
+}
 
 import { logger,
       configureLogger }       from './logger';
