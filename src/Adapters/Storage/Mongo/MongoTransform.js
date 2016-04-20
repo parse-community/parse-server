@@ -250,7 +250,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
       (!expected && restValue && restValue.__type == 'Pointer')) {
     restKey = '_p_' + restKey;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
   var value = transformAtom(restValue, false, { inArray: false, inObject: false });
