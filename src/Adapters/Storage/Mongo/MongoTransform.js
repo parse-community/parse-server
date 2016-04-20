@@ -248,12 +248,9 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   }
   //skip straight to transformAtom for Bytes, they don't show up in the schema for some reason
   if (restValue && restValue.__type !== 'Bytes') {
-    var expected = undefined;
-    if (schema && schema.getExpectedType) {
-      expected = schema.getExpectedType(className, restKey);
-    }
-    if ((expected && expected.type == 'Pointer') ||
-        (!expected && restValue && restValue.__type == 'Pointer')) {
+    //Note: We may not know the type of a field here, as the user could be saving (null) to a field
+    //That never existed before, meaning we can't infer the type.
+    if (parseFormatSchema.fields[restKey] && parseFormatSchema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
       restKey = '_p_' + restKey;
     }
   }
