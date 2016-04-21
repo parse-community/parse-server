@@ -7,7 +7,8 @@ describe('info logs', () => {
     var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.info('testing info logs', () => {
       fileLoggerAdapter.query({
-        size: 1,
+        from: new Date(Date.now() - 500),
+        size: 100,
         level: 'info'
       }, (results) => {
         if(results.length == 0) {
@@ -28,7 +29,8 @@ describe('error logs', () => {
     var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.error('testing error logs', () => {
       fileLoggerAdapter.query({
-        size: 1,
+        from: new Date(Date.now() - 500),
+        size: 100,
         level: 'error'
       }, (results) => {
         if(results.length == 0) {

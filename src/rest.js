@@ -52,7 +52,7 @@ function del(config, auth, className, objectId) {
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
+          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -79,7 +79,7 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config.applicationId);
+    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
     return Promise.resolve();
   });
 }
