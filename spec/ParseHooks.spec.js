@@ -37,50 +37,43 @@ describe('Hooks', () => {
      });
    });
 
-   it("should CRUD a function registration", (done) => {
-     // Create
-     Parse.Hooks.createFunction("My-Test-Function", "http://someurl").then((res) => {
-       expect(res.functionName).toBe("My-Test-Function");
-       expect(res.url).toBe("http://someurl")
-       // Find
-       return Parse.Hooks.getFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       expect(res).not.toBe(null);
-       expect(res).not.toBe(undefined);
-       expect(res.url).toBe("http://someurl");
-       // delete
-        return Parse.Hooks.updateFunction("My-Test-Function", "http://anotherurl");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       expect(res.functionName).toBe("My-Test-Function");
-       expect(res.url).toBe("http://anotherurl")
-
-       return Parse.Hooks.deleteFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       // Find again! but should be deleted
-       return Parse.Hooks.getFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       fail("Should not succeed")
-       done();
-     }, (err) => {
-       expect(err).not.toBe(null);
-       expect(err).not.toBe(undefined);
-       expect(err.code).toBe(143);
-       expect(err.error).toBe("no function named: My-Test-Function is defined")
-       done();
-     })
-   });
+  it("should CRUD a function registration", (done) => {
+    // Create
+    Parse.Hooks.createFunction("My-Test-Function", "http://someurl")
+    .then(response => {
+      expect(response.functionName).toBe("My-Test-Function");
+      expect(response.url).toBe("http://someurl")
+      // Find
+      return Parse.Hooks.getFunction("My-Test-Function")
+    }).then(response => {
+      expect(response.url).toBe("http://someurl");
+      return Parse.Hooks.updateFunction("My-Test-Function", "http://anotherurl");
+    })
+    .then((res) => {
+      expect(res.functionName).toBe("My-Test-Function");
+      expect(res.url).toBe("http://anotherurl")
+      // delete
+      return Parse.Hooks.deleteFunction("My-Test-Function")
+    })
+    .then((res) => {
+      // Find again! but should be deleted
+      return Parse.Hooks.getFunction("My-Test-Function")
+      .then((res) => {
+        fail("Failed to delete hook")
+        done();
+        return Promise.resolve();
+      }, (err) => {
+        expect(err.code).toBe(143);
+        expect(err.error).toBe("no function named: My-Test-Function is defined")
+        done();
+        return Promise.resolve();
+      })
+    })
+    .catch(error => {
+      fail(error);
+      done();
+    })
+  });
 
    it("should CRUD a trigger registration", (done) => {
      // Create

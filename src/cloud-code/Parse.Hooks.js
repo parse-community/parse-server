@@ -1,6 +1,6 @@
 var request = require("request");
 const send = function(method, path, body) {
-  
+
   var Parse = require("parse/node").Parse;
 
   var options = {
@@ -12,7 +12,7 @@ const send = function(method, path, body) {
         'Content-Type': 'application/json'
       },
   };
-  
+
   if (body) {
     if (typeof body == "object") {
       options.body = JSON.stringify(body);
@@ -20,7 +20,7 @@ const send = function(method, path, body) {
       options.body = body;
     }
   }
-  
+
   var promise = new Parse.Promise();
   request(options, function(err, response, body){
       if (err) {

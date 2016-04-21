@@ -159,6 +159,27 @@ export class MongoStorageAdapter {
     .then(collection => collection.insertOne(mongoObject));
   }
 
+  // Remove the object with the given ID. If the object does not exist, reject with OBJECT_NOT_FOUND.
+  // If there is a different type of error, reject with INTERNAL_SERVER_ERROR and a message
+  // that doesn't leak info to the client.
+  deleteObject(className, objectId) {
+    return this.adaptiveCollection(className)
+    .then(collection => collection.deleteOne({ _id: objectId }))
+    .then(({ deletedCount }) => {
+      if (deletedCount === 1) {
+        return Promise.resolve();
+      } else {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      }
+    }, error => {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+    });
+  }
+
+  //
+  deleteObjectsByQuery(className, query) {
+  }
+
   get transform() {
     return transform;
   }

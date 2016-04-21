@@ -156,7 +156,7 @@ DatabaseController.prototype.update = function(className, query, update, {
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
       if (!isMaster) {
-        query = this.addPointerPermissions(schema, className, 'update', query, aclGroup); 
+        query = this.addPointerPermissions(schema, className, 'update', query, aclGroup);
       }
       if (!query) {
         return Promise.resolve();
@@ -284,40 +284,56 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-DatabaseController.prototype.destroy = function(className, query, { acl } = {}) {
-  var isMaster = acl !== undefined;
-  var aclGroup = acl || [];
+DatabaseController.prototype.destroy = function(className, { objectId, ...query}, { acl } = {}) {
+  const isMaster = acl !== undefined;
+  const aclGroup = acl || [];
 
-  var schema;
   return this.loadSchema()
-    .then(s => {
-      schema = s;
-      if (!isMaster) {
-        return schema.validatePermission(className, aclGroup, 'delete');
-      }
-      return Promise.resolve();
-    })
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
-      if (!isMaster) {
-        query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup); 
-        if (!query) {
-          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+  .then(schemaController => {
+    return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'delete'))
+    .then(() => {
+      if (query !== {} || !objectId) {
+        if (objectId) {
+          query.objectId = objectId;
         }
-      }
-      let mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
-      if (acl) {
-        mongoWhere = this.transform.addWriteACL(mongoWhere, acl);
-      }
-      return collection.deleteMany(mongoWhere);
-    })
-    .then(resp => {
-      //Check _Session to avoid changing password failed without any session.
-      // TODO: @nlutsenko Stop relying on `result.n`
-      if (resp.result.n === 0 && className !== "_Session") {
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+
+        // delete by query
+        return this.adapter.adaptiveCollection(className)
+        .then(collection => {
+          if (!isMaster) {
+            query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup);
+            if (!query) {
+              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            }
+          }
+          let mongoWhere = this.transform.transformWhere(schemaController, className, query, {validate: !this.skipValidation});
+          if (acl) {
+            mongoWhere = this.transform.addWriteACL(mongoWhere, acl);
+          }
+          return collection.deleteMany(mongoWhere)
+          .then(resp => {
+            //Check _Session to avoid changing password failed without any session.
+            // TODO: @nlutsenko Stop relying on `result.n`
+            if (resp.result.n === 0 && className !== "_Session") {
+              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+            }
+          });
+        });
+      } else {
+        // delete by objectId
+        return this.adapter.deleteObject(className, objectId)
+        .catch(error => {
+          if (className === '_Session' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+            // When deleting sessions while changing passwords, don't throw an error.
+            // I suspect this isn't necessary, as sessions should only be deleted by query
+            // when changing password, but we'll see.
+            return Promise.resolve();
+          }
+          throw error;
+        });
       }
     });
+  });
 };
 
 // Inserts an object into the database.
@@ -612,7 +628,7 @@ DatabaseController.prototype.find = function(className, query, {
   .then(() => this.adapter.adaptiveCollection(className))
   .then(collection => {
     if (!isMaster) {
-      query = this.addPointerPermissions(schema, className, op, query, aclGroup); 
+      query = this.addPointerPermissions(schema, className, op, query, aclGroup);
     }
     if (!query) {
       if (op == 'get') {
