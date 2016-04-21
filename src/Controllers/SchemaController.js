@@ -91,7 +91,7 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -112,8 +112,8 @@ function verifyPermissionKey(key) {
   }
 }
 
-const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
-function validateCLP(perms) {
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
+function validateCLP(perms, fields) {
   if (!perms) {
     return;
   }
@@ -121,6 +121,20 @@ function validateCLP(perms) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+
+    if (operation === 'readUserFields' || operation === 'writeUserFields') {
+      if (!Array.isArray(perms[operation])) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
+      } else {
+        perms[operation].forEach((key) => {
+          if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
+             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
+          }
+        });
+      }
+      return;
+    }
+    
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
       let perm = perms[operation][key];
@@ -318,7 +332,7 @@ class SchemaController {
         });
         return Promise.all(promises);
       })
-      .then(() => this.setPermissions(className, classLevelPermissions))
+      .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
       //TODO: Move this logic into the database adapter
       .then(() => ({
         className: className,
@@ -341,12 +355,8 @@ class SchemaController {
 
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
-  // If 'freeze' is true, refuse to update the schema.
-  // WARNING: this function has side-effects, and doesn't actually
-  // do any validation of the format of the className. You probably
-  // should use classNameIsValid or addClassIfNotExists or something
-  // like that instead. TODO: rename or remove this function.
-  validateClassName(className, freeze) {
+  // If 'freeze' is true, refuse to modify the schema.
+  enforceClassExists(className, freeze) {
     if (this.data[className]) {
       return Promise.resolve(this);
     }
@@ -366,7 +376,7 @@ class SchemaController {
       return this.reloadData();
     }).then(() => {
       // Ensure that the schema now validates
-      return this.validateClassName(className, true);
+      return this.enforceClassExists(className, true);
     }, () => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
@@ -415,15 +425,15 @@ class SchemaController {
         error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
       };
     }
-    validateCLP(classLevelPermissions);
+    validateCLP(classLevelPermissions, fields);
   }
 
   // Sets the Class-level permissions for a given className, which must exist.
-  setPermissions(className, perms) {
+  setPermissions(className, perms, newSchema) {
     if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
-    validateCLP(perms);
+    validateCLP(perms, newSchema);
     let update = {
       _metadata: {
         class_permissions: perms
@@ -547,7 +557,7 @@ class SchemaController {
   // valid.
   validateObject(className, object, query) {
     let geocount = 0;
-    let promise = this.validateClassName(className);
+    let promise = this.enforceClassExists(className);
     for (let fieldName in object) {
       if (object[fieldName] === undefined) {
         continue;
@@ -609,7 +619,8 @@ class SchemaController {
     if (!this.perms[className] || !this.perms[className][operation]) {
       return Promise.resolve();
     }
-    let perms = this.perms[className][operation];
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
       return Promise.resolve();
@@ -621,11 +632,26 @@ class SchemaController {
         found = true;
       }
     }
-    if (!found) {
-      // TODO: Verify correct error code
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+     
+    if (found) {
+      return Promise.resolve();
+    }
+
+    // No matching CLP, let's check the Pointer permissions
+    // And handle those later
+    let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+    
+    // Reject create when write lockdown
+    if (permissionField == 'writeUserFields' && operation == 'create') {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
         'Permission denied for this action.');
     }
+
+    if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
+        return Promise.resolve();
+    }
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        'Permission denied for this action.');
   };
 
   // Returns the expected type for a className+key combination
@@ -641,15 +667,6 @@ class SchemaController {
   hasClass(className) {
     return this.reloadData().then(() => !!(this.data[className]));
   }
-
-  // Helper function to check if a field is a pointer, returns true or false.
-  isPointer(className, key) {
-    let expected = this.getExpectedType(className, key);
-    if (expected && expected.charAt(0) == '*') {
-      return true;
-    }
-    return false;
-  };
 
   getRelationFields(className) {
     if (this.data && this.data[className]) {

@@ -145,14 +145,16 @@ export class MongoStorageAdapter {
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   getOneSchema(className) {
-    return this.schemaCollection().then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+    return this.schemaCollection()
+    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }
 
-  // TODO: As yet not particularly well specified. Creates an object. Does it really need the schema?
-  // or can it fetch the schema itself? Also the schema is not currently a Parse format schema, and it
-  // should be, if we are passing it at all.
-  createObject(className, object, schema) {
-    const mongoObject = transform.parseObjectToMongoObject(schema, className, object);
+  // TODO: As yet not particularly well specified. Creates an object. Shouldn't need the
+  // schemaController, but MongoTransform still needs it :( maybe shouldn't even need the schema,
+  // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
+  // the schem only for the legacy mongo format. We'll figure that out later.
+  createObject(className, object, schemaController, parseFormatSchema) {
+    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject));
   }
