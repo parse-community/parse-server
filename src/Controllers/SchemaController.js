@@ -112,8 +112,8 @@ function verifyPermissionKey(key) {
   }
 }
 
-const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
-function validateCLP(perms) {
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
+function validateCLP(perms, fields) {
   if (!perms) {
     return;
   }
@@ -121,6 +121,20 @@ function validateCLP(perms) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+
+    if (operation === 'readUserFields' || operation === 'writeUserFields') {
+      if (!Array.isArray(perms[operation])) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
+      } else {
+        perms[operation].forEach((key) => {
+          if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
+             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
+          }
+        });
+      }
+      return;
+    }
+    
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
       let perm = perms[operation][key];
@@ -318,7 +332,7 @@ class SchemaController {
         });
         return Promise.all(promises);
       })
-      .then(() => this.setPermissions(className, classLevelPermissions))
+      .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
       //TODO: Move this logic into the database adapter
       .then(() => ({
         className: className,
@@ -411,15 +425,15 @@ class SchemaController {
         error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
       };
     }
-    validateCLP(classLevelPermissions);
+    validateCLP(classLevelPermissions, fields);
   }
 
   // Sets the Class-level permissions for a given className, which must exist.
-  setPermissions(className, perms) {
+  setPermissions(className, perms, newSchema) {
     if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
-    validateCLP(perms);
+    validateCLP(perms, newSchema);
     let update = {
       _metadata: {
         class_permissions: perms
@@ -605,7 +619,8 @@ class SchemaController {
     if (!this.perms[className] || !this.perms[className][operation]) {
       return Promise.resolve();
     }
-    let perms = this.perms[className][operation];
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
       return Promise.resolve();
@@ -617,11 +632,26 @@ class SchemaController {
         found = true;
       }
     }
-    if (!found) {
-      // TODO: Verify correct error code
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+     
+    if (found) {
+      return Promise.resolve();
+    }
+
+    // No matching CLP, let's check the Pointer permissions
+    // And handle those later
+    let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+    
+    // Reject create when write lockdown
+    if (permissionField == 'writeUserFields' && operation == 'create') {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
         'Permission denied for this action.');
     }
+
+    if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
+        return Promise.resolve();
+    }
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        'Permission denied for this action.');
   };
 
   // Returns the expected type for a className+key combination

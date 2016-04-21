@@ -151,6 +151,12 @@ DatabaseController.prototype.update = function(className, query, update, options
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
+      if (!isMaster) {
+        query = this.addPointerPermissions(schema, className, 'update', query, aclGroup); 
+      }
+      if (!query) {
+        return Promise.resolve();
+      }
       var mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       if (options.acl) {
         mongoWhere = this.transform.addWriteACL(mongoWhere, options.acl);
@@ -291,6 +297,12 @@ DatabaseController.prototype.destroy = function(className, query, options = {}) 
     })
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
+      if (!isMaster) {
+        query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup); 
+        if (!query) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        }
+      }
       let mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       if (options.acl) {
         mongoWhere = this.transform.addWriteACL(mongoWhere, options.acl);
@@ -569,6 +581,9 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   let isMaster = !('acl' in options);
   let aclGroup = options.acl || [];
   let schema = null;
+  let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ?
+        'get' :
+        'find';
   return this.loadSchema().then(s => {
     schema = s;
     if (options.sort) {
@@ -580,9 +595,6 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
     }
 
     if (!isMaster) {
-      let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ?
-        'get' :
-        'find';
       return schema.validatePermission(className, aclGroup, op);
     }
     return Promise.resolve();
@@ -591,6 +603,17 @@ DatabaseController.prototype.find = function(className, query, options = {}) {
   .then(() => this.reduceInRelation(className, query, schema))
   .then(() => this.adapter.adaptiveCollection(className))
   .then(collection => {
+    if (!isMaster) {
+      query = this.addPointerPermissions(schema, className, op, query, aclGroup); 
+    }
+    if (!query) {
+      if (op == 'get') {
+        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+          'Object not found.'));
+      } else {
+        return Promise.resolve([]);
+      }
+    }
     let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (!isMaster) {
       mongoWhere = this.transform.addReadACL(mongoWhere, aclGroup);
@@ -627,6 +650,42 @@ DatabaseController.prototype.deleteSchema = function(className) {
             })
         })
     })
+}
+
+DatabaseController.prototype.addPointerPermissions = function(schema, className, operation, query, aclGroup = []) {
+  let perms = schema.perms[className];
+  let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+  let userACL = aclGroup.filter((acl) => {
+     return acl.indexOf('role:') != 0 && acl != '*';
+  });
+  // the ACL should have exactly 1 user
+  if (perms && perms[field] && perms[field].length > 0) {
+    // No user set return undefined
+    if (userACL.length != 1) {
+      return;
+    }
+    let userId = userACL[0];
+    let userPointer =  {
+          "__type": "Pointer",
+          "className": "_User",
+          "objectId": userId
+        };
+
+    let constraints = {};
+    let permFields = perms[field];
+    let ors = permFields.map((key) => {
+      let q = {
+        [key]: userPointer
+      };
+      return {'$and': [q, query]};
+    });
+    if (ors.length > 1) {
+      return {'$or': ors};
+    }
+    return ors[0];
+  } else {
+    return query;
+  }
 }
 
 function joinTableName(className, key) {
