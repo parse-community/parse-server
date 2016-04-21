@@ -16,7 +16,7 @@ const baseStore = function() {
     base[key] = {};
     return base;
   }, {});
-  
+
   return Object.freeze({
     Functions,
     Validators,
@@ -63,7 +63,7 @@ export function getTrigger(className, triggerType, applicationId) {
     throw "Missing ApplicationID";
   }
   var manager = _triggerStore[applicationId]
-  if (manager 
+  if (manager
     && manager.Triggers
     && manager.Triggers[triggerType]
     && manager.Triggers[triggerType][className]) {
@@ -92,15 +92,18 @@ export function getValidator(functionName, applicationId) {
   return undefined;
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject) {
+export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
   var request = {
     triggerName: triggerType,
     object: parseObject,
-    master: false
+    master: false,
+    log: config.loggerController && config.loggerController.adapter
   };
+
   if (originalParseObject) {
     request.original = originalParseObject;
   }
+
   if (!auth) {
     return request;
   }
@@ -145,19 +148,19 @@ export function getResponseObject(request, resolve, reject) {
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for befote/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, applicationId) {
+export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
   if (!parseObject) {
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
-    var trigger = getTrigger(parseObject.className, triggerType, applicationId);
+    var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject);
+    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
     var response = getResponseObject(request, resolve, reject);
     // Force the current Parse app before the trigger
-    Parse.applicationId = applicationId;
-    Parse.javascriptKey = cache.apps.get(applicationId).javascriptKey || '';
-    Parse.masterKey = cache.apps.get(applicationId).masterKey;
+    Parse.applicationId = config.applicationId;
+    Parse.javascriptKey = config.javascriptKey || '';
+    Parse.masterKey = config.masterKey;
     trigger(request, response);
   });
 };

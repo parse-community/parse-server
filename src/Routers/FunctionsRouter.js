@@ -7,11 +7,11 @@ var express = require('express'),
 import PromiseRouter from '../PromiseRouter';
 
 export class FunctionsRouter extends PromiseRouter {
-  
+
   mountRoutes() {
     this.route('POST', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
   }
-  
+
   static createResponseObject(resolve, reject) {
     return {
       success: function(result) {
@@ -26,19 +26,19 @@ export class FunctionsRouter extends PromiseRouter {
       }
     }
   }
-  
+
   static handleCloudFunction(req) {
     var applicationId = req.config.applicationId;
     var theFunction = triggers.getFunction(req.params.functionName, applicationId);
     var theValidator = triggers.getValidator(req.params.functionName, applicationId);
     if (theFunction) {
-
       const params = Object.assign({}, req.body, req.query);
       var request = {
         params: params,
         master: req.auth && req.auth.isMaster,
         user: req.auth && req.auth.user,
-        installationId: req.info.installationId
+        installationId: req.info.installationId,
+        log: req.config.loggerController && req.config.loggerController.adapter
       };
 
       if (theValidator && typeof theValidator === "function") {
