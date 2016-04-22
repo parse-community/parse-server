@@ -59,7 +59,9 @@ export class HooksController {
   }
 
   _removeHooks(query) {
-    return this.database.destroy(DefaultHooksCollectionName, query);
+    return this.database.destroy(DefaultHooksCollectionName, query).then(() => {
+      return Promise.resolve({});
+    });
   }
 
   saveHook(hook) {
