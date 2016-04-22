@@ -333,4 +333,9 @@ describe('server', () => {
     })).toThrow('Session length must be a value greater than 0.');
     done();
   })
+
+  it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
+    expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();
+    done();
+  });
 });

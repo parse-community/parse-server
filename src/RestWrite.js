@@ -420,8 +420,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
 
 // Handles any followup logic
 RestWrite.prototype.handleFollowup = function() {
-
-  if (this.storage && this.storage['clearSessions']) {
+  if (this.storage && this.storage['clearSessions'] && this.config.revokeSessionOnPasswordReset) {
     var sessionQuery = {
       user: {
           __type: 'Pointer',
