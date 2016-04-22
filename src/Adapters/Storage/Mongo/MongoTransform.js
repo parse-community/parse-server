@@ -1017,6 +1017,5 @@ module.exports = {
   transformDontSelect,
   transformInQuery,
   transformNotInQuery,
-  addReadACL,
   untransformObject
 };

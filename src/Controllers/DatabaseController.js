@@ -12,8 +12,15 @@ const deepcopy = require('deepcopy');
 
 function addWriteACL(query, acl) {
   let newQuery = _.cloneDeep(query);
-  //Can't be any existing '_wperm', we don't allow client queries on that, no need to $and
+  //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
   newQuery._wperm = { "$in" : [null, ...acl]};
+  return newQuery;
+}
+
+function addReadACL(query, acl) {
+  let newQuery = _.cloneDeep(query);
+  //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
+  newQuery._rperm = { "$in" : [null, "*", ...acl]};
   return newQuery;
 }
 
@@ -624,10 +631,10 @@ DatabaseController.prototype.find = function(className, query, {
         return Promise.resolve([]);
       }
     }
-    let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (!isMaster) {
-      mongoWhere = this.transform.addReadACL(mongoWhere, aclGroup);
+      query = addReadACL(query, aclGroup);
     }
+    let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (count) {
       delete mongoOptions.limit;
       return collection.count(mongoWhere, mongoOptions);
