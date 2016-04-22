@@ -284,9 +284,8 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-DatabaseController.prototype.destroy = function(className, query, options = {}) {
-  const isMaster = !('acl' in options);
-  const { acl } = options;
+DatabaseController.prototype.destroy = function(className, query, { acl } = {}) {
+  const isMaster = acl === undefined;
   const aclGroup = acl || [];
 
   return this.loadSchema()
