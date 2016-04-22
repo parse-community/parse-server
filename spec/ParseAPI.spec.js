@@ -39,8 +39,8 @@ describe('miscellaneous', function() {
       expect(data.get('password')).toBeUndefined();
       done();
     }, function(err) {
-      console.log(err);
       fail(err);
+      done();
     });
   });
 

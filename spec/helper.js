@@ -84,7 +84,7 @@ beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
   Parse.User.enableUnsafeCurrentUser();
-  done();
+  return TestUtils.destroyAllDataPermanently().then(done, fail);
 });
 
 afterEach(function(done) {
