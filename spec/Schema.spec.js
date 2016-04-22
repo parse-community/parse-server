@@ -121,39 +121,39 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test get', (done) => {
-    var user;
     var obj;
-    createTestUser().then((u) => {
-      user = u;
-      return config.database.loadSchema();
-    }).then((schema) => {
-      // Just to create a valid class
-      return schema.validateObject('Stuff', {foo: 'bar'});
-    }).then((schema) => {
-      var find = {};
-      var get = {};
-      get[user.id] = true;
-      return schema.setPermissions('Stuff', {
-        'find': find,
-        'get': get
-      });
-    }).then((schema) => {
-      obj = new Parse.Object('Stuff');
-      obj.set('foo', 'bar');
-      return obj.save();
-    }).then((o) => {
-      obj = o;
-      var query = new Parse.Query('Stuff');
-      return query.find();
-    }).then((results) => {
-      fail('Class permissions should have rejected this query.');
-      done();
-    }, (e) => {
-      var query = new Parse.Query('Stuff');
-      return query.get(obj.id).then((o) => {
+    createTestUser()
+    .then(user => {
+      console.log(user);
+      return config.database.loadSchema()
+      // Create a valid class
+      .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
+      .then(schema => {
+        var find = {};
+        var get = {};
+        get[user.id] = true;
+        return schema.setPermissions('Stuff', {
+          'find': find,
+          'get': get
+        });
+      }).then((schema) => {
+        obj = new Parse.Object('Stuff');
+        obj.set('foo', 'bar');
+        return obj.save();
+      }).then((o) => {
+        obj = o;
+        var query = new Parse.Query('Stuff');
+        return query.find();
+      }).then((results) => {
+        fail('Class permissions should have rejected this query.');
         done();
       }, (e) => {
-        fail('Class permissions should have allowed this get query');
+        var query = new Parse.Query('Stuff');
+        return query.get(obj.id).then((o) => {
+          done();
+        }, (e) => {
+          fail('Class permissions should have allowed this get query');
+        });
       });
     });
   });

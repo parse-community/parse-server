@@ -41,8 +41,8 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
-  
+
+
   it('should work with write', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -107,7 +107,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should let a proper user find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -137,7 +137,7 @@ describe('Pointer Permissions', () => {
       let q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
-      expect(res.length).toBe(0);     
+      expect(res.length).toBe(0);
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
     }).then(() => {
@@ -167,7 +167,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should not allow creating objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -193,7 +193,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should handle multiple writeUserFields', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -235,7 +235,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should prevent creating pointer permission on missing field', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
@@ -248,7 +248,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should prevent creating pointer permission on bad field', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
@@ -261,7 +261,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should prevent creating pointer permission on bad field', (done) => {
     let config = new Config(Parse.applicationId);
     let object = new Parse.Object('AnObject');
@@ -278,14 +278,14 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
       CLP: update open ({"*": true})
       PointerPerm: "owner"
       ACL: logged in user has access
-      
+
       The owner is another user than the ACL
      */
     let config = new Config(Parse.applicationId);
@@ -325,7 +325,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
@@ -370,7 +370,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
     /*
       tests:
@@ -415,7 +415,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
     /*
       tests:
@@ -462,7 +462,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
     /*
       tests:
@@ -509,7 +509,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
     /*
       tests:
@@ -554,7 +554,7 @@ describe('Pointer Permissions', () => {
       done();
     });
   });
-  
+
   it('should let master key find objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -569,7 +569,7 @@ describe('Pointer Permissions', () => {
       let q = new Parse.Query('AnObject');
       return q.find();
     }).then(() => {
-      
+
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
@@ -584,7 +584,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should let master key get objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -599,7 +599,7 @@ describe('Pointer Permissions', () => {
       let q = new Parse.Query('AnObject');
       return q.get(object.id);
     }).then(() => {
-      
+
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
@@ -615,8 +615,8 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
-  
+
+
   it('should let master key update objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -630,7 +630,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return object.save({'hello': 'bar'});
     }).then(() => {
-      
+
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
@@ -644,7 +644,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should let master key delete objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
@@ -658,7 +658,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return object.destroy();
     }).then(() => {
-      
+      fail();
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
@@ -671,7 +671,7 @@ describe('Pointer Permissions', () => {
       done();
     })
   });
-  
+
   it('should fail with invalid pointer perms', () => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
@@ -682,7 +682,7 @@ describe('Pointer Permissions', () => {
       done();
      });
   });
-  
+
   it('should fail with invalid pointer perms', () => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
@@ -693,5 +693,5 @@ describe('Pointer Permissions', () => {
       done();
      });
   })
-  
+
 });

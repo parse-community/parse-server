@@ -159,6 +159,37 @@ export class MongoStorageAdapter {
     .then(collection => collection.insertOne(mongoObject));
   }
 
+  // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
+  // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
+  // If there is some other error, reject with INTERNAL_SERVER_ERROR.
+
+  // Currently accepts the acl, schemaController, validate
+  // for lecacy reasons, Parse Server should later integrate acl into the query. Database adapters
+  // shouldn't know about acl.
+  deleteObjectsByQuery(className, query, acl, schemaController, validate) {
+    return this.adaptiveCollection(className)
+    .then(collection => {
+      let mongoWhere = transform.transformWhere(
+        schemaController,
+        className,
+        query,
+        { validate }
+      );
+      if (acl) {
+        mongoWhere = transform.addWriteACL(mongoWhere, acl);
+      }
+      return collection.deleteMany(mongoWhere)
+    })
+    .then(({ result }) => {
+      if (result.n === 0) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      }
+      return Promise.resolve();
+    }, error => {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
+    });
+  }
+
   get transform() {
     return transform;
   }
