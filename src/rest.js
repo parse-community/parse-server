@@ -9,7 +9,7 @@
 
 var Parse = require('parse/node').Parse;
 import cache from './cache';
-import Auth from './Auth';
+import Auth  from './Auth';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
@@ -95,8 +95,6 @@ function create(config, auth, className, restObject) {
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
 function update(config, auth, className, objectId, restObject) {
-  enforceRoleSecurity('update', className, auth);
-
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId) ||

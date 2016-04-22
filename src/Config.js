@@ -49,11 +49,12 @@ export class Config {
     this.liveQueryController = cacheInfo.liveQueryController;
     this.sessionLength = cacheInfo.sessionLength;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
+    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
   }
 
   static validate(options) {
-    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
-                                appName: options.appName, 
+    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails,
+                                appName: options.appName,
                                 publicServerURL: options.publicServerURL})
     if (options.publicServerURL) {
       if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {

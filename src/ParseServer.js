@@ -9,7 +9,7 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse,
     path = require('path'),
     authDataManager = require('./authDataManager');
-    
+
 if (!global._babelPolyfill) {
   require('babel-polyfill');
 }
@@ -115,7 +115,11 @@ class ParseServer {
     liveQuery = {},
     sessionLength = 31536000, // 1 Year in seconds
     verbose = false,
+    revokeSessionOnPasswordReset = true,
   }) {
+    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
+      throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -186,7 +190,8 @@ class ParseServer {
       customPages: customPages,
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
-      sessionLength : Number(sessionLength),
+      sessionLength: Number(sessionLength),
+      revokeSessionOnPasswordReset
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
