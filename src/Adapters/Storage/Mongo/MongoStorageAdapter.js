@@ -160,14 +160,12 @@ export class MongoStorageAdapter {
   }
 
   // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
-  // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with nothing.
+  // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
 
   // Currently accepts the acl, schemaController, validate
   // for lecacy reasons, Parse Server should later integrate acl into the query. Database adapters
   // shouldn't know about acl.
-
-  // Currently resolves with empty object because thats what HooksController expects, but that should change.
   deleteObjectsByQuery(className, query, acl, schemaController, validate) {
     return this.adaptiveCollection(className)
     .then(collection => {
@@ -186,7 +184,9 @@ export class MongoStorageAdapter {
       if (result.n === 0) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
-      return Promise.resolve({});
+      return Promise.resolve();
+    }, error => {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
     });
   }
 
