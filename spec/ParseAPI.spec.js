@@ -1340,7 +1340,6 @@ describe('miscellaneous', function() {
        expect(res.key).toBe(1);
        return runIncrement(-1);
      }).then((res) => {
-       console.log(res);
        expect(res.key).toBe(0);
        done();
      })

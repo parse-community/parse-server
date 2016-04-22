@@ -214,8 +214,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
-  case '_created_at'://TODO: for some reason, _PushStatus is already transformed when it gets here. For now,
-  // just pass the _created_at through. Later, we should make sure the push status doesn't get transformed inside Parse Server.
   case 'createdAt':
     transformedValue = transformAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
@@ -228,8 +226,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
     transformedValue = transformAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: 'expiresAt', value: coercedToDate};
-  case '_id': //TODO: for some reason, _PushStatus is already transformed when it gets here. For now,
-  // just pass the ID through. Later, we should make sure the push status doesn't get transformed inside Parse Server.
   case '_rperm':
   case '_wperm':
   case '_email_verify_token':
