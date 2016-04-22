@@ -95,6 +95,7 @@ function create(config, auth, className, restObject) {
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
 function update(config, auth, className, objectId, restObject) {
+  enforceRoleSecurity('update', className, auth);
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId) ||

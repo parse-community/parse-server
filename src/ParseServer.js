@@ -117,9 +117,6 @@ class ParseServer {
     verbose = false,
     revokeSessionOnPasswordReset = true,
   }) {
-    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
-      throw 'revokeSessionOnPasswordReset must be a boolean value';
-    }
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
