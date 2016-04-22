@@ -159,25 +159,36 @@ export class MongoStorageAdapter {
     .then(collection => collection.insertOne(mongoObject));
   }
 
-  // Remove the object with the given ID. If the object does not exist, reject with OBJECT_NOT_FOUND.
-  // If there is a different type of error, reject with INTERNAL_SERVER_ERROR and a message
-  // that doesn't leak info to the client.
-  deleteObject(className, objectId) {
+  // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
+  // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with nothing.
+  // If there is some other error, reject with INTERNAL_SERVER_ERROR.
+
+  // Currently accepts the acl, schemaController, validate
+  // for lecacy reasons, Parse Server should later integrate acl into the query. Database adapters
+  // shouldn't know about acl.
+
+  // Currently resolves with empty object because thats what HooksController expects, but that should change.
+  deleteObjectsByQuery(className, query, acl, schemaController, validate) {
     return this.adaptiveCollection(className)
-    .then(collection => collection.deleteOne({ _id: objectId }))
-    .then(({ deletedCount }) => {
-      if (deletedCount === 1) {
-        return Promise.resolve();
-      } else {
+    .then(collection => {
+      let mongoWhere = transform.transformWhere(
+        schemaController,
+        className,
+        query,
+        { validate }
+      );
+      if (acl) {
+        mongoWhere = transform.addWriteACL(mongoWhere, acl);
+      }
+      return collection.deleteMany(mongoWhere)
+    })
+    .then(({ result }) => {
+      if (result.n === 0) {
+
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
-    }, error => {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      return Promise.resolve({});
     });
-  }
-
-  //
-  deleteObjectsByQuery(className, query) {
   }
 
   get transform() {

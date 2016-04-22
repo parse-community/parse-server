@@ -58,8 +58,9 @@ describe('Hooks', () => {
     .then((res) => {
       // Find again! but should be deleted
       return Parse.Hooks.getFunction("My-Test-Function")
-      .then((res) => {
+      .then(res => {
         fail("Failed to delete hook")
+        fail(res)
         done();
         return Promise.resolve();
       }, (err) => {

@@ -284,7 +284,7 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-DatabaseController.prototype.destroy = function(className, { objectId, ...query}, { acl } = {}) {
+DatabaseController.prototype.destroy = function(className, query, { acl } = {}) {
   const isMaster = acl !== undefined;
   const aclGroup = acl || [];
 
@@ -292,9 +292,12 @@ DatabaseController.prototype.destroy = function(className, { objectId, ...query}
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'delete'))
     .then(() => {
-      if (query !== {} || !objectId) {
-        if (objectId) {
-          query.objectId = objectId;
+      // delete by query
+      return this.adapter.deleteObjectsByQuery(className, query, acl, schemaController, !this.skipValidation)
+      .catch(error => {
+        // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
+        if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
+          return Promise.resolve({});
         }
 
         // delete by query
