@@ -70,7 +70,7 @@ var removeJoinTables = (database, mongoSchema) => {
     .filter(field => mongoSchema[field].startsWith('relation<'))
     .map(field => {
       let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.adapter.dropCollection(collectionName);
+      return database.adapter.deleteOneSchema(collectionName);
     })
   );
 };

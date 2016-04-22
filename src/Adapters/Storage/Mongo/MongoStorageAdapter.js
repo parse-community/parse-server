@@ -70,7 +70,10 @@ export class MongoStorageAdapter {
     });
   }
 
-  dropCollection(className: string) {
+  // Deletes a schema. Resolve if successful. If the schema doesn't
+  // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
+  // reject with INTERNAL_SERVER_ERROR.
+  deleteOneSchema(className: string) {
     return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
@@ -81,15 +84,24 @@ export class MongoStorageAdapter {
     });
   }
 
-  // Used for testing only right now.
-  allCollections() {
-    return this.connect().then(() => {
-      return this.database.collections();
-    }).then(collections => {
+  // Delete all data known to this adatper. Used for testing.
+  deleteAllSchemas() {
+    return this._allCollections().then(collections => {
+      let promises = collections.map(collection => collection.drop());
+      return Promise.all(promises);
+    });
+  }
+
+  _allCollections() {
+    return this.connect()
+    .then(() => this.database.collections())
+    .then(collections => {
       return collections.filter(collection => {
         if (collection.namespace.match(/\.system\./)) {
           return false;
         }
+        //TODO: If you have one app with a collection prefix that happens to be a prefix of another
+        // apps prefix, this will go very very badly. We should fix that somehow.
         return (collection.collectionName.indexOf(this._collectionPrefix) == 0);
       });
     });
