@@ -916,10 +916,6 @@ function transformNotInQuery(notInQueryObject, className, results) {
   }
 }
 
-function addWriteACL(mongoWhere, acl) {
-  return {'$and': [mongoWhere, {"_wperm" : { "$in" : [null, ...acl]}}]};
-}
-
 function addReadACL(mongoWhere, acl) {
   return {'$and': [mongoWhere, {"_rperm" : { "$in" : [null, "*", ...acl]}}]};
 }
@@ -1022,6 +1018,5 @@ module.exports = {
   transformInQuery,
   transformNotInQuery,
   addReadACL,
-  addWriteACL,
   untransformObject
 };
