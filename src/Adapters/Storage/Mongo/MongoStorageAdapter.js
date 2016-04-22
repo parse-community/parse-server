@@ -184,7 +184,6 @@ export class MongoStorageAdapter {
     })
     .then(({ result }) => {
       if (result.n === 0) {
-
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
       return Promise.resolve({});

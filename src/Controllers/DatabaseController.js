@@ -284,14 +284,21 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-DatabaseController.prototype.destroy = function(className, query, { acl } = {}) {
-  const isMaster = acl !== undefined;
+DatabaseController.prototype.destroy = function(className, query, options = {}) {
+  const isMaster = !('acl' in options);
+  const { acl } = options;
   const aclGroup = acl || [];
 
   return this.loadSchema()
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'delete'))
     .then(() => {
+      if (!isMaster) {
+        query = this.addPointerPermissions(schemaController, className, 'delete', query, aclGroup);
+        if (!query) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+        }
+      }
       // delete by query
       return this.adapter.deleteObjectsByQuery(className, query, acl, schemaController, !this.skipValidation)
       .catch(error => {
@@ -299,42 +306,8 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
           return Promise.resolve({});
         }
-
-        // delete by query
-        return this.adapter.adaptiveCollection(className)
-        .then(collection => {
-          if (!isMaster) {
-            query = this.addPointerPermissions(schema, className, 'delete', query, aclGroup);
-            if (!query) {
-              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
-            }
-          }
-          let mongoWhere = this.transform.transformWhere(schemaController, className, query, {validate: !this.skipValidation});
-          if (acl) {
-            mongoWhere = this.transform.addWriteACL(mongoWhere, acl);
-          }
-          return collection.deleteMany(mongoWhere)
-          .then(resp => {
-            //Check _Session to avoid changing password failed without any session.
-            // TODO: @nlutsenko Stop relying on `result.n`
-            if (resp.result.n === 0 && className !== "_Session") {
-              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
-            }
-          });
-        });
-      } else {
-        // delete by objectId
-        return this.adapter.deleteObject(className, objectId)
-        .catch(error => {
-          if (className === '_Session' && error.code === Parse.Error.OBJECT_NOT_FOUND) {
-            // When deleting sessions while changing passwords, don't throw an error.
-            // I suspect this isn't necessary, as sessions should only be deleted by query
-            // when changing password, but we'll see.
-            return Promise.resolve();
-          }
-          throw error;
-        });
-      }
+        throw error;
+      });
     });
   });
 };
