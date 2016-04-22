@@ -26,9 +26,9 @@ export default function pushStatusHandler(config) {
     let data =  body.data || {};
     let payloadString = JSON.stringify(data);
     let object = {
-      _id: objectId,
+      objectId,
+      createdAt: now,
       pushTime: now.toISOString(),
-      _created_at: now,
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,
@@ -38,8 +38,7 @@ export default function pushStatusHandler(config) {
       numSent: 0,
       pushHash: md5Hash(payloadString),
       // lockdown!
-      _wperm: [],
-      _rperm: []
+      ACL: {}
     }
 
     return database.create(PUSH_STATUS_COLLECTION, object).then(() => {
@@ -54,12 +53,13 @@ export default function pushStatusHandler(config) {
     logger.verbose('sending push to %d installations', installations.length);
     return database.update(PUSH_STATUS_COLLECTION,
       {status:"pending", objectId: objectId},
-      {status: "running"});
+      {status: "running", updatedAt: new Date() });
   }
 
   let complete = function(results) {
     let update = {
       status: 'succeeded',
+      updatedAt: new Date(),
       numSent: 0,
       numFailed: 0,
     };
@@ -87,16 +87,17 @@ export default function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return database.update('_PushStatus', {status:"running", objectId }, update);
+    return database.update(PUSH_STATUS_COLLECTION, {status:"running", objectId }, update);
   }
 
   let fail = function(err) {
     let update = {
       errorMessage: JSON.stringify(err),
-      status: 'failed'
+      status: 'failed',
+      updatedAt: new Date()
     }
     logger.error('error while sending push', err);
-    return database.update('_PushStatus', { objectId }, update);
+    return database.update(PUSH_STATUS_COLLECTION, { objectId }, update);
   }
 
   return Object.freeze({
