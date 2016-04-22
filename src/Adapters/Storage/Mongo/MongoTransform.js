@@ -916,10 +916,6 @@ function transformNotInQuery(notInQueryObject, className, results) {
   }
 }
 
-function addReadACL(mongoWhere, acl) {
-  return {'$and': [mongoWhere, {"_rperm" : { "$in" : [null, "*", ...acl]}}]};
-}
-
 var DateCoder = {
   JSONToDatabase(json) {
     return new Date(json.iso);
