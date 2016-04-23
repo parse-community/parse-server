@@ -2,12 +2,27 @@
 // Parse database.
 
 import intersect from 'intersect';
+import _         from 'lodash';
 
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
 var SchemaController = require('../Controllers/SchemaController');
 const deepcopy = require('deepcopy');
+
+function addWriteACL(query, acl) {
+  let newQuery = _.cloneDeep(query);
+  //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
+  newQuery._wperm = { "$in" : [null, ...acl]};
+  return newQuery;
+}
+
+function addReadACL(query, acl) {
+  let newQuery = _.cloneDeep(query);
+  //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
+  newQuery._rperm = { "$in" : [null, "*", ...acl]};
+  return newQuery;
+}
 
 function DatabaseController(adapter, { skipValidation } = {}) {
   this.adapter = adapter;
@@ -161,10 +176,10 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (!query) {
         return Promise.resolve();
       }
-      var mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       if (acl) {
-        mongoWhere = this.transform.addWriteACL(mongoWhere, acl);
+        query = addWriteACL(query, acl);
       }
+      var mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
       mongoUpdate = this.transform.transformUpdate(schema, className, update, {validate: !this.skipValidation});
       if (many) {
         return collection.updateMany(mongoWhere, mongoUpdate);
@@ -299,7 +314,10 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
       }
       // delete by query
-      return this.adapter.deleteObjectsByQuery(className, query, acl, schemaController, !this.skipValidation)
+      if (acl) {
+        query = addWriteACL(query, acl);
+      }
+      return this.adapter.deleteObjectsByQuery(className, query, schemaController, !this.skipValidation)
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -613,10 +631,10 @@ DatabaseController.prototype.find = function(className, query, {
         return Promise.resolve([]);
       }
     }
-    let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (!isMaster) {
-      mongoWhere = this.transform.addReadACL(mongoWhere, aclGroup);
+      query = addReadACL(query, aclGroup);
     }
+    let mongoWhere = this.transform.transformWhere(schema, className, query);
     if (count) {
       delete mongoOptions.limit;
       return collection.count(mongoWhere, mongoOptions);

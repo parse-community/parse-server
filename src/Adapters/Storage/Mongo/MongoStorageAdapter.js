@@ -163,10 +163,8 @@ export class MongoStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
 
-  // Currently accepts the acl, schemaController, validate
-  // for lecacy reasons, Parse Server should later integrate acl into the query. Database adapters
-  // shouldn't know about acl.
-  deleteObjectsByQuery(className, query, acl, schemaController, validate) {
+  // Currently accepts the schemaController, and validate for lecacy reasons
+  deleteObjectsByQuery(className, query, schemaController, validate) {
     return this.adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transform.transformWhere(
@@ -175,9 +173,6 @@ export class MongoStorageAdapter {
         query,
         { validate }
       );
-      if (acl) {
-        mongoWhere = transform.addWriteACL(mongoWhere, acl);
-      }
       return collection.deleteMany(mongoWhere)
     })
     .then(({ result }) => {
