@@ -10,6 +10,21 @@ let MongoClient = mongodb.MongoClient;
 const MongoSchemaCollectionName = '_SCHEMA';
 const DefaultMongoURI = 'mongodb://localhost:27017/parse';
 
+const storageAdapterAllCollections = mongoAdapter => {
+  return mongoAdapter.connect()
+  .then(() => mongoAdapter.database.collections())
+  .then(collections => {
+    return collections.filter(collection => {
+      if (collection.namespace.match(/\.system\./)) {
+        return false;
+      }
+      // TODO: If you have one app with a collection prefix that happens to be a prefix of another
+      // apps prefix, this will go very very badly. We should fix that somehow.
+      return (collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0);
+    });
+  });
+}
+
 export class MongoStorageAdapter {
   // Private
   _uri: string;
@@ -70,7 +85,10 @@ export class MongoStorageAdapter {
     });
   }
 
-  dropCollection(className: string) {
+  // Deletes a schema. Resolve if successful. If the schema doesn't
+  // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
+  // reject with INTERNAL_SERVER_ERROR.
+  deleteOneSchema(className: string) {
     return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
@@ -81,18 +99,10 @@ export class MongoStorageAdapter {
     });
   }
 
-  // Used for testing only right now.
-  allCollections() {
-    return this.connect().then(() => {
-      return this.database.collections();
-    }).then(collections => {
-      return collections.filter(collection => {
-        if (collection.namespace.match(/\.system\./)) {
-          return false;
-        }
-        return (collection.collectionName.indexOf(this._collectionPrefix) == 0);
-      });
-    });
+  // Delete all data known to this adatper. Used for testing.
+  deleteAllSchemas() {
+    return storageAdapterAllCollections(this)
+    .then(collections => Promise.all(collections.map(collection => collection.drop())));
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled

@@ -381,11 +381,7 @@ DatabaseController.prototype.mongoFind = function(className, query, options = {}
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
-
-  return this.adapter.allCollections().then(collections => {
-    let promises = collections.map(collection => collection.drop());
-    return Promise.all(promises);
-  });
+  return this.adapter.deleteAllSchemas();
 };
 
 // Finds the keys in a query. Returns a Set. REST format only
@@ -652,21 +648,19 @@ DatabaseController.prototype.find = function(className, query, {
 
 DatabaseController.prototype.deleteSchema = function(className) {
   return this.collectionExists(className)
-    .then(exist => {
-      if (!exist) {
-        return Promise.resolve();
+  .then(exist => {
+    if (!exist) {
+      return Promise.resolve();
+    }
+    return this.adapter.adaptiveCollection(className)
+    .then(collection => collection.count())
+    .then(count => {
+      if (count > 0) {
+        throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
       }
-      return this.adapter.adaptiveCollection(className)
-        .then(collection => {
-          return collection.count()
-            .then(count => {
-              if (count > 0) {
-                throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
-              }
-              return collection.drop();
-            })
-        })
+      return this.adapter.deleteOneSchema(className);
     })
+  });
 }
 
 DatabaseController.prototype.addPointerPermissions = function(schema, className, operation, query, aclGroup = []) {
