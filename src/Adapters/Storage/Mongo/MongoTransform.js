@@ -21,13 +21,9 @@ var Parse = require('parse/node').Parse;
 // validate: true indicates that key names are to be validated.
 //
 // Returns an object with {key: key, value: value}.
-export function transformKeyValue(schema, className, restKey, restValue, {
-  inArray,
-  inObject,
-  query,
-  update,
-  validate,
-} = {}) {
+export function transformKeyValue(schema, className, restKey, restValue, options) {
+  options = options || {};
+
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -66,7 +62,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
     return {key: key, value: restValue};
     break;
   case '$or':
-    if (!query) {
+    if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $or in queries');
     }
@@ -79,7 +75,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
     });
     return {key: '$or', value: mongoSubqueries};
   case '$and':
-    if (!query) {
+    if (!options.query) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'you can only use $and in queries');
     }
@@ -95,7 +91,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
-      if (query) {
+      if (options.query) {
         var provider = authDataMatch[1];
         // Special-case auth data.
         return {key: '_auth_data_'+provider+'.id', value: restValue};
@@ -104,7 +100,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
                             'can only query on ' + key);
       break;
     };
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+    if (options.validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
                             'invalid key name: ' + key);
     }
@@ -121,24 +117,24 @@ export function transformKeyValue(schema, className, restKey, restValue, {
       (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
+  var inArray = (expected && expected.type === 'Array');
 
   // Handle query constraints
-  if (query) {
-    value = transformConstraint(restValue, expectedTypeIsArray);
+  if (options.query) {
+    value = transformConstraint(restValue, inArray);
     if (value !== CannotTransform) {
       return {key: key, value: value};
     }
   }
 
-  if (expectedTypeIsArray && query && !(restValue instanceof Array)) {
+  if (inArray && options.query && !(restValue instanceof Array)) {
     return {
       key: key, value: { '$all' : [restValue] }
     };
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray, inObject });
+  var value = transformAtom(restValue, false, options);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -154,7 +150,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
 
   // Handle arrays
   if (restValue instanceof Array) {
-    if (query) {
+    if (options.query) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
                             'cannot use array as query param');
     }
@@ -166,7 +162,7 @@ export function transformKeyValue(schema, className, restKey, restValue, {
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, !update);
+  value = transformUpdateOperator(restValue, !options.update);
   if (value !== CannotTransform) {
     return {key: key, value: value};
   }
@@ -290,21 +286,16 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseFormatSchema) {
+// Returns the mongo form of the object.
+function parseObjectToMongoObject(schema, className, restCreate) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
   var mongoCreate = transformACL(restCreate);
-  for (let restKey in restCreate) {
-    let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      schema,
-      className,
-      restKey,
-      restCreate[restKey],
-      parseFormatSchema
-    );
-    if (value !== undefined) {
-      mongoCreate[key] = value;
+  for (var restKey in restCreate) {
+    var out = transformKeyValue(schema, className, restKey, restCreate[restKey]);
+    if (out.value !== undefined) {
+      mongoCreate[out.key] = out.value;
     }
   }
   return mongoCreate;
@@ -1006,7 +997,7 @@ var FileCoder = {
 
 module.exports = {
   transformKey,
-  parseObjectToMongoObjectForCreate,
+  parseObjectToMongoObject,
   transformUpdate,
   transformWhere,
   transformSelect,

@@ -91,7 +91,7 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -355,8 +355,12 @@ class SchemaController {
 
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
-  // If 'freeze' is true, refuse to modify the schema.
-  enforceClassExists(className, freeze) {
+  // If 'freeze' is true, refuse to update the schema.
+  // WARNING: this function has side-effects, and doesn't actually
+  // do any validation of the format of the className. You probably
+  // should use classNameIsValid or addClassIfNotExists or something
+  // like that instead. TODO: rename or remove this function.
+  validateClassName(className, freeze) {
     if (this.data[className]) {
       return Promise.resolve(this);
     }
@@ -376,7 +380,7 @@ class SchemaController {
       return this.reloadData();
     }).then(() => {
       // Ensure that the schema now validates
-      return this.enforceClassExists(className, true);
+      return this.validateClassName(className, true);
     }, () => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
@@ -557,7 +561,7 @@ class SchemaController {
   // valid.
   validateObject(className, object, query) {
     let geocount = 0;
-    let promise = this.enforceClassExists(className);
+    let promise = this.validateClassName(className);
     for (let fieldName in object) {
       if (object[fieldName] === undefined) {
         continue;
@@ -667,6 +671,15 @@ class SchemaController {
   hasClass(className) {
     return this.reloadData().then(() => !!(this.data[className]));
   }
+
+  // Helper function to check if a field is a pointer, returns true or false.
+  isPointer(className, key) {
+    let expected = this.getExpectedType(className, key);
+    if (expected && expected.charAt(0) == '*') {
+      return true;
+    }
+    return false;
+  };
 
   getRelationFields(className) {
     if (this.data && this.data[className]) {
