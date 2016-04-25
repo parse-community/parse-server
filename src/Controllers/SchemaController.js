@@ -134,7 +134,7 @@ function validateCLP(perms, fields) {
       }
       return;
     }
-    
+
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
       let perm = perms[operation][key];
@@ -543,7 +543,7 @@ class SchemaController {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adapter.deleteFields(className, [fieldName], [])
-        .then(() => database.adapter.dropCollection(`_Join:${fieldName}:${className}`));
+        .then(() => database.adapter.deleteOneSchema(`_Join:${fieldName}:${className}`));
       }
 
       const fieldNames = [fieldName];
@@ -632,7 +632,7 @@ class SchemaController {
         found = true;
       }
     }
-     
+
     if (found) {
       return Promise.resolve();
     }
@@ -640,7 +640,7 @@ class SchemaController {
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
-    
+
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
