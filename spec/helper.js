@@ -40,7 +40,7 @@ var defaultConfiguration = {
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
-  }
+  },
 };
 
 // Set up a default API server for testing with default configuration.
@@ -54,7 +54,7 @@ delete defaultConfiguration.cloud;
 
 var currentConfiguration;
 // Allows testing specific configurations of Parse Server
-var setServerConfiguration = configuration => {
+const setServerConfiguration = configuration => {
   // the configuration hasn't changed
   if (configuration === currentConfiguration) {
     return;
@@ -84,7 +84,7 @@ beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
   Parse.User.enableUnsafeCurrentUser();
-  done();
+  return TestUtils.destroyAllDataPermanently().then(done, fail);
 });
 
 afterEach(function(done) {

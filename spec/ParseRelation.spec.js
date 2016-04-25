@@ -683,4 +683,62 @@ describe('Parse.Relation testing', () => {
       })
     });
   });
+
+  it('can query roles in Cloud Code (regession test #1489)', done => {
+    Parse.Cloud.define('isAdmin', (request, response) => {
+      let query = new Parse.Query(Parse.Role);
+      query.equalTo('name', 'admin');
+      query.first({ useMasterKey: true })
+      .then(role => {
+        let relation = new Parse.Relation(role, 'users');
+        let admins = relation.query();
+        admins.equalTo('username', request.user.get('username'));
+        admins.first({ useMasterKey: true })
+        .then(user => {
+          if (user) {
+            Parse.Cloud._removeHook('Functions', 'isAdmin');
+            done();
+          } else {
+            Parse.Cloud._removeHook('Functions', 'isAdmin');
+            fail('Should have found admin user, found nothing instead');
+            done();
+          }
+        }, error => {
+          Parse.Cloud._removeHook('Functions', 'isAdmin');
+          fail('User not admin');
+          done();
+        })
+      }, error => {
+        Parse.Cloud._removeHook('Functions', 'isAdmin');
+        fail('Should have found admin user, errored instead');
+        fail(error);
+        done();
+      });
+    });
+
+    let adminUser = new Parse.User();
+    adminUser.set('username', 'name');
+    adminUser.set('password', 'pass');
+    adminUser.signUp()
+    .then(adminUser => {
+      let adminACL = new Parse.ACL();
+      adminACL.setPublicReadAccess(true);
+
+      // Create admin role
+      let adminRole = new Parse.Role('admin', adminACL);
+      adminRole.getUsers().add(adminUser);
+      adminRole.save()
+      .then(() => {
+        Parse.Cloud.run('isAdmin');
+      }, error => {
+        fail('failed to save role');
+        fail(error);
+        done()
+      });
+    }, error => {
+      fail('failed to sign up');
+      fail(error);
+      done();
+    });
+  });
 });

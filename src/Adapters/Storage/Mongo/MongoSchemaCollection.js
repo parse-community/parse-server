@@ -1,6 +1,6 @@
 
 import MongoCollection from './MongoCollection';
-import * as transform from './MongoTransform';
+import * as transform  from './MongoTransform';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -128,18 +128,12 @@ class MongoSchemaCollection {
     this._collection = collection;
   }
 
-  // Return a promise for all schemas known to this adapter, in Parse format. In case the
-  // schemas cannot be retrieved, returns a promise that rejects. Requirements fot the
-  // rejection reason are TBD.
-  getAllSchemas() {
+  _fetchAllSchemasFrom_SCHEMA() {
     return this._collection._rawFind({})
     .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  // Return a promise for the schema with the given name, in Parse format. If
-  // this adapter doesn't know about the schema, return a promise that rejects with
-  // undefined as the reason.
-  findSchema(name: string) {
+  _fechOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
@@ -185,21 +179,45 @@ class MongoSchemaCollection {
     return this._collection.upsertOne(_mongoSchemaQueryFromNameQuery(name, query), update);
   }
 
-  updateField(className: string, fieldName: string, type: string) {
-    // We don't have this field. Update the schema.
-    // Note that we use the $exists guard and $set to avoid race
-    // conditions in the database. This is important!
-    let query = {};
-    query[fieldName] = { '$exists': false };
-    let update = {};
-    if (typeof type === 'string') {
-      type = {
-        type: type
+  // Add a field to the schema. If database does not support the field
+  // type (e.g. mongo doesn't support more than one GeoPoint in a class) reject with an "Incorrect Type"
+  // Parse error with a desciptive message. If the field already exists, this function must
+  // not modify the schema, and must reject with an error. Exact error format is TBD. If this function
+  // is called for a class that doesn't exist, this function must create that class.
+
+  // TODO: throw an error if an unsupported field type is passed. Deciding whether a type is supported
+  // should be the job of the adapter. Some adapters may not support GeoPoint at all. Others may
+  // Support additional types that Mongo doesn't, like Money, or something.
+
+  // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
+  addFieldIfNotExists(className: string, fieldName: string, type: string) {
+    return this._fechOneSchemaFrom_SCHEMA(className)
+    .then(schema => {
+      // The schema exists. Check for existing GeoPoints.
+      if (type.type === 'GeoPoint') {
+        // Make sure there are not other geopoint fields
+        if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
+          return Promise.reject(new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.'));
+        }
       }
-    }
-    update[fieldName] = parseFieldTypeToMongoFieldType(type);
-    update = {'$set': update};
-    return this.upsertSchema(className, query, update);
+      return Promise.resolve();
+    }, error => {
+      // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
+      // If some other error, reject with it.
+      if (error === undefined) {
+        return Promise.resolve();
+      }
+      throw Promise.reject(error);
+    })
+    .then(() => {
+      // We use $exists and $set to avoid overwriting the field type if it
+      // already exists. (it could have added inbetween the last query and the update)
+      return this.upsertSchema(
+        className,
+        { [fieldName]: { '$exists': false } },
+        { '$set' : { [fieldName]: parseFieldTypeToMongoFieldType(type) } }
+      );
+    });
   }
 
   get transform() {

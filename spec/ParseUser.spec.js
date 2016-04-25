@@ -1028,6 +1028,23 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('returns authData when authed and logged in with provider (regression test for #1498)', done => {
+    Parse.Object.enableSingleInstance();
+    let provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith('facebook', {
+      success: user => {
+        let userQuery = new Parse.Query(Parse.User);
+        userQuery.get(user.id)
+        .then(user => {
+          expect(user.get('authData')).not.toBeUndefined();
+          Parse.Object.disableSingleInstance();
+          done();
+        });
+      }
+    });
+  });
+
   it('log in with provider with files', done => {
     let provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -2098,9 +2115,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  // Sometimes the authData still has null on that keys
-  // https://github.com/ParsePlatform/parse-server/issues/935
-  it('should cleanup null authData keys', (done) => {
+  it('should cleanup null authData keys (regression test for #935)', (done) => {
     let database = new Config(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
@@ -2134,8 +2149,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  // https://github.com/ParsePlatform/parse-server/issues/1198
-  it('should cleanup null authData keys ParseUser update', (done) => {
+  it('should cleanup null authData keys ParseUser update (regression test for #1198)', (done) => {
     Parse.Cloud.beforeSave('_User', (req, res) => {
       req.object.set('foo', 'bar');
       res.success();
@@ -2273,4 +2287,124 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should not create extraneous session tokens', (done) => {
+    let config = new Config(Parse.applicationId);
+    config.database.loadSchema().then((s) => {
+      // Lock down the _User class for creation
+      return s.addClassIfNotExists('_User', {}, {create: {}})
+    }).then((res) => {
+      let user  = new Parse.User();
+      return user.save({'username': 'user', 'password': 'pass'});
+    }).then(() => {
+      fail('should not be able to save the user');
+    }, (err) => {
+      return Promise.resolve();
+    }).then(() => {
+      let q = new Parse.Query('_Session');
+      return q.find({useMasterKey: true})
+    }).then((res) => {
+      // We should have no session created
+      expect(res.length).toBe(0);
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    });
+  });
+
+  it('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
+    Parse.Object.disableSingleInstance();
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    var user = new Parse.User();
+    user.set("username", "testLinkWithProvider");
+    user.set("password", "mypass");
+    user.signUp()
+    .then(user => user._linkWith("facebook", {
+      success: user => {
+        expect(user.get('username')).toEqual('testLinkWithProvider');
+        expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
+        return user._unlinkFrom('facebook')
+        .then(() => user.fetch())
+        .then(user => {
+          expect(user.get('username')).toEqual('testLinkWithProvider');
+          expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
+          done();
+        });
+      },
+      error: e => {
+        fail('Unexpected failure testing linking');
+        fail(error);
+        done();
+      }
+    }))
+    .catch(error => {
+      fail('Unexpected failure testing in unlink user test');
+      fail(error);
+      done();
+    });
+  });
+
+  it('should revoke sessions when converting anonymous user to "normal" user', done => {
+    request.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }, (err, res, body) => {
+      Parse.User.become(body.sessionToken)
+      .then(user => {
+        let obj = new Parse.Object('TestObject');
+        obj.setACL(new Parse.ACL(user));
+        return obj.save()
+        .then(() => {
+          // Change password, revoking session
+          user.set('username', 'no longer anonymous');
+          user.set('password', 'password');
+          return user.save()
+        })
+        .then(() => obj.fetch())
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+          done();
+        });
+      })
+    });
+  });
+
+  it('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      masterKey: 'test',
+      cloud: './spec/cloud/main.js',
+      revokeSessionOnPasswordReset: false,
+    })
+    request.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }, (err, res, body) => {
+      Parse.User.become(body.sessionToken)
+      .then(user => {
+        let obj = new Parse.Object('TestObject');
+        obj.setACL(new Parse.ACL(user));
+        return obj.save()
+        .then(() => {
+          // Change password, revoking session
+          user.set('username', 'no longer anonymous');
+          user.set('password', 'password');
+          return user.save()
+        })
+        .then(() => obj.fetch())
+        // fetch should succeed as we still have our session token
+        .then(done, fail);
+      })
+    });
+  })
 });

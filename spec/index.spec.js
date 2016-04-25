@@ -356,4 +356,9 @@ describe('server', () => {
     })).not.toThrow();
     done();
   })
+
+  it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
+    expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();
+    done();
+  });
 });

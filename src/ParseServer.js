@@ -1,7 +1,5 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
-import 'babel-polyfill';
-
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     DatabaseAdapter = require('./DatabaseAdapter'),
@@ -11,6 +9,10 @@ var batch = require('./batch'),
     Parse = require('parse/node').Parse,
     path = require('path'),
     authDataManager = require('./authDataManager');
+
+if (!global._babelPolyfill) {
+  require('babel-polyfill');
+}
 
 import { logger,
       configureLogger }       from './logger';
@@ -114,6 +116,7 @@ class ParseServer {
     sessionLength = 31536000, // 1 Year in seconds
     expireInactiveSessions = true,
     verbose = false,
+    revokeSessionOnPasswordReset = true,
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -185,8 +188,9 @@ class ParseServer {
       customPages: customPages,
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
-      sessionLength : Number(sessionLength),
+      sessionLength: Number(sessionLength),
       expireInactiveSessions: expireInactiveSessions,
+      revokeSessionOnPasswordReset
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

@@ -169,11 +169,11 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             // Start making requests by the public, which should all fail.
-            Parse.User.logOut();
-
-            // Delete
-            object.destroy().then(() => {
+            Parse.User.logOut()
+            .then(() => object.destroy())
+            .then(() => {
               fail('destroy should fail');
+              done();
             }, error => {
               expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
               done();

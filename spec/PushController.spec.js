@@ -293,6 +293,7 @@ describe('PushController', () => {
      expect(results.length).toBe(1);
      let result = results[0];
      expect(result.createdAt instanceof Date).toBe(true);
+     expect(result.updatedAt instanceof Date).toBe(true);
      expect(result.id.length).toBe(10);
      expect(result.get('source')).toEqual('rest');
      expect(result.get('query')).toEqual(JSON.stringify({}));

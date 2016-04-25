@@ -50,12 +50,20 @@ export class Config {
     this.sessionLength = cacheInfo.sessionLength;
     this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
+    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
   }
 
   static validate(options) {
-    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
-                                appName: options.appName, 
-                                publicServerURL: options.publicServerURL});
+    this.validateEmailConfiguration({
+      verifyUserEmails: options.verifyUserEmails,
+      appName: options.appName,
+      publicServerURL: options.publicServerURL
+    })
+
+    if (typeof options.revokeSessionOnPasswordReset !== 'boolean') {
+      throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
     if (options.publicServerURL) {
       if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
         throw "publicServerURL should be a valid HTTPS URL starting with https://"

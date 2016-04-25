@@ -70,8 +70,15 @@ export class MongoStorageAdapter {
     });
   }
 
-  dropCollection(name: string) {
-    return this.collection(this._collectionPrefix + name).then(collection => collection.drop());
+  dropCollection(className: string) {
+    return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
+    .catch(error => {
+      // 'ns not found' means collection was already gone. Ignore deletion attempt.
+      if (error.message == 'ns not found') {
+        return Promise.resolve();
+      }
+      return Promise.reject(error);
+    });
   }
 
   // Used for testing only right now.
@@ -125,6 +132,57 @@ export class MongoStorageAdapter {
     .then(collection => collection.updateMany({}, collectionUpdate))
     .then(updateResult => this.schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
+  }
+
+  // Return a promise for all schemas known to this adapter, in Parse format. In case the
+  // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
+  // rejection reason are TBD.
+  getAllSchemas() {
+    return this.schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
+  }
+
+  // Return a promise for the schema with the given name, in Parse format. If
+  // this adapter doesn't know about the schema, return a promise that rejects with
+  // undefined as the reason.
+  getOneSchema(className) {
+    return this.schemaCollection()
+    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+  }
+
+  // TODO: As yet not particularly well specified. Creates an object. Shouldn't need the
+  // schemaController, but MongoTransform still needs it :( maybe shouldn't even need the schema,
+  // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
+  // the schem only for the legacy mongo format. We'll figure that out later.
+  createObject(className, object, schemaController, parseFormatSchema) {
+    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
+    return this.adaptiveCollection(className)
+    .then(collection => collection.insertOne(mongoObject));
+  }
+
+  // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
+  // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
+  // If there is some other error, reject with INTERNAL_SERVER_ERROR.
+
+  // Currently accepts the schemaController, and validate for lecacy reasons
+  deleteObjectsByQuery(className, query, schemaController, validate) {
+    return this.adaptiveCollection(className)
+    .then(collection => {
+      let mongoWhere = transform.transformWhere(
+        schemaController,
+        className,
+        query,
+        { validate }
+      );
+      return collection.deleteMany(mongoWhere)
+    })
+    .then(({ result }) => {
+      if (result.n === 0) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      }
+      return Promise.resolve();
+    }, error => {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
+    });
   }
 
   get transform() {
