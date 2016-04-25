@@ -167,7 +167,6 @@ describe('rest query', () => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-        expect(b.error).toEqual('Improper encode of parameter');
         done();
       });
     }).then(() => {
@@ -185,7 +184,6 @@ describe('rest query', () => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-        expect(b.error).toEqual('Improper encode of parameter');
         done();
       });
     });
