@@ -184,13 +184,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
-        var mongoWhere = this.transform.transformWhere(
-          schemaController,
-          className,
-          query,
-          {validate: !this.skipValidation},
-          parseFormatSchema
-        );
+        var mongoWhere = this.transform.transformWhere(className, query, {validate: !this.skipValidation}, parseFormatSchema);
         mongoUpdate = this.transform.transformUpdate(
           schemaController,
           className,
@@ -664,7 +658,7 @@ DatabaseController.prototype.find = function(className, query, {
         throw error;
       })
       .then(parseFormatSchema => {
-        let mongoWhere = this.transform.transformWhere(schemaController, className, query, {}, parseFormatSchema);
+        let mongoWhere = this.transform.transformWhere(className, query, {}, parseFormatSchema);
         if (count) {
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
