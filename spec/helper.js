@@ -6,7 +6,7 @@ var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
-var ParseServer = require('../src/index').ParseServer;
+var ParseServer = require('../src/index').default;
 var path = require('path');
 
 var databaseURI = process.env.DATABASE_URI;
@@ -43,9 +43,9 @@ var defaultConfiguration = {
 };
 
 // Set up a default API server for testing with default configuration.
-var api = new ParseServer(defaultConfiguration);
+global.parseServerObject = new ParseServer(defaultConfiguration);
 var app = express();
-app.use('/1', api);
+app.use('/1', global.parseServerObject.app);
 var server = app.listen(port);
 
 // Prevent reinitializing the server from clobbering Cloud Code
@@ -63,8 +63,8 @@ var setServerConfiguration = configuration => {
   server.close();
   cache.clearCache();
   app = express();
-  api = new ParseServer(configuration);
-  app.use('/1', api);
+  global.parseServerObject = new ParseServer(configuration);
+  app.use('/1', global.parseServerObject.app);
   server = app.listen(port);
 };
 
@@ -259,6 +259,7 @@ global.jequal = jequal;
 global.range = range;
 global.setServerConfiguration = setServerConfiguration;
 global.defaultConfiguration = defaultConfiguration;
+global.parseServerObject = global.parseServerObject;
 
 // LiveQuery test setting
 require('../src/LiveQuery/PLog').logLevel = 'NONE';

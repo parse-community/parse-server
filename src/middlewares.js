@@ -1,5 +1,6 @@
 import cache from './cache';
 import log   from './logger';
+import SettingsManager from './SettingsManager';
 
 var Parse = require('parse/node').Parse;
 
@@ -84,60 +85,75 @@ function handleParseHeaders(req, res, next) {
   }
 
   info.app = cache.apps.get(info.appId);
-  req.config = new Config(info.appId, mount);
-  req.info = info;
-
-  var isMaster = (info.masterKey === req.config.masterKey);
-
-  if (isMaster) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
-    next();
-    return;
+  let fetchConfiguration = Promise.resolve();
+  if (info.app.enableConfigChanges) {
+    let settingsManager = SettingsManager(info.appId);
+    fetchConfiguration = settingsManager.pull()
+      .then(settingsManager.updateCache);
   }
 
-  // Client keys are not required in parse-server, but if any have been configured in the server, validate them
-  //  to preserve original behavior.
-  let keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
-
-  // We do it with mismatching keys to support no-keys config
-  var keyMismatch = keys.reduce(function(mismatch, key){
-
-    // check if set in the config and compare
-    if (req.config[key] && info[key] !== req.config[key]) {
-      mismatch++;
-    }
-    return mismatch;
-  }, 0);
-
-  // All keys mismatch
-  if (keyMismatch == keys.length) {
-    return invalidRequest(req, res);
-  }
-
-  if (!info.sessionToken) {
-    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
-    next();
-    return;
-  }
-
-  return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    .then((auth) => {
-      if (auth) {
-        req.auth = auth;
-        next();
-      }
+  return fetchConfiguration
+    .catch(error => {
+      log.error('error retrieving server settings from database', error);
+      throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
     })
-    .catch((error) => {
-      if(error instanceof Parse.Error) {
-        next(error);
+    .then(_ => {
+      req.config = new Config(info.appId, mount);
+      req.info = info;
+
+      var isMaster = (info.masterKey === req.config.masterKey);
+
+      if (isMaster) {
+        req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
+        next();
         return;
       }
-      else {
-        // TODO: Determine the correct error scenario.
-        log.error('error getting auth for sessionToken', error);
-        throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+
+      // Client keys are not required in parse-server, but if any have been configured in the server, validate them
+      //  to preserve original behavior.
+      let keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
+
+      // We do it with mismatching keys to support no-keys config
+      var keyMismatch = keys.reduce(function(mismatch, key){
+
+        // check if set in the config and compare
+        if (req.config[key] && info[key] !== req.config[key]) {
+          mismatch++;
+        }
+        return mismatch;
+      }, 0);
+
+      // All keys mismatch
+      if (keyMismatch == keys.length) {
+        return invalidRequest(req, res);
       }
-    });
+
+      if (!info.sessionToken) {
+        req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
+        next();
+        return;
+      }
+
+      return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+        .then((auth) => {
+          if (auth) {
+            req.auth = auth;
+            next();
+          }
+        })
+        .catch((error) => {
+          if(error instanceof Parse.Error) {
+            next(error);
+            return;
+          }
+          else {
+            // TODO: Determine the correct error scenario.
+            log.error('error getting auth for sessionToken', error);
+            throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
+          }
+        });
+  });
+
 }
 
 var allowCrossDomain = function(req, res, next) {
