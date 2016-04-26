@@ -169,19 +169,17 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
-    var mongoSubqueries = value.map(subQuery => transformWhere(schema, className, subQuery));
-    return {key: '$or', value: mongoSubqueries};
+    return {key: '$or', value: value.map(subQuery => transformWhere(schema, className, subQuery))};
   case '$and':
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
     }
-    var mongoSubqueries = value.map(subQuery => transformWhere(schema, className, subQuery));
-    return {key: '$and', value: mongoSubqueries};
+    return {key: '$and', value: value.map(subQuery => transformWhere(schema, className, subQuery))};
   default:
     // Other auth data
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+    const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
-      var provider = authDataMatch[1];
+      const provider = authDataMatch[1];
       // Special-case auth data.
       return {key: `_auth_data_${provider}.id`, value};
     }
@@ -193,7 +191,7 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
   // Handle special schema key changes
   // TODO: it seems like this is likely to have edge cases where
   // pointer types are missed
-  var expected = undefined;
+  let expected = undefined;
   if (schema && schema.getExpectedType) {
     expected = schema.getExpectedType(className, key);
   }
@@ -201,7 +199,7 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
       (!expected && value && value.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
+  const expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle query constraints
   if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
