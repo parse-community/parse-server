@@ -180,7 +180,7 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
   default:
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch ) {
+    if (authDataMatch) {
       var provider = authDataMatch[1];
       // Special-case auth data.
       return {key: `_auth_data_${provider}.id`, value};
