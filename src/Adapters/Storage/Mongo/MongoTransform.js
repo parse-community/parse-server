@@ -195,7 +195,10 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
       (!expected && value && value.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  const expectedTypeIsArray = (expected && expected.type === 'Array');
+  const expectedTypeIsArray =
+    parseFormatSchema &&
+    parseFormatSchema.fields[key] &&
+    parseFormatSchema.fields[key].type === 'Array'
 
   // Handle query constraints
   if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
