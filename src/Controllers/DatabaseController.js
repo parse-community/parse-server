@@ -598,56 +598,48 @@ DatabaseController.prototype.find = function(className, query, {
   }
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
-  let schema = null;
-  let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ?
-        'get' :
-        'find';
-  return this.loadSchema().then(s => {
-    schema = s;
+  let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
+  return this.loadSchema()
+  .then(schemaController => {
     if (sort) {
       mongoOptions.sort = {};
       for (let key in sort) {
-        let mongoKey = this.transform.transformKey(schema, className, key);
+        let mongoKey = this.transform.transformKey(schemaController, className, key);
         mongoOptions.sort[mongoKey] = sort[key];
       }
     }
-
-    if (!isMaster) {
-      return schema.validatePermission(className, aclGroup, op);
-    }
-    return Promise.resolve();
-  })
-  .then(() => this.reduceRelationKeys(className, query))
-  .then(() => this.reduceInRelation(className, query, schema))
-  .then(() => this.adapter.adaptiveCollection(className))
-  .then(collection => {
-    if (!isMaster) {
-      query = this.addPointerPermissions(schema, className, op, query, aclGroup);
-    }
-    if (!query) {
-      if (op == 'get') {
-        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-          'Object not found.'));
-      } else {
-        return Promise.resolve([]);
+    return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
+    .then(() => this.reduceRelationKeys(className, query))
+    .then(() => this.reduceInRelation(className, query, schemaController))
+    .then(() => this.adapter.adaptiveCollection(className))
+    .then(collection => {
+      if (!isMaster) {
+        query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
       }
-    }
-    if (!isMaster) {
-      query = addReadACL(query, aclGroup);
-    }
-    let mongoWhere = this.transform.transformWhere(schema, className, query);
-    if (count) {
-      delete mongoOptions.limit;
-      return collection.count(mongoWhere, mongoOptions);
-    } else {
-      return collection.find(mongoWhere, mongoOptions)
+      if (!query) {
+        if (op == 'get') {
+          return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found.'));
+        } else {
+          return Promise.resolve([]);
+        }
+      }
+      if (!isMaster) {
+        query = addReadACL(query, aclGroup);
+      }
+      let mongoWhere = this.transform.transformWhere(schemaController, className, query);
+      if (count) {
+        delete mongoOptions.limit;
+        return collection.count(mongoWhere, mongoOptions);
+      } else {
+        return collection.find(mongoWhere, mongoOptions)
         .then((mongoResults) => {
           return mongoResults.map((r) => {
-            return this.untransformObject(
-              schema, isMaster, aclGroup, className, r);
+            return this.untransformObject(schemaController, isMaster, aclGroup, className, r);
           });
         });
-    }
+      }
+    });
   });
 };
 
