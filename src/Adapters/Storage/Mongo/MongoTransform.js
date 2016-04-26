@@ -139,7 +139,7 @@ const valueAsDate = value => {
   return false;
 }
 
-function transformQueryKeyValue(className, key, value, { validate } = {}, parseFormatSchema) {
+function transformQueryKeyValue(className, key, value, { validate } = {}, schema) {
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -168,12 +168,12 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, parseF
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, parseFormatSchema))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   case '$and':
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
     }
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, parseFormatSchema))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   default:
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -188,16 +188,16 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, parseF
   }
 
   const expectedTypeIsArray =
-    parseFormatSchema &&
-    parseFormatSchema.fields[key] &&
-    parseFormatSchema.fields[key].type === 'Array';
+    schema &&
+    schema.fields[key] &&
+    schema.fields[key].type === 'Array';
 
   const expectedTypeIsPointer =
-    parseFormatSchema &&
-    parseFormatSchema.fields[key] &&
-    parseFormatSchema.fields[key].type === 'Pointer';
+    schema &&
+    schema.fields[key] &&
+    schema.fields[key].type === 'Pointer';
 
-  if (expectedTypeIsPointer || !parseFormatSchema && value && value.__type === 'Pointer') {
+  if (expectedTypeIsPointer || !schema && value && value.__type === 'Pointer') {
     key = '_p_' + key;
   }
 
@@ -222,13 +222,13 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, parseF
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
-function transformWhere(className, restWhere, { validate = true } = {}, parseFormatSchema) {
+function transformWhere(className, restWhere, { validate = true } = {}, schema) {
   let mongoWhere = {};
   if (restWhere['ACL']) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
   for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], { validate }, parseFormatSchema);
+    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], { validate }, schema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
