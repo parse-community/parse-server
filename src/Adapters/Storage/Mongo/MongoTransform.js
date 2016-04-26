@@ -168,12 +168,12 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
-    return {key: '$or', value: value.map(subQuery => transformWhere(schema, className, subQuery, parseFormatSchema))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(schema, className, subQuery, {}, parseFormatSchema))};
   case '$and':
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
     }
-    return {key: '$and', value: value.map(subQuery => transformWhere(schema, className, subQuery, parseFormatSchema))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(schema, className, subQuery, {}, parseFormatSchema))};
   default:
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -187,18 +187,19 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
     }
   }
 
-  let expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if ((expected && expected.type == 'Pointer') ||
-      (!expected && value && value.__type == 'Pointer')) {
-    key = '_p_' + key;
-  }
   const expectedTypeIsArray =
     parseFormatSchema &&
     parseFormatSchema.fields[key] &&
-    parseFormatSchema.fields[key].type === 'Array'
+    parseFormatSchema.fields[key].type === 'Array';
+
+  const expectedTypeIsPointer =
+    parseFormatSchema &&
+    parseFormatSchema.fields[key] &&
+    parseFormatSchema.fields[key].type === 'Pointer';
+
+  if (expectedTypeIsPointer || !parseFormatSchema && value && value.__type === 'Pointer') {
+    key = '_p_' + key;
+  }
 
   // Handle query constraints
   if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
