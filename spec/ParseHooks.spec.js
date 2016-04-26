@@ -76,7 +76,7 @@ describe('Hooks', () => {
     })
   });
 
-   it("should CRUD a trigger registration", (done) => {
+  it("should CRUD a trigger registration", (done) => {
      // Create
      Parse.Hooks.createTrigger("MyClass","beforeDelete", "http://someurl").then((res) => {
        expect(res.className).toBe("MyClass");
