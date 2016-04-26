@@ -236,12 +236,6 @@ function transformQueryKeyValue(schema, className, restKey, restValue, { validat
     throw new Parse.Error(Parse.Error.INVALID_JSON,'cannot use array as query param');
   }
 
-  // Handle update operators
-  value = transformUpdateOperator(restValue, true);
-  if (value !== CannotTransform) {
-    return {key: key, value: value};
-  }
-
   // Handle normal objects by recursing
   value = {};
   for (var subRestKey in restValue) {
