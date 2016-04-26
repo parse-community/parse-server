@@ -52,11 +52,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     limit: 1,
     include: 'user'
   };
-  var restWhere = {
-    _session_token: sessionToken
-  };
-  var query = new RestQuery(config, master(config), '_Session',
-                            restWhere, restOptions);
+  var query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
   return query.execute().then((response) => {
     var results = response.results;
     if (results.length !== 1 || !results[0]['user']) {

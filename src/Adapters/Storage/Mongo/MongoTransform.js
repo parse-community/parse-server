@@ -130,59 +130,52 @@ function transformKeyValue(schema, className, restKey, restValue, {
   return {key: key, value: value};
 }
 
-function transformQueryKeyValue(schema, className, restKey, restValue, { validate } = {}) {
+const valueAsDate = value => {
+  if (typeof value === 'string') {
+    return new Date(value);
+  } else if (value instanceof Date) {
+    return value;
+  }
+  return false;
+}
+
+function transformQueryKeyValue(schema, className, key, value, { validate } = {}) {
   // Check if the schema is known since it's a built-in field.
-  var key = restKey;
-  var timeField = false;
   switch(key) {
-  case 'objectId':
-  case '_id':
-    key = '_id';
-    break;
   case 'createdAt':
-  case '_created_at':
+    if (valueAsDate(value)) {
+      return {key: '_created_at', value: valueAsDate(value)}
+    }
     key = '_created_at';
-    timeField = true;
     break;
   case 'updatedAt':
-  case '_updated_at':
+    if (valueAsDate(value)) {
+      return {key: '_updated_at', value: valueAsDate(value)}
+    }
     key = '_updated_at';
-    timeField = true;
-    break;
-  case '_email_verify_token':
-    key = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
-  case 'sessionToken':
-  case '_session_token':
-    key = '_session_token';
     break;
   case 'expiresAt':
-  case '_expiresAt':
-    key = 'expiresAt';
-    timeField = true;
+    if (valueAsDate(value)) {
+      return {key: 'expiresAt', value: valueAsDate(value)}
+    }
     break;
+  case 'objectId': return {key: '_id', value}
+  case 'sessionToken': return {key: '_session_token', value}
   case '_rperm':
   case '_wperm':
-    return {key: key, value: restValue};
-    break;
+  case '_perishable_token':
+  case '_email_verify_token': return {key, value}
   case '$or':
-    if (!(restValue instanceof Array)) {
+    if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
-    var mongoSubqueries = restValue.map((s) => {
-      return transformWhere(schema, className, s);
-    });
+    var mongoSubqueries = value.map(subQuery => transformWhere(schema, className, subQuery));
     return {key: '$or', value: mongoSubqueries};
   case '$and':
-    if (!(restValue instanceof Array)) {
+    if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
     }
-    var mongoSubqueries = restValue.map((s) => {
-      return transformWhere(schema, className, s);
-    });
+    var mongoSubqueries = value.map(subQuery => transformWhere(schema, className, subQuery));
     return {key: '$and', value: mongoSubqueries};
   default:
     // Other auth data
@@ -190,7 +183,7 @@ function transformQueryKeyValue(schema, className, restKey, restValue, { validat
     if (authDataMatch ) {
       var provider = authDataMatch[1];
       // Special-case auth data.
-      return {key: '_auth_data_'+provider+'.id', value: restValue};
+      return {key: `_auth_data_${provider}.id`, value};
     }
     if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
@@ -205,46 +198,39 @@ function transformQueryKeyValue(schema, className, restKey, restValue, { validat
     expected = schema.getExpectedType(className, key);
   }
   if ((expected && expected.type == 'Pointer') ||
-      (!expected && restValue && restValue.__type == 'Pointer')) {
+      (!expected && value && value.__type == 'Pointer')) {
     key = '_p_' + key;
   }
   var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle query constraints
-  value = transformConstraint(restValue, expectedTypeIsArray);
-  if (value !== CannotTransform) {
-    return {key: key, value: value};
+  if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
+    return {key, value: transformConstraint(value, expectedTypeIsArray)};
   }
 
-  if (expectedTypeIsArray && !(restValue instanceof Array)) {
-    return {
-      key: key, value: { '$all' : [restValue] }
-    };
+  if (expectedTypeIsArray && !(value instanceof Array)) {
+    return {key, value: { '$all' : [value] }};
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false);
-  if (value !== CannotTransform) {
-    if (timeField && (typeof value === 'string')) {
-      value = new Date(value);
-    }
-    return {key: key, value: value};
+  if (transformAtom(value, false) !== CannotTransform) {
+    return {key, value: transformAtom(value, false)};
   }
 
   // Handle arrays
-  if (restValue instanceof Array) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON,'cannot use array as query param');
+  if (value instanceof Array) {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot use array as query param');
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
+  let result = {};
+  for (var subRestKey in value) {
+    var subRestValue = value[subRestKey];
     var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
     // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
+    result[subRestKey] = out.value;
   }
-  return {key: key, value: value};
+  return {key, result};
 }
 
 // Main exposed method to help run queries.
