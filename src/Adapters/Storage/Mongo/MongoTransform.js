@@ -215,22 +215,9 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
   // Handle atomic values
   if (transformAtom(value, false) !== CannotTransform) {
     return {key, value: transformAtom(value, false)};
+  } else {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${value} as a query parameter.`);
   }
-
-  // Handle arrays
-  if (value instanceof Array) {
-    throw new Parse.Error(Parse.Error.INVALID_JSON, 'cannot use array as query param');
-  }
-
-  // Handle normal objects by recursing
-  let result = {};
-  for (var subRestKey in value) {
-    var subRestValue = value[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
-    // For recursed objects, keep the keys in rest format
-    result[subRestKey] = out.value;
-  }
-  return {key, result};
 }
 
 // Main exposed method to help run queries.
