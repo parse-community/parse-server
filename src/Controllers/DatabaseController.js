@@ -654,7 +654,8 @@ DatabaseController.prototype.find = function(className, query, {
       if (!isMaster) {
         query = addReadACL(query, aclGroup);
       }
-      return schemaController.getOneSchema(className)
+      return schemaController.reloadData()
+      .then(() => schemaController.getOneSchema(className))
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
         // will likely need revisiting.
@@ -664,7 +665,7 @@ DatabaseController.prototype.find = function(className, query, {
         throw error;
       })
       .then(parseFormatSchema => {
-        let mongoWhere = this.transform.transformWhere(schemaController, className, query, parseFormatSchema);
+        let mongoWhere = this.transform.transformWhere(schemaController, className, query, {}, parseFormatSchema);
         if (count) {
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
