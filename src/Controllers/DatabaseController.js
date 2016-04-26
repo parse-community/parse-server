@@ -654,8 +654,7 @@ DatabaseController.prototype.find = function(className, query, {
       if (!isMaster) {
         query = addReadACL(query, aclGroup);
       }
-      return schemaController.reloadData()
-      .then(() => schemaController.getOneSchema(className))
+      return schemaController.getOneSchema(className)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
         // will likely need revisiting.
