@@ -93,6 +93,8 @@ const requiredColumns = Object.freeze({
 
 const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
 
+const volatileClasses = Object.freeze(['_PushStatus']);
+
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
 // Anything that start with role
@@ -251,6 +253,15 @@ class SchemaController {
         this.data[schema.className] = schema.fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
+      
+      // Inject the in-memory classes
+      volatileClasses.forEach(className => {
+        this.data[className] = injectDefaultSchema({
+          className,
+          fields: {},
+          classLevelPermissions: {}
+        });
+      });
     });
   }
 
@@ -259,7 +270,10 @@ class SchemaController {
     .then(allSchemas => allSchemas.map(injectDefaultSchema));
   }
 
-  getOneSchema(className) {
+  getOneSchema(className, allowVolatileClasses = false) {
+    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+      return Promise.resolve(this.data[className]);
+    }
     return this._dbAdapter.getOneSchema(className)
     .then(injectDefaultSchema);
   }
