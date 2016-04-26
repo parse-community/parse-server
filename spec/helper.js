@@ -96,7 +96,8 @@ var mongoAdapter = new MongoStorageAdapter({
 afterEach(function(done) {
   mongoAdapter.getAllSchemas()
   .then(allSchemas => {
-    allSchemas.forEach(({ className }) => {
+    allSchemas.forEach((schema) => {
+      var className = schema.className;
       expect(className).toEqual({ asymmetricMatch: className => {
         if (!className.startsWith('_')) {
           return true;
