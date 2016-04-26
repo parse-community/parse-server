@@ -187,15 +187,13 @@ export function transformKeyValue(schema, className, restKey, restValue, {
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
-function transformWhere(schema, className, restWhere, options = {validate: true}) {
+function transformWhere(schema, className, restWhere, { validate = true } = {}) {
   let mongoWhere = {};
   if (restWhere['ACL']) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
-  let transformKeyOptions = {query: true};
-  transformKeyOptions.validate = options.validate;
   for (let restKey in restWhere) {
-    let out = transformKeyValue(schema, className, restKey, restWhere[restKey], transformKeyOptions);
+    let out = transformKeyValue(schema, className, restKey, restWhere[restKey], { query: true, validate });
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
