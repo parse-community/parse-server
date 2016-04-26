@@ -210,10 +210,15 @@ module.exports = {
         setConstraint(parseOjbArr);
     },
     getConstraint: function(json){
+        if(lastTime === json.lastTime){
+            return {};
+        }
         var key = json ? (json.key ? json.key : "" ) : "";
         if (key != "") {
            return memCache.definitions[key];
         }
+
+        memCache.lastTime = lastTime;
         return memCache;
 
     },
