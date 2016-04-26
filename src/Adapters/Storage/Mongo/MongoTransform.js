@@ -130,12 +130,7 @@ function transformKeyValue(schema, className, restKey, restValue, {
   return {key: key, value: value};
 }
 
-function transformQueryKeyValue(schema, className, restKey, restValue, {
-  inArray,
-  inObject,
-  update,
-  validate,
-} = {}) {
+function transformQueryKeyValue(schema, className, restKey, restValue, { validate } = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -228,18 +223,12 @@ function transformQueryKeyValue(schema, className, restKey, restValue, {
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray, inObject });
+  var value = transformAtom(restValue, false);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
     return {key: key, value: value};
-  }
-
-  // ACLs are handled before this method is called
-  // If an ACL key still exists here, something is wrong.
-  if (key === 'ACL') {
-    throw 'There was a problem transforming an ACL.';
   }
 
   // Handle arrays
@@ -248,7 +237,7 @@ function transformQueryKeyValue(schema, className, restKey, restValue, {
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, !update);
+  value = transformUpdateOperator(restValue, true);
   if (value !== CannotTransform) {
     return {key: key, value: value};
   }
