@@ -106,7 +106,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
 
 describe('transformWhere', () => {
   it('objectId', (done) => {
-    var out = transform.transformWhere(dummySchema, null, {objectId: 'foo'});
+    var out = transform.transformWhere(null, {objectId: 'foo'});
     expect(out._id).toEqual('foo');
     done();
   });
@@ -115,7 +115,7 @@ describe('transformWhere', () => {
     var input = {
       objectId: {'$in': ['one', 'two', 'three']},
     };
-    var output = transform.transformWhere(dummySchema, null, input);
+    var output = transform.transformWhere(null, input);
     jequal(input.objectId, output._id);
     done();
   });
