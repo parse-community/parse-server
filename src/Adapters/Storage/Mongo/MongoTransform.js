@@ -140,7 +140,6 @@ const valueAsDate = value => {
 }
 
 function transformQueryKeyValue(schema, className, key, value, { validate } = {}) {
-  // Check if the schema is known since it's a built-in field.
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -188,9 +187,6 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
     }
   }
 
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
   let expected = undefined;
   if (schema && schema.getExpectedType) {
     expected = schema.getExpectedType(className, key);

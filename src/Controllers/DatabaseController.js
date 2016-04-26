@@ -158,20 +158,15 @@ DatabaseController.prototype.update = function(className, query, update, {
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
-  var mongoUpdate, schema;
+  var mongoUpdate;
   return this.loadSchema()
-    .then(s => {
-      schema = s;
-      if (!isMaster) {
-        return schema.validatePermission(className, aclGroup, 'update');
-      }
-      return Promise.resolve();
-    })
+  .then(schemaController => {
+    return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
     .then(() => this.adapter.adaptiveCollection(className))
     .then(collection => {
       if (!isMaster) {
-        query = this.addPointerPermissions(schema, className, 'update', query, aclGroup);
+        query = this.addPointerPermissions(schemaController, className, 'update', query, aclGroup);
       }
       if (!query) {
         return Promise.resolve();
@@ -179,8 +174,18 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (acl) {
         query = addWriteACL(query, acl);
       }
-      var mongoWhere = this.transform.transformWhere(schema, className, query, {validate: !this.skipValidation});
-      mongoUpdate = this.transform.transformUpdate(schema, className, update, {validate: !this.skipValidation});
+      var mongoWhere = this.transform.transformWhere(
+        schemaController,
+        className,
+        query,
+        {validate: !this.skipValidation}
+      );
+      mongoUpdate = this.transform.transformUpdate(
+        schemaController,
+        className,
+        update,
+        {validate: !this.skipValidation}
+      );
       if (many) {
         return collection.updateMany(mongoWhere, mongoUpdate);
       } else if (upsert) {
@@ -191,14 +196,14 @@ DatabaseController.prototype.update = function(className, query, update, {
     })
     .then(result => {
       if (!result) {
-        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-          'Object not found.'));
+        return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.'));
       }
       if (this.skipValidation) {
         return Promise.resolve(result);
       }
       return sanitizeDatabaseResult(originalUpdate, result);
     });
+  });
 };
 
 function sanitizeDatabaseResult(originalObject, result) {
