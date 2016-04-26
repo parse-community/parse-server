@@ -174,14 +174,15 @@ export class MongoStorageAdapter {
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
 
   // Currently accepts the schemaController, and validate for lecacy reasons
-  deleteObjectsByQuery(className, query, schemaController, validate) {
+  deleteObjectsByQuery(className, query, schemaController, validate, parseFormatSchema) {
     return this.adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transform.transformWhere(
         schemaController,
         className,
         query,
-        { validate }
+        { validate },
+        parseFormatSchema
       );
       return collection.deleteMany(mongoWhere)
     })
