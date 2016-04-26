@@ -24,10 +24,17 @@
         ]
       },
       "typeFamily": {
-        "type": [
-          "string",
-          "null"
-        ]
+        "type": "string",
+        "enum": [
+          "category_type",
+          "link_type",
+          "feed_type",
+          "module_type",
+          "slideshow_type"
+        ],
+        "errorMessage": {
+          "1": "Must be one of [category_type, link_type, feed_type, module_type, slideshow_type]."
+        }
       },
       "showInVersion": {
         "type": [
@@ -116,18 +123,29 @@
         }
       },
       "type": {
-        "type": [
-          "string",
-          "null"
+        "type": "string",
+        "enum": [
+          "category",
+          "link",
+          "feed",
+          "module",
+          "slideshow"
         ],
-        "maxLength": 255
+        "errorMessage": {
+          "1": "Must be one of [category, link, feed, module, slideshow]."
+        }
       },
       "viewLayout": {
-        "type": [
-          "string",
-          "null"
+        "type": "string",
+        "enum": [
+          "list",
+          "web-link",
+          "web-view",
+          "weather"
         ],
-        "maxLength": 255
+        "errorMessage": {
+          "1": "Must be one of [list, web-link, web-view, weather]."
+        }
       },
       "categoryNo": {
         "type": [

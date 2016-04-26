@@ -3,7 +3,8 @@
   "additionalProperties": false,
   "required": [
     "affiliateId",
-    "name"
+    "name",
+    "menuId"
   ],
   "properties": {
     "id": {
@@ -13,10 +14,7 @@
       ]
     },
     "menuId": {
-      "type": [
-        "number",
-        "null"
-      ]
+      "type": "number"
     },
     "affiliateId": {
       "type": "string",
