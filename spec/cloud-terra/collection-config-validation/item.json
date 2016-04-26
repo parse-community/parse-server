@@ -1,0 +1,22 @@
+[
+    "affiliateId",
+    "isActive",
+    "isPlatformActive",
+    "name",
+    "description",
+    "appType",
+    "platform",
+    "version",
+    "theme",
+    "setting",
+    "themeType",
+    "menuId",
+    "xmlUrl",
+    "jsonUrl",
+    "isPublished",
+    "objectId",
+    "auditTrail",
+    "uniqueAppId",
+    "updatedAt",
+    "createdAt"
+]

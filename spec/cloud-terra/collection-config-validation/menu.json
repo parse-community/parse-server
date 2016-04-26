@@ -1,0 +1,11 @@
+[
+    "id",
+    "menuId",
+    "affiliateId",
+    "name",
+    "menu",
+    "auditTrail",
+    "objectId",
+    "updatedAt",
+    "createdAt"
+]

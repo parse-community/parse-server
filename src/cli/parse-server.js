@@ -5,6 +5,7 @@ import definitions from './cli-definitions';
 import program from './utils/commander';
 import { mergeWithOptions } from './utils/commander';
 import colors from 'colors';
+var dataCache = require("../../spec/cloud-terra/constraint");
 
 program.loadDefinitions(definitions);
 
@@ -64,6 +65,10 @@ var server = app.listen(options.port, function() {
   }
   console.log('');
   console.log('parse-server running on '+options.serverURL);
+
+  //init cache memory constraint
+  console.log("Init cache constraint data from DB");
+  dataCache.initConstraint();
 });
 
 var handleShutdown = function() {

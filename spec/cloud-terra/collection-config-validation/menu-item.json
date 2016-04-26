@@ -1,0 +1,21 @@
+[
+    "title",
+    "level",
+    "order",
+    "typeFamily",
+    "showInVersion",
+    "openInBrowser",
+    "feed",
+    "module",
+    "adTarget",
+    "showAds",
+    "excludeFromPager",
+    "itemsInHomePage",
+    "headerFontColor",
+    "type",
+    "viewLayout",
+    "categoryNo",
+    "categoryType",
+    "categoryPageUrl",
+    "menu"
+]

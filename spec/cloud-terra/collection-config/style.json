@@ -1,0 +1,108 @@
+{
+  "type": "object",
+  "required": [
+    "affiliateId"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "affiliateId": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "fgColor1": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "fgColor2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "bgColor1": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "bgColor2": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "breakingNewsColor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "font1": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "headerFontColor": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+      "errorMessage": {
+        "202": "Invalid hex color."
+      }
+    },
+    "name": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "objectId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "constraintType":"style"
+}

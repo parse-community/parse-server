@@ -1,0 +1,11 @@
+{
+  "constraintType":{
+      "style":"style"
+      ,"item":"item"
+      ,"setting":"setting"
+      ,"menu":"menu"
+      ,"menuItem":"menuItem"
+      ,"share":"share"
+  },
+  "collectionName":"Constraint"
+}

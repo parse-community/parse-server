@@ -1,0 +1,87 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "affiliateId",
+    "name"
+  ],
+  "properties": {
+    "id": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "menuId": {
+      "type": [
+        "number",
+        "null"
+      ]
+    },
+    "affiliateId": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "menu": {
+      "#$ref": "#/definitions/MenuItem"
+    },
+    "auditTrail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "creationDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "creationBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastEditedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "lastEditedBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "objectId": {
+      "type": [
+        "string",
+        "number",
+        "null"
+      ]
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "constraintType":"menu"
+}

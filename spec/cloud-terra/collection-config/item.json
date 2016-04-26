@@ -1,0 +1,317 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "affiliateId",
+    "isActive",
+    "name",
+    "appType",
+    "platform",
+    "uniqueAppId"
+  ],
+  "properties": {
+    "affiliateId": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "isActive": {
+      "type": "boolean"
+    },
+    "isPlatformActive": {
+      "type": "boolean"
+    },
+    "name": {
+      "type": "string",
+      "maxLength": 255,
+      "pattern": "^[A-Za-z0-9\\s]+$",
+      "errorMessage": {
+        "202": "Please use only letters (a-z), numbers and spaces."
+      }
+    },
+    "description": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "appType": {
+      "type": "string",
+      "maxLength": 255,
+      "enum": [
+        "iPhone",
+        "Android",
+        "iPad",
+        "Roku",
+        "Apple TV",
+        "Fire TV"
+      ],
+      "errorMessage": {
+        "1": "appType must be one of [iPhone, Android, iPad, Roku, Apple TV, Fire TV]."
+      }
+    },
+    "platform": {
+      "type": "string",
+      "maxLength": 255,
+      "enum": [
+        "iOS",
+        "Android",
+        "iPad",
+        "Roku",
+        "Apple TV",
+        "Fire TV"
+      ],
+      "errorMessage": {
+        "1": "platform must be one of [iOS, Android, iPad, Roku, Apple TV, Fire TV]."
+      }
+    },
+    "version": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "theme": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "fgColor1": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            },
+            "fgColor2": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            },
+            "bgColor1": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            },
+            "bgColor2": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            },
+            "breakingNewsColor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            },
+            "font1": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 255
+            },
+            "headerFontColor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+              "errorMessage": {
+                "202": "Invalid hex color."
+              }
+            }
+          }
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 255
+        }
+      }
+    },
+    "setting": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "premiumFeeds": {
+          "#$ref": "#/definitions/PremiumFeeds"
+        },
+        "search": {
+          "#$ref": "#/definitions/Search"
+        },
+        "pushBehavior": {
+          "#$ref": "#/definitions/PushBehavior"
+        },
+        "analytics": {
+          "#$ref": "#/definitions/Analytics"
+        },
+        "advertising": {
+          "#$ref": "#/definitions/Advertising"
+        },
+        "breakingNews": {
+          "#$ref": "#/definitions/BreakingNews"
+        },
+        "weather": {
+          "#$ref": "#/definitions/Weather"
+        },
+        "connect": {
+          "#$ref": "#/definitions/Connect"
+        },
+        "video": {
+          "#$ref": "#/definitions/Video"
+        },
+        "storeAccounts": {
+          "#$ref": "#/definitions/StoreAccounts"
+        },
+        "general": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "isAllowsEnableApp": {
+              "type": "boolean"
+            }
+          }
+        }
+      }
+    },
+    "themeType": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255,
+      "enum": [
+        "global",
+        "custom"
+      ],
+      "errorMessage": {
+        "1": "themeType must be one of [global, custom]"
+      }
+    },
+    "menuId": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "maxLength": 255
+    },
+    "xmlUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "jsonUrl": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "isPublished": {
+      "type": "boolean"
+    },
+    "objectId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "auditTrail": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "creationDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "creationBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lastEditedDate": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        },
+        "lastEditedBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publishBy": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "publishAt": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date-time"
+        }
+      }
+    },
+    "uniqueAppId": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    }
+  },
+  "constraintType":"item"
+}
