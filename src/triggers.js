@@ -1,6 +1,6 @@
 // triggers.js
 import Parse from 'parse/node';
-import cache  from './cache';
+import AppCache  from './cache';
 
 export const Types = {
   beforeSave: 'beforeSave',
