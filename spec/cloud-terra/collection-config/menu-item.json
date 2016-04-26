@@ -1,0 +1,174 @@
+{
+  "type": "array",
+  "items": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "title": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "level": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "order": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "typeFamily": {
+        "type": "string",
+        "enum": [
+          "category_type",
+          "link_type",
+          "feed_type",
+          "module_type",
+          "slideshow_type"
+        ],
+        "errorMessage": {
+          "1": "Must be one of [category_type, link_type, feed_type, module_type, slideshow_type]."
+        }
+      },
+      "showInVersion": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "openInBrowser": {
+        "type": "boolean"
+      },
+      "feed": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "/^(https?|ftp):\\/\\/(((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:)*@)?(((\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5]))|((([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])*([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])))\\.)+(([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])*([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])))\\.?)(:\\d*)?)(\\/((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)+(\\/(([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)*)*)?)?(\\?((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)|[\\uE000-\\uF8FF]|\\/|\\?)*)?(\\#((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)|\\/|\\?)*)?$/i",
+            "errorMessage": {
+              "202": "Invalid URL."
+            }
+          },
+          "premiumUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "/^(https?|ftp):\\/\\/(((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:)*@)?(((\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5])\\.(\\d|[1-9]\\d|1\\d\\d|2[0-4]\\d|25[0-5]))|((([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])*([a-z]|\\d|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])))\\.)+(([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])*([a-z]|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])))\\.?)(:\\d*)?)(\\/((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)+(\\/(([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)*)*)?)?(\\?((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)|[\\uE000-\\uF8FF]|\\/|\\?)*)?(\\#((([a-z]|\\d|-|\\.|_|~|[\\u00A0-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFEF])|(%[\\da-f]{2})|[!\\$&'\\(\\)\\*\\+,;=]|:|@)|\\/|\\?)*)?$/i",
+            "errorMessage": {
+              "202": "Invalid URL."
+            }
+          },
+          "itemQuerySuffix": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          }
+        }
+      },
+      "module": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "weather": {
+            "type": "boolean"
+          },
+          "traffic": {
+            "type": "boolean"
+          },
+          "liveVideo": {
+            "type": "boolean"
+          }
+        }
+      },
+      "adTarget": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "maxLength": 255
+      },
+      "showAds": {
+        "type": "boolean"
+      },
+      "excludeFromPager": {
+        "type": "boolean"
+      },
+      "itemsInHomePage": {
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "headerFontColor": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "pattern": "^(#[A-Fa-f0-9]{6}|[A-Fa-f0-9]{6})$",
+        "errorMessage": {
+          "202": "Invalid hex color."
+        }
+      },
+      "type": {
+        "type": "string",
+        "enum": [
+          "category",
+          "link",
+          "feed",
+          "module",
+          "slideshow"
+        ],
+        "errorMessage": {
+          "1": "Must be one of [category, link, feed, module, slideshow]."
+        }
+      },
+      "viewLayout": {
+        "type": "string",
+        "enum": [
+          "list",
+          "web-link",
+          "web-view",
+          "weather"
+        ],
+        "errorMessage": {
+          "1": "Must be one of [list, web-link, web-view, weather]."
+        }
+      },
+      "categoryNo": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "categoryType": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "categoryPageUrl": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "menu": {
+        "#$ref": "#/definitions/ChildMenuItem"
+      }
+    }
+  },
+  "constraintType":"menuItem"
+}

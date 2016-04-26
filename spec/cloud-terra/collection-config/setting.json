@@ -1,0 +1,110 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "affiliateId"
+  ],
+  "properties": {
+    "affiliateId": {
+      "type": "string",
+      "maxLength": 255
+    },
+    "general": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "affiliateName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "affiliateId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "availableApps": {
+          "type": "array",
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 255
+          }
+        },
+        "cmsCustomer": {
+          "type": "boolean"
+        },
+        "isAllowsEnableApp": {
+          "type": "boolean"
+        }
+      }
+    },
+    "premiumFeeds": {
+      "#$ref": "#/definitions/PremiumFeeds"
+    },
+    "search": {
+      "#$ref": "#/definitions/Search"
+    },
+    "pushBehavior": {
+      "#$ref": "#/definitions/PushBehavior"
+    },
+    "analytics": {
+      "#$ref": "#/definitions/Analytics"
+    },
+    "advertising": {
+      "#$ref": "#/definitions/Advertising"
+    },
+    "breakingNews": {
+      "#$ref": "#/definitions/BreakingNews"
+    },
+    "video": {
+      "#$ref": "#/definitions/Video"
+    },
+    "weather": {
+      "#$ref": "#/definitions/Weather"
+    },
+    "connect": {
+      "#$ref": "#/definitions/Connect"
+    },
+    "storeAccounts": {
+      "#$ref": "#/definitions/StoreAccounts"
+    },
+    "objectId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "updatedAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "createdAt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "createdBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "lastEditedBy": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "constraintType":"setting"
+}
