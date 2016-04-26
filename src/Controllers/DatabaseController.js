@@ -174,25 +174,37 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (acl) {
         query = addWriteACL(query, acl);
       }
-      var mongoWhere = this.transform.transformWhere(
-        schemaController,
-        className,
-        query,
-        {validate: !this.skipValidation}
-      );
-      mongoUpdate = this.transform.transformUpdate(
-        schemaController,
-        className,
-        update,
-        {validate: !this.skipValidation}
-      );
-      if (many) {
-        return collection.updateMany(mongoWhere, mongoUpdate);
-      } else if (upsert) {
-        return collection.upsertOne(mongoWhere, mongoUpdate);
-      } else {
-        return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
-      }
+      return schemaController.getOneSchema(className)
+      .catch(error => {
+        // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+        // will likely need revisiting.
+        if (error === undefined) {
+          return { fields: {} };
+        }
+        throw error;
+      })
+      .then(parseFormatSchema => {
+        var mongoWhere = this.transform.transformWhere(
+          schemaController,
+          className,
+          query,
+          {validate: !this.skipValidation},
+          parseFormatSchema
+        );
+        mongoUpdate = this.transform.transformUpdate(
+          schemaController,
+          className,
+          update,
+          {validate: !this.skipValidation}
+        );
+        if (many) {
+          return collection.updateMany(mongoWhere, mongoUpdate);
+        } else if (upsert) {
+          return collection.upsertOne(mongoWhere, mongoUpdate);
+        } else {
+          return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+        }
+      });
     })
     .then(result => {
       if (!result) {
@@ -322,7 +334,22 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
       if (acl) {
         query = addWriteACL(query, acl);
       }
-      return this.adapter.deleteObjectsByQuery(className, query, schemaController, !this.skipValidation)
+      return schemaController.getOneSchema(className)
+      .catch(error => {
+        // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+        // will likely need revisiting.
+        if (error === undefined) {
+          return { fields: {} };
+        }
+        throw error;
+      })
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(
+        className,
+        query,
+        schemaController,
+        !this.skipValidation,
+        parseFormatSchema
+      ))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -627,18 +654,29 @@ DatabaseController.prototype.find = function(className, query, {
       if (!isMaster) {
         query = addReadACL(query, aclGroup);
       }
-      let mongoWhere = this.transform.transformWhere(schemaController, className, query);
-      if (count) {
-        delete mongoOptions.limit;
-        return collection.count(mongoWhere, mongoOptions);
-      } else {
-        return collection.find(mongoWhere, mongoOptions)
-        .then((mongoResults) => {
-          return mongoResults.map((r) => {
-            return this.untransformObject(schemaController, isMaster, aclGroup, className, r);
+      return schemaController.getOneSchema(className)
+      .catch(error => {
+        // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+        // will likely need revisiting.
+        if (error === undefined) {
+          return { fields: {} };
+        }
+        throw error;
+      })
+      .then(parseFormatSchema => {
+        let mongoWhere = this.transform.transformWhere(schemaController, className, query, parseFormatSchema);
+        if (count) {
+          delete mongoOptions.limit;
+          return collection.count(mongoWhere, mongoOptions);
+        } else {
+          return collection.find(mongoWhere, mongoOptions)
+          .then((mongoResults) => {
+            return mongoResults.map((r) => {
+              return this.untransformObject(schemaController, isMaster, aclGroup, className, r);
+            });
           });
-        });
-      }
+        }
+      });
     });
   });
 };

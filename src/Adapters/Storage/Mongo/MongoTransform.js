@@ -139,7 +139,7 @@ const valueAsDate = value => {
   return false;
 }
 
-function transformQueryKeyValue(schema, className, key, value, { validate } = {}) {
+function transformQueryKeyValue(schema, className, key, value, { validate } = {}, parseFormatSchema) {
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -168,12 +168,12 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
-    return {key: '$or', value: value.map(subQuery => transformWhere(schema, className, subQuery))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(schema, className, subQuery, parseFormatSchema))};
   case '$and':
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
     }
-    return {key: '$and', value: value.map(subQuery => transformWhere(schema, className, subQuery))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(schema, className, subQuery, parseFormatSchema))};
   default:
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -218,13 +218,13 @@ function transformQueryKeyValue(schema, className, key, value, { validate } = {}
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
-function transformWhere(schema, className, restWhere, { validate = true } = {}) {
+function transformWhere(schema, className, restWhere, { validate = true } = {}, parseFormatSchema) {
   let mongoWhere = {};
   if (restWhere['ACL']) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
   for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(schema, className, restKey, restWhere[restKey], { validate });
+    let out = transformQueryKeyValue(schema, className, restKey, restWhere[restKey], { validate }, parseFormatSchema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
