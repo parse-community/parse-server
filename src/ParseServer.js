@@ -121,7 +121,7 @@ class ParseServer {
       liveQuery = {},
       sessionLength = 31536000, // 1 Year in seconds
       verbose = false,
-      logLevel = 'error',
+      logLevel = 'info',
       enableConfigChanges = process.env.ENABLE_CONFIG_CHANGES,
       lockDefinedSettings = true
     } = definedSettings;
@@ -226,7 +226,7 @@ class ParseServer {
       this.config.settingsInitialized = settingsManager.pull()
         .then(persistedSettings => {
           settingsManager.updateCache(persistedSettings);
-          return settingsManager.push(settingsManager.getUnlocked());
+          return settingsManager.push(settingsManager.getVisible());
         });
     }
 

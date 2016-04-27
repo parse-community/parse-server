@@ -1,7 +1,11 @@
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 var Parse = require('parse/node').Parse;
+var configureLogger = require('../src/logger').configureLogger;
 
-describe('info logs', () => {
+describe('FileLoggerAdapter', () => {
+  beforeEach(() => {
+    configureLogger({ logsFolder: './test_logs/file_logger/'});
+  });
 
   it("Verify INFO logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();
@@ -20,9 +24,6 @@ describe('info logs', () => {
       });
     });
   });
-});
-
-describe('error logs', () => {
 
   it("Verify ERROR logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();

@@ -1,16 +1,15 @@
 var request = require('request');
 var deepcopy = require('deepcopy');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
-var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
-var settingsCollection = '_ServerSettings';
+var Config = require('../src/Config');
 var logger = require('../src/logger').default;
 
+var settingsCollectionName = '_ServerSettings';
 var configuration;
+var settingsCollection;
 
 describe('Persistent Settings', () => {
   beforeEach((done) => {
     configuration = deepcopy(defaultConfiguration);
-    configuration.verbose = true;
     configuration.enableConfigChanges = true;
     newServer().then(done);
   });
@@ -65,7 +64,8 @@ describe('Persistent Settings', () => {
         .then(res => expect(res.res.statusCode).toBe(200))
         .then(_ => endpoint.post({ clientKey: 'causesError' }))
         .then(res => {
-          expect(res.res.statusCode).toBe(403);
+          expect(res.res.statusCode).toBe(400);
+          expect(res.body.code).toBe(119); //Parse.Error.OPERATION_FORBIDDEN
           expect(res.body.error).toBe('Server config changes are disabled');
         })
         .then(done)
@@ -73,16 +73,16 @@ describe('Persistent Settings', () => {
     });
 
     it('should run setting callbacks such as configureLogger', (done) => {
-      endpoint.post({ logLevel: 'silly' })
+      endpoint.post({ logLevel: 'debug' })
         .then(res => {
           expect(res.res.statusCode).toBe(200);
-          expect(res.body.logLevel).toBe('silly');
-          expect(logger.transports['parse-server'].level).toBe('silly');
+          expect(res.body.logLevel).toBe('debug');
+          expect(logger.transports['parse-server'].level).toBe('debug');
         })
         .then(endpoint.get)
         .then(res => {
           expect(res.res.statusCode).toBe(200);
-          expect(res.body.logLevel).toBe('silly');
+          expect(res.body.logLevel).toBe('debug');
         })
         .then(done)
         .catch(done.fail);
@@ -126,7 +126,7 @@ describe('Persistent Settings', () => {
     it('should expose non-existant settings as null', (done) => {
       delete configuration.clientKey;
 
-      database.deleteEverything()
+      settingsCollection.drop()
         .then(newServer)
         .then(endpoint.get)
         .then(res => expect(res.body.clientKey).toBe(null))
@@ -137,7 +137,7 @@ describe('Persistent Settings', () => {
     it('should fetch database values', (done) => {
       delete configuration.clientKey;
 
-      database.deleteEverything()
+      settingsCollection.drop()
         .then(newServer)
         .then(endpoint.get)
         .then(res => expect(res.body.clientKey).toBe(null))
@@ -163,20 +163,24 @@ describe('Persistent Settings', () => {
 
 function newServer() {
   setServerConfiguration(deepcopy(configuration));
-  return parseServerObject.config.settingsInitialized;
+  return parseServerObject.config.settingsInitialized
+    .then(_ => {
+      var config = new Config(configuration.appId);
+      return config.database.adapter.adaptiveCollection(settingsCollectionName);
+    })
+    .then(coll => { settingsCollection = coll; });
 }
 
 function updatePersisted(settings) {
   settings.applicationId = configuration.appId;
   return parseServerObject.config.settingsInitialized
-    .then(_ => database.adaptiveCollection(settingsCollection))
-    .then(coll => coll.upsertOne({ applicationId: configuration.appId }, { $set: settings }))
+    .then(_ => settingsCollection.upsertOne({ applicationId: configuration.appId }, { $set: settings }))
     .then(_ => undefined);
 }
 
 function getPersisted() {
   return parseServerObject.config.settingsInitialized
-    .then(_ => database.mongoFind(settingsCollection, {}, {}))
+    .then(_ => settingsCollection.find({ applicationId: configuration.appId }))
     .then(results => results && results.length && results[0]);
 }
 

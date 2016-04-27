@@ -5,17 +5,22 @@ let deepcopy = require('deepcopy');
 
 import { logger, configureLogger } from './logger';
 import cache from './cache';
+import Config from './Config';
 let authDataManager = require('./authDataManager');
-let database = require('./DatabaseAdapter');
+
 
 const settingsCollectionName = '_ServerSettings';
 
-// doesn't make sense to expose / modify these settings
+// visible locked settings
 const lockedSettings = [
   'applicationId',
   'masterKey',
   'serverURL',
   'collectionPrefix',
+  'enableConfigChanges',
+];
+// hidden locked settings
+const hiddenSettings = [
   'filesController',
   'pushController',
   'loggerController',
@@ -23,7 +28,6 @@ const lockedSettings = [
   'userController',
   'authDataManager',
   'liveQueryController',
-  'enableConfigChanges',
   'settingsInitialized'
 ];
 
@@ -83,11 +87,11 @@ export default function SettingsManager(appId) {
       return updates;
     },
 
-    getUnlocked: _ => {
+    getVisible: _ => {
       let settings = cache.apps.get(appId);
 
       let settingsString = JSON.stringify(settings, (k, v) => {
-        if (!lockedSettings.includes(k)) {
+        if (!hiddenSettings.includes(k)) {
           if (v === undefined) return null;
           return v;
         }
@@ -100,12 +104,12 @@ export default function SettingsManager(appId) {
   };
 
   function getSettingsCollection() {
-    let config = cache.apps.get(appId);
-    return database.getDatabaseConnection(appId, config.collectionPrefix).adaptiveCollection(settingsCollectionName);
+    let config = new Config(appId);
+    return config.database.adapter.adaptiveCollection(settingsCollectionName);
   }
 
   function isLocked(update) {
-    var isLocked = lockedSettings.includes(update);
+    var isLocked = lockedSettings.includes(update) || hiddenSettings.includes(update);
     if (isLocked) logger.warn(`Cannot modify the value of '${update}' as it is locked`);
     return isLocked;
   }
