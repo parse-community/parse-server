@@ -179,7 +179,7 @@ export default {
     help: "Sets the log level"
   },
   "enableConfigChanges": {
-    env: "ENABLE_CONFIG_CHANGES"
+    env: "ENABLE_CONFIG_CHANGES",
     help: "Allows server settings to be modified via the settings endpoint, defaults to false"
   },
   "lockDefinedSettings": {
