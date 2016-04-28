@@ -97,7 +97,7 @@ function handleParseHeaders(req, res, next) {
       log.error('error retrieving server settings from database', error);
       throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
     })
-    .then(_ => {
+    .then(() => {
       req.config = new Config(info.appId, mount);
       req.info = info;
 

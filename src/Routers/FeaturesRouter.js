@@ -40,6 +40,10 @@ export class FeaturesRouter extends PromiseRouter {
           exportClass: false,
           editClassLevelPermissions: true,
         },
+        serverSettings: {
+          read: true,
+          update: req.config.enableConfigChanges
+        }
       };
 
       return { response: {

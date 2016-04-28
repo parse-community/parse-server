@@ -6,6 +6,7 @@ var logger = require('../src/logger').default;
 var settingsCollectionName = '_ServerSettings';
 var configuration;
 var settingsCollection;
+var parseServerObject;
 
 describe('Persistent Settings', () => {
   beforeEach((done) => {
@@ -162,7 +163,7 @@ describe('Persistent Settings', () => {
 });
 
 function newServer() {
-  setServerConfiguration(deepcopy(configuration));
+  parseServerObject = setServerConfiguration(deepcopy(configuration));
   return parseServerObject.config.settingsInitialized
     .then(_ => {
       var config = new Config(configuration.appId);

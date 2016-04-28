@@ -19,7 +19,7 @@ export class SettingsRouter extends PromiseRouter {
         let settingsManager = SettingsManager(req.config.applicationId);
         var updatedSettings = settingsManager.updateCache(body);
         return settingsManager.push(updatedSettings)
-          .then(_ => ({ response: updatedSettings }));
+          .then(() => ({ response: updatedSettings }));
       } else {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Server config changes are disabled'));
       }

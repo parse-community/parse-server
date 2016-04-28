@@ -49,7 +49,7 @@ let onChange = {
 
 export default function SettingsManager(appId) {
   return {
-    pull: _ => {
+    pull: () => {
       return getSettingsCollection(appId)
         .then(coll => coll.find({ applicationId: appId }, { limit: 1 }))
         .then(results => {
@@ -65,7 +65,7 @@ export default function SettingsManager(appId) {
       settings.applicationId = appId;
       return getSettingsCollection(appId)
         .then(coll => coll.upsertOne({applicationId: appId}, { $set: settings }))
-        .then(_ => {
+        .then(() => {
           logger.verbose('Pushed settings: ' + JSON.stringify(settings, null, 2));
         });
     },
@@ -87,7 +87,7 @@ export default function SettingsManager(appId) {
       return updates;
     },
 
-    getVisible: _ => {
+    getVisible: () => {
       let settings = cache.apps.get(appId);
 
       let settingsString = JSON.stringify(settings, (k, v) => {

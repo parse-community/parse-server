@@ -174,5 +174,15 @@ export default {
   "verbose": {
     env: "VERBOSE",
     help: "Set the logging to verbose"
+  },
+  "logLevel": {
+    help: "Sets the log level"
+  },
+  "enableConfigChanges": {
+    env: "ENABLE_CONFIG_CHANGES"
+    help: "Allows server settings to be modified via the settings endpoint, defaults to false"
+  },
+  "lockDefinedSettings": {
+    help: "Disallows modification of code/cli defined settings, defaults to true"
   }
 };
