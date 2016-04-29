@@ -45,6 +45,10 @@ function handleParseHeaders(req, res, next) {
       fileViaJSON = true;
     }
 
+    if (req.body) {
+      delete req.body._RevocableSession;
+    }
+
     if (req.body &&
       req.body._ApplicationId &&
       cache.apps.get(req.body._ApplicationId) &&

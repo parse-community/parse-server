@@ -1,6 +1,6 @@
 Check out [this issue](https://github.com/ParsePlatform/parse-server/issues/1271) for an ideal bug report. The closer your issue report is to that one, the more likely we are to be able to help, and the more likely we will be to fix the issue quickly!
 
-For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
+For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities. For database migration help, please [file a bug report](https://parse.com/help#report).
 
 Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
 

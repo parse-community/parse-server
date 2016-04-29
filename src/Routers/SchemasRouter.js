@@ -70,7 +70,7 @@ var removeJoinTables = (database, mongoSchema) => {
     .filter(field => mongoSchema[field].startsWith('relation<'))
     .map(field => {
       let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.adapter.dropCollection(collectionName);
+      return database.adapter.deleteOneSchema(collectionName);
     })
   );
 };
@@ -79,22 +79,19 @@ function deleteSchema(req) {
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
-
   return req.config.database.deleteSchema(req.params.className)
-    .then(() => {
-      // We've dropped the collection now, so delete the item from _SCHEMA
-      // and clear the _Join collections
-      return req.config.database.schemaCollection()
-        .then(coll => coll.findAndDeleteSchema(req.params.className))
-        .then(document => {
-          if (document === null) {
-            //tried to delete non-existent class
-            return Promise.resolve();
-          }
-          return removeJoinTables(req.config.database, document);
-        });
-    })
-    .then(() => ({ response: {} }));
+  .then(() => req.config.database.schemaCollection())
+  // We've dropped the collection now, so delete the item from _SCHEMA
+  // and clear the _Join collections
+  .then(coll => coll.findAndDeleteSchema(req.params.className))
+  .then(document => {
+    if (document === null) {
+      //tried to delete non-existent class
+      return Promise.resolve();
+    }
+    return removeJoinTables(req.config.database, document);
+  })
+  .then(() => ({ response: {} }));
 }
 
 export class SchemasRouter extends PromiseRouter {
