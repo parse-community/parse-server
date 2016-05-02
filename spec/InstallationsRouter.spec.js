@@ -22,7 +22,8 @@ describe('InstallationsRouter', () => {
         where: {
           deviceType: 'android'
         }
-      }
+      },
+      query: {}
     };
 
     var router = new InstallationsRouter();
