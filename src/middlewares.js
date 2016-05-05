@@ -17,13 +17,15 @@ function handleParseHeaders(req, res, next) {
   var mountPath = req.originalUrl.slice(0, mountPathLength);
   var mount = req.protocol + '://' + req.get('host') + mountPath;
 
+  var basicAuth = httpAuth(req);
+
   var info = {
-    appId: req.get('X-Parse-Application-Id'),
+    appId: basicAuth.appId || req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
-    masterKey: req.get('X-Parse-Master-Key'),
+    masterKey: basicAuth.masterKey || req.get('X-Parse-Master-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
-    javascriptKey: req.get('X-Parse-Javascript-Key'),
+    javascriptKey: basicAuth.javascriptKey || req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key')
   };
@@ -142,6 +144,33 @@ function handleParseHeaders(req, res, next) {
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
+}
+
+function httpAuth(req) {
+  var appId, masterKey, javascriptKey;
+  var credentialsRegExp = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9\-\._~\+\/]+=*) *$/
+  var appIdKeyRegExp = /^([^ :]*):([Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt][-][Kk][Ee][Yy]=)?(.*)/
+ // get header
+  var header = (req.req || req).headers.authorization
+  // parse header
+  var match = credentialsRegExp.exec(header || '')
+  if (match) {
+    // decode user pass
+    var appIdKeyMatch = appIdKeyRegExp.exec(decodeBase64(match[1]))
+	 if (appIdKeyMatch) {
+      appId = appIdKeyMatch[1];
+      if (appIdKeyMatch[2])
+        javascriptKey = appIdKeyMatch[3];
+      else
+        masterKey = appIdKeyMatch[3];
+    }
+  }
+  
+  return {appId: appId, masterKey: masterKey, javascriptKey: javascriptKey};
+}
+
+function decodeBase64(str) {
+  return new Buffer(str, 'base64').toString()
 }
 
 var allowCrossDomain = function(req, res, next) {

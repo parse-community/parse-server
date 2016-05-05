@@ -12,6 +12,30 @@ describe('server', () => {
     expect(setServerConfiguration.bind(undefined, { appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');
     done();
   });
+	
+  it('support http basic authentication with masterkey', done => {
+    request.get({
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+      	'Authorization': 'Basic ' + new Buffer('test:' + 'test').toString('base64')
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      done();
+    });
+  });
+  
+  it('support http basic authentication with javascriptKey', done => {
+    request.get({
+      url: 'http://localhost:8378/1/classes/TestObject',
+      headers: {
+      	'Authorization': 'Basic ' + new Buffer('test:javascript-key=' + 'test').toString('base64')
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      done();
+    });
+  });
 
   it('fails if database is unreachable', done => {
     setServerConfiguration({
