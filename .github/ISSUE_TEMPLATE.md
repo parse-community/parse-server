@@ -26,3 +26,5 @@ Make sure these boxes are checked before submitting your issue -- thanks for rep
 - What was the expected result? What is the actual outcome?
 
 #### Logs/Trace
+
+- You can turn on additional logging by configuring VERBOSE=1 in your environment.
