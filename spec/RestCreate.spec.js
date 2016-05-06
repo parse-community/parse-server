@@ -352,4 +352,31 @@ describe('rest create', () => {
         done();
       });
   });
+
+  it("can create a session with no expiration", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar'
+    };
+    config.expireInactiveSessions = false;
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        expect(session.expiresAt).toBeUndefined();
+
+        done();
+      });
+  });
 });

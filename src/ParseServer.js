@@ -114,6 +114,7 @@ class ParseServer {
     },
     liveQuery = {},
     sessionLength = 31536000, // 1 Year in seconds
+    expireInactiveSessions = true,
     verbose = false,
     revokeSessionOnPasswordReset = true,
   }) {
@@ -188,6 +189,7 @@ class ParseServer {
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
       sessionLength: Number(sessionLength),
+      expireInactiveSessions: expireInactiveSessions,
       revokeSessionOnPasswordReset
     });
 
