@@ -8,9 +8,11 @@ var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
+var TestUtils = require('../src/index').TestUtils;
+var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
-var cloudMain = process.env.CLOUD_CODE_MAIN || '../spec/cloud/main.js';
+var cloudMain = process.env.CLOUD_CODE_MAIN || './spec/cloud/main.js';
 var port = 8378;
 
 // Default server configuration for tests.
@@ -39,7 +41,7 @@ var defaultConfiguration = {
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
-  }
+  },
 };
 
 // Set up a default API server for testing with default configuration.
@@ -53,7 +55,7 @@ delete defaultConfiguration.cloud;
 
 var currentConfiguration;
 // Allows testing specific configurations of Parse Server
-var setServerConfiguration = configuration => {
+const setServerConfiguration = configuration => {
   // the configuration hasn't changed
   if (configuration === currentConfiguration) {
     return;
@@ -83,12 +85,33 @@ beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
   Parse.User.enableUnsafeCurrentUser();
-  done();
+  return TestUtils.destroyAllDataPermanently().then(done, fail);
 });
 
+var mongoAdapter = new MongoStorageAdapter({
+  collectionPrefix: defaultConfiguration.collectionPrefix,
+  uri: databaseURI,
+})
+
 afterEach(function(done) {
-  Parse.User.logOut().then(() => {
-    return clearData();
+  mongoAdapter.getAllSchemas()
+  .then(allSchemas => {
+    allSchemas.forEach((schema) => {
+      var className = schema.className;
+      expect(className).toEqual({ asymmetricMatch: className => {
+        if (!className.startsWith('_')) {
+          return true;
+        } else {
+          // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
+          // break it.
+          return ['_User', '_Installation', '_Role', '_Session', '_Product'].includes(className);
+        }
+      }});
+    });
+  })
+  .then(() => Parse.User.logOut())
+  .then(() => {
+    return TestUtils.destroyAllDataPermanently();
   }).then(() => {
     done();
   }, (error) => {
@@ -230,14 +253,6 @@ function mockFacebook() {
     return Promise.reject();
   };
   return facebook;
-}
-
-function clearData() {
-  var promises = [];
-  for (var conn in DatabaseAdapter.dbConnections) {
-    promises.push(DatabaseAdapter.dbConnections[conn].deleteEverything());
-  }
-  return Promise.all(promises);
 }
 
 // This is polluting, but, it makes it way easier to directly port old tests.

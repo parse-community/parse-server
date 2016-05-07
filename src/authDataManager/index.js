@@ -5,6 +5,7 @@ let meetup = require("./meetup");
 let google = require("./google");
 let github = require("./github");
 let twitter = require("./twitter");
+let spotify = require("./spotify");
 
 let anonymous = {
   validateAuthData: () => {
@@ -23,6 +24,7 @@ let providers = {
   google,
   github,
   twitter,
+  spotify,
   anonymous
 }
 
@@ -33,14 +35,14 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
   }
   // To handle the test cases on configuration
   let getValidatorForProvider = function(provider) {
-    
+
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
-    
+
     let defaultProvider = providers[provider];
     let optionalProvider = oauthOptions[provider];
-    
+
     if (!defaultProvider && !optionalProvider) {
       return;
     }
@@ -49,7 +51,7 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
     if (optionalProvider) {
       appIds = optionalProvider.appIds;
     }
-    
+
     var validateAuthData;
     var validateAppId;
 
@@ -72,11 +74,11 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
         validateAppId = optionalProvider.validateAppId;
       }
     }
-    
+
     if (!validateAuthData || !validateAppId) {
       return;
     }
-    
+
     return function(authData) {
       return validateAuthData(authData, optionalProvider).then(() => {
         if (appIds) {
@@ -89,6 +91,6 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
 
   return Object.freeze({
     getValidatorForProvider,
-    setEnableAnonymousUsers, 
+    setEnableAnonymousUsers,
   })
 }

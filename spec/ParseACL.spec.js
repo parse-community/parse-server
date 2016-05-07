@@ -1,5 +1,9 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_acl_test.js
+var rest = require('../src/rest');
+var Config = require('../src/Config');
+var config = new Config('test');
+var auth = require('../src/Auth');
 
 describe('Parse.ACL', () => {
   it("acl must be valid", (done) => {
@@ -165,11 +169,11 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             // Start making requests by the public, which should all fail.
-            Parse.User.logOut();
-
-            // Delete
-            object.destroy().then(() => {
+            Parse.User.logOut()
+            .then(() => object.destroy())
+            .then(() => {
               fail('destroy should fail');
+              done();
             }, error => {
               expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
               done();
@@ -1157,5 +1161,35 @@ describe('Parse.ACL', () => {
       done();
     });
   });
+
+  it('regression test #701', done => {
+    var anonUser = {
+      authData: {
+        anonymous: {
+          id: '00000000-0000-0000-0000-000000000001'
+        }
+      }
+    };
+
+    Parse.Cloud.afterSave(Parse.User, req => {
+      if (!req.object.existed()) {
+        var user = req.object;
+        var acl = new Parse.ACL(user);
+        user.setACL(acl);
+        user.save(null, {useMasterKey: true}).then(user => {
+          new Parse.Query('_User').get(user.objectId).then(user => {
+            fail('should not have fetched user without public read enabled');
+            done();
+          }, error => {
+            expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+            Parse.Cloud._removeHook('Triggers', 'afterSave', Parse.User.className);
+            done();
+          });
+        });
+      }
+    });
+
+    rest.create(config, auth.nobody(config), '_User', anonUser)
+  })
 
 });

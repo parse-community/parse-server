@@ -1,6 +1,6 @@
 "use strict";
 var PushController = require('../src/Controllers/PushController').PushController;
-
+var pushStatusHandler = require('../src/pushStatusHandler');
 var Config = require('../src/Config');
 
 const successfulTransmissions = function(body, installations) {
@@ -184,7 +184,6 @@ describe('PushController', () => {
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });
@@ -233,7 +232,6 @@ describe('PushController', () => {
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });
@@ -295,9 +293,12 @@ describe('PushController', () => {
      expect(results.length).toBe(1);
      let result = results[0];
      expect(result.createdAt instanceof Date).toBe(true);
+     expect(result.updatedAt instanceof Date).toBe(true);
+     expect(result.id.length).toBe(10);
      expect(result.get('source')).toEqual('rest');
      expect(result.get('query')).toEqual(JSON.stringify({}));
-     expect(result.get('payload')).toEqual(payload.data);
+     expect(typeof result.get('payload')).toEqual("string");
+     expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
      expect(result.get('status')).toEqual('succeeded');
      expect(result.get('numSent')).toEqual(10);
      expect(result.get('sentPerType')).toEqual({
@@ -315,6 +316,45 @@ describe('PushController', () => {
      done();
    });
 
+  });
+
+  it('should properly report failures in _PushStatus', (done) => {
+    var pushAdapter = {
+     send: function(body, installations) {
+       return installations.map((installation) => {
+         return Promise.resolve({
+           deviceType: installation.deviceType
+         })
+       })
+     },
+     getValidPushTypes: function() {
+       return ["ios"];
+     }
+   }
+   let where = { 'channels': {
+     '$ins': ['Giants', 'Mets']
+   }};
+   var payload = {data: {
+     alert: "Hello World!",
+     badge: 1,
+   }}
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   pushController.sendPush(payload, where, config, auth).then(() => {
+     fail('should not succeed');
+     done();
+   }).catch(() => {
+     let query = new Parse.Query('_PushStatus');
+     query.find({useMasterKey: true}).then((results) => {
+       expect(results.length).toBe(1);
+       let pushStatus = results[0];
+       expect(pushStatus.get('status')).toBe('failed');
+       done();
+     });
+   })
   });
 
   it('should support full RESTQuery for increment', (done) => {
@@ -357,4 +397,8 @@ describe('PushController', () => {
     });
   });
 
+  it('should flatten', () => {
+    var res = pushStatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
+    expect(res).toEqual([1,2,3,4,5,6]);
+  })
 });

@@ -16,7 +16,7 @@ app.listen(12345);
 
 
 describe('Hooks', () => {
-  
+
    it("should have some hooks registered", (done) => {
      Parse.Hooks.getFunctions().then((res) => {
        expect(res.constructor).toBe(Array.prototype.constructor);
@@ -26,7 +26,7 @@ describe('Hooks', () => {
        done();
      });
    });
-   
+
    it("should have some triggers registered", (done) => {
      Parse.Hooks.getTriggers().then( (res) => {
        expect(res.constructor).toBe(Array.prototype.constructor);
@@ -37,51 +37,45 @@ describe('Hooks', () => {
      });
    });
 
-   it("should CRUD a function registration", (done) => {
-     // Create
-     Parse.Hooks.createFunction("My-Test-Function", "http://someurl").then((res) => {
-       expect(res.functionName).toBe("My-Test-Function");
-       expect(res.url).toBe("http://someurl")
-       // Find
-       return Parse.Hooks.getFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       expect(res).not.toBe(null);
-       expect(res).not.toBe(undefined);
-       expect(res.url).toBe("http://someurl");
-       // delete
-        return Parse.Hooks.updateFunction("My-Test-Function", "http://anotherurl");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       expect(res.functionName).toBe("My-Test-Function");
-       expect(res.url).toBe("http://anotherurl")
-       
-       return Parse.Hooks.deleteFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       // Find again! but should be deleted
-       return Parse.Hooks.getFunction("My-Test-Function");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       fail("Should not succeed")
-       done();
-     }, (err) => {
-       expect(err).not.toBe(null);
-       expect(err).not.toBe(undefined);
-       expect(err.code).toBe(143);
-       expect(err.error).toBe("no function named: My-Test-Function is defined")
-       done();
-     })
-   });
-   
+  it("should CRUD a function registration", (done) => {
+    // Create
+    Parse.Hooks.createFunction("My-Test-Function", "http://someurl")
+    .then(response => {
+      expect(response.functionName).toBe("My-Test-Function");
+      expect(response.url).toBe("http://someurl")
+      // Find
+      return Parse.Hooks.getFunction("My-Test-Function")
+    }).then(response => {
+      expect(response.url).toBe("http://someurl");
+      return Parse.Hooks.updateFunction("My-Test-Function", "http://anotherurl");
+    })
+    .then((res) => {
+      expect(res.functionName).toBe("My-Test-Function");
+      expect(res.url).toBe("http://anotherurl")
+      // delete
+      return Parse.Hooks.deleteFunction("My-Test-Function")
+    })
+    .then((res) => {
+      // Find again! but should be deleted
+      return Parse.Hooks.getFunction("My-Test-Function")
+      .then(res => {
+        fail("Failed to delete hook")
+        fail(res)
+        done();
+        return Promise.resolve();
+      }, (err) => {
+        expect(err.code).toBe(143);
+        expect(err.error).toBe("no function named: My-Test-Function is defined")
+        done();
+        return Promise.resolve();
+      })
+    })
+    .catch(error => {
+      fail(error);
+      done();
+    })
+  });
+
    it("should CRUD a trigger registration", (done) => {
      // Create
      Parse.Hooks.createTrigger("MyClass","beforeDelete", "http://someurl").then((res) => {
@@ -105,7 +99,7 @@ describe('Hooks', () => {
      }).then((res) => {
        expect(res.className).toBe("MyClass");
        expect(res.url).toBe("http://anotherurl")
-       
+
        return Parse.Hooks.deleteTrigger("MyClass","beforeDelete");
      }, (err) => {
        fail(err);
@@ -127,7 +121,7 @@ describe('Hooks', () => {
        done();
      });
    });
-   
+
    it("should fail to register hooks without Master Key", (done) => {
      request.post(Parse.serverURL+"/hooks/functions", {
        headers: {
@@ -141,7 +135,7 @@ describe('Hooks', () => {
        done();
      })
    });
-   
+
    it("should fail trying to create two times the same function", (done) => {
       Parse.Hooks.createFunction("my_new_function", "http://url.com").then( () => {
         return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
@@ -162,7 +156,7 @@ describe('Hooks', () => {
         done();
       })
    });
-   
+
    it("should fail trying to create two times the same trigger", (done) => {
       Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then( () => {
         return  Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com")
@@ -181,7 +175,7 @@ describe('Hooks', () => {
         done();
       })
    });
-   
+
    it("should fail trying to update a function that don't exist", (done) => {
       Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
         fail("Should not succeed")
@@ -198,7 +192,7 @@ describe('Hooks', () => {
         done();
       });
    });
-   
+
    it("should fail trying to update a trigger that don't exist", (done) => {
       Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
         fail("Should not succeed")
@@ -215,8 +209,8 @@ describe('Hooks', () => {
         done();
       });
    });
-   
-   
+
+
    it("should fail trying to create a malformed function", (done) => {
       Parse.Hooks.createFunction("MyFunction").then( (res) => {
         fail(res);
@@ -226,7 +220,7 @@ describe('Hooks', () => {
         done();
       });
    });
-   
+
    it("should fail trying to create a malformed function (REST)", (done) => {
      request.post(Parse.serverURL+"/hooks/functions", {
        headers: {
@@ -241,16 +235,16 @@ describe('Hooks', () => {
        done();
      })
    });
-   
-   
+
+
    it("should create hooks and properly preload them", (done) => {
-     
+
      var promises = [];
      for (var i = 0; i<5; i++) {
        promises.push(Parse.Hooks.createTrigger("MyClass"+i, "beforeSave", "http://url.com/beforeSave/"+i));
        promises.push(Parse.Hooks.createFunction("AFunction"+i, "http://url.com/function"+i));
      }
-     
+
      Parse.Promise.when(promises).then(function(results){
        for (var i=0; i<5; i++) {
          // Delete everything from memory, as the server just started
@@ -263,7 +257,7 @@ describe('Hooks', () => {
        return hooksController.load()
      }, (err) => {
        console.error(err);
-       fail();
+       fail('Should properly create all hooks');
        done();
      }).then(function() {
        for (var i=0; i<5; i++) {
@@ -273,17 +267,17 @@ describe('Hooks', () => {
        done();
      }, (err) => {
        console.error(err);
-       fail();
+       fail('should properly load all hooks');
        done();
      })
    });
-   
+
    it("should run the function on the test server", (done) => {
-     
+
      app.post("/SomeFunction", function(req, res) {
         res.json({success:"OK!"});
      });
-     
+
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunction").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
@@ -299,9 +293,9 @@ describe('Hooks', () => {
        done();
      })
    });
-   
+
    it("should run the function on the test server", (done) => {
-     
+
      app.post("/SomeFunctionError", function(req, res) {
         res.json({error: {code: 1337, error: "hacking that one!"}});
      });
@@ -322,8 +316,8 @@ describe('Hooks', () => {
        done();
      });
    });
-   
-   
+
+
    it("should run the beforeSave hook on the test server", (done) => {
      var triggerCount = 0;
      app.post("/BeforeSaveSome", function(req, res) {
@@ -350,7 +344,7 @@ describe('Hooks', () => {
        done();
      });
    });
-   
+
    it("should run the afterSave hook on the test server", (done) => {
      var triggerCount = 0;
      var newObjectId;

@@ -9,7 +9,7 @@
 
 var Parse = require('parse/node').Parse;
 import cache from './cache';
-import Auth from './Auth';
+import Auth  from './Auth';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
@@ -52,7 +52,7 @@ function del(config, auth, className, objectId) {
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
+          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -79,7 +79,7 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config.applicationId);
+    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
     return Promise.resolve();
   });
 }
@@ -87,7 +87,6 @@ function del(config, auth, className, objectId) {
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject) {
   enforceRoleSecurity('create', className, auth);
-
   var write = new RestWrite(config, auth, className, null, restObject);
   return write.execute();
 }
@@ -97,7 +96,6 @@ function create(config, auth, className, restObject) {
 // Usually, this is just updatedAt.
 function update(config, auth, className, objectId, restObject) {
   enforceRoleSecurity('update', className, auth);
-
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId) ||
@@ -119,11 +117,11 @@ function update(config, auth, className, objectId, restObject) {
 
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
-  if (method === 'delete' && className === '_Installation' && !auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                          'Clients aren\'t allowed to perform the ' +
-                          'delete operation on the installation collection.');
-
+  if (className === '_Installation' && !auth.isMaster) {
+    if (method === 'delete' || method === 'find') {
+      let error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    }
   }
 }
 

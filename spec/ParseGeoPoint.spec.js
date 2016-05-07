@@ -85,8 +85,8 @@ describe('Parse.GeoPoint testing', () => {
       equal(results.length, 3);
       done();
     }, (err) => {
-      console.log(err);
-      fail();
+      fail("Couldn't query GeoPoint");
+      fail(err)
     });
   });
 

@@ -1,5 +1,6 @@
 # Logs
 logs
+test_logs
 *.log
 
 # Runtime data

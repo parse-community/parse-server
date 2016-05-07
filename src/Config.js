@@ -4,6 +4,16 @@
 
 import cache from './cache';
 
+function removeTrailingSlash(str) {
+  if (!str) {
+    return str;
+  }
+  if (str.endsWith("/")) {
+    str = str.substr(0, str.length-1);
+  }
+  return str;
+}
+
 export class Config {
   constructor(applicationId: string, mount: string) {
     let DatabaseAdapter = require('./DatabaseAdapter');
@@ -24,7 +34,7 @@ export class Config {
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
 
     this.serverURL = cacheInfo.serverURL;
-    this.publicServerURL = cacheInfo.publicServerURL;
+    this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.appName = cacheInfo.appName;
 
@@ -35,14 +45,32 @@ export class Config {
     this.userController = cacheInfo.userController;
     this.authDataManager = cacheInfo.authDataManager;
     this.customPages = cacheInfo.customPages || {};
-    this.mount = mount;
+    this.mount = removeTrailingSlash(mount);
     this.liveQueryController = cacheInfo.liveQueryController;
+    this.sessionLength = cacheInfo.sessionLength;
+    this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
+    this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
+    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
   }
 
   static validate(options) {
-    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails,
-                                appName: options.appName,
-                                publicServerURL: options.publicServerURL})
+    this.validateEmailConfiguration({
+      verifyUserEmails: options.verifyUserEmails,
+      appName: options.appName,
+      publicServerURL: options.publicServerURL
+    })
+
+    if (typeof options.revokeSessionOnPasswordReset !== 'boolean') {
+      throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
+    if (options.publicServerURL) {
+      if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
+        throw "publicServerURL should be a valid HTTPS URL starting with https://"
+      }
+    }
+
+    this.validateSessionConfiguration(options.sessionLength, options.expireInactiveSessions);
   }
 
   static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
@@ -54,6 +82,37 @@ export class Config {
         throw 'A public server url is required when using email verification.';
       }
     }
+  }
+
+  get mount() {
+    var mount = this._mount;
+    if (this.publicServerURL) {
+      mount = this.publicServerURL;
+    }
+    return mount;
+  }
+
+  set mount(newValue) {
+    this._mount = newValue;
+  }
+
+  static validateSessionConfiguration(sessionLength, expireInactiveSessions) {
+    if (expireInactiveSessions) {
+      if (isNaN(sessionLength)) {
+        throw 'Session length must be a valid number.';
+      }
+      else if (sessionLength <= 0) {
+        throw 'Session length must be a value greater than 0.'
+      }
+    }
+  }
+
+  generateSessionExpiresAt() {
+    if (!this.expireInactiveSessions) {
+      return undefined;
+    }
+    var now = new Date();
+    return new Date(now.getTime() + (this.sessionLength*1000));
   }
 
   get invalidLinkURL() {
@@ -79,7 +138,7 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
-};
+}
 
 export default Config;
 module.exports = Config;
