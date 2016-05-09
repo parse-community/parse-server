@@ -39,7 +39,8 @@ var defaultConfiguration = {
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
-  }
+  },
+  enableConfigChanges: false
 };
 
 // Set up a default API server for testing with default configuration.
