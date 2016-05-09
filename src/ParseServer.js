@@ -79,7 +79,8 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 // "sessionLength": optional length in seconds for how long Sessions should be valid for
-// "enableConfigChanges": Allow modification of server config from settings endpoint
+// "enableConfigChanges": Allow modification of server config from settings endpoint.
+//                        Requires one extra database call per request to retrieve settings
 // "lockDefinedSettings": Disallow modification of code-defined server config settings
 
 class ParseServer {
@@ -122,7 +123,7 @@ class ParseServer {
       sessionLength = 31536000, // 1 Year in seconds
       verbose = false,
       logLevel = 'info',
-      enableConfigChanges = process.env.ENABLE_CONFIG_CHANGES,
+      enableConfigChanges = true,
       lockDefinedSettings = true
     } = definedSettings;
     // Initialize the node client SDK automatically
