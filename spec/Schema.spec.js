@@ -124,7 +124,6 @@ describe('SchemaController', () => {
     var obj;
     createTestUser()
     .then(user => {
-      console.log(user);
       return config.database.loadSchema()
       // Create a valid class
       .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
