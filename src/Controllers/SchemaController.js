@@ -253,7 +253,7 @@ class SchemaController {
         this.data[schema.className] = schema.fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
-      
+
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
         this.data[className] = injectDefaultSchema({
@@ -467,7 +467,7 @@ class SchemaController {
   validateField(className, fieldName, type, freeze) {
     return this.reloadData().then(() => {
       // Just to check that the fieldName is valid
-      this._collection.transform.transformKey(this, className, fieldName);
+      this._collection.transform.transformKeyValue(this, className, fieldName, null, {validate: true});
 
       if( fieldName.indexOf(".") > 0 ) {
         // subdocument key (x.y) => ok if x is of type 'object'

@@ -619,7 +619,7 @@ DatabaseController.prototype.find = function(className, query, {
     if (sort) {
       mongoOptions.sort = {};
       for (let key in sort) {
-        let mongoKey = this.transform.transformKey(schemaController, className, key);
+        let mongoKey = this.transform.transformKeyValue(schemaController, className, key, null, {validate: true}).key;
         mongoOptions.sort[mongoKey] = sort[key];
       }
     }

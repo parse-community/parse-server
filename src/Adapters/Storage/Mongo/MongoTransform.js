@@ -454,11 +454,6 @@ function untransformACL(mongoObject) {
   return output;
 }
 
-// Transforms a key used in the REST API format to its mongo format.
-function transformKey(schema, className, key) {
-  return transformKeyValue(schema, className, key, null, {validate: true}).key;
-}
-
 // A sentinel value that helper transformations return when they
 // cannot perform a transformation
 function CannotTransform() {}
@@ -1038,7 +1033,7 @@ var FileCoder = {
 };
 
 module.exports = {
-  transformKey,
+  transformKeyValue,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,

@@ -191,14 +191,10 @@ describe('untransformObject', () => {
   });
 });
 
-describe('transformKey', () => {
-  it('throws out _password', (done) => {
-    try {
-      transform.transformKey(dummySchema, '_User', '_password');
-      fail('should have thrown');
-    } catch (e) {
-      done();
-    }
+describe('transformKeyValue', () => {
+  it('throws out _password', done => {
+    expect(() => transform.transformKeyValue(dummySchema, '_User', '_password', null, {validate: true})).toThrow();
+    done();
   });
 });
 
