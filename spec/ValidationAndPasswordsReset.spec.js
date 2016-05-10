@@ -1,7 +1,9 @@
 "use strict";
 
-var request = require('request');
-var Config = require("../src/Config");
+let MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+let request = require('request');
+let Config = require("../src/Config");
+
 describe("Custom Pages Configuration", () => {
   it("should set the custom pages", (done) => {
     setServerConfiguration({
@@ -279,6 +281,38 @@ describe("Email Verification", () => {
         fail('Failed to save user');
         done();
       }
+    });
+  });
+
+  it('fails if you set include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
+    setServerConfiguration({
+      serverURL: 'http://localhost:8378/1',
+      appId: 'test',
+      appName: 'unused',
+      javascriptKey: 'test',
+      dotNetKey: 'windows',
+      clientKey: 'client',
+      restAPIKey: 'rest',
+      masterKey: 'test',
+      collectionPrefix: 'test_',
+      fileKey: 'test',
+      verifyUserEmails: false,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+
+    let user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+    user.set("email", "cool_guy@parse.com");
+    user.signUp(null)
+    .then(user => Parse.User.requestPasswordReset("cool_guy@parse.com"))
+    .catch(error => {
+      expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+      done();
     });
   });
 

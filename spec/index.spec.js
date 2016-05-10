@@ -361,26 +361,4 @@ describe('server', () => {
     expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();
     done();
   });
-
-  it('fails if you set verifyUserEmails to true without setting an app ID or publicServerURL (regression test for #1649)', done => {
-    expect(() => setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
-      verifyUserEmails: true,
-      emailAdapter: MockEmailAdapterWithOptions({
-        fromAddress: 'parse@example.com',
-        apiKey: 'k',
-        domain: 'd',
-      }),
-    })).toThrow('A public server url is required when using email verification.');
-    done();
-  });
 });
