@@ -68,7 +68,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
       let userObject = Parse.Object.fromJSON(obj);
       cache.users.set(sessionToken, userObject);
       return new Auth({ config, isMaster: false, installationId, user: userObject });
-    }
+    });
   } else {
     var query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
     return query.execute().then((response) => {
@@ -90,8 +90,8 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
       let userObject = Parse.Object.fromJSON(obj);
       cache.users.set(sessionToken, userObject);
       return new Auth({ config, isMaster: false, installationId, user: userObject });
-    }
-  });
+    });
+  }
 };
 
 // Returns a promise that resolves to an array of role names
