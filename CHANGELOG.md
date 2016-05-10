@@ -1,5 +1,9 @@
 ## Parse Server Changelog
 
+### 2.2.9 (5/9/2016)
+
+* Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
+
 ### 2.2.8 (5/8/2016)
 
 * New: Support for Pointer Permissions
