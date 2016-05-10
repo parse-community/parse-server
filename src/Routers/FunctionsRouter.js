@@ -36,7 +36,7 @@ export class FunctionsRouter extends PromiseRouter {
       for (var key in params) {
         if (params.hasOwnProperty(key)) {
           var value = params[key];
-          if (value.__type == 'Date') {
+          if (value && value.__type == 'Date') {
             params[key] = new Date(value.iso);
           }
         }

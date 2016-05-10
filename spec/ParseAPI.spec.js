@@ -1119,6 +1119,22 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('can handle null params in cloud functions (regression test for #1742)', done => {
+    Parse.Cloud.define('func', (request, response) => {
+      expect(request.params.nullParam).toEqual(null);
+      response.success('yay');
+    });
+
+    Parse.Cloud.run('func', {nullParam: null})
+    .then(() => {
+      Parse.Cloud._removeHook('Functions', 'func');
+      done()
+    }, e => {
+      fail('cloud code call failed');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
