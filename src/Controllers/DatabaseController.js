@@ -618,9 +618,23 @@ DatabaseController.prototype.find = function(className, query, {
   .then(schemaController => {
     if (sort) {
       mongoOptions.sort = {};
-      for (let key in sort) {
-        let mongoKey = this.transform.transformKeyValue(schemaController, className, key, null, {validate: true}).key;
-        mongoOptions.sort[mongoKey] = sort[key];
+      for (let fieldName in sort) {
+        // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+        // so duplicate that behaviour here.
+        if (fieldName === '_created_at') {
+          fieldName = 'createdAt';
+          sort['createdAt'] = sort['_created_at'];
+        }
+        if (fieldName === '_updated_at') {
+          fieldName = 'updatedAt';
+          sort['updatedAt'] = sort['_updated_at'];
+        }
+
+        if (!SchemaController.fieldNameIsValid(fieldName)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+        }
+        let mongoKey = this.transform.transformKeyValue(schemaController, className, fieldName, null).key;
+        mongoOptions.sort[mongoKey] = sort[fieldName];
       }
     }
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))

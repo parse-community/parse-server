@@ -191,13 +191,6 @@ describe('untransformObject', () => {
   });
 });
 
-describe('transformKeyValue', () => {
-  it('throws out _password', done => {
-    expect(() => transform.transformKeyValue(dummySchema, '_User', '_password', null, {validate: true})).toThrow();
-    done();
-  });
-});
-
 describe('transform schema key changes', () => {
 
   it('changes new pointer key', (done) => {
