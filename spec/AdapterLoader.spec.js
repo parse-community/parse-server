@@ -2,7 +2,6 @@
 var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
 var FilesAdapter = require("parse-server-fs-adapter").default;
 var S3Adapter = require("parse-server-s3-adapter").default;
-var GCSAdapter = require("parse-server-gcs-adapter").default;
 var ParsePushAdapter = require("parse-server-push-adapter").default;
 
 describe("AdapterLoader", ()=>{
@@ -111,15 +110,6 @@ describe("AdapterLoader", ()=>{
     expect(() => {
       var adapter = loadAdapter(s3Adapter, FilesAdapter);
       expect(adapter).toBe(s3Adapter);
-    }).not.toThrow();
-    done();
-  })
-
-  it("should load GCSAdapter from direct passing", (done) => {
-    var gcsAdapter = new GCSAdapter("projectId", "path/to/keyfile", "bucket")
-    expect(() => {
-      var adapter = loadAdapter(gcsAdapter, FilesAdapter);
-      expect(adapter).toBe(gcsAdapter);
     }).not.toThrow();
     done();
   })
