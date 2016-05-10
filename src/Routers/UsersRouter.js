@@ -163,6 +163,7 @@ export class UsersRouter extends ClassesRouter {
       });
     } catch (e) {
       if (typeof e === 'string') {
+        // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset functionality.');
       } else {
         throw e;
