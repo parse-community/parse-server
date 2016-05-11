@@ -166,7 +166,14 @@ export class MongoStorageAdapter {
   createObject(className, object, schemaController, parseFormatSchema) {
     const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
     return this.adaptiveCollection(className)
-    .then(collection => collection.insertOne(mongoObject));
+    .then(collection => collection.insertOne(mongoObject))
+    .catch(error => {
+      if (error.code === 11000) { // Duplicate value
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided');
+      }
+      return Promise.reject(error);
+    });
   }
 
   // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
