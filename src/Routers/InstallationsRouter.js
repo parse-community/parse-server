@@ -12,7 +12,7 @@ export class InstallationsRouter extends ClassesRouter {
     if (body.skip) {
       options.skip = Number(body.skip);
     }
-    if (body.limit) {
+    if (body.limit || body.limit === 0) {
       options.limit = Number(body.limit);
     }
     if (body.order) {
