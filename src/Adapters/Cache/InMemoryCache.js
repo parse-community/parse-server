@@ -1,4 +1,4 @@
-const DEFAULT_CACHE_TTL = 60 * 1000;
+const DEFAULT_CACHE_TTL = 5 * 1000;
 
 
 export class InMemoryCache {

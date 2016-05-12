@@ -66,9 +66,9 @@ describe('InMemoryCache', function() {
     done();
   });
 
-  it('should deafult TTL to 60 seconds', () => {
+  it('should deafult TTL to 5 seconds', () => {
     var cache = new InMemoryCache({});
-    expect(cache.ttl).toEqual(60 * 1000);
+    expect(cache.ttl).toEqual(5 * 1000);
   });
 
 });
