@@ -5,6 +5,7 @@
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 const Parse = require("parse/node");
+let Config = require('../src/Config');
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -1385,6 +1386,27 @@ describe('miscellaneous', function() {
         expect(result.a).toBe('b');
         done();
       })
+    });
+  });
+
+  it('fail when create duplicate value in unique field', (done) => {
+    let obj = new Parse.Object('UniqueField');
+    obj.set('unique', 'value');
+    obj.save().then(() => {
+      expect(obj.id).not.toBeUndefined();
+      let config = new Config('test');
+      return config.database.adapter.adaptiveCollection('UniqueField')
+    }).then(collection => {
+      return collection._mongoCollection.createIndex({ 'unique': 1 }, { unique: true })
+    }).then(() => {
+      let obj = new Parse.Object('UniqueField');
+      obj.set('unique', 'value');
+      return obj.save()
+    }).then(() => {
+      return Promise.reject();
+    }, error => {
+      expect(error.code === Parse.Error.DUPLICATE_VALUE);
+      done();
     });
   });
 });
