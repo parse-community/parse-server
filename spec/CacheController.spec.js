@@ -7,11 +7,13 @@ describe('CacheController', function() {
 
   beforeEach(() => {
     FakeCacheAdapter = {
-      get: jasmine.createSpy('get'),
+      get: () => Promise.resolve(null),
       put: jasmine.createSpy('put'),
       del: jasmine.createSpy('del'),
       clear: jasmine.createSpy('clear')
     }
+
+    spyOn(FakeCacheAdapter, 'get').and.callThrough();
   });
 
 
@@ -58,5 +60,15 @@ describe('CacheController', function() {
     expect(FakeCacheAdapter.clear.calls.count()).toEqual(3);
   });
 
+  it('should handle cache rejections', (done) => {
+
+      FakeCacheAdapter.get = () => Promise.reject();
+
+      var cache = new CacheController(FakeCacheAdapter, FakeAppID);
+
+      cache.get('foo').then(done, () => {
+          fail('Promise should not be rejected.');
+      });
+  });
 
 });
