@@ -9,7 +9,7 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   LOGS_FOLDER = './test_logs/'
 }
 
-LOGS_FOLDER = process.env.LOGS_FOLDER || LOGS_FOLDER;
+LOGS_FOLDER = process.env.PARSE_SERVER_LOGS_FOLDER || LOGS_FOLDER;
 
 let currentLogsFolder = LOGS_FOLDER;
 
