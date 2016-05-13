@@ -15,14 +15,11 @@ var Parse = require('parse/node').Parse;
 // in the value are converted to a mongo update form. Otherwise they are
 // converted to static data.
 //
-// validate: true indicates that key names are to be validated.
-//
 // Returns an object with {key: key, value: value}.
 function transformKeyValue(schema, className, restKey, restValue, {
   inArray,
   inObject,
   update,
-  validate,
 } = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;

@@ -624,8 +624,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (fieldName === '_created_at') {
           fieldName = 'createdAt';
           sort['createdAt'] = sort['_created_at'];
-        }
-        if (fieldName === '_updated_at') {
+        } else if (fieldName === '_updated_at') {
           fieldName = 'updatedAt';
           sort['updatedAt'] = sort['_updated_at'];
         }
@@ -633,7 +632,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (!SchemaController.fieldNameIsValid(fieldName)) {
           throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
         }
-        let mongoKey = this.transform.transformKeyValue(schemaController, className, fieldName, null).key;
+        const mongoKey = this.transform.transformKeyValue(schemaController, className, fieldName, null).key;
         mongoOptions.sort[mongoKey] = sort[fieldName];
       }
     }
