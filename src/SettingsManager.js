@@ -39,7 +39,7 @@ let authChange = settings => settings.authDataManager = authDataManager(settings
 let onChange = {
   logLevel: settings => configureLogger({ level: settings.logLevel }),
   verbose: settings => {
-    settings.logLevel = 'silly';
+    settings.logLevel = settings.verbose? 'silly': 'info';
     configureLogger({ level: settings.logLevel });
   },
   oauth: authChange,
