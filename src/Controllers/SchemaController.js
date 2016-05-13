@@ -253,7 +253,7 @@ class SchemaController {
         this.data[schema.className] = schema.fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
-      
+
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
         this.data[className] = injectDefaultSchema({
@@ -466,13 +466,14 @@ class SchemaController {
   // If 'freeze' is true, refuse to update the schema for this field.
   validateField(className, fieldName, type, freeze) {
     return this.reloadData().then(() => {
-      // Just to check that the fieldName is valid
-      this._collection.transform.transformKey(this, className, fieldName);
-
-      if( fieldName.indexOf(".") > 0 ) {
+      if (fieldName.indexOf(".") > 0) {
         // subdocument key (x.y) => ok if x is of type 'object'
         fieldName = fieldName.split(".")[ 0 ];
         type = 'Object';
+      }
+
+      if (!fieldNameIsValid(fieldName)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
       }
 
       let expected = this.data[className][fieldName];
@@ -847,6 +848,7 @@ function getObjectType(obj) {
 export {
   load,
   classNameIsValid,
+  fieldNameIsValid,
   invalidClassNameMessage,
   buildMergedSchemaObject,
   systemClasses,

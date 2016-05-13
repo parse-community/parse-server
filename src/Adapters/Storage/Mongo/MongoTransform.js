@@ -15,14 +15,11 @@ var Parse = require('parse/node').Parse;
 // in the value are converted to a mongo update form. Otherwise they are
 // converted to static data.
 //
-// validate: true indicates that key names are to be validated.
-//
 // Returns an object with {key: key, value: value}.
 function transformKeyValue(schema, className, restKey, restValue, {
   inArray,
   inObject,
   update,
-  validate,
 } = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
@@ -70,9 +67,6 @@ function transformKeyValue(schema, className, restKey, restValue, {
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
-    }
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
     }
   }
 
@@ -452,11 +446,6 @@ function untransformACL(mongoObject) {
   delete mongoObject._rperm;
   delete mongoObject._wperm;
   return output;
-}
-
-// Transforms a key used in the REST API format to its mongo format.
-function transformKey(schema, className, key) {
-  return transformKeyValue(schema, className, key, null, {validate: true}).key;
 }
 
 // A sentinel value that helper transformations return when they
@@ -1038,7 +1027,7 @@ var FileCoder = {
 };
 
 module.exports = {
-  transformKey,
+  transformKeyValue,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
