@@ -84,7 +84,7 @@ function transformKeyValue(schema, className, restKey, restValue, {
   var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray, inObject });
+  var value = (inArray || inObject) ? transformInteriorAtom(restValue) : transformTopLevelAtom(restValue, false);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -205,8 +205,8 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
   }
 
   // Handle atomic values
-  if (transformAtom(value, false) !== CannotTransform) {
-    return {key, value: transformAtom(value, false)};
+  if (transformTopLevelAtom(value, false) !== CannotTransform) {
+    return {key, value: transformTopLevelAtom(value, false)};
   } else {
     throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${value} as a query parameter.`);
   }
@@ -241,15 +241,15 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
   case 'createdAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: '_created_at', value: coercedToDate};
   case 'updatedAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue, false);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: 'expiresAt', value: coercedToDate};
   case '_rperm':
@@ -268,7 +268,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
       return {key: restKey, value: restValue};
     }
   }
-  //skip straight to transformAtom for Bytes, they don't show up in the schema for some reason
+  //skip straight to transformTopLevelAtom for Bytes, they don't show up in the schema for some reason
   if (restValue && restValue.__type !== 'Bytes') {
     //Note: We may not know the type of a field here, as the user could be saving (null) to a field
     //That never existed before, meaning we can't infer the type.
@@ -278,7 +278,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray: false, inObject: false });
+  var value = transformTopLevelAtom(restValue, false);
   if (value !== CannotTransform) {
     return {key: restKey, value: value};
   }
@@ -462,6 +462,25 @@ function untransformACL(mongoObject) {
 // cannot perform a transformation
 function CannotTransform() {}
 
+const transformInteriorAtom = atom => {
+  // TODO: check validity harder for the __type-defined types
+  if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
+    return {
+      __type: 'Pointer',
+      className: atom.className,
+      objectId: atom.objectId
+    };
+  } else if (typeof atom === 'function' || typeof atom === 'symbol') {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
+  } else if (DateCoder.isValidJSON(atom)) {
+    return DateCoder.JSONToDatabase(atom);
+  } else if (BytesCoder.isValidJSON(atom)) {
+    return BytesCoder.JSONToDatabase(atom);
+  } else {
+    return atom;
+  }
+}
+
 // Helper function to transform an atom from REST format to Mongo format.
 // An atom is anything that can't contain other expressions. So it
 // includes things where objects are used to represent other
@@ -472,10 +491,7 @@ function CannotTransform() {}
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom, or if force is
 // true, throws an error.
-function transformAtom(atom, force, {
-  inArray,
-  inObject,
-} = {}) {
+function transformTopLevelAtom(atom, force) {
   switch(typeof atom) {
   case 'string':
   case 'number':
@@ -499,14 +515,7 @@ function transformAtom(atom, force, {
 
     // TODO: check validity harder for the __type-defined types
     if (atom.__type == 'Pointer') {
-      if (!inArray && !inObject) {
-        return `${atom.className}$${atom.objectId}`;
-      }
-      return {
-        __type: 'Pointer',
-        className: atom.className,
-        objectId: atom.objectId
-      };
+      return `${atom.className}$${atom.objectId}`;
     }
     if (DateCoder.isValidJSON(atom)) {
       return DateCoder.JSONToDatabase(atom);
@@ -515,15 +524,11 @@ function transformAtom(atom, force, {
       return BytesCoder.JSONToDatabase(atom);
     }
     if (GeoPointCoder.isValidJSON(atom)) {
-      return (inArray || inObject ? atom : GeoPointCoder.JSONToDatabase(atom));
+      return GeoPointCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
-      return (inArray || inObject ? atom : FileCoder.JSONToDatabase(atom));
+      return FileCoder.JSONToDatabase(atom);
     }
-    if (inArray || inObject) {
-      return atom;
-    }
-
     if (force) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
     }
@@ -560,19 +565,17 @@ function transformConstraint(constraint, inArray) {
     case '$exists':
     case '$ne':
     case '$eq':
-      answer[key] = transformAtom(constraint[key], true,
-                                  {inArray: inArray});
+      answer[key] = inArray ? transformInteriorAtom(constraint[key]) : transformTopLevelAtom(constraint[key], true);
       break;
 
     case '$in':
     case '$nin':
       var arr = constraint[key];
       if (!(arr instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON,
-                              'bad ' + key + ' value');
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
       }
       answer[key] = arr.map((v) => {
-        return transformAtom(v, true, { inArray: inArray });
+        return inArray ? transformInteriorAtom(v) : transformTopLevelAtom(v, true);
       });
       break;
 
@@ -582,9 +585,7 @@ function transformConstraint(constraint, inArray) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
       }
-      answer[key] = arr.map((v) => {
-        return transformAtom(v, true, { inArray: true });
-      });
+      answer[key] = arr.map(transformInteriorAtom);
       break;
 
     case '$regex':
@@ -699,9 +700,7 @@ function transformUpdateOperator(operator, flatten) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
                             'objects to add must be an array');
     }
-    var toAdd = operator.objects.map((obj) => {
-      return transformAtom(obj, true, { inArray: true });
-    });
+    var toAdd = operator.objects.map(transformInteriorAtom);
     if (flatten) {
       return toAdd;
     } else {
@@ -717,9 +716,7 @@ function transformUpdateOperator(operator, flatten) {
       throw new Parse.Error(Parse.Error.INVALID_JSON,
                             'objects to remove must be an array');
     }
-    var toRemove = operator.objects.map((obj) => {
-      return transformAtom(obj, true, { inArray: true });
-    });
+    var toRemove = operator.objects.map(transformInteriorAtom);
     if (flatten) {
       return [];
     } else {
