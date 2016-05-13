@@ -38,7 +38,7 @@ describe('server', () => {
     }, (error, response, body) => {
       expect(response.statusCode).toEqual(500);
       expect(body.code).toEqual(1);
-      expect(body.message).toEqual('Internal server error.');
+      expect(body.error.message).toEqual('Authentication failed.');
       done();
     });
   });

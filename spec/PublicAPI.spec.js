@@ -14,7 +14,8 @@ describe("public API", () => {
       masterKey: 'test',
       collectionPrefix: 'test_',
       fileKey: 'test',
-      publicServerURL: 'http://localhost:8378/1'
+      publicServerURL: 'http://localhost:8378/1',
+      enableConfigChanges: false
     });
     done();
   })
