@@ -1834,6 +1834,22 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('unset user email', (done) => {
+    var user = new Parse.User();
+    user.set('username', 'test');
+    user.set('password', 'test');
+    user.set('email', 'test@test.com');
+    user.signUp().then(() => {
+      user.unset('email');
+      return user.save();
+    }).then(() => {
+      return Parse.User.logIn('test', 'test');
+    }).then((user) => {
+      expect(user.getEmail()).toBeUndefined();
+      done();
+    });
+  });
+
   it('create session from user', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
