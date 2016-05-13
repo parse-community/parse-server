@@ -16,11 +16,7 @@ var Parse = require('parse/node').Parse;
 // converted to static data.
 //
 // Returns an object with {key: key, value: value}.
-function transformKeyValue(schema, className, restKey, restValue, {
-  inArray,
-  inObject,
-  update,
-} = {}) {
+function transformKeyValue(schema, className, restKey, restValue, { interior, update } = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -84,7 +80,7 @@ function transformKeyValue(schema, className, restKey, restValue, {
   var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
-  var value = (inArray || inObject) ? transformInteriorAtom(restValue) : transformTopLevelAtom(restValue, false);
+  var value = interior ? transformInteriorAtom(restValue) : transformTopLevelAtom(restValue, false);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -101,7 +97,7 @@ function transformKeyValue(schema, className, restKey, restValue, {
   // Handle arrays
   if (restValue instanceof Array) {
     value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
+      var out = transformKeyValue(schema, className, restKey, restObj, { interior: true });
       return out.value;
     });
     return {key: key, value: value};
@@ -117,7 +113,7 @@ function transformKeyValue(schema, className, restKey, restValue, {
   value = {};
   for (var subRestKey in restValue) {
     var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
+    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { interior: true });
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
@@ -292,7 +288,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   // Handle arrays
   if (restValue instanceof Array) {
     value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
+      var out = transformKeyValue(schema, className, restKey, restObj, { interior: true });
       return out.value;
     });
     return {key: restKey, value: value};
@@ -308,7 +304,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   value = {};
   for (var subRestKey in restValue) {
     var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
+    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { interior: true });
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
@@ -486,8 +482,6 @@ const transformInteriorAtom = atom => {
 // includes things where objects are used to represent other
 // datatypes, like pointers and dates, but it does not include objects
 // or arrays with generic stuff inside.
-// If options.inArray is true, we'll leave it in REST format.
-// If options.inObject is true, we'll leave files in REST format.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom, or if force is
 // true, throws an error.
