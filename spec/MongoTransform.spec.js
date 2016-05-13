@@ -191,17 +191,6 @@ describe('untransformObject', () => {
   });
 });
 
-describe('transformKey', () => {
-  it('throws out _password', (done) => {
-    try {
-      transform.transformKey(dummySchema, '_User', '_password');
-      fail('should have thrown');
-    } catch (e) {
-      done();
-    }
-  });
-});
-
 describe('transform schema key changes', () => {
 
   it('changes new pointer key', (done) => {
