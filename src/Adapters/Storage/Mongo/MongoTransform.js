@@ -104,7 +104,7 @@ const transformKeyValue = (schema, className, restKey, restValue, { update } = {
   return {key, value};
 }
 
-const transformInteriorKeyValue = (schema, className, restKey, restValue, { update } = {}) => {
+const transformInteriorKeyValue = (schema, className, restKey, restValue) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -182,7 +182,7 @@ const transformInteriorKeyValue = (schema, className, restKey, restValue, { upda
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, !update);
+  value = transformUpdateOperator(restValue, true);
   if (value !== CannotTransform) {
     return {key, value};
   }
