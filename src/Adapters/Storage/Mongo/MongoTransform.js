@@ -10,7 +10,7 @@ var Parse = require('parse/node').Parse;
 // converted to static data.
 //
 // Returns an object with {key: key, value: value}.
-function transformKeyValue(schema, className, restKey, restValue, { interior, update } = {}) {
+const transformKeyValue = (schema, className, restKey, restValue, { update } = {}) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -73,7 +73,7 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
   var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
-  var value = interior ? transformInteriorAtom(restValue) : transformTopLevelAtom(restValue, false);
+  var value = transformTopLevelAtom(restValue, false);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -83,7 +83,7 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map(restObj => transformKeyValue(schema, className, restKey, restObj, { interior: true }).value);
+    value = restValue.map(restObj => transformInteriorKeyValue(schema, className, restKey, restObj).value);
     return {key, value};
   }
 
@@ -97,7 +97,101 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
   value = {};
   for (var subRestKey in restValue) {
     var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { interior: true });
+    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
+    // For recursed objects, keep the keys in rest format
+    value[subRestKey] = out.value;
+  }
+  return {key, value};
+}
+
+const transformInteriorKeyValue = (schema, className, restKey, restValue, { update } = {}) => {
+  // Check if the schema is known since it's a built-in field.
+  var key = restKey;
+  var timeField = false;
+  switch(key) {
+  case 'objectId':
+  case '_id':
+    key = '_id';
+    break;
+  case 'createdAt':
+  case '_created_at':
+    key = '_created_at';
+    timeField = true;
+    break;
+  case 'updatedAt':
+  case '_updated_at':
+    key = '_updated_at';
+    timeField = true;
+    break;
+  case '_email_verify_token':
+    key = "_email_verify_token";
+    break;
+  case '_perishable_token':
+    key = "_perishable_token";
+    break;
+  case 'sessionToken':
+  case '_session_token':
+    key = '_session_token';
+    break;
+  case 'expiresAt':
+  case '_expiresAt':
+    key = 'expiresAt';
+    timeField = true;
+    break;
+  case '_rperm':
+  case '_wperm':
+    return {key: key, value: restValue};
+    break;
+  case '$or':
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
+  case '$and':
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
+  default:
+    // Other auth data
+    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+    if (authDataMatch) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
+    }
+  }
+
+  // Handle special schema key changes
+  // TODO: it seems like this is likely to have edge cases where
+  // pointer types are missed
+  var expected = undefined;
+  if (schema && schema.getExpectedType) {
+    expected = schema.getExpectedType(className, key);
+  }
+  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
+    key = '_p_' + key;
+  }
+  var expectedTypeIsArray = (expected && expected.type === 'Array');
+
+  // Handle atomic values
+  var value = transformInteriorAtom(restValue);
+  if (value !== CannotTransform) {
+    if (timeField && (typeof value === 'string')) {
+      value = new Date(value);
+    }
+    return {key, value};
+  }
+
+  // Handle arrays
+  if (restValue instanceof Array) {
+    value = restValue.map(restObj => transformInteriorKeyValue(schema, className, restKey, restObj).value);
+    return {key, value};
+  }
+
+  // Handle update operators
+  value = transformUpdateOperator(restValue, !update);
+  if (value !== CannotTransform) {
+    return {key, value};
+  }
+
+  // Handle normal objects by recursing
+  value = {};
+  for (var subRestKey in restValue) {
+    var subRestValue = restValue[subRestKey];
+    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
@@ -272,7 +366,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   // Handle arrays
   if (restValue instanceof Array) {
     value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { interior: true });
+      var out = transformInteriorKeyValue(schema, className, restKey, restObj);
       return out.value;
     });
     return {key: restKey, value: value};
@@ -288,7 +382,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   value = {};
   for (var subRestKey in restValue) {
     var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { interior: true });
+    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
