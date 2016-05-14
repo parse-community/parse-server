@@ -3,12 +3,6 @@ import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-// Transforms a key-value pair from REST API form to Mongo form.
-// This is the main entry point for converting anything from REST form
-// to Mongo form; no conversion should happen that doesn't pass
-// through this function.
-// Schema should already be loaded.
-//
 // There are several options that can help transform:
 //
 // update: true indicates that __op operators like Add and Delete
@@ -73,8 +67,7 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
   if (schema && schema.getExpectedType) {
     expected = schema.getExpectedType(className, key);
   }
-  if ((expected && expected.type == 'Pointer') ||
-      (!expected && restValue && restValue.__type == 'Pointer')) {
+  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
   var expectedTypeIsArray = (expected && expected.type === 'Array');
@@ -85,28 +78,19 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
-    return {key: key, value: value};
-  }
-
-  // ACLs are handled before this method is called
-  // If an ACL key still exists here, something is wrong.
-  if (key === 'ACL') {
-    throw 'There was a problem transforming an ACL.';
+    return {key, value};
   }
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { interior: true });
-      return out.value;
-    });
-    return {key: key, value: value};
+    value = restValue.map(restObj => transformKeyValue(schema, className, restKey, restObj, { interior: true }).value);
+    return {key, value};
   }
 
   // Handle update operators
   value = transformUpdateOperator(restValue, !update);
   if (value !== CannotTransform) {
-    return {key: key, value: value};
+    return {key, value};
   }
 
   // Handle normal objects by recursing
@@ -117,7 +101,7 @@ function transformKeyValue(schema, className, restKey, restValue, { interior, up
     // For recursed objects, keep the keys in rest format
     value[subRestKey] = out.value;
   }
-  return {key: key, value: value};
+  return {key, value};
 }
 
 const valueAsDate = value => {
