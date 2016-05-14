@@ -225,6 +225,34 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test beforeSave set object acl success', function(done) {
+    var acl = new Parse.ACL({
+      '*': { read: true, write: false }
+    });
+    Parse.Cloud.beforeSave('BeforeSaveAddACL', function(req, res) {
+      req.object.setACL(acl);
+      res.success();
+    });
+
+    var obj = new Parse.Object('BeforeSaveAddACL');
+    obj.set('lol', true);
+    obj.save().then(function() {
+      Parse.Cloud._removeHook('Triggers', 'beforeSave', 'BeforeSaveAddACL');
+      var query = new Parse.Query('BeforeSaveAddACL');
+      query.get(obj.id).then(function(objAgain) {
+        expect(objAgain.get('lol')).toBeTruthy();
+        expect(objAgain.getACL().equals(acl));
+        done();
+      }, function(error) {
+        fail(error);
+        done();
+      });
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
   it('test beforeSave returns value on create and update', (done) => {
     var obj = new Parse.Object('BeforeSaveChanged');
     obj.set('foo', 'bing');
