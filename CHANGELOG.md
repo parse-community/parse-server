@@ -1,5 +1,26 @@
 ## Parse Server Changelog
 
+### 2.2.9 (5/9/2016)
+
+* Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
+
+### 2.2.8 (5/8/2016)
+
+* New: Support for Pointer Permissions
+* New: Expose logger in Cloud Code
+* New: Option to revoke sessions on password reset
+* New: Option to expire inactive sessions
+* Perf: Improvements in ACL checking query
+* Fix: Issues when sending pushes to list of devices that contains invalid values
+* Fix: Issues caused by using babel-polyfill outside of Parse Server, but in the same express app
+* Fix: Remove creation of extra session tokens
+* Fix: Return authData when querying with master key
+* Fix: Bugs when deleting webhooks
+* Fix: Ignore _RevocableSession header, which might be sent by the JS SDK
+* Fix: Issues with querying via URL params
+* Fix: Properly encode "Date" parameters to cloud code functions
+
+
 ### 2.2.7 (4/15/2016)
 
 * Adds support for --verbose and verbose option when running ParseServer [\#1414](https://github.com/ParsePlatform/parse-server/pull/1414) ([flovilmart](https://github.com/flovilmart))

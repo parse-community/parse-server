@@ -11,22 +11,15 @@ var Parse = require('parse/node').Parse;
 //
 // There are several options that can help transform:
 //
-// query: true indicates that query constraints like $lt are allowed in
-// the value.
-//
 // update: true indicates that __op operators like Add and Delete
 // in the value are converted to a mongo update form. Otherwise they are
 // converted to static data.
 //
-// validate: true indicates that key names are to be validated.
-//
 // Returns an object with {key: key, value: value}.
-export function transformKeyValue(schema, className, restKey, restValue, {
+function transformKeyValue(schema, className, restKey, restValue, {
   inArray,
   inObject,
-  query,
   update,
-  validate,
 } = {}) {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
@@ -66,47 +59,14 @@ export function transformKeyValue(schema, className, restKey, restValue, {
     return {key: key, value: restValue};
     break;
   case '$or':
-    if (!query) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'you can only use $or in queries');
-    }
-    if (!(restValue instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                            'bad $or format - use an array value');
-    }
-    var mongoSubqueries = restValue.map((s) => {
-      return transformWhere(schema, className, s);
-    });
-    return {key: '$or', value: mongoSubqueries};
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
   case '$and':
-    if (!query) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'you can only use $and in queries');
-    }
-    if (!(restValue instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                            'bad $and format - use an array value');
-    }
-    var mongoSubqueries = restValue.map((s) => {
-      return transformWhere(schema, className, s);
-    });
-    return {key: '$and', value: mongoSubqueries};
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
   default:
     // Other auth data
     var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
-      if (query) {
-        var provider = authDataMatch[1];
-        // Special-case auth data.
-        return {key: '_auth_data_'+provider+'.id', value: restValue};
-      }
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'can only query on ' + key);
-      break;
-    };
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME,
-                            'invalid key name: ' + key);
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
     }
   }
 
@@ -122,20 +82,6 @@ export function transformKeyValue(schema, className, restKey, restValue, {
     key = '_p_' + key;
   }
   var expectedTypeIsArray = (expected && expected.type === 'Array');
-
-  // Handle query constraints
-  if (query) {
-    value = transformConstraint(restValue, expectedTypeIsArray);
-    if (value !== CannotTransform) {
-      return {key: key, value: value};
-    }
-  }
-
-  if (expectedTypeIsArray && query && !(restValue instanceof Array)) {
-    return {
-      key: key, value: { '$all' : [restValue] }
-    };
-  }
 
   // Handle atomic values
   var value = transformAtom(restValue, false, { inArray, inObject });
@@ -154,10 +100,6 @@ export function transformKeyValue(schema, className, restKey, restValue, {
 
   // Handle arrays
   if (restValue instanceof Array) {
-    if (query) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'cannot use array as query param');
-    }
     value = restValue.map((restObj) => {
       var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
       return out.value;
@@ -182,20 +124,105 @@ export function transformKeyValue(schema, className, restKey, restValue, {
   return {key: key, value: value};
 }
 
+const valueAsDate = value => {
+  if (typeof value === 'string') {
+    return new Date(value);
+  } else if (value instanceof Date) {
+    return value;
+  }
+  return false;
+}
+
+function transformQueryKeyValue(className, key, value, { validate } = {}, schema) {
+  switch(key) {
+  case 'createdAt':
+    if (valueAsDate(value)) {
+      return {key: '_created_at', value: valueAsDate(value)}
+    }
+    key = '_created_at';
+    break;
+  case 'updatedAt':
+    if (valueAsDate(value)) {
+      return {key: '_updated_at', value: valueAsDate(value)}
+    }
+    key = '_updated_at';
+    break;
+  case 'expiresAt':
+    if (valueAsDate(value)) {
+      return {key: 'expiresAt', value: valueAsDate(value)}
+    }
+    break;
+  case 'objectId': return {key: '_id', value}
+  case 'sessionToken': return {key: '_session_token', value}
+  case '_rperm':
+  case '_wperm':
+  case '_perishable_token':
+  case '_email_verify_token': return {key, value}
+  case '$or':
+    if (!(value instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
+    }
+    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+  case '$and':
+    if (!(value instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
+    }
+    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+  default:
+    // Other auth data
+    const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
+    if (authDataMatch) {
+      const provider = authDataMatch[1];
+      // Special-case auth data.
+      return {key: `_auth_data_${provider}.id`, value};
+    }
+    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
+    }
+  }
+
+  const expectedTypeIsArray =
+    schema &&
+    schema.fields[key] &&
+    schema.fields[key].type === 'Array';
+
+  const expectedTypeIsPointer =
+    schema &&
+    schema.fields[key] &&
+    schema.fields[key].type === 'Pointer';
+
+  if (expectedTypeIsPointer || !schema && value && value.__type === 'Pointer') {
+    key = '_p_' + key;
+  }
+
+  // Handle query constraints
+  if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
+    return {key, value: transformConstraint(value, expectedTypeIsArray)};
+  }
+
+  if (expectedTypeIsArray && !(value instanceof Array)) {
+    return {key, value: { '$all' : [value] }};
+  }
+
+  // Handle atomic values
+  if (transformAtom(value, false) !== CannotTransform) {
+    return {key, value: transformAtom(value, false)};
+  } else {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${value} as a query parameter.`);
+  }
+}
 
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
-function transformWhere(schema, className, restWhere, options = {validate: true}) {
+function transformWhere(className, restWhere, { validate = true } = {}, schema) {
   let mongoWhere = {};
   if (restWhere['ACL']) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
-  let transformKeyOptions = {query: true};
-  transformKeyOptions.validate = options.validate;
   for (let restKey in restWhere) {
-    let out = transformKeyValue(schema, className, restKey, restWhere[restKey], transformKeyOptions);
+    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], { validate }, schema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
@@ -419,11 +446,6 @@ function untransformACL(mongoObject) {
   delete mongoObject._rperm;
   delete mongoObject._wperm;
   return output;
-}
-
-// Transforms a key used in the REST API format to its mongo format.
-function transformKey(schema, className, key) {
-  return transformKeyValue(schema, className, key, null, {validate: true}).key;
 }
 
 // A sentinel value that helper transformations return when they
@@ -1005,7 +1027,7 @@ var FileCoder = {
 };
 
 module.exports = {
-  transformKey,
+  transformKeyValue,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,

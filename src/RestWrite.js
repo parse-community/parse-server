@@ -356,7 +356,7 @@ RestWrite.prototype.transformUser = function() {
         return Promise.resolve();
       });
   }).then(() => {
-    if (!this.data.email) {
+    if (!this.data.email || this.data.email.__op === 'Delete') {
       return;
     }
     // Validate basic email address format

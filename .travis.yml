@@ -1,6 +1,7 @@
 language: node_js
 node_js:
 - '4.3'
+- '6.1'
 env:
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'

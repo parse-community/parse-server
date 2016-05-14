@@ -33,6 +33,14 @@ export class FunctionsRouter extends PromiseRouter {
     var theValidator = triggers.getValidator(req.params.functionName, applicationId);
     if (theFunction) {
       const params = Object.assign({}, req.body, req.query);
+      for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+          var value = params[key];
+          if (value && value.__type == 'Date') {
+            params[key] = new Date(value.iso);
+          }
+        }
+      }
       var request = {
         params: params,
         master: req.auth && req.auth.isMaster,

@@ -166,23 +166,25 @@ export class MongoStorageAdapter {
   createObject(className, object, schemaController, parseFormatSchema) {
     const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
     return this.adaptiveCollection(className)
-    .then(collection => collection.insertOne(mongoObject));
+    .then(collection => collection.insertOne(mongoObject))
+    .catch(error => {
+      if (error.code === 11000) { // Duplicate value
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
+            'A duplicate value for a field with unique values was provided');
+      }
+      return Promise.reject(error);
+    });
   }
 
   // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
 
-  // Currently accepts the schemaController, and validate for lecacy reasons
-  deleteObjectsByQuery(className, query, schemaController, validate) {
+  // Currently accepts validate for legacy reasons. Currently accepts the schema, that may not actually be necessary.
+  deleteObjectsByQuery(className, query, validate, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
-      let mongoWhere = transform.transformWhere(
-        schemaController,
-        className,
-        query,
-        { validate }
-      );
+      let mongoWhere = transform.transformWhere(className, query, { validate }, schema);
       return collection.deleteMany(mongoWhere)
     })
     .then(({ result }) => {

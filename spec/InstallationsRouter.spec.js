@@ -71,4 +71,100 @@ describe('InstallationsRouter', () => {
       done();
     });
   });
+
+  it('query installations with limit = 0', (done) => {
+    var androidDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
+      'deviceType': 'android'
+    };
+    var iosDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
+      'deviceType': 'ios'
+    };
+    var request = {
+      config: config,
+      auth: auth.master(config),
+      body: {},
+      query: {
+        limit: 0
+      }
+    };
+
+    var router = new InstallationsRouter();
+    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+        .then(() => {
+          return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
+        }).then(() => {
+      return router.handleFind(request);
+    }).then((res) => {
+      var response = res.response;
+      expect(response.results.length).toEqual(0);
+      done();
+    });
+  });
+
+  it('query installations with count = 1', (done) => {
+    var androidDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
+      'deviceType': 'android'
+    };
+    var iosDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
+      'deviceType': 'ios'
+    };
+    var request = {
+      config: config,
+      auth: auth.master(config),
+      body: {},
+      query: {
+        count: 1
+      }
+    };
+
+    var router = new InstallationsRouter();
+    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+        .then(() => {
+          return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
+        }).then(() => {
+      return router.handleFind(request);
+    }).then((res) => {
+      var response = res.response;
+      expect(response.results.length).toEqual(2);
+      expect(response.count).toEqual(2);
+      done();
+    });
+  });
+
+  it('query installations with limit = 0 and count = 1', (done) => {
+    var androidDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
+      'deviceType': 'android'
+    };
+    var iosDeviceRequest = {
+      'installationId': '12345678-abcd-abcd-abcd-123456789abd',
+      'deviceType': 'ios'
+    };
+    var request = {
+      config: config,
+      auth: auth.master(config),
+      body: {},
+      query: {
+        limit: 0,
+        count: 1
+      }
+    };
+
+    var router = new InstallationsRouter();
+    rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
+        .then(() => {
+          return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
+        }).then(() => {
+      return router.handleFind(request);
+    }).then((res) => {
+      var response = res.response;
+      expect(response.results.length).toEqual(0);
+      expect(response.count).toEqual(2);
+      done();
+    });
+  });
 });

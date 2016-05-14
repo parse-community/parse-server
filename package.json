@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.2.7",
+  "version": "2.2.9",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -57,12 +57,10 @@
     "codecov": "^1.0.1",
     "cross-env": "^1.0.7",
     "deep-diff": "^0.3.3",
-    "flow-bin": "^0.22.0",
-    "gaze": "^0.5.2",
+    "gaze": "^1.0.0",
     "jasmine": "^2.3.2",
-    "mongodb-runner": "3.1.15",
-    "nodemon": "^1.8.1",
-    "parse-server-gcs-adapter": "^1.0.0"
+    "mongodb-runner": "3.2.2",
+    "nodemon": "^1.8.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",

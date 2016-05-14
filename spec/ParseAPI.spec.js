@@ -5,6 +5,7 @@
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 const Parse = require("parse/node");
+let Config = require('../src/Config');
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -213,6 +214,34 @@ describe('miscellaneous', function() {
       var query = new Parse.Query('BeforeSaveChanged');
       query.get(obj.id).then(function(objAgain) {
         expect(objAgain.get('foo')).toEqual('baz');
+        done();
+      }, function(error) {
+        fail(error);
+        done();
+      });
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
+  it('test beforeSave set object acl success', function(done) {
+    var acl = new Parse.ACL({
+      '*': { read: true, write: false }
+    });
+    Parse.Cloud.beforeSave('BeforeSaveAddACL', function(req, res) {
+      req.object.setACL(acl);
+      res.success();
+    });
+
+    var obj = new Parse.Object('BeforeSaveAddACL');
+    obj.set('lol', true);
+    obj.save().then(function() {
+      Parse.Cloud._removeHook('Triggers', 'beforeSave', 'BeforeSaveAddACL');
+      var query = new Parse.Query('BeforeSaveAddACL');
+      query.get(obj.id).then(function(objAgain) {
+        expect(objAgain.get('lol')).toBeTruthy();
+        expect(objAgain.getACL().equals(acl));
         done();
       }, function(error) {
         fail(error);
@@ -1119,6 +1148,22 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('can handle null params in cloud functions (regression test for #1742)', done => {
+    Parse.Cloud.define('func', (request, response) => {
+      expect(request.params.nullParam).toEqual(null);
+      response.success('yay');
+    });
+
+    Parse.Cloud.run('func', {nullParam: null})
+    .then(() => {
+      Parse.Cloud._removeHook('Functions', 'func');
+      done()
+    }, e => {
+      fail('cloud code call failed');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
@@ -1369,6 +1414,27 @@ describe('miscellaneous', function() {
         expect(result.a).toBe('b');
         done();
       })
+    });
+  });
+
+  it('fail when create duplicate value in unique field', (done) => {
+    let obj = new Parse.Object('UniqueField');
+    obj.set('unique', 'value');
+    obj.save().then(() => {
+      expect(obj.id).not.toBeUndefined();
+      let config = new Config('test');
+      return config.database.adapter.adaptiveCollection('UniqueField')
+    }).then(collection => {
+      return collection._mongoCollection.createIndex({ 'unique': 1 }, { unique: true })
+    }).then(() => {
+      let obj = new Parse.Object('UniqueField');
+      obj.set('unique', 'value');
+      return obj.save()
+    }).then(() => {
+      return Promise.reject();
+    }, error => {
+      expect(error.code === Parse.Error.DUPLICATE_VALUE);
+      done();
     });
   });
 });
