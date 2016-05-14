@@ -88,9 +88,8 @@ const transformKeyValue = (schema, className, restKey, restValue) => {
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, true);
-  if (value !== CannotTransform) {
-    return {key, value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key, value: transformUpdateOperator(restValue, true)};
   }
 
   // Handle normal objects by recursing
@@ -182,9 +181,8 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, false);
-  if (value !== CannotTransform) {
-    return {key, value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key, value: transformUpdateOperator(restValue, false)};
   }
 
   // Handle normal objects by recursing
@@ -276,9 +274,8 @@ const transformInteriorKeyValue = (schema, className, restKey, restValue) => {
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, true);
-  if (value !== CannotTransform) {
-    return {key, value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key, value: transformUpdateOperator(restValue, true)};
   }
 
   // Handle normal objects by recursing
@@ -467,9 +464,8 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   }
 
   // Handle update operators. TODO: handle within Parse Server. DB adapter shouldn't see update operators in creates.
-  value = transformUpdateOperator(restValue, true);
-  if (value !== CannotTransform) {
-    return {key: restKey, value: value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key: restKey, value: transformUpdateOperator(restValue, true)};
   }
 
   // Handle normal objects by recursing
@@ -833,14 +829,14 @@ function transformConstraint(constraint, inArray) {
 // The output for a non-flattened operator is a hash with __op being
 // the mongo op, and arg being the argument.
 // The output for a flattened operator is just a value.
-// Returns CannotTransform if this cannot transform it.
 // Returns undefined if this should be a no-op.
-function transformUpdateOperator(operator, flatten) {
-  if (typeof operator !== 'object' || !operator.__op) {
-    return CannotTransform;
-  }
 
-  switch(operator.__op) {
+function transformUpdateOperator({
+  __op,
+  amount,
+  objects,
+}, flatten) {
+  switch(__op) {
   case 'Delete':
     if (flatten) {
       return undefined;
@@ -849,39 +845,36 @@ function transformUpdateOperator(operator, flatten) {
     }
 
   case 'Increment':
-    if (typeof operator.amount !== 'number') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'incrementing must provide a number');
+    if (typeof amount !== 'number') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
     }
     if (flatten) {
-      return operator.amount;
+      return amount;
     } else {
-      return {__op: '$inc', arg: operator.amount};
+      return {__op: '$inc', arg: amount};
     }
 
   case 'Add':
   case 'AddUnique':
-    if (!(operator.objects instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'objects to add must be an array');
+    if (!(objects instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
     }
-    var toAdd = operator.objects.map(transformInteriorAtom);
+    var toAdd = objects.map(transformInteriorAtom);
     if (flatten) {
       return toAdd;
     } else {
       var mongoOp = {
         Add: '$push',
         AddUnique: '$addToSet'
-      }[operator.__op];
+      }[__op];
       return {__op: mongoOp, arg: {'$each': toAdd}};
     }
 
   case 'Remove':
-    if (!(operator.objects instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'objects to remove must be an array');
+    if (!(objects instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
     }
-    var toRemove = operator.objects.map(transformInteriorAtom);
+    var toRemove = objects.map(transformInteriorAtom);
     if (flatten) {
       return [];
     } else {
@@ -889,9 +882,7 @@ function transformUpdateOperator(operator, flatten) {
     }
 
   default:
-    throw new Parse.Error(
-      Parse.Error.COMMAND_UNAVAILABLE,
-      'the ' + operator.__op + ' op is not supported yet');
+    throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${__op} operator is not supported yet.`);
   }
 }
 
