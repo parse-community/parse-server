@@ -2312,18 +2312,15 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('include on the wrong key type', (done) => {
+  it('include on the wrong key type just ignores the include, like Parse.com', (done) => {
     var obj = new Parse.Object('TestObject');
     obj.set('foo', 'bar');
     obj.save().then(() => {
       var query = new Parse.Query('TestObject');
       query.include('foo');
       return query.find();
-    }).then((results) => {
-      console.log('results:', results);
-      fail('Should have failed to query.');
-      done();
-    }, (error) => {
+    }).then(results => {
+      expect(results.length).toEqual(1);
       done();
     });
   });
@@ -2532,4 +2529,19 @@ describe('Parse.Query testing', () => {
     })
   });
 
+  it('attempting to include random fields of the wrong type or missing type doesnt cause a crash (regression test #1788)', done => {
+    let obj = new Parse.Object('test');
+    obj.set('a', 'b');
+    obj.save()
+    .then(() => {
+      let q = new Parse.Query('test');
+      q.include('a');
+      q.include('nonExistantKey');
+      return q.find();
+    })
+    .then(results => {
+      expect(results.length).toEqual(1);
+      done();
+    });
+  });
 });

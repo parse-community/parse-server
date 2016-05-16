@@ -467,16 +467,14 @@ function findPointers(object, path) {
   }
 
   if (typeof object !== 'object') {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'can only include pointer fields');
+    return [];
   }
 
   if (path.length == 0) {
     if (object.__type == 'Pointer') {
       return [object];
     }
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'can only include pointer fields');
+    return [];
   }
 
   var subobject = object[path[0]];
