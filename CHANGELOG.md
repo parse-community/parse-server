@@ -1,5 +1,14 @@
 ## Parse Server Changelog
 
+### 2.2.10 (5/15/2016)
+
+* Fix: Match Parse.com behaviour when including keys that don't exist or don't have the right type.
+* Fix: Write legacy ACLs to Mongo so that clients that still go through Parse.com can read them, thanks to [Tyler Brock](https://github.com/TylerBrock) and [carmenlau](https://github.com/carmenlau)
+* Fix: Querying installations with limit = 0 and count = 1 now works, thanks to [ssk7833](https://github.com/ssk7833)
+* Fix: Return correct error when violating unique index, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Allow unsetting user's email, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Support for Node 6.1
+
 ### 2.2.9 (5/9/2016)
 
 * Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
