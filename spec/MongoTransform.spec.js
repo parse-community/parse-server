@@ -244,6 +244,21 @@ describe('transform schema key changes', () => {
     done();
   });
 
+  it('writes the old ACL format in addition to rperm and wperm', (done) => {
+    var input = {
+      ACL: {
+        "*": { "read": true },
+        "Kevin": { "write": true }
+      }
+    };
+
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    expect(typeof output._acl).toEqual('object');
+    expect(output._acl["Kevin"].w).toBeTruthy();
+    expect(output._acl["Kevin"].r).toBeUndefined();
+    done();
+  })
+
   it('untransforms from _rperm and _wperm to ACL', (done) => {
     var input = {
       _rperm: ["*"],

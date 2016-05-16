@@ -354,13 +354,16 @@ function transformUpdate(schema, className, restUpdate) {
 
   var mongoUpdate = {};
   var acl = transformACL(restUpdate);
-  if (acl._rperm || acl._wperm) {
+  if (acl._rperm || acl._wperm || acl._acl) {
     mongoUpdate['$set'] = {};
     if (acl._rperm) {
       mongoUpdate['$set']['_rperm'] = acl._rperm;
     }
     if (acl._wperm) {
       mongoUpdate['$set']['_wperm'] = acl._wperm;
+    }
+    if (acl._acl) {
+      mongoUpdate['$set']['_acl'] = acl._acl;
     }
   }
 
@@ -410,16 +413,23 @@ function transformACL(restObject) {
   var acl = restObject['ACL'];
   var rperm = [];
   var wperm = [];
+  var _acl = {}; // old format
+
   for (var entry in acl) {
     if (acl[entry].read) {
       rperm.push(entry);
+      _acl[entry] = _acl[entry] || {};
+      _acl[entry]['r'] = true;
     }
     if (acl[entry].write) {
       wperm.push(entry);
+      _acl[entry] = _acl[entry] || {};
+      _acl[entry]['w'] = true;
     }
   }
   output._rperm = rperm;
   output._wperm = wperm;
+  output._acl = _acl;
   delete restObject.ACL;
   return output;
 }
