@@ -91,7 +91,7 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map(restObj => transformInteriorKeyValue(schema, className, restKey, restObj).value);
+    value = restValue.map(restValue => transformInteriorValue(className, 'unused', restValue));
     return {key, value};
   }
 
@@ -101,75 +101,41 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
-  }
+  value = _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
   return {key, value};
 }
 
-const transformInteriorKeyValue = (schema, className, restKey, restValue) => {
-  // Check if the schema is known since it's a built-in field.
-  var key = restKey;
+const transformInteriorValue = (className, restKey, restValue) => {
   var timeField = false;
-  switch(key) {
-  case 'objectId':
-  case '_id':
-    key = '_id';
-    break;
-  case 'createdAt':
-  case '_created_at':
-    key = '_created_at';
-    timeField = true;
-    break;
-  case 'updatedAt':
-  case '_updated_at':
-    key = '_updated_at';
-    timeField = true;
-    break;
-  case '_email_verify_token':
-    key = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
-  case 'sessionToken':
-  case '_session_token':
-    key = '_session_token';
-    break;
-  case 'expiresAt':
-  case '_expiresAt':
-    key = 'expiresAt';
-    timeField = true;
-    break;
-  case '_rperm':
-  case '_wperm':
-    return {key: key, value: restValue};
-    break;
-  case '$or':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-  case '$and':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
-  default:
-    // Other auth data
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
-    }
-  }
-
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
-    key = '_p_' + key;
+  switch(restKey) {
+    case 'objectId':
+    case '_id':
+    case '_email_verify_token':
+    case '_perishable_token':
+    case 'sessionToken':
+    case '_session_token':
+      break;
+    case 'createdAt':
+    case '_created_at':
+    case 'updatedAt':
+    case '_updated_at':
+    case 'expiresAt':
+    case '_expiresAt':
+      timeField = true;
+      break;
+    case '_rperm':
+    case '_wperm':
+      return restValue;
+      break;
+    case '$or':
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
+    case '$and':
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
+    default:
+      // Other auth data
+      if (restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + restKey);
+      }
   }
 
   // Handle atomic values
@@ -178,29 +144,21 @@ const transformInteriorKeyValue = (schema, className, restKey, restValue) => {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
-    return {key, value};
+    return value;
   }
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map(restObj => transformInteriorKeyValue(schema, className, restKey, restObj).value);
-    return {key, value};
+    return restValue.map(restObj => transformInteriorValue(className, 'unused', restObj));
   }
 
   // Handle update operators
   if (typeof restValue === 'object' && '__op' in restValue) {
-    return {key, value: transformUpdateOperator(restValue, true)};
+    return transformUpdateOperator(restValue, true);
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
-  }
-  return {key, value};
+  return _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
 }
 
 const valueAsDate = value => {
@@ -370,10 +328,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map((restObj) => {
-      var out = transformInteriorKeyValue(schema, className, restKey, restObj);
-      return out.value;
-    });
+    value = restValue.map(restObj => transformInteriorValue(className, 'unused', restObj));
     return {key: restKey, value: value};
   }
 
@@ -383,14 +338,8 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
-  }
-  return {key: restKey, value: value};
+  value = _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
+  return {key: restKey, value};
 }
 
 // Main exposed method to create new objects.
