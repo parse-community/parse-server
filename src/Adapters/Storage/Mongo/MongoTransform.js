@@ -6,18 +6,10 @@ var Parse = require('parse/node').Parse;
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
   switch(fieldName) {
-  case 'objectId':
-    fieldName = '_id';
-    break;
-  case 'createdAt':
-    fieldName = '_created_at';
-    break;
-  case 'updatedAt':
-    fieldName = '_updated_at';
-    break;
-  case 'sessionToken':
-    fieldName = '_session_token';
-    break;
+    case 'objectId': return '_id';
+    case 'createdAt': return '_created_at';
+    case 'updatedAt': return '_updated_at';
+    case 'sessionToken': return '_session_token';
   }
 
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
