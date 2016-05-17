@@ -70,7 +70,6 @@ const transformKeyValue = (schema, className, restKey, restValue) => {
   if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
   var value = transformTopLevelAtom(restValue, false);
@@ -163,7 +162,6 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
   var value = transformTopLevelAtom(restValue, false);
@@ -256,7 +254,6 @@ const transformInteriorKeyValue = (schema, className, restKey, restValue) => {
   if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
