@@ -91,7 +91,7 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map(restValue => transformInteriorValue(className, 'unused', restValue));
+    value = restValue.map(transformInteriorValue);
     return {key, value};
   }
 
@@ -101,55 +101,26 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   }
 
   // Handle normal objects by recursing
-  value = _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
+  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+  }
+  value = _.mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
 
-const transformInteriorValue = (className, restKey, restValue) => {
-  var timeField = false;
-  switch(restKey) {
-    case 'objectId':
-    case '_id':
-    case '_email_verify_token':
-    case '_perishable_token':
-    case 'sessionToken':
-    case '_session_token':
-      break;
-    case 'createdAt':
-    case '_created_at':
-    case 'updatedAt':
-    case '_updated_at':
-    case 'expiresAt':
-    case '_expiresAt':
-      timeField = true;
-      break;
-    case '_rperm':
-    case '_wperm':
-      return restValue;
-      break;
-    case '$or':
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-    case '$and':
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
-    default:
-      // Other auth data
-      if (restKey.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + restKey);
-      }
+const transformInteriorValue = restValue => {
+  if (typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
-    if (timeField && (typeof value === 'string')) {
-      value = new Date(value);
-    }
     return value;
   }
 
   // Handle arrays
   if (restValue instanceof Array) {
-    return restValue.map(restObj => transformInteriorValue(className, 'unused', restObj));
+    return restValue.map(transformInteriorValue);
   }
 
   // Handle update operators
@@ -158,7 +129,7 @@ const transformInteriorValue = (className, restKey, restValue) => {
   }
 
   // Handle normal objects by recursing
-  return _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
+  return _.mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -328,7 +299,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map(restObj => transformInteriorValue(className, 'unused', restObj));
+    value = restValue.map(transformInteriorValue);
     return {key: restKey, value: value};
   }
 
@@ -338,7 +309,10 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   }
 
   // Handle normal objects by recursing
-  value = _.mapValues(restValue, subRestValue => transformInteriorValue(className, 'unused', subRestValue));
+  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+  }
+  value = _.mapValues(restValue, transformInteriorValue);
   return {key: restKey, value};
 }
 

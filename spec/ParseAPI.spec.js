@@ -1449,4 +1449,24 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it('bans interior keys containing . or $', done => {
+    new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      done();
+    })
+  });
 });
