@@ -10,50 +10,20 @@ var Parse = require('parse/node').Parse;
 // converted to static data.
 //
 // Returns an object with {key: key, value: value}.
-const transformKey = (schema, className, restKey) => {
-  // Check if the schema is known since it's a built-in field.
-  var key = restKey;
+const transformKey = (schema, className, key) => {
   switch(key) {
   case 'objectId':
-  case '_id':
     key = '_id';
     break;
   case 'createdAt':
-  case '_created_at':
     key = '_created_at';
     break;
   case 'updatedAt':
-  case '_updated_at':
     key = '_updated_at';
     break;
-  case '_email_verify_token':
-    key = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
   case 'sessionToken':
-  case '_session_token':
     key = '_session_token';
     break;
-  case 'expiresAt':
-  case '_expiresAt':
-    key = 'expiresAt';
-    break;
-  case '_rperm':
-  case '_wperm':
-    return key;
-    break;
-  case '$or':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-  case '$and':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
-  default:
-    // Other auth data
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
-    }
   }
 
   // Handle special schema key changes

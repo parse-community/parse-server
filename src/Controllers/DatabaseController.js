@@ -632,6 +632,9 @@ DatabaseController.prototype.find = function(className, query, {
         if (!SchemaController.fieldNameIsValid(fieldName)) {
           throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
         }
+        if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `can only query on ${fieldName}`);
+        }
         const mongoKey = this.transform.transformKey(schemaController, className, fieldName);
         mongoOptions.sort[mongoKey] = sort[fieldName];
       }
