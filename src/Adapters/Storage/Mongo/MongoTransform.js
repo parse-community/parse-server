@@ -3,41 +3,28 @@ import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-// There are several options that can help transform:
-//
-// update: true indicates that __op operators like Add and Delete
-// in the value are converted to a mongo update form. Otherwise they are
-// converted to static data.
-//
-// Returns an object with {key: key, value: value}.
-const transformKey = (schema, className, key) => {
-  switch(key) {
+const transformKey = (className, fieldName, schema) => {
+  // Check if the schema is known since it's a built-in field.
+  switch(fieldName) {
   case 'objectId':
-    key = '_id';
+    fieldName = '_id';
     break;
   case 'createdAt':
-    key = '_created_at';
+    fieldName = '_created_at';
     break;
   case 'updatedAt':
-    key = '_updated_at';
+    fieldName = '_updated_at';
     break;
   case 'sessionToken':
-    key = '_session_token';
+    fieldName = '_session_token';
     break;
   }
 
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if (expected && expected.type == 'Pointer') {
-    key = '_p_' + key;
+  if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
+    fieldName = '_p_' + fieldName;
   }
 
-  return key;
+  return fieldName;
 }
 
 const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {

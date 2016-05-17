@@ -616,67 +616,67 @@ DatabaseController.prototype.find = function(className, query, {
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
   return this.loadSchema()
   .then(schemaController => {
-    if (sort) {
-      mongoOptions.sort = {};
-      for (let fieldName in sort) {
-        // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
-        // so duplicate that behaviour here.
-        if (fieldName === '_created_at') {
-          fieldName = 'createdAt';
-          sort['createdAt'] = sort['_created_at'];
-        } else if (fieldName === '_updated_at') {
-          fieldName = 'updatedAt';
-          sort['updatedAt'] = sort['_updated_at'];
-        }
+    return schemaController.getOneSchema(className)
+    .catch(error => {
+      // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+      // will likely need revisiting.
+      if (error === undefined) {
+        return { fields: {} };
+      }
+      throw error;
+    })
+    .then(schema => {
+      if (sort) {
+        mongoOptions.sort = {};
+        for (let fieldName in sort) {
+          // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+          // so duplicate that behaviour here.
+          if (fieldName === '_created_at') {
+            fieldName = 'createdAt';
+            sort['createdAt'] = sort['_created_at'];
+          } else if (fieldName === '_updated_at') {
+            fieldName = 'updatedAt';
+            sort['updatedAt'] = sort['_updated_at'];
+          }
 
-        if (!SchemaController.fieldNameIsValid(fieldName)) {
-          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
-        }
-        if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `can only query on ${fieldName}`);
-        }
-        const mongoKey = this.transform.transformKey(schemaController, className, fieldName);
-        mongoOptions.sort[mongoKey] = sort[fieldName];
-      }
-    }
-    return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
-    .then(() => this.reduceRelationKeys(className, query))
-    .then(() => this.reduceInRelation(className, query, schemaController))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
-      if (!isMaster) {
-        query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
-      }
-      if (!query) {
-        if (op == 'get') {
-          return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'));
-        } else {
-          return Promise.resolve([]);
+          if (!SchemaController.fieldNameIsValid(fieldName)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+          }
+          if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `can only query on ${fieldName}`);
+          }
+          const mongoKey = this.transform.transformKey(className, fieldName, schema);
+          mongoOptions.sort[mongoKey] = sort[fieldName];
         }
       }
-      if (!isMaster) {
-        query = addReadACL(query, aclGroup);
-      }
-      return schemaController.getOneSchema(className)
-      .catch(error => {
-        // If the schema doesn't exist, pretend it exists with no fields. This behaviour
-        // will likely need revisiting.
-        if (error === undefined) {
-          return { fields: {} };
+      return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
+      .then(() => this.reduceRelationKeys(className, query))
+      .then(() => this.reduceInRelation(className, query, schemaController))
+      .then(() => this.adapter.adaptiveCollection(className))
+      .then(collection => {
+        if (!isMaster) {
+          query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
         }
-        throw error;
-      })
-      .then(parseFormatSchema => {
-        let mongoWhere = this.transform.transformWhere(className, query, {}, parseFormatSchema);
+        if (!query) {
+          if (op == 'get') {
+            return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+              'Object not found.'));
+          } else {
+            return Promise.resolve([]);
+          }
+        }
+        if (!isMaster) {
+          query = addReadACL(query, aclGroup);
+        }
+        let mongoWhere = this.transform.transformWhere(className, query, {}, schema);
         if (count) {
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
         } else {
           return collection.find(mongoWhere, mongoOptions)
-          .then((mongoResults) => {
-            return mongoResults.map((r) => {
-              return this.untransformObject(schemaController, isMaster, aclGroup, className, r);
+          .then(mongoResults => {
+            return mongoResults.map(result => {
+              return this.untransformObject(schemaController, isMaster, aclGroup, className, result);
             });
           });
         }
