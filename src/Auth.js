@@ -52,27 +52,46 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     limit: 1,
     include: 'user'
   };
-  var query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
-  return query.execute().then((response) => {
-    var results = response.results;
-    if (results.length !== 1 || !results[0]['user']) {
-      return nobody(config);
-    }
 
-    var now = new Date(),
-        expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
-    if(expiresAt < now) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-            'Session token is expired.');
-    }
-    var obj = results[0]['user'];
-    delete obj.password;
-    obj['className'] = '_User';
-    obj['sessionToken'] = sessionToken;
-    let userObject = Parse.Object.fromJSON(obj);
-    cache.users.set(sessionToken, userObject);
-    return new Auth({ config, isMaster: false, installationId, user: userObject });
-  });
+  if(config.legacySessionTokens) {
+    var query = new RestQuery(config, master(config), '_User', { sessionToken }, restOptions);
+    return query.execute().then((response) => {
+      var results = response.results;
+      if (results.length !== 1) {
+        return nobody(config);
+      }
+
+      var obj = results[0];
+      delete obj.password;
+      obj['className'] = '_User';
+      obj['sessionToken'] = sessionToken;
+      let userObject = Parse.Object.fromJSON(obj);
+      cache.users.set(sessionToken, userObject);
+      return new Auth({ config, isMaster: false, installationId, user: userObject });
+    });
+  } else {
+    var query = new RestQuery(config, master(config), '_Session', { sessionToken }, restOptions);
+    return query.execute().then((response) => {
+      var results = response.results;
+      if (results.length !== 1 || !results[0]['user']) {
+        return nobody(config);
+      }
+
+      var now = new Date(),
+          expiresAt = results[0].expiresAt ? new Date(results[0].expiresAt.iso) : undefined;
+      if(expiresAt < now) {
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
+              'Session token is expired.');
+      }
+      var obj = results[0]['user'];
+      delete obj.password;
+      obj['className'] = '_User';
+      obj['sessionToken'] = sessionToken;
+      let userObject = Parse.Object.fromJSON(obj);
+      cache.users.set(sessionToken, userObject);
+      return new Auth({ config, isMaster: false, installationId, user: userObject });
+    });
+  }
 };
 
 // Returns a promise that resolves to an array of role names

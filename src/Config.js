@@ -51,6 +51,7 @@ export class Config {
     this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
     this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
+    this.legacySessionTokens = cacheInfo.legacySessionTokens;
   }
 
   static validate(options) {

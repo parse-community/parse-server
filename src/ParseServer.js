@@ -117,6 +117,7 @@ class ParseServer {
     expireInactiveSessions = true,
     verbose = false,
     revokeSessionOnPasswordReset = true,
+    legacySessionTokens = false
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -190,7 +191,8 @@ class ParseServer {
       liveQueryController: liveQueryController,
       sessionLength: Number(sessionLength),
       expireInactiveSessions: expireInactiveSessions,
-      revokeSessionOnPasswordReset
+      revokeSessionOnPasswordReset,
+      legacySessionTokens
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
