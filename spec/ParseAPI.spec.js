@@ -1437,4 +1437,16 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it('doesnt convert interior keys of objects that use special names', done => {
+    let obj = new Parse.Object('Obj');
+    obj.set('val', { createdAt: 'a', updatedAt: 1 });
+    obj.save()
+    .then(obj => new Parse.Query('Obj').get(obj.id))
+    .then(obj => {
+      expect(obj.get('val').createdAt).toEqual('a');
+      expect(obj.get('val').updatedAt).toEqual(1);
+      done();
+    });
+  });
 });
