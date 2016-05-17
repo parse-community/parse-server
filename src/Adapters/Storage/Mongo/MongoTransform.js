@@ -112,6 +112,7 @@ const transformInteriorValue = restValue => {
   if (typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
+
   // Handle atomic values
   var value = transformInteriorAtom(restValue);
   if (value !== CannotTransform) {
