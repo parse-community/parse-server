@@ -10,10 +10,9 @@ var Parse = require('parse/node').Parse;
 // converted to static data.
 //
 // Returns an object with {key: key, value: value}.
-const transformKeyValue = (schema, className, restKey, restValue) => {
+const transformKey = (schema, className, restKey) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
-  var timeField = false;
   switch(key) {
   case 'objectId':
   case '_id':
@@ -22,12 +21,10 @@ const transformKeyValue = (schema, className, restKey, restValue) => {
   case 'createdAt':
   case '_created_at':
     key = '_created_at';
-    timeField = true;
     break;
   case 'updatedAt':
   case '_updated_at':
     key = '_updated_at';
-    timeField = true;
     break;
   case '_email_verify_token':
     key = "_email_verify_token";
@@ -42,11 +39,10 @@ const transformKeyValue = (schema, className, restKey, restValue) => {
   case 'expiresAt':
   case '_expiresAt':
     key = 'expiresAt';
-    timeField = true;
     break;
   case '_rperm':
   case '_wperm':
-    return {key: key, value: restValue};
+    return key;
     break;
   case '$or':
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
@@ -67,39 +63,11 @@ const transformKeyValue = (schema, className, restKey, restValue) => {
   if (schema && schema.getExpectedType) {
     expected = schema.getExpectedType(className, key);
   }
-  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
+  if (expected && expected.type == 'Pointer') {
     key = '_p_' + key;
   }
 
-  // Handle atomic values
-  var value = transformTopLevelAtom(restValue);
-  if (value !== CannotTransform) {
-    if (timeField && (typeof value === 'string')) {
-      value = new Date(value);
-    }
-    return {key, value};
-  }
-
-  // Handle arrays
-  if (restValue instanceof Array) {
-    value = restValue.map(restObj => transformInteriorKeyValue(schema, className, restKey, restObj).value);
-    return {key, value};
-  }
-
-  // Handle update operators
-  if (typeof restValue === 'object' && '__op' in restValue) {
-    return {key, value: transformUpdateOperator(restValue, true)};
-  }
-
-  // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformInteriorKeyValue(schema, className, subRestKey, subRestValue);
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
-  }
-  return {key, value};
+  return key;
 }
 
 const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
@@ -1190,7 +1158,7 @@ var FileCoder = {
 };
 
 module.exports = {
-  transformKeyValue,
+  transformKey,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,

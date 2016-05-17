@@ -632,7 +632,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (!SchemaController.fieldNameIsValid(fieldName)) {
           throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
         }
-        const mongoKey = this.transform.transformKeyValue(schemaController, className, fieldName, null).key;
+        const mongoKey = this.transform.transformKey(schemaController, className, fieldName);
         mongoOptions.sort[mongoKey] = sort[fieldName];
       }
     }
