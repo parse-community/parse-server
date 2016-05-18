@@ -141,7 +141,7 @@ const valueAsDate = value => {
   return false;
 }
 
-function transformQueryKeyValue(className, key, value, { validate } = {}, schema) {
+function transformQueryKeyValue(className, key, value, schema) {
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -184,9 +184,6 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
       // Special-case auth data.
       return {key: `_auth_data_${provider}.id`, value};
     }
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
-    }
   }
 
   const expectedTypeIsArray =
@@ -224,13 +221,17 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 function transformWhere(className, restWhere, { validate = true } = {}, schema) {
   let mongoWhere = {};
   if (restWhere['ACL']) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
   }
   for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], { validate }, schema);
+    if (validate && !specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
+    }
+    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
