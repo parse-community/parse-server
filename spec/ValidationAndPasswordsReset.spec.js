@@ -64,7 +64,7 @@ describe("Email Verification", () => {
     var user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
-    user.setEmail('cool_guy@parse.com');
+    user.setEmail('testIfEnabled@parse.com');
     user.signUp(null, {
       success: function(user) {
         expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
@@ -152,7 +152,7 @@ describe("Email Verification", () => {
         expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
         user.fetch()
         .then((user) => {
-          user.set("email", "cool_guy@parse.com");
+          user.set("email", "testWhenUpdating@parse.com");
           return user.save();
         }).then((user) => {
           return user.fetch();
@@ -206,7 +206,7 @@ describe("Email Verification", () => {
         expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
         user.fetch()
         .then((user) => {
-          user.set("email", "cool_guy@parse.com");
+          user.set("email", "testValidLinkWhenUpdating@parse.com");
           return user.save();
         }).then((user) => {
           return user.fetch();
@@ -230,7 +230,7 @@ describe("Email Verification", () => {
     var calls = 0;
     var emailAdapter = {
       sendMail: function(options){
-        expect(options.to).toBe('cool_guy@parse.com');
+        expect(options.to).toBe('testSendSimpleAdapter@parse.com');
         if (calls == 0) {
           expect(options.subject).toEqual('Please verify your e-mail for My Cool App');
           expect(options.text.match(/verify_email/)).not.toBe(null);
@@ -260,7 +260,7 @@ describe("Email Verification", () => {
     var user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
-    user.set("email", "cool_guy@parse.com");
+    user.set("email", "testSendSimpleAdapter@parse.com");
     user.signUp(null, {
       success: function(user) {
         expect(calls).toBe(1);
@@ -268,7 +268,7 @@ describe("Email Verification", () => {
         .then((user) => {
           return user.save();
         }).then((user) => {
-          return Parse.User.requestPasswordReset("cool_guy@parse.com").catch((err) => {
+          return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch((err) => {
             fail('Should not fail requesting a password');
             done();
           })
@@ -284,7 +284,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('fails if you set include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
+  it('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
     setServerConfiguration({
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -307,9 +307,9 @@ describe("Email Verification", () => {
     let user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
-    user.set("email", "cool_guy@parse.com");
+    user.set("email", "testInvalidConfig@parse.com");
     user.signUp(null)
-    .then(user => Parse.User.requestPasswordReset("cool_guy@parse.com"))
+    .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
     .catch(error => {
       expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
       done();
