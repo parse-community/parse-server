@@ -85,7 +85,9 @@ beforeEach(function(done) {
   Parse.initialize('test', 'test', 'test');
   Parse.serverURL = 'http://localhost:' + port + '/1';
   Parse.User.enableUnsafeCurrentUser();
-  return TestUtils.destroyAllDataPermanently().then(done, fail);
+
+  return Parse.User.logOut()
+  .then(() => TestUtils.destroyAllDataPermanently().then(done, fail));
 });
 
 var mongoAdapter = new MongoStorageAdapter({
@@ -96,7 +98,7 @@ var mongoAdapter = new MongoStorageAdapter({
 afterEach(function(done) {
   mongoAdapter.getAllSchemas()
   .then(allSchemas => {
-    allSchemas.forEach((schema) => {
+    allSchemas.forEach(schema => {
       var className = schema.className;
       expect(className).toEqual({ asymmetricMatch: className => {
         if (!className.startsWith('_')) {
@@ -108,14 +110,6 @@ afterEach(function(done) {
         }
       }});
     });
-  })
-  .then(() => Parse.User.logOut())
-  .then(() => {
-    return TestUtils.destroyAllDataPermanently();
-  }).then(() => {
-    done();
-  }, (error) => {
-    console.log('error in clearData', error);
     done();
   });
 });
