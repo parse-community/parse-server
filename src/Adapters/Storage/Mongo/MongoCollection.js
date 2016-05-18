@@ -17,7 +17,7 @@ export default class MongoCollection {
     return this._rawFind(query, { skip, limit, sort })
       .catch(error => {
         // Check for "no geoindex" error
-        if (error.code != 17007 || !error.message.match(/unable to find index for .geoNear/)) {
+        if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
           throw error;
         }
         // Figure out what key needs an index
