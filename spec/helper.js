@@ -63,7 +63,7 @@ const setServerConfiguration = configuration => {
   DatabaseAdapter.clearDatabaseSettings();
   currentConfiguration = configuration;
   server.close();
-  cache.clearCache();
+  cache.clear();
   app = express();
   api = new ParseServer(configuration);
   app.use('/1', api);
