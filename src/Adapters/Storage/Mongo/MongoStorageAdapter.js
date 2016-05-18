@@ -184,6 +184,9 @@ export class MongoStorageAdapter {
   deleteObjectsByQuery(className, query, validate, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
+      if (query.ACL) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+      }
       let mongoWhere = transform.transformWhere(className, query, { validate }, schema);
       return collection.deleteMany(mongoWhere)
     })

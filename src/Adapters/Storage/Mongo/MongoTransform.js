@@ -170,10 +170,16 @@ function transformQueryKeyValue(className, key, value, schema) {
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
     }
+    if (value.some(subQuery => subQuery.ACL)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+    }
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   case '$and':
     if (!(value instanceof Array)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
+    }
+    if (value.some(subQuery => subQuery.ACL)) {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
     }
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   default:
@@ -224,9 +230,6 @@ function transformQueryKeyValue(className, key, value, schema) {
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 function transformWhere(className, restWhere, { validate = true } = {}, schema) {
   let mongoWhere = {};
-  if (restWhere['ACL']) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-  }
   for (let restKey in restWhere) {
     if (validate && !specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);

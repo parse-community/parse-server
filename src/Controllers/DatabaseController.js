@@ -184,6 +184,9 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
+        if (query.ACL) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+        }
         var mongoWhere = this.transform.transformWhere(className, query, {validate: !this.skipValidation}, parseFormatSchema);
         mongoUpdate = this.transform.transformUpdate(
           schemaController,
@@ -667,6 +670,9 @@ DatabaseController.prototype.find = function(className, query, {
         }
         if (!isMaster) {
           query = addReadACL(query, aclGroup);
+        }
+        if (query.ACL) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
         }
         let mongoWhere = this.transform.transformWhere(className, query, {}, schema);
         if (count) {
