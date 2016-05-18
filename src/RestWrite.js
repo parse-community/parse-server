@@ -2,7 +2,6 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
-import cache from './cache';
 var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
@@ -310,6 +309,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
   });
 }
 
+
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function() {
   if (this.className !== '_User') {
@@ -320,7 +320,8 @@ RestWrite.prototype.transformUser = function() {
 
   // If we're updating a _User object, clear the user cache for the session
   if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
-    cache.users.remove(this.auth.user.getSessionToken());
+    let cacheAdapter = this.config.cacheController;
+    cacheAdapter.user.del(this.auth.user.getSessionToken());
   }
 
   return promise.then(() => {
@@ -438,24 +439,6 @@ RestWrite.prototype.handleFollowup = function() {
     // Fire and forget!
     this.config.userController.sendVerificationEmail(this.data);
     this.handleFollowup.bind(this);
-  }
-};
-
-// Handles the _Role class specialness.
-// Does nothing if this isn't a role object.
-RestWrite.prototype.handleRole = function() {
-  if (this.response || this.className !== '_Role') {
-    return;
-  }
-
-  if (!this.auth.user && !this.auth.isMaster) {
-    throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-                          'Session token required.');
-  }
-
-  if (!this.data.name) {
-    throw new Parse.Error(Parse.Error.INVALID_ROLE_NAME,
-                          'Invalid role name.');
   }
 };
 
@@ -714,6 +697,10 @@ RestWrite.prototype.expandFilesForExistingObjects = function() {
 RestWrite.prototype.runDatabaseOperation = function() {
   if (this.response) {
     return;
+  }
+
+  if (this.className === '_Role') {
+    this.config.cacheController.role.clear();
   }
 
   if (this.className === '_User' &&

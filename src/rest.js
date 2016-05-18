@@ -8,8 +8,7 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-import cache from './cache';
-import Auth  from './Auth';
+import Auth from './Auth';
 
 var RestQuery = require('./RestQuery');
 var RestWrite = require('./RestWrite');
@@ -48,7 +47,9 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.users.remove(response.results[0].sessionToken);
+
+          var cacheAdapter = config.cacheController;
+          cacheAdapter.user.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
@@ -96,6 +97,7 @@ function create(config, auth, className, restObject) {
 // Usually, this is just updatedAt.
 function update(config, auth, className, objectId, restObject) {
   enforceRoleSecurity('update', className, auth);
+
   return Promise.resolve().then(() => {
     if (triggers.getTrigger(className, triggers.Types.beforeSave, config.applicationId) ||
         triggers.getTrigger(className, triggers.Types.afterSave, config.applicationId) ||
