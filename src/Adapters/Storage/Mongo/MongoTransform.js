@@ -172,6 +172,11 @@ function transformQueryKeyValue(className, key, value, schema) {
     }
     if (value.some(subQuery => subQuery.ACL)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+      Object.keys(subQuery).forEach(restKey => {
+        if (!specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
+        }
+      });
     }
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   case '$and':
@@ -180,6 +185,11 @@ function transformQueryKeyValue(className, key, value, schema) {
     }
     if (value.some(subQuery => subQuery.ACL)) {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+      Object.keys(subQuery).forEach(restKey => {
+        if (!specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
+        }
+      });
     }
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
   default:

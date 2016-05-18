@@ -25,6 +25,7 @@ const storageAdapterAllCollections = mongoAdapter => {
   });
 }
 
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 export class MongoStorageAdapter {
   // Private
   _uri: string;
@@ -187,7 +188,10 @@ export class MongoStorageAdapter {
       if (query.ACL) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
       }
-      let mongoWhere = transform.transformWhere(className, query, { validate }, schema);
+      if (validate && Object.keys(query).some(restKey => !specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/))) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
+      }
+      let mongoWhere = transform.transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
     })
     .then(({ result }) => {
