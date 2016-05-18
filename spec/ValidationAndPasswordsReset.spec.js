@@ -310,7 +310,11 @@ describe("Email Verification", () => {
     user.set("email", "testInvalidConfig@parse.com");
     user.signUp(null)
     .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
-    .catch(error => {
+    .then(result => {
+      console.log(result);
+      fail('sending password reset email should not have succeeded');
+      done();
+    }, error => {
       expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
       done();
     });

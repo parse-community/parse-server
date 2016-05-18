@@ -174,13 +174,16 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
     }
     let userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then((token) => {
+    return userController.sendPasswordResetEmail(email).then(token => {
        return Promise.resolve({
          response: {}
        });
     }, err => {
-      console.log(err);
-      throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
+      } else {
+        throw err;
+      }
     });
   }
 
