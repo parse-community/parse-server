@@ -2395,7 +2395,6 @@ describe('Parse.User testing', () => {
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
-      cloud: './spec/cloud/main.js',
       revokeSessionOnPasswordReset: false,
     })
     request.post({
