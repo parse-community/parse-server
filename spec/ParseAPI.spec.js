@@ -1437,4 +1437,36 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it('doesnt convert interior keys of objects that use special names', done => {
+    let obj = new Parse.Object('Obj');
+    obj.set('val', { createdAt: 'a', updatedAt: 1 });
+    obj.save()
+    .then(obj => new Parse.Query('Obj').get(obj.id))
+    .then(obj => {
+      expect(obj.get('val').createdAt).toEqual('a');
+      expect(obj.get('val').updatedAt).toEqual(1);
+      done();
+    });
+  });
+
+  it('bans interior keys containing . or $', done => {
+    new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+      done();
+    })
+  });
 });
