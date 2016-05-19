@@ -17,18 +17,24 @@ function handleParseHeaders(req, res, next) {
   var mountPath = req.originalUrl.slice(0, mountPathLength);
   var mount = req.protocol + '://' + req.get('host') + mountPath;
 
-  var basicAuth = httpAuth(req);
-
   var info = {
-    appId: basicAuth.appId || req.get('X-Parse-Application-Id'),
+    appId: req.get('X-Parse-Application-Id'),
     sessionToken: req.get('X-Parse-Session-Token'),
-    masterKey: basicAuth.masterKey || req.get('X-Parse-Master-Key'),
+    masterKey: req.get('X-Parse-Master-Key'),
     installationId: req.get('X-Parse-Installation-Id'),
     clientKey: req.get('X-Parse-Client-Key'),
-    javascriptKey: basicAuth.javascriptKey || req.get('X-Parse-Javascript-Key'),
+    javascriptKey: req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key')
   };
+  
+  var basicAuth = httpAuth(req);
+  
+  if (basicAuth) {
+    info.appId = basicAuth.appId
+    info.masterKey = basicAuth.masterKey || info.masterKey;
+    info.javascriptKey = basicAuth.javascriptKey || info.javascriptKey;
+  }
 
   if (req.body) {
     // Unity SDK sends a _noBody key which needs to be removed.
@@ -147,22 +153,34 @@ function handleParseHeaders(req, res, next) {
 }
 
 function httpAuth(req) {
-  var appId, masterKey, javascriptKey;
-  var credentialsRegExp = /^ *(?:[Bb][Aa][Ss][Ii][Cc]) +([A-Za-z0-9\-\._~\+\/]+=*) *$/
-  var appIdKeyRegExp = /^([^ :]*):([Jj][Aa][Vv][Aa][Ss][Cc][Rr][Ii][Pp][Tt][-][Kk][Ee][Yy]=)?(.*)/
- // get header
-  var header = (req.req || req).headers.authorization
+  if (!(req.req || req).headers.authorization)
+    return ;
+
+  var header = (req.req || req).headers.authorization;  
+  var appId, masterKey, javascriptKey;  
+
   // parse header
-  var match = credentialsRegExp.exec(header || '')
-  if (match) {
-    // decode user pass
-    var appIdKeyMatch = appIdKeyRegExp.exec(decodeBase64(match[1]))
-	 if (appIdKeyMatch) {
-      appId = appIdKeyMatch[1];
-      if (appIdKeyMatch[2])
-        javascriptKey = appIdKeyMatch[3];
-      else
-        masterKey = appIdKeyMatch[3];
+  var authPrefix = 'basic ';
+  
+  var match = header.toLowerCase().indexOf(authPrefix);
+  
+  if (match == 0) {
+    var encodedAuth = header.substring(authPrefix.length, header.length);
+    var credentials = decodeBase64(encodedAuth).split(':');
+    
+    if (credentials.length == 2) {
+      appId = credentials[0];
+      var key = credentials[1];
+    
+      var jsKeyPrefix = 'javascript-key=';
+    
+      var matchKey = key.indexOf(jsKeyPrefix)
+      if (matchKey == 0) {
+        javascriptKey = key.substring(jsKeyPrefix.length, key.length);
+      }
+      else {
+        masterKey = key;
+      }
     }
   }
   
