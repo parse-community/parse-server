@@ -27,6 +27,14 @@ function handleParseHeaders(req, res, next) {
     dotNetKey: req.get('X-Parse-Windows-Key'),
     restAPIKey: req.get('X-Parse-REST-API-Key')
   };
+  
+  var basicAuth = httpAuth(req);
+  
+  if (basicAuth) {
+    info.appId = basicAuth.appId
+    info.masterKey = basicAuth.masterKey || info.masterKey;
+    info.javascriptKey = basicAuth.javascriptKey || info.javascriptKey;
+  }
 
   if (req.body) {
     // Unity SDK sends a _noBody key which needs to be removed.
@@ -142,6 +150,45 @@ function handleParseHeaders(req, res, next) {
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
+}
+
+function httpAuth(req) {
+  if (!(req.req || req).headers.authorization)
+    return ;
+
+  var header = (req.req || req).headers.authorization;  
+  var appId, masterKey, javascriptKey;  
+
+  // parse header
+  var authPrefix = 'basic ';
+  
+  var match = header.toLowerCase().indexOf(authPrefix);
+  
+  if (match == 0) {
+    var encodedAuth = header.substring(authPrefix.length, header.length);
+    var credentials = decodeBase64(encodedAuth).split(':');
+    
+    if (credentials.length == 2) {
+      appId = credentials[0];
+      var key = credentials[1];
+    
+      var jsKeyPrefix = 'javascript-key=';
+    
+      var matchKey = key.indexOf(jsKeyPrefix)
+      if (matchKey == 0) {
+        javascriptKey = key.substring(jsKeyPrefix.length, key.length);
+      }
+      else {
+        masterKey = key;
+      }
+    }
+  }
+  
+  return {appId: appId, masterKey: masterKey, javascriptKey: javascriptKey};
+}
+
+function decodeBase64(str) {
+  return new Buffer(str, 'base64').toString()
 }
 
 var allowCrossDomain = function(req, res, next) {
