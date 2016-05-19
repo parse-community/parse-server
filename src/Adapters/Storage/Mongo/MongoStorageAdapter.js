@@ -185,7 +185,6 @@ export class MongoStorageAdapter {
   deleteObjectsByQuery(className, query, validate, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
-      transform.validateQuery(query);
       let mongoWhere = transform.transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
     })
