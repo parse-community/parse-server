@@ -185,12 +185,7 @@ export class MongoStorageAdapter {
   deleteObjectsByQuery(className, query, validate, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
-      if (query.ACL) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-      }
-      if (validate && Object.keys(query).some(restKey => !specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/))) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
-      }
+      transform.validateQuery(query);
       let mongoWhere = transform.transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
     })

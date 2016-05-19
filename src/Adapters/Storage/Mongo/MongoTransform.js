@@ -167,31 +167,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
   case '$or':
-    if (!(value instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
-    }
-    if (value.some(subQuery => subQuery.ACL)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-      Object.keys(subQuery).forEach(restKey => {
-        if (!specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
-        }
-      });
-    }
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
-    if (!(value instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
-    }
-    if (value.some(subQuery => subQuery.ACL)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-      Object.keys(subQuery).forEach(restKey => {
-        if (!specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
-        }
-      });
-    }
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   default:
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -233,17 +211,42 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 }
 
+const validateQuery = query => {
+  if (query.ACL) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+  }
+
+  if (query.$or) {
+    if (query.$or instanceof Array) {
+      query.$or.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
+    }
+  }
+
+  if (query.$and) {
+    if (query.$and instanceof Array) {
+      query.$and.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+    }
+  }
+
+  Object.keys(query).forEach(key => {
+    if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
+    }
+  });
+}
+
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 // Throws a Parse.Error if the input query is invalid.
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
-function transformWhere(className, restWhere, { validate = true } = {}, schema) {
+function transformWhere(className, restWhere, schema) {
   let mongoWhere = {};
   for (let restKey in restWhere) {
-    if (validate && !specialQuerykeys.includes(restKey) && !restKey.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${restKey}`);
-    }
     let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
     mongoWhere[out.key] = out.value;
   }
@@ -1045,6 +1048,7 @@ var FileCoder = {
 
 module.exports = {
   transformKey,
+  validateQuery,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
