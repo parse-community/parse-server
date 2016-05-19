@@ -25,7 +25,6 @@ const storageAdapterAllCollections = mongoAdapter => {
   });
 }
 
-const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 export class MongoStorageAdapter {
   // Private
   _uri: string;
