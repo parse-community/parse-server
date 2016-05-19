@@ -368,7 +368,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
         throw error;
       })
-      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, !this.skipValidation, parseFormatSchema))
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, parseFormatSchema))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
