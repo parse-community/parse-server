@@ -12,13 +12,11 @@ var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
-var cloudMain = process.env.CLOUD_CODE_MAIN || './spec/cloud/main.js';
 var port = 8378;
 
 // Default server configuration for tests.
 var defaultConfiguration = {
   databaseURI: databaseURI,
-  cloud: cloudMain,
   serverURL: 'http://localhost:' + port + '/1',
   appId: 'test',
   javascriptKey: 'test',
@@ -94,6 +92,7 @@ var mongoAdapter = new MongoStorageAdapter({
 })
 
 afterEach(function(done) {
+  Parse.Cloud._removeAllHooks();
   mongoAdapter.getAllSchemas()
   .then(allSchemas => {
     allSchemas.forEach((schema) => {

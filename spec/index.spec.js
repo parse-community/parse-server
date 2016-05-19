@@ -12,7 +12,7 @@ describe('server', () => {
     expect(setServerConfiguration.bind(undefined, { appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');
     done();
   });
-	
+
   it('support http basic authentication with masterkey', done => {
     request.get({
       url: 'http://localhost:8378/1/classes/TestObject',
@@ -24,7 +24,7 @@ describe('server', () => {
       done();
     });
   });
-  
+
   it('support http basic authentication with javascriptKey', done => {
     request.get({
       url: 'http://localhost:8378/1/classes/TestObject',
@@ -197,26 +197,6 @@ describe('server', () => {
       expect(body.parseServerVersion).toEqual(parseServerPackage.version);
       done();
     })
-  });
-
-  it('can load absolute cloud code file', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      cloud: __dirname + '/cloud/main.js'
-    });
-    done();
-  });
-
-  it('can load relative cloud code file', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      cloud: './spec/cloud/main.js'
-    });
-    done();
   });
 
   it('can create a parse-server', done => {
