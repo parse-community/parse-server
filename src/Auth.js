@@ -71,7 +71,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
       delete obj.password;
       obj['className'] = '_User';
       obj['sessionToken'] = sessionToken;
-      config.cacheController.user.put(sessionToken, obj);
+      config.cacheController.user.put(obj.objectId, obj);
 
       let userObject = Parse.Object.fromJSON(obj);
       return new Auth({config, isMaster: false, installationId, user: userObject});

@@ -319,9 +319,8 @@ RestWrite.prototype.transformUser = function() {
   var promise = Promise.resolve();
 
   // If we're updating a _User object, clear the user cache for the session
-  if (this.query && this.auth.user && this.auth.user.getSessionToken()) {
-    let cacheAdapter = this.config.cacheController;
-    cacheAdapter.user.del(this.auth.user.getSessionToken());
+  if (this.query) {
+    this.config.cacheController.user.del(this.data.objectId);
   }
 
   return promise.then(() => {

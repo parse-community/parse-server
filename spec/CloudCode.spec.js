@@ -467,4 +467,27 @@ describe('Cloud Code', () => {
       done();
     });
   });
+
+  it('doesnt receive stale user in cloud code functions after user has been updated with master key (regression test for #1836)', done => {
+    Parse.Cloud.define('testQuery', function(request, response) {
+      response.success(request.user.get('data'));
+    });
+
+    Parse.User.signUp('user', 'pass')
+    .then(user => {
+      user.set('data', 'AAA');
+      return user.save();
+    })
+    .then(() => Parse.Cloud.run('testQuery'))
+    .then(result => {
+      expect(result).toEqual('AAA');
+      Parse.User.current().set('data', 'BBB');
+      return Parse.User.current().save(null, {useMasterKey: true});
+    })
+    .then(() => Parse.Cloud.run('testQuery'))
+    .then(result => {
+      expect(result).toEqual('BBB');
+      done();
+    });
+  });
 });
