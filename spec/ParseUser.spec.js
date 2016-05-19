@@ -1156,12 +1156,10 @@ describe('Parse.User testing', () => {
 
         Parse.User._logInWith("facebook", {
           success: function(innerModel) {
-            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
             done();
           },
           error: function(model, error) {
             ok(undefined, error);
-            Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
             done();
           }
         });
@@ -1584,8 +1582,6 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
       success: function(model) {
-        Parse.Cloud._removeHook('Triggers', 'beforeSave', Parse.User.className);
-        Parse.Cloud._removeHook('Triggers', 'afterSave', Parse.User.className);
         done();
       }
     });
@@ -2213,11 +2209,9 @@ describe('Parse.User testing', () => {
     }).then((user) => {
       expect(typeof user).toEqual('object');
       expect(user.authData).toBeUndefined();
-      Parse.Cloud._removeHook('Triggers', 'beforeSave', '_User');
       done();
     }).catch((err) => {
       fail('no request should fail: ' + JSON.stringify(err));
-      Parse.Cloud._removeHook('Triggers', 'beforeSave', '_User');
       done();
     });
   });
@@ -2237,7 +2231,6 @@ describe('Parse.User testing', () => {
       user.set('hello', 'world');
       return user.save();
     }).then(() => {
-      Parse.Cloud._removeHook('Triggers', 'afterSave', '_User');
       done();
     });
   });
@@ -2395,7 +2388,6 @@ describe('Parse.User testing', () => {
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
-      cloud: './spec/cloud/main.js',
       revokeSessionOnPasswordReset: false,
     })
     request.post({
