@@ -211,39 +211,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 }
 
-const validateQuery = query => {
-  if (query.ACL) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-  }
-
-  if (query.$or) {
-    if (query.$or instanceof Array) {
-      query.$or.forEach(validateQuery);
-    } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
-    }
-  }
-
-  if (query.$and) {
-    if (query.$and instanceof Array) {
-      query.$and.forEach(validateQuery);
-    } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
-    }
-  }
-
-  Object.keys(query).forEach(key => {
-    if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
-    }
-  });
-}
-
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
-// Throws a Parse.Error if the input query is invalid.
-const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 function transformWhere(className, restWhere, schema) {
   let mongoWhere = {};
   for (let restKey in restWhere) {
@@ -1048,7 +1018,6 @@ var FileCoder = {
 
 module.exports = {
   transformKey,
-  validateQuery,
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
