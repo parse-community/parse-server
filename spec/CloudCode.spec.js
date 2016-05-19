@@ -435,4 +435,35 @@ describe('Cloud Code', () => {
       }
     });
   });
+
+  it('beforeSave change propagates through the save response', (done) => {
+    Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
+      request.object.set('foo', 'baz');
+      response.success();
+    });
+    let obj = new Parse.Object('ChangingObject');
+    obj.save({ foo: 'bar' }).then((objAgain) => {
+      expect(objAgain.get('foo')).toEqual('baz');
+      done();
+    }, (e) => {
+      fail('Should not have failed to save.');
+      done();
+    });
+  });
+
+  it('test cloud function parameter validation success', (done) => {
+    // Register a function with validation
+    Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
+      res.success('works');
+    }, (request) => {
+      return request.params.success === 100;
+    });
+
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+      done();
+    }, (e) => {
+      fail('Validation should not have failed.');
+      done();
+    });
+  });
 });

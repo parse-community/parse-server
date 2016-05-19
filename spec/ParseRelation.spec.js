@@ -696,20 +696,16 @@ describe('Parse.Relation testing', () => {
         admins.first({ useMasterKey: true })
         .then(user => {
           if (user) {
-            Parse.Cloud._removeHook('Functions', 'isAdmin');
             done();
           } else {
-            Parse.Cloud._removeHook('Functions', 'isAdmin');
             fail('Should have found admin user, found nothing instead');
             done();
           }
         }, error => {
-          Parse.Cloud._removeHook('Functions', 'isAdmin');
           fail('User not admin');
           done();
         })
       }, error => {
-        Parse.Cloud._removeHook('Functions', 'isAdmin');
         fail('Should have found admin user, errored instead');
         fail(error);
         done();

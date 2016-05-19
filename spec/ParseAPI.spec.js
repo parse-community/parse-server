@@ -176,7 +176,6 @@ describe('miscellaneous', function() {
     var obj = new Parse.Object('BeforeSaveAddACL');
     obj.set('lol', true);
     obj.save().then(function() {
-      Parse.Cloud._removeHook('Triggers', 'beforeSave', 'BeforeSaveAddACL');
       var query = new Parse.Query('BeforeSaveAddACL');
       query.get(obj.id).then(function(objAgain) {
         expect(objAgain.get('lol')).toBeTruthy();
@@ -383,7 +382,6 @@ describe('miscellaneous', function() {
       return obj.save();
     }).then((obj) => {
       expect(obj.get('point').id).toEqual(pointId);
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     })
   });
@@ -421,8 +419,6 @@ describe('miscellaneous', function() {
     }).then(function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock beforeSave
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     }, function(error) {
       fail(error);
@@ -474,8 +470,6 @@ describe('miscellaneous', function() {
     }).then(function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, function(error) {
       console.error(error);
@@ -524,8 +518,6 @@ describe('miscellaneous', function() {
     }).then(function() {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, function(error) {
       console.error(error);
@@ -564,8 +556,6 @@ describe('miscellaneous', function() {
     }).then(() => {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, error => {
       console.error(error);
@@ -606,8 +596,6 @@ describe('miscellaneous', function() {
     }).then(() => {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
       done();
     }, error => {
       console.error(error);
@@ -648,8 +636,6 @@ describe('miscellaneous', function() {
     }).then(() => {
       // Make sure the checking has been triggered
       expect(triggerTime).toBe(2);
-      // Clear mock afterSave
-      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     }, error => {
       console.error(error);
@@ -709,12 +695,10 @@ describe('miscellaneous', function() {
     });
     Parse.Cloud.run('willFail').then((s) => {
       fail('Should not have succeeded.');
-      Parse.Cloud._removeHook("Functions", "willFail");
       done();
     }, (e) => {
       expect(e.code).toEqual(141);
       expect(e.message).toEqual('noway');
-      Parse.Cloud._removeHook("Functions", "willFail");
       done();
     });
   });
@@ -746,9 +730,6 @@ describe('miscellaneous', function() {
     }, (error, response, body) => {
       expect(error).toBe(null);
       expect(triggerTime).toEqual(2);
-
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "GameScore");
-      Parse.Cloud._removeHook("Triggers", "afterSave", "GameScore");
       done();
     });
   });
@@ -785,9 +766,6 @@ describe('miscellaneous', function() {
       }, (error, response, body) => {
         expect(error).toBe(null);
         expect(triggerTime).toEqual(2);
-
-        Parse.Cloud._removeHook("Triggers", "beforeDelete", "GameScore");
-        Parse.Cloud._removeHook("Triggers", "afterDelete", "GameScore");
         done();
       });
     });
@@ -817,24 +795,6 @@ describe('miscellaneous', function() {
       // Make sure query string params override body params
       expect(res.other).toEqual('2');
       expect(res.foo).toEqual("bar");
-      Parse.Cloud._removeHook("Functions",'echoParams');
-      done();
-    });
-  });
-
-  it('test cloud function parameter validation success', (done) => {
-    // Register a function with validation
-    Parse.Cloud.define('functionWithParameterValidation', (req, res) => {
-      res.success('works');
-    }, (request) => {
-      return request.params.success === 100;
-    });
-
-    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
-      Parse.Cloud._removeHook("Functions", "functionWithParameterValidation");
-      done();
-    }, (e) => {
-      fail('Validation should not have failed.');
       done();
     });
   });
@@ -849,7 +809,6 @@ describe('miscellaneous', function() {
 
     Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
       fail('Validation should not have succeeded');
-      Parse.Cloud._removeHook("Functions", "functionWithParameterValidationFailure");
       done();
     }, (e) => {
       expect(e.code).toEqual(141);
@@ -866,7 +825,6 @@ describe('miscellaneous', function() {
 
     Parse.Cloud.run('func', {nullParam: null})
     .then(() => {
-      Parse.Cloud._removeHook('Functions', 'func');
       done()
     }, e => {
       fail('cloud code call failed');
@@ -949,23 +907,6 @@ describe('miscellaneous', function() {
     }, (e) => {
       expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
       expect(e.message).toEqual('Invalid function.');
-      done();
-    });
-  });
-
-  it('beforeSave change propagates through the save response', (done) => {
-    Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
-      request.object.set('foo', 'baz');
-      response.success();
-    });
-    let obj = new Parse.Object('ChangingObject');
-    obj.save({ foo: 'bar' }).then((objAgain) => {
-      expect(objAgain.get('foo')).toEqual('baz');
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
-      done();
-    }, (e) => {
-      Parse.Cloud._removeHook("Triggers", "beforeSave", "ChangingObject");
-      fail('Should not have failed to save.');
       done();
     });
   });

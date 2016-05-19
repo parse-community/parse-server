@@ -1182,7 +1182,6 @@ describe('Parse.ACL', () => {
             done();
           }, error => {
             expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-            Parse.Cloud._removeHook('Triggers', 'afterSave', Parse.User.className);
             done();
           });
         });
