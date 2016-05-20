@@ -59,13 +59,13 @@
     "deep-diff": "^0.3.3",
     "gaze": "^1.0.0",
     "jasmine": "^2.3.2",
-    "mongodb-runner": "3.2.2",
+    "mongodb-runner": "^3.3.2",
     "nodemon": "^1.8.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
     "build": "./node_modules/.bin/babel src/ -d lib/",
-    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.0.8} ./node_modules/.bin/mongodb-runner start",
+    "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 ./node_modules/.bin/mongodb-runner start",
     "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
     "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node ./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/** ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "posttest": "./node_modules/.bin/mongodb-runner stop",
