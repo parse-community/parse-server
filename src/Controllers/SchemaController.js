@@ -33,7 +33,7 @@ const defaultColumns = Object.freeze({
     "email":         {type:'String'},
     "emailVerified": {type:'Boolean'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {
     "installationId":   {type:'String'},
     "deviceToken":      {type:'String'},
@@ -43,15 +43,19 @@ const defaultColumns = Object.freeze({
     "GCMSenderId":      {type:'String'},
     "timeZone":         {type:'String'},
     "localeIdentifier": {type:'String'},
-    "badge":            {type:'Number'}
+    "badge":            {type:'Number'},
+    "appVersion":       {type:'String'},
+    "appName":          {type:'String'},
+    "appIdentifier":    {type:'String'},
+    "parseVersion":     {type:'String'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Role collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
     "users": {type:'Relation', targetClass:'_User'},
     "roles": {type:'Relation', targetClass:'_Role'}
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
     "restricted":     {type:'Boolean'},
     "user":           {type:'Pointer', targetClass:'_User'},
