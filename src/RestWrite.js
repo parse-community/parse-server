@@ -114,7 +114,8 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 RestWrite.prototype.validateClientClassCreation = function() {
   let sysClass = SchemaController.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
-      && sysClass.indexOf(this.className) === -1) {
+      && sysClass.indexOf(this.className) === -1
+      && this.config.allowedClientClasses.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
       if (hasClass === true) {
         return Promise.resolve();
