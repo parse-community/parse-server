@@ -318,9 +318,22 @@ RestWrite.prototype.transformUser = function() {
 
   var promise = Promise.resolve();
 
-  // If we're updating a _User object, clear the user cache for the session
   if (this.query) {
-    this.config.cacheController.user.del(this.data.objectId);
+    // If we're updating a _User object, clear the user cache for the session
+    if (this.auth.user && this.auth.user.getSessionToken()) {
+      this.config.cacheController.user.del(this.auth.user.getSessionToken());
+    } else {
+      // Update was made with master key, so we don't have the session. Query to find it. Hopefully we can make this faster later, somehow.
+      let userObject = Parse.Object.createWithoutData('_User', this.data.objectId);
+      let sessionsQuery = new Parse.Query('_Session');
+      //sessionsQuery.equalTo('user', userObject);
+      promise = sessionsQuery.find({ useMasterKey: true })
+      .then(sessions => {
+        sessions.forEach(session => {
+          this.config.cacheController.user.del(session.get('sessionToken'));
+        });
+      })
+    }
   }
 
   return promise.then(() => {
