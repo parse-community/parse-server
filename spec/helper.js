@@ -1,6 +1,6 @@
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
 
 var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
