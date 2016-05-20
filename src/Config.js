@@ -31,6 +31,7 @@ export class Config {
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
+    this.allowedClientClasses = cacheInfo.allowedClientClasses;
     this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
 
     this.serverURL = cacheInfo.serverURL;
