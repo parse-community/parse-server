@@ -59,7 +59,7 @@
     "deep-diff": "^0.3.3",
     "gaze": "^1.0.0",
     "jasmine": "^2.3.2",
-    "mongodb-runner": "git://github.com/TylerBrock/runner.git#old-mongo-storage-fix",
+    "mongodb-runner": "^3.3.2",
     "nodemon": "^1.8.1"
   },
   "scripts": {
