@@ -1,5 +1,7 @@
 "use strict"
 const Parse = require("parse/node");
+const request = require('request');
+const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
 
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
@@ -488,6 +490,71 @@ describe('Cloud Code', () => {
     .then(result => {
       expect(result).toEqual('BBB');
       done();
+    });
+  });
+
+  it('clears out the user cache for all sessions when the user is changed', done => {
+    const cacheAdapter = new InMemoryCacheAdapter({ ttl: 100000000 });
+    setServerConfiguration({ ...defaultConfiguration, cacheAdapter });
+    Parse.Cloud.define('checkStaleUser', (request, response) => {
+      response.success(request.user.get('data'));
+    });
+
+    let user = new Parse.User();
+    user.set('username', 'test');
+    user.set('password', 'moon-y');
+    user.set('data', 'first data');
+    user.signUp()
+    .then(user => {
+      let session1 = user.getSessionToken();
+      request.get({
+        url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }, (error, response, body) => {
+        let session2 = body.sessionToken;
+
+        //Ensure both session tokens are in the cache
+        Parse.Cloud.run('checkStaleUser')
+        .then(() => {
+          request.post({
+            url: 'http://localhost:8378/1/functions/checkStaleUser',
+            json: true,
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest',
+              'X-Parse-Session-Token': session2,
+            }
+          }, (error, response, body) => {
+            Parse.Promise.all([cacheAdapter.get('test:user:' + session1), cacheAdapter.get('test:user:' + session2)])
+            .then(([cacheVal1, cacheVal2]) => {
+              expect(cacheVal1.objectId).toEqual(user.id);
+              expect(cacheVal2.objectId).toEqual(user.id);
+
+              //Change with session 1 and then read with session 2.
+              user.set('data', 'second data');
+              user.save()
+              .then(() => {
+                request.post({
+                  url: 'http://localhost:8378/1/functions/checkStaleUser',
+                  json: true,
+                  headers: {
+                    'X-Parse-Application-Id': 'test',
+                    'X-Parse-REST-API-Key': 'rest',
+                    'X-Parse-Session-Token': session2,
+                  }
+                }, (error, response, body) => {
+                  expect(body.result).toEqual('second data');
+                  done();
+                })
+              });
+            });
+          });
+        });
+      });
     });
   });
 });

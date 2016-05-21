@@ -53,7 +53,6 @@ export class InMemoryCache {
     if (record.timeout) {
       clearTimeout(record.timeout);
     }
-
     delete this.cache[key];
   }
 

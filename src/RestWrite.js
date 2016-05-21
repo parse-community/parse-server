@@ -11,6 +11,7 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+import RestQuery from './RestQuery';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -319,21 +320,16 @@ RestWrite.prototype.transformUser = function() {
   var promise = Promise.resolve();
 
   if (this.query) {
-    // If we're updating a _User object, clear the user cache for the session
-    if (this.auth.user && this.auth.user.getSessionToken()) {
-      this.config.cacheController.user.del(this.auth.user.getSessionToken());
-    } else {
-      // Update was made with master key, so we don't have the session. Query to find it. Hopefully we can make this faster later, somehow.
-      let userObject = Parse.Object.createWithoutData('_User', this.data.objectId);
-      let sessionsQuery = new Parse.Query('_Session');
-      //sessionsQuery.equalTo('user', userObject);
-      promise = sessionsQuery.find({ useMasterKey: true })
-      .then(sessions => {
-        sessions.forEach(session => {
-          this.config.cacheController.user.del(session.get('sessionToken'));
-        });
-      })
-    }
+    // If we're updating a _User object, we need to clear out the cache for that user. Find all their
+    // session tokens, and remove them from the cache.
+    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', { user: {
+      __type: "Pointer",
+      className: "_User",
+      objectId: this.objectId(),
+    }}).execute()
+    .then(results => {
+      results.results.forEach(session => this.config.cacheController.user.del(session.sessionToken));
+    });
   }
 
   return promise.then(() => {
@@ -426,8 +422,7 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.response && this.response.response) {
     this.response.response.sessionToken = token;
   }
-  var create = new RestWrite(this.config, Auth.master(this.config),
-                                 '_Session', null, sessionData);
+  var create = new RestWrite(this.config, Auth.master(this.config), '_Session', null, sessionData);
   return create.execute();
 }
 
@@ -494,8 +489,7 @@ RestWrite.prototype.handleSession = function() {
       }
       sessionData[key] = this.data[key];
     }
-    var create = new RestWrite(this.config, Auth.master(this.config),
-                               '_Session', null, sessionData);
+    var create = new RestWrite(this.config, Auth.master(this.config), '_Session', null, sessionData);
     return create.execute().then((results) => {
       if (!results.response) {
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR,
