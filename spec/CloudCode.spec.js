@@ -530,9 +530,9 @@ describe('Cloud Code', () => {
             }
           }, (error, response, body) => {
             Parse.Promise.all([cacheAdapter.get('test:user:' + session1), cacheAdapter.get('test:user:' + session2)])
-            .then(([cacheVal1, cacheVal2]) => {
-              expect(cacheVal1.objectId).toEqual(user.id);
-              expect(cacheVal2.objectId).toEqual(user.id);
+            .then(cachedVals => {
+              expect(cachedVals[0].objectId).toEqual(user.id);
+              expect(cachedVals[1].objectId).toEqual(user.id);
 
               //Change with session 1 and then read with session 2.
               user.set('data', 'second data');
