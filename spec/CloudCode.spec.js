@@ -495,7 +495,7 @@ describe('Cloud Code', () => {
 
   it('clears out the user cache for all sessions when the user is changed', done => {
     const cacheAdapter = new InMemoryCacheAdapter({ ttl: 100000000 });
-    setServerConfiguration({ ...defaultConfiguration, cacheAdapter });
+    setServerConfiguration(Object.assign({}, defaultConfiguration, { cacheAdapter: cacheAdapter }));
     Parse.Cloud.define('checkStaleUser', (request, response) => {
       response.success(request.user.get('data'));
     });
