@@ -747,7 +747,7 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    var restObject = untransformACL(mongoObject);
+    var restObject = {};
     for (var key in mongoObject) {
       var expectedType = schema.getExpectedType(className, key);
       var value = mongoObject[key];

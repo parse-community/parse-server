@@ -1138,4 +1138,13 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it('does not change inner object key names _rperm, _wperm', done => {
+    new Parse.Object('O').save({ innerObj: {_rperm: 7, _wperm: 8}})
+    .then(object => new Parse.Query('O').get(object.id))
+    .then(object => {
+      expect(object.get('innerObj')).toEqual({_rperm: 7, _wperm: 8});
+      done();
+    });
+  });
 });
