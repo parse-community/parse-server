@@ -747,21 +747,7 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    var restObject = {};
-    for (var key in mongoObject) {
-      var expectedType = schema.getExpectedType(className, key);
-      var value = mongoObject[key];
-      if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
-        restObject[key] = FileCoder.databaseToJSON(value);
-        break;
-      }
-      if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
-        restObject[key] = GeoPointCoder.databaseToJSON(value);
-        break;
-      }
-      restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
-    }
-    return restObject;
+    return _.mapValues(mongoObject, value => nestedMongoObjectToNestedParseObject(schema, className, value));
   default:
     throw 'unknown js type';
   }
