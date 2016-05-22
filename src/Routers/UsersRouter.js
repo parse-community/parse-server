@@ -85,6 +85,7 @@ export class UsersRouter extends ClassesRouter {
         user = results[0];
         return passwordCrypto.compare(req.body.password, user.password);
       }).then((correct) => {
+
         if (!correct) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
