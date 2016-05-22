@@ -146,12 +146,8 @@ DatabaseController.prototype.validateObject = function(className, object, query,
   });
 };
 
-// Like transform.untransformObject but you need to provide a className.
 // Filters out any data that shouldn't be on this REST-formatted object.
-DatabaseController.prototype.untransformObject = function(
-  schema, isMaster, aclGroup, className, mongoObject) {
-  var object = this.transform.untransformObject(schema, className, mongoObject);
-
+const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   if (className !== '_User') {
     return object;
   }
@@ -706,11 +702,10 @@ DatabaseController.prototype.find = function(className, query, {
           return collection.count(mongoWhere, mongoOptions);
         } else {
           return collection.find(mongoWhere, mongoOptions)
-          .then(mongoResults => {
-            return mongoResults.map(result => {
-              return this.untransformObject(schemaController, isMaster, aclGroup, className, result);
-            });
-          });
+          .then(mongoResults => mongoResults.map(mongoObject => {
+            var parseObject = this.transform.untransformObject(schemaController, className, mongoObject);
+            return filterSensitiveData(isMaster, aclGroup, className, parseObject);
+          }));
         }
       });
     });
