@@ -713,22 +713,6 @@ function transformUpdateOperator({
   }
 }
 
-const specialKeysForUntransform = [
-  '_id',
-  '_hashed_password',
-  '_acl',
-  '_email_verify_token',
-  '_perishable_token',
-  '_tombstone',
-  '_session_token',
-  'updatedAt',
-  '_updated_at',
-  'createdAt',
-  '_created_at',
-  'expiresAt',
-  '_expiresAt',
-];
-
 const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) => {
   switch(typeof mongoObject) {
   case 'string':
@@ -744,9 +728,7 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
       return null;
     }
     if (mongoObject instanceof Array) {
-      return mongoObject.map(arrayEntry => {
-        return nestedMongoObjectToNestedParseObject(schema, className, arrayEntry);
-      });
+      return mongoObject.map(arrayEntry => nestedMongoObjectToNestedParseObject(schema, className, arrayEntry));
     }
 
     if (mongoObject instanceof Date) {
@@ -767,91 +749,58 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      if (_.includes(specialKeysForUntransform, key)) {
-        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
-        continue;
+      // Check auth data keys
+      var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      if (authDataMatch) {
+        var provider = authDataMatch[1];
+        restObject['authData'] = restObject['authData'] || {};
+        restObject['authData'][provider] = mongoObject[key];
+        break;
       }
-      switch(key) {
-      case '_id':
-        restObject['objectId'] = '' + mongoObject[key];
-        break;
-      case '_hashed_password':
-        restObject['password'] = mongoObject[key];
-        break;
-      case '_acl':
-      case '_email_verify_token':
-      case '_perishable_token':
-      case '_tombstone':
-        break;
-      case '_session_token':
-        restObject['sessionToken'] = mongoObject[key];
-        break;
-      case 'updatedAt':
-      case '_updated_at':
-        restObject['updatedAt'] = Parse._encode(new Date(mongoObject[key])).iso;
-        break;
-      case 'createdAt':
-      case '_created_at':
-        restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
-        break;
-      case 'expiresAt':
-      case '_expiresAt':
-        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
-        break;
-      default:
-        // Check other auth data keys
-        var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
-        if (authDataMatch) {
-          var provider = authDataMatch[1];
-          restObject['authData'] = restObject['authData'] || {};
-          restObject['authData'][provider] = mongoObject[key];
-          break;
-        }
 
-        if (key.indexOf('_p_') == 0) {
-          var newKey = key.substring(3);
-          var expected;
-          if (schema && schema.getExpectedType) {
-            expected = schema.getExpectedType(className, newKey);
-          }
-          if (!expected) {
-            log.info('transform.js',
-              'Found a pointer column not in the schema, dropping it.',
-              className, newKey);
-            break;
-          }
-          if (expected && expected.type !== 'Pointer') {
-            log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
-            break;
-          }
-          if (mongoObject[key] === null) {
-            break;
-          }
-          var objData = mongoObject[key].split('$');
-          var newClass = (expected ? expected.targetClass : objData[0]);
-          if (objData[0] !== newClass) {
-            throw 'pointer to incorrect className';
-          }
-          restObject[newKey] = {
-            __type: 'Pointer',
-            className: objData[0],
-            objectId: objData[1]
-          };
-          break;
-        } else {
-          var expectedType = schema.getExpectedType(className, key);
-          var value = mongoObject[key];
-          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
-            restObject[key] = FileCoder.databaseToJSON(value);
-            break;
-          }
-          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
-            restObject[key] = GeoPointCoder.databaseToJSON(value);
-            break;
-          }
+      if (key.indexOf('_p_') == 0) {
+        var newKey = key.substring(3);
+        var expected;
+        if (schema && schema.getExpectedType) {
+          expected = schema.getExpectedType(className, newKey);
         }
-        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
+        if (!expected) {
+          log.info('transform.js',
+            'Found a pointer column not in the schema, dropping it.',
+            className, newKey);
+          break;
+        }
+        if (expected && expected.type !== 'Pointer') {
+          log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
+          break;
+        }
+        if (mongoObject[key] === null) {
+          break;
+        }
+        var objData = mongoObject[key].split('$');
+        var newClass = (expected ? expected.targetClass : objData[0]);
+        if (objData[0] !== newClass) {
+          throw 'pointer to incorrect className';
+        }
+        restObject[newKey] = {
+          __type: 'Pointer',
+          className: objData[0],
+          objectId: objData[1]
+        };
+        break;
+      } else {
+        var expectedType = schema.getExpectedType(className, key);
+        var value = mongoObject[key];
+        if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+          restObject[key] = FileCoder.databaseToJSON(value);
+          break;
+        }
+        if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+          restObject[key] = GeoPointCoder.databaseToJSON(value);
+          break;
+        }
       }
+      restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
     }
     return restObject;
   default:
