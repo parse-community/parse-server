@@ -729,9 +729,7 @@ const specialKeysForUntransform = [
   '_expiresAt',
 ];
 
-// Converts from a mongo-format object to a REST-format object.
-// Does not strip out anything based on a lack of authentication.
-function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject = false) {
+const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -747,7 +745,7 @@ function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject
     }
     if (mongoObject instanceof Array) {
       return mongoObject.map(arrayEntry => {
-        return mongoObjectToParseObject(schema, className, arrayEntry, true);
+        return nestedMongoObjectToNestedParseObject(schema, className, arrayEntry);
       });
     }
 
@@ -769,8 +767,8 @@ function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
-        restObject[key] = mongoObjectToParseObject(schema, className, mongoObject[key], true);
+      if (_.includes(specialKeysForUntransform, key)) {
+        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
         continue;
       }
       switch(key) {
@@ -840,7 +838,135 @@ function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject
             objectId: objData[1]
           };
           break;
-        } else if (!isNestedObject && key[0] == '_' && key != '__type') {
+        } else {
+          var expectedType = schema.getExpectedType(className, key);
+          var value = mongoObject[key];
+          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+            restObject[key] = FileCoder.databaseToJSON(value);
+            break;
+          }
+          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+            restObject[key] = GeoPointCoder.databaseToJSON(value);
+            break;
+          }
+        }
+        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
+      }
+    }
+    return restObject;
+  default:
+    throw 'unknown js type';
+  }
+}
+
+// Converts from a mongo-format object to a REST-format object.
+// Does not strip out anything based on a lack of authentication.
+const mongoObjectToParseObject = (schema, className, mongoObject) => {
+  switch(typeof mongoObject) {
+  case 'string':
+  case 'number':
+  case 'boolean':
+    return mongoObject;
+  case 'undefined':
+  case 'symbol':
+  case 'function':
+    throw 'bad value in mongoObjectToParseObject';
+  case 'object':
+    if (mongoObject === null) {
+      return null;
+    }
+    if (mongoObject instanceof Array) {
+      return mongoObject.map(arrayEntry => {
+        return nestedMongoObjectToNestedParseObject(schema, className, arrayEntry);
+      });
+    }
+
+    if (mongoObject instanceof Date) {
+      return Parse._encode(mongoObject);
+    }
+
+    if (mongoObject instanceof mongodb.Long) {
+      return mongoObject.toNumber();
+    }
+
+    if (mongoObject instanceof mongodb.Double) {
+      return mongoObject.value;
+    }
+
+    if (BytesCoder.isValidDatabaseObject(mongoObject)) {
+      return BytesCoder.databaseToJSON(mongoObject);
+    }
+
+    var restObject = untransformACL(mongoObject);
+    for (var key in mongoObject) {
+      switch(key) {
+      case '_id':
+        restObject['objectId'] = '' + mongoObject[key];
+        break;
+      case '_hashed_password':
+        restObject['password'] = mongoObject[key];
+        break;
+      case '_acl':
+      case '_email_verify_token':
+      case '_perishable_token':
+      case '_tombstone':
+        break;
+      case '_session_token':
+        restObject['sessionToken'] = mongoObject[key];
+        break;
+      case 'updatedAt':
+      case '_updated_at':
+        restObject['updatedAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'createdAt':
+      case '_created_at':
+        restObject['createdAt'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'expiresAt':
+      case '_expiresAt':
+        restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
+        break;
+      default:
+        // Check other auth data keys
+        var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+        if (authDataMatch) {
+          var provider = authDataMatch[1];
+          restObject['authData'] = restObject['authData'] || {};
+          restObject['authData'][provider] = mongoObject[key];
+          break;
+        }
+
+        if (key.indexOf('_p_') == 0) {
+          var newKey = key.substring(3);
+          var expected;
+          if (schema && schema.getExpectedType) {
+            expected = schema.getExpectedType(className, newKey);
+          }
+          if (!expected) {
+            log.info('transform.js',
+              'Found a pointer column not in the schema, dropping it.',
+              className, newKey);
+            break;
+          }
+          if (expected && expected.type !== 'Pointer') {
+            log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
+            break;
+          }
+          if (mongoObject[key] === null) {
+            break;
+          }
+          var objData = mongoObject[key].split('$');
+          var newClass = (expected ? expected.targetClass : objData[0]);
+          if (objData[0] !== newClass) {
+            throw 'pointer to incorrect className';
+          }
+          restObject[newKey] = {
+            __type: 'Pointer',
+            className: objData[0],
+            objectId: objData[1]
+          };
+          break;
+        } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
           var expectedType = schema.getExpectedType(className, key);
@@ -854,15 +980,11 @@ function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject
             break;
           }
         }
-        restObject[key] = mongoObjectToParseObject(schema, className, mongoObject[key], true);
+        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
       }
     }
 
-    if (!isNestedObject) {
-      let relationFields = schema.getRelationFields(className);
-      Object.assign(restObject, relationFields);
-    }
-    return restObject;
+    return { ...restObject, ...schema.getRelationFields(className) };
   default:
     throw 'unknown js type';
   }
