@@ -713,7 +713,7 @@ function transformUpdateOperator({
   }
 }
 
-const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) => {
+const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -728,7 +728,7 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
       return null;
     }
     if (mongoObject instanceof Array) {
-      return mongoObject.map(arrayEntry => nestedMongoObjectToNestedParseObject(schema, className, arrayEntry));
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
     }
 
     if (mongoObject instanceof Date) {
@@ -747,7 +747,7 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    return _.mapValues(mongoObject, value => nestedMongoObjectToNestedParseObject(schema, className, value));
+    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
   default:
     throw 'unknown js type';
   }
@@ -770,9 +770,7 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
       return null;
     }
     if (mongoObject instanceof Array) {
-      return mongoObject.map(arrayEntry => {
-        return nestedMongoObjectToNestedParseObject(schema, className, arrayEntry);
-      });
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
     }
 
     if (mongoObject instanceof Date) {
@@ -874,7 +872,7 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
             break;
           }
         }
-        restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
+        restObject[key] = nestedMongoObjectToNestedParseObject(mongoObject[key]);
       }
     }
 
