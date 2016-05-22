@@ -25,6 +25,7 @@ function mongoFieldToParseSchemaField(type) {
     case 'array':    return {type: 'Array'};
     case 'geopoint': return {type: 'GeoPoint'};
     case 'file':     return {type: 'File'};
+    case 'bytes':    return {type: 'Bytes'};
   }
 }
 
