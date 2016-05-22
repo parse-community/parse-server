@@ -731,7 +731,7 @@ const specialKeysForUntransform = [
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
-function untransformObject(schema, className, mongoObject, isNestedObject = false) {
+function mongoObjectToParseObject(schema, className, mongoObject, isNestedObject = false) {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -740,14 +740,14 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   case 'undefined':
   case 'symbol':
   case 'function':
-    throw 'bad value in untransformObject';
+    throw 'bad value in mongoObjectToParseObject';
   case 'object':
     if (mongoObject === null) {
       return null;
     }
     if (mongoObject instanceof Array) {
       return mongoObject.map(arrayEntry => {
-        return untransformObject(schema, className, arrayEntry, true);
+        return mongoObjectToParseObject(schema, className, arrayEntry, true);
       });
     }
 
@@ -770,7 +770,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
       if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        restObject[key] = mongoObjectToParseObject(schema, className, mongoObject[key], true);
         continue;
       }
       switch(key) {
@@ -854,7 +854,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             break;
           }
         }
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        restObject[key] = mongoObjectToParseObject(schema, className, mongoObject[key], true);
       }
     }
 
@@ -961,5 +961,5 @@ module.exports = {
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
-  untransformObject
+  mongoObjectToParseObject,
 };

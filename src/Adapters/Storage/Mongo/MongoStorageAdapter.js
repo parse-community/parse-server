@@ -197,6 +197,14 @@ export class MongoStorageAdapter {
     });
   }
 
+  // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
+  // Accepts the schemaController for legacy reasons.
+  find(className, query, { skip, limit, sort }, schemaController) {
+    return this.adaptiveCollection(className)
+    .then(collection => collection.find(query, { skip, limit, sort }))
+    .then(objects => objects.map(object => transform.mongoObjectToParseObject(schemaController, className, object)));
+  }
+
   get transform() {
     return transform;
   }

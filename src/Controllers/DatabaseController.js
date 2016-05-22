@@ -701,11 +701,8 @@ DatabaseController.prototype.find = function(className, query, {
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
         } else {
-          return collection.find(mongoWhere, mongoOptions)
-          .then(mongoResults => mongoResults.map(mongoObject => {
-            var parseObject = this.transform.untransformObject(schemaController, className, mongoObject);
-            return filterSensitiveData(isMaster, aclGroup, className, parseObject);
-          }));
+          return this.adapter.find(className, mongoWhere, mongoOptions, schemaController)
+          .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });
     });
