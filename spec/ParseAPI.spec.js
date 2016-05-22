@@ -1170,4 +1170,6 @@ describe('miscellaneous', function() {
       done();
     });
   });
+=======
+>>>>>>> Prevent untransforming inner object keys named _p_*
 });
