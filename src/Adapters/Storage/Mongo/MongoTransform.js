@@ -868,66 +868,6 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   }
 }
 
-function transformSelect(selectObject, key ,objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete selectObject['$select'];
-  if (Array.isArray(selectObject['$in'])) {
-    selectObject['$in'] = selectObject['$in'].concat(values);
-  } else {
-    selectObject['$in'] = values;
-  }
-}
-
-function transformDontSelect(dontSelectObject, key, objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete dontSelectObject['$dontSelect'];
-  if (Array.isArray(dontSelectObject['$nin'])) {
-    dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
-  } else {
-    dontSelectObject['$nin'] = values;
-  }
-}
-
-function transformInQuery(inQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete inQueryObject['$inQuery'];
-  if (Array.isArray(inQueryObject['$in'])) {
-    inQueryObject['$in'] = inQueryObject['$in'].concat(values);
-  } else {
-    inQueryObject['$in'] = values;
-  }
-}
-
-function transformNotInQuery(notInQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete notInQueryObject['$notInQuery'];
-  if (Array.isArray(notInQueryObject['$nin'])) {
-    notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
-  } else {
-    notInQueryObject['$nin'] = values;
-  }
-}
-
 var DateCoder = {
   JSONToDatabase(json) {
     return new Date(json.iso);
@@ -1021,9 +961,5 @@ module.exports = {
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
-  transformSelect,
-  transformDontSelect,
-  transformInQuery,
-  transformNotInQuery,
   untransformObject
 };
