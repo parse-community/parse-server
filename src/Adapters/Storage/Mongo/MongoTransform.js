@@ -749,47 +749,15 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      if (key.indexOf('_p_') == 0) {
-        var newKey = key.substring(3);
-        var expected;
-        if (schema && schema.getExpectedType) {
-          expected = schema.getExpectedType(className, newKey);
-        }
-        if (!expected) {
-          log.info('transform.js',
-            'Found a pointer column not in the schema, dropping it.',
-            className, newKey);
-          break;
-        }
-        if (expected && expected.type !== 'Pointer') {
-          log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
-          break;
-        }
-        if (mongoObject[key] === null) {
-          break;
-        }
-        var objData = mongoObject[key].split('$');
-        var newClass = (expected ? expected.targetClass : objData[0]);
-        if (objData[0] !== newClass) {
-          throw 'pointer to incorrect className';
-        }
-        restObject[newKey] = {
-          __type: 'Pointer',
-          className: objData[0],
-          objectId: objData[1]
-        };
+      var expectedType = schema.getExpectedType(className, key);
+      var value = mongoObject[key];
+      if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+        restObject[key] = FileCoder.databaseToJSON(value);
         break;
-      } else {
-        var expectedType = schema.getExpectedType(className, key);
-        var value = mongoObject[key];
-        if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
-          restObject[key] = FileCoder.databaseToJSON(value);
-          break;
-        }
-        if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
-          restObject[key] = GeoPointCoder.databaseToJSON(value);
-          break;
-        }
+      }
+      if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+        restObject[key] = GeoPointCoder.databaseToJSON(value);
+        break;
       }
       restObject[key] = nestedMongoObjectToNestedParseObject(schema, className, mongoObject[key]);
     }
