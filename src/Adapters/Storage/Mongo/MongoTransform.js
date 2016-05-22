@@ -749,15 +749,6 @@ const nestedMongoObjectToNestedParseObject = (schema, className, mongoObject) =>
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      // Check auth data keys
-      var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
-      if (authDataMatch) {
-        var provider = authDataMatch[1];
-        restObject['authData'] = restObject['authData'] || {};
-        restObject['authData'][provider] = mongoObject[key];
-        break;
-      }
-
       if (key.indexOf('_p_') == 0) {
         var newKey = key.substring(3);
         var expected;
