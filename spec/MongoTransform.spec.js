@@ -153,7 +153,9 @@ describe('mongoObjectToParseObject', () => {
 
   it('file', (done) => {
     var input = {picture: 'pic.jpg'};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { picture: { type: 'File' }},
+    });
     expect(typeof output.picture).toEqual('object');
     expect(output.picture).toEqual({__type: 'File', name: 'pic.jpg'});
     done();
@@ -161,7 +163,9 @@ describe('mongoObjectToParseObject', () => {
 
   it('geopoint', (done) => {
     var input = {location: [180, -180]};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { location: { type: 'GeoPoint' }},
+    });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
       {__type: 'GeoPoint', longitude: 180, latitude: -180}
@@ -171,7 +175,9 @@ describe('mongoObjectToParseObject', () => {
 
   it('nested array', (done) => {
     var input = {arr: [{_testKey: 'testValue' }]};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { arr: { type: 'Array' } },
+    });
     expect(Array.isArray(output.arr)).toEqual(true);
     expect(output.arr).toEqual([{ _testKey: 'testValue'}]);
     done();
@@ -189,7 +195,9 @@ describe('mongoObjectToParseObject', () => {
       },
       regularKey: "some data",
     }]}
-    let output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    let output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { array: { type: 'Array' }},
+    });
     expect(dd(output, input)).toEqual(undefined);
     done();
   });
@@ -271,7 +279,12 @@ describe('transform schema key changes', () => {
       long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
       double: new mongodb.Double(Number.MAX_VALUE)
     }
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: {
+        long: { type: 'Number' },
+        double: { type: 'Number' },
+      },
+    });
     expect(output.long).toBe(Number.MAX_SAFE_INTEGER);
     expect(output.double).toBe(Number.MAX_VALUE);
     done();

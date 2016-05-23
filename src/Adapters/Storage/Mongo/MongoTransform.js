@@ -830,10 +830,6 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
 
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
-          var expected;
-          if (schemaController && schemaController.getExpectedType) {
-            expected = schemaController.getExpectedType(className, newKey);
-          }
           if (!schema.fields[newKey]) {
             log.info('transform.js', 'Found a pointer column not in the schema, dropping it.', className, newKey);
             break;
@@ -858,13 +854,12 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
-          var expectedType = schemaController.getExpectedType(className, key);
           var value = mongoObject[key];
-          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'File' && FileCoder.isValidDatabaseObject(value)) {
             restObject[key] = FileCoder.databaseToJSON(value);
             break;
           }
-          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
