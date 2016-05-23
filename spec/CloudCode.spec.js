@@ -558,7 +558,7 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('trivial beforeSave should not affect fetched pointers', done => {
+  it('trivial beforeSave should not affect fetched pointers (regression test for #1238)', done => {
     Parse.Cloud.beforeSave('BeforeSaveUnchanged', (req, res) => {
       res.success();
     });
@@ -588,5 +588,15 @@ describe('Cloud Code', () => {
       expect(aBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
       done();
     });
+  });
+
+  it('beforeSave that adds pointer works', done => {
+    fail();
+    done()
+  });
+
+  it('beforeSave that changes a pointer to a different pointer works', done => {
+    fail();
+    done()
   });
 });

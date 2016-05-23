@@ -760,7 +760,8 @@ RestWrite.prototype.runDatabaseOperation = function() {
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
     .then(response => {
-      response = { ...response, objectId: this.data.objectId, createdAt: this.data.createdAt };
+      response.objectId = this.data.objectId;
+      response.createdAt = this.data.createdAt;
       if (this.storage.changedByTrigger) {
         Object.keys(this.data).forEach(fieldName => {
           response[fieldName] = response[fieldName] || this.data[fieldName];
