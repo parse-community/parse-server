@@ -1120,4 +1120,54 @@ describe('miscellaneous', function() {
       done();
     })
   });
+
+  it('does not change inner object key names _auth_data_something', done => {
+    new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
+    .then(object => new Parse.Query('O').get(object.id))
+    .then(object => {
+      expect(object.get('innerObj')).toEqual({_auth_data_facebook: 7});
+      done();
+    });
+  });
+
+  it('does not change inner object key names _p_somethign', done => {
+    new Parse.Object('O').save({ innerObj: {_p_data: 7}})
+    .then(object => new Parse.Query('O').get(object.id))
+    .then(object => {
+      expect(object.get('innerObj')).toEqual({_p_data: 7});
+      done();
+    });
+  });
+
+  it('does not change inner object key names _rperm, _wperm', done => {
+    new Parse.Object('O').save({ innerObj: {_rperm: 7, _wperm: 8}})
+    .then(object => new Parse.Query('O').get(object.id))
+    .then(object => {
+      expect(object.get('innerObj')).toEqual({_rperm: 7, _wperm: 8});
+      done();
+    });
+  });
+
+  it('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
+    let file = new Parse.File('myfile.txt', { base64: 'eAo=' });
+    file.save()
+    .then(f => {
+      let obj = new Parse.Object('O');
+      obj.set('fileField', f);
+      obj.set('geoField', new Parse.GeoPoint(0, 0));
+      obj.set('innerObj', {
+        fileField: "data",
+        geoField: [1,2],
+      });
+      return obj.save();
+    })
+    .then(object => object.fetch())
+    .then(object => {
+      expect(object.get('innerObj')).toEqual({
+        fileField: "data",
+        geoField: [1,2],
+      });
+      done();
+    });
+  });
 });
