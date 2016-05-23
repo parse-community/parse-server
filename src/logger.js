@@ -46,8 +46,10 @@ export function configureLogger({logsFolder, level = winston.level}) {
   if (!path.isAbsolute(logsFolder)) {
     logsFolder = path.resolve(process.cwd(), logsFolder);
   }
-  if (!fs.existsSync(logsFolder)) {
+  try {
     fs.mkdirSync(logsFolder);
+  } catch (exception) {
+    // Ignore, assume the folder already exists
   }
   currentLogsFolder = logsFolder;
 
