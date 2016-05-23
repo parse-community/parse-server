@@ -245,6 +245,9 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 
 For the full list of configurable environment variables, run `parse-server --help`.
 
+### Available Adapters
+[Parse Server Modules (Adapters)](https://github.com/parse-server-modules)
+
 ### Configuring File Adapters
 
 Parse Server allows developers to choose from several options when hosting files:
