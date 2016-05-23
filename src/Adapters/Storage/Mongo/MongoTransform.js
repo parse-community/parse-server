@@ -834,7 +834,7 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
           if (schemaController && schemaController.getExpectedType) {
             expected = schemaController.getExpectedType(className, newKey);
           }
-          if (!expected) {
+          if (!schema.fields[newKey]) {
             log.info('transform.js',
               'Found a pointer column not in the schema, dropping it.',
               className, newKey);
