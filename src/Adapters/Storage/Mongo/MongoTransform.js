@@ -713,25 +713,7 @@ function transformUpdateOperator({
   }
 }
 
-const specialKeysForUntransform = [
-  '_id',
-  '_hashed_password',
-  '_acl',
-  '_email_verify_token',
-  '_perishable_token',
-  '_tombstone',
-  '_session_token',
-  'updatedAt',
-  '_updated_at',
-  'createdAt',
-  '_created_at',
-  'expiresAt',
-  '_expiresAt',
-];
-
-// Converts from a mongo-format object to a REST-format object.
-// Does not strip out anything based on a lack of authentication.
-function untransformObject(schema, className, mongoObject, isNestedObject = false) {
+const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -740,15 +722,55 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   case 'undefined':
   case 'symbol':
   case 'function':
-    throw 'bad value in untransformObject';
+    throw 'bad value in mongoObjectToParseObject';
   case 'object':
     if (mongoObject === null) {
       return null;
     }
     if (mongoObject instanceof Array) {
-      return mongoObject.map(arrayEntry => {
-        return untransformObject(schema, className, arrayEntry, true);
-      });
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
+    }
+
+    if (mongoObject instanceof Date) {
+      return Parse._encode(mongoObject);
+    }
+
+    if (mongoObject instanceof mongodb.Long) {
+      return mongoObject.toNumber();
+    }
+
+    if (mongoObject instanceof mongodb.Double) {
+      return mongoObject.value;
+    }
+
+    if (BytesCoder.isValidDatabaseObject(mongoObject)) {
+      return BytesCoder.databaseToJSON(mongoObject);
+    }
+
+    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
+  default:
+    throw 'unknown js type';
+  }
+}
+
+// Converts from a mongo-format object to a REST-format object.
+// Does not strip out anything based on a lack of authentication.
+const mongoObjectToParseObject = (schema, className, mongoObject) => {
+  switch(typeof mongoObject) {
+  case 'string':
+  case 'number':
+  case 'boolean':
+    return mongoObject;
+  case 'undefined':
+  case 'symbol':
+  case 'function':
+    throw 'bad value in mongoObjectToParseObject';
+  case 'object':
+    if (mongoObject === null) {
+      return null;
+    }
+    if (mongoObject instanceof Array) {
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
     }
 
     if (mongoObject instanceof Date) {
@@ -769,10 +791,6 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-        continue;
-      }
       switch(key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];
@@ -840,7 +858,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             objectId: objData[1]
           };
           break;
-        } else if (!isNestedObject && key[0] == '_' && key != '__type') {
+        } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
           var expectedType = schema.getExpectedType(className, key);
@@ -854,77 +872,13 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             break;
           }
         }
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        restObject[key] = nestedMongoObjectToNestedParseObject(mongoObject[key]);
       }
     }
 
-    if (!isNestedObject) {
-      let relationFields = schema.getRelationFields(className);
-      Object.assign(restObject, relationFields);
-    }
-    return restObject;
+    return { ...restObject, ...schema.getRelationFields(className) };
   default:
     throw 'unknown js type';
-  }
-}
-
-function transformSelect(selectObject, key ,objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete selectObject['$select'];
-  if (Array.isArray(selectObject['$in'])) {
-    selectObject['$in'] = selectObject['$in'].concat(values);
-  } else {
-    selectObject['$in'] = values;
-  }
-}
-
-function transformDontSelect(dontSelectObject, key, objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete dontSelectObject['$dontSelect'];
-  if (Array.isArray(dontSelectObject['$nin'])) {
-    dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
-  } else {
-    dontSelectObject['$nin'] = values;
-  }
-}
-
-function transformInQuery(inQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete inQueryObject['$inQuery'];
-  if (Array.isArray(inQueryObject['$in'])) {
-    inQueryObject['$in'] = inQueryObject['$in'].concat(values);
-  } else {
-    inQueryObject['$in'] = values;
-  }
-}
-
-function transformNotInQuery(notInQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete notInQueryObject['$notInQuery'];
-  if (Array.isArray(notInQueryObject['$nin'])) {
-    notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
-  } else {
-    notInQueryObject['$nin'] = values;
   }
 }
 
@@ -1021,9 +975,5 @@ module.exports = {
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
-  transformSelect,
-  transformDontSelect,
-  transformInQuery,
-  transformNotInQuery,
-  untransformObject
+  mongoObjectToParseObject,
 };
