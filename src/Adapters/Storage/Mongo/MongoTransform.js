@@ -835,12 +835,10 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
             expected = schemaController.getExpectedType(className, newKey);
           }
           if (!schema.fields[newKey]) {
-            log.info('transform.js',
-              'Found a pointer column not in the schema, dropping it.',
-              className, newKey);
+            log.info('transform.js', 'Found a pointer column not in the schema, dropping it.', className, newKey);
             break;
           }
-          if (expected && expected.type !== 'Pointer') {
+          if (schema.fields[newKey].type !== 'Pointer') {
             log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
