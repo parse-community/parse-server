@@ -589,14 +589,4 @@ describe('Cloud Code', () => {
       done();
     });
   });
-
-  it('beforeSave that adds pointer works', done => {
-    fail();
-    done()
-  });
-
-  it('beforeSave that changes a pointer to a different pointer works', done => {
-    fail();
-    done()
-  });
 });

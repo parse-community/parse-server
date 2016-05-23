@@ -12,6 +12,7 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 import RestQuery from './RestQuery';
+import _         from 'lodash';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -165,8 +166,10 @@ RestWrite.prototype.runBeforeTrigger = function() {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
     if (response && response.object) {
+      if (!_.isEqual(this.data, response.object)) {
+        this.storage.changedByTrigger = true;
+      }
       this.data = response.object;
-      this.storage.changedByTrigger = true;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
         delete this.data.objectId
