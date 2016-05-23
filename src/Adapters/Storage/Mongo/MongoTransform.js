@@ -846,8 +846,7 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
             break;
           }
           var objData = mongoObject[key].split('$');
-          var newClass = (expected ? expected.targetClass : objData[0]);
-          if (objData[0] !== newClass) {
+          if (objData[0] !== schema.fields[newKey].targetClass) {
             throw 'pointer to incorrect className';
           }
           restObject[newKey] = {
