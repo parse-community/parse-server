@@ -755,7 +755,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
-const mongoObjectToParseObject = (schema, className, mongoObject) => {
+const mongoObjectToParseObject = (schemaController, className, mongoObject, schema) => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -831,8 +831,8 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
           var expected;
-          if (schema && schema.getExpectedType) {
-            expected = schema.getExpectedType(className, newKey);
+          if (schemaController && schemaController.getExpectedType) {
+            expected = schemaController.getExpectedType(className, newKey);
           }
           if (!expected) {
             log.info('transform.js',
@@ -861,7 +861,7 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
-          var expectedType = schema.getExpectedType(className, key);
+          var expectedType = schemaController.getExpectedType(className, key);
           var value = mongoObject[key];
           if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
             restObject[key] = FileCoder.databaseToJSON(value);
@@ -876,7 +876,7 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
       }
     }
 
-    return { ...restObject, ...schema.getRelationFields(className) };
+    return { ...restObject, ...schemaController.getRelationFields(className) };
   default:
     throw 'unknown js type';
   }
