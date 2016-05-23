@@ -180,11 +180,11 @@ export class MongoStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
 
-  // Currently accepts validate for legacy reasons. Currently accepts the schema, that may not actually be necessary.
-  deleteObjectsByQuery(className, query, validate, schema) {
+  // Currently accepts the schema, that may not actually be necessary.
+  deleteObjectsByQuery(className, query, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
-      let mongoWhere = transform.transformWhere(className, query, { validate }, schema);
+      let mongoWhere = transform.transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
     })
     .then(({ result }) => {

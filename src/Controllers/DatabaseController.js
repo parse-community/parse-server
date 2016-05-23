@@ -24,6 +24,35 @@ function addReadACL(query, acl) {
   return newQuery;
 }
 
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
+const validateQuery = query => {
+  if (query.ACL) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+  }
+
+  if (query.$or) {
+    if (query.$or instanceof Array) {
+      query.$or.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
+    }
+  }
+
+  if (query.$and) {
+    if (query.$and instanceof Array) {
+      query.$and.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+    }
+  }
+
+  Object.keys(query).forEach(key => {
+    if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
+    }
+  });
+}
+
 function DatabaseController(adapter, { skipValidation } = {}) {
   this.adapter = adapter;
 
@@ -174,6 +203,7 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (acl) {
         query = addWriteACL(query, acl);
       }
+      validateQuery(query);
       return schemaController.getOneSchema(className)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
@@ -184,7 +214,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
-        var mongoWhere = this.transform.transformWhere(className, query, {validate: !this.skipValidation}, parseFormatSchema);
+        var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
         mongoUpdate = this.transform.transformUpdate(
           schemaController,
           className,
@@ -328,6 +358,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
       if (acl) {
         query = addWriteACL(query, acl);
       }
+      validateQuery(query);
       return schemaController.getOneSchema(className)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
@@ -337,7 +368,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
         throw error;
       })
-      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, !this.skipValidation, parseFormatSchema))
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, parseFormatSchema))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -668,7 +699,8 @@ DatabaseController.prototype.find = function(className, query, {
         if (!isMaster) {
           query = addReadACL(query, aclGroup);
         }
-        let mongoWhere = this.transform.transformWhere(className, query, {}, schema);
+        validateQuery(query);
+        let mongoWhere = this.transform.transformWhere(className, query, schema);
         if (count) {
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
