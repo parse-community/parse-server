@@ -132,7 +132,9 @@ describe('mongoObjectToParseObject', () => {
 
   it('pointer', (done) => {
     var input = {_p_userPointer: '_User$123'};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
+    });
     expect(typeof output.userPointer).toEqual('object');
     expect(output.userPointer).toEqual(
       {__type: 'Pointer', className: '_User', objectId: '123'}
@@ -142,7 +144,9 @@ describe('mongoObjectToParseObject', () => {
 
   it('null pointer', (done) => {
     var input = {_p_userPointer: null};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+      fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
+    });
     expect(output.userPointer).toBeUndefined();
     done();
   });
