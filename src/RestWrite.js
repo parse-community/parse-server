@@ -166,7 +166,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }).then((response) => {
     if (response && response.object) {
       this.data = response.object;
-      this.storage['changedByTrigger'] = true;
+      this.storage.changedByTrigger = true;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
         delete this.data.objectId
@@ -733,19 +733,16 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // Run an update
-    return this.config.database.update(
-      this.className, this.query, this.data, this.runOptions).then((resp) => {
-        resp.updatedAt = this.updatedAt;
-        if (this.storage['changedByTrigger']) {
-          resp = Object.keys(this.data).reduce((memo, key) => {
-            memo[key] = resp[key] || this.data[key];
-            return memo;
-          }, resp);
-        }
-        this.response = {
-          response: resp
-        };
-      });
+    return this.config.database.update(this.className, this.query, this.data, this.runOptions)
+    .then(response => {
+      response.updatedAt = this.updatedAt;
+      if (this.storage.changedByTrigger) {
+        Object.keys(this.data).forEach(fieldName => {
+          response[fieldName] = response[fieldName] || this.data[fieldName];
+        });
+      }
+      this.response = { response };
+    });
   } else {
     // Set the default ACL for the new _User
     if (this.className === '_User') {
@@ -762,23 +759,19 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
-      .then((resp) => {
-        Object.assign(resp, {
-          objectId: this.data.objectId,
-          createdAt: this.data.createdAt
+    .then(response => {
+      response = { ...response, objectId: this.data.objectId, createdAt: this.data.createdAt };
+      if (this.storage.changedByTrigger) {
+        Object.keys(this.data).forEach(fieldName => {
+          response[fieldName] = response[fieldName] || this.data[fieldName];
         });
-        if (this.storage['changedByTrigger']) {
-          resp = Object.keys(this.data).reduce((memo, key) => {
-            memo[key] = resp[key] || this.data[key];
-            return memo;
-          }, resp);
-        }
-        this.response = {
-          status: 201,
-          response: resp,
-          location: this.location()
-        };
-      });
+      }
+      this.response = {
+        status: 201,
+        response,
+        location: this.location()
+      };
+    });
   }
 };
 
