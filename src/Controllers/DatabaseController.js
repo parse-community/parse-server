@@ -697,8 +697,7 @@ DatabaseController.prototype.find = function(className, query, {
         validateQuery(query);
         if (count) {
           let mongoWhere = this.transform.transformWhere(className, query, schema);
-          delete mongoOptions.limit;
-          return this.adapter.count(className, mongoWhere, mongoOptions);
+          return this.adapter.count(className, mongoWhere);
         } else {
           return this.adapter.find(className, query, mongoOptions, schema)
           .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
