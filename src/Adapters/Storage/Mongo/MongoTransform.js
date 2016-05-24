@@ -94,9 +94,6 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle normal objects by recursing
-  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
-    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
-  }
   value = _.mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
@@ -343,6 +340,9 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   }
 
   for (var restKey in restUpdate) {
+    if (Object.keys(restUpdate[restKey]).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
+      throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+    }
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
