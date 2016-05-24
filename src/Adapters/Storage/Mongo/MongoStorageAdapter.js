@@ -206,9 +206,9 @@ export class MongoStorageAdapter {
   }
 
   // Executs a count.
-  count(className, query, { limit, skip, sort }) {
+  count(className, query, { skip, sort }) {
     return this.adaptiveCollection(className)
-    .then(collection => collection.count(query, { limit, skip, sort }));
+    .then(collection => collection.count(query, { skip, sort }));
   }
 
   get transform() {
