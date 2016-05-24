@@ -210,12 +210,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
-        mongoUpdate = this.transform.transformUpdate(
-          schemaController,
-          className,
-          update,
-          parseFormatSchema
-        );
+        mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
         if (many) {
           return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoUpdate);
         } else if (upsert) {
