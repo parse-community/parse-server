@@ -168,12 +168,11 @@ export class MongoStorageAdapter {
     .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }
 
-  // TODO: As yet not particularly well specified. Creates an object. Shouldn't need the
-  // schemaController, but MongoTransform still needs it :( maybe shouldn't even need the schema,
+  // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
-  createObject(className, object, schemaController, schema) {
-    const mongoObject = parseObjectToMongoObjectForCreate(schemaController, className, object, schema);
+  createObject(className, object, schema) {
+    const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
     .catch(error => {

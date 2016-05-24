@@ -197,13 +197,7 @@ function transformWhere(className, restWhere, schema) {
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (
-  schema,
-  className,
-  restKey,
-  restValue,
-  parseFormatSchema
-) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
@@ -241,7 +235,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   if (restValue && restValue.__type !== 'Bytes') {
     //Note: We may not know the type of a field here, as the user could be saving (null) to a field
     //That never existed before, meaning we can't infer the type.
-    if (parseFormatSchema.fields[restKey] && parseFormatSchema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
+    if (schema.fields[restKey] && schema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
       restKey = '_p_' + restKey;
     }
   }
@@ -279,18 +273,17 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseFormatSchema) {
+function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
   var mongoCreate = transformACL(restCreate);
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      schema,
       className,
       restKey,
       restCreate[restKey],
-      parseFormatSchema
+      schema
     );
     if (value !== undefined) {
       mongoCreate[key] = value;
