@@ -868,7 +868,16 @@ const mongoObjectToParseObject = (schemaController, className, mongoObject, sche
       }
     }
 
-    return { ...restObject, ...schemaController.getRelationFields(className) };
+    const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
+    let relationFields = {};
+    relationFieldNames.forEach(relationFieldName => {
+      relationFields[relationFieldName] = {
+        __type: 'Relation',
+        className: schema.fields[relationFieldName].targetClass,
+      }
+    });
+
+    return { ...restObject, ...relationFields };
   default:
     throw 'unknown js type';
   }

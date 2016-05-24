@@ -17,9 +17,6 @@ var dummySchema = {
       }
       return;
     },
-    getRelationFields: function() {
-      return {}
-    }
 };
 
 
@@ -39,7 +36,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
       createdAt: "2015-10-06T21:24:50.332Z",
       updatedAt: "2015-10-06T21:24:50.332Z"
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, { fields: {} });
     expect(output._created_at instanceof Date).toBe(true);
     expect(output._updated_at instanceof Date).toBe(true);
     done();
@@ -62,14 +59,14 @@ describe('parseObjectToMongoObjectForCreate', () => {
   //have __op delete in a new object. Figure out what this should actually be testing.
   notWorking('a delete op', (done) => {
     var input = {deleteMe: {__op: 'Delete'}};
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, { fields: {} });
     jequal(output, {});
     done();
   });
 
   it('basic ACL', (done) => {
     var input = {ACL: {'0123': {'read': true, 'write': true}}};
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, { fields: {} });
     // This just checks that it doesn't crash, but it should check format.
     done();
   });
@@ -124,7 +121,7 @@ describe('transformWhere', () => {
 describe('mongoObjectToParseObject', () => {
   it('built-in timestamps', (done) => {
     var input = {createdAt: new Date(), updatedAt: new Date()};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, { fields: {} });
     expect(typeof output.createdAt).toEqual('string');
     expect(typeof output.updatedAt).toEqual('string');
     done();
@@ -236,7 +233,7 @@ describe('transform schema key changes', () => {
         "Kevin": { "write": true }
       }
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, { fields: {} });
     expect(typeof output._rperm).toEqual('object');
     expect(typeof output._wperm).toEqual('object');
     expect(output.ACL).toBeUndefined();
@@ -253,7 +250,7 @@ describe('transform schema key changes', () => {
       }
     };
 
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, { fields: {} });
     expect(typeof output._acl).toEqual('object');
     expect(output._acl["Kevin"].w).toBeTruthy();
     expect(output._acl["Kevin"].r).toBeUndefined();
@@ -265,7 +262,7 @@ describe('transform schema key changes', () => {
       _rperm: ["*"],
       _wperm: ["Kevin"]
     };
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input);
+    var output = transform.mongoObjectToParseObject(dummySchema, null, input, { fields: {} });
     expect(typeof output.ACL).toEqual('object');
     expect(output._rperm).toBeUndefined();
     expect(output._wperm).toBeUndefined();
