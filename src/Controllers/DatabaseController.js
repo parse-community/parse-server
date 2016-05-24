@@ -649,11 +649,11 @@ DatabaseController.prototype.find = function(className, query, {
       // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
       // so duplicate that behaviour here. If both are specified, the corrent behaviour to match Parse.com is to
       // use the one that appears first in the sort list.
-      if (sort && sort._created_at) {
+      if (sort._created_at) {
         sort.createdAt = sort._created_at;
         delete sort._created_at;
       }
-      if (sort && sort._updated_at) {
+      if (sort._updated_at) {
         sort.updatedAt = sort._updated_at;
         delete sort._updated_at;
       }
