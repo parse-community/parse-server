@@ -196,7 +196,8 @@ export class MongoStorageAdapter {
   }
 
   // Apply the update to all objects that match the given Parse Query.
-  updateObjectsByQuery(className, query, schema, mongoUpdate) {
+  updateObjectsByQuery(className, query, schema, update) {
+    const mongoUpdate = transform.transformUpdate(className, update, schema);
     const mongoWhere = transform.transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));

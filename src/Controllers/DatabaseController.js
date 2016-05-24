@@ -171,6 +171,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
+const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token'];
 DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,
@@ -210,18 +211,28 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
+        Object.keys(update).forEach(fieldName => {
+          if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+          fieldName = fieldName.split('.')[0];
+          if (!SchemaController.fieldNameIsValid(fieldName) && !specialKeysForUpdate.includes(fieldName)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+        });
         for (let updateOperation in update) {
           if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
             throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
           }
         }
-        mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
         if (many) {
-          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoUpdate);
+          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, update);
         } else if (upsert) {
+          var mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
           var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
           return collection.upsertOne(mongoWhere, mongoUpdate);
         } else {
+          var mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
           var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
           return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
         }
