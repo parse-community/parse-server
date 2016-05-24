@@ -205,6 +205,12 @@ export class MongoStorageAdapter {
     .then(objects => objects.map(object => transform.mongoObjectToParseObject(className, object, schema)));
   }
 
+  // Executs a count.
+  count(className, query, mongoOptions) {
+    return this.adaptiveCollection(className)
+    .then(collection => collection.count(query, mongoOptions));
+  }
+
   get transform() {
     return transform;
   }
