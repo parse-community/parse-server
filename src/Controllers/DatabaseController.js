@@ -210,6 +210,11 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
+        for (let updateOperation in update) {
+          if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
+            throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+          }
+        }
         mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
         if (many) {
           return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoUpdate);

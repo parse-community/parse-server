@@ -317,9 +317,6 @@ function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseF
 
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
-  if (!restUpdate) {
-    throw 'got empty restUpdate';
-  }
   if (className == '_User') {
     restUpdate = transformAuthData(restUpdate);
   }
@@ -338,11 +335,7 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
       mongoUpdate['$set']['_acl'] = acl._acl;
     }
   }
-
   for (var restKey in restUpdate) {
-    if (Object.keys(restUpdate[restKey]).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
-      throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
-    }
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
