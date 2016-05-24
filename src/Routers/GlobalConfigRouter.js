@@ -24,13 +24,6 @@ export class GlobalConfigRouter extends PromiseRouter {
       return acc;
     }, {});
     let database = req.config.database.WithoutValidation();
-    // TODO: We don't want to require db adapters to support upsert, so we create
-    // and then update whether the object already existed or not. The result
-    // is that simultaneous changes of _GlobalConfig might not work, but I
-    // think given the low write load of _GlobalConfig, thats probably fine.
-
-    // However, we could allow db adapters to optionally support upsert, and
-    // use upsert if its there. That will come later though.
     return database.update('_GlobalConfig', {objectId: 1}, update, {upsert: true}).then(() => ({ response: { result: true } }));
   }
 
