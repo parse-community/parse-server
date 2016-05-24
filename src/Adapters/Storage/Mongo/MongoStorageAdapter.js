@@ -208,7 +208,7 @@ export class MongoStorageAdapter {
     const mongoUpdate = transform.transformUpdate(className, update, schema);
     const mongoWhere = transform.transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
-    .then(collection => collection.findOneAndUpdate());
+    .then(collection => collection.findOneAndUpdate(mongoWhere, mongoUpdate));
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.

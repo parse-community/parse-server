@@ -230,9 +230,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         } else if (upsert) {
           return this.adapter.upsertOneObject(className, query, parseFormatSchema, update);
         } else {
-          var mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
-          var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
-          return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+          return this.adapter.findOneAndUpdate(className, query, parseFormatSchema, update);
         }
       });
     })
