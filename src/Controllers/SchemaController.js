@@ -492,7 +492,7 @@ class SchemaController {
         } else {
           throw new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${expected} but got ${type}`
+            `schema mismatch for ${className}.${fieldName}; expected ${expected.type || expected} but got ${type}`
           );
         }
       }
