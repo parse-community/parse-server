@@ -197,6 +197,11 @@ export class MongoStorageAdapter {
     });
   }
 
+  updateObjectsByQuery(className, query, schema, mongoWhere, mongoUpdate) {
+    return this.adaptiveCollection(className)
+    .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
+  }
+
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, query, schema, { skip, limit, sort }) {
     let mongoWhere = this.transform.transformWhere(className, query, schema);

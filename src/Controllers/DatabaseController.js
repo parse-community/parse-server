@@ -218,7 +218,7 @@ DatabaseController.prototype.update = function(className, query, update, {
           {validate: !this.skipValidation}
         );
         if (many) {
-          return collection.updateMany(mongoWhere, mongoUpdate);
+          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoWhere, mongoUpdate);
         } else if (upsert) {
           return collection.upsertOne(mongoWhere, mongoUpdate);
         } else {
