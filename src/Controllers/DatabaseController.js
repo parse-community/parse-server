@@ -189,8 +189,7 @@ DatabaseController.prototype.update = function(className, query, update, {
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
+    .then(() => {
       if (!isMaster) {
         query = this.addPointerPermissions(schemaController, className, 'update', query, aclGroup);
       }
@@ -210,7 +209,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         }
         throw error;
       })
-      .then(parseFormatSchema => {
+      .then(schema => {
         Object.keys(update).forEach(fieldName => {
           if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
@@ -226,11 +225,11 @@ DatabaseController.prototype.update = function(className, query, update, {
           }
         }
         if (many) {
-          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, update);
+          return this.adapter.updateObjectsByQuery(className, query, schema, update);
         } else if (upsert) {
-          return this.adapter.upsertOneObject(className, query, parseFormatSchema, update);
+          return this.adapter.upsertOneObject(className, query, schema, update);
         } else {
-          return this.adapter.findOneAndUpdate(className, query, parseFormatSchema, update);
+          return this.adapter.findOneAndUpdate(className, query, schema, update);
         }
       });
     })
