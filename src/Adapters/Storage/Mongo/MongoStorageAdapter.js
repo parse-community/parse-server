@@ -163,8 +163,8 @@ export class MongoStorageAdapter {
   // schemaController, but MongoTransform still needs it :( maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
-  createObject(className, object, schemaController, parseFormatSchema) {
-    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, parseFormatSchema);
+  createObject(className, object, schemaController, schema) {
+    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
     .catch(error => {
@@ -201,6 +201,22 @@ export class MongoStorageAdapter {
     const mongoWhere = transform.transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
+  }
+
+  // Hopefully we can get rid of this in favor of updateObjectsByQuery.
+  findOneAndUpdate(className, query, schema, update) {
+    const mongoUpdate = transform.transformUpdate(className, update, schema);
+    const mongoWhere = transform.transformWhere(className, query, schema);
+    return this.adaptiveCollection(className)
+    .then(collection => collection.findOneAndUpdate());
+  }
+
+  // Hopefully we can get rid of this. It's only used for config and hooks.
+  upsertOneObject(className, query, schema, update) {
+    const mongoUpdate = this.transform.transformUpdate(className, update, schema);
+    const mongoWhere = this.transform.transformWhere(className, query, schema);
+    return this.adaptiveCollection(className)
+    .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
