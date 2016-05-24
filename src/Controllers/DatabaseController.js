@@ -214,7 +214,7 @@ DatabaseController.prototype.update = function(className, query, update, {
           schemaController,
           className,
           update,
-          {validate: !this.skipValidation}
+          parseFormatSchema
         );
         if (many) {
           return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoUpdate);

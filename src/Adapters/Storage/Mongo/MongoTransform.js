@@ -19,7 +19,7 @@ const transformKey = (className, fieldName, schema) => {
   return fieldName;
 }
 
-const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
+const transformKeyValueForUpdate = (schema, className, restKey, restValue, parseFormatSchema) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -326,7 +326,7 @@ function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseF
 }
 
 // Main exposed method to help update old objects.
-function transformUpdate(schema, className, restUpdate) {
+function transformUpdate(schema, className, restUpdate, parseFormatSchema) {
   if (!restUpdate) {
     throw 'got empty restUpdate';
   }
@@ -350,7 +350,7 @@ function transformUpdate(schema, className, restUpdate) {
   }
 
   for (var restKey in restUpdate) {
-    var out = transformKeyValueForUpdate(schema, className, restKey, restUpdate[restKey]);
+    var out = transformKeyValueForUpdate(schema, className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
     // operator that needs to be lifted onto the top level update
