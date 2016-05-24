@@ -24,9 +24,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       return acc;
     }, {});
     let database = req.config.database.WithoutValidation();
-    return database.update('_GlobalConfig', {objectId: 1}, update, {upsert: true}).then(() => {
-      return Promise.resolve({ response: { result: true } });
-    });
+    return database.update('_GlobalConfig', {objectId: 1}, update, {upsert: true}).then(() => ({ response: { result: true } }));
   }
 
   mountRoutes() {
