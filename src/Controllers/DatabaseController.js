@@ -698,7 +698,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (count) {
           return this.adapter.count(className, query, schema);
         } else {
-          return this.adapter.find(className, query, mongoOptions, schema)
+          return this.adapter.find(className, query, schema, mongoOptions)
           .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });
