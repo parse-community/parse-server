@@ -213,15 +213,15 @@ export class MongoStorageAdapter {
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, query, schema, update) {
-    const mongoUpdate = this.transform.transformUpdate(className, update, schema);
-    const mongoWhere = this.transform.transformWhere(className, query, schema);
+    const mongoUpdate = transform.transformUpdate(className, update, schema);
+    const mongoWhere = transform.transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, query, schema, { skip, limit, sort }) {
-    let mongoWhere = this.transform.transformWhere(className, query, schema);
+    let mongoWhere = transform.transformWhere(className, query, schema);
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transform.transformKey(className, fieldName, schema));
     return this.adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
@@ -232,10 +232,6 @@ export class MongoStorageAdapter {
   count(className, query, schema) {
     return this.adaptiveCollection(className)
     .then(collection => collection.count(transform.transformWhere(className, query, schema)));
-  }
-
-  get transform() {
-    return transform;
   }
 }
 

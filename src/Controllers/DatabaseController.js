@@ -62,12 +62,6 @@ function DatabaseController(adapter, { skipValidation } = {}) {
   this.schemaPromise = null;
   this.skipValidation = !!skipValidation;
   this.connect();
-
-  Object.defineProperty(this, 'transform', {
-     get: function() {
-       return adapter.transform;
-     }
-  })
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
