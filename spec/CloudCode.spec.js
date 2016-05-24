@@ -557,4 +557,36 @@ describe('Cloud Code', () => {
       });
     });
   });
+
+  it('trivial beforeSave should not affect fetched pointers (regression test for #1238)', done => {
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', (req, res) => {
+      res.success();
+    });
+
+    var TestObject =  Parse.Object.extend("TestObject");
+    var NoBeforeSaveObject = Parse.Object.extend("NoBeforeSave");
+    var BeforeSaveObject = Parse.Object.extend("BeforeSaveUnchanged");
+
+    var aTestObject = new TestObject();
+    aTestObject.set("foo", "bar");
+    aTestObject.save()
+    .then(aTestObject => {
+      var aNoBeforeSaveObj = new NoBeforeSaveObject();
+      aNoBeforeSaveObj.set("aTestObject", aTestObject);
+      expect(aNoBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+      return aNoBeforeSaveObj.save();
+    })
+    .then(aNoBeforeSaveObj => {
+      expect(aNoBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+
+      var aBeforeSaveObj = new BeforeSaveObject();
+      aBeforeSaveObj.set("aTestObject", aTestObject);
+      expect(aBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+      return aBeforeSaveObj.save();
+    })
+    .then(aBeforeSaveObj => {
+      expect(aBeforeSaveObj.get("aTestObject").get("foo")).toEqual("bar");
+      done();
+    });
+  });
 });
