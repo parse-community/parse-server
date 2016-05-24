@@ -679,8 +679,7 @@ DatabaseController.prototype.find = function(className, query, {
       return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
       .then(() => this.reduceRelationKeys(className, query))
       .then(() => this.reduceInRelation(className, query, schemaController))
-      .then(() => this.adapter.adaptiveCollection(className))
-      .then(collection => {
+      .then(() => {
         if (!isMaster) {
           query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
         }
