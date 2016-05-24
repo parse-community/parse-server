@@ -210,7 +210,6 @@ DatabaseController.prototype.update = function(className, query, update, {
         throw error;
       })
       .then(parseFormatSchema => {
-        var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
         mongoUpdate = this.transform.transformUpdate(
           schemaController,
           className,
@@ -218,10 +217,12 @@ DatabaseController.prototype.update = function(className, query, update, {
           {validate: !this.skipValidation}
         );
         if (many) {
-          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoWhere, mongoUpdate);
+          return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, mongoUpdate);
         } else if (upsert) {
+          var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
           return collection.upsertOne(mongoWhere, mongoUpdate);
         } else {
+          var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
           return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
         }
       });

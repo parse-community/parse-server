@@ -176,11 +176,9 @@ export class MongoStorageAdapter {
     });
   }
 
-  // Remove all objects that match the given parse query. Parse Query should be in Parse Format.
+  // Remove all objects that match the given Parse Query.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
-
-  // Currently accepts the schema, that may not actually be necessary.
   deleteObjectsByQuery(className, query, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
@@ -197,7 +195,9 @@ export class MongoStorageAdapter {
     });
   }
 
-  updateObjectsByQuery(className, query, schema, mongoWhere, mongoUpdate) {
+  // Apply the update to all objects that match the given Parse Query.
+  updateObjectsByQuery(className, query, schema, mongoUpdate) {
+    const mongoWhere = transform.transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
   }
