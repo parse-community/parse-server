@@ -631,13 +631,6 @@ DatabaseController.prototype.find = function(className, query, {
   sort,
   count,
 } = {}) {
-  let mongoOptions = {};
-  if (skip) {
-    mongoOptions.skip = skip;
-  }
-  if (limit) {
-    mongoOptions.limit = limit;
-  }
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
@@ -653,8 +646,8 @@ DatabaseController.prototype.find = function(className, query, {
       throw error;
     })
     .then(schema => {
+      const transformedSort = {};
       if (sort) {
-        mongoOptions.sort = {};
         for (let fieldName in sort) {
           // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
           // so duplicate that behaviour here.
@@ -673,7 +666,7 @@ DatabaseController.prototype.find = function(className, query, {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
           }
           const mongoKey = this.transform.transformKey(className, fieldName, schema);
-          mongoOptions.sort[mongoKey] = sort[fieldName];
+          transformedSort[mongoKey] = sort[fieldName];
         }
       }
       return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
@@ -698,7 +691,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (count) {
           return this.adapter.count(className, query, schema);
         } else {
-          return this.adapter.find(className, query, schema, mongoOptions)
+          return this.adapter.find(className, query, schema, { skip, limit, sort: transformedSort })
           .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });
