@@ -28,8 +28,6 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 **Using a remote MongoDB?** Pass the  `--databaseURI DATABASE_URI` parameter when starting `parse-server`. Learn more about configuring Parse Server [here](#configuration). For a full list of available options, run `parse-server --help`.
 
-**Want logs to be in placed in other folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
-
 ### Saving your first object
 
 Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](https://parse.com/docs/rest/guide), but you can easily do the same using any of the [Parse SDKs](https://parseplatform.github.io/#sdks). Run the following:
@@ -191,6 +189,16 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
 * `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
+
+##### Logging
+
+Use the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server` to save your server logfiles to the specified folder.
+
+Usage:
+
+```
+PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+```
 
 ##### Email verification and password reset
 
