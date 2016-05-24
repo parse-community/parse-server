@@ -1,8 +1,17 @@
-import MongoCollection                          from './MongoCollection';
-import MongoSchemaCollection                    from './MongoSchemaCollection';
-import {parse as parseUrl, format as formatUrl} from '../../../vendor/mongodbUrl';
-import * as transform                           from './MongoTransform';
-import _                                        from 'lodash';
+import MongoCollection       from './MongoCollection';
+import MongoSchemaCollection from './MongoSchemaCollection';
+import {
+  parse as parseUrl,
+  format as formatUrl,
+} from '../../../vendor/mongodbUrl';
+import {
+  parseObjectToMongoObjectForCreate,
+  mongoObjectToParseObject,
+  transformKey,
+  transformWhere,
+  transformUpdate,
+} from './MongoTransform';
+import _                     from 'lodash';
 
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
@@ -164,7 +173,7 @@ export class MongoStorageAdapter {
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
   createObject(className, object, schemaController, schema) {
-    const mongoObject = transform.parseObjectToMongoObjectForCreate(schemaController, className, object, schema);
+    const mongoObject = parseObjectToMongoObjectForCreate(schemaController, className, object, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
     .catch(error => {
@@ -182,7 +191,7 @@ export class MongoStorageAdapter {
   deleteObjectsByQuery(className, query, schema) {
     return this.adaptiveCollection(className)
     .then(collection => {
-      let mongoWhere = transform.transformWhere(className, query, schema);
+      let mongoWhere = transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
     })
     .then(({ result }) => {
@@ -197,41 +206,41 @@ export class MongoStorageAdapter {
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, query, schema, update) {
-    const mongoUpdate = transform.transformUpdate(className, update, schema);
-    const mongoWhere = transform.transformWhere(className, query, schema);
+    const mongoUpdate = transformUpdate(className, update, schema);
+    const mongoWhere = transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
   }
 
   // Hopefully we can get rid of this in favor of updateObjectsByQuery.
   findOneAndUpdate(className, query, schema, update) {
-    const mongoUpdate = transform.transformUpdate(className, update, schema);
-    const mongoWhere = transform.transformWhere(className, query, schema);
+    const mongoUpdate = transformUpdate(className, update, schema);
+    const mongoWhere = transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.findOneAndUpdate(mongoWhere, mongoUpdate));
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, query, schema, update) {
-    const mongoUpdate = transform.transformUpdate(className, update, schema);
-    const mongoWhere = transform.transformWhere(className, query, schema);
+    const mongoUpdate = transformUpdate(className, update, schema);
+    const mongoWhere = transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
     .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, query, schema, { skip, limit, sort }) {
-    let mongoWhere = transform.transformWhere(className, query, schema);
-    let mongoSort = _.mapKeys(sort, (value, fieldName) => transform.transformKey(className, fieldName, schema));
+    let mongoWhere = transformWhere(className, query, schema);
+    let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
     return this.adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
-    .then(objects => objects.map(object => transform.mongoObjectToParseObject(className, object, schema)));
+    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
   }
 
   // Executs a count.
   count(className, query, schema) {
     return this.adaptiveCollection(className)
-    .then(collection => collection.count(transform.transformWhere(className, query, schema)));
+    .then(collection => collection.count(transformWhere(className, query, schema)));
   }
 }
 
