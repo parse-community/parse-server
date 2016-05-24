@@ -123,11 +123,9 @@ describe('InstallationsRouter', () => {
 
     var router = new InstallationsRouter();
     rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
-        .then(() => {
-          return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
-        }).then(() => {
-      return router.handleFind(request);
-    }).then((res) => {
+    .then(() => rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest))
+    .then(() => router.handleFind(request))
+    .then((res) => {
       var response = res.response;
       expect(response.results.length).toEqual(2);
       expect(response.count).toEqual(2);

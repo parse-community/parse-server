@@ -628,16 +628,9 @@ DatabaseController.prototype.find = function(className, query, {
   skip,
   limit,
   acl,
-  sort,
+  sort = {},
   count,
 } = {}) {
-  let mongoOptions = {};
-  if (skip) {
-    mongoOptions.skip = skip;
-  }
-  if (limit) {
-    mongoOptions.limit = limit;
-  }
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
@@ -653,34 +646,29 @@ DatabaseController.prototype.find = function(className, query, {
       throw error;
     })
     .then(schema => {
-      if (sort) {
-        mongoOptions.sort = {};
-        for (let fieldName in sort) {
-          // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
-          // so duplicate that behaviour here.
-          if (fieldName === '_created_at') {
-            fieldName = 'createdAt';
-            sort['createdAt'] = sort['_created_at'];
-          } else if (fieldName === '_updated_at') {
-            fieldName = 'updatedAt';
-            sort['updatedAt'] = sort['_updated_at'];
-          }
-
-          if (!SchemaController.fieldNameIsValid(fieldName)) {
-            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
-          }
-          if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
-            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
-          }
-          const mongoKey = this.transform.transformKey(className, fieldName, schema);
-          mongoOptions.sort[mongoKey] = sort[fieldName];
-        }
+      // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+      // so duplicate that behaviour here. If both are specified, the corrent behaviour to match Parse.com is to
+      // use the one that appears first in the sort list.
+      if (sort._created_at) {
+        sort.createdAt = sort._created_at;
+        delete sort._created_at;
       }
+      if (sort._updated_at) {
+        sort.updatedAt = sort._updated_at;
+        delete sort._updated_at;
+      }
+      Object.keys(sort).forEach(fieldName => {
+        if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
+        }
+        if (!SchemaController.fieldNameIsValid(fieldName)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+        }
+      });
       return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
       .then(() => this.reduceRelationKeys(className, query))
       .then(() => this.reduceInRelation(className, query, schemaController))
-      .then(() => this.adapter.adaptiveCollection(className))
-      .then(collection => {
+      .then(() => {
         if (!isMaster) {
           query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
         }
@@ -696,12 +684,10 @@ DatabaseController.prototype.find = function(className, query, {
           query = addReadACL(query, aclGroup);
         }
         validateQuery(query);
-        let mongoWhere = this.transform.transformWhere(className, query, schema);
         if (count) {
-          delete mongoOptions.limit;
-          return collection.count(mongoWhere, mongoOptions);
+          return this.adapter.count(className, query, schema);
         } else {
-          return this.adapter.find(className, mongoWhere, mongoOptions, schemaController)
+          return this.adapter.find(className, query, schema, { skip, limit, sort })
           .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });

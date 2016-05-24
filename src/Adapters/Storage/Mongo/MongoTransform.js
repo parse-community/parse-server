@@ -755,7 +755,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
-const mongoObjectToParseObject = (schema, className, mongoObject) => {
+const mongoObjectToParseObject = (className, mongoObject, schema) => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -830,17 +830,11 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
 
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
-          var expected;
-          if (schema && schema.getExpectedType) {
-            expected = schema.getExpectedType(className, newKey);
-          }
-          if (!expected) {
-            log.info('transform.js',
-              'Found a pointer column not in the schema, dropping it.',
-              className, newKey);
+          if (!schema.fields[newKey]) {
+            log.info('transform.js', 'Found a pointer column not in the schema, dropping it.', className, newKey);
             break;
           }
-          if (expected && expected.type !== 'Pointer') {
+          if (schema.fields[newKey].type !== 'Pointer') {
             log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
@@ -848,8 +842,7 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
             break;
           }
           var objData = mongoObject[key].split('$');
-          var newClass = (expected ? expected.targetClass : objData[0]);
-          if (objData[0] !== newClass) {
+          if (objData[0] !== schema.fields[newKey].targetClass) {
             throw 'pointer to incorrect className';
           }
           restObject[newKey] = {
@@ -861,13 +854,12 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
-          var expectedType = schema.getExpectedType(className, key);
           var value = mongoObject[key];
-          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'File' && FileCoder.isValidDatabaseObject(value)) {
             restObject[key] = FileCoder.databaseToJSON(value);
             break;
           }
-          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
@@ -876,7 +868,16 @@ const mongoObjectToParseObject = (schema, className, mongoObject) => {
       }
     }
 
-    return { ...restObject, ...schema.getRelationFields(className) };
+    const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
+    let relationFields = {};
+    relationFieldNames.forEach(relationFieldName => {
+      relationFields[relationFieldName] = {
+        __type: 'Relation',
+        className: schema.fields[relationFieldName].targetClass,
+      }
+    });
+
+    return { ...restObject, ...relationFields };
   default:
     throw 'unknown js type';
   }

@@ -686,23 +686,6 @@ class SchemaController {
   hasClass(className) {
     return this.reloadData().then(() => !!(this.data[className]));
   }
-
-  getRelationFields(className) {
-    if (this.data && this.data[className]) {
-      let classData = this.data[className];
-      return Object.keys(classData).filter((field) => {
-        return classData[field].type === 'Relation';
-      }).reduce((memo, field) => {
-        let type = classData[field];
-        memo[field] = {
-          __type: 'Relation',
-          className: type.targetClass
-        };
-        return memo;
-      }, {});
-    }
-    return {};
-  }
 }
 
 // Returns a promise for a new Schema.

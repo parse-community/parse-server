@@ -1121,7 +1121,7 @@ describe('miscellaneous', function() {
     })
   });
 
-  it('does not change inner object key names _auth_data_something', done => {
+  it('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
     .then(object => new Parse.Query('O').get(object.id))
     .then(object => {
