@@ -202,7 +202,7 @@ export class MongoStorageAdapter {
   find(className, query, { skip, limit, sort }, schemaController, schema) {
     return this.adaptiveCollection(className)
     .then(collection => collection.find(query, { skip, limit, sort }))
-    .then(objects => objects.map(object => transform.mongoObjectToParseObject(schemaController, className, object, schema)));
+    .then(objects => objects.map(object => transform.mongoObjectToParseObject(className, object, schema)));
   }
 
   get transform() {

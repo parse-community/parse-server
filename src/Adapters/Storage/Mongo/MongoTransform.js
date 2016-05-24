@@ -755,7 +755,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
 
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
-const mongoObjectToParseObject = (schemaController, className, mongoObject, schema) => {
+const mongoObjectToParseObject = (className, mongoObject, schema) => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
