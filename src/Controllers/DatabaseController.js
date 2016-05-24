@@ -228,9 +228,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         if (many) {
           return this.adapter.updateObjectsByQuery(className, query, parseFormatSchema, update);
         } else if (upsert) {
-          var mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
-          var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
-          return collection.upsertOne(mongoWhere, mongoUpdate);
+          return this.adapter.upsertOneObject(className, query, parseFormatSchema, update);
         } else {
           var mongoUpdate = this.transform.transformUpdate(className, update, parseFormatSchema);
           var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
