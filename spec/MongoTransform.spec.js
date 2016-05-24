@@ -121,7 +121,7 @@ describe('transformWhere', () => {
 describe('mongoObjectToParseObject', () => {
   it('built-in timestamps', (done) => {
     var input = {createdAt: new Date(), updatedAt: new Date()};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, { fields: {} });
+    var output = transform.mongoObjectToParseObject(null, input, { fields: {} });
     expect(typeof output.createdAt).toEqual('string');
     expect(typeof output.updatedAt).toEqual('string');
     done();
@@ -129,7 +129,7 @@ describe('mongoObjectToParseObject', () => {
 
   it('pointer', (done) => {
     var input = {_p_userPointer: '_User$123'};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
     });
     expect(typeof output.userPointer).toEqual('object');
@@ -141,7 +141,7 @@ describe('mongoObjectToParseObject', () => {
 
   it('null pointer', (done) => {
     var input = {_p_userPointer: null};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
     });
     expect(output.userPointer).toBeUndefined();
@@ -150,7 +150,7 @@ describe('mongoObjectToParseObject', () => {
 
   it('file', (done) => {
     var input = {picture: 'pic.jpg'};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: { picture: { type: 'File' }},
     });
     expect(typeof output.picture).toEqual('object');
@@ -160,7 +160,7 @@ describe('mongoObjectToParseObject', () => {
 
   it('geopoint', (done) => {
     var input = {location: [180, -180]};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'GeoPoint' }},
     });
     expect(typeof output.location).toEqual('object');
@@ -172,7 +172,7 @@ describe('mongoObjectToParseObject', () => {
 
   it('nested array', (done) => {
     var input = {arr: [{_testKey: 'testValue' }]};
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: { arr: { type: 'Array' } },
     });
     expect(Array.isArray(output.arr)).toEqual(true);
@@ -192,7 +192,7 @@ describe('mongoObjectToParseObject', () => {
       },
       regularKey: "some data",
     }]}
-    let output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    let output = transform.mongoObjectToParseObject(null, input, {
       fields: { array: { type: 'Array' }},
     });
     expect(dd(output, input)).toEqual(undefined);
@@ -262,7 +262,7 @@ describe('transform schema key changes', () => {
       _rperm: ["*"],
       _wperm: ["Kevin"]
     };
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, { fields: {} });
+    var output = transform.mongoObjectToParseObject(null, input, { fields: {} });
     expect(typeof output.ACL).toEqual('object');
     expect(output._rperm).toBeUndefined();
     expect(output._wperm).toBeUndefined();
@@ -276,7 +276,7 @@ describe('transform schema key changes', () => {
       long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
       double: new mongodb.Double(Number.MAX_VALUE)
     }
-    var output = transform.mongoObjectToParseObject(dummySchema, null, input, {
+    var output = transform.mongoObjectToParseObject(null, input, {
       fields: {
         long: { type: 'Number' },
         double: { type: 'Number' },
