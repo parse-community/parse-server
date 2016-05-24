@@ -696,12 +696,12 @@ DatabaseController.prototype.find = function(className, query, {
           query = addReadACL(query, aclGroup);
         }
         validateQuery(query);
-        let mongoWhere = this.transform.transformWhere(className, query, schema);
         if (count) {
+          let mongoWhere = this.transform.transformWhere(className, query, schema);
           delete mongoOptions.limit;
           return collection.count(mongoWhere, mongoOptions);
         } else {
-          return this.adapter.find(className, mongoWhere, mongoOptions, schema)
+          return this.adapter.find(className, query, mongoOptions, schema)
           .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });
