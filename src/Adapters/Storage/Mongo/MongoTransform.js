@@ -69,14 +69,7 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue, parse
     }
   }
 
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
+  if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
 
