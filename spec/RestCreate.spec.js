@@ -11,14 +11,14 @@ var config = new Config('test');
 var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 
 describe('rest create', () => {
-  it('handles _id', (done) => {
-    rest.create(config, auth.nobody(config), 'Foo', {}).then(() => {
-      return database.mongoFind('Foo', {});
-    }).then((results) => {
+  it('handles _id', done => {
+    rest.create(config, auth.nobody(config), 'Foo', {})
+    .then(() => database.adapter.find('Foo', {}, { fields: {} }, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
-      expect(typeof obj._id).toEqual('string');
-      expect(obj.objectId).toBeUndefined();
+      expect(typeof obj.objectId).toEqual('string');
+      expect(obj._id).toBeUndefined();
       done();
     });
   });
