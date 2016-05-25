@@ -458,9 +458,8 @@ DatabaseController.prototype.relatedIds = function(className, key, owningId) {
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
 DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
-  return this.adapter.adaptiveCollection(joinTableName(className, key))
-    .then(coll => coll.find({ relatedId: { '$in': relatedIds } }))
-    .then(results => results.map(r => r.owningId));
+  return this.adapter.find(joinTableName(className, key), { relatedId: { '$in': relatedIds } }, relationSchema, {})
+  .then(results => results.map(result => result.owningId));
 };
 
 // Modifies query so that it no longer has $in on relation fields, or
