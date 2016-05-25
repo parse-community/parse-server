@@ -1,3 +1,4 @@
+"use strict";
 // These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
@@ -23,6 +24,9 @@ describe('rest create', () => {
     });
   });
 
+  // This test needs to be split into Parse Server portion
+  // and Mongo Adapter portion, but it's unclear if Date
+  // encoding/decoding should happen in Parse Server or the adapter.
   it('handles array, object, date', (done) => {
     var obj = {
       array: [1, 2, 3],
@@ -240,8 +244,8 @@ describe('rest create', () => {
       });
   });
 
-  it('stores pointers with a _p_ prefix', (done) => {
-    var obj = {
+  it('stores pointers', done => {
+    let obj = {
       foo: 'bar',
       aPointer: {
         __type: 'Pointer',
@@ -250,17 +254,23 @@ describe('rest create', () => {
       }
     };
     rest.create(config, auth.nobody(config), 'APointerDarkly', obj)
-      .then((r) => {
-        return database.mongoFind('APointerDarkly', {});
-      }).then((results) => {
-        expect(results.length).toEqual(1);
-        var output = results[0];
-        expect(typeof output._id).toEqual('string');
-        expect(typeof output._p_aPointer).toEqual('string');
-        expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
-        expect(output.aPointer).toBeUndefined();
-        done();
+    .then(() => database.adapter.find('APointerDarkly', {}, { fields: {
+      foo: { type: 'String' },
+      aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+    }}, {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let output = results[0];
+      expect(typeof output.foo).toEqual('string');
+      expect(typeof output._p_aPointer).toEqual('undefined');
+      expect(output._p_aPointer).toBeUndefined();
+      expect(output.aPointer).toEqual({
+        __type: 'Pointer',
+        className: 'JustThePointer',
+        objectId: 'qwerty'
       });
+      done();
+    });
   });
 
   it("cannot set objectId", (done) => {

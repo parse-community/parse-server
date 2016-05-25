@@ -2,10 +2,17 @@
 
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const MongoClient = require('mongodb').MongoClient;
+const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
 describe('MongoStorageAdapter', () => {
+  beforeEach(done => {
+    new MongoStorageAdapter({ uri: databaseURI })
+    .deleteAllSchemas()
+    .then(done, fail);
+  });
+
   it('auto-escapes symbols in auth information', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
@@ -41,7 +48,7 @@ describe('MongoStorageAdapter', () => {
   });
 
   it('stores objectId in _id', done => {
-    let adapter = new MongoStorageAdapter({ uri: process.env.DATABASE_URI });
+    let adapter = new MongoStorageAdapter({ uri: databaseURI });
     adapter.createObject('Foo', { objectId: 'abcde' }, { fields: { objectId: 'String' } })
     .then(() => adapter.adaptiveCollection('Foo'))
     .then(collection => collection.find({}))
@@ -50,6 +57,33 @@ describe('MongoStorageAdapter', () => {
       var obj = results[0];
       expect(typeof obj._id).toEqual('string');
       expect(obj.objectId).toBeUndefined();
+      done();
+    });
+  });
+
+  it('stores pointers with a _p_ prefix', (done) => {
+    let obj = {
+      objectId: 'bar',
+      aPointer: {
+        __type: 'Pointer',
+        className: 'JustThePointer',
+        objectId: 'qwerty'
+      }
+    };
+    let adapter = new MongoStorageAdapter({ uri: databaseURI });
+    adapter.createObject('APointerDarkly', obj, { fields: {
+      objectId: { type: 'String' },
+      aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+    }})
+    .then(() => adapter.adaptiveCollection('APointerDarkly'))
+    .then(collection => collection.find({}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let output = results[0];
+      expect(typeof output._id).toEqual('string');
+      expect(typeof output._p_aPointer).toEqual('string');
+      expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
+      expect(output.aPointer).toBeUndefined();
       done();
     });
   });
