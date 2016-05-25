@@ -702,8 +702,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
     if (!exist) {
       return Promise.resolve();
     }
-    return this.adapter.adaptiveCollection(className)
-    .then(collection => collection.count())
+    return this.adapter.count(className)
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
