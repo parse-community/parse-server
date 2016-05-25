@@ -451,9 +451,8 @@ function keysForQuery(query) {
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
 DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  return this.adapter.adaptiveCollection(joinTableName(className, key))
-    .then(coll => coll.find({owningId : owningId}))
-    .then(results => results.map(r => r.relatedId));
+  return this.adapter.find(joinTableName(className, key), { owningId }, relationSchema, {})
+  .then(results => results.map(result => result.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
