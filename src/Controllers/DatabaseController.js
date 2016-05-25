@@ -310,10 +310,9 @@ DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, 
     relatedId: toId,
     owningId : fromId
   };
-  let className = `_Join:${key}:${fromClassName}`;
-  return this.adapter.adaptiveCollection(className).then((coll) => {
-    return coll.upsertOne(doc, doc);
-  });
+  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, {
+    fields: { relatedId: { type: 'String' }, owningId: { type: 'String' }},
+  }, doc);
 };
 
 // Removes a relation.
