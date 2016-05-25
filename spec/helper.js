@@ -12,6 +12,7 @@ var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
+console.log(databaseURI);
 var port = 8378;
 
 // Default server configuration for tests.
