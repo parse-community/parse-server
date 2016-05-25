@@ -1,0 +1,64 @@
+import * as middlewares from "../src/middlewares";
+import {AppCache} from '../src/cache';
+
+describe('middlewares', () => {
+
+    var fakeReq, fakeRes;
+
+    beforeEach(() => {
+        fakeReq = {
+            originalUrl: 'http://example.com/parse/',
+            url: 'http://example.com/',
+            body: {
+                _ApplicationId: 'FakeAppId'
+            },
+            headers: {},
+            get: (key) => {
+                return fakeReq.headers[key]
+            }
+        };
+        AppCache.clear();
+        AppCache.put(fakeReq.body._ApplicationId, {});
+    });
+
+    it('should use _ContentType if provided', (done) => {
+        expect(fakeReq.headers['content-type']).toEqual(undefined);
+        fakeReq.body._ContentType = 'image/jpeg';
+        middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+            expect(fakeReq.headers['content-type']).toEqual(fakeReq.body._ContentType);
+            done()
+        });
+    });
+
+    const BodyParams = {
+        clientVersion: '_ClientVersion',
+        installationId: '_InstallationId',
+        sessionToken: '_SessionToken',
+        masterKey: '_MasterKey',
+        javascriptKey: '_JavaScriptKey'
+    };
+
+    const BodyKeys = Object.keys(BodyParams);
+
+    BodyKeys.forEach((infoKey) => {
+        const bodyKey = BodyParams[infoKey];
+        const keyValue = 'Fake' + bodyKey;
+        // javascriptKey is the only one that gets defaulted,
+        const otherKeys = BodyKeys.filter((otherKey) => otherKey !== infoKey && otherKey !== 'javascriptKey');
+
+        it(`it should pull ${bodyKey} into req.info`, (done) => {
+            fakeReq.body[bodyKey] = keyValue;
+
+            middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+                expect(fakeReq.body[bodyKey]).toEqual(undefined);
+                expect(fakeReq.info[infoKey]).toEqual(keyValue);
+
+                otherKeys.forEach((otherKey) => {
+                    expect(fakeReq.info[otherKey]).toEqual(undefined);
+                });
+
+                done();
+            });
+        });
+    });
+});
