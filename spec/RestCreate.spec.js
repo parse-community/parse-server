@@ -45,35 +45,33 @@ describe('rest create', () => {
     });
   });
 
-  it('handles object and subdocument', (done) => {
-    var obj = {
-      subdoc: {foo: 'bar', wu: 'tan'},
-    };
-    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
-      return database.mongoFind('MyClass', {}, {});
-    }).then((results) => {
+  it('handles object and subdocument', done => {
+    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    rest.create(config, auth.nobody(config), 'MyClass', obj)
+    .then(() => database.adapter.find('MyClass', {}, { fields: {} }, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      var mob = results[0];
+      let mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
-      expect(typeof mob._id).toEqual('string');
-
-      var obj = {
-        'subdoc.wu': 'clan',
-      };
-
-      rest.update(config, auth.nobody(config), 'MyClass', mob._id, obj).then(() => {
-        return database.mongoFind('MyClass', {}, {});
-      }).then((results) => {
-        expect(results.length).toEqual(1);
-        var mob = results[0];
-        expect(typeof mob.subdoc).toBe('object');
-        expect(mob.subdoc.foo).toBe('bar');
-        expect(mob.subdoc.wu).toBe('clan');
-        done();
-      });
-
+      expect(typeof mob.objectId).toEqual('string');
+      let obj = { 'subdoc.wu': 'clan' };
+      return rest.update(config, auth.nobody(config), 'MyClass', mob.objectId, obj)
+    })
+    .then(() => database.adapter.find('MyClass', {}, { fields: {} }, {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('clan');
+      done();
+    })
+    .catch(error => {
+      console.log(error);
+      fail();
+      done();
     });
   });
 

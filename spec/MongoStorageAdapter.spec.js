@@ -50,8 +50,7 @@ describe('MongoStorageAdapter', () => {
   it('stores objectId in _id', done => {
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
     adapter.createObject('Foo', { objectId: 'abcde' }, { fields: { objectId: 'String' } })
-    .then(() => adapter.adaptiveCollection('Foo'))
-    .then(collection => collection.find({}))
+    .then(() => adapter._rawFind('Foo', {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -75,8 +74,7 @@ describe('MongoStorageAdapter', () => {
       objectId: { type: 'String' },
       aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
     }})
-    .then(() => adapter.adaptiveCollection('APointerDarkly'))
-    .then(collection => collection.find({}))
+    .then(() => adapter._rawFind('APointerDarkly', {}))
     .then(results => {
       expect(results.length).toEqual(1);
       let output = results[0];
@@ -84,6 +82,32 @@ describe('MongoStorageAdapter', () => {
       expect(typeof output._p_aPointer).toEqual('string');
       expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
       expect(output.aPointer).toBeUndefined();
+      done();
+    });
+  });
+
+  it('handles object and subdocument', done => {
+    let adapter = new MongoStorageAdapter({ uri: databaseURI });
+    let schema = { fields : { subdoc: { type: 'Object' } } };
+    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    adapter.createObject('MyClass', obj, schema)
+    .then(() => adapter._rawFind('MyClass', {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('tan');
+      let obj = { 'subdoc.wu': 'clan' };
+      return adapter.findOneAndUpdate('MyClass', {}, schema, obj);
+    })
+    .then(() => adapter._rawFind('MyClass', {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('clan');
       done();
     });
   });
