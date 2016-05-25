@@ -62,12 +62,6 @@ function DatabaseController(adapter, { skipValidation } = {}) {
   this.schemaPromise = null;
   this.skipValidation = !!skipValidation;
   this.connect();
-
-  Object.defineProperty(this, 'transform', {
-     get: function() {
-       return adapter.transform;
-     }
-  })
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
@@ -171,6 +165,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
+const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token'];
 DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,
@@ -188,8 +183,7 @@ DatabaseController.prototype.update = function(className, query, update, {
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
+    .then(() => {
       if (!isMaster) {
         query = this.addPointerPermissions(schemaController, className, 'update', query, aclGroup);
       }
@@ -209,20 +203,27 @@ DatabaseController.prototype.update = function(className, query, update, {
         }
         throw error;
       })
-      .then(parseFormatSchema => {
-        var mongoWhere = this.transform.transformWhere(className, query, parseFormatSchema);
-        mongoUpdate = this.transform.transformUpdate(
-          schemaController,
-          className,
-          update,
-          {validate: !this.skipValidation}
-        );
+      .then(schema => {
+        Object.keys(update).forEach(fieldName => {
+          if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+          fieldName = fieldName.split('.')[0];
+          if (!SchemaController.fieldNameIsValid(fieldName) && !specialKeysForUpdate.includes(fieldName)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+        });
+        for (let updateOperation in update) {
+          if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
+            throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+          }
+        }
         if (many) {
-          return collection.updateMany(mongoWhere, mongoUpdate);
+          return this.adapter.updateObjectsByQuery(className, query, schema, update);
         } else if (upsert) {
-          return collection.upsertOne(mongoWhere, mongoUpdate);
+          return this.adapter.upsertOneObject(className, query, schema, update);
         } else {
-          return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+          return this.adapter.findOneAndUpdate(className, query, schema, update);
         }
       });
     })
@@ -393,7 +394,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, object, schemaController, schema))
+    .then(schema => this.adapter.createObject(className, object, schema))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };

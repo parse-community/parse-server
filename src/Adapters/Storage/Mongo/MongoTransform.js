@@ -19,7 +19,7 @@ const transformKey = (className, fieldName, schema) => {
   return fieldName;
 }
 
-const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
+const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSchema) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -38,12 +38,6 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
     key = '_updated_at';
     timeField = true;
     break;
-  case '_email_verify_token':
-    key = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
   case 'sessionToken':
   case '_session_token':
     key = '_session_token';
@@ -57,26 +51,9 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   case '_wperm':
     return {key: key, value: restValue};
     break;
-  case '$or':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-  case '$and':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
-  default:
-    // Other auth data
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
-    }
   }
 
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if ((expected && expected.type == 'Pointer') || (!expected && restValue && restValue.__type == 'Pointer')) {
+  if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
 
@@ -101,9 +78,6 @@ const transformKeyValueForUpdate = (schema, className, restKey, restValue) => {
   }
 
   // Handle normal objects by recursing
-  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
-    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
-  }
   value = _.mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
@@ -223,13 +197,7 @@ function transformWhere(className, restWhere, schema) {
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (
-  schema,
-  className,
-  restKey,
-  restValue,
-  parseFormatSchema
-) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
@@ -267,7 +235,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
   if (restValue && restValue.__type !== 'Bytes') {
     //Note: We may not know the type of a field here, as the user could be saving (null) to a field
     //That never existed before, meaning we can't infer the type.
-    if (parseFormatSchema.fields[restKey] && parseFormatSchema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
+    if (schema.fields[restKey] && schema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
       restKey = '_p_' + restKey;
     }
   }
@@ -305,18 +273,17 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseFormatSchema) {
+function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
   var mongoCreate = transformACL(restCreate);
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      schema,
       className,
       restKey,
       restCreate[restKey],
-      parseFormatSchema
+      schema
     );
     if (value !== undefined) {
       mongoCreate[key] = value;
@@ -326,10 +293,7 @@ function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseF
 }
 
 // Main exposed method to help update old objects.
-function transformUpdate(schema, className, restUpdate) {
-  if (!restUpdate) {
-    throw 'got empty restUpdate';
-  }
+const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   if (className == '_User') {
     restUpdate = transformAuthData(restUpdate);
   }
@@ -348,9 +312,8 @@ function transformUpdate(schema, className, restUpdate) {
       mongoUpdate['$set']['_acl'] = acl._acl;
     }
   }
-
   for (var restKey in restUpdate) {
-    var out = transformKeyValueForUpdate(schema, className, restKey, restUpdate[restKey]);
+    var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
     // operator that needs to be lifted onto the top level update
