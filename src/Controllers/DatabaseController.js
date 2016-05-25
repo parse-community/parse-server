@@ -305,14 +305,13 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
 
 // Adds a relation.
 // Returns a promise that resolves successfully iff the add was successful.
+const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, toId) {
   let doc = {
     relatedId: toId,
     owningId : fromId
   };
-  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, {
-    fields: { relatedId: { type: 'String' }, owningId: { type: 'String' }},
-  }, doc);
+  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, relationSchema, doc);
 };
 
 // Removes a relation.
@@ -323,9 +322,13 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
     relatedId: toId,
     owningId: fromId
   };
-  let className = `_Join:${key}:${fromClassName}`;
-  return this.adapter.adaptiveCollection(className).then(coll => {
-    return coll.deleteOne(doc);
+  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, doc, relationSchema)
+  .catch(error => {
+    // We don't care if they try to delete a non-existent relation.
+    if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
+      return;
+    }
+    throw error;
   });
 };
 
