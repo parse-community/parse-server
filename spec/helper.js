@@ -23,6 +23,7 @@ var defaultConfiguration = {
   dotNetKey: 'windows',
   clientKey: 'client',
   restAPIKey: 'rest',
+  webhookKey: 'hook',
   masterKey: 'test',
   collectionPrefix: 'test_',
   fileKey: 'test',
