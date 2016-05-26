@@ -484,30 +484,27 @@ fdescribe('Installations', () => {
     var firstObject;
     var secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input)
-        .then(() => {
-          input = {
-            'installationId': installId2,
-            'deviceType': 'android'
-          };
-          return rest.create(config, auth.nobody(config), '_Installation', input);
-        }).then(() => {
-      return database.mongoFind('_Installation',
-          {installationId: installId1}, {});
-    }).then((results) => {
-      expect(results.length).toEqual(1);
+    .then(() => {
+      input = {
+        'installationId': installId2,
+        'deviceType': 'android'
+      };
+      return rest.create(config, auth.nobody(config), '_Installation', input);
+    })
+    .then(() => database.adapter.find('_Installation', {installationId: installId1}, installationSchema, {}))
+    .then(results => {
       firstObject = results[0];
-      return database.mongoFind('_Installation',
-          {installationId: installId2}, {});
-    }).then((results) => {
+      expect(results.length).toEqual(1);
+      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+    }).then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
       // Update second installation to conflict with first installation
       input = {
-        'objectId': secondObject._id,
+        'objectId': secondObject.objectId,
         'deviceToken': t
       };
-      return rest.update(config, auth.nobody(config), '_Installation',
-          secondObject._id, input);
+      return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     }).then(() => {
       // The first object should have been deleted
       return database.mongoFind('_Installation', {_id: firstObject._id}, {});
