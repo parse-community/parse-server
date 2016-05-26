@@ -514,7 +514,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  fit('update ios device token with duplicate device token', (done) => {
+  it('update ios device token with duplicate device token', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -549,7 +549,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     })
-    .then(() => database.mongoFind('_Installation', {_id: firstObject.objectId}, {}))
+    .then(() => database.adapter.find('_Installation', {objectId: firstObject.objectId}, installationSchema, {}))
     .then(results => {
       // The first object should have been deleted
       expect(results.length).toEqual(0);
