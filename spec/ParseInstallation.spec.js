@@ -323,29 +323,31 @@ fdescribe('Installations', () => {
 
   it('updating with new channels', (done) => {
     var input = {
-      'installationId': '12345678-abcd-abcd-abcd-123456789abc',
-      'deviceType': 'android',
-      'channels': ['foo', 'bar']
+      installationId: '12345678-abcd-abcd-abcd-123456789abc',
+      deviceType: 'android',
+      channels: ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      var id = results[0]['_id'];
+      var id = results[0].objectId;
       var update = {
         'channels': ['baz']
       };
-      return rest.update(config, auth.nobody(config),
-                         '_Installation', id, update);
-    }).then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+      return rest.update(config, auth.nobody(config), '_Installation', id, update);
+    })
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].channels.length).toEqual(1);
       expect(results[0].channels[0]).toEqual('baz');
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch(error => {
+      console.log(error);
+      fail();
+      done();
+    });
   });
 
   it('update android fails with new installation id', (done) => {
@@ -357,15 +359,11 @@ fdescribe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      input = {
-        'installationId': installId2
-      };
-      return rest.update(config, auth.nobody(config), '_Installation',
-                         results[0]['_id'], input);
+      input = { 'installationId': installId2 };
+      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     }).then(() => {
       fail('Updating the installation should have failed.');
       done();
@@ -384,15 +382,11 @@ fdescribe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      input = {
-        'deviceToken': b
-      };
-      return rest.update(config, auth.nobody(config), '_Installation',
-                         results[0]['_id'], input);
+      input = { 'deviceToken': b };
+      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     }).then(() => {
       fail('Updating the installation should have failed.');
     }).catch((error) => {
