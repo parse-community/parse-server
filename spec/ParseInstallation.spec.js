@@ -18,7 +18,7 @@ const installationSchema = { fields: {
   ...defaultColumns._Installation,
 }};
 
-fdescribe('Installations', () => {
+describe('Installations', () => {
   it('creates an android installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';
