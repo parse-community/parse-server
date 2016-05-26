@@ -627,21 +627,19 @@ fdescribe('Installations', () => {
         'deviceType': 'ios'
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
-    }).then(() => {
-      return database.mongoFind('_Installation',
-                     {deviceToken: t}, {});
-    }).then((results) => {
+    })
+    .then(() => database.adapter.find('_Installation', { deviceToken: t }, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       input = {
         'deviceToken': t,
         'installationId': installId,
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation',
-                         results[0]['_id'], input);
-    }).then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+    })
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
       expect(results[0].deviceToken).toEqual(t);
@@ -763,7 +761,7 @@ fdescribe('Installations', () => {
           'amount': 1
         }
       };
-      return rest.update(config, auth.nobody(config), '_Installation', installObj._id, input);
+      return rest.update(config, auth.nobody(config), '_Installation', installObj.objectId, input);
     })
     .then(() => database.adapter.find('_Installation', { objectId: tokenObj.objectId }, installationSchema, {}))
     .then(results => {
