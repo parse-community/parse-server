@@ -286,7 +286,7 @@ describe('OAuth', function() {
             var config = new Config(Parse.applicationId);
             config.database.adapter.find('_User', { objectId: model.id }, {
               fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
-            } }, {})
+            }, {})
             .then(res => {
               expect(res.length).toBe(1);
               expect(res[0]._auth_data_myoauth).toBeUndefined();
