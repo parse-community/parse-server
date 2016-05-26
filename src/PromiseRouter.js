@@ -154,15 +154,20 @@ export default class PromiseRouter {
 // just treat it like it resolved to an error.
 function makeExpressHandler(promiseHandler) {
   return function(req, res, next) {
+    var url = maskSensitiveUrl(req);
     try {
-      log.verbose(req.method, maskSensitiveUrl(req), req.headers,
-                  JSON.stringify(maskSensitiveBody(req), null, 2));
+      log.verbose(`REQUEST for [${req.method}] ${url}`, {
+        method: req.method,
+        url: url,
+        headers: req.headers,
+        body: maskSensitiveBody(req)
+      });
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
           log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-        log.verbose(JSON.stringify(result, null, 2));
+        log.verbose(`RESPONSE from [${req.method}] ${url}`, {result: result});
 
         var status = result.status || 200;
         res.status(status);
@@ -186,11 +191,11 @@ function makeExpressHandler(promiseHandler) {
         }
         res.json(result.response);
       }, (e) => {
-        log.verbose('error:', e);
+        log.error(`Error generating response. ${e}`, {error: e});
         next(e);
       });
     } catch (e) {
-      log.verbose('exception:', e);
+      log.error(`Error handling request: ${e}`, {error: e});
       next(e);
     }
   }
