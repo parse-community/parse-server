@@ -46,10 +46,12 @@ describe('Hooks', () => {
       // Find
       return Parse.Hooks.getFunction("My-Test-Function")
     }).then(response => {
+      expect(response.objectId).toBeUndefined();
       expect(response.url).toBe("http://someurl");
       return Parse.Hooks.updateFunction("My-Test-Function", "http://anotherurl");
     })
     .then((res) => {
+      expect(res.objectId).toBeUndefined();
       expect(res.functionName).toBe("My-Test-Function");
       expect(res.url).toBe("http://anotherurl")
       // delete
@@ -90,6 +92,7 @@ describe('Hooks', () => {
      }).then((res) => {
        expect(res).not.toBe(null);
        expect(res).not.toBe(undefined);
+       expect(res.objectId).toBeUndefined();
        expect(res.url).toBe("http://someurl");
        // delete
         return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
@@ -99,6 +102,7 @@ describe('Hooks', () => {
      }).then((res) => {
        expect(res.className).toBe("MyClass");
        expect(res.url).toBe("http://anotherurl")
+       expect(res.objectId).toBeUndefined();
 
        return Parse.Hooks.deleteTrigger("MyClass","beforeDelete");
      }, (err) => {
