@@ -537,7 +537,7 @@ describe('Installations', () => {
     .then((results) => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
-      return database.mongoFind('_Installation', {installationId: installId2}, {});
+      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
     })
     .then(results => {
       expect(results.length).toEqual(1);
@@ -547,7 +547,7 @@ describe('Installations', () => {
         'installationId': installId2,
         'deviceToken': t
       };
-      return rest.update(config, auth.nobody(config), '_Installation', secondObject._id, input);
+      return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     })
     .then(() => database.mongoFind('_Installation', {_id: firstObject.objectId}, {}))
     .then(results => {
