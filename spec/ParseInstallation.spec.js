@@ -755,9 +755,8 @@ fdescribe('Installations', () => {
     var installObj;
     var tokenObj;
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       installObj = results[0];
       input = {
@@ -810,9 +809,8 @@ fdescribe('Installations', () => {
       'deviceType': 'ios'
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       input = {
         'installationId': installId,
