@@ -33,7 +33,7 @@ const defaultColumns = Object.freeze({
     "email":         {type:'String'},
     "emailVerified": {type:'Boolean'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {
     "installationId":   {type:'String'},
     "deviceToken":      {type:'String'},
@@ -43,15 +43,19 @@ const defaultColumns = Object.freeze({
     "GCMSenderId":      {type:'String'},
     "timeZone":         {type:'String'},
     "localeIdentifier": {type:'String'},
-    "badge":            {type:'Number'}
+    "badge":            {type:'Number'},
+    "appVersion":       {type:'String'},
+    "appName":          {type:'String'},
+    "appIdentifier":    {type:'String'},
+    "parseVersion":     {type:'String'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Role collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
     "users": {type:'Relation', targetClass:'_User'},
     "roles": {type:'Relation', targetClass:'_Role'}
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
     "restricted":     {type:'Boolean'},
     "user":           {type:'Pointer', targetClass:'_User'},
@@ -253,7 +257,7 @@ class SchemaController {
         this.data[schema.className] = schema.fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
-      
+
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
         this.data[className] = injectDefaultSchema({
@@ -466,13 +470,14 @@ class SchemaController {
   // If 'freeze' is true, refuse to update the schema for this field.
   validateField(className, fieldName, type, freeze) {
     return this.reloadData().then(() => {
-      // Just to check that the fieldName is valid
-      this._collection.transform.transformKey(this, className, fieldName);
-
-      if( fieldName.indexOf(".") > 0 ) {
+      if (fieldName.indexOf(".") > 0) {
         // subdocument key (x.y) => ok if x is of type 'object'
         fieldName = fieldName.split(".")[ 0 ];
         type = 'Object';
+      }
+
+      if (!fieldNameIsValid(fieldName)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
       }
 
       let expected = this.data[className][fieldName];
@@ -487,7 +492,7 @@ class SchemaController {
         } else {
           throw new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${expected} but got ${type}`
+            `schema mismatch for ${className}.${fieldName}; expected ${expected.type || expected} but got ${type}`
           );
         }
       }
@@ -681,23 +686,6 @@ class SchemaController {
   hasClass(className) {
     return this.reloadData().then(() => !!(this.data[className]));
   }
-
-  getRelationFields(className) {
-    if (this.data && this.data[className]) {
-      let classData = this.data[className];
-      return Object.keys(classData).filter((field) => {
-        return classData[field].type === 'Relation';
-      }).reduce((memo, field) => {
-        let type = classData[field];
-        memo[field] = {
-          __type: 'Relation',
-          className: type.targetClass
-        };
-        return memo;
-      }, {});
-    }
-    return {};
-  }
 }
 
 // Returns a promise for a new Schema.
@@ -847,6 +835,7 @@ function getObjectType(obj) {
 export {
   load,
   classNameIsValid,
+  fieldNameIsValid,
   invalidClassNameMessage,
   buildMergedSchemaObject,
   systemClasses,

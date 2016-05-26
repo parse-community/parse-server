@@ -24,6 +24,35 @@ function addReadACL(query, acl) {
   return newQuery;
 }
 
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
+const validateQuery = query => {
+  if (query.ACL) {
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
+  }
+
+  if (query.$or) {
+    if (query.$or instanceof Array) {
+      query.$or.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
+    }
+  }
+
+  if (query.$and) {
+    if (query.$and instanceof Array) {
+      query.$and.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
+    }
+  }
+
+  Object.keys(query).forEach(key => {
+    if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
+    }
+  });
+}
+
 function DatabaseController(adapter, { skipValidation } = {}) {
   this.adapter = adapter;
 
@@ -33,12 +62,6 @@ function DatabaseController(adapter, { skipValidation } = {}) {
   this.schemaPromise = null;
   this.skipValidation = !!skipValidation;
   this.connect();
-
-  Object.defineProperty(this, 'transform', {
-     get: function() {
-       return adapter.transform;
-     }
-  })
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
@@ -117,12 +140,8 @@ DatabaseController.prototype.validateObject = function(className, object, query,
   });
 };
 
-// Like transform.untransformObject but you need to provide a className.
 // Filters out any data that shouldn't be on this REST-formatted object.
-DatabaseController.prototype.untransformObject = function(
-  schema, isMaster, aclGroup, className, mongoObject) {
-  var object = this.transform.untransformObject(schema, className, mongoObject);
-
+const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   if (className !== '_User') {
     return object;
   }
@@ -146,6 +165,7 @@ DatabaseController.prototype.untransformObject = function(
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
+const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token'];
 DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,
@@ -163,8 +183,7 @@ DatabaseController.prototype.update = function(className, query, update, {
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
     .then(() => this.handleRelationUpdates(className, query.objectId, update))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
+    .then(() => {
       if (!isMaster) {
         query = this.addPointerPermissions(schemaController, className, 'update', query, aclGroup);
       }
@@ -174,6 +193,7 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (acl) {
         query = addWriteACL(query, acl);
       }
+      validateQuery(query);
       return schemaController.getOneSchema(className)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
@@ -183,20 +203,27 @@ DatabaseController.prototype.update = function(className, query, update, {
         }
         throw error;
       })
-      .then(parseFormatSchema => {
-        var mongoWhere = this.transform.transformWhere(className, query, {validate: !this.skipValidation}, parseFormatSchema);
-        mongoUpdate = this.transform.transformUpdate(
-          schemaController,
-          className,
-          update,
-          {validate: !this.skipValidation}
-        );
+      .then(schema => {
+        Object.keys(update).forEach(fieldName => {
+          if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+          fieldName = fieldName.split('.')[0];
+          if (!SchemaController.fieldNameIsValid(fieldName) && !specialKeysForUpdate.includes(fieldName)) {
+            throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
+          }
+        });
+        for (let updateOperation in update) {
+          if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
+            throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+          }
+        }
         if (many) {
-          return collection.updateMany(mongoWhere, mongoUpdate);
+          return this.adapter.updateObjectsByQuery(className, query, schema, update);
         } else if (upsert) {
-          return collection.upsertOne(mongoWhere, mongoUpdate);
+          return this.adapter.upsertOneObject(className, query, schema, update);
         } else {
-          return collection.findOneAndUpdate(mongoWhere, mongoUpdate);
+          return this.adapter.findOneAndUpdate(className, query, schema, update);
         }
       });
     })
@@ -328,6 +355,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
       if (acl) {
         query = addWriteACL(query, acl);
       }
+      validateQuery(query);
       return schemaController.getOneSchema(className)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
@@ -337,7 +365,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
         throw error;
       })
-      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, !this.skipValidation, parseFormatSchema))
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, parseFormatSchema))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -366,7 +394,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, object, schemaController, schema))
+    .then(schema => this.adapter.createObject(className, object, schema))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };
@@ -601,68 +629,67 @@ DatabaseController.prototype.find = function(className, query, {
   skip,
   limit,
   acl,
-  sort,
+  sort = {},
   count,
 } = {}) {
-  let mongoOptions = {};
-  if (skip) {
-    mongoOptions.skip = skip;
-  }
-  if (limit) {
-    mongoOptions.limit = limit;
-  }
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
   return this.loadSchema()
   .then(schemaController => {
-    if (sort) {
-      mongoOptions.sort = {};
-      for (let key in sort) {
-        let mongoKey = this.transform.transformKey(schemaController, className, key);
-        mongoOptions.sort[mongoKey] = sort[key];
+    return schemaController.getOneSchema(className)
+    .catch(error => {
+      // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+      // will likely need revisiting.
+      if (error === undefined) {
+        return { fields: {} };
       }
-    }
-    return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
-    .then(() => this.reduceRelationKeys(className, query))
-    .then(() => this.reduceInRelation(className, query, schemaController))
-    .then(() => this.adapter.adaptiveCollection(className))
-    .then(collection => {
-      if (!isMaster) {
-        query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
+      throw error;
+    })
+    .then(schema => {
+      // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
+      // so duplicate that behaviour here. If both are specified, the corrent behaviour to match Parse.com is to
+      // use the one that appears first in the sort list.
+      if (sort._created_at) {
+        sort.createdAt = sort._created_at;
+        delete sort._created_at;
       }
-      if (!query) {
-        if (op == 'get') {
-          return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-            'Object not found.'));
-        } else {
-          return Promise.resolve([]);
+      if (sort._updated_at) {
+        sort.updatedAt = sort._updated_at;
+        delete sort._updated_at;
+      }
+      Object.keys(sort).forEach(fieldName => {
+        if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
         }
-      }
-      if (!isMaster) {
-        query = addReadACL(query, aclGroup);
-      }
-      return schemaController.getOneSchema(className)
-      .catch(error => {
-        // If the schema doesn't exist, pretend it exists with no fields. This behaviour
-        // will likely need revisiting.
-        if (error === undefined) {
-          return { fields: {} };
+        if (!SchemaController.fieldNameIsValid(fieldName)) {
+          throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
         }
-        throw error;
-      })
-      .then(parseFormatSchema => {
-        let mongoWhere = this.transform.transformWhere(className, query, {}, parseFormatSchema);
+      });
+      return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
+      .then(() => this.reduceRelationKeys(className, query))
+      .then(() => this.reduceInRelation(className, query, schemaController))
+      .then(() => {
+        if (!isMaster) {
+          query = this.addPointerPermissions(schemaController, className, op, query, aclGroup);
+        }
+        if (!query) {
+          if (op == 'get') {
+            return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+              'Object not found.'));
+          } else {
+            return Promise.resolve([]);
+          }
+        }
+        if (!isMaster) {
+          query = addReadACL(query, aclGroup);
+        }
+        validateQuery(query);
         if (count) {
-          delete mongoOptions.limit;
-          return collection.count(mongoWhere, mongoOptions);
+          return this.adapter.count(className, query, schema);
         } else {
-          return collection.find(mongoWhere, mongoOptions)
-          .then((mongoResults) => {
-            return mongoResults.map((r) => {
-              return this.untransformObject(schemaController, isMaster, aclGroup, className, r);
-            });
-          });
+          return this.adapter.find(className, query, schema, { skip, limit, sort })
+          .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
         }
       });
     });

@@ -188,6 +188,23 @@ RestQuery.prototype.validateClientClassCreation = function() {
   }
 };
 
+function transformInQuery(inQueryObject, className, results) {
+  var values = [];
+  for (var result of results) {
+    values.push({
+      __type: 'Pointer',
+      className: className,
+      objectId: result.objectId
+    });
+  }
+  delete inQueryObject['$inQuery'];
+  if (Array.isArray(inQueryObject['$in'])) {
+    inQueryObject['$in'] = inQueryObject['$in'].concat(values);
+  } else {
+    inQueryObject['$in'] = values;
+  }
+}
+
 // Replaces a $inQuery clause by running the subquery, if there is an
 // $inQuery clause.
 // The $inQuery clause turns into an $in with values that are just
@@ -213,11 +230,28 @@ RestQuery.prototype.replaceInQuery = function() {
     this.config, this.auth, inQueryValue.className,
     inQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
-    this.config.database.transform.transformInQuery(inQueryObject, subquery.className, response.results);
+    transformInQuery(inQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceInQuery();
   });
 };
+
+function transformNotInQuery(notInQueryObject, className, results) {
+  var values = [];
+  for (var result of results) {
+    values.push({
+      __type: 'Pointer',
+      className: className,
+      objectId: result.objectId
+    });
+  }
+  delete notInQueryObject['$notInQuery'];
+  if (Array.isArray(notInQueryObject['$nin'])) {
+    notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
+  } else {
+    notInQueryObject['$nin'] = values;
+  }
+}
 
 // Replaces a $notInQuery clause by running the subquery, if there is an
 // $notInQuery clause.
@@ -244,11 +278,24 @@ RestQuery.prototype.replaceNotInQuery = function() {
     this.config, this.auth, notInQueryValue.className,
     notInQueryValue.where, additionalOptions);
   return subquery.execute().then((response) => {
-    this.config.database.transform.transformNotInQuery(notInQueryObject, subquery.className, response.results);
+    transformNotInQuery(notInQueryObject, subquery.className, response.results);
     // Recurse to repeat
     return this.replaceNotInQuery();
   });
 };
+
+const transformSelect = (selectObject, key ,objects) => {
+  var values = [];
+  for (var result of objects) {
+    values.push(result[key]);
+  }
+  delete selectObject['$select'];
+  if (Array.isArray(selectObject['$in'])) {
+    selectObject['$in'] = selectObject['$in'].concat(values);
+  } else {
+    selectObject['$in'] = values;
+  }
+}
 
 // Replaces a $select clause by running the subquery, if there is a
 // $select clause.
@@ -281,11 +328,24 @@ RestQuery.prototype.replaceSelect = function() {
     this.config, this.auth, selectValue.query.className,
     selectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
-    this.config.database.transform.transformSelect(selectObject, selectValue.key, response.results);
+    transformSelect(selectObject, selectValue.key, response.results);
     // Keep replacing $select clauses
     return this.replaceSelect();
   })
 };
+
+const transformDontSelect = (dontSelectObject, key, objects) => {
+  var values = [];
+  for (var result of objects) {
+    values.push(result[key]);
+  }
+  delete dontSelectObject['$dontSelect'];
+  if (Array.isArray(dontSelectObject['$nin'])) {
+    dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
+  } else {
+    dontSelectObject['$nin'] = values;
+  }
+}
 
 // Replaces a $dontSelect clause by running the subquery, if there is a
 // $dontSelect clause.
@@ -316,7 +376,7 @@ RestQuery.prototype.replaceDontSelect = function() {
     this.config, this.auth, dontSelectValue.query.className,
     dontSelectValue.query.where, additionalOptions);
   return subquery.execute().then((response) => {
-    this.config.database.transform.transformDontSelect(dontSelectObject, dontSelectValue.key, response.results);
+    transformDontSelect(dontSelectObject, dontSelectValue.key, response.results);
     // Keep replacing $dontSelect clauses
     return this.replaceDontSelect();
   })

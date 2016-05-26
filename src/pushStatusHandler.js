@@ -96,7 +96,7 @@ export default function pushStatusHandler(config) {
       status: 'failed',
       updatedAt: new Date()
     }
-    logger.error('error while sending push', err);
+    logger.info('warning: error while sending push', err);
     return database.update(PUSH_STATUS_COLLECTION, { objectId }, update);
   }
 

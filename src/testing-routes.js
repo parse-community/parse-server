@@ -1,5 +1,5 @@
 // testing-routes.js
-import cache            from './cache';
+import AppCache         from './cache';
 import * as middlewares from './middlewares';
 import { ParseServer }  from './index';
 import { Parse }        from 'parse/node';
@@ -47,7 +47,7 @@ function dropApp(req, res) {
     return res.status(401).send({ "error": "unauthorized" });
   }
   return req.config.database.deleteEverything().then(() => {
-    cache.apps.remove(req.config.applicationId);
+    AppCache.del(req.config.applicationId);
     res.status(200).send({});
   });
 }

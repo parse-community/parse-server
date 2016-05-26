@@ -3,27 +3,23 @@ import _   from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-// Transforms a key-value pair from REST API form to Mongo form.
-// This is the main entry point for converting anything from REST form
-// to Mongo form; no conversion should happen that doesn't pass
-// through this function.
-// Schema should already be loaded.
-//
-// There are several options that can help transform:
-//
-// update: true indicates that __op operators like Add and Delete
-// in the value are converted to a mongo update form. Otherwise they are
-// converted to static data.
-//
-// validate: true indicates that key names are to be validated.
-//
-// Returns an object with {key: key, value: value}.
-function transformKeyValue(schema, className, restKey, restValue, {
-  inArray,
-  inObject,
-  update,
-  validate,
-} = {}) {
+const transformKey = (className, fieldName, schema) => {
+  // Check if the schema is known since it's a built-in field.
+  switch(fieldName) {
+    case 'objectId': return '_id';
+    case 'createdAt': return '_created_at';
+    case 'updatedAt': return '_updated_at';
+    case 'sessionToken': return '_session_token';
+  }
+
+  if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
+    fieldName = '_p_' + fieldName;
+  }
+
+  return fieldName;
+}
+
+const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSchema) => {
   // Check if the schema is known since it's a built-in field.
   var key = restKey;
   var timeField = false;
@@ -42,12 +38,6 @@ function transformKeyValue(schema, className, restKey, restValue, {
     key = '_updated_at';
     timeField = true;
     break;
-  case '_email_verify_token':
-    key = "_email_verify_token";
-    break;
-  case '_perishable_token':
-    key = "_perishable_token";
-    break;
   case 'sessionToken':
   case '_session_token':
     key = '_session_token';
@@ -61,73 +51,59 @@ function transformKeyValue(schema, className, restKey, restValue, {
   case '_wperm':
     return {key: key, value: restValue};
     break;
-  case '$or':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $or in queries');
-  case '$and':
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'you can only use $and in queries');
-  default:
-    // Other auth data
-    var authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
-    if (authDataMatch) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'can only query on ' + key);
-    }
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
-    }
   }
 
-  // Handle special schema key changes
-  // TODO: it seems like this is likely to have edge cases where
-  // pointer types are missed
-  var expected = undefined;
-  if (schema && schema.getExpectedType) {
-    expected = schema.getExpectedType(className, key);
-  }
-  if ((expected && expected.type == 'Pointer') ||
-      (!expected && restValue && restValue.__type == 'Pointer')) {
+  if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
     key = '_p_' + key;
   }
-  var expectedTypeIsArray = (expected && expected.type === 'Array');
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray, inObject });
+  var value = transformTopLevelAtom(restValue);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
-    return {key: key, value: value};
-  }
-
-  // ACLs are handled before this method is called
-  // If an ACL key still exists here, something is wrong.
-  if (key === 'ACL') {
-    throw 'There was a problem transforming an ACL.';
+    return {key, value};
   }
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
-      return out.value;
-    });
-    return {key: key, value: value};
+    value = restValue.map(transformInteriorValue);
+    return {key, value};
   }
 
   // Handle update operators
-  value = transformUpdateOperator(restValue, !update);
-  if (value !== CannotTransform) {
-    return {key: key, value: value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key, value: transformUpdateOperator(restValue, false)};
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
+  value = _.mapValues(restValue, transformInteriorValue);
+  return {key, value};
+}
+
+const transformInteriorValue = restValue => {
+  if (typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-  return {key: key, value: value};
+  // Handle atomic values
+  var value = transformInteriorAtom(restValue);
+  if (value !== CannotTransform) {
+    return value;
+  }
+
+  // Handle arrays
+  if (restValue instanceof Array) {
+    return restValue.map(transformInteriorValue);
+  }
+
+  // Handle update operators
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return transformUpdateOperator(restValue, true);
+  }
+
+  // Handle normal objects by recursing
+  return _.mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -139,7 +115,7 @@ const valueAsDate = value => {
   return false;
 }
 
-function transformQueryKeyValue(className, key, value, { validate } = {}, schema) {
+function transformQueryKeyValue(className, key, value, schema) {
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -165,15 +141,9 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
   case '$or':
-    if (!(value instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $or format - use an array value');
-    }
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
-    if (!(value instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'bad $and format - use an array value');
-    }
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, {}, schema))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   default:
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -181,9 +151,6 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
       const provider = authDataMatch[1];
       // Special-case auth data.
       return {key: `_auth_data_${provider}.id`, value};
-    }
-    if (validate && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'invalid key name: ' + key);
     }
   }
 
@@ -211,8 +178,8 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
   }
 
   // Handle atomic values
-  if (transformAtom(value, false) !== CannotTransform) {
-    return {key, value: transformAtom(value, false)};
+  if (transformTopLevelAtom(value) !== CannotTransform) {
+    return {key, value: transformTopLevelAtom(value)};
   } else {
     throw new Parse.Error(Parse.Error.INVALID_JSON, `You cannot use ${value} as a query parameter.`);
   }
@@ -221,41 +188,31 @@ function transformQueryKeyValue(className, key, value, { validate } = {}, schema
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
-// Throws a Parse.Error if the input query is invalid.
-function transformWhere(className, restWhere, { validate = true } = {}, schema) {
+function transformWhere(className, restWhere, schema) {
   let mongoWhere = {};
-  if (restWhere['ACL']) {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
-  }
   for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], { validate }, schema);
+    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (
-  schema,
-  className,
-  restKey,
-  restValue,
-  parseFormatSchema
-) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
   case 'createdAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: '_created_at', value: coercedToDate};
   case 'updatedAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
-    transformedValue = transformAtom(restValue, false);
+    transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: 'expiresAt', value: coercedToDate};
   case '_rperm':
@@ -274,17 +231,17 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
       return {key: restKey, value: restValue};
     }
   }
-  //skip straight to transformAtom for Bytes, they don't show up in the schema for some reason
+  //skip straight to transformTopLevelAtom for Bytes, they don't show up in the schema for some reason
   if (restValue && restValue.__type !== 'Bytes') {
     //Note: We may not know the type of a field here, as the user could be saving (null) to a field
     //That never existed before, meaning we can't infer the type.
-    if (parseFormatSchema.fields[restKey] && parseFormatSchema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
+    if (schema.fields[restKey] && schema.fields[restKey].type == 'Pointer' || restValue.__type == 'Pointer') {
       restKey = '_p_' + restKey;
     }
   }
 
   // Handle atomic values
-  var value = transformAtom(restValue, false, { inArray: false, inObject: false });
+  var value = transformTopLevelAtom(restValue);
   if (value !== CannotTransform) {
     return {key: restKey, value: value};
   }
@@ -297,44 +254,36 @@ const parseObjectKeyValueToMongoObjectKeyValue = (
 
   // Handle arrays
   if (restValue instanceof Array) {
-    value = restValue.map((restObj) => {
-      var out = transformKeyValue(schema, className, restKey, restObj, { inArray: true });
-      return out.value;
-    });
+    value = restValue.map(transformInteriorValue);
     return {key: restKey, value: value};
   }
 
   // Handle update operators. TODO: handle within Parse Server. DB adapter shouldn't see update operators in creates.
-  value = transformUpdateOperator(restValue, true);
-  if (value !== CannotTransform) {
-    return {key: restKey, value: value};
+  if (typeof restValue === 'object' && '__op' in restValue) {
+    return {key: restKey, value: transformUpdateOperator(restValue, true)};
   }
 
   // Handle normal objects by recursing
-  value = {};
-  for (var subRestKey in restValue) {
-    var subRestValue = restValue[subRestKey];
-    var out = transformKeyValue(schema, className, subRestKey, subRestValue, { inObject: true });
-    // For recursed objects, keep the keys in rest format
-    value[subRestKey] = out.value;
+  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+    throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-  return {key: restKey, value: value};
+  value = _.mapValues(restValue, transformInteriorValue);
+  return {key: restKey, value};
 }
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseFormatSchema) {
+function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
   var mongoCreate = transformACL(restCreate);
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      schema,
       className,
       restKey,
       restCreate[restKey],
-      parseFormatSchema
+      schema
     );
     if (value !== undefined) {
       mongoCreate[key] = value;
@@ -344,17 +293,14 @@ function parseObjectToMongoObjectForCreate(schema, className, restCreate, parseF
 }
 
 // Main exposed method to help update old objects.
-function transformUpdate(schema, className, restUpdate) {
-  if (!restUpdate) {
-    throw 'got empty restUpdate';
-  }
+const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   if (className == '_User') {
     restUpdate = transformAuthData(restUpdate);
   }
 
   var mongoUpdate = {};
   var acl = transformACL(restUpdate);
-  if (acl._rperm || acl._wperm) {
+  if (acl._rperm || acl._wperm || acl._acl) {
     mongoUpdate['$set'] = {};
     if (acl._rperm) {
       mongoUpdate['$set']['_rperm'] = acl._rperm;
@@ -362,16 +308,17 @@ function transformUpdate(schema, className, restUpdate) {
     if (acl._wperm) {
       mongoUpdate['$set']['_wperm'] = acl._wperm;
     }
+    if (acl._acl) {
+      mongoUpdate['$set']['_acl'] = acl._acl;
+    }
   }
-
   for (var restKey in restUpdate) {
-    var out = transformKeyValue(schema, className, restKey, restUpdate[restKey], {update: true});
+    var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
     // operator that needs to be lifted onto the top level update
     // object.
-    if (typeof out.value === 'object' && out.value !== null &&
-        out.value.__op) {
+    if (typeof out.value === 'object' && out.value !== null && out.value.__op) {
       mongoUpdate[out.value.__op] = mongoUpdate[out.value.__op] || {};
       mongoUpdate[out.value.__op][out.key] = out.value.arg;
     } else {
@@ -410,16 +357,23 @@ function transformACL(restObject) {
   var acl = restObject['ACL'];
   var rperm = [];
   var wperm = [];
+  var _acl = {}; // old format
+
   for (var entry in acl) {
     if (acl[entry].read) {
       rperm.push(entry);
+      _acl[entry] = _acl[entry] || {};
+      _acl[entry]['r'] = true;
     }
     if (acl[entry].write) {
       wperm.push(entry);
+      _acl[entry] = _acl[entry] || {};
+      _acl[entry]['w'] = true;
     }
   }
   output._rperm = rperm;
   output._wperm = wperm;
+  output._acl = _acl;
   delete restObject.ACL;
   return output;
 }
@@ -454,29 +408,37 @@ function untransformACL(mongoObject) {
   return output;
 }
 
-// Transforms a key used in the REST API format to its mongo format.
-function transformKey(schema, className, key) {
-  return transformKeyValue(schema, className, key, null, {validate: true}).key;
-}
-
 // A sentinel value that helper transformations return when they
 // cannot perform a transformation
 function CannotTransform() {}
+
+const transformInteriorAtom = atom => {
+  // TODO: check validity harder for the __type-defined types
+  if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
+    return {
+      __type: 'Pointer',
+      className: atom.className,
+      objectId: atom.objectId
+    };
+  } else if (typeof atom === 'function' || typeof atom === 'symbol') {
+    throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
+  } else if (DateCoder.isValidJSON(atom)) {
+    return DateCoder.JSONToDatabase(atom);
+  } else if (BytesCoder.isValidJSON(atom)) {
+    return BytesCoder.JSONToDatabase(atom);
+  } else {
+    return atom;
+  }
+}
 
 // Helper function to transform an atom from REST format to Mongo format.
 // An atom is anything that can't contain other expressions. So it
 // includes things where objects are used to represent other
 // datatypes, like pointers and dates, but it does not include objects
 // or arrays with generic stuff inside.
-// If options.inArray is true, we'll leave it in REST format.
-// If options.inObject is true, we'll leave files in REST format.
 // Raises an error if this cannot possibly be valid REST format.
-// Returns CannotTransform if it's just not an atom, or if force is
-// true, throws an error.
-function transformAtom(atom, force, {
-  inArray,
-  inObject,
-} = {}) {
+// Returns CannotTransform if it's just not an atom
+function transformTopLevelAtom(atom) {
   switch(typeof atom) {
   case 'string':
   case 'number':
@@ -500,14 +462,7 @@ function transformAtom(atom, force, {
 
     // TODO: check validity harder for the __type-defined types
     if (atom.__type == 'Pointer') {
-      if (!inArray && !inObject) {
-        return `${atom.className}$${atom.objectId}`;
-      }
-      return {
-        __type: 'Pointer',
-        className: atom.className,
-        objectId: atom.objectId
-      };
+      return `${atom.className}$${atom.objectId}`;
     }
     if (DateCoder.isValidJSON(atom)) {
       return DateCoder.JSONToDatabase(atom);
@@ -516,17 +471,10 @@ function transformAtom(atom, force, {
       return BytesCoder.JSONToDatabase(atom);
     }
     if (GeoPointCoder.isValidJSON(atom)) {
-      return (inArray || inObject ? atom : GeoPointCoder.JSONToDatabase(atom));
+      return GeoPointCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
-      return (inArray || inObject ? atom : FileCoder.JSONToDatabase(atom));
-    }
-    if (inArray || inObject) {
-      return atom;
-    }
-
-    if (force) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
+      return FileCoder.JSONToDatabase(atom);
     }
     return CannotTransform;
 
@@ -561,19 +509,24 @@ function transformConstraint(constraint, inArray) {
     case '$exists':
     case '$ne':
     case '$eq':
-      answer[key] = transformAtom(constraint[key], true,
-                                  {inArray: inArray});
+      answer[key] = inArray ? transformInteriorAtom(constraint[key]) : transformTopLevelAtom(constraint[key]);
+      if (answer[key] === CannotTransform) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
+      }
       break;
 
     case '$in':
     case '$nin':
       var arr = constraint[key];
       if (!(arr instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON,
-                              'bad ' + key + ' value');
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
       }
-      answer[key] = arr.map((v) => {
-        return transformAtom(v, true, { inArray: inArray });
+      answer[key] = arr.map(value => {
+        let result = inArray ? transformInteriorAtom(value) : transformTopLevelAtom(value);
+        if (result === CannotTransform) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
+        }
+        return result;
       });
       break;
 
@@ -583,9 +536,7 @@ function transformConstraint(constraint, inArray) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
       }
-      answer[key] = arr.map((v) => {
-        return transformAtom(v, true, { inArray: true });
-      });
+      answer[key] = arr.map(transformInteriorAtom);
       break;
 
     case '$regex':
@@ -668,14 +619,14 @@ function transformConstraint(constraint, inArray) {
 // The output for a non-flattened operator is a hash with __op being
 // the mongo op, and arg being the argument.
 // The output for a flattened operator is just a value.
-// Returns CannotTransform if this cannot transform it.
 // Returns undefined if this should be a no-op.
-function transformUpdateOperator(operator, flatten) {
-  if (typeof operator !== 'object' || !operator.__op) {
-    return CannotTransform;
-  }
 
-  switch(operator.__op) {
+function transformUpdateOperator({
+  __op,
+  amount,
+  objects,
+}, flatten) {
+  switch(__op) {
   case 'Delete':
     if (flatten) {
       return undefined;
@@ -684,43 +635,36 @@ function transformUpdateOperator(operator, flatten) {
     }
 
   case 'Increment':
-    if (typeof operator.amount !== 'number') {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'incrementing must provide a number');
+    if (typeof amount !== 'number') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'incrementing must provide a number');
     }
     if (flatten) {
-      return operator.amount;
+      return amount;
     } else {
-      return {__op: '$inc', arg: operator.amount};
+      return {__op: '$inc', arg: amount};
     }
 
   case 'Add':
   case 'AddUnique':
-    if (!(operator.objects instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'objects to add must be an array');
+    if (!(objects instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
     }
-    var toAdd = operator.objects.map((obj) => {
-      return transformAtom(obj, true, { inArray: true });
-    });
+    var toAdd = objects.map(transformInteriorAtom);
     if (flatten) {
       return toAdd;
     } else {
       var mongoOp = {
         Add: '$push',
         AddUnique: '$addToSet'
-      }[operator.__op];
+      }[__op];
       return {__op: mongoOp, arg: {'$each': toAdd}};
     }
 
   case 'Remove':
-    if (!(operator.objects instanceof Array)) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'objects to remove must be an array');
+    if (!(objects instanceof Array)) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to remove must be an array');
     }
-    var toRemove = operator.objects.map((obj) => {
-      return transformAtom(obj, true, { inArray: true });
-    });
+    var toRemove = objects.map(transformInteriorAtom);
     if (flatten) {
       return [];
     } else {
@@ -728,31 +672,11 @@ function transformUpdateOperator(operator, flatten) {
     }
 
   default:
-    throw new Parse.Error(
-      Parse.Error.COMMAND_UNAVAILABLE,
-      'the ' + operator.__op + ' op is not supported yet');
+    throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${__op} operator is not supported yet.`);
   }
 }
 
-const specialKeysForUntransform = [
-  '_id',
-  '_hashed_password',
-  '_acl',
-  '_email_verify_token',
-  '_perishable_token',
-  '_tombstone',
-  '_session_token',
-  'updatedAt',
-  '_updated_at',
-  'createdAt',
-  '_created_at',
-  'expiresAt',
-  '_expiresAt',
-];
-
-// Converts from a mongo-format object to a REST-format object.
-// Does not strip out anything based on a lack of authentication.
-function untransformObject(schema, className, mongoObject, isNestedObject = false) {
+const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
   case 'string':
   case 'number':
@@ -761,15 +685,55 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
   case 'undefined':
   case 'symbol':
   case 'function':
-    throw 'bad value in untransformObject';
+    throw 'bad value in mongoObjectToParseObject';
   case 'object':
     if (mongoObject === null) {
       return null;
     }
     if (mongoObject instanceof Array) {
-      return mongoObject.map(arrayEntry => {
-        return untransformObject(schema, className, arrayEntry, true);
-      });
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
+    }
+
+    if (mongoObject instanceof Date) {
+      return Parse._encode(mongoObject);
+    }
+
+    if (mongoObject instanceof mongodb.Long) {
+      return mongoObject.toNumber();
+    }
+
+    if (mongoObject instanceof mongodb.Double) {
+      return mongoObject.value;
+    }
+
+    if (BytesCoder.isValidDatabaseObject(mongoObject)) {
+      return BytesCoder.databaseToJSON(mongoObject);
+    }
+
+    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
+  default:
+    throw 'unknown js type';
+  }
+}
+
+// Converts from a mongo-format object to a REST-format object.
+// Does not strip out anything based on a lack of authentication.
+const mongoObjectToParseObject = (className, mongoObject, schema) => {
+  switch(typeof mongoObject) {
+  case 'string':
+  case 'number':
+  case 'boolean':
+    return mongoObject;
+  case 'undefined':
+  case 'symbol':
+  case 'function':
+    throw 'bad value in mongoObjectToParseObject';
+  case 'object':
+    if (mongoObject === null) {
+      return null;
+    }
+    if (mongoObject instanceof Array) {
+      return mongoObject.map(nestedMongoObjectToNestedParseObject);
     }
 
     if (mongoObject instanceof Date) {
@@ -790,10 +754,6 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
     var restObject = untransformACL(mongoObject);
     for (var key in mongoObject) {
-      if (isNestedObject && _.includes(specialKeysForUntransform, key)) {
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
-        continue;
-      }
       switch(key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];
@@ -833,17 +793,11 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
 
         if (key.indexOf('_p_') == 0) {
           var newKey = key.substring(3);
-          var expected;
-          if (schema && schema.getExpectedType) {
-            expected = schema.getExpectedType(className, newKey);
-          }
-          if (!expected) {
-            log.info('transform.js',
-              'Found a pointer column not in the schema, dropping it.',
-              className, newKey);
+          if (!schema.fields[newKey]) {
+            log.info('transform.js', 'Found a pointer column not in the schema, dropping it.', className, newKey);
             break;
           }
-          if (expected && expected.type !== 'Pointer') {
+          if (schema.fields[newKey].type !== 'Pointer') {
             log.info('transform.js', 'Found a pointer in a non-pointer column, dropping it.', className, key);
             break;
           }
@@ -851,8 +805,7 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             break;
           }
           var objData = mongoObject[key].split('$');
-          var newClass = (expected ? expected.targetClass : objData[0]);
-          if (objData[0] !== newClass) {
+          if (objData[0] !== schema.fields[newKey].targetClass) {
             throw 'pointer to incorrect className';
           }
           restObject[newKey] = {
@@ -861,91 +814,35 @@ function untransformObject(schema, className, mongoObject, isNestedObject = fals
             objectId: objData[1]
           };
           break;
-        } else if (!isNestedObject && key[0] == '_' && key != '__type') {
+        } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
         } else {
-          var expectedType = schema.getExpectedType(className, key);
           var value = mongoObject[key];
-          if (expectedType && expectedType.type === 'File' && FileCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'File' && FileCoder.isValidDatabaseObject(value)) {
             restObject[key] = FileCoder.databaseToJSON(value);
             break;
           }
-          if (expectedType && expectedType.type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
+          if (schema.fields[key] && schema.fields[key].type === 'GeoPoint' && GeoPointCoder.isValidDatabaseObject(value)) {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
         }
-        restObject[key] = untransformObject(schema, className, mongoObject[key], true);
+        restObject[key] = nestedMongoObjectToNestedParseObject(mongoObject[key]);
       }
     }
 
-    if (!isNestedObject) {
-      let relationFields = schema.getRelationFields(className);
-      Object.assign(restObject, relationFields);
-    }
-    return restObject;
+    const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
+    let relationFields = {};
+    relationFieldNames.forEach(relationFieldName => {
+      relationFields[relationFieldName] = {
+        __type: 'Relation',
+        className: schema.fields[relationFieldName].targetClass,
+      }
+    });
+
+    return { ...restObject, ...relationFields };
   default:
     throw 'unknown js type';
-  }
-}
-
-function transformSelect(selectObject, key ,objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete selectObject['$select'];
-  if (Array.isArray(selectObject['$in'])) {
-    selectObject['$in'] = selectObject['$in'].concat(values);
-  } else {
-    selectObject['$in'] = values;
-  }
-}
-
-function transformDontSelect(dontSelectObject, key, objects) {
-  var values = [];
-  for (var result of objects) {
-    values.push(result[key]);
-  }
-  delete dontSelectObject['$dontSelect'];
-  if (Array.isArray(dontSelectObject['$nin'])) {
-    dontSelectObject['$nin'] = dontSelectObject['$nin'].concat(values);
-  } else {
-    dontSelectObject['$nin'] = values;
-  }
-}
-
-function transformInQuery(inQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete inQueryObject['$inQuery'];
-  if (Array.isArray(inQueryObject['$in'])) {
-    inQueryObject['$in'] = inQueryObject['$in'].concat(values);
-  } else {
-    inQueryObject['$in'] = values;
-  }
-}
-
-function transformNotInQuery(notInQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
-  delete notInQueryObject['$notInQuery'];
-  if (Array.isArray(notInQueryObject['$nin'])) {
-    notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);
-  } else {
-    notInQueryObject['$nin'] = values;
   }
 }
 
@@ -1042,9 +939,5 @@ module.exports = {
   parseObjectToMongoObjectForCreate,
   transformUpdate,
   transformWhere,
-  transformSelect,
-  transformDontSelect,
-  transformInQuery,
-  transformNotInQuery,
-  untransformObject
+  mongoObjectToParseObject,
 };

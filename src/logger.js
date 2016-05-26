@@ -9,6 +9,8 @@ if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
   LOGS_FOLDER = './test_logs/'
 }
 
+LOGS_FOLDER = process.env.PARSE_SERVER_LOGS_FOLDER || LOGS_FOLDER;
+
 let currentLogsFolder = LOGS_FOLDER;
 
 function generateTransports(level) {
@@ -44,8 +46,10 @@ export function configureLogger({logsFolder, level = winston.level}) {
   if (!path.isAbsolute(logsFolder)) {
     logsFolder = path.resolve(process.cwd(), logsFolder);
   }
-  if (!fs.existsSync(logsFolder)) {
+  try {
     fs.mkdirSync(logsFolder);
+  } catch (exception) {
+    // Ignore, assume the folder already exists
   }
   currentLogsFolder = logsFolder;
 

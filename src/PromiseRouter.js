@@ -6,6 +6,7 @@
 // components that external developers may be modifying.
 
 import express from 'express';
+import url from 'url';
 import log from './logger';
 
 export default class PromiseRouter {
@@ -154,8 +155,8 @@ export default class PromiseRouter {
 function makeExpressHandler(promiseHandler) {
   return function(req, res, next) {
     try {
-      log.verbose(req.method, req.originalUrl, req.headers,
-                  JSON.stringify(req.body, null, 2));
+      log.verbose(req.method, maskSensitiveUrl(req), req.headers,
+                  JSON.stringify(maskSensitiveBody(req), null, 2));
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
           log.error('the handler did not include a "response" or a "location" field');
@@ -193,4 +194,35 @@ function makeExpressHandler(promiseHandler) {
       next(e);
     }
   }
+}
+
+function maskSensitiveBody(req) {
+  let maskBody = Object.assign({}, req.body);
+  let shouldMaskBody = (req.method === 'POST' && req.originalUrl.endsWith('/users')
+                       && !req.originalUrl.includes('classes')) ||
+                       (req.method === 'PUT' && /users\/\w+$/.test(req.originalUrl)
+                       && !req.originalUrl.includes('classes')) ||
+                       (req.originalUrl.includes('classes/_User'));
+  if (shouldMaskBody) {
+    for (let key of Object.keys(maskBody)) {
+      if (key == 'password') {
+        maskBody[key] = '********';
+        break;
+      }
+    }
+  }
+  return maskBody;
+}
+
+function maskSensitiveUrl(req) {
+  let maskUrl = req.originalUrl.toString();
+  let shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
+                      && !req.originalUrl.includes('classes');
+  if (shouldMaskUrl) {
+    let password = url.parse(req.originalUrl, true).query.password;
+    if (password) {
+      maskUrl = maskUrl.replace('password=' + password, 'password=********')
+    }
+  }
+  return maskUrl;
 }

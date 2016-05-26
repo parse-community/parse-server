@@ -1,6 +1,6 @@
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 2000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
 
 var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
@@ -12,13 +12,11 @@ var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 var databaseURI = process.env.DATABASE_URI;
-var cloudMain = process.env.CLOUD_CODE_MAIN || './spec/cloud/main.js';
 var port = 8378;
 
 // Default server configuration for tests.
 var defaultConfiguration = {
   databaseURI: databaseURI,
-  cloud: cloudMain,
   serverURL: 'http://localhost:' + port + '/1',
   appId: 'test',
   javascriptKey: 'test',
@@ -63,7 +61,7 @@ const setServerConfiguration = configuration => {
   DatabaseAdapter.clearDatabaseSettings();
   currentConfiguration = configuration;
   server.close();
-  cache.clearCache();
+  cache.clear();
   app = express();
   api = new ParseServer(configuration);
   app.use('/1', api);
@@ -94,6 +92,7 @@ var mongoAdapter = new MongoStorageAdapter({
 })
 
 afterEach(function(done) {
+  Parse.Cloud._removeAllHooks();
   mongoAdapter.getAllSchemas()
   .then(allSchemas => {
     allSchemas.forEach((schema) => {

@@ -60,7 +60,7 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
     uri: appDatabaseURIs[appId], //may be undefined if the user didn't supply a URI, in which case the default will be used
   }
 
-  dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions));
+  dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions), {appId: appId});
 
   return dbConnections[appId];
 }

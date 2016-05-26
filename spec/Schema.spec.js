@@ -453,6 +453,10 @@ describe('SchemaController', () => {
           timeZone: { type: 'String' },
           localeIdentifier: { type: 'String' },
           badge: { type: 'Number' },
+          appVersion: { type: 'String' },
+          appName: { type: 'String' },
+          appIdentifier: { type: 'String' },
+          parseVersion: { type: 'String' },
         },
         classLevelPermissions: {
           find: { '*': true },
