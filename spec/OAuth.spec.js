@@ -285,7 +285,7 @@ describe('OAuth', function() {
             // make sure the auth data is properly deleted
             var config = new Config(Parse.applicationId);
             config.database.adapter.find('_User', { objectId: model.id }, {
-              fields: Object.assign({} defaultColumns._Default, defaultColumns._Installation),
+              fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
             } }, {})
             .then(res => {
               expect(res.length).toBe(1);
