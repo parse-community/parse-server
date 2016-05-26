@@ -533,13 +533,11 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     }).then(() => {
-      return database.mongoFind('_Installation',
-                     {installationId: installId1}, {});
+      return database.mongoFind('_Installation', {installationId: installId1}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
-      return database.mongoFind('_Installation',
-                     {installationId: installId2}, {});
+      return database.mongoFind('_Installation', {installationId: installId2}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
@@ -548,8 +546,7 @@ describe('Installations', () => {
         'installationId': installId2,
         'deviceToken': t
       };
-      return rest.update(config, auth.nobody(config), '_Installation',
-                         secondObject._id, input);
+      return rest.update(config, auth.nobody(config), '_Installation', secondObject._id, input);
     }).then(() => {
       // The first object should have been deleted
       return database.mongoFind('_Installation', {_id: firstObject._id}, {});
