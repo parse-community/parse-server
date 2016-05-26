@@ -98,6 +98,7 @@ class ParseServer {
     javascriptKey,
     dotNetKey,
     restAPIKey,
+    webhookKey,
     fileKey = 'invalid-file-key',
     facebookAppIds = [],
     enableAnonymousUsers = true,
@@ -166,7 +167,7 @@ class ParseServer {
     const filesController = new FilesController(filesControllerAdapter, appId);
     const pushController = new PushController(pushControllerAdapter, appId);
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
-    const hooksController = new HooksController(appId, collectionPrefix);
+    const hooksController = new HooksController(appId, collectionPrefix, webhookKey);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
     const cacheController = new CacheController(cacheControllerAdapter, appId);
@@ -179,6 +180,7 @@ class ParseServer {
       javascriptKey: javascriptKey,
       dotNetKey: dotNetKey,
       restAPIKey: restAPIKey,
+      webhookKey: webhookKey,
       fileKey: fileKey,
       facebookAppIds: facebookAppIds,
       cacheController: cacheController,

@@ -4,6 +4,7 @@ import * as DatabaseAdapter from "../DatabaseAdapter";
 import * as triggers from "../triggers";
 import * as Parse from "parse/node";
 import * as request from "request";
+import { logger } from '../logger';
 
 const DefaultHooksCollectionName = "_Hooks";
 
@@ -12,9 +13,10 @@ export class HooksController {
   _collectionPrefix:string;
   _collection;
 
-  constructor(applicationId:string, collectionPrefix:string = '') {
+  constructor(applicationId:string, collectionPrefix:string = '', webhookKey) {
     this._applicationId = applicationId;
     this._collectionPrefix = collectionPrefix;
+    this._webhookKey = webhookKey;
     this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).WithoutValidation();
   }
 
@@ -79,7 +81,7 @@ export class HooksController {
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook);
+    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
@@ -153,7 +155,7 @@ export class HooksController {
   };
 }
 
-function wrapToHTTPRequest(hook) {
+function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
     let jsonBody = {};
     for (var i in req) {
@@ -173,6 +175,12 @@ function wrapToHTTPRequest(hook) {
       },
       body: JSON.stringify(jsonBody)
     };
+
+    if (key) {
+      jsonRequest.headers['X-Parse-Webhook-Key'] = key;
+    } else {
+      logger.warn('Making outgoing webhook request without webhookKey being set!');
+    }
 
     request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
       var result;
