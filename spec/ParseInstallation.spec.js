@@ -514,7 +514,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('update ios device token with duplicate device token', (done) => {
+  fit('update ios device token with duplicate device token', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -532,13 +532,14 @@ describe('Installations', () => {
         'deviceType': 'ios'
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
-    }).then(() => {
-      return database.mongoFind('_Installation', {installationId: installId1}, {});
-    }).then((results) => {
+    })
+    .then(() => database.mongoFind('_Installation', {installationId: installId1}, {}))
+    .then((results) => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
       return database.mongoFind('_Installation', {installationId: installId2}, {});
-    }).then((results) => {
+    })
+    .then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
       // Update second installation to conflict with first installation id
@@ -547,10 +548,10 @@ describe('Installations', () => {
         'deviceToken': t
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject._id, input);
-    }).then(() => {
+    })
+    .then(() => database.mongoFind('_Installation', {_id: firstObject._id}, {}))
+    .then(results => {
       // The first object should have been deleted
-      return database.mongoFind('_Installation', {_id: firstObject._id}, {});
-    }).then((results) => {
       expect(results.length).toEqual(0);
       done();
     }).catch((error) => { console.log(error); });
