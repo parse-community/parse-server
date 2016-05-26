@@ -1556,4 +1556,21 @@ describe('schemas', () => {
       done();
     })
   })
+
+  it('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
+    new Parse.Object('MyClass').save({ data: 'foo'})
+    .then(obj => obj.destroy())
+    .then(() => setPermissionsOnClass('MyClass', { find: {}, get: {} }, true))
+    .then(() => {
+      request.del({
+        url: 'http://localhost:8378/1/schemas/MyClass',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(200);
+        expect(response.body).toEqual({});
+        done();
+      });
+    });
+  });
 });

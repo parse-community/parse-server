@@ -67,7 +67,7 @@ function modifySchema(req) {
 // A helper function that removes all join tables for a schema. Returns a promise.
 var removeJoinTables = (database, mongoSchema) => {
   return Promise.all(Object.keys(mongoSchema)
-    .filter(field => mongoSchema[field].startsWith('relation<'))
+    .filter(field => field !== '_metadata' && mongoSchema[field].startsWith('relation<'))
     .map(field => {
       let collectionName = `_Join:${field}:${mongoSchema._id}`;
       return database.adapter.deleteOneSchema(collectionName);
