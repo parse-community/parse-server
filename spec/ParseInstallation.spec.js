@@ -11,12 +11,9 @@ var rest = require('../src/rest');
 
 var config = new Config('test');
 let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
-import { defaultColumns } from '../src/Controllers/SchemaController';
+let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
-const installationSchema = { fields: {
-  ...defaultColumns._Default,
-  ...defaultColumns._Installation,
-}};
+const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };
 
 describe('Installations', () => {
   it('creates an android installation with ids', (done) => {
