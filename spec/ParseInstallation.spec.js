@@ -307,17 +307,14 @@ fdescribe('Installations', () => {
     }).then(() => {
       input.installationId = installId3;
       return rest.create(config, auth.nobody(config), '_Installation', input);
-    }).then(() => {
-      return database.mongoFind('_Installation',
-                     {installationId: installId1}, {});
-    }).then((results) => {
+    })
+    .then(() => database.adapter.find('_Installation', {installationId: installId1}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      return database.mongoFind('_Installation',
-                     {installationId: installId2}, {});
-    }).then((results) => {
+      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+    }).then(results => {
       expect(results.length).toEqual(1);
-      return database.mongoFind('_Installation',
-                     {installationId: installId3}, {});
+      return database.adapter.find('_Installation', {installationId: installId3}, installationSchema, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       done();
