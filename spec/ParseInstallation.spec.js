@@ -406,20 +406,18 @@ fdescribe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       input = {
         'installationId': installId,
         'deviceToken': u,
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation',
-                         results[0]['_id'], input);
-    }).then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+    })
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(u);
       done();
