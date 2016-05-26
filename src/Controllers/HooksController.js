@@ -57,7 +57,12 @@ export class HooksController {
 
   _getHooks(query = {}, limit) {
     let options = limit ? { limit: limit } : undefined;
-    return this.database.find(DefaultHooksCollectionName, query);
+    return this.database.find(DefaultHooksCollectionName, query).then((results) => {
+      return results.map((result) => {
+        delete result.objectId;
+        return result;
+      });
+    });
   }
 
   _removeHooks(query) {
