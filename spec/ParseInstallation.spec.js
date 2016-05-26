@@ -533,15 +533,16 @@ fdescribe('Installations', () => {
         'deviceType': 'ios'
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
-    }).then(() => {
-      return database.mongoFind('_Installation',
-                     {installationId: installId1}, {});
-    }).then((results) => {
+    })
+    .then(() => database.adapter.find('_Installation', {installationId: installId1}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
+      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+    })
+    .then(results => {
       firstObject = results[0];
-      return database.mongoFind('_Installation',
-                     {installationId: installId2}, {});
-    }).then((results) => {
+      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+    }).then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
       // Update second installation to conflict with first installation id
