@@ -505,10 +505,10 @@ fdescribe('Installations', () => {
         'deviceToken': t
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
-    }).then(() => {
+    })
+    .then(() => database.adapter.find('_Installation', {objectId: firstObject.objectId}, installationSchema, {}))
+    .then(results => {
       // The first object should have been deleted
-      return database.mongoFind('_Installation', {_id: firstObject._id}, {});
-    }).then((results) => {
       expect(results.length).toEqual(0);
       done();
     }).catch((error) => { console.log(error); });
