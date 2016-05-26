@@ -24,23 +24,26 @@ describe('rest create', () => {
     });
   });
 
-  // This test needs to be split into Parse Server portion
-  // and Mongo Adapter portion, but it's unclear if Date
-  // encoding/decoding should happen in Parse Server or the adapter.
   it('handles array, object, date', (done) => {
+    let now = new Date();
     var obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
-      date: Parse._encode(new Date()),
+      date: Parse._encode(now),
     };
-    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
-      return database.mongoFind('MyClass', {}, {});
-    }).then((results) => {
+    rest.create(config, auth.nobody(config), 'MyClass', obj)
+    .then(() => database.adapter.find('MyClass', {}, { fields: {
+      array: { type: 'Array' },
+      object: { type: 'Object' },
+      date: { type: 'Date' },
+    } }, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var mob = results[0];
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
-      expect(mob.date instanceof Date).toBe(true);
+      expect(mob.date.__type).toBe('Date');
+      expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
       done();
     });
   });

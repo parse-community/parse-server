@@ -417,15 +417,6 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
   return Promise.resolve();
 }
 
-// Runs a mongo query on the database.
-// This should only be used for testing - use 'find' for normal code
-// to avoid Mongo-format dependencies.
-// Returns a promise that resolves to a list of items.
-DatabaseController.prototype.mongoFind = function(className, query, options = {}) {
-  return this.adapter.adaptiveCollection(className)
-    .then(collection => collection.find(query, options));
-};
-
 // Deletes everything in the database matching the current collectionPrefix
 // Won't delete collections in the system namespace
 // Returns a promise.

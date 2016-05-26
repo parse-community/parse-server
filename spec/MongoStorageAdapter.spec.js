@@ -111,4 +111,45 @@ describe('MongoStorageAdapter', () => {
       done();
     });
   });
+
+  it('handles array, object, date', (done) => {
+    let adapter = new MongoStorageAdapter({ uri: databaseURI });
+    let obj = {
+      array: [1, 2, 3],
+      object: {foo: 'bar'},
+      date: {
+        __type: 'Date',
+        iso: '2016-05-26T20:55:01.154Z',
+      },
+    };
+    let schema = { fields: {
+      array: { type: 'Array' },
+      object: { type: 'Object' },
+      date: { type: 'Date' },
+    } };
+    adapter.createObject('MyClass', obj, schema)
+    .then(() => adapter._rawFind('MyClass', {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(mob.array instanceof Array).toBe(true);
+      expect(typeof mob.object).toBe('object');
+      expect(mob.date instanceof Date).toBe(true);
+      return adapter.find('MyClass', {}, schema, {});
+    })
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(mob.array instanceof Array).toBe(true);
+      expect(typeof mob.object).toBe('object');
+      expect(mob.date.__type).toBe('Date');
+      expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
+      done();
+    })
+    .catch(error => {
+      console.log(error);
+      fail();
+      done();
+    });
+  });
 });
