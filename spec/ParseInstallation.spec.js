@@ -11,9 +11,14 @@ var rest = require('../src/rest');
 
 var config = new Config('test');
 let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
+import { defaultColumns } from '../src/Controllers/SchemaController';
+
+const installationSchema = { fields: {
+  ...defaultColumns._Default,
+  ...defaultColumns._Installation,
+}};
 
 describe('Installations', () => {
-
   it('creates an android installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';
@@ -22,9 +27,8 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.installationId).toEqual(installId);
@@ -41,9 +45,8 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.deviceToken).toEqual(t);
@@ -60,9 +63,8 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.installationId).toEqual(installId);
@@ -80,9 +82,8 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.installationId).toEqual(installId);
@@ -104,9 +105,8 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.deviceToken).toEqual(t);
@@ -203,9 +203,8 @@ describe('Installations', () => {
       'custom': 'allowed'
     };
   rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
       expect(obj.custom).toEqual('allowed');
@@ -831,12 +830,17 @@ describe('Installations', () => {
         'deviceType': 'ios'
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
-    }).then(() => {
-      return database.mongoFind('_Installation', {}, {});
-    }).then((results) => {
+    })
+    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(t);
       expect(results[0].installationId).toEqual(installId);
+      done();
+    })
+    .catch(error => {
+      console.log(error);
+      fail();
       done();
     });
   });
