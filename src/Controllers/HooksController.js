@@ -190,7 +190,7 @@ function wrapToHTTPRequest(hook, key) {
     request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
       var result;
       if (body) {
-        if (typeof body == "string") {
+        if (typeof body === "string") {
           try {
             body = JSON.parse(body);
           } catch (e) {
@@ -204,6 +204,8 @@ function wrapToHTTPRequest(hook, key) {
       }
       if (err) {
         return res.error(err);
+      } else if (hook.triggerName === 'beforeSave') {
+        return res.success({object: result});
       } else {
         return res.success(result);
       }
