@@ -1119,27 +1119,6 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('fail when create duplicate value in unique field', (done) => {
-    let obj = new Parse.Object('UniqueField');
-    obj.set('unique', 'value');
-    obj.save().then(() => {
-      expect(obj.id).not.toBeUndefined();
-      let config = new Config('test');
-      return config.database.adapter.adaptiveCollection('UniqueField')
-    }).then(collection => {
-      return collection._mongoCollection.createIndex({ 'unique': 1 }, { unique: true })
-    }).then(() => {
-      let obj = new Parse.Object('UniqueField');
-      obj.set('unique', 'value');
-      return obj.save()
-    }).then(() => {
-      return Promise.reject();
-    }, error => {
-      expect(error.code === Parse.Error.DUPLICATE_VALUE);
-      done();
-    });
-  });
-
   it('doesnt convert interior keys of objects that use special names', done => {
     let obj = new Parse.Object('Obj');
     obj.set('val', { createdAt: 'a', updatedAt: 1 });
