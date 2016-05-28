@@ -381,7 +381,7 @@ describe('Hooks', () => {
        object.hello = "world";
        // Would need parse cloud express to set much more
        // But this should override the key upon return
-        res.json({success: {object: object}});
+       res.json({success: object});
      });
      // The function is delete as the DB is dropped between calls
      Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave" ,hookServerURL+"/BeforeSaveSome").then(function(){
