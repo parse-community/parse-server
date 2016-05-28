@@ -207,7 +207,100 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('succeed in logging in', function(done) {
+  it('ensure that email is uniquely indexed', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+    Parse.Promise.all([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
+  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
+    let config = new Config('test');
+    // Remove existing data to clear out unique index
+    TestUtils.destroyAllDataPermanently()
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'x', email: 'a@b.c' }))
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'y', email: 'a@b.c' }))
+    .then(reconfigureServer)
+    .catch(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('qqq');
+      user.setEmail('unique@unique.unique');
+      return user.signUp().catch(fail);
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('www');
+      user.setEmail('a@b.c');
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+      done();
+    });
+  });
+
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+    let config = new Config('test');
+    config.database.adapter.ensureUniqueness('_User', requiredUserFields, ['randomField'])
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('1');
+      user.setEmail('1@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('2');
+      user.setEmail('2@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      done();
+    });
+  });
+
+  fit('succeed in logging in', function(done) {
     createTestUser(function(u) {
       expect(typeof u.id).toEqual('string');
 
@@ -217,8 +310,9 @@ describe('miscellaneous', function() {
           expect(user.get('password')).toBeUndefined();
           expect(user.getSessionToken()).not.toBeUndefined();
           Parse.User.logOut().then(done);
-        }, error: function(error) {
-          fail(error);
+        }, error: error => {
+          fail(JSON.stringify(error));
+          done();
         }
       });
     }, fail);

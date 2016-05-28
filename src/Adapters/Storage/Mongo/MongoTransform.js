@@ -197,20 +197,12 @@ function transformWhere(className, restWhere, schema) {
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
-  case 'createdAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_created_at', value: coercedToDate};
-  case 'updatedAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
     transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
@@ -271,8 +263,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue,
   return {key: restKey, value};
 }
 
-// Main exposed method to create new objects.
-// restCreate is the "create" clause in REST API form.
 const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
@@ -281,7 +271,6 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   let mongoCreate = {}
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      className,
       restKey,
       restCreate[restKey],
       schema
@@ -290,6 +279,13 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
       mongoCreate[key] = value;
     }
   }
+
+  // Use the legacy mongo format for createdAt and updatedAt
+  mongoCreate._created_at = mongoCreate.createdAt.iso;
+  delete mongoCreate.createdAt;
+  mongoCreate._updated_at = mongoCreate.updatedAt.iso;
+  delete mongoCreate.updatedAt;
+
   return mongoCreate;
 }
 
@@ -735,7 +731,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         restObject['objectId'] = '' + mongoObject[key];
         break;
       case '_hashed_password':
-        restObject['password'] = mongoObject[key];
+        restObject._hashed_password = mongoObject[key];
         break;
       case '_acl':
       case '_email_verify_token':

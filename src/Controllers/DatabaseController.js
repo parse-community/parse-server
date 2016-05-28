@@ -159,6 +159,9 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
     return object;
   }
 
+  object.password = object._hashed_password;
+  delete object._hashed_password;
+
   delete object.sessionToken;
 
   if (isMaster || (aclGroup.indexOf(object.objectId) > -1)) {
@@ -399,6 +402,9 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
   // Make a copy of the object, so we don't mutate the incoming data.
   let originalObject = object;
   object = transformObjectACL(object);
+
+  object.createdAt = { iso: object.createdAt, __type: 'Date' };
+  object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
