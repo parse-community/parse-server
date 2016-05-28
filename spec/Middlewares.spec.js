@@ -17,8 +17,11 @@ describe('middlewares', () => {
                 return fakeReq.headers[key.toLowerCase()]
             }
         };
-        AppCache.clear();
         AppCache.put(fakeReq.body._ApplicationId, {});
+    });
+
+    afterEach(() => {
+        AppCache.del(fakeReq.body._ApplicationId);
     });
 
     it('should use _ContentType if provided', (done) => {
