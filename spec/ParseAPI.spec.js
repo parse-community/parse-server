@@ -258,6 +258,27 @@ describe('miscellaneous', function() {
         done();
       });
     });
+    it('works when object is passed to success', done => {
+      let triggerTime = 0;
+      // Register a mock beforeSave hook
+      Parse.Cloud.beforeSave('GameScore', (req, res) => {
+        let object = req.object;
+        object.set('foo', 'bar');
+        triggerTime++;
+        res.success(object);
+      });
+
+      let obj = new Parse.Object('GameScore');
+      obj.set('foo', 'baz');
+      obj.save().then(() => {
+        expect(triggerTime).toBe(1);
+        expect(obj.get('foo')).toEqual('bar');
+        done();
+      }, error => {
+        fail(error);
+        done();
+      });
+    });
 
     it('original object is set on update', done => {
       let triggerTime = 0;
