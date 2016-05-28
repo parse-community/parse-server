@@ -66,10 +66,6 @@ describe('Uniqueness', function() {
     });
   });
 
-  notWorking('doesnt let you enforce uniqueness on nullable fields', done => {
-    // Coming later, once we have a way to specify that a field is non-nullable
-  });
-
   it('can do compound uniqueness', done => {
     let config = new Config('test');
     config.database.adapter.ensureUniqueness('CompoundUnique', ['k1', 'k2'], { fields: { k1: { type: 'String' }, k2: { type: 'String' } } })
@@ -101,5 +97,13 @@ describe('Uniqueness', function() {
       expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
       done();
     });
+  });
+
+  it('adding a unique index to an existing field works even if it has nulls', done => {
+
+  });
+
+  it('adding a unique index to an existing field doesnt prevent you from adding new documents with nulls', done => {
+
   });
 });

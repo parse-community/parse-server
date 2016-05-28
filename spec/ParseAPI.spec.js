@@ -6,6 +6,10 @@ var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
+let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
+
+const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
+
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -45,15 +49,114 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('fail to create a duplicate username', function(done) {
-    createTestUser(function(data) {
-      createTestUser(function(data) {
-        fail('Should not have been able to save duplicate username.');
-      }, function(error) {
+  fit('fail to create a duplicate username', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+    let p1 = createTestUser();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+    let p2 = createTestUser();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+    Parse.Promise.all([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
+  fit('ensure that if people already have duplicate users, they can still sign up new users', done => {
+    let config = new Config('test');
+    config.database.adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
+    .then(() => config.database.adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('zxcv');
+      return user.signUp();
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('u');
+      user.signUp()
+      .catch(error => {
         expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
         done();
       });
+    })
+    .catch(() => {
+      fail('save should have succeeded');
+      done();
     });
+  });
+
+  fit('ensure that email is uniquely indexed', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+    Parse.Promise.all([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
+  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
+
+  });
+
+  it('ensure you get the right error if you have 2 users with the same email', done => {
+
+  });
+
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+
   });
 
   it('succeed in logging in', function(done) {

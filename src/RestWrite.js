@@ -14,6 +14,8 @@ var triggers = require('./triggers');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 
+const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
 // If query is null, this is a "create" and the data in data should be
@@ -356,44 +358,60 @@ RestWrite.prototype.transformUser = function() {
       }
       return;
     }
-    return this.config.database.find(
-      this.className, {
-        username: this.data.username,
-        objectId: {'$ne': this.objectId()}
-      }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.USERNAME_TAKEN,
-                                'Account already exists for this username');
-        }
-        return Promise.resolve();
-      });
+    // TODO: refactor this so that ensureUniqueness isn't called for every single sign up.
+    return this.config.database.adapter.ensureUniqueness('_User', ['username'], requiredUserFields)
+    .catch(error => {
+      if (error.code === Parse.Error.DUPLICATE_VALUE) {
+        // If they already have duplicate usernames or emails, the ensureUniqueness will fail,
+        // and then nobody will be able to sign up D: so just use the old, janky
+        // method to check for duplicate usernames.
+        return this.config.database.find(
+          this.className,
+          { username: this.data.username, objectId: {'$ne': this.objectId()} },
+          { limit: 1 }
+        )
+        .then(results => {
+          if (results.length > 0) {
+            throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+          }
+          return;
+        });
+      }
+      throw error;
+    })
   }).then(() => {
     if (!this.data.email || this.data.email.__op === 'Delete') {
       return;
     }
     // Validate basic email address format
     if (!this.data.email.match(/^.+@.+$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS,
-                            'Email address format is invalid.');
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.');
     }
     // Check for email uniqueness
-    return this.config.database.find(
-      this.className, {
-        email: this.data.email,
-        objectId: {'$ne': this.objectId()}
-      }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
-                                'Account already exists for this email ' +
-                                'address');
-        }
-        return Promise.resolve();
-      }).then(() => {
-        // We updated the email, send a new validation
-        this.storage['sendVerificationEmail'] = true;
-        this.config.userController.setEmailVerifyToken(this.data);
-        return Promise.resolve();
-      })
+    return this.config.database.adapter.ensureUniqueness('_User', ['email'], requiredUserFields)
+    .catch(error => {
+      // Same problem for email as above for username
+      if (error.code === Parse.Error.DUPLICATE_VALUE) {
+        return this.config.database.find(
+          this.className,
+          { email: this.data.email, objectId: {'$ne': this.objectId()} },
+          { limit: 1 }
+        )
+        .then(results => {
+          if (results.length > 0) {
+            throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+          }
+          return;
+        });
+      }
+      throw error;
+    })
+    .then(() => {
+      // We updated the email, send a new validation
+      this.storage['sendVerificationEmail'] = true;
+      this.config.userController.setEmailVerifyToken(this.data);
+      return;
+    })
   });
 };
 
@@ -762,6 +780,36 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
+    .catch(error => {
+      if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
+        throw error;
+      }
+      // If this was a failed user creation due to username or email already taken, we need to
+      // check whether it was username or email and return the appropriate error.
+
+      // TODO: See if we can later do this without additional queries by using named indexes.
+      return this.config.database.find(
+        this.className,
+        { username: this.data.username, objectId: {'$ne': this.objectId()} },
+        { limit: 1 }
+      )
+      .then(results => {
+        if (results.length > 0) {
+          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+        }
+        return this.config.database.find(
+          this.className,
+          { email: this.data.email, objectId: {'$ne': this.objectId()} },
+          { limit: 1 }
+        );
+      })
+      .then(results => {
+        if (results.length > 0) {
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+        }
+        throw error;
+      });
+    })
     .then(response => {
       response.objectId = this.data.objectId;
       response.createdAt = this.data.createdAt;
