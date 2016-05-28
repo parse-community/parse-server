@@ -76,6 +76,7 @@ addParseCloud();
 // "clientKey": optional key from Parse dashboard
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
+// "webhookKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 // "sessionLength": optional length in seconds for how long Sessions should be valid for
