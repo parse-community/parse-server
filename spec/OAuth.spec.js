@@ -1,6 +1,7 @@
 var OAuth = require("../src/authDataManager/OAuth1Client");
 var request = require('request');
 var Config = require("../src/Config");
+var defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
 describe('OAuth', function() {
 
@@ -283,9 +284,10 @@ describe('OAuth', function() {
                "Expiration should be cleared");
             // make sure the auth data is properly deleted
             var config = new Config(Parse.applicationId);
-            config.database.mongoFind('_User', {
-              _id: model.id
-            }).then((res) => {
+            config.database.adapter.find('_User', { objectId: model.id }, {
+              fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+            }, {})
+            .then(res => {
               expect(res.length).toBe(1);
               expect(res[0]._auth_data_myoauth).toBeUndefined();
               expect(res[0]._auth_data_myoauth).not.toBeNull();

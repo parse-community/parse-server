@@ -236,6 +236,11 @@ export class MongoStorageAdapter {
     .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
   }
 
+  // Used in tests
+  _rawFind(className, query) {
+    return this.adaptiveCollection(className).then(collection => collection.find(query));
+  }
+
   // Executs a count.
   count(className, query, schema) {
     return this.adaptiveCollection(className)

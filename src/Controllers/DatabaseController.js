@@ -305,15 +305,13 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
 
 // Adds a relation.
 // Returns a promise that resolves successfully iff the add was successful.
+const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, toId) {
   let doc = {
     relatedId: toId,
     owningId : fromId
   };
-  let className = `_Join:${key}:${fromClassName}`;
-  return this.adapter.adaptiveCollection(className).then((coll) => {
-    return coll.upsertOne(doc, doc);
-  });
+  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, relationSchema, doc);
 };
 
 // Removes a relation.
@@ -324,9 +322,13 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
     relatedId: toId,
     owningId: fromId
   };
-  let className = `_Join:${key}:${fromClassName}`;
-  return this.adapter.adaptiveCollection(className).then(coll => {
-    return coll.deleteOne(doc);
+  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, doc, relationSchema)
+  .catch(error => {
+    // We don't care if they try to delete a non-existent relation.
+    if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
+      return;
+    }
+    throw error;
   });
 };
 
@@ -415,15 +417,6 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
   return Promise.resolve();
 }
 
-// Runs a mongo query on the database.
-// This should only be used for testing - use 'find' for normal code
-// to avoid Mongo-format dependencies.
-// Returns a promise that resolves to a list of items.
-DatabaseController.prototype.mongoFind = function(className, query, options = {}) {
-  return this.adapter.adaptiveCollection(className)
-    .then(collection => collection.find(query, options));
-};
-
 // Deletes everything in the database matching the current collectionPrefix
 // Won't delete collections in the system namespace
 // Returns a promise.
@@ -449,17 +442,15 @@ function keysForQuery(query) {
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
 DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  return this.adapter.adaptiveCollection(joinTableName(className, key))
-    .then(coll => coll.find({owningId : owningId}))
-    .then(results => results.map(r => r.relatedId));
+  return this.adapter.find(joinTableName(className, key), { owningId }, relationSchema, {})
+  .then(results => results.map(result => result.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
 DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
-  return this.adapter.adaptiveCollection(joinTableName(className, key))
-    .then(coll => coll.find({ relatedId: { '$in': relatedIds } }))
-    .then(results => results.map(r => r.owningId));
+  return this.adapter.find(joinTableName(className, key), { relatedId: { '$in': relatedIds } }, relationSchema, {})
+  .then(results => results.map(result => result.owningId));
 };
 
 // Modifies query so that it no longer has $in on relation fields, or
@@ -702,8 +693,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
     if (!exist) {
       return Promise.resolve();
     }
-    return this.adapter.adaptiveCollection(className)
-    .then(collection => collection.count())
+    return this.adapter.count(className)
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);

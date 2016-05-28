@@ -203,7 +203,7 @@ describe('miscellaneous', function() {
       return obj.save();
     }).then(() => {
       var db = DatabaseAdapter.getDatabaseConnection(appId, 'test_');
-      return db.mongoFind('TestObject', {}, {});
+      return db.adapter.find('TestObject', {}, { fields: {} }, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
