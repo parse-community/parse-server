@@ -1,5 +1,5 @@
-import * as middlewares from "../src/middlewares";
-import {AppCache} from '../src/cache';
+var middlewares = require('../src/middlewares');
+var AppCache = require('../src/cache').AppCache;
 
 describe('middlewares', () => {
 
@@ -14,7 +14,7 @@ describe('middlewares', () => {
             },
             headers: {},
             get: (key) => {
-                return fakeReq.headers[key]
+                return fakeReq.headers[key.toLowerCase()]
             }
         };
         AppCache.clear();
