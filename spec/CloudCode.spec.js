@@ -589,4 +589,60 @@ describe('Cloud Code', () => {
       done();
     });
   });
+
+  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      res.success();
+    });
+
+    Parse.Cloud.define('removeme', (req, res) => {
+      var testObject = new TestObject();
+      testObject.save()
+      .then(testObject => {
+        var object = new NoBeforeSaveObject({remove: testObject});
+        return object.save();
+      })
+      .then(object => {
+        object.unset('remove');
+        return object.save();
+      })
+      .then(object => {
+        res.success(object);
+      });
+    });
+
+    Parse.Cloud.define('removeme2', (req, res) => {
+      var testObject = new TestObject();
+      testObject.save()
+      .then(testObject => {
+        var object = new BeforeSaveObject({remove: testObject});
+        return object.save();
+      })
+      .then(object => {
+        object.unset('remove');
+        return object.save();
+      })
+      .then(object => {
+        res.success(object);
+      });
+    });
+
+    Parse.Cloud.run('removeme')
+    .then(aNoBeforeSaveObj => {
+      expect(aNoBeforeSaveObj.get('remove')).toEqual(undefined);
+
+      return Parse.Cloud.run('removeme2');
+    })
+    .then(aBeforeSaveObj => {
+      expect(aBeforeSaveObj.get('before')).toEqual('save');
+      expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
+      done();
+    });
+  });
 });
