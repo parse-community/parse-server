@@ -589,4 +589,30 @@ describe('Cloud Code', () => {
       done();
     });
   });
+
+  it('set("key", undefined) should remove value at "key" before beforeSave', done => {
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveUnchanged');
+
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', (req, res) => {
+     var object = req.object;
+      if (object.has('removed') && object.get('removed')) {
+        expect(object.get('remove')).toEqual(undefined);
+      }
+      res.success();
+    });
+
+    var object = new BeforeSaveObject({remove: 'me'});
+    return object.save()
+    .then(object => {
+      expect(object.get('remove')).toEqual('me');
+      expect(object.has('removed')).toEqual(false);
+      object.set('remove', undefined);
+      object.set('removed', true);
+      return object.save();
+    })
+    .then(object => {
+      expect(object.get('remove')).toEqual(undefined);
+      done();
+    });
+  });
 });
