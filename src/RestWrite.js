@@ -763,9 +763,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     .then(response => {
       response.updatedAt = this.updatedAt;
       if (this.storage.changedByTrigger) {
-        Object.keys(this.data).forEach(fieldName => {
-          response[fieldName] = response[fieldName] || this.data[fieldName];
-        });
+        updateResponseWithData(response, this.data);
       }
       this.response = { response };
     });
@@ -823,9 +821,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
         response.username = this.data.username;
       }
       if (this.storage.changedByTrigger) {
-        Object.keys(this.data).forEach(fieldName => {
-          response[fieldName] = response[fieldName] || this.data[fieldName];
-        });
+        updateResponseWithData(response, this.data);
       }
       this.response = {
         status: 201,
@@ -913,6 +909,19 @@ RestWrite.prototype.cleanUserAuthData = function() {
     }
   }
 };
+
+function updateResponseWithData(response, data) {
+  Object.keys(data).forEach(fieldName => {
+    let dataValue = data[fieldName];
+    let responseValue = response[fieldName];
+    if (dataValue && dataValue.__op === 'Delete') {
+      delete response[fieldName];
+    } else {
+      response[fieldName] = responseValue || dataValue;
+    }
+  });
+  return response;
+}
 
 export default RestWrite;
 module.exports = RestWrite;
