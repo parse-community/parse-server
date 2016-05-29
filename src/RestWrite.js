@@ -915,7 +915,7 @@ function updateResponseWithData(response, data) {
     let dataValue = data[fieldName];
     let responseValue = response[fieldName];
     if (dataValue && dataValue.__op === 'Delete') {
-      delete response[fieldName];
+      response[fieldName] = undefined;
     } else {
       response[fieldName] = responseValue || dataValue;
     }

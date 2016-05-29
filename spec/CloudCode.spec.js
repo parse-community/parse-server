@@ -722,4 +722,33 @@ describe('Cloud Code', () => {
       done();
     });
   });
+
+  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      object.unset('remove');
+      res.success();
+    });
+
+    let object;
+    let testObject = new TestObject({key: 'value'});
+    testObject.save().then(() => {
+       object = new BeforeSaveObject();
+       return object.save().then(() => {
+          object.set({remove:testObject})
+          return object.save();
+       });
+    }).then((objectAgain) => {
+       expect(objectAgain.get('remove')).toBeUndefined();
+       expect(object.get('remove')).toBeUndefined();
+       done();
+    }).fail((err) => {
+      console.error(err);
+      done();
+    })
+  });
 });
