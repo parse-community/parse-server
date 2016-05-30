@@ -21,8 +21,12 @@ export class FunctionsRouter extends PromiseRouter {
           }
         });
       },
-      error: function(error) {
-        reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, error));
+      error: function(code, message) {
+        if (!message) {
+          message = code;
+          code = Parse.Error.SCRIPT_FAILED;
+        }
+        reject(new Parse.Error(code, message));
       }
     }
   }

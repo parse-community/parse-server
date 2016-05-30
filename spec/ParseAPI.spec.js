@@ -724,6 +724,36 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test cloud function error handling with custom error code', (done) => {
+    // Register a function which will fail
+    Parse.Cloud.define('willFail', (req, res) => {
+      res.error(999, 'noway');
+    });
+    Parse.Cloud.run('willFail').then((s) => {
+      fail('Should not have succeeded.');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(999);
+      expect(e.message).toEqual('noway');
+      done();
+    });
+  });
+
+  it('test cloud function error handling with standard error code', (done) => {
+    // Register a function which will fail
+    Parse.Cloud.define('willFail', (req, res) => {
+      res.error('noway');
+    });
+    Parse.Cloud.run('willFail').then((s) => {
+      fail('Should not have succeeded.');
+      done();
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
+      expect(e.message).toEqual('noway');
+      done();
+    });
+  });
+
   it('test beforeSave/afterSave get installationId', function(done) {
     let triggerTime = 0;
     Parse.Cloud.beforeSave('GameScore', function(req, res) {

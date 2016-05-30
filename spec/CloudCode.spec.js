@@ -64,6 +64,23 @@ describe('Cloud Code', () => {
     })
   });
 
+  it('beforeSave rejection with custom error code', function(done) {
+    Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function (req, res) {
+      res.error(999, 'Nope');
+    });
+
+    var obj = new Parse.Object('BeforeSaveFailWithErrorCode');
+    obj.set('foo', 'bar');
+    obj.save().then(function() {
+      fail('Should not have been able to save BeforeSaveFailWithErrorCode class.');
+      done();
+    }, function(error) {
+      expect(error.code).toEqual(999);
+      expect(error.message).toEqual('Nope');
+      done();
+    });
+  });
+
   it('basic beforeSave rejection via promise', function(done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithPromise', function (req, res) {
       var query = new Parse.Query('Yolo');
