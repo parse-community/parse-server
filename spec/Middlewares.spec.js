@@ -26,9 +26,11 @@ describe('middlewares', () => {
 
     it('should use _ContentType if provided', (done) => {
         expect(fakeReq.headers['content-type']).toEqual(undefined);
-        fakeReq.body._ContentType = 'image/jpeg';
+        var contentType = 'image/jpeg';
+        fakeReq.body._ContentType = contentType;
         middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-            expect(fakeReq.headers['content-type']).toEqual(fakeReq.body._ContentType);
+            expect(fakeReq.headers['content-type']).toEqual(contentType);
+            expect(fakeReq.body._ContentType).toEqual(undefined);
             done()
         });
     });
