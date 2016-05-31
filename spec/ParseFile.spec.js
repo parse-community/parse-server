@@ -36,6 +36,31 @@ describe('Parse.File testing', () => {
       });
     });
 
+
+    it('works with _ContentType', done => {
+
+      request.post({
+        url: 'http://localhost:8378/1/files/file',
+        body: JSON.stringify({
+          _ApplicationId: 'test',
+          _JavaScriptKey: 'test',
+          _ContentType: 'text/html',
+          base64: 'PGh0bWw+PC9odG1sPgo='
+        })
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        expect(b.name).toMatch(/_file.html/);
+        expect(b.url).toMatch(/^http:\/\/localhost:8378\/1\/files\/test\/.*file.html$/);
+        request.get(b.url, (error, response, body) => {
+          expect(response.headers['content-type']).toMatch('^text/html');
+          expect(error).toBe(null);
+          expect(body).toEqual('<html></html>\n');
+          done();
+        });
+      });
+    });
+
     it('works without Content-Type', done => {
       var headers = {
         'X-Parse-Application-Id': 'test',
