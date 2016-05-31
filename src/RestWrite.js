@@ -914,11 +914,7 @@ function updateResponseWithData(response, data) {
   Object.keys(data).forEach(fieldName => {
     let dataValue = data[fieldName];
     let responseValue = response[fieldName];
-    if (dataValue && dataValue.__op === 'Delete') {
-      response[fieldName] = undefined;
-    } else {
-      response[fieldName] = responseValue || dataValue;
-    }
+    response[fieldName] = responseValue || dataValue;
   });
   return response;
 }
