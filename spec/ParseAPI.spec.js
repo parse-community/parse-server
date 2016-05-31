@@ -49,7 +49,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('fail to create a duplicate username', done => {
+  it('fail to create a duplicate username', done => {
     let numCreated = 0;
     let numFailed = 0;
     let p1 = createTestUser();
@@ -80,7 +80,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  fit('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     config.database.adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
     .then(() => config.database.adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
@@ -106,7 +106,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('ensure that email is uniquely indexed', done => {
+  it('ensure that email is uniquely indexed', done => {
     let numCreated = 0;
     let numFailed = 0;
 
@@ -148,15 +148,57 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-
+    let config = new Config('test');
+    config.database.adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
+    .then(() => config.database.adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('qqq');
+      user.setEmail('unique@unique.unique');
+      return user.signUp();
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('www');
+      user.setEmail('a@b.c');
+      user.signUp()
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+        done();
+      });
+    })
+    .catch(error => {
+      console.log(error);
+      fail('save should have succeeded');
+      done();
+    });
   });
 
-  it('ensure you get the right error if you have 2 users with the same email', done => {
-
-  });
-
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
-
+  fit('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+    let config = new Config('test');
+    config.database.adapter.ensureUniqueness('_User', ['randomField'], requiredUserFields)
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('1');
+      user.setEmail('1@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('2');
+      user.setEmail('2@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      done();
+    });
   });
 
   it('succeed in logging in', function(done) {
