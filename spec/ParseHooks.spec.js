@@ -387,15 +387,35 @@ describe('Hooks', () => {
      Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave" ,hookServerURL+"/BeforeSaveSome").then(function(){
        const obj = new Parse.Object("SomeRandomObject");
        return obj.save();
-     }).then(function(res){
+     }).then(function(res) {
        expect(triggerCount).toBe(1);
        return res.fetch();
-     }).then(function(res){
+     }).then(function(res) {
        expect(res.get("hello")).toEqual("world");
        done();
      }).fail((err) => {
        console.error(err);
        fail("Should not fail creating a function");
+       done();
+     });
+   });
+
+   it("beforeSave hooks should correctly handle responses containing entire object", (done) => {
+     app.post("/BeforeSaveSome2", function(req, res) {
+       var object = Parse.Object.fromJSON(req.body.object);
+       object.set('hello', "world");
+       res.json({success: object});
+     });
+     Parse.Hooks.createTrigger("SomeRandomObject2", "beforeSave" ,hookServerURL+"/BeforeSaveSome2").then(function(){
+       const obj = new Parse.Object("SomeRandomObject2");
+       return obj.save();
+     }).then(function(res) {
+       return res.save();
+     }).then(function(res) {
+       expect(res.get("hello")).toEqual("world");
+       done();
+     }).fail((err) => {
+       fail(`Should not fail: ${JSON.stringify(err)}`);
        done();
      });
    });
