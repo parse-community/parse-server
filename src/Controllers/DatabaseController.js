@@ -87,8 +87,7 @@ DatabaseController.prototype.validateClassName = function(className) {
     return Promise.resolve();
   }
   if (!SchemaController.classNameIsValid(className)) {
-    const error = new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className);
-    return Promise.reject(error);
+    return Promise.reject(new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className));
   }
   return Promise.resolve();
 };

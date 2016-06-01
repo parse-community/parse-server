@@ -80,6 +80,46 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
+  it('ensure that email is uniquely indexed', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    Parse.Promise.all([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     config.database.adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
@@ -104,47 +144,6 @@ describe('miscellaneous', function() {
       fail('save should have succeeded');
       done();
     });
-  });
-
-  it('ensure that email is uniquely indexed', done => {
-    let numCreated = 0;
-    let numFailed = 0;
-
-    let user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    let p1 = user1.signUp();
-    p1.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-    });
-
-    let user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    let p2 = user2.signUp();
-    p2.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-    });
-    Parse.Promise.all([p1, p2])
-    .then(() => {
-      fail('one of the users should not have been created');
-      done();
-    })
-    .catch(done);
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
@@ -176,7 +175,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
     config.database.adapter.ensureUniqueness('_User', ['randomField'], requiredUserFields)
     .then(() => {

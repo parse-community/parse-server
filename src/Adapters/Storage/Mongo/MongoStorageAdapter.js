@@ -102,9 +102,9 @@ export class MongoStorageAdapter {
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
       if (error.message == 'ns not found') {
-        return Promise.resolve();
+        return;
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
@@ -180,7 +180,7 @@ export class MongoStorageAdapter {
         throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided');
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
@@ -239,27 +239,22 @@ export class MongoStorageAdapter {
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
   // currently know which fields are nullable and which aren't, we ignore that criteria.
   // As such, we shouldn't expose this function to users of parse until we have an out-of-band
-  // Way of determining if a field is nullable.
+  // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
+  // which is why we use sparse indexes.
   ensureUniqueness(className, fieldNames, schema) {
     let indexCreationRequest = {};
-    fieldNames.map(fieldName => transformKey(className, fieldName, schema)).forEach(transformedName => {
-      indexCreationRequest[transformedName] = 1;
+    let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
     });
     return this.adaptiveCollection(className)
-    .then(collection => {
-      return new Promise((resolve, reject) => {
-        collection._mongoCollection.ensureIndex(indexCreationRequest, { unique: true, background: true }, (err, indexName) => {
-          if (err) {
-            if (err.code === 11000) {
-              reject(new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to force field uniqueness for a class that already has duplicates.'));
-            } else {
-              reject(err);
-            }
-          } else {
-            resolve();
-          }
-        });
-      })
+    .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
+    .catch(error => {
+      if (error.code === 11000) {
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
+      } else {
+        throw error;
+      }
     });
   }
 

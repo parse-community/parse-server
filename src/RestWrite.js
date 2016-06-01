@@ -107,9 +107,9 @@ RestWrite.prototype.getUserAndRoleACL = function() {
     return this.auth.getUserRoles().then((roles) => {
       roles.push(this.auth.user.id);
       this.runOptions.acl = this.runOptions.acl.concat(roles);
-      return Promise.resolve();
+      return;
     });
-  }else{
+  } else {
     return Promise.resolve();
   }
 };
@@ -121,7 +121,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
       if (hasClass === true) {
-        return Promise.resolve();
+        return;
       }
 
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
@@ -311,7 +311,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
         }
       }
     }
-    return Promise.resolve();
+    return;
   });
 }
 
@@ -595,7 +595,7 @@ RestWrite.prototype.handleInstallation = function() {
                                 'deviceType may not be changed in this ' +
                                 'operation');
         }
-        return Promise.resolve();
+        return;
       });
     });
   }
@@ -807,7 +807,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
         if (results.length > 0) {
           throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
         }
-        throw error;
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
       });
     })
     .then(response => {
