@@ -202,11 +202,14 @@ function wrapToHTTPRequest(hook, key) {
           err = body.error;
         }
       }
+
       if (err) {
         return res.error(err);
       } else if (hook.triggerName === 'beforeSave') {
-        delete result.createdAt;
-        delete result.updatedAt;
+        if (typeof result === 'object') {
+          delete result.createdAt;
+          delete result.updatedAt;
+        }
         return res.success({object: result});
       } else {
         return res.success(result);
