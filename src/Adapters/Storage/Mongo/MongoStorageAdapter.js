@@ -75,7 +75,7 @@ export class MongoStorageAdapter {
     });
   }
 
-  adaptiveCollection(name: string) {
+  _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))
       .then(rawCollection => new MongoCollection(rawCollection));
@@ -83,7 +83,7 @@ export class MongoStorageAdapter {
 
   schemaCollection() {
     return this.connect()
-      .then(() => this.adaptiveCollection(MongoSchemaCollectionName))
+      .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
   }
 
@@ -148,7 +148,7 @@ export class MongoStorageAdapter {
       schemaUpdate['$unset'][name] = null;
     });
 
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.updateMany({}, collectionUpdate))
     .then(updateResult => this.schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
@@ -174,7 +174,7 @@ export class MongoStorageAdapter {
   // the schem only for the legacy mongo format. We'll figure that out later.
   createObject(className, object, schema) {
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
     .catch(error => {
       if (error.code === 11000) { // Duplicate value
@@ -189,7 +189,7 @@ export class MongoStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, query, schema) {
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
@@ -208,7 +208,7 @@ export class MongoStorageAdapter {
   updateObjectsByQuery(className, query, schema, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
   }
 
@@ -217,7 +217,7 @@ export class MongoStorageAdapter {
   findOneAndUpdate(className, query, schema, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, { new: true }))
     .then(result => result.value);
   }
@@ -226,7 +226,7 @@ export class MongoStorageAdapter {
   upsertOneObject(className, query, schema, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
   }
 
@@ -234,7 +234,7 @@ export class MongoStorageAdapter {
   find(className, query, schema, { skip, limit, sort }) {
     let mongoWhere = transformWhere(className, query, schema);
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
     .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
   }
@@ -250,7 +250,7 @@ export class MongoStorageAdapter {
     mongoFieldNames.forEach(fieldName => {
       indexCreationRequest[fieldName] = 1;
     });
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
     .catch(error => {
       if (error.code === 11000) {
@@ -263,12 +263,12 @@ export class MongoStorageAdapter {
 
   // Used in tests
   _rawFind(className, query) {
-    return this.adaptiveCollection(className).then(collection => collection.find(query));
+    return this._adaptiveCollection(className).then(collection => collection.find(query));
   }
 
   // Executs a count.
   count(className, query, schema) {
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.count(transformWhere(className, query, schema)));
   }
 }
