@@ -69,12 +69,6 @@ export class MongoStorageAdapter {
     return this.connectionPromise;
   }
 
-  collection(name: string) {
-    return this.connect().then(() => {
-      return this.database.collection(name);
-    });
-  }
-
   _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))
@@ -99,7 +93,8 @@ export class MongoStorageAdapter {
   // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
   // reject with INTERNAL_SERVER_ERROR.
   deleteOneSchema(className: string) {
-    return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
+    return this._adaptiveCollection(className)
+    .then(collection => collection.drop())
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
       if (error.message == 'ns not found') {
