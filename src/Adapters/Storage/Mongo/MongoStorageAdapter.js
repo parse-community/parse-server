@@ -89,6 +89,13 @@ export class MongoStorageAdapter {
     });
   }
 
+  setClassLevelPermissions(className, CLPs) {
+    return this.schemaCollection()
+    .then(schemaCollection => schemaCollection.updateSchema(className, {
+      $set: { _metadata: { class_permissions: CLPs } }
+    }));
+  }
+
   createCollection(className, fields, classLevelPermissions) {
     return this.schemaCollection()
     .then(schemaCollection => schemaCollection.addSchema(className, fields, classLevelPermissions));

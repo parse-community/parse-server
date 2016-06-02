@@ -452,16 +452,8 @@ class SchemaController {
       return Promise.resolve();
     }
     validateCLP(perms, newSchema);
-    let update = {
-      _metadata: {
-        class_permissions: perms
-      }
-    };
-    update = {'$set': update};
-    return this._collection.updateSchema(className, update).then(() => {
-      // The update succeeded. Reload the schema
-      return this.reloadData();
-    });
+    return this._dbAdapter.setClassLevelPermissions(className, perms)
+    .then(() => this.reloadData());
   }
 
   // Returns a promise that resolves successfully to the new schema
