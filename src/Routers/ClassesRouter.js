@@ -77,7 +77,7 @@ export class ClassesRouter extends PromiseRouter {
       options.include = String(body.include);
     }
 
-    return rest.find(req.config, req.auth, req.params.className, {objectId: req.params.objectId}, options)
+    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');

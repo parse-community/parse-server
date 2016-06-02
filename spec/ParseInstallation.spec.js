@@ -2,14 +2,15 @@
 // These tests check the Installations functionality of the REST API.
 // Ported from installation_collection_test.go
 
-var auth = require('../src/Auth');
-var cache = require('../src/cache');
-var Config = require('../src/Config');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
-var Parse = require('parse/node').Parse;
-var rest = require('../src/rest');
+let auth = require('../src/Auth');
+let cache = require('../src/cache');
+let Config = require('../src/Config');
+let DatabaseAdapter = require('../src/DatabaseAdapter');
+let Parse = require('parse/node').Parse;
+let rest = require('../src/rest');
+let request = require("request");
 
-var config = new Config('test');
+let config = new Config('test');
 let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
@@ -808,8 +809,36 @@ describe('Installations', () => {
     });
   });
 
+  it('allows you to get your own installation (regression test for #1718)', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key':   'rest',
+      };
+      request.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/installations/' + createResult.response.objectId,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.objectId).toEqual(createResult.response.objectId);
+        done();
+      });
+    })
+    .catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments
-
 });
