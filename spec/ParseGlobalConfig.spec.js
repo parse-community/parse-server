@@ -7,9 +7,12 @@ let Config = require('../src/Config');
 describe('a GlobalConfig', () => {
   beforeEach(done => {
     let config = new Config('test');
-    config.database.adapter.adaptiveCollection('_GlobalConfig')
-      .then(coll => coll.upsertOne({ '_id': 1 }, { $set: { params: { companies: ['US', 'DK'] } } }))
-      .then(() => { done(); });
+    config.database.adapter.upsertOneObject(
+      '_GlobalConfig',
+      { objectId: 1 },
+      { fields: { params: { __type: 'String' } } },
+      { params: { companies: ['US', 'DK'] } }
+    ).then(done);
   });
 
   it('can be retrieved', (done) => {
