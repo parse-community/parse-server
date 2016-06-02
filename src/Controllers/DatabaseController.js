@@ -727,14 +727,33 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
 }
 
 DatabaseController.prototype.deleteSchema = function(className) {
-  return this.collectionExists(className)
-  .then(exist => this.adapter.count(className))
-  .then(count => {
-    if (count > 0) {
-      throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
+  return this.loadSchema()
+  .then(schemaController => schemaController.getOneSchema(className))
+  .catch(error => {
+    if (error === undefined) {
+      return { fields: {} };
+    } else {
+      throw error;
     }
-    return this.adapter.deleteOneSchema(className);
-  });
+  })
+  .then(schema => {
+    return this.collectionExists(className)
+    .then(exist => this.adapter.count(className))
+    .then(count => {
+      if (count > 0) {
+        throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
+      }
+      return this.adapter.deleteOneSchema(className);
+    })
+    .then(wasParseCollection => {
+      if (wasParseCollection) {
+        const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
+        return Promise.all(relationFieldNames.map(name => this.adapter.deleteOneSchema(joinTableName(className, name))));
+      } else {
+        return Promise.resolve();
+      }
+    });
+  })
 }
 
 DatabaseController.prototype.addPointerPermissions = function(schema, className, operation, query, aclGroup = []) {

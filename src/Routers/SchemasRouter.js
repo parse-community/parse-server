@@ -64,30 +64,11 @@ function modifySchema(req) {
   .then(result => ({response: result}));
 }
 
-// A helper function that removes all join tables for a schema. Returns a promise.
-var removeJoinTables = (database, mongoSchema) => {
-  return Promise.all(Object.keys(mongoSchema)
-    .filter(field => field !== '_metadata' && mongoSchema[field].startsWith('relation<'))
-    .map(field => {
-      let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.adapter.deleteOneSchema(collectionName);
-    })
-  );
-};
-
 const deleteSchema = req => {
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
   return req.config.database.deleteSchema(req.params.className)
-  .then(doc => {
-    if (!doc) {
-      //tried to delete non-existent class
-      return Promise.resolve();
-    }
-    // clear the _Join collections
-    return removeJoinTables(req.config.database, doc);
-  })
   .then(() => ({ response: {} }));
 }
 

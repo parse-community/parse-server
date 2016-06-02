@@ -154,14 +154,8 @@ class MongoSchemaCollection {
   }
 
   // Atomically find and delete an object based on query.
-  // The result is the promise with an object that was in the database before deleting.
-  // Postgres Note: Translates directly to `DELETE * FROM ... RETURNING *`, which will return data after delete is done.
   findAndDeleteSchema(name: string) {
-    // arguments: query, sort
-    return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
+    return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []);
   }
 
   // Add a collection. Currently the input is in mongo format, but that will change to Parse format in a

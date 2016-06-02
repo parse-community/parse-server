@@ -89,9 +89,8 @@ export class MongoStorageAdapter {
     });
   }
 
-  // Deletes a schema. Resolve if successful. If the schema doesn't
-  // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
-  // reject with INTERNAL_SERVER_ERROR.
+  // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
+  // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteOneSchema(className: string) {
     return this._adaptiveCollection(className)
     .then(collection => collection.drop())
