@@ -561,9 +561,8 @@ describe("Password Reset", () => {
 
             Parse.User.logIn("zxcv", "hello").then(function(user){
               let config = new Config('test');
-              config.database.adapter.adaptiveCollection('_User')
-              .then(coll => coll.find({ 'username': 'zxcv' }, { limit: 1 }))
-              .then((results) => {
+              config.database.adapter.find('_User', { 'username': 'zxcv' }, { fields: {} }, { limit: 1 })
+              .then(results => {
                 // _perishable_token should be unset after reset password
                 expect(results.length).toEqual(1);
                 expect(results[0]['_perishable_token']).toEqual(undefined);
