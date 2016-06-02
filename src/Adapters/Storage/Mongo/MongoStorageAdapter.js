@@ -75,7 +75,7 @@ export class MongoStorageAdapter {
       .then(rawCollection => new MongoCollection(rawCollection));
   }
 
-  schemaCollection() {
+  _schemaCollection() {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
@@ -90,19 +90,19 @@ export class MongoStorageAdapter {
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return this.schemaCollection()
+    return this._schemaCollection()
     .then(schemaCollection => schemaCollection.updateSchema(className, {
       $set: { _metadata: { class_permissions: CLPs } }
     }));
   }
 
   createCollection(className, fields, classLevelPermissions) {
-    return this.schemaCollection()
+    return this._schemaCollection()
     .then(schemaCollection => schemaCollection.addSchema(className, fields, classLevelPermissions));
   }
 
   addFieldIfNotExists(className, fieldName, type) {
-    return this.schemaCollection()
+    return this._schemaCollection()
     .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type));
   }
 
@@ -119,7 +119,7 @@ export class MongoStorageAdapter {
       throw error;
     })
     // We've dropped the collection, now remove the _SCHEMA document
-    .then(() => this.schemaCollection())
+    .then(() => this._schemaCollection())
     .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
   }
 
@@ -164,7 +164,7 @@ export class MongoStorageAdapter {
 
     return this._adaptiveCollection(className)
     .then(collection => collection.updateMany({}, collectionUpdate))
-    .then(updateResult => this.schemaCollection())
+    .then(updateResult => this._schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
 
@@ -172,14 +172,14 @@ export class MongoStorageAdapter {
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllSchemas() {
-    return this.schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
+    return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   getOneSchema(className) {
-    return this.schemaCollection()
+    return this._schemaCollection()
     .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }
 
