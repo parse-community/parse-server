@@ -295,12 +295,12 @@ class SchemaController {
       return Promise.reject(validationError);
     }
 
-    return this._collection.addSchema(className, fields, classLevelPermissions)
+    return this._dbAdapter.createCollection(className, fields, classLevelPermissions)
     .catch(error => {
-      if (error === undefined) {
+      if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
       } else {
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+        throw error;
       }
     });
   }
@@ -511,7 +511,7 @@ class SchemaController {
         type = { type };
       }
 
-      return this._collection.addFieldIfNotExists(className, fieldName, type).then(() => {
+      return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
       }, () => {

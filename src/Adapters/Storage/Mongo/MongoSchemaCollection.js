@@ -158,10 +158,8 @@ class MongoSchemaCollection {
     return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []);
   }
 
-  // Add a collection. Currently the input is in mongo format, but that will change to Parse format in a
-  // later PR. Returns a promise that is expected to resolve with the newly created schema, in Parse format.
-  // If the class already exists, returns a promise that rejects with undefined as the reason. If the collection
-  // can't be added for a reason other than it already existing, requirements for rejection reason are TBD.
+  // Returns a promise that is expected to resolve with the newly created schema, in Parse format.
+  // If the class already exists, returns a promise that rejects with DUPLICATE_VALUE as the reason.
   addSchema(name: string, fields, classLevelPermissions) {
     let mongoSchema = mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions);
     let mongoObject = _mongoSchemaObjectFromNameFields(name, mongoSchema);
@@ -169,9 +167,10 @@ class MongoSchemaCollection {
     .then(result => mongoSchemaToParseSchema(result.ops[0]))
     .catch(error => {
       if (error.code === 11000) { //Mongo's duplicate key error
-        throw undefined;
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+      } else {
+        throw error;
       }
-      throw error;
     });
   }
 
@@ -186,8 +185,8 @@ class MongoSchemaCollection {
   // Add a field to the schema. If database does not support the field
   // type (e.g. mongo doesn't support more than one GeoPoint in a class) reject with an "Incorrect Type"
   // Parse error with a desciptive message. If the field already exists, this function must
-  // not modify the schema, and must reject with an error. Exact error format is TBD. If this function
-  // is called for a class that doesn't exist, this function must create that class.
+  // not modify the schema, and must reject with DUPLICATE_VALUE error.
+  // If this is called for a class that doesn't exist, this function must create that class.
 
   // TODO: throw an error if an unsupported field type is passed. Deciding whether a type is supported
   // should be the job of the adapter. Some adapters may not support GeoPoint at all. Others may
