@@ -100,7 +100,7 @@ var masterKeyHeaders = {
   'X-Parse-Master-Key': 'test',
 };
 
-fdescribe('schemas', () => {
+describe('schemas', () => {
   it('requires the master key to get all schemas', (done) => {
     request.get({
       url: 'http://localhost:8378/1/schemas',

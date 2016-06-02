@@ -105,15 +105,11 @@ DatabaseController.prototype.validateClassName = function(className) {
   return Promise.resolve();
 };
 
-// Returns a promise for a schema object.
-// If we are provided a acceptor, then we run it on the schema.
-// If the schema isn't accepted, we reload it at most once.
+// Returns a promise for a schemaController.
 DatabaseController.prototype.loadSchema = function() {
   if (!this.schemaPromise) {
-    this.schemaPromise = this.adapter.schemaCollection().then(collection => {
-      delete this.schemaPromise;
-      return SchemaController.load(collection, this.adapter);
-    });
+    this.schemaPromise = SchemaController.load(this.adapter);
+    this.schemaPromise.then(() => delete this.schemaPromise);
   }
   return this.schemaPromise;
 };

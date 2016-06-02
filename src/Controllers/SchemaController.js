@@ -233,13 +233,11 @@ const injectDefaultSchema = schema => ({
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 class SchemaController {
-  _collection;
   _dbAdapter;
   data;
   perms;
 
-  constructor(collection, databaseAdapter) {
-    this._collection = collection;
+  constructor(databaseAdapter) {
     this._dbAdapter = databaseAdapter;
 
     // this.data[className][fieldName] tells you the type of that field, in mongo format
@@ -688,8 +686,8 @@ class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-function load(collection, dbAdapter) {
-  let schema = new SchemaController(collection, dbAdapter);
+const load = dbAdapter => {
+  let schema = new SchemaController(dbAdapter);
   return schema.reloadData().then(() => schema);
 }
 
