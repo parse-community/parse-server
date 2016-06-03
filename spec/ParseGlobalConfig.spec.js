@@ -9,8 +9,8 @@ describe('a GlobalConfig', () => {
     let config = new Config('test');
     config.database.adapter.upsertOneObject(
       '_GlobalConfig',
+      { fields: {} },
       { objectId: 1 },
-      { fields: { params: { __type: 'String' } } },
       { params: { companies: ['US', 'DK'] } }
     ).then(done);
   });
@@ -95,8 +95,8 @@ describe('a GlobalConfig', () => {
     let config = new Config('test');
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',
-      { objectId: 1 },
-      { fields: { params: { __type: 'String' } } }
+      { fields: { params: { __type: 'String' } } },
+      { objectId: 1 }
     ).then(() => {
       request.get({
         url    : 'http://localhost:8378/1/config',

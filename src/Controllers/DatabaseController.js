@@ -227,11 +227,11 @@ DatabaseController.prototype.update = function(className, query, update, {
         }
         update = transformObjectACL(update);
         if (many) {
-          return this.adapter.updateObjectsByQuery(className, query, schema, update);
+          return this.adapter.updateObjectsByQuery(className, schema, query, update);
         } else if (upsert) {
-          return this.adapter.upsertOneObject(className, query, schema, update);
+          return this.adapter.upsertOneObject(className, schema, query, update);
         } else {
-          return this.adapter.findOneAndUpdate(className, query, schema, update);
+          return this.adapter.findOneAndUpdate(className, schema, query, update);
         }
       });
     })
@@ -319,7 +319,7 @@ DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, 
     relatedId: toId,
     owningId : fromId
   };
-  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, relationSchema, doc);
+  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, relationSchema, doc, doc);
 };
 
 // Removes a relation.
@@ -330,7 +330,7 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
     relatedId: toId,
     owningId: fromId
   };
-  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, doc, relationSchema)
+  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, relationSchema, doc)
   .catch(error => {
     // We don't care if they try to delete a non-existent relation.
     if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
@@ -375,7 +375,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
         throw error;
       })
-      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, parseFormatSchema))
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, parseFormatSchema, query))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -404,7 +404,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, object, schema))
+    .then(schema => this.adapter.createObject(className, schema, object))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };

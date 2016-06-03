@@ -191,7 +191,7 @@ export class MongoStorageAdapter {
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
-  createObject(className, object, schema) {
+  createObject(className, schema, object) {
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this._adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
@@ -207,7 +207,7 @@ export class MongoStorageAdapter {
   // Remove all objects that match the given Parse Query.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
-  deleteObjectsByQuery(className, query, schema) {
+  deleteObjectsByQuery(className, schema, query) {
     return this._adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transformWhere(className, query, schema);
@@ -224,7 +224,7 @@ export class MongoStorageAdapter {
   }
 
   // Apply the update to all objects that match the given Parse Query.
-  updateObjectsByQuery(className, query, schema, update) {
+  updateObjectsByQuery(className, schema, query, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
@@ -233,7 +233,7 @@ export class MongoStorageAdapter {
 
   // Atomically finds and updates an object based on query.
   // Resolve with the updated object.
-  findOneAndUpdate(className, query, schema, update) {
+  findOneAndUpdate(className, schema, query, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
@@ -242,7 +242,7 @@ export class MongoStorageAdapter {
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
-  upsertOneObject(className, query, schema, update) {
+  upsertOneObject(className, schema, query, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
