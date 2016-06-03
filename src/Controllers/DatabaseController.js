@@ -84,12 +84,8 @@ function DatabaseController(adapter, { skipValidation } = {}) {
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
-  return new DatabaseController(this.adapter, {collectionPrefix: this.collectionPrefix, skipValidation: true});
+  return new DatabaseController(this.adapter, { skipValidation: true });
 }
-
-DatabaseController.prototype.schemaCollection = function() {
-  return this.adapter.schemaCollection();
-};
 
 DatabaseController.prototype.collectionExists = function(className) {
   return this.adapter.classExists(className);

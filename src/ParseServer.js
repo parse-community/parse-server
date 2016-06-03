@@ -101,6 +101,7 @@ class ParseServer {
     logsFolder,
     databaseURI,
     databaseOptions,
+    databaseAdapter,
     cloud,
     collectionPrefix = '',
     clientKey,
