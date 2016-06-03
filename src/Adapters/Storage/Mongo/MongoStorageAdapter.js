@@ -263,7 +263,7 @@ export class MongoStorageAdapter {
   // As such, we shouldn't expose this function to users of parse until we have an out-of-band
   // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
   // which is why we use sparse indexes.
-  ensureUniqueness(className, fieldNames, schema) {
+  ensureUniqueness(className, schema, fieldNames) {
     let indexCreationRequest = {};
     let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
     mongoFieldNames.forEach(fieldName => {
@@ -286,7 +286,7 @@ export class MongoStorageAdapter {
   }
 
   // Executs a count.
-  count(className, query, schema) {
+  count(className, schema, query) {
     return this._adaptiveCollection(className)
     .then(collection => collection.count(transformWhere(className, query, schema)));
   }

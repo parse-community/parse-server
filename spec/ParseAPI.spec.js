@@ -213,7 +213,7 @@ describe('miscellaneous', function() {
 
   it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
-    config.database.adapter.ensureUniqueness('_User', ['randomField'], requiredUserFields)
+    config.database.adapter.ensureUniqueness('_User', requiredUserFields, ['randomField'])
     .then(() => {
       let user = new Parse.User();
       user.setPassword('asdf');
