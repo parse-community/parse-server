@@ -449,14 +449,14 @@ function keysForQuery(query) {
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
 DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  return this.adapter.find(joinTableName(className, key), { owningId }, relationSchema, {})
+  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, {})
   .then(results => results.map(result => result.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
 DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
-  return this.adapter.find(joinTableName(className, key), { relatedId: { '$in': relatedIds } }, relationSchema, {})
+  return this.adapter.find(joinTableName(className, key), relationSchema, { relatedId: { '$in': relatedIds } }, {})
   .then(results => results.map(result => result.owningId));
 };
 
@@ -686,7 +686,7 @@ DatabaseController.prototype.find = function(className, query, {
         if (count) {
           return this.adapter.count(className, query, schema);
         } else {
-          return this.adapter.find(className, query, schema, { skip, limit, sort })
+          return this.adapter.find(className, schema, query, { skip, limit, sort })
           .then(objects => objects.map(object => {
             object = untransformObjectACL(object);
             return filterSensitiveData(isMaster, aclGroup, className, object)

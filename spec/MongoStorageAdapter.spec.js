@@ -135,7 +135,7 @@ describe('MongoStorageAdapter', () => {
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date instanceof Date).toBe(true);
-      return adapter.find('MyClass', {}, schema, {});
+      return adapter.find('MyClass', schema, {}, {});
     })
     .then(results => {
       expect(results.length).toEqual(1);
