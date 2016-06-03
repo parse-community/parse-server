@@ -293,7 +293,7 @@ class SchemaController {
       return Promise.reject(validationError);
     }
 
-    return this._dbAdapter.createClass(className, fields, classLevelPermissions)
+    return this._dbAdapter.createClass(className, { fields, classLevelPermissions })
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -548,16 +548,16 @@ class SchemaController {
       if (!this.data[className][fieldName]) {
         throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
       }
-
+    })
+    .then(() => this.getOneSchema(className))
+    .then(schema => {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
-        return database.adapter.deleteFields(className, [fieldName], [])
+        return database.adapter.deleteFields(className, schema, [fieldName])
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
 
-      const fieldNames = [fieldName];
-      const pointerFieldNames = this.data[className][fieldName].type === 'Pointer' ? [fieldName] : [];
-      return database.adapter.deleteFields(className, fieldNames, pointerFieldNames);
+      return database.adapter.deleteFields(className, schema, [fieldName]);
     });
   }
 

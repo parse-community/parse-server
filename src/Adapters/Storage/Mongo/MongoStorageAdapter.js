@@ -81,7 +81,7 @@ export class MongoStorageAdapter {
       .then(collection => new MongoSchemaCollection(collection));
   }
 
-  classExists(name: string) {
+  classExists(name) {
     return this.connect().then(() => {
       return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
     }).then(collections => {
@@ -96,9 +96,9 @@ export class MongoStorageAdapter {
     }));
   }
 
-  createClass(className, fields, classLevelPermissions) {
+  createClass(className, schema) {
     return this._schemaCollection()
-    .then(schemaCollection => schemaCollection.addSchema(className, fields, classLevelPermissions));
+    .then(schemaCollection => schemaCollection.addSchema(className, schema.fields, schema.classLevelPermissions));
   }
 
   addFieldIfNotExists(className, fieldName, type) {
@@ -108,7 +108,7 @@ export class MongoStorageAdapter {
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
-  deleteClass(className: string) {
+  deleteClass(className) {
     return this._adaptiveCollection(className)
     .then(collection => collection.drop())
     .catch(error => {
@@ -149,9 +149,14 @@ export class MongoStorageAdapter {
   // may do so.
 
   // Returns a Promise.
-  deleteFields(className: string, fieldNames, pointerFieldNames) {
-    const nonPointerFieldNames = _.difference(fieldNames, pointerFieldNames);
-    const mongoFormatNames = nonPointerFieldNames.concat(pointerFieldNames.map(name => `_p_${name}`));
+  deleteFields(className, schema, fieldNames) {
+    const mongoFormatNames = fieldNames.map(fieldName => {
+      if (schema.fields[fieldName].type === 'Pointer') {
+        return `_p_${fieldName}`
+      } else {
+        return fieldName;
+      }
+    });
     const collectionUpdate = { '$unset' : {} };
     mongoFormatNames.forEach(name => {
       collectionUpdate['$unset'][name] = null;
@@ -164,7 +169,7 @@ export class MongoStorageAdapter {
 
     return this._adaptiveCollection(className)
     .then(collection => collection.updateMany({}, collectionUpdate))
-    .then(updateResult => this._schemaCollection())
+    .then(() => this._schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
 
