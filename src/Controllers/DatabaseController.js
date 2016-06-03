@@ -92,7 +92,7 @@ DatabaseController.prototype.schemaCollection = function() {
 };
 
 DatabaseController.prototype.collectionExists = function(className) {
-  return this.adapter.collectionExists(className);
+  return this.adapter.classExists(className);
 };
 
 DatabaseController.prototype.validateClassName = function(className) {
@@ -429,7 +429,7 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
-  return this.adapter.deleteAllSchemas();
+  return this.adapter.deleteAllClasses();
 };
 
 // Finds the keys in a query. Returns a Set. REST format only
@@ -738,12 +738,12 @@ DatabaseController.prototype.deleteSchema = function(className) {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
       }
-      return this.adapter.deleteOneSchema(className);
+      return this.adapter.deleteClass(className);
     })
     .then(wasParseCollection => {
       if (wasParseCollection) {
         const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
-        return Promise.all(relationFieldNames.map(name => this.adapter.deleteOneSchema(joinTableName(className, name))));
+        return Promise.all(relationFieldNames.map(name => this.adapter.deleteClass(joinTableName(className, name))));
       } else {
         return Promise.resolve();
       }

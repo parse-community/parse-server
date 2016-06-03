@@ -81,7 +81,7 @@ export class MongoStorageAdapter {
       .then(collection => new MongoSchemaCollection(collection));
   }
 
-  collectionExists(name: string) {
+  classExists(name: string) {
     return this.connect().then(() => {
       return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
     }).then(collections => {
@@ -96,7 +96,7 @@ export class MongoStorageAdapter {
     }));
   }
 
-  createCollection(className, fields, classLevelPermissions) {
+  createClass(className, fields, classLevelPermissions) {
     return this._schemaCollection()
     .then(schemaCollection => schemaCollection.addSchema(className, fields, classLevelPermissions));
   }
@@ -108,7 +108,7 @@ export class MongoStorageAdapter {
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
-  deleteOneSchema(className: string) {
+  deleteClass(className: string) {
     return this._adaptiveCollection(className)
     .then(collection => collection.drop())
     .catch(error => {
@@ -124,7 +124,7 @@ export class MongoStorageAdapter {
   }
 
   // Delete all data known to this adatper. Used for testing.
-  deleteAllSchemas() {
+  deleteAllClasses() {
     return storageAdapterAllCollections(this)
     .then(collections => Promise.all(collections.map(collection => collection.drop())));
   }
@@ -171,14 +171,14 @@ export class MongoStorageAdapter {
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
-  getAllSchemas() {
+  getAllClasses() {
     return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
-  getOneSchema(className) {
+  getClass(className) {
     return this._schemaCollection()
     .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
   }

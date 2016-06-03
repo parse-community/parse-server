@@ -16,7 +16,7 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 
 function getAllSchemas(req) {
   return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getAllSchemas())
+  .then(schemaController => schemaController.getAllClasses())
   .then(schemas => ({ response: { results: schemas } }));
 }
 

@@ -249,7 +249,7 @@ class SchemaController {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this.getAllSchemas()
+    return this.getAllClasses()
     .then(allSchemas => {
       allSchemas.forEach(schema => {
         this.data[schema.className] = schema.fields;
@@ -267,8 +267,8 @@ class SchemaController {
     });
   }
 
-  getAllSchemas() {
-    return this._dbAdapter.getAllSchemas()
+  getAllClasses() {
+    return this._dbAdapter.getAllClasses()
     .then(allSchemas => allSchemas.map(injectDefaultSchema));
   }
 
@@ -276,7 +276,7 @@ class SchemaController {
     if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
       return Promise.resolve(this.data[className]);
     }
-    return this._dbAdapter.getOneSchema(className)
+    return this._dbAdapter.getClass(className)
     .then(injectDefaultSchema);
   }
 
@@ -293,7 +293,7 @@ class SchemaController {
       return Promise.reject(validationError);
     }
 
-    return this._dbAdapter.createCollection(className, fields, classLevelPermissions)
+    return this._dbAdapter.createClass(className, fields, classLevelPermissions)
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -552,7 +552,7 @@ class SchemaController {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adapter.deleteFields(className, [fieldName], [])
-        .then(() => database.adapter.deleteOneSchema(`_Join:${fieldName}:${className}`));
+        .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
 
       const fieldNames = [fieldName];
