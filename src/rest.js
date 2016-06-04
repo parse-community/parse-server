@@ -17,8 +17,14 @@ var triggers = require('./triggers');
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions) {
   enforceRoleSecurity('find', className, auth);
-  var query = new RestQuery(config, auth, className,
-                            restWhere, restOptions);
+  let query = new RestQuery(config, auth, className, restWhere, restOptions);
+  return query.execute();
+}
+
+// get is just like find but only queries an objectId.
+const get = (config, auth, className, objectId, restOptions) => {
+  enforceRoleSecurity('get', className, auth);
+  let query = new RestQuery(config, auth, className, { objectId }, restOptions);
   return query.execute();
 }
 
@@ -128,8 +134,9 @@ function enforceRoleSecurity(method, className, auth) {
 }
 
 module.exports = {
-  create: create,
-  del: del,
-  find: find,
-  update: update
+  create,
+  del,
+  find,
+  get,
+  update
 };
