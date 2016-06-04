@@ -11,23 +11,32 @@ var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
-var port = 8378;
-
-let mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-let mongoAdapter = new MongoStorageAdapter({
+var mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+var mongoAdapter = new MongoStorageAdapter({
   uri: mongoURI,
   collectionPrefix: 'test_',
 })
+
+var postgresURI = 'postgres://localhost:5432/drewgross';
+var postgresAdapter = new PostgresStorageAdapter({
+  uri: postgresURI,
+  collectionPrefix: 'test_',
+});
+
+var port = 8378;
 
 let gridStoreAdapter = new GridStoreAdapter(mongoURI);
 
 // Default server configuration for tests.
 var defaultConfiguration = {
-  databaseAdapter: mongoAdapter,
   filesAdapter: gridStoreAdapter,
   serverURL: 'http://localhost:' + port + '/1',
+  databaseAdapter: mongoAdapter,
+  databaseAdapter: postgresAdapter,
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',

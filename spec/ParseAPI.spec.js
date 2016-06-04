@@ -13,14 +13,17 @@ var TestUtils = require('../src/index').TestUtils;
 const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
 describe('miscellaneous', function() {
-  it('create a GameScore object', function(done) {
+  fit('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
     obj.set('score', 1337);
     obj.save().then(function(obj) {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
-    }, function(err) { console.log(err); });
+    }, error => {
+      fail(JSON.stringify(error));
+      done();
+    });
   });
 
   it('get a TestObject', function(done) {

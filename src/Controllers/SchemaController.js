@@ -381,7 +381,7 @@ class SchemaController {
         'schema is frozen, cannot add: ' + className);
     }
     // We don't have this class. Update the schema
-    return this.addClassIfNotExists(className, []).then(() => {
+    return this.addClassIfNotExists(className, {}).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
     }, () => {

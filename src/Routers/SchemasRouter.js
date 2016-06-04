@@ -47,7 +47,7 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
     .then(schema => ({ response: schema }));
 }
 
