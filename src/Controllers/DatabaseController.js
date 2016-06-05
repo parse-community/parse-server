@@ -704,6 +704,11 @@ DatabaseController.prototype.deleteSchema = function(className) {
 }
 
 DatabaseController.prototype.addPointerPermissions = function(schema, className, operation, query, aclGroup = []) {
+  // Check if class has public permission for operation
+  // If the BaseCLP pass, let go through
+  if (schema.testBaseCLP(className, aclGroup, operation)) {
+    return query;
+  }
   let perms = schema.perms[className];
   let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
   let userACL = aclGroup.filter((acl) => {

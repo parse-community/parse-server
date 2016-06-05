@@ -632,30 +632,36 @@ class SchemaController {
     }
     return Promise.resolve(this);
   }
-
-  // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className, aclGroup, operation) {
+  
+  // Validates the base CLP for an operation
+  testBaseCLP(className, aclGroup, operation) {
     if (!this.perms[className] || !this.perms[className][operation]) {
-      return Promise.resolve();
+      return true;
     }
     let classPerms = this.perms[className];
     let perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
-      return Promise.resolve();
+      return true;
     }
     // Check permissions against the aclGroup provided (array of userId/roles)
-    let found = false;
-    for (let i = 0; i < aclGroup.length && !found; i++) {
-      if (perms[aclGroup[i]]) {
-        found = true;
-      }
+    if (aclGroup.some(acl => { return perms[acl] === true })) {
+      return true;
     }
+    return false;
+  }
 
-    if (found) {
+  // Validates an operation passes class-level-permissions set in the schema
+  validatePermission(className, aclGroup, operation) {
+    if (this.testBaseCLP(className, aclGroup, operation)) {
       return Promise.resolve();
     }
 
+    if (!this.perms[className] || !this.perms[className][operation]) {
+      return true;
+    }
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
@@ -666,6 +672,7 @@ class SchemaController {
         'Permission denied for this action.');
     }
 
+    // Process the readUserFields later
     if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
         return Promise.resolve();
     }

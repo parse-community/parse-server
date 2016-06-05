@@ -963,18 +963,10 @@ describe('schemas', () => {
           create: {
             'role:admin': true
           },
-          get: {
-            '*': true
-          },
-          update: {
-            '*': true
-          },
-          addField: {
-            '*': true
-          },
-          delete: {
-            '*': true
-          }
+          get: {},
+          update: {},
+          delete: {},
+          addField: {}
         });
         done();
       });
@@ -1018,6 +1010,9 @@ describe('schemas', () => {
       json: true,
       body: {
         classLevelPermissions: {
+          create: {
+            '*': true
+          },
           find: {
             '*': true
           },
@@ -1040,14 +1035,14 @@ describe('schemas', () => {
     })
   });
 
-  it('should not be able to add a field', done => {
+  it('should be able to add a field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
         classLevelPermissions: {
-          find: {
+          create: {
             '*': true
           },
           addField: {
@@ -1243,7 +1238,7 @@ describe('schemas', () => {
     }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
-        return obj.save();
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
@@ -1292,7 +1287,7 @@ describe('schemas', () => {
     }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
-        return obj.save();
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
@@ -1357,7 +1352,7 @@ describe('schemas', () => {
     }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
-        return obj.save();
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
@@ -1415,7 +1410,7 @@ describe('schemas', () => {
     }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
-        return obj.save();
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
@@ -1544,6 +1539,7 @@ describe('schemas', () => {
 
   it('can login when addFields is false (issue #1355)', (done) => {
     setPermissionsOnClass('_User', {
+      'create': {'*': true},
       'addField': {}
     }).then(() => {
       return Parse.User.signUp('foo', 'bar');
