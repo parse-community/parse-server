@@ -1569,4 +1569,40 @@ describe('schemas', () => {
       });
     });
   });
+
+  fit("regression test for #1991", done => {
+    let user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    let role = new Parse.Role('admin', new Parse.ACL());
+    let obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, role]).then(() => {
+      role.relation('users').add(user);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+      return setPermissionsOnClass('AnObject', {
+        'get': {"*": true},
+        'find': {"*": true},
+        'create': {'*': true},
+        'update': {'role:admin': true},
+        'delete': {'role:admin': true}
+      })
+    }).then(() => {
+      return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user')
+    }).then(() => {
+      return obj.destroy();
+    }).then((result) => {
+      let query = new Parse.Query('AnObject');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(0);
+      done();
+    }).catch((err) => {
+      fail('should not fail');
+      console.error(err);
+      done();
+    });
+  });
 });
