@@ -43,6 +43,15 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
   return response;
 }
 
+const emptyCLPS = Object.freeze({
+  find: {},
+  get: {},
+  create: {},
+  update: {},
+  delete: {},
+  addField: {},
+});
+
 const defaultCLPS = Object.freeze({
   find: {'*': true},
   get: {'*': true},
@@ -53,14 +62,14 @@ const defaultCLPS = Object.freeze({
 });
 
 function mongoSchemaToParseSchema(mongoSchema) {
-  let clpsFromMongoObject = {};
+  let clps = defaultCLPS;
   if (mongoSchema._metadata && mongoSchema._metadata.class_permissions) {
-    clpsFromMongoObject = mongoSchema._metadata.class_permissions;
+    clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
   }
   return {
     className: mongoSchema._id,
     fields: mongoSchemaFieldsToParseSchemaFields(mongoSchema),
-    classLevelPermissions: {...defaultCLPS, ...clpsFromMongoObject},
+    classLevelPermissions: clps,
   };
 }
 

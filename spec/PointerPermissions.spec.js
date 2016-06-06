@@ -282,7 +282,7 @@ describe('Pointer Permissions', () => {
   it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
 
@@ -300,7 +300,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -310,7 +310,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
@@ -329,7 +329,7 @@ describe('Pointer Permissions', () => {
   it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
      */
@@ -355,7 +355,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
@@ -374,7 +374,7 @@ describe('Pointer Permissions', () => {
   it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
      */
@@ -400,7 +400,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
@@ -419,7 +419,7 @@ describe('Pointer Permissions', () => {
   it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
     /*
       tests:
-      CLP: find/get open ({"*": true})
+      CLP: find/get open ({})
       PointerPerm: "owner" : read
       ACL: logged in user has access
 
@@ -447,7 +447,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {find: {}, get: {}, readUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
