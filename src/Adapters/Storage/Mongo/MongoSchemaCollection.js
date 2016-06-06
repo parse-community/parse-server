@@ -1,4 +1,3 @@
-
 import MongoCollection from './MongoCollection';
 
 function mongoFieldToParseSchemaField(type) {
@@ -126,6 +125,12 @@ function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPe
       mongoObject._metadata.class_permissions = classLevelPermissions;
     }
   }
+
+  // Legacy mongo adapter knows about the difference between password and _hashed_password.
+  // Future database adapters will only know about _hashed_password.
+  // Note: Parse Server will bring back password with injectDefaultSchema, so we don't need
+  // to add it here.
+  delete mongoObject._hashed_password;
 
   return mongoObject;
 }

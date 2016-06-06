@@ -3,6 +3,15 @@ const pgp = require('pg-promise')();
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 
+const parseTypeToPostgresType = type => {
+  switch (type.type) {
+    case 'String': return 'text';
+    case 'Date': return 'timestamp';
+    case 'Object': return 'jsonb';
+    case 'Boolean': return 'boolean';
+    default: throw `no type for ${JSON.stringify(type)} yet`;
+  }
+};
 
 export class PostgresStorageAdapter {
   // Private
@@ -37,13 +46,20 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this._client.query('CREATE TABLE $<className:name> ()', { className })
+    let valuesArray = [];
+    let patternsArray = [];
+    Object.keys(schema.fields).forEach((fieldName, index) => {
+      valuesArray.push(fieldName);
+      valuesArray.push(parseTypeToPostgresType(schema.fields[fieldName]));
+      patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
+    });
+    return this._client.query(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray])
     .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
   }
 
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Doing this in a transaction is probably a good idea.
-    return this._client.query('ALTER TABLE "GameScore" ADD COLUMN "score" double precision', { className, fieldName })
+    return this._client.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> text', { className, fieldName })
     .catch(error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         return this.createClass(className, { fields: { [fieldName]: type } })
@@ -136,7 +152,16 @@ export class PostgresStorageAdapter {
 
   // TODO: remove the mongo format dependency
   createObject(className, schema, object) {
-    return this._client.query('INSERT INTO "GameScore" (score) VALUES ($<score>)', { score: object.score })
+    console.log(object);
+    let columnsArray = [];
+    let valuesArray = [];
+    Object.keys(object).forEach(fieldName => {
+      columnsArray.push(fieldName);
+      valuesArray.push(object[fieldName]);
+    });
+    let columnsPattern = columnsArray.map((col, index) => `$${index + 2}~`).join(',');
+    let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}`).join(',');
+    return this._client.query(`INSERT INTO $1~ (${columnsPattern}) VALUES (${valuesPattern})`, [className, ...columnsArray, ...valuesArray])
     .then(() => ({ ops: [object] }));
   }
 
@@ -164,7 +189,7 @@ export class PostgresStorageAdapter {
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, schema, query, { skip, limit, sort }) {
-    return this._client.query("SELECT * FROM $<className>", { className })
+    return this._client.query("SELECT * FROM $<className:name>", { className })
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
