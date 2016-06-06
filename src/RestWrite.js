@@ -388,10 +388,14 @@ RestWrite.prototype.transformUser = function() {
       if (results.length > 0) {
         throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
       }
-      // We updated the email, send a new validation
-      this.storage['sendVerificationEmail'] = true;
-      this.config.userController.setEmailVerifyToken(this.data);
+      return;
     });
+  })
+  .then(() => {
+    // We updated the email, send a new validation
+    this.storage['sendVerificationEmail'] = true;
+    this.config.userController.setEmailVerifyToken(this.data);
+    return;
   })
 };
 
