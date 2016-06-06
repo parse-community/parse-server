@@ -56,9 +56,6 @@ var currentConfiguration;
 // Allows testing specific configurations of Parse Server
 const setServerConfiguration = configuration => {
   // the configuration hasn't changed
-  if (configuration === currentConfiguration) {
-    return;
-  }
   DatabaseAdapter.clearDatabaseSettings();
   currentConfiguration = configuration;
   server.close();
@@ -80,11 +77,14 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
-  restoreServerConfiguration();
-  Parse.initialize('test', 'test', 'test');
-  Parse.serverURL = 'http://localhost:' + port + '/1';
-  Parse.User.enableUnsafeCurrentUser();
-  return TestUtils.destroyAllDataPermanently().then(done, fail);
+  TestUtils.destroyAllDataPermanently()
+  .then(() => {
+    restoreServerConfiguration();
+    Parse.initialize('test', 'test', 'test');
+    Parse.serverURL = 'http://localhost:' + port + '/1';
+    Parse.User.enableUnsafeCurrentUser();
+    done();
+  }, fail)
 });
 
 var mongoAdapter = new MongoStorageAdapter({
@@ -111,7 +111,7 @@ afterEach(function(done) {
   })
   .then(() => Parse.User.logOut())
   .then(() => {
-    //return TestUtils.destroyAllDataPermanently();
+    return TestUtils.destroyAllDataPermanently();
   }).then(() => {
     done();
   }, (error) => {

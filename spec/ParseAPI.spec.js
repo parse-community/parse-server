@@ -10,7 +10,6 @@ let defaultColumns = require('../src/Controllers/SchemaController').defaultColum
 
 const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
-
 fdescribe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
@@ -50,37 +49,40 @@ fdescribe('miscellaneous', function() {
   });
 
   it('fail to create a duplicate username', done => {
-    let numCreated = 0;
-    let numFailed = 0;
-    let p1 = createTestUser();
-    p1.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-    });
-    let p2 = createTestUser();
-    p2.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-    });
-    Parse.Promise.all([p1, p2])
+    DatabaseAdapter._indexBuildsCompleted('test')
     .then(() => {
-      fail('one of the users should not have been created');
-      done();
-    })
-    .catch(done);
+      let numCreated = 0;
+      let numFailed = 0;
+      let p1 = createTestUser();
+      p1.then(user => {
+        numCreated++;
+        expect(numCreated).toEqual(1);
+      })
+      .catch(error => {
+        numFailed++;
+        expect(numFailed).toEqual(1);
+        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      });
+      let p2 = createTestUser();
+      p2.then(user => {
+        numCreated++;
+        expect(numCreated).toEqual(1);
+      })
+      .catch(error => {
+        numFailed++;
+        expect(numFailed).toEqual(1);
+        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      });
+      Parse.Promise.all([p1, p2])
+      .then(() => {
+        fail('one of the users should not have been created');
+        done();
+      })
+      .catch(done);
+    });
   });
 
-  fit('ensure that email is uniquely indexed', done => {
+  it('ensure that email is uniquely indexed', done => {
     DatabaseAdapter._indexBuildsCompleted('test')
     .then(() => {
       let numCreated = 0;
@@ -96,7 +98,6 @@ fdescribe('miscellaneous', function() {
         expect(numCreated).toEqual(1);
       }, error => {
         numFailed++;
-        console.log(error);
         expect(numFailed).toEqual(1);
         expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
       });
@@ -111,7 +112,6 @@ fdescribe('miscellaneous', function() {
         expect(numCreated).toEqual(1);
       }, error => {
         numFailed++;
-        console.log(error);
         expect(numFailed).toEqual(1);
         expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
       });

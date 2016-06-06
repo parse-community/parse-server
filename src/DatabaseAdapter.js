@@ -41,6 +41,7 @@ function clearDatabaseSettings() {
   appDatabaseURIs = {};
   dbConnections = {};
   appDatabaseOptions = {};
+  indexBuildCreationPromises = {};
 }
 
 //Used by tests
@@ -87,42 +88,7 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
     return Promise.reject();
   })
 
-  indexBuildCreationPromises[appId] = p1.then(() => p2)
-  .then(() => console.log('index build success'))
-  .then(() => {
-    let numCreated = 0;
-    let numFailed = 0;
-
-    let user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    let p1 = user1.signUp();
-    p1.then(user => {
-      numCreated++;
-      console.log(numCreated)
-    }, error => {
-      numFailed++;
-      console.log(error);
-      console.log(numFailed)
-      console.log(error.code)
-    });
-
-    let user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    let p2 = user2.signUp();
-    p2.then(user => {
-      numCreated++;
-      console.log(numCreated)
-    }, error => {
-      numFailed++;
-      console.log(error);
-      console.log(numFailed)
-      console.log(error.code)
-    });
-  })
+  indexBuildCreationPromises[appId] = Promise.all([p1, p2])
 
   return dbConnections[appId];
 }

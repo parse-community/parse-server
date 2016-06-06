@@ -235,7 +235,6 @@ var handleParseErrors = function(err, req, res, next) {
     }
 
     res.status(httpStatus);
-    console.log(err);
     res.json({code: err.code, error: err.message});
   } else if (err.status && err.message) {
     res.status(err.status);
