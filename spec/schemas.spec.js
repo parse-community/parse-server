@@ -1570,7 +1570,7 @@ describe('schemas', () => {
     });
   });
 
-  fit("regression test for #1991", done => {
+  it("regression test for #1991", done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
