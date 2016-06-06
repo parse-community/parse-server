@@ -47,8 +47,8 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this._client.query('CREATE TABLE "GameScore" ()', {})
-    .then(() => this._client.query('INSERT INTO "_SCHEMA" VALUES ($<className>, $<schema>, true)', { className, schema }))
+    return this._client.query('CREATE TABLE $<className:name> ()', { className })
+    .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
   }
 
   addFieldIfNotExists(className, fieldName, type) {
