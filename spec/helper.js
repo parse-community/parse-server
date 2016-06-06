@@ -111,7 +111,7 @@ afterEach(function(done) {
   })
   .then(() => Parse.User.logOut())
   .then(() => {
-    return TestUtils.destroyAllDataPermanently();
+    //return TestUtils.destroyAllDataPermanently();
   }).then(() => {
     done();
   }, (error) => {
@@ -243,14 +243,16 @@ function mockFacebook() {
   facebook.validateAuthData = function(authData) {
     if (authData.id === '8675309' && authData.access_token === 'jenny') {
       return Promise.resolve();
+    } else {
+      throw undefined;
     }
-    return Promise.reject();
   };
   facebook.validateAppId = function(appId, authData) {
     if (authData.access_token === 'jenny') {
       return Promise.resolve();
+    } else {
+      throw undefined;
     }
-    return Promise.reject();
   };
   return facebook;
 }

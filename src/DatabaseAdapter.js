@@ -17,10 +17,16 @@
 
 import DatabaseController  from './Controllers/DatabaseController';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
+import log                 from './logger';
+
+var SchemaController = require('./Controllers/SchemaController');
 
 let dbConnections = {};
 let appDatabaseURIs = {};
 let appDatabaseOptions = {};
+let indexBuildCreationPromises = {};
+
+const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
 
 function setAppDatabaseURI(appId, uri) {
   appDatabaseURIs[appId] = uri;
@@ -49,6 +55,11 @@ function destroyAllDataPermanently() {
   throw 'Only supported in test environment';
 }
 
+//Super janky. Will be removed in a later PR.
+function _indexBuildsCompleted(appId) {
+  return indexBuildCreationPromises[appId];
+}
+
 function getDatabaseConnection(appId: string, collectionPrefix: string) {
   if (dbConnections[appId]) {
     return dbConnections[appId];
@@ -62,6 +73,57 @@ function getDatabaseConnection(appId: string, collectionPrefix: string) {
 
   dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions), {appId: appId});
 
+  // Kick off unique index build in the background (or ensure the unique index already exists)
+  // A bit janky, will be fixed in a later PR.
+  let p1 = dbConnections[appId].adapter.ensureUniqueness('_User', ['username'], requiredUserFields)
+  .catch(error => {
+    log.warn('Unable to ensure uniqueness for usernames: ', error);
+    return Promise.reject();
+  });
+
+  let p2 = dbConnections[appId].adapter.ensureUniqueness('_User', ['email'], requiredUserFields)
+  .catch(error => {
+    log.warn('Unabled to ensure uniqueness for user email addresses: ', error);
+    return Promise.reject();
+  })
+
+  indexBuildCreationPromises[appId] = p1.then(() => p2)
+  .then(() => console.log('index build success'))
+  .then(() => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      console.log(numCreated)
+    }, error => {
+      numFailed++;
+      console.log(error);
+      console.log(numFailed)
+      console.log(error.code)
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      console.log(numCreated)
+    }, error => {
+      numFailed++;
+      console.log(error);
+      console.log(numFailed)
+      console.log(error.code)
+    });
+  })
+
   return dbConnections[appId];
 }
 
@@ -71,4 +133,5 @@ module.exports = {
   setAppDatabaseURI: setAppDatabaseURI,
   clearDatabaseSettings: clearDatabaseSettings,
   destroyAllDataPermanently: destroyAllDataPermanently,
+  _indexBuildsCompleted,
 };

@@ -14,8 +14,6 @@ var triggers = require('./triggers');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 
-const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
-
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
 // If query is null, this is a "create" and the data in data should be
@@ -358,28 +356,21 @@ RestWrite.prototype.transformUser = function() {
       }
       return;
     }
-    // TODO: refactor this so that ensureUniqueness isn't called for every single sign up.
-    return this.config.database.adapter.ensureUniqueness('_User', ['username'], requiredUserFields)
-    .catch(error => {
-      if (error.code === Parse.Error.DUPLICATE_VALUE) {
-        // If they already have duplicate usernames or emails, the ensureUniqueness will fail,
-        // and then nobody will be able to sign up D: so just use the old, janky
-        // method to check for duplicate usernames.
-        return this.config.database.find(
-          this.className,
-          { username: this.data.username, objectId: {'$ne': this.objectId()} },
-          { limit: 1 }
-        )
-        .then(results => {
-          if (results.length > 0) {
-            throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
-          }
-          return;
-        });
+    // We need to a find to check for duplicate username in case they are missing the unique index on usernames
+    // TODO: Check if there is a unique index, and if so, skip this query.
+    return this.config.database.find(
+      this.className,
+      { username: this.data.username, objectId: {'$ne': this.objectId()} },
+      { limit: 1 }
+    )
+    .then(results => {
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
       }
-      throw error;
-    })
-  }).then(() => {
+      return;
+    });
+  })
+  .then(() => {
     if (!this.data.email || this.data.email.__op === 'Delete') {
       return;
     }
@@ -387,32 +378,25 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.email.match(/^.+@.+$/)) {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.');
     }
-    // Check for email uniqueness
-    return this.config.database.adapter.ensureUniqueness('_User', ['email'], requiredUserFields)
-    .catch(error => {
-      // Same problem for email as above for username
-      if (error.code === Parse.Error.DUPLICATE_VALUE) {
-        return this.config.database.find(
-          this.className,
-          { email: this.data.email, objectId: {'$ne': this.objectId()} },
-          { limit: 1 }
-        )
-        .then(results => {
-          if (results.length > 0) {
-            throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
-          }
-          return;
-        });
+    // Same problem for email as above for username
+    return this.config.database.find(
+      this.className,
+      { email: this.data.email, objectId: {'$ne': this.objectId()} },
+      { limit: 1 }
+    )
+    .then(results => {
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
       }
-      throw error;
-    })
-    .then(() => {
-      // We updated the email, send a new validation
-      this.storage['sendVerificationEmail'] = true;
-      this.config.userController.setEmailVerifyToken(this.data);
       return;
-    })
-  });
+    });
+  })
+  .then(() => {
+    // We updated the email, send a new validation
+    this.storage['sendVerificationEmail'] = true;
+    this.config.userController.setEmailVerifyToken(this.data);
+    return;
+  })
 };
 
 RestWrite.prototype.createSessionTokenIfNeeded = function() {

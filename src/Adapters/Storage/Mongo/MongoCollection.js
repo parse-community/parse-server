@@ -88,8 +88,9 @@ export default class MongoCollection {
       this._mongoCollection.ensureIndex(indexRequest, { unique: true, background: true, sparse: true }, (error, indexName) => {
         if (error) {
           reject(error);
+        } else {
+          resolve();
         }
-        resolve();
       });
     });
   }
