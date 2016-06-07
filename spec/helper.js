@@ -80,7 +80,14 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 beforeEach(done => {
-  Parse.User.enableUnsafeCurrentUser();
+  try {
+    Parse.User.enableUnsafeCurrentUser();
+  } catch (error) {
+    if (error !== 'You need to call Parse.initialize before using Parse.') {
+      console.log(error);
+      throw error;
+    }
+  }
   TestUtils.destroyAllDataPermanently()
   .then(() => reconfigureServer())
   .then(() => {
@@ -108,13 +115,7 @@ afterEach(function(done) {
     });
   })
   .then(() => Parse.User.logOut())
-  .then(() => {
-    return TestUtils.destroyAllDataPermanently();
-  }).then(done,
-  error => {
-    console.log('error in clearData', error);
-    done();
-  });
+  .then(done);
 });
 
 var TestObject = Parse.Object.extend({

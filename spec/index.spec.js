@@ -10,11 +10,19 @@ const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageA
 
 describe('server', () => {
   it('requires a master key and app id', done => {
-    fail('TODO: figrue out async');
-    /*expect(() => reconfigureServer({})).toThrow('You must provide an appId!');
-    expect(() => reconfigureServer({ appId: 'myId' })).toThrow('You must provide a masterKey!');
-    expect(() => reconfigureServer({ appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');*/
-    done();
+    reconfigureServer({ appId: undefined })
+    .catch(error => {
+      expect(error).toEqual('You must provide an appId!');
+      return reconfigureServer({ masterKey: undefined });
+    })
+    .catch(error => {
+      expect(error).toEqual('You must provide a masterKey!');
+      return reconfigureServer({ serverURL: undefined });
+    })
+    .catch(error => {
+      expect(error).toEqual('You must provide a serverURL!');
+      done();
+    });
   });
 
   it('support http basic authentication with masterkey', done => {
@@ -110,38 +118,21 @@ describe('server', () => {
   });
 
   it('can load email adapter via only module name', done => {
-    fail('TODO: figure out async');
-    /*expect(() => reconfigureServer({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: 'parse-server-simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');*/
-    done();
+    })
+    .catch(error => {
+      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+      done();
+    });
   });
 
   it('throws if you initialize email adapter incorrecly', done => {
-    fail('TODO: figure out async');
-    /*expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         module: 'parse-server-simple-mailgun-adapter',
@@ -150,8 +141,11 @@ describe('server', () => {
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');*/
-    done();
+    })
+    .catch(error => {
+      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+      done();
+    });
   });
 
   it('can report the server version', done => {
@@ -268,86 +262,47 @@ describe('server', () => {
   });
 
   it('should throw when getting invalid mount', done => {
-    fail('TODO: figure out async')
-    /*expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      publicServerURL: 'blabla:/some'
-    }) ).toThrow("publicServerURL should be a valid HTTPS URL starting with https://");*/
-    done();
+    reconfigureServer({ publicServerURL: 'blabla:/some' })
+    .then(error => {
+      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
+      done();
+    });
   });
 
-  it('fails if the session length is not a number', (done) => {
-    fail('TODO: figure out async')
-    /*expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
-      sessionLength: 'test'
-    })).toThrow('Session length must be a valid number.');*/
-    done();
+  it('fails if the session length is not a number', done => {
+    reconfigureServer({ sessionLength: 'test' })
+    .catch(error => {
+      express(error).toEqual('Session length must be a valid number.');
+      done();
+    });
   });
 
-  it('fails if the session length is less than or equal to 0', (done) => {
-    fail('TODO: figure out async')
-
-    /*expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
-      sessionLength: '-33'
-    })).toThrow('Session length must be a value greater than 0.');
-
-    expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
-      sessionLength: '0'
-    })).toThrow('Session length must be a value greater than 0.');*/
-    done();
+  it('fails if the session length is less than or equal to 0', done => {
+    reconfigureServer({ sessionLength: '-33' })
+    .catch(error => {
+      expect(error).toEqual('Session length must be a value greater than 0.');
+      return reconfigureServer({ sessionLength: '0' })
+    })
+    .catch(error => {
+      expect(error).toEqual('Session length must be a value greater than 0.');
+      done();
+    });
   });
 
   it('ignores the session length when expireInactiveSessions set to false', (done) => {
-    fail('TODO: figure out async')
-    /*expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
+    reconfigureServer({
       sessionLength: '-33',
       expireInactiveSessions: false
-    })).not.toThrow();
-
-    expect(() => setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      appName: 'unused',
-      javascriptKey: 'test',
-      masterKey: 'test',
+    })
+    .then(() => reconfigureServer({
       sessionLength: '0',
       expireInactiveSessions: false
-    })).not.toThrow();*/
-    done();
+    }))
+    .then(done);
   })
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
-    fail('TODO: figure out async')
-
-    /*expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();*/
-    done();
+    reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
+    .catch(done);
   });
 });
