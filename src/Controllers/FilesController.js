@@ -6,6 +6,8 @@ import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path  from 'path';
 import mime from 'mime';
 
+const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
+
 export class FilesController extends AdaptableController {
 
   getFileData(config, filename) {
@@ -59,8 +61,13 @@ export class FilesController extends AdaptableController {
           continue;
         }
         let filename = fileObject['name'];
+        // all filenames starting with "tfss-" should be from files.parsetfss.com
+        // all filenames starting with a "-" seperated UUID should be from files.parse.com
+        // all other filenames have been migrated or created from Parse Server
         if (filename.indexOf('tfss-') === 0) {
           fileObject['url'] = 'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+        } else if (legacyFilesRegex.test(filename)) {
+          fileObject['url'] = 'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
         } else {
           fileObject['url'] = this.adapter.getFileLocation(config, filename);
         }
