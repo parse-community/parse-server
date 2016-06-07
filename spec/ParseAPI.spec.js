@@ -51,151 +51,166 @@ describe('miscellaneous', function() {
   });
 
   it('fail to create a duplicate username', done => {
-    DatabaseAdapter._indexBuildsCompleted('test')
-    .then(() => {
-      let numCreated = 0;
-      let numFailed = 0;
-      let p1 = createTestUser();
-      p1.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-      let p2 = createTestUser();
-      p2.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      })
-      .catch(error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      });
-      Parse.Promise.all([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
+    setServerConfiguration({
+      ...defaultConfiguration,
+      __indexBuildCompletionCallbackForTests: promise => {
+        promise.then(() => {
+          let numCreated = 0;
+          let numFailed = 0;
+          let p1 = createTestUser();
+          p1.then(user => {
+            numCreated++;
+            expect(numCreated).toEqual(1);
+          })
+          .catch(error => {
+            numFailed++;
+            expect(numFailed).toEqual(1);
+            expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+          });
+          let p2 = createTestUser();
+          p2.then(user => {
+            numCreated++;
+            expect(numCreated).toEqual(1);
+          })
+          .catch(error => {
+            numFailed++;
+            expect(numFailed).toEqual(1);
+            expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+          });
+          Parse.Promise.all([p1, p2])
+          .then(() => {
+            fail('one of the users should not have been created');
+            done();
+          })
+          .catch(done);
+        });
+      },
     });
   });
 
   it('ensure that email is uniquely indexed', done => {
-    DatabaseAdapter._indexBuildsCompleted('test')
-    .then(() => {
-      let numCreated = 0;
-      let numFailed = 0;
+    setServerConfiguration({
+      ...defaultConfiguration,
+      __indexBuildCompletionCallbackForTests: promise => {
+        let numCreated = 0;
+        let numFailed = 0;
 
-      let user1 = new Parse.User();
-      user1.setPassword('asdf');
-      user1.setUsername('u1');
-      user1.setEmail('dupe@dupe.dupe');
-      let p1 = user1.signUp();
-      p1.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      }, error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      });
+        let user1 = new Parse.User();
+        user1.setPassword('asdf');
+        user1.setUsername('u1');
+        user1.setEmail('dupe@dupe.dupe');
+        let p1 = user1.signUp();
+        p1.then(user => {
+          numCreated++;
+          expect(numCreated).toEqual(1);
+        }, error => {
+          numFailed++;
+          expect(numFailed).toEqual(1);
+          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+        });
 
-      let user2 = new Parse.User();
-      user2.setPassword('asdf');
-      user2.setUsername('u2');
-      user2.setEmail('dupe@dupe.dupe');
-      let p2 = user2.signUp();
-      p2.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      }, error => {
-        numFailed++;
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      });
+        let user2 = new Parse.User();
+        user2.setPassword('asdf');
+        user2.setUsername('u2');
+        user2.setEmail('dupe@dupe.dupe');
+        let p2 = user2.signUp();
+        p2.then(user => {
+          numCreated++;
+          expect(numCreated).toEqual(1);
+        }, error => {
+          numFailed++;
+          expect(numFailed).toEqual(1);
+          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+        });
 
-      Parse.Promise.all([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(done);
-    })
-    .catch(error => {
-      fail('index build failed')
-      done();
+        Parse.Promise.all([p1, p2])
+        .then(() => {
+          fail('one of the users should not have been created');
+          done();
+        })
+        .catch(done);
+      },
     });
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    // Remove existing data to clear out unique index
-    TestUtils.destroyAllDataPermanently()
-    .then(() => {
-      let adapter = new MongoStorageAdapter({
-        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
-        collectionPrefix: 'test_',
-      });
-      adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
-      .then(() => adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('zxcv');
-        return user.signUp();
-      })
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('u');
-        user.signUp()
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    setServerConfiguration({
+      ...defaultConfiguration,
+      __indexBuildCompletionCallbackForTests: promise => {
+        // Remove existing data to clear out unique index
+        promise.then(TestUtils.destroyAllDataPermanently)
+        .then(() => {
+          let adapter = new MongoStorageAdapter({
+            uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+            collectionPrefix: 'test_',
+          });
+          adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
+          .then(() => adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
+          .then(() => {
+            let user = new Parse.User();
+            user.setPassword('asdf');
+            user.setUsername('zxcv');
+            return user.signUp();
+          })
+          .then(() => {
+            let user = new Parse.User();
+            user.setPassword('asdf');
+            user.setUsername('u');
+            user.signUp()
+            .catch(error => {
+              expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+              done();
+            });
+          })
+          .catch(error => {
+            fail(JSON.stringify(error));
+            done();
+          });
+        }, () => {
+          fail('destroyAllDataPermanently failed')
           done();
         });
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
-    }, () => {
-      fail('destroyAllDataPermanently failed')
-      done();
-    });
+        },
+    })
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    // Wipe out existing database with unique index so we can create a duplicate user
-    TestUtils.destroyAllDataPermanently()
-    .then(() => {
-      let config = new Config('test');
-      config.database.adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
-      .then(() => config.database.adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('qqq');
-        user.setEmail('unique@unique.unique');
-        return user.signUp();
-      })
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('www');
-        user.setEmail('a@b.c');
-        user.signUp()
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-          done();
-        });
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
+    setServerConfiguration({
+      ...defaultConfiguration,
+      __indexBuildCompletionCallbackForTests: promise => {
+        // Wipe out existing database with unique index so we can create a duplicate user
+        promise.then(TestUtils.destroyAllDataPermanently)
+        .then(() => {
+          let adapter = new MongoStorageAdapter({
+            uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+            collectionPrefix: 'test_',
+          });
+          adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
+          .then(() => adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+          .then(() => {
+            let user = new Parse.User();
+            user.setPassword('asdf');
+            user.setUsername('qqq');
+            user.setEmail('unique@unique.unique');
+            return user.signUp();
+          })
+          .then(() => {
+            let user = new Parse.User();
+            user.setPassword('asdf');
+            user.setUsername('www');
+            user.setEmail('a@b.c');
+            user.signUp()
+            .catch(error => {
+              expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+              done();
+            });
+          })
+          .catch(error => {
+            fail(JSON.stringify(error));
+            done();
+          });
+        })
+      }
     });
   });
 
@@ -370,8 +385,8 @@ describe('miscellaneous', function() {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId, 'test_');
-      return db.adapter.find('TestObject', {}, { fields: {} }, {});
+      let config = new Config(appId);
+      return config.database.adapter.find('TestObject', {}, { fields: {} }, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');

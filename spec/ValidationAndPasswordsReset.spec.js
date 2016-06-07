@@ -7,6 +7,7 @@ let Config = require("../src/Config");
 describe("Custom Pages Configuration", () => {
   it("should set the custom pages", (done) => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -15,7 +16,6 @@ describe("Custom Pages Configuration", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       customPages: {
         invalidLink: "myInvalidLink",
@@ -46,6 +46,7 @@ describe("Email Verification", () => {
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -54,7 +55,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -88,6 +88,7 @@ describe("Email Verification", () => {
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -96,7 +97,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -129,6 +129,7 @@ describe("Email Verification", () => {
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -137,7 +138,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -179,6 +179,7 @@ describe("Email Verification", () => {
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -187,7 +188,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -243,6 +243,7 @@ describe("Email Verification", () => {
       }
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'My Cool App',
@@ -251,7 +252,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -286,6 +286,7 @@ describe("Email Verification", () => {
 
   it('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -294,7 +295,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: false,
       emailAdapter: MockEmailAdapterWithOptions({
@@ -327,6 +327,7 @@ describe("Email Verification", () => {
       sendMail: () => Promise.resolve()
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -335,7 +336,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
@@ -371,6 +371,7 @@ describe("Email Verification", () => {
       sendMail: () => {}
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -379,7 +380,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -422,6 +422,7 @@ describe("Email Verification", () => {
       sendMail: () => {}
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -430,7 +431,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -444,6 +444,7 @@ describe("Email Verification", () => {
 
   it('redirects you to invalid link if you try to verify email incorrecly', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -452,7 +453,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -473,6 +473,7 @@ describe("Email Verification", () => {
 
   it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -481,7 +482,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -520,6 +520,7 @@ describe("Email Verification", () => {
       sendMail: () => {}
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -528,7 +529,6 @@ describe("Email Verification", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -571,6 +571,7 @@ describe("Password Reset", () => {
       sendMail: () => {}
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -579,7 +580,6 @@ describe("Password Reset", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -601,6 +601,7 @@ describe("Password Reset", () => {
 
   it('redirects you to invalid link if you try to request password for a nonexistant users email', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -609,7 +610,6 @@ describe("Password Reset", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -689,6 +689,7 @@ describe("Password Reset", () => {
       sendMail: () => {}
     }
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'emailing app',
@@ -697,7 +698,6 @@ describe("Password Reset", () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -716,5 +716,4 @@ describe("Password Reset", () => {
       });
     });
   });
-
 })

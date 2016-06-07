@@ -7,10 +7,8 @@ var rest = require('../src/rest');
 var querystring = require('querystring');
 var request = require('request');
 
-var DatabaseAdapter = require('../src/DatabaseAdapter');
-var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
-
 var config = new Config('test');
+let database = config.database;
 var nobody = auth.nobody(config);
 
 describe('rest query', () => {

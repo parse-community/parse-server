@@ -1,23 +1,20 @@
 /** @flow weak */
 
 import * as DatabaseAdapter from "../DatabaseAdapter";
-import * as triggers from "../triggers";
-import * as Parse from "parse/node";
-import * as request from "request";
-import { logger } from '../logger';
+import * as triggers        from "../triggers";
+import * as Parse           from "parse/node";
+import * as request         from "request";
+import { logger }           from '../logger';
 
 const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
   _applicationId:string;
-  _collectionPrefix:string;
-  _collection;
 
-  constructor(applicationId:string, collectionPrefix:string = '', webhookKey) {
+  constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
-    this._collectionPrefix = collectionPrefix;
     this._webhookKey = webhookKey;
-    this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).WithoutValidation();
+    this.database = databaseController;
   }
 
   load() {

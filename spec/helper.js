@@ -11,12 +11,16 @@ var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
-var databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 var port = 8378;
+
+var mongoAdapter = new MongoStorageAdapter({
+  uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+  collectionPrefix: 'test_',
+})
 
 // Default server configuration for tests.
 var defaultConfiguration = {
-  databaseURI: databaseURI,
+  databaseAdapter: mongoAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   appId: 'test',
   javascriptKey: 'test',
@@ -25,7 +29,6 @@ var defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
-  collectionPrefix: 'test_',
   fileKey: 'test',
   push: {
     'ios': {
@@ -52,12 +55,8 @@ var server = app.listen(port);
 // Prevent reinitializing the server from clobbering Cloud Code
 delete defaultConfiguration.cloud;
 
-var currentConfiguration;
 // Allows testing specific configurations of Parse Server
 const setServerConfiguration = configuration => {
-  // the configuration hasn't changed
-  DatabaseAdapter.clearDatabaseSettings();
-  currentConfiguration = configuration;
   server.close();
   cache.clear();
   app = express();
@@ -66,7 +65,6 @@ const setServerConfiguration = configuration => {
   server = app.listen(port);
 };
 
-var restoreServerConfiguration = () => setServerConfiguration(defaultConfiguration);
 
 // Set up a Parse client to talk to our test API server
 var Parse = require('parse/node');
@@ -80,17 +78,12 @@ beforeEach(function(done) {
   Parse.User.enableUnsafeCurrentUser();
   TestUtils.destroyAllDataPermanently()
   .then(() => {
-    restoreServerConfiguration();
+    setServerConfiguration(defaultConfiguration);
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
   }, fail)
 });
-
-var mongoAdapter = new MongoStorageAdapter({
-  collectionPrefix: defaultConfiguration.collectionPrefix,
-  uri: databaseURI,
-})
 
 afterEach(function(done) {
   Parse.Cloud._removeAllHooks();

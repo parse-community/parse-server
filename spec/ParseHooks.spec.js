@@ -1,3 +1,4 @@
+"use strict";
 /* global describe, it, expect, fail, Parse */
 var request = require('request');
 var triggers = require('../src/triggers');
@@ -13,7 +14,7 @@ var hookServerURL = "http://localhost:"+port;
 var app = express();
 app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
-
+let AppCache = require('../src/cache').AppCache;
 
 describe('Hooks', () => {
 
@@ -257,7 +258,7 @@ describe('Hooks', () => {
          expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).toBeUndefined();
          expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).toBeUndefined();
        }
-       const hooksController = new HooksController(Parse.applicationId);
+       const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
        return hooksController.load()
      }, (err) => {
        console.error(err);

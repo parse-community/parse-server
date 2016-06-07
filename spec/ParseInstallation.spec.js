@@ -5,13 +5,12 @@
 let auth = require('../src/Auth');
 let cache = require('../src/cache');
 let Config = require('../src/Config');
-let DatabaseAdapter = require('../src/DatabaseAdapter');
 let Parse = require('parse/node').Parse;
 let rest = require('../src/rest');
 let request = require("request");
 
 let config = new Config('test');
-let database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
+let database = config.database;
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
 const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };

@@ -1,3 +1,4 @@
+"use strict"
 var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
@@ -39,6 +40,7 @@ describe('server', () => {
 
   it('fails if database is unreachable', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       databaseURI: 'mongodb://fake:fake@ds043605.mongolab.com:43605/drew3',
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -47,7 +49,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
     });
     //Need to use rest api because saving via JS SDK results in fail() not getting called
@@ -69,6 +70,7 @@ describe('server', () => {
 
   it('can load email adapter via object', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -77,7 +79,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: MockEmailAdapterWithOptions({
@@ -92,6 +93,7 @@ describe('server', () => {
 
   it('can load email adapter via class', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -100,7 +102,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -118,6 +119,7 @@ describe('server', () => {
 
   it('can load email adapter via module name', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -126,7 +128,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -144,6 +145,7 @@ describe('server', () => {
 
   it('can load email adapter via only module name', done => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -152,7 +154,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: 'parse-server-simple-mailgun-adapter',
@@ -163,6 +164,7 @@ describe('server', () => {
 
   it('throws if you initialize email adapter incorrecly', done => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -171,7 +173,6 @@ describe('server', () => {
       clientKey: 'client',
       restAPIKey: 'rest',
       masterKey: 'test',
-      collectionPrefix: 'test_',
       fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
@@ -201,10 +202,10 @@ describe('server', () => {
 
   it('can create a parse-server', done => {
     var parseServer = new ParseServer.default({
+      ...defaultConfiguration,
       appId: "aTestApp",
       masterKey: "aTestMasterKey",
       serverURL: "http://localhost:12666/parse",
-      databaseURI: 'mongodb://localhost:27017/aTestApp'
     });
 
     expect(Parse.applicationId).toEqual("aTestApp");
@@ -230,10 +231,10 @@ describe('server', () => {
 
   it('can create a parse-server', done => {
     var parseServer = ParseServer.ParseServer({
+      ...defaultConfiguration,
       appId: "anOtherTestApp",
       masterKey: "anOtherTestMasterKey",
       serverURL: "http://localhost:12667/parse",
-      databaseURI: 'mongodb://localhost:27017/anotherTstApp'
     });
 
     expect(Parse.applicationId).toEqual("anOtherTestApp");
@@ -274,6 +275,7 @@ describe('server', () => {
 
   it('properly gives publicServerURL when set', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
@@ -286,6 +288,7 @@ describe('server', () => {
 
   it('properly removes trailing slash in mount', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test'
@@ -297,6 +300,7 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
@@ -307,6 +311,7 @@ describe('server', () => {
 
   it('fails if the session length is not a number', (done) => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -319,6 +324,7 @@ describe('server', () => {
 
   it('fails if the session length is less than or equal to 0', (done) => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -328,6 +334,7 @@ describe('server', () => {
     })).toThrow('Session length must be a value greater than 0.');
 
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -340,6 +347,7 @@ describe('server', () => {
 
   it('ignores the session length when expireInactiveSessions set to false', (done) => {
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',
@@ -350,6 +358,7 @@ describe('server', () => {
     })).not.toThrow();
 
     expect(() => setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       appName: 'unused',

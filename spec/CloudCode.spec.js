@@ -6,6 +6,7 @@ const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
@@ -19,6 +20,7 @@ describe('Cloud Code', () => {
 
   it('can load relative cloud code file', done => {
     setServerConfiguration({
+      ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',

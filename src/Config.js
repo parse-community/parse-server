@@ -16,7 +16,6 @@ function removeTrailingSlash(str) {
 
 export class Config {
   constructor(applicationId: string, mount: string) {
-    let DatabaseAdapter = require('./DatabaseAdapter');
     let cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
@@ -32,7 +31,7 @@ export class Config {
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
+    this.database = cacheInfo.databaseController;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
