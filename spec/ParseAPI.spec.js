@@ -81,51 +81,47 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  fit('ensure that email is uniquely indexed', done => {
-    DatabaseAdapter._indexBuildsCompleted('test')
+  it('ensure that email is uniquely indexed', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    Parse.Promise.when([p1, p2])
     .then(() => {
-      let numCreated = 0;
-      let numFailed = 0;
-
-      let user1 = new Parse.User();
-      user1.setPassword('asdf');
-      user1.setUsername('u1');
-      user1.setEmail('dupe@dupe.dupe');
-      let p1 = user1.signUp();
-      p1.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      }, error => {
-        numFailed++;
-        console.log(error);
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      });
-
-      let user2 = new Parse.User();
-      user2.setPassword('asdf');
-      user2.setUsername('u2');
-      user2.setEmail('dupe@dupe.dupe');
-      let p2 = user2.signUp();
-      p2.then(user => {
-        numCreated++;
-        expect(numCreated).toEqual(1);
-      }, error => {
-        numFailed++;
-        console.log(error);
-        expect(numFailed).toEqual(1);
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      });
-
-      Parse.Promise.when([p1, p2])
-      .then(() => {
-        fail('one of the users should not have been created');
-        done();
-      })
-      .catch(error => {
-        fail('index build failed')
-        done();
-      });
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(error => {
+      fail('index build failed')
+      done();
+    });
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
