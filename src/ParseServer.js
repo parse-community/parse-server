@@ -216,7 +216,7 @@ class ParseServer {
         setTimeout(() => {
           hooksController.reset();
           repeat();
-        } , hooksRefreshIntervalMs);
+        } , hooksRefreshIntervalMs).unref();
       })();
     } else {
       hooksController.reset();
