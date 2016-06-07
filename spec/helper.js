@@ -89,12 +89,23 @@ beforeEach(done => {
     }
   }
   TestUtils.destroyAllDataPermanently()
+  .catch(error => {
+    // For tests that connect to their own mongo, there won't be any data to delete.
+    if (error.message === 'ns not found') {
+      return;
+    } else {
+      throw error;
+    }
+  })
   .then(() => reconfigureServer())
   .then(() => {
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
-  }, fail)
+  }, error => {
+    fail(JSON.stringify(error));
+    done();
+  })
 });
 
 afterEach(function(done) {
@@ -115,7 +126,11 @@ afterEach(function(done) {
     });
   })
   .then(() => Parse.User.logOut())
-  .then(done);
+  .then(done)
+  .catch(error => {
+    fail(JSON.stringify(error));
+    done();
+  });
 });
 
 var TestObject = Parse.Object.extend({
