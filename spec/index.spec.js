@@ -6,6 +6,8 @@ var ParseServer = require("../src/index");
 var Config = require('../src/Config');
 var express = require('express');
 
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+
 describe('server', () => {
   it('requires a master key and app id', done => {
     expect(setServerConfiguration.bind(undefined, {  })).toThrow('You must provide an appId!');
@@ -41,7 +43,9 @@ describe('server', () => {
   it('fails if database is unreachable', done => {
     setServerConfiguration({
       ...defaultConfiguration,
-      databaseURI: 'mongodb://fake:fake@ds043605.mongolab.com:43605/drew3',
+      databaseAdapter: new MongoStorageAdapter({
+        uri: 'mongodb://fake:fake@localhost:43605/drew3',
+      }),
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       javascriptKey: 'test',
