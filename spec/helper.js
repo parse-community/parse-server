@@ -1,6 +1,6 @@
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 15000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 3000;
 
 var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');
@@ -77,12 +77,12 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 beforeEach(function(done) {
+  Parse.User.enableUnsafeCurrentUser();
   TestUtils.destroyAllDataPermanently()
   .then(() => {
     restoreServerConfiguration();
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
-    Parse.User.enableUnsafeCurrentUser();
     done();
   }, fail)
 });
@@ -112,9 +112,8 @@ afterEach(function(done) {
   .then(() => Parse.User.logOut())
   .then(() => {
     return TestUtils.destroyAllDataPermanently();
-  }).then(() => {
-    done();
-  }, (error) => {
+  }).then(done,
+  error => {
     console.log('error in clearData', error);
     done();
   });

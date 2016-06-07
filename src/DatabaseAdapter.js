@@ -18,6 +18,7 @@
 import DatabaseController  from './Controllers/DatabaseController';
 import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
 import log                 from './logger';
+import _                   from 'lodash';
 
 var SchemaController = require('./Controllers/SchemaController');
 
@@ -39,7 +40,7 @@ function setAppDatabaseOptions(appId: string, options: Object) {
 //Used by tests
 function clearDatabaseSettings() {
   appDatabaseURIs = {};
-  dbConnections = {};
+  //dbConnections = {};
   appDatabaseOptions = {};
   indexBuildCreationPromises = {};
 }
@@ -47,11 +48,8 @@ function clearDatabaseSettings() {
 //Used by tests
 function destroyAllDataPermanently() {
   if (process.env.TESTING) {
-    var promises = [];
-    for (var conn in dbConnections) {
-      promises.push(dbConnections[conn].deleteEverything());
-    }
-    return Promise.all(promises);
+    return Promise.all(Object.values(indexBuildCreationPromises))
+    .then(() => Promise.all(Object.values(dbConnections).map(conn => conn.deleteEverything())))
   }
   throw 'Only supported in test environment';
 }

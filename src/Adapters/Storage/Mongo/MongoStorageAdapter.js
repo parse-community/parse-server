@@ -65,6 +65,7 @@ export class MongoStorageAdapter {
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
       this.database = database;
     });
+
     return this.connectionPromise;
   }
 

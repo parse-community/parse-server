@@ -1,6 +1,5 @@
 'use strict';
 
-var DatabaseAdapter = require('../src/DatabaseAdapter');
 var request = require('request');
 const Parse = require("parse/node");
 let Config = require('../src/Config');

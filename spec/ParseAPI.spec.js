@@ -3,14 +3,16 @@
 'use strict';
 
 var DatabaseAdapter = require('../src/DatabaseAdapter');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
+var TestUtils = require('../src/index').TestUtils;
 
 const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
-fdescribe('miscellaneous', function() {
+describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
     obj.set('score', 1337);
@@ -130,57 +132,70 @@ fdescribe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    let config = new Config('test');
-    config.database.adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
-    .then(() => config.database.adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
+    // Remove existing data to clear out unique index
+    TestUtils.destroyAllDataPermanently()
     .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
-      return user.signUp();
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('u');
-      user.signUp()
+      let adapter = new MongoStorageAdapter({
+        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+        collectionPrefix: 'test_',
+      });
+      adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
+      .then(() => adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        return user.signUp();
+      })
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('u');
+        user.signUp()
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+          done();
+        });
+      })
       .catch(error => {
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+        fail(JSON.stringify(error));
         done();
       });
-    })
-    .catch(() => {
-      fail('save should have succeeded');
+    }, () => {
+      fail('destroyAllDataPermanently failed')
       done();
     });
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    let config = new Config('test');
-    config.database.adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
-    .then(() => config.database.adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+    // Wipe out existing database with unique index so we can create a duplicate user
+    TestUtils.destroyAllDataPermanently()
     .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('qqq');
-      user.setEmail('unique@unique.unique');
-      return user.signUp();
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('www');
-      user.setEmail('a@b.c');
-      user.signUp()
+      let config = new Config('test');
+      config.database.adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
+      .then(() => config.database.adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('qqq');
+        user.setEmail('unique@unique.unique');
+        return user.signUp();
+      })
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('www');
+        user.setEmail('a@b.c');
+        user.signUp()
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+          done();
+        });
+      })
       .catch(error => {
-        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+        fail(JSON.stringify(error));
         done();
       });
-    })
-    .catch(error => {
-      console.log(error);
-      fail('save should have succeeded');
-      done();
     });
   });
 
