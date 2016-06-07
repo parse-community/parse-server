@@ -1,3 +1,4 @@
+"use strict"
 // Sets up a Parse API server for testing.
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 3000;
@@ -56,15 +57,19 @@ var server = app.listen(port);
 delete defaultConfiguration.cloud;
 
 // Allows testing specific configurations of Parse Server
-const setServerConfiguration = configuration => {
-  server.close();
-  cache.clear();
-  app = express();
-  api = new ParseServer(configuration);
-  app.use('/1', api);
-  server = app.listen(port);
-};
-
+const reconfigureServer = changedConfiguration => {
+  return new Promise((resolve, reject) => {
+    let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+      __indexBuildCompletionCallbackForTests: promise => promise.then(resolve, reject),
+    });
+    server.close();
+    cache.clear();
+    app = express();
+    api = new ParseServer(newConfiguration);
+    app.use('/1', api);
+    server = app.listen(port);
+  });
+}
 
 // Set up a Parse client to talk to our test API server
 var Parse = require('parse/node');
@@ -74,11 +79,11 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 // TODO: update tests to work in an A+ way
 Parse.Promise.disableAPlusCompliant();
 
-beforeEach(function(done) {
+beforeEach(done => {
   Parse.User.enableUnsafeCurrentUser();
   TestUtils.destroyAllDataPermanently()
+  .then(() => reconfigureServer())
   .then(() => {
-    setServerConfiguration(defaultConfiguration);
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
@@ -266,7 +271,7 @@ global.expectError = expectError;
 global.arrayContains = arrayContains;
 global.jequal = jequal;
 global.range = range;
-global.setServerConfiguration = setServerConfiguration;
+global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 
 // LiveQuery test setting

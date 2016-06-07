@@ -1,35 +1,28 @@
 "use strict"
 const Parse = require("parse/node");
 const request = require('request');
+const rp = require('request-promise');
 const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
 
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      cloud: __dirname + '/cloud/cloudCodeRelativeFile.js'
-    });
-    Parse.Cloud.run('cloudCodeInFile', {}, result => {
-      expect(result).toEqual('It is possible to define cloud code in a file.');
-      done();
-    });
+    reconfigureServer({ cloud: __dirname + '/cloud/cloudCodeRelativeFile.js' })
+    .then(() => {
+      Parse.Cloud.run('cloudCodeInFile', {}, result => {
+        expect(result).toEqual('It is possible to define cloud code in a file.');
+        done();
+      });
+    })
   });
 
   it('can load relative cloud code file', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      cloud: './spec/cloud/cloudCodeAbsoluteFile.js'
-    });
-    Parse.Cloud.run('cloudCodeInFile', {}, result => {
-      expect(result).toEqual('It is possible to define cloud code in a file.');
-      done();
-    });
+    reconfigureServer({ cloud: './spec/cloud/cloudCodeAbsoluteFile.js' })
+    .then(() => {
+      Parse.Cloud.run('cloudCodeInFile', {}, result => {
+        expect(result).toEqual('It is possible to define cloud code in a file.');
+        done();
+      });
+    })
   });
 
   it('can create functions', done => {
@@ -513,67 +506,75 @@ describe('Cloud Code', () => {
   });
 
   it('clears out the user cache for all sessions when the user is changed', done => {
+    let session1;
+    let session2;
+    let user;
     const cacheAdapter = new InMemoryCacheAdapter({ ttl: 100000000 });
-    setServerConfiguration(Object.assign({}, defaultConfiguration, { cacheAdapter: cacheAdapter }));
-    Parse.Cloud.define('checkStaleUser', (request, response) => {
-      response.success(request.user.get('data'));
-    });
+    reconfigureServer({ cacheAdapter })
+    .then(() => {
+      Parse.Cloud.define('checkStaleUser', (request, response) => {
+        response.success(request.user.get('data'));
+      });
 
-    let user = new Parse.User();
-    user.set('username', 'test');
-    user.set('password', 'moon-y');
-    user.set('data', 'first data');
-    user.signUp()
+      user = new Parse.User();
+      user.set('username', 'test');
+      user.set('password', 'moon-y');
+      user.set('data', 'first data');
+      return user.signUp();
+    })
     .then(user => {
-      let session1 = user.getSessionToken();
-      request.get({
-        url: 'http://localhost:8378/1/login?username=test&password=moon-y',
+      session1 = user.getSessionToken();
+      return rp({
+        uri: 'http://localhost:8378/1/login?username=test&password=moon-y',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
         },
-      }, (error, response, body) => {
-        let session2 = body.sessionToken;
+      })
+    })
+    .then(body => {
+      session2 = body.sessionToken;
 
-        //Ensure both session tokens are in the cache
-        Parse.Cloud.run('checkStaleUser')
-        .then(() => {
-          request.post({
-            url: 'http://localhost:8378/1/functions/checkStaleUser',
-            json: true,
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-REST-API-Key': 'rest',
-              'X-Parse-Session-Token': session2,
-            }
-          }, (error, response, body) => {
-            Parse.Promise.all([cacheAdapter.get('test:user:' + session1), cacheAdapter.get('test:user:' + session2)])
-            .then(cachedVals => {
-              expect(cachedVals[0].objectId).toEqual(user.id);
-              expect(cachedVals[1].objectId).toEqual(user.id);
+      //Ensure both session tokens are in the cache
+      return Parse.Cloud.run('checkStaleUser')
+    })
+    .then(() => rp({
+      method: 'POST',
+      uri: 'http://localhost:8378/1/functions/checkStaleUser',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': session2,
+      }
+    }))
+    .then(() => Parse.Promise.all([cacheAdapter.get('test:user:' + session1), cacheAdapter.get('test:user:' + session2)]))
+    .then(cachedVals => {
+      expect(cachedVals[0].objectId).toEqual(user.id);
+      expect(cachedVals[1].objectId).toEqual(user.id);
 
-              //Change with session 1 and then read with session 2.
-              user.set('data', 'second data');
-              user.save()
-              .then(() => {
-                request.post({
-                  url: 'http://localhost:8378/1/functions/checkStaleUser',
-                  json: true,
-                  headers: {
-                    'X-Parse-Application-Id': 'test',
-                    'X-Parse-REST-API-Key': 'rest',
-                    'X-Parse-Session-Token': session2,
-                  }
-                }, (error, response, body) => {
-                  expect(body.result).toEqual('second data');
-                  done();
-                })
-              });
-            });
-          });
-        });
-      });
+      //Change with session 1 and then read with session 2.
+      user.set('data', 'second data');
+      return user.save()
+    })
+    .then(() => rp({
+      method: 'POST',
+      uri: 'http://localhost:8378/1/functions/checkStaleUser',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': session2,
+      }
+    }))
+    .then(body => {
+      expect(body.result).toEqual('second data');
+      done();
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
     });
   });
 

@@ -28,26 +28,27 @@ describe('Parse.Push', () => {
       }
     }
 
-    setServerConfiguration({
+    return reconfigureServer({
       appId: Parse.applicationId,
       masterKey: Parse.masterKey,
       serverURL: Parse.serverURL,
       push: {
         adapter: pushAdapter
       }
+    })
+    .then(() => {
+      var installations = [];
+      while(installations.length != 10) {
+        var installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_"+installations.length);
+        installation.set("deviceToken","device_token_"+installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
     });
-
-    var installations = [];
-    while(installations.length != 10) {
-      var installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
-      installation.set("badge", installations.length);
-      installation.set("originalBadge", installations.length);
-      installation.set("deviceType", "ios");
-      installations.push(installation);
-    }
-    return Parse.Object.saveAll(installations);
   }
 
   it('should properly send push', (done) => {
@@ -110,7 +111,7 @@ describe('Parse.Push', () => {
           'X-Parse-Application-Id': 'test',
         },
       }, (error, response, body) => {
-        expect(body.results.length).toEqual(0);
+        expect(body.error).toEqual('unauthorized');
         done();
       });
     });

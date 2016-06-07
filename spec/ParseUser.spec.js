@@ -2384,35 +2384,32 @@ describe('Parse.User testing', () => {
   });
 
   it('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      revokeSessionOnPasswordReset: false,
-    })
-    request.post({
-      url: 'http://localhost:8378/1/classes/_User',
-      headers: {
-        'X-Parse-Application-Id': Parse.applicationId,
-        'X-Parse-REST-API-Key': 'rest',
-      },
-      json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
-    }, (err, res, body) => {
-      Parse.User.become(body.sessionToken)
-      .then(user => {
-        let obj = new Parse.Object('TestObject');
-        obj.setACL(new Parse.ACL(user));
-        return obj.save()
-        .then(() => {
-          // Change password, revoking session
-          user.set('username', 'no longer anonymous');
-          user.set('password', 'password');
-          return user.save()
+    reconfigureServer({ revokeSessionOnPasswordReset: false })
+    .then(() => {
+      request.post({
+        url: 'http://localhost:8378/1/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }, (err, res, body) => {
+        Parse.User.become(body.sessionToken)
+        .then(user => {
+          let obj = new Parse.Object('TestObject');
+          obj.setACL(new Parse.ACL(user));
+          return obj.save()
+          .then(() => {
+            // Change password, revoking session
+            user.set('username', 'no longer anonymous');
+            user.set('password', 'password');
+            return user.save()
+          })
+          .then(() => obj.fetch())
+          // fetch should succeed as we still have our session token
+          .then(done, fail);
         })
-        .then(() => obj.fetch())
-        // fetch should succeed as we still have our session token
-        .then(done, fail);
-      })
+      });
     });
   })
 });

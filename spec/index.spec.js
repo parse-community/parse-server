@@ -10,9 +10,10 @@ const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageA
 
 describe('server', () => {
   it('requires a master key and app id', done => {
-    expect(setServerConfiguration.bind(undefined, {  })).toThrow('You must provide an appId!');
-    expect(setServerConfiguration.bind(undefined, { appId: 'myId' })).toThrow('You must provide a masterKey!');
-    expect(setServerConfiguration.bind(undefined, { appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');
+    fail('TODO: figrue out async');
+    /*expect(() => reconfigureServer({})).toThrow('You must provide an appId!');
+    expect(() => reconfigureServer({ appId: 'myId' })).toThrow('You must provide a masterKey!');
+    expect(() => reconfigureServer({ appId: 'myId', masterKey: 'mk' })).toThrow('You must provide a serverURL!');*/
     done();
   });
 
@@ -41,49 +42,31 @@ describe('server', () => {
   });
 
   it('fails if database is unreachable', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      databaseAdapter: new MongoStorageAdapter({
-        uri: 'mongodb://fake:fake@localhost:43605/drew3',
-      }),
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
-    });
-    //Need to use rest api because saving via JS SDK results in fail() not getting called
-    request.post({
-      url: 'http://localhost:8378/1/classes/NewClass',
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest',
-      },
-      body: {},
-      json: true,
-    }, (error, response, body) => {
-      expect(response.statusCode).toEqual(500);
-      expect(body.code).toEqual(1);
-      expect(body.message).toEqual('Internal server error.');
-      done();
+    reconfigureServer({
+      databaseAdapter: new MongoStorageAdapter({ uri: 'mongodb://fake:fake@localhost:43605/drew3' }),
+    })
+    .then(() => {
+      //Need to use rest api because saving via JS SDK results in fail() not getting called
+      request.post({
+        url: 'http://localhost:8378/1/classes/NewClass',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        body: {},
+        json: true,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(500);
+        expect(body.code).toEqual(1);
+        expect(body.message).toEqual('Internal server error.');
+        done();
+      });
     });
   });
 
   it('can load email adapter via object', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
@@ -91,22 +74,12 @@ describe('server', () => {
         domain: 'd',
       }),
       publicServerURL: 'http://localhost:8378/1'
-    });
-    done();
+    }).then(done, fail);
   });
 
   it('can load email adapter via class', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         class: MockEmailAdapterWithOptions,
@@ -117,22 +90,12 @@ describe('server', () => {
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    });
-    done();
+    }).then(done, fail);
   });
 
   it('can load email adapter via module name', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         module: 'parse-server-simple-mailgun-adapter',
@@ -143,12 +106,12 @@ describe('server', () => {
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    });
-    done();
+    }).then(done, fail);
   });
 
   it('can load email adapter via only module name', done => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async');
+    /*expect(() => reconfigureServer({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -162,12 +125,13 @@ describe('server', () => {
       verifyUserEmails: true,
       emailAdapter: 'parse-server-simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');*/
     done();
   });
 
   it('throws if you initialize email adapter incorrecly', done => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async');
+    /*expect(() => setServerConfiguration({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -186,7 +150,7 @@ describe('server', () => {
         }
       },
       publicServerURL: 'http://localhost:8378/1'
-    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+    })).toThrow('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');*/
     done();
   });
 
@@ -210,27 +174,31 @@ describe('server', () => {
       appId: "aTestApp",
       masterKey: "aTestMasterKey",
       serverURL: "http://localhost:12666/parse",
+      __indexBuildCompletionCallbackForTests: promise => {
+        promise
+        .then(() => {
+          expect(Parse.applicationId).toEqual("aTestApp");
+          var app = express();
+          app.use('/parse', parseServer.app);
+
+          var server = app.listen(12666);
+          var obj  = new Parse.Object("AnObject");
+          var objId;
+          obj.save().then((obj) => {
+            objId = obj.id;
+            var q = new Parse.Query("AnObject");
+            return q.first();
+          }).then((obj) => {
+            expect(obj.id).toEqual(objId);
+            server.close();
+            done();
+          }).fail((err) => {
+            server.close();
+            done();
+          })
+        });
+      },
     });
-
-    expect(Parse.applicationId).toEqual("aTestApp");
-    var app = express();
-    app.use('/parse', parseServer.app);
-
-    var server = app.listen(12666);
-    var obj  = new Parse.Object("AnObject");
-    var objId;
-    obj.save().then((obj) => {
-      objId = obj.id;
-      var q = new Parse.Query("AnObject");
-      return q.first();
-    }).then((obj) => {
-      expect(obj.id).toEqual(objId);
-      server.close();
-      done();
-    }).fail((err) => {
-      server.close();
-      done();
-    })
   });
 
   it('can create a parse-server', done => {
@@ -239,27 +207,31 @@ describe('server', () => {
       appId: "anOtherTestApp",
       masterKey: "anOtherTestMasterKey",
       serverURL: "http://localhost:12667/parse",
+      __indexBuildCompletionCallbackForTests: promise => {
+        promise
+        .then(() => {
+          expect(Parse.applicationId).toEqual("anOtherTestApp");
+          var app = express();
+          app.use('/parse', parseServer);
+
+          var server = app.listen(12667);
+          var obj  = new Parse.Object("AnObject");
+          var objId;
+          obj.save().then((obj) => {
+            objId = obj.id;
+            var q = new Parse.Query("AnObject");
+            return q.first();
+          }).then((obj) => {
+            expect(obj.id).toEqual(objId);
+            server.close();
+            done();
+          }).fail((err) => {
+            server.close();
+            done();
+          })
+        });
+      },
     });
-
-    expect(Parse.applicationId).toEqual("anOtherTestApp");
-    var app = express();
-    app.use('/parse', parseServer);
-
-    var server = app.listen(12667);
-    var obj  = new Parse.Object("AnObject");
-    var objId;
-    obj.save().then((obj) => {
-      objId = obj.id;
-      var q = new Parse.Query("AnObject");
-      return q.first();
-    }).then((obj) => {
-      expect(obj.id).toEqual(objId);
-      server.close();
-      done();
-    }).fail((err) => {
-      server.close();
-      done();
-    })
   });
 
   it('has createLiveQueryServer', done => {
@@ -278,43 +250,38 @@ describe('server', () => {
   });
 
   it('properly gives publicServerURL when set', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test',
-      publicServerURL: 'https://myserver.com/1'
+    reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
+    .then(() => {
+      var config = new Config('test', 'http://localhost:8378/1');
+      expect(config.mount).toEqual('https://myserver.com/1');
+      done();
     });
-    var config = new Config('test', 'http://localhost:8378/1');
-    expect(config.mount).toEqual('https://myserver.com/1');
-    done();
   });
 
   it('properly removes trailing slash in mount', done => {
-    setServerConfiguration({
-      ...defaultConfiguration,
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
-      masterKey: 'test'
+    reconfigureServer({})
+    .then(() => {
+      var config = new Config('test', 'http://localhost:8378/1/');
+      expect(config.mount).toEqual('http://localhost:8378/1');
+      done();
     });
-    var config = new Config('test', 'http://localhost:8378/1/');
-    expect(config.mount).toEqual('http://localhost:8378/1');
-    done();
   });
 
   it('should throw when getting invalid mount', done => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async')
+    /*expect(() => setServerConfiguration({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
       masterKey: 'test',
       publicServerURL: 'blabla:/some'
-    }) ).toThrow("publicServerURL should be a valid HTTPS URL starting with https://");
+    }) ).toThrow("publicServerURL should be a valid HTTPS URL starting with https://");*/
     done();
   });
 
   it('fails if the session length is not a number', (done) => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async')
+    /*expect(() => setServerConfiguration({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -322,12 +289,14 @@ describe('server', () => {
       javascriptKey: 'test',
       masterKey: 'test',
       sessionLength: 'test'
-    })).toThrow('Session length must be a valid number.');
+    })).toThrow('Session length must be a valid number.');*/
     done();
   });
 
   it('fails if the session length is less than or equal to 0', (done) => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async')
+
+    /*expect(() => setServerConfiguration({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -345,12 +314,13 @@ describe('server', () => {
       javascriptKey: 'test',
       masterKey: 'test',
       sessionLength: '0'
-    })).toThrow('Session length must be a value greater than 0.');
+    })).toThrow('Session length must be a value greater than 0.');*/
     done();
   });
 
   it('ignores the session length when expireInactiveSessions set to false', (done) => {
-    expect(() => setServerConfiguration({
+    fail('TODO: figure out async')
+    /*expect(() => setServerConfiguration({
       ...defaultConfiguration,
       serverURL: 'http://localhost:8378/1',
       appId: 'test',
@@ -370,12 +340,14 @@ describe('server', () => {
       masterKey: 'test',
       sessionLength: '0',
       expireInactiveSessions: false
-    })).not.toThrow();
+    })).not.toThrow();*/
     done();
   })
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
-    expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();
+    fail('TODO: figure out async')
+
+    /*expect(() => setServerConfiguration({ revokeSessionOnPasswordReset: 'non-bool' })).toThrow();*/
     done();
   });
 });
