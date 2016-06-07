@@ -129,9 +129,8 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    reconfigureServer({})
     // Remove existing data to clear out unique index
-    .then(TestUtils.destroyAllDataPermanently)
+    TestUtils.destroyAllDataPermanently()
     .then(() => {
       let adapter = new MongoStorageAdapter({
         uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
@@ -166,16 +165,12 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    reconfigureServer({})
     // Wipe out existing database with unique index so we can create a duplicate user
-    .then(TestUtils.destroyAllDataPermanently)
+    TestUtils.destroyAllDataPermanently()
     .then(() => {
-      let adapter = new MongoStorageAdapter({
-        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
-        collectionPrefix: 'test_',
-      });
-      adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
-      .then(() => adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+      let config = new Config('test');
+      config.database.adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
+      .then(() => config.database.adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
       .then(() => {
         let user = new Parse.User();
         user.setPassword('asdf');
