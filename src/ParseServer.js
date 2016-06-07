@@ -201,11 +201,6 @@ class ParseServer {
       return Promise.reject();
     })
 
-    if (process.env.TESTING) {
-      __indexBuildCompletionCallbackForTests(Promise.all([usernameUniqueness, emailUniqueness]));
-    }
-
-
     AppCache.put(appId, {
       masterKey: masterKey,
       serverURL: serverURL,
@@ -245,6 +240,11 @@ class ParseServer {
     Config.validate(AppCache.get(appId));
     this.config = AppCache.get(appId);
     hooksController.load();
+
+    // Note: Tests will start to fail if any validation happens after this is called.
+    if (process.env.TESTING) {
+      __indexBuildCompletionCallbackForTests(Promise.all([usernameUniqueness, emailUniqueness]));
+    }
   }
 
   get app() {

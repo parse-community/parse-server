@@ -60,12 +60,16 @@ delete defaultConfiguration.cloud;
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
     let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-      __indexBuildCompletionCallbackForTests: promise => promise.then(resolve, reject),
+      __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
     });
     server.close();
     cache.clear();
     app = express();
-    api = new ParseServer(newConfiguration);
+    try {
+      api = new ParseServer(newConfiguration);
+    } catch(error) {
+      reject(error);
+    }
     app.use('/1', api);
     server = app.listen(port);
   });
@@ -84,17 +88,17 @@ beforeEach(done => {
     Parse.User.enableUnsafeCurrentUser();
   } catch (error) {
     if (error !== 'You need to call Parse.initialize before using Parse.') {
-      console.log(error);
       throw error;
     }
   }
   TestUtils.destroyAllDataPermanently()
   .catch(error => {
     // For tests that connect to their own mongo, there won't be any data to delete.
-    if (error.message === 'ns not found') {
+    if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
       return;
     } else {
-      throw error;
+      fail(error);
+      return;
     }
   })
   .then(() => reconfigureServer())
@@ -126,7 +130,9 @@ afterEach(function(done) {
     });
   })
   .then(() => Parse.User.logOut())
-  .then(done)
+  .then(() => {
+    done();
+  })
   .catch(error => {
     fail(JSON.stringify(error));
     done();

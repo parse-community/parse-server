@@ -54,24 +54,31 @@ export class Config {
     this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
   }
 
-  static validate(options) {
+  static validate({
+    verifyUserEmails,
+    appName,
+    publicServerURL,
+    revokeSessionOnPasswordReset,
+    expireInactiveSessions,
+    sessionLength,
+  }) {
     this.validateEmailConfiguration({
-      verifyUserEmails: options.verifyUserEmails,
-      appName: options.appName,
-      publicServerURL: options.publicServerURL
+      verifyUserEmails: verifyUserEmails,
+      appName: appName,
+      publicServerURL: publicServerURL
     })
 
-    if (typeof options.revokeSessionOnPasswordReset !== 'boolean') {
+    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
     }
 
-    if (options.publicServerURL) {
-      if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
+    if (publicServerURL) {
+      if (!publicServerURL.startsWith("http://") && !publicServerURL.startsWith("https://")) {
         throw "publicServerURL should be a valid HTTPS URL starting with https://"
       }
     }
 
-    this.validateSessionConfiguration(options.sessionLength, options.expireInactiveSessions);
+    this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
   }
 
   static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {

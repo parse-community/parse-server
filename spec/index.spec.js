@@ -265,16 +265,16 @@ describe('server', () => {
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' })
-    .then(error => {
+    .catch(error => {
       expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
       done();
-    });
+    })
   });
 
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
     .catch(error => {
-      express(error).toEqual('Session length must be a valid number.');
+      expect(error).toEqual('Session length must be a valid number.');
       done();
     });
   });
