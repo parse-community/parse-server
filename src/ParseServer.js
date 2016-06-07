@@ -122,6 +122,7 @@ class ParseServer {
     expireInactiveSessions = true,
     verbose = false,
     revokeSessionOnPasswordReset = true,
+    hooksRefreshIntervalMs = 0,
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -210,7 +211,16 @@ class ParseServer {
 
     Config.validate(AppCache.get(appId));
     this.config = AppCache.get(appId);
-    hooksController.load();
+    if (hooksRefreshIntervalMs > 0) {
+      (function repeat() {
+        setTimeout(() => {
+          hooksController.reset();
+          repeat();
+        } , hooksRefreshIntervalMs);
+      })();
+    } else {
+      hooksController.reset();
+    }
   }
 
   get app() {
