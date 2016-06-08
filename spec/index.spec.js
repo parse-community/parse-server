@@ -182,11 +182,9 @@ describe('server', () => {
             return q.first();
           }).then((obj) => {
             expect(obj.id).toEqual(objId);
-            server.close();
-            done();
+            server.close(done);
           }).fail((err) => {
-            server.close();
-            done();
+            server.close(done);
           })
         });
       },
@@ -219,8 +217,7 @@ describe('server', () => {
         })
         .then(obj => {
           expect(obj.id).toEqual(objId);
-          server.close();
-          done();
+          server.close(done);
         })
         .catch(error => {
           fail(JSON.stringify(error))

@@ -36,7 +36,7 @@ var defaultConfiguration = {
       cert: 'prodCert.pem',
       key: 'prodKey.pem',
       production: true,
-      bundleId: 'bundleId'
+      bundleId: 'bundleId',
     }
   },
   oauth: { // Override the facebook provider
@@ -59,19 +59,21 @@ delete defaultConfiguration.cloud;
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-      __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
+    server.close(() => {
+      try {
+        let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+          __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
+        });
+        cache.clear();
+        app = express();
+        api = new ParseServer(newConfiguration);
+        app.use('/1', api);
+        var newServer = app.listen(port);
+        server = newServer;
+      } catch(error) {
+        reject(error);
+      }
     });
-    server.close();
-    cache.clear();
-    app = express();
-    try {
-      api = new ParseServer(newConfiguration);
-    } catch(error) {
-      reject(error);
-    }
-    app.use('/1', api);
-    server = app.listen(port);
   });
 }
 
