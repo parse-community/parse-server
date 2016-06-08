@@ -161,8 +161,8 @@ describe('server', () => {
   });
 
   it('can create a parse-server v1', done => {
-    var parseServer = new ParseServer.default({
-      ...defaultConfiguration,
+    var parseServer = new ParseServer.default(Object.assign({},
+      defaultConfiguration, {
       appId: "aTestApp",
       masterKey: "aTestMasterKey",
       serverURL: "http://localhost:12666/parse",
@@ -187,15 +187,15 @@ describe('server', () => {
             server.close(done);
           })
         });
-      },
-    });
+      }})
+    );
   });
 
   it('can create a parse-server v2', done => {
     let objId;
     let server
-    let parseServer = ParseServer.ParseServer({
-      ...defaultConfiguration,
+    let parseServer = ParseServer.ParseServer(Object.assign({},
+      defaultConfiguration, {
       appId: "anOtherTestApp",
       masterKey: "anOtherTestMasterKey",
       serverURL: "http://localhost:12667/parse",
@@ -223,8 +223,8 @@ describe('server', () => {
           fail(JSON.stringify(error))
           done();
         });
-      },
-    });
+      }}
+    );
   });
 
   it('has createLiveQueryServer', done => {
