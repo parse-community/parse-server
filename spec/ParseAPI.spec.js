@@ -252,8 +252,8 @@ describe('miscellaneous', function() {
       return Parse.User.logIn('test', 'moon-y');
     }).then((user) => {
       expect(user.get('foo')).toEqual(2);
-      Parse.User.logOut();
-      done();
+      Parse.User.logOut()
+      .then(done);
     }, (error) => {
       fail(error);
       done();
@@ -371,8 +371,8 @@ describe('miscellaneous', function() {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail(err => {
-      fail(err);
+    }).fail(error => {
+      fail(JSON.stringify(error));
       done();
     })
   });
