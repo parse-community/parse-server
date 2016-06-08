@@ -22,6 +22,7 @@ export class Config {
     }
 
     this.applicationId = applicationId;
+    this.jsonLogs = cacheInfo.jsonLogs;
     this.masterKey = cacheInfo.masterKey;
     this.clientKey = cacheInfo.clientKey;
     this.javascriptKey = cacheInfo.javascriptKey;

@@ -69,6 +69,7 @@ const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Defau
 //                 and delete
 // "loggerAdapter": a class like FileLoggerAdapter providing info, error,
 //                 and query
+// "jsonLogs": log as structured JSON objects
 // "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
 //          what database this Parse API connects to.
 // "cloud": relative location to cloud code to require, or a function
@@ -98,6 +99,7 @@ class ParseServer {
     filesAdapter,
     push,
     loggerAdapter,
+    jsonLogs,
     logsFolder,
     databaseURI,
     databaseOptions,
@@ -155,9 +157,7 @@ class ParseServer {
     }
 
     if (logsFolder) {
-      configureLogger({
-        logsFolder
-      })
+      configureLogger({logsFolder, jsonLogs});
     }
 
     if (cloud) {
@@ -172,7 +172,7 @@ class ParseServer {
     }
 
     if (verbose || process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
-      configureLogger({level: 'silly'});
+      configureLogger({level: 'silly', jsonLogs});
     }
 
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
@@ -215,6 +215,7 @@ class ParseServer {
     })
 
     AppCache.put(appId, {
+      appId,
       masterKey: masterKey,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
@@ -242,6 +243,7 @@ class ParseServer {
       liveQueryController: liveQueryController,
       sessionLength: Number(sessionLength),
       expireInactiveSessions: expireInactiveSessions,
+      jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
     });
@@ -265,7 +267,7 @@ class ParseServer {
     return ParseServer.app(this.config);
   }
 
-  static app({maxUploadSize = '20mb'}) {
+  static app({maxUploadSize = '20mb', appId}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
     var api = express();
@@ -312,7 +314,7 @@ class ParseServer {
       return memo.concat(router.routes);
     }, []);
 
-    let appRouter = new PromiseRouter(routes);
+    let appRouter = new PromiseRouter(routes, appId);
 
     batch.mountOnto(appRouter);
 

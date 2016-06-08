@@ -59,7 +59,7 @@ describe('verbose logs', () => {
         level: 'verbose'
       });
     }).then((results) => {
-      expect(results[1].message.includes('"password": "********"')).toEqual(true);
+      expect(results[1].body.password).toEqual("********");
       var headers = {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
@@ -74,7 +74,7 @@ describe('verbose logs', () => {
           size: 100,
           level: 'verbose'
         }).then((results) => {
-          expect(results[1].message.includes('password=********')).toEqual(true);
+          expect(results[1].url.includes('password=********')).toEqual(true);
           done();
         });
       });
@@ -92,7 +92,7 @@ describe('verbose logs', () => {
         level: 'verbose'
       });
     }).then((results) => {
-      expect(results[1].message.includes('"password": "pw"')).toEqual(true);
+      expect(results[1].body.password).toEqual("pw");
       done();
     });
   });
