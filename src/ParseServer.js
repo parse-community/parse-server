@@ -148,6 +148,10 @@ class ParseServer {
       databaseAdapter = loadAdapter(databaseAdapter)
     }
 
+    if (!filesAdapter && !databaseURI) {
+      throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
+    }
+
     if (logsFolder) {
       configureLogger({
         logsFolder
