@@ -47,11 +47,19 @@ var defaultConfiguration = {
   },
 };
 
+let openConnections = {};
+
 // Set up a default API server for testing with default configuration.
 var api = new ParseServer(defaultConfiguration);
 var app = express();
 app.use('/1', api);
+
 var server = app.listen(port);
+server.on('connection', connection => {
+  let key = `${connection.remoteAddress}:${connection.remotePort}`;
+  openConnections[key] = connection;
+  connection.on('close', () => { delete openConnections[key] });
+});
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
@@ -65,7 +73,13 @@ const reconfigureServer = changedConfiguration => {
         app = express();
         api = new ParseServer(newConfiguration);
         app.use('/1', api);
+
         server = app.listen(port);
+        server.on('connection', connection => {
+          let key = `${connection.remoteAddress}:${connection.remotePort}`;
+          openConnections[key] = connection;
+          connection.on('close', () => { delete openConnections[key] });
+        });
       } catch(error) {
         reject(error);
       }
@@ -129,6 +143,9 @@ afterEach(function(done) {
   })
   .then(() => Parse.User.logOut())
   .then(() => {
+    if (Object.keys(openConnections).length > 0) {
+      fail('There were open connections to the server left after the test finished');
+    }
     done();
   })
   .catch(error => {
