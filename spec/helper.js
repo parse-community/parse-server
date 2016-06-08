@@ -53,9 +53,6 @@ var app = express();
 app.use('/1', api);
 var server = app.listen(port);
 
-// Prevent reinitializing the server from clobbering Cloud Code
-delete defaultConfiguration.cloud;
-
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
