@@ -265,6 +265,10 @@ describe("Email Verification", () => {
         expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
         done();
       });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
     });
   });
 

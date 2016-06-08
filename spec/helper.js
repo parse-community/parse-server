@@ -35,8 +35,8 @@ let gridStoreAdapter = new GridStoreAdapter(mongoURI);
 var defaultConfiguration = {
   filesAdapter: gridStoreAdapter,
   serverURL: 'http://localhost:' + port + '/1',
-  databaseAdapter: mongoAdapter,
   databaseAdapter: postgresAdapter,
+  databaseAdapter: mongoAdapter,
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',

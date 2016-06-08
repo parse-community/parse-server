@@ -95,7 +95,6 @@ class ParseServer {
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
     filesAdapter,
-    databaseAdapter,
     push,
     loggerAdapter,
     logsFolder,
@@ -194,13 +193,13 @@ class ParseServer {
     const databaseController = new DatabaseController(databaseAdapter);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
-    let usernameUniqueness = databaseController.adapter.ensureUniqueness('_User', ['username'], requiredUserFields)
+    let usernameUniqueness = databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['username'])
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
       return Promise.reject();
     });
 
-    let emailUniqueness = databaseController.adapter.ensureUniqueness('_User', ['email'], requiredUserFields)
+    let emailUniqueness = databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
     .catch(error => {
       logger.warn('Unabled to ensure uniqueness for user email addresses: ', error);
       return Promise.reject();
