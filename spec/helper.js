@@ -13,7 +13,6 @@ var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 
-
 var port = 8378;
 
 let mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
