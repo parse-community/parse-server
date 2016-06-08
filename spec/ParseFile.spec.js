@@ -491,7 +491,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('creates correct url for old files hosted on parse', done => {
+  it('creates correct url for old files hosted on files.parsetfss.com', done => {
     var file = {
       __type: 'File',
       url: 'http://irrelevant.elephant/',
@@ -506,6 +506,26 @@ describe('Parse.File testing', () => {
       var fileAgain = result.get('oldfile');
       expect(fileAgain.url()).toEqual(
         'http://files.parsetfss.com/test/tfss-123.txt'
+      );
+      done();
+    });
+  });
+
+  it('creates correct url for old files hosted on files.parse.com', done => {
+    var file = {
+      __type: 'File',
+      url: 'http://irrelevant.elephant/',
+      name: 'd6e80979-a128-4c57-a167-302f874700dc-123.txt'
+    };
+    var obj = new Parse.Object('OldFileTest');
+    obj.set('oldfile', file);
+    obj.save().then(() => {
+      var query = new Parse.Query('OldFileTest');
+      return query.first();
+    }).then((result) => {
+      var fileAgain = result.get('oldfile');
+      expect(fileAgain.url()).toEqual(
+        'http://files.parse.com/test/d6e80979-a128-4c57-a167-302f874700dc-123.txt'
       );
       done();
     });
