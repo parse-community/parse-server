@@ -41,6 +41,7 @@
     "redis": "^2.5.0-1",
     "request": "^2.65.0",
     "request-promise": "^3.0.0",
+    "server-destroy": "^1.0.1",
     "tv4": "^1.2.7",
     "winston": "^2.1.1",
     "winston-daily-rotate-file": "^1.0.1",

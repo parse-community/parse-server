@@ -11,6 +11,7 @@ var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const enableDestroy = require('server-destroy');
 
 var port = 8378;
 
@@ -52,6 +53,7 @@ var api = new ParseServer(defaultConfiguration);
 var app = express();
 app.use('/1', api);
 var server = app.listen(port);
+enableDestroy(server);
 
 // Prevent reinitializing the server from clobbering Cloud Code
 delete defaultConfiguration.cloud;
@@ -59,7 +61,7 @@ delete defaultConfiguration.cloud;
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    server.close(() => {
+    server.destroy(() => {
       try {
         let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
           __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
@@ -68,8 +70,8 @@ const reconfigureServer = changedConfiguration => {
         app = express();
         api = new ParseServer(newConfiguration);
         app.use('/1', api);
-        var newServer = app.listen(port);
-        server = newServer;
+        server = app.listen(port);
+        enableDestroy(server);
       } catch(error) {
         reject(error);
       }
