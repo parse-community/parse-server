@@ -224,7 +224,7 @@ describe('server', () => {
           done();
         });
       }}
-    );
+    ));
   });
 
   it('has createLiveQueryServer', done => {
