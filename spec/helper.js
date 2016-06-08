@@ -59,7 +59,7 @@ delete defaultConfiguration.cloud;
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    server.close(() => {
+    const startNewServer = () => {
       try {
         let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
           __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
@@ -72,7 +72,8 @@ const reconfigureServer = changedConfiguration => {
       } catch(error) {
         reject(error);
       }
-    });
+    }
+    server.close(startNewServer);
   });
 }
 
