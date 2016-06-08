@@ -1,3 +1,4 @@
+'use strict'
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
