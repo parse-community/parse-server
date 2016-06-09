@@ -15,17 +15,21 @@ var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAda
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
-var mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-var mongoAdapter = new MongoStorageAdapter({
-  uri: mongoURI,
-  collectionPrefix: 'test_',
-})
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+let databaseAdapter;
+if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+  var postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+  databaseAdapter = new PostgresStorageAdapter({
+    uri: postgresURI,
+    collectionPrefix: 'test_',
+  });
+} else {
+  databaseAdapter = new MongoStorageAdapter({
+    uri: mongoURI,
+    collectionPrefix: 'test_',
+  })
+}
 
-var postgresURI = 'postgres://localhost:5432/drewgross';
-var postgresAdapter = new PostgresStorageAdapter({
-  uri: postgresURI,
-  collectionPrefix: 'test_',
-});
 
 var port = 8378;
 
@@ -35,8 +39,7 @@ let gridStoreAdapter = new GridStoreAdapter(mongoURI);
 var defaultConfiguration = {
   filesAdapter: gridStoreAdapter,
   serverURL: 'http://localhost:' + port + '/1',
-  databaseAdapter: postgresAdapter,
-  databaseAdapter: mongoAdapter,
+  databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',

@@ -13,7 +13,7 @@ var TestUtils = require('../src/index').TestUtils;
 const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
 describe('miscellaneous', function() {
-  it('create a GameScore object', function(done) {
+  fit('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
     obj.set('score', 1337);
     obj.save().then(function(obj) {

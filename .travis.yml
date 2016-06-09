@@ -2,7 +2,15 @@ language: node_js
 node_js:
 - '4.3'
 - '6.1'
+services:
+- postgresql
+addons:
+- postgresql: '9.5'
+before_script:
+- psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
+  - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_DB=mongodb
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
   matrix:

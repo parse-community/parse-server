@@ -242,6 +242,7 @@ export class PostgresStorageAdapter {
   // which is why we use sparse indexes.
   ensureUniqueness(className, schema, fieldNames) {
     console.log('ensureUniqueness(className, schema, fieldNames) {')
+    return Promise.resolve();
     let indexCreationRequest = {};
     let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
     mongoFieldNames.forEach(fieldName => {
