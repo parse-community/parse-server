@@ -6,6 +6,29 @@ var express = require('express'),
 
 import PromiseRouter from '../PromiseRouter';
 
+function parseDate(params) {
+  for (let key in params) {
+    if (params.hasOwnProperty(key)) {
+      let value = params[key];
+      if (Array.isArray(value)) {
+        params[key] = value.map((item) => {
+          if (item && item.__type == 'Date') {
+            return new Date(item.iso);
+          } else if (typeof item === 'object') {
+            return parseDate(item);
+          }
+          return item;
+        });
+      } else if (value && value.__type == 'Date') {
+        params[key] = new Date(value.iso);
+      } else if (typeof value === 'object') {
+        params[key] = parseDate(value);
+      }
+    }
+  }
+  return params;
+}
+
 export class FunctionsRouter extends PromiseRouter {
 
   mountRoutes() {
@@ -36,15 +59,8 @@ export class FunctionsRouter extends PromiseRouter {
     var theFunction = triggers.getFunction(req.params.functionName, applicationId);
     var theValidator = triggers.getValidator(req.params.functionName, applicationId);
     if (theFunction) {
-      const params = Object.assign({}, req.body, req.query);
-      for (var key in params) {
-        if (params.hasOwnProperty(key)) {
-          var value = params[key];
-          if (value && value.__type == 'Date') {
-            params[key] = new Date(value.iso);
-          }
-        }
-      }
+      let params = Object.assign({}, req.body, req.query);
+      params = parseDate(params);
       var request = {
         params: params,
         master: req.auth && req.auth.isMaster,
@@ -73,4 +89,3 @@ export class FunctionsRouter extends PromiseRouter {
     }
   }
 }
-
