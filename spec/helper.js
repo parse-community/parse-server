@@ -143,7 +143,7 @@ beforeEach(done => {
 
 afterEach(function(done) {
   Parse.Cloud._removeAllHooks();
-  mongoAdapter.getAllClasses()
+  databaseAdapter.getAllClasses()
   .then(allSchemas => {
     allSchemas.forEach((schema) => {
       var className = schema.className;
