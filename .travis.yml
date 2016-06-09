@@ -2,11 +2,10 @@ language: node_js
 node_js:
 - '4.3'
 - '6.1'
-sudo: required
 services:
   - postgresql
 before_script:
-  - psql -c 'create database parse_server_postgres_adapter_test_database;'
+  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
