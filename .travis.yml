@@ -3,7 +3,7 @@ node_js:
 - '4.3'
 - '6.1'
 services:
-- postgresql
+  - postgresql
 addons:
   postgresql: '9.5'
 before_script:
