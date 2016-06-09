@@ -17,7 +17,7 @@ env:
 matrix:
   fast_finish: true,
   allow_failures:
-    - PARSE_SERVER_TEST_DB=postgres
+    - env: PARSE_SERVER_TEST_DB=postgres
 branches:
   only:
   - master
