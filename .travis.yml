@@ -15,6 +15,14 @@ env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
+matrix:
+  exclude:
+  - PARSE_SERVER_TEST_DB=postgres
+    MONGODB_VERSION=2.6.11
+  - PARSE_SERVER_TEST_DB=postgres
+    MONGODB_VERSION=3.0.8
+  - PARSE_SERVER_TEST_DB=postgres
+    MONGODB_VERSION=3.2.6
 branches:
   only:
   - master
