@@ -5,28 +5,28 @@ var express = require('express'),
     triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
+import _ from 'lodash';
 
 function parseDate(params) {
-  for (let key in params) {
-    if (params.hasOwnProperty(key)) {
-      let value = params[key];
-      if (Array.isArray(value)) {
-        params[key] = value.map((item) => {
-          if (item && item.__type == 'Date') {
-            return new Date(item.iso);
-          } else if (typeof item === 'object') {
-            return parseDate(item);
-          }
+  return _.mapValues(params, (obj) => {
+    if (Array.isArray(obj)) {
+      return obj.map((item) => {
+        if (item && item.__type == 'Date') {
+          return new Date(item.iso);
+        } else if (item && typeof item === 'object') {
+          return parseDate(item);
+        } else {
           return item;
-        });
-      } else if (value && value.__type == 'Date') {
-        params[key] = new Date(value.iso);
-      } else if (typeof value === 'object') {
-        params[key] = parseDate(value);
-      }
+        }
+      });
+    } else if (obj && obj.__type == 'Date') {
+      return new Date(obj.iso);
+    } else if (obj && typeof obj === 'object') {
+      return parseDate(obj);
+    } else {
+      return obj;
     }
-  }
-  return params;
+  });
 }
 
 export class FunctionsRouter extends PromiseRouter {
