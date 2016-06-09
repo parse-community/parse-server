@@ -316,6 +316,63 @@ describe('Cloud Code', () => {
     });
   });
 
+  it('test cloud function request params types', function(done) {
+    Parse.Cloud.define('params', function(req, res) {
+      expect(req.params.date instanceof Date).toBe(true);
+      expect(req.params.date.getTime()).toBe(1463907600000);
+      expect(req.params.dateList[0] instanceof Date).toBe(true);
+      expect(req.params.dateList[0].getTime()).toBe(1463907600000);
+      expect(req.params.complexStructure.date[0] instanceof Date).toBe(true);
+      expect(req.params.complexStructure.date[0].getTime()).toBe(1463907600000);
+      expect(req.params.complexStructure.deepDate.date[0] instanceof Date).toBe(true);
+      expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
+      expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
+      expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
+      return res.success({});
+    });
+
+    let params = {
+      'date': {
+        '__type': 'Date',
+        'iso': '2016-05-22T09:00:00.000Z'
+      },
+      'dateList': [
+        {
+          '__type': 'Date',
+          'iso': '2016-05-22T09:00:00.000Z'
+        }
+      ],
+      'lol': 'hello',
+      'complexStructure': {
+        'date': [
+          {
+            '__type': 'Date',
+            'iso': '2016-05-22T09:00:00.000Z'
+          }
+        ],
+        'deepDate': {
+          'date': [
+            {
+              '__type': 'Date',
+              'iso': '2016-05-22T09:00:00.000Z'
+            }
+          ]
+        },
+        'deepDate2': [
+          {
+            'date': {
+              '__type': 'Date',
+              'iso': '2016-05-22T09:00:00.000Z'
+            }
+          }
+        ]
+      }
+    };
+    Parse.Cloud.run('params', params).then((result) => {
+      done();
+    });
+  });
+
   it('test cloud function should echo keys', function(done) {
     Parse.Cloud.define('echoKeys', function(req, res){
       return res.success({
