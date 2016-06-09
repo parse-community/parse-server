@@ -14,6 +14,10 @@ env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
+matrix:
+  fast_finish: true,
+  allow_failures:
+    - PARSE_SERVER_TEST_DB=postgres
 branches:
   only:
   - master
