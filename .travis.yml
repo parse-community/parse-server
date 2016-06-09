@@ -7,7 +7,7 @@ services:
 addons:
   postgresql: '9.5'
 before_script:
-- psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
+- psql -c 'create database parse_server_postgres_adapter_test_database;'
 env:
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
