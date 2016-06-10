@@ -54,7 +54,7 @@ describe('MongoStorageAdapter', () => {
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
-      expect(typeof obj._id).toEqual('string');
+      expect(obj._id).toEqual('abcde');
       expect(obj.objectId).toBeUndefined();
       done();
     });

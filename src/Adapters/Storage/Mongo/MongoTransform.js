@@ -273,11 +273,12 @@ const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue,
 
 // Main exposed method to create new objects.
 // restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
+const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
   }
-  var mongoCreate = transformACL(restCreate);
+  restCreate = addLegacyACL(restCreate);
+  let mongoCreate = {}
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
       className,
@@ -298,18 +299,18 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
     restUpdate = transformAuthData(restUpdate);
   }
 
-  var mongoUpdate = {};
-  var acl = transformACL(restUpdate);
-  if (acl._rperm || acl._wperm || acl._acl) {
-    mongoUpdate['$set'] = {};
+  let mongoUpdate = {};
+  let acl = addLegacyACL(restUpdate)._acl;
+  if (acl) {
+    mongoUpdate.$set = {};
     if (acl._rperm) {
-      mongoUpdate['$set']['_rperm'] = acl._rperm;
+      mongoUpdate.$set._rperm = acl._rperm;
     }
     if (acl._wperm) {
-      mongoUpdate['$set']['_wperm'] = acl._wperm;
+      mongoUpdate.$set._wperm = acl._wperm;
     }
     if (acl._acl) {
-      mongoUpdate['$set']['_acl'] = acl._acl;
+      mongoUpdate.$set._acl = acl._acl;
     }
   }
   for (var restKey in restUpdate) {
@@ -347,66 +348,34 @@ function transformAuthData(restObject) {
   return restObject;
 }
 
-// Transforms a REST API formatted ACL object to our two-field mongo format.
-// This mutates the restObject passed in to remove the ACL key.
-function transformACL(restObject) {
-  var output = {};
-  if (!restObject['ACL']) {
-    return output;
-  }
-  var acl = restObject['ACL'];
-  var rperm = [];
-  var wperm = [];
-  var _acl = {}; // old format
+// Add the legacy _acl format.
+const addLegacyACL = restObject => {
+  let restObjectCopy = {...restObject};
+  let _acl = {};
 
-  for (var entry in acl) {
-    if (acl[entry].read) {
-      rperm.push(entry);
-      _acl[entry] = _acl[entry] || {};
-      _acl[entry]['r'] = true;
-    }
-    if (acl[entry].write) {
-      wperm.push(entry);
-      _acl[entry] = _acl[entry] || {};
-      _acl[entry]['w'] = true;
-    }
+  if (restObject._wperm) {
+    restObject._wperm.forEach(entry => {
+      _acl[entry] = { w: true };
+    });
   }
-  output._rperm = rperm;
-  output._wperm = wperm;
-  output._acl = _acl;
-  delete restObject.ACL;
-  return output;
+
+  if (restObject._rperm) {
+    restObject._rperm.forEach(entry => {
+      if (!(entry in _acl)) {
+        _acl[entry] = { r: true };
+      } else {
+        _acl[entry].r = true;
+      }
+    });
+  }
+
+  if (Object.keys(_acl).length > 0) {
+    restObjectCopy._acl = _acl;
+  }
+
+  return restObjectCopy;
 }
 
-// Transforms a mongo format ACL to a REST API format ACL key
-// This mutates the mongoObject passed in to remove the _rperm/_wperm keys
-function untransformACL(mongoObject) {
-  var output = {};
-  if (!mongoObject['_rperm'] && !mongoObject['_wperm']) {
-    return output;
-  }
-  var acl = {};
-  var rperm = mongoObject['_rperm'] || [];
-  var wperm = mongoObject['_wperm'] || [];
-  rperm.map((entry) => {
-    if (!acl[entry]) {
-      acl[entry] = {read: true};
-    } else {
-      acl[entry]['read'] = true;
-    }
-  });
-  wperm.map((entry) => {
-    if (!acl[entry]) {
-      acl[entry] = {write: true};
-    } else {
-      acl[entry]['write'] = true;
-    }
-  });
-  output['ACL'] = acl;
-  delete mongoObject._rperm;
-  delete mongoObject._wperm;
-  return output;
-}
 
 // A sentinel value that helper transformations return when they
 // cannot perform a transformation
@@ -752,7 +721,14 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    var restObject = untransformACL(mongoObject);
+    let restObject = {};
+    if (mongoObject._rperm || mongoObject._wperm) {
+      restObject._rperm = mongoObject._rperm || [];
+      restObject._wperm = mongoObject._wperm || [];
+      delete mongoObject._rperm;
+      delete mongoObject._wperm;
+    }
+
     for (var key in mongoObject) {
       switch(key) {
       case '_id':

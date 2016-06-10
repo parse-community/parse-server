@@ -24,6 +24,27 @@ function addReadACL(query, acl) {
   return newQuery;
 }
 
+// Transforms a REST API formatted ACL object to our two-field mongo format.
+const transformObjectACL = restObject => {
+  let { ACL, ...result } = restObject;
+  if (!ACL) {
+    return result;
+  }
+
+  result._wperm = [];
+  result._rperm = [];
+
+  for (let entry in ACL) {
+    if (ACL[entry].read) {
+      result._rperm.push(entry);
+    }
+    if (ACL[entry].write) {
+      result._wperm.push(entry);
+    }
+  }
+  return result;
+}
+
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token'];
 const validateQuery = query => {
   if (query.ACL) {
@@ -218,6 +239,7 @@ DatabaseController.prototype.update = function(className, query, update, {
             throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
           }
         }
+        update = transformObjectACL(update);
         if (many) {
           return this.adapter.updateObjectsByQuery(className, query, schema, update);
         } else if (upsert) {
@@ -384,7 +406,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
 DatabaseController.prototype.create = function(className, object, { acl } = {}) {
   // Make a copy of the object, so we don't mutate the incoming data.
   let originalObject = object;
-  object = deepcopy(object);
+  object = transformObjectACL(object);
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
@@ -680,12 +702,39 @@ DatabaseController.prototype.find = function(className, query, {
           return this.adapter.count(className, query, schema);
         } else {
           return this.adapter.find(className, query, schema, { skip, limit, sort })
-          .then(objects => objects.map(object => filterSensitiveData(isMaster, aclGroup, className, object)));
+          .then(objects => objects.map(object => {
+            object = untransformObjectACL(object);
+            return filterSensitiveData(isMaster, aclGroup, className, object)
+          }));
         }
       });
     });
   });
 };
+
+// Transforms a Database format ACL to a REST API format ACL
+const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
+  if (_rperm || _wperm) {
+    output.ACL = {};
+
+    (_rperm || []).forEach(entry => {
+      if (!output.ACL[entry]) {
+        output.ACL[entry] = { read: true };
+      } else {
+        output.ACL[entry]['read'] = true;
+      }
+    });
+
+    (_wperm || []).forEach(entry => {
+      if (!output.ACL[entry]) {
+        output.ACL[entry] = { write: true };
+      } else {
+        output.ACL[entry]['write'] = true;
+      }
+    });
+  }
+  return output;
+}
 
 DatabaseController.prototype.deleteSchema = function(className) {
   return this.collectionExists(className)
