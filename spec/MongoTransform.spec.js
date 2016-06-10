@@ -16,6 +16,15 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('an object with null values', (done) => {
+    var input = {objectWithNullValues: {isNull: null, notNull: 3}};
+    var output = transform.parseObjectToMongoObjectForCreate(null, input, {
+      fields: {objectWithNullValues: {type: 'object'}}
+    });
+    jequal(input, output);
+    done();
+  });
+
   it('built-in timestamps', (done) => {
     var input = {
       createdAt: "2015-10-06T21:24:50.332Z",
