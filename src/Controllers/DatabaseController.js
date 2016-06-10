@@ -400,7 +400,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, schema, object))
+    .then(schema => this.adapter.createObject(className, SchemaController.convertSchemaToAdapterSchema(schema), object))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };
