@@ -223,6 +223,8 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
 const convertSchemaToAdapterSchema = schema => {
   schema = injectDefaultSchema(schema);
   delete schema.fields.ACL;
+  schema.fields._rperm = { type: 'Array' };
+  schema.fields._wperm = { type: 'Array' };
 
   if (schema.className === '_User') {
     delete schema.fields.password;
@@ -837,4 +839,5 @@ export {
   buildMergedSchemaObject,
   systemClasses,
   defaultColumns,
+  convertSchemaToAdapterSchema,
 };
