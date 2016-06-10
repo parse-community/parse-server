@@ -20,9 +20,12 @@ export class HooksController {
     this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).WithoutValidation();
   }
 
-  load() {
+  reset() {
     return this._getHooks().then(hooks => {
       hooks = hooks || [];
+      // addHookToTriggers must be synchronous to avoid valid hooks being undefined
+      // for a period of time
+      triggers._unregisterAll();
       hooks.forEach((hook) => {
         this.addHookToTriggers(hook);
       });

@@ -258,7 +258,7 @@ describe('Hooks', () => {
          expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).toBeUndefined();
        }
        const hooksController = new HooksController(Parse.applicationId);
-       return hooksController.load()
+       return hooksController.reset();
      }, (err) => {
        console.error(err);
        fail('Should properly create all hooks');
@@ -274,6 +274,53 @@ describe('Hooks', () => {
        fail('should properly load all hooks');
        done();
      })
+   });
+
+   it("should reset hooks when loading from db", (done) => {
+     const refreshInterval = 100;
+     setServerConfiguration(Object.assign({}, defaultConfiguration, {hooksRefreshIntervalMs: refreshInterval}));
+     const hooksController = new HooksController(Parse.applicationId);
+     // create initial set of hooks
+     Parse.Promise.when([
+       Parse.Hooks.createTrigger("RemovedTrigger", "beforeSave", "http://url.com/beforeSave/RemovedTrigger"),
+       Parse.Hooks.createFunction("RemovedFunction", "http://url.com/RemovedFunction"),
+       Parse.Hooks.createTrigger("UpdatedTrigger", "beforeSave", "http://url.com/beforeSave/NotUpdatedTrigger"),
+       Parse.Hooks.createFunction("UpdatedFunction", "http://url.com/NotUpdatedFunction"),
+     ]).then(results => {
+       // write hooks directly to db bypassing memory. This simulates a different ParseServer instance updating
+       // the db, and this instance attempting to reset at some later point in time.
+       return Parse.Promise.when([
+         hooksController._removeHooks({ className: "RemovedTrigger", triggerName: "beforeSave" }),
+         hooksController._removeHooks({ functionName: "RemovedFunction" }),
+         hooksController.saveHook({functionName: "UpdatedFunction", url:"http://url.com/UpdatedFunction"}),
+         hooksController.saveHook({className: "UpdatedTrigger", triggerName: "beforeSave", url: "http://url.com/beforeSave/UpdatedTrigger"}),
+         hooksController.saveHook({functionName: "CreatedFunction", url:"http://url.com/CreatedFunction"}),
+         hooksController.saveHook({className: "CreatedTrigger", triggerName: "beforeSave", url: "http://url.com/beforeSave/CreatedTrigger"}),
+       ]);
+     }).then(results => {
+       // wait for refresh interval to be hit
+       let promise = new Parse.Promise();
+       setTimeout(() => promise.resolve(), refreshInterval);
+       return promise;
+     }).then(_ => {
+       expect(triggers.getTrigger("RemovedTrigger", "beforeSave", Parse.applicationId)).toBeUndefined();
+       expect(triggers.getFunction("RemovedFunction", Parse.applicationId)).toBeUndefined();
+
+       let updatedTrigger = triggers.getTrigger("UpdatedTrigger", "beforeSave", Parse.applicationId);
+       expect(updatedTrigger).not.toBeUndefined();
+       expect(updatedTrigger.url).toEqual("http://url.com/beforeSave/UpdatedTrigger");
+       let updatedFunction = triggers.getFunction("UpdatedFunction", Parse.applicationId);
+       expect(updatedFunction).not.toBeUndefined();
+       expect(updatedFunction.url).toEqual("http://url.com/UpdatedFunction");
+
+       expect(triggers.getTrigger("CreatedTrigger", "beforeSave", Parse.applicationId)).not.toBeUndefined();
+       expect(triggers.getFunction("CreatedFunction", Parse.applicationId)).not.toBeUndefined();
+       done();
+     }).catch(err => {
+       console.error(err);
+       fail('should load hooks');
+       done();
+     });
    });
 
    it("should run the function on the test server", (done) => {
