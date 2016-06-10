@@ -209,7 +209,7 @@ function arrayContains(arr, item) {
 
 // Normalizes a JSON object.
 function normalize(obj) {
-  if (typeof obj !== 'object') {
+  if (obj === null || typeof obj !== 'object') {
     return JSON.stringify(obj);
   }
   if (obj instanceof Array) {
