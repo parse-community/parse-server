@@ -25,8 +25,7 @@ function addReadACL(query, acl) {
 }
 
 // Transforms a REST API formatted ACL object to our two-field mongo format.
-const transformObjectACL = restObject => {
-  let { ACL, ...result } = restObject;
+const transformObjectACL = ({ ACL, ...result }) => {
   if (!ACL) {
     return result;
   }
