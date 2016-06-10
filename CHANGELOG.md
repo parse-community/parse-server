@@ -1,5 +1,14 @@
 ## Parse Server Changelog
 
+### 2.2.12 (6/9/2016)
+
+* New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Allow "get" on installations
+* Fix: Fix overly restrictive Class Level Permissions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Fix nested date parsing in Cloud Code, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Support very old file formats from Parse.com
+
 ### 2.2.11 (5/31/2016)
 
 * Security: Censor user password in logs, thanks to [Marco Cheung](https://github.com/Marco129)
