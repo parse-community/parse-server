@@ -1,6 +1,6 @@
 ## Parse Server Changelog
 
-### 2.2.12 (9/9/2016)
+### 2.2.12 (6/9/2016)
 
 * New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
 * Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
