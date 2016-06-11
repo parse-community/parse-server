@@ -42,18 +42,6 @@ function del(config, auth, className, objectId) {
 
   enforceRoleSecurity('delete', className, auth);
 
-  if (objectId === '*') {
-    return Promise.resolve().then(() => {
-      return config.database.purgeCollection(className);
-    }).then(() => {
-      if (className == '_Session') {
-        var cacheAdapter = config.cacheController;
-        cacheAdapter.user.clear();
-      }
-      return Promise.resolve({});
-    });
-  }
-
   var inflatedObject;
 
   return Promise.resolve().then(() => {

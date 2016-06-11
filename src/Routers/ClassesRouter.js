@@ -108,13 +108,23 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleDelete(req) {
-    if (!req.params.objectId) {
-      req.params.objectId = '*';
-    }
     return rest.del(req.config, req.auth, req.params.className, req.params.objectId)
       .then(() => {
         return {response: {}};
       });
+  }
+
+  handlePurge(req) {
+    return req.config.database.purgeCollection(req.params.className)
+    .then(() => {
+      var cacheAdapter = req.config.cacheController;
+      if (req.params.className == '_Session') {
+        cacheAdapter.user.clear();
+      } else if (req.params.className == '_Role') {
+        cacheAdapter.role.clear();
+      }
+      return {response: {}};
+    });
   }
 
   static JSONFromQuery(query) {
@@ -135,7 +145,7 @@ export class ClassesRouter extends PromiseRouter {
     this.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
     this.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
     this.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
-    this.route('DELETE',  '/classes/:className', middleware.promiseEnforceMasterKeyAccess, (req) => { return this.handleDelete(req); });
+    this.route('DELETE',  '/classes/:className', middleware.promiseEnforceMasterKeyAccess, (req) => { return this.handlePurge(req); });
   }
 }
 

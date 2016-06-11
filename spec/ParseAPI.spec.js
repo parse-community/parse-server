@@ -1408,9 +1408,66 @@ describe('miscellaneous', function() {
       uri: 'http://localhost:8378/1/classes/TestObject',
       json: true
     }).then(body => {
-      fail('Should not succeed')
+      fail('Should not succeed');
     }).catch(err => {
       expect(err.error.error).toEqual('unauthorized: master key is required');
+      done();
+    });
+  });
+
+  it('purge all objects in _Role also purge cache', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    var user, object;
+    createTestUser().then((x) => {
+      user = x;
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
+      let role = new Parse.Object('_Role');
+      role.set('name', 'TestRole');
+      role.setACL(acl);
+      let users = role.relation('users');
+      users.add(user);
+      return role.save({}, { useMasterKey: true });
+    }).then((x) => {
+      let query = new Parse.Query('_Role');
+      return query.find({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.length).toEqual(1);
+      let relation = x[0].relation('users').query();
+      return relation.first({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.id).toEqual(user.id);
+      object = new Parse.Object('TestObject');
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(false);
+      acl.setPublicWriteAccess(false);
+      acl.setRoleReadAccess('TestRole', true);
+      acl.setRoleWriteAccess('TestRole', true);
+      object.setACL(acl);
+      return object.save();
+    }).then((x) => {
+      let query = new Parse.Query('TestObject');
+      return query.find({ sessionToken: user.getSessionToken() });
+    }).then((x) => {
+      expect(x.length).toEqual(1);
+      return rp({
+        method: 'DELETE',
+        headers: headers,
+        uri: 'http://localhost:8378/1/classes/_Role',
+        json: true
+      });
+    }).then((x) => {
+      let query = new Parse.Query('TestObject');
+      return query.get(object.id, { sessionToken: user.getSessionToken() });
+    }).then((x) => {
+      fail('Should not succeed');
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
       done();
     });
   });
