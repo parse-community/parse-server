@@ -95,10 +95,6 @@ export class MongoStorageAdapter {
     });
   }
 
-  purgeCollection(name: string) {
-    return this.collection(this._collectionPrefix + name).then(collection => collection.remove({}));
-  }
-
   // Deletes a schema. Resolve if successful. If the schema doesn't
   // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
   // reject with INTERNAL_SERVER_ERROR.
