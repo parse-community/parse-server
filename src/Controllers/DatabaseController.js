@@ -75,6 +75,10 @@ DatabaseController.prototype.collectionExists = function(className) {
   return this.adapter.collectionExists(className);
 };
 
+DatabaseController.prototype.purgeCollection = function(className) {
+  return this.adapter.purgeCollection(className);
+};
+
 DatabaseController.prototype.validateClassName = function(className) {
   if (this.skipValidation) {
     return Promise.resolve();

@@ -5,6 +5,7 @@
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
+const rp = require('request-promise');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
@@ -1360,6 +1361,56 @@ describe('miscellaneous', function() {
         fileField: "data",
         geoField: [1,2],
       });
+      done();
+    });
+  });
+
+  it('purge all objects in class', (done) => {
+    let object = new Parse.Object('TestObject');
+    object.set('foo', 'bar');
+    let object2 = new Parse.Object('TestObject');
+    object2.set('alice', 'wonderland');
+    Parse.Object.saveAll([object, object2])
+    .then(() => {
+      let query = new Parse.Query(TestObject);
+      return query.count()
+    }).then((count) => {
+      expect(count).toBe(2);
+      let headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test'
+      };
+      request.del({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: true
+      }, (err, res, body) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query(TestObject);
+        return query.count().then((count) => {
+          expect(count).toBe(0);
+          done();
+        });
+      });
+    });
+  });
+
+  it('fail on purge all objects in class without master key', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    rp({
+      method: 'DELETE',
+      headers: headers,
+      uri: 'http://localhost:8378/1/classes/TestObject',
+      json: true
+    }).then(body => {
+      fail('Should not succeed')
+    }).catch(err => {
+      expect(err.error.error).toEqual('unauthorized: master key is required');
       done();
     });
   });

@@ -1,5 +1,6 @@
 
 import PromiseRouter from '../PromiseRouter';
+import * as middleware from '../middlewares';
 import rest          from '../rest';
 
 import url           from 'url';
@@ -107,6 +108,9 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleDelete(req) {
+    if (!req.params.objectId) {
+      req.params.objectId = '*';
+    }
     return rest.del(req.config, req.auth, req.params.className, req.params.objectId)
       .then(() => {
         return {response: {}};
@@ -131,6 +135,7 @@ export class ClassesRouter extends PromiseRouter {
     this.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
     this.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
     this.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
+    this.route('DELETE',  '/classes/:className', middleware.promiseEnforceMasterKeyAccess, (req) => { return this.handleDelete(req); });
   }
 }
 
