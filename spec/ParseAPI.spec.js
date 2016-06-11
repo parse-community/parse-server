@@ -13,7 +13,7 @@ var TestUtils = require('../src/index').TestUtils;
 const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
 describe('miscellaneous', function() {
-  fit('create a GameScore object', function(done) {
+  it('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
     obj.set('score', 1337);
     obj.save().then(function(obj) {
@@ -121,10 +121,7 @@ describe('miscellaneous', function() {
       fail('one of the users should not have been created');
       done();
     })
-    .catch(error => {
-      fail('index build failed')
-      done();
-    });
+    .catch(done);
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
