@@ -232,7 +232,7 @@ export class MongoStorageAdapter {
   }
 
   // Atomically finds and updates an object based on query.
-  // Resolve with the updated object.
+  // Return value not currently well specified.
   findOneAndUpdate(className, schema, query, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
@@ -255,7 +255,7 @@ export class MongoStorageAdapter {
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
     return this._adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
-    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't

@@ -117,8 +117,7 @@ function update(config, auth, className, objectId, restObject) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className,
-                              {objectId: objectId}, restObject, originalRestObject);
+    var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject);
     return write.execute();
   });
 }

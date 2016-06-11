@@ -300,7 +300,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('succeed in logging in', function(done) {
+  it('succeed in logging in', function(done) {
     createTestUser(function(u) {
       expect(typeof u.id).toEqual('string');
 
@@ -318,7 +318,7 @@ describe('miscellaneous', function() {
     }, fail);
   });
 
-  it('increment with a user object', function(done) {
+  fit('increment with a user object', function(done) {
     createTestUser().then((user) => {
       user.increment('foo');
       return user.save();
@@ -328,15 +328,14 @@ describe('miscellaneous', function() {
       expect(user.get('foo')).toEqual(1);
       user.increment('foo');
       return user.save();
-    }).then(() => {
-      Parse.User.logOut();
-      return Parse.User.logIn('test', 'moon-y');
-    }).then((user) => {
+    }).then(() => Parse.User.logOut())
+    .then(() => Parse.User.logIn('test', 'moon-y'))
+    .then((user) => {
       expect(user.get('foo')).toEqual(2);
       Parse.User.logOut()
       .then(done);
     }, (error) => {
-      fail(error);
+      fail(JSON.stringify(error));
       done();
     });
   });

@@ -240,7 +240,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         } else if (upsert) {
           return this.adapter.upsertOneObject(className, schema, query, update);
         } else {
-          return this.adapter.findOneAndUpdate(className, schema, query, update);
+          return this.adapter.findOneAndUpdate(className, schema, query, update)
         }
       });
     })
@@ -645,13 +645,15 @@ DatabaseController.prototype.find = function(className, query, {
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
+  let classExists = true;
   return this.loadSchema()
   .then(schemaController => {
     return schemaController.getOneSchema(className)
     .catch(error => {
-      // If the schema doesn't exist, pretend it exists with no fields. This behaviour
-      // will likely need revisiting.
+      // Behaviour for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
+      // For now, pretend the class exists but has no objects,
       if (error === undefined) {
+        classExists = false;
         return { fields: {} };
       }
       throw error;
@@ -685,10 +687,9 @@ DatabaseController.prototype.find = function(className, query, {
         }
         if (!query) {
           if (op == 'get') {
-            return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found.'));
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           } else {
-            return Promise.resolve([]);
+            return [];
           }
         }
         if (!isMaster) {
@@ -696,13 +697,21 @@ DatabaseController.prototype.find = function(className, query, {
         }
         validateQuery(query);
         if (count) {
-          return this.adapter.count(className, schema, query);
+          if (!classExists) {
+            return 0;
+          } else {
+            return this.adapter.count(className, schema, query);
+          }
         } else {
-          return this.adapter.find(className, schema, query, { skip, limit, sort })
-          .then(objects => objects.map(object => {
-            object = untransformObjectACL(object);
-            return filterSensitiveData(isMaster, aclGroup, className, object)
-          }));
+          if (!classExists) {
+            return [];
+          } else {
+            return this.adapter.find(className, schema, query, { skip, limit, sort })
+            .then(objects => objects.map(object => {
+              object = untransformObjectACL(object);
+              return filterSensitiveData(isMaster, aclGroup, className, object)
+            }));
+          }
         }
       });
     });
