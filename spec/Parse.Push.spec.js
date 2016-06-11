@@ -144,4 +144,24 @@ describe('Parse.Push', () => {
       });
     });
   });
+
+  it('should throw error if missing push configuration', done => {
+    reconfigureServer({push: null})
+    .then(() => {
+      return Parse.Push.send({
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
+    }).then((response) => {
+      fail('should not succeed');
+    }, (err) => {
+      expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
+      done();
+    });
+  });
 });

@@ -177,7 +177,7 @@ class ParseServer {
       return new GridStoreAdapter(databaseURI);
     });
     // Pass the push options too as it works with the default
-    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push);
+    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
     const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
@@ -185,7 +185,7 @@ class ParseServer {
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const filesController = new FilesController(filesControllerAdapter, appId);
-    const pushController = new PushController(pushControllerAdapter, appId);
+    const pushController = new PushController(pushControllerAdapter, appId, push);
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
