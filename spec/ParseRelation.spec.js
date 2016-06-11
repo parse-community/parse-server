@@ -696,6 +696,7 @@ describe('Parse.Relation testing', () => {
         admins.first({ useMasterKey: true })
         .then(user => {
           if (user) {
+            response.success(user);
             done();
           } else {
             fail('Should have found admin user, found nothing instead');

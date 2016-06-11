@@ -148,7 +148,7 @@ class MongoSchemaCollection {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
       } else {
-        return Promise.reject();
+        throw undefined;
       }
     });
   }
@@ -175,9 +175,9 @@ class MongoSchemaCollection {
     .then(result => mongoSchemaToParseSchema(result.ops[0]))
     .catch(error => {
       if (error.code === 11000) { //Mongo's duplicate key error
-        return Promise.reject();
+        throw undefined;
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
@@ -207,17 +207,17 @@ class MongoSchemaCollection {
       if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
         if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
-          return Promise.reject(new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.'));
+          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.');
         }
       }
-      return Promise.resolve();
+      return;
     }, error => {
       // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
       // If some other error, reject with it.
       if (error === undefined) {
-        return Promise.resolve();
+        return;
       }
-      throw Promise.reject(error);
+      throw error;
     })
     .then(() => {
       // We use $exists and $set to avoid overwriting the field type if it

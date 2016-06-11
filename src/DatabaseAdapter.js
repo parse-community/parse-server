@@ -1,74 +1,21 @@
-/** @flow weak */
-// Database Adapter
-//
-// Allows you to change the underlying database.
-//
-// Adapter classes must implement the following methods:
-// * a constructor with signature (connectionString, optionsObject)
-// * connect()
-// * loadSchema()
-// * create(className, object)
-// * find(className, query, options)
-// * update(className, query, update, options)
-// * destroy(className, query, options)
-// * This list is incomplete and the database process is not fully modularized.
-//
-// Default is MongoStorageAdapter.
-
-import DatabaseController  from './Controllers/DatabaseController';
-import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
-
-let dbConnections = {};
-let appDatabaseURIs = {};
-let appDatabaseOptions = {};
-
-function setAppDatabaseURI(appId, uri) {
-  appDatabaseURIs[appId] = uri;
-}
-
-function setAppDatabaseOptions(appId: string, options: Object) {
-  appDatabaseOptions[appId] = options;
-}
-
-//Used by tests
-function clearDatabaseSettings() {
-  appDatabaseURIs = {};
-  dbConnections = {};
-  appDatabaseOptions = {};
-}
+import AppCache from './cache';
 
 //Used by tests
 function destroyAllDataPermanently() {
   if (process.env.TESTING) {
-    var promises = [];
-    for (var conn in dbConnections) {
-      promises.push(dbConnections[conn].deleteEverything());
-    }
-    return Promise.all(promises);
+    // This is super janky, but destroyAllDataPermanently is
+    // a janky interface, so we need to have some jankyness
+    // to support it
+    return Promise.all(Object.keys(AppCache.cache).map(appId => {
+      const app = AppCache.get(appId);
+      if (app.databaseController) {
+        return app.databaseController.deleteEverything();
+      } else {
+        return Promise.resolve();
+      }
+    }));
   }
   throw 'Only supported in test environment';
 }
 
-function getDatabaseConnection(appId: string, collectionPrefix: string) {
-  if (dbConnections[appId]) {
-    return dbConnections[appId];
-  }
-
-  let mongoAdapterOptions = {
-    collectionPrefix: collectionPrefix,
-    mongoOptions: appDatabaseOptions[appId],
-    uri: appDatabaseURIs[appId], //may be undefined if the user didn't supply a URI, in which case the default will be used
-  }
-
-  dbConnections[appId] = new DatabaseController(new MongoStorageAdapter(mongoAdapterOptions), {appId: appId});
-
-  return dbConnections[appId];
-}
-
-module.exports = {
-  getDatabaseConnection: getDatabaseConnection,
-  setAppDatabaseOptions: setAppDatabaseOptions,
-  setAppDatabaseURI: setAppDatabaseURI,
-  clearDatabaseSettings: clearDatabaseSettings,
-  destroyAllDataPermanently: destroyAllDataPermanently,
-};
+module.exports = { destroyAllDataPermanently };

@@ -3,9 +3,14 @@
 'use strict';
 
 var DatabaseAdapter = require('../src/DatabaseAdapter');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
+let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
+var TestUtils = require('../src/index').TestUtils;
+
+const requiredUserFields = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._User) };
 
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
@@ -45,14 +50,172 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('fail to create a duplicate username', function(done) {
-    createTestUser(function(data) {
-      createTestUser(function(data) {
-        fail('Should not have been able to save duplicate username.');
-      }, function(error) {
-        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+  it('fail to create a duplicate username', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+    let p1 = createTestUser();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+    let p2 = createTestUser();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    })
+    .catch(error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+    });
+    Parse.Promise.when([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
+  it('ensure that email is uniquely indexed', done => {
+    let numCreated = 0;
+    let numFailed = 0;
+
+    let user1 = new Parse.User();
+    user1.setPassword('asdf');
+    user1.setUsername('u1');
+    user1.setEmail('dupe@dupe.dupe');
+    let p1 = user1.signUp();
+    p1.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    let user2 = new Parse.User();
+    user2.setPassword('asdf');
+    user2.setUsername('u2');
+    user2.setEmail('dupe@dupe.dupe');
+    let p2 = user2.signUp();
+    p2.then(user => {
+      numCreated++;
+      expect(numCreated).toEqual(1);
+    }, error => {
+      numFailed++;
+      expect(numFailed).toEqual(1);
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+    });
+
+    Parse.Promise.when([p1, p2])
+    .then(() => {
+      fail('one of the users should not have been created');
+      done();
+    })
+    .catch(done);
+  });
+
+  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+    reconfigureServer({})
+    // Remove existing data to clear out unique index
+    .then(TestUtils.destroyAllDataPermanently)
+    .then(() => {
+      let adapter = new MongoStorageAdapter({
+        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+        collectionPrefix: 'test_',
+      });
+      adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
+      .then(() => adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        return user.signUp();
+      })
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('u');
+        user.signUp()
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+          done();
+        });
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
         done();
       });
+    }, () => {
+      fail('destroyAllDataPermanently failed')
+      done();
+    });
+  });
+
+  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
+    reconfigureServer({})
+    // Wipe out existing database with unique index so we can create a duplicate user
+    .then(TestUtils.destroyAllDataPermanently)
+    .then(() => {
+      let adapter = new MongoStorageAdapter({
+        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+        collectionPrefix: 'test_',
+      });
+      adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
+      .then(() => adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('qqq');
+        user.setEmail('unique@unique.unique');
+        return user.signUp();
+      })
+      .then(() => {
+        let user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('www');
+        user.setEmail('a@b.c');
+        user.signUp()
+        .catch(error => {
+          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+          done();
+        });
+      })
+      .catch(error => {
+        fail(JSON.stringify(error));
+        done();
+      });
+    });
+  });
+
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+    let config = new Config('test');
+    config.database.adapter.ensureUniqueness('_User', ['randomField'], requiredUserFields)
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('1');
+      user.setEmail('1@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('2');
+      user.setEmail('2@b.c');
+      user.set('randomField', 'a');
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      done();
     });
   });
 
@@ -89,8 +252,8 @@ describe('miscellaneous', function() {
       return Parse.User.logIn('test', 'moon-y');
     }).then((user) => {
       expect(user.get('foo')).toEqual(2);
-      Parse.User.logOut();
-      done();
+      Parse.User.logOut()
+      .then(done);
     }, (error) => {
       fail(error);
       done();
@@ -202,14 +365,14 @@ describe('miscellaneous', function() {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      var db = DatabaseAdapter.getDatabaseConnection(appId, 'test_');
-      return db.adapter.find('TestObject', {}, { fields: {} }, {});
+      let config = new Config(appId);
+      return config.database.adapter.find('TestObject', {}, { fields: {} }, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');
       done();
-    }).fail(err => {
-      fail(err);
+    }).fail(error => {
+      fail(JSON.stringify(error));
       done();
     })
   });
@@ -1116,27 +1279,6 @@ describe('miscellaneous', function() {
         expect(result.a).toBe('b');
         done();
       })
-    });
-  });
-
-  it('fail when create duplicate value in unique field', (done) => {
-    let obj = new Parse.Object('UniqueField');
-    obj.set('unique', 'value');
-    obj.save().then(() => {
-      expect(obj.id).not.toBeUndefined();
-      let config = new Config('test');
-      return config.database.adapter.adaptiveCollection('UniqueField')
-    }).then(collection => {
-      return collection._mongoCollection.createIndex({ 'unique': 1 }, { unique: true })
-    }).then(() => {
-      let obj = new Parse.Object('UniqueField');
-      obj.set('unique', 'value');
-      return obj.save()
-    }).then(() => {
-      return Promise.reject();
-    }, error => {
-      expect(error.code === Parse.Error.DUPLICATE_VALUE);
-      done();
     });
   });
 

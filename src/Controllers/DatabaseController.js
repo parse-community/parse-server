@@ -61,18 +61,11 @@ function DatabaseController(adapter, { skipValidation } = {}) {
   // it. Instead, use loadSchema to get a schema.
   this.schemaPromise = null;
   this.skipValidation = !!skipValidation;
-  this.connect();
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
   return new DatabaseController(this.adapter, {collectionPrefix: this.collectionPrefix, skipValidation: true});
 }
-
-// Connects to the database. Returns a promise that resolves when the
-// connection is successful.
-DatabaseController.prototype.connect = function() {
-  return this.adapter.connect();
-};
 
 DatabaseController.prototype.schemaCollection = function() {
   return this.adapter.schemaCollection();
@@ -87,8 +80,7 @@ DatabaseController.prototype.validateClassName = function(className) {
     return Promise.resolve();
   }
   if (!SchemaController.classNameIsValid(className)) {
-    const error = new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className);
-    return Promise.reject(error);
+    return Promise.reject(new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className));
   }
   return Promise.resolve();
 };
@@ -417,7 +409,6 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
   return Promise.resolve();
 }
 
-// Deletes everything in the database matching the current collectionPrefix
 // Won't delete collections in the system namespace
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {

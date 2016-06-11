@@ -6,17 +6,8 @@ let Config = require("../src/Config");
 
 describe("Custom Pages Configuration", () => {
   it("should set the custom pages", (done) => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       customPages: {
         invalidLink: "myInvalidLink",
         verifyEmailSuccess: "myVerifyEmailSuccess",
@@ -24,17 +15,17 @@ describe("Custom Pages Configuration", () => {
         passwordResetSuccess: "myPasswordResetSuccess"
       },
       publicServerURL: "https://my.public.server.com/1"
+    })
+    .then(() => {
+      var config = new Config("test");
+      expect(config.invalidLinkURL).toEqual("myInvalidLink");
+      expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
+      expect(config.choosePasswordURL).toEqual("myChoosePassword");
+      expect(config.passwordResetSuccessURL).toEqual("myPasswordResetSuccess");
+      expect(config.verifyEmailURL).toEqual("https://my.public.server.com/1/apps/test/verify_email");
+      expect(config.requestResetPasswordURL).toEqual("https://my.public.server.com/1/apps/test/request_password_reset");
+      done();
     });
-
-    var config = new Config("test");
-
-    expect(config.invalidLinkURL).toEqual("myInvalidLink");
-    expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
-    expect(config.choosePasswordURL).toEqual("myChoosePassword");
-    expect(config.passwordResetSuccessURL).toEqual("myPasswordResetSuccess");
-    expect(config.verifyEmailURL).toEqual("https://my.public.server.com/1/apps/test/verify_email");
-    expect(config.requestResetPasswordURL).toEqual("https://my.public.server.com/1/apps/test/request_password_reset");
-    done();
   });
 });
 
@@ -45,39 +36,32 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    spyOn(emailAdapter, 'sendVerificationEmail');
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.setEmail('testIfEnabled@parse.com');
-    user.signUp(null, {
-      success: function(user) {
-        expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-        user.fetch()
-        .then(() => {
-          expect(user.get('emailVerified')).toEqual(false);
+    })
+    .then(() => {
+      spyOn(emailAdapter, 'sendVerificationEmail');
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.setEmail('testIfEnabled@parse.com');
+      user.signUp(null, {
+        success: function(user) {
+          expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+          user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(false);
+            done();
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
           done();
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+        }
+      });
     });
   });
 
@@ -87,38 +71,31 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    spyOn(emailAdapter, 'sendVerificationEmail');
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.signUp(null, {
-      success: function(user) {
-        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-        user.fetch()
-        .then(() => {
-          expect(user.get('emailVerified')).toEqual(undefined);
+    })
+    .then(() => {
+      spyOn(emailAdapter, 'sendVerificationEmail');
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.signUp(null, {
+        success: function(user) {
+          expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+          user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(undefined);
+            done();
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
           done();
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+        }
+      });
     });
   });
 
@@ -128,47 +105,40 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    spyOn(emailAdapter, 'sendVerificationEmail');
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.signUp(null, {
-      success: function(user) {
-        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-        user.fetch()
-        .then((user) => {
-          user.set("email", "testWhenUpdating@parse.com");
-          return user.save();
-        }).then((user) => {
-          return user.fetch();
-        }).then(() => {
-          expect(user.get('emailVerified')).toEqual(false);
-          // Wait as on update email, we need to fetch the username
-          setTimeout(function(){
-            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-            done();
-          }, 200);
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+    })
+    .then(() => {
+      spyOn(emailAdapter, 'sendVerificationEmail');
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.signUp(null, {
+        success: function(user) {
+          expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+          user.fetch()
+          .then((user) => {
+            user.set("email", "testWhenUpdating@parse.com");
+            return user.save();
+          }).then((user) => {
+            return user.fetch();
+          }).then(() => {
+            expect(user.get('emailVerified')).toEqual(false);
+            // Wait as on update email, we need to fetch the username
+            setTimeout(function(){
+              expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+              done();
+            }, 200);
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
+          done();
+        }
+      });
     });
   });
 
@@ -178,51 +148,44 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    spyOn(emailAdapter, 'sendVerificationEmail').and.callFake((options) => {
-      expect(options.link).not.toBeNull();
-      expect(options.link).not.toMatch(/token=undefined/);
-      Promise.resolve();
-    });
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.signUp(null, {
-      success: function(user) {
-        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
-        user.fetch()
-        .then((user) => {
-          user.set("email", "testValidLinkWhenUpdating@parse.com");
-          return user.save();
-        }).then((user) => {
-          return user.fetch();
-        }).then(() => {
-          expect(user.get('emailVerified')).toEqual(false);
-          // Wait as on update email, we need to fetch the username
-          setTimeout(function(){
-            expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
-            done();
-          }, 200);
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+    })
+    .then(() => {
+      spyOn(emailAdapter, 'sendVerificationEmail').and.callFake((options) => {
+        expect(options.link).not.toBeNull();
+        expect(options.link).not.toMatch(/token=undefined/);
+        Promise.resolve();
+      });
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.signUp(null, {
+        success: function(user) {
+          expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+          user.fetch()
+          .then((user) => {
+            user.set("email", "testValidLinkWhenUpdating@parse.com");
+            return user.save();
+          }).then((user) => {
+            return user.fetch();
+          }).then(() => {
+            expect(user.get('emailVerified')).toEqual(false);
+            // Wait as on update email, we need to fetch the username
+            setTimeout(function(){
+              expect(emailAdapter.sendVerificationEmail).toHaveBeenCalled();
+              done();
+            }, 200);
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
+          done();
+        }
+      });
     });
   });
 
@@ -242,60 +205,44 @@ describe("Email Verification", () => {
         return Promise.resolve();
       }
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'My Cool App',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.set("email", "testSendSimpleAdapter@parse.com");
-    user.signUp(null, {
-      success: function(user) {
-        expect(calls).toBe(1);
-        user.fetch()
-        .then((user) => {
-          return user.save();
-        }).then((user) => {
-          return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch((err) => {
-            fail('Should not fail requesting a password');
+    })
+    .then(() => {
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testSendSimpleAdapter@parse.com");
+      user.signUp(null, {
+        success: function(user) {
+          expect(calls).toBe(1);
+          user.fetch()
+          .then((user) => {
+            return user.save();
+          }).then((user) => {
+            return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch((err) => {
+              fail('Should not fail requesting a password');
+              done();
+            })
+          }).then(() => {
+            expect(calls).toBe(2);
             done();
-          })
-        }).then(() => {
-          expect(calls).toBe(2);
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
           done();
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+        }
+      });
     });
   });
 
   it('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: false,
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
@@ -303,20 +250,21 @@ describe("Email Verification", () => {
         domain: 'd',
       }),
     })
-
-    let user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.set("email", "testInvalidConfig@parse.com");
-    user.signUp(null)
-    .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
-    .then(result => {
-      console.log(result);
-      fail('sending password reset email should not have succeeded');
-      done();
-    }, error => {
-      expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
-      done();
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(result => {
+        console.log(result);
+        fail('sending password reset email should not have succeeded');
+        done();
+      }, error => {
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        done();
+      });
     });
   });
 
@@ -326,37 +274,30 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'unused',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
-    });
-    spyOn(emailAdapter, 'sendVerificationEmail');
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.signUp(null, {
-      success: function(user) {
-        user.fetch()
-        .then(() => {
-          expect(emailAdapter.sendVerificationEmail.calls.count()).toEqual(0);
-          expect(user.get('emailVerified')).toEqual(undefined);
+    })
+    .then(() => {
+      spyOn(emailAdapter, 'sendVerificationEmail');
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.signUp(null, {
+        success: function(user) {
+          user.fetch()
+          .then(() => {
+            expect(emailAdapter.sendVerificationEmail.calls.count()).toEqual(0);
+            expect(user.get('emailVerified')).toEqual(undefined);
+            done();
+          });
+        },
+        error: function(userAgain, error) {
+          fail('Failed to save user');
           done();
-        });
-      },
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+        }
+      });
     });
   });
 
@@ -370,31 +311,24 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    var user = new Parse.User();
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.set('email', 'user@parse.com');
-    user.signUp(null, {
-      success: () => {},
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+    })
+    .then(() => {
+      var user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set('email', 'user@parse.com');
+      user.signUp(null, {
+        success: () => {},
+        error: function(userAgain, error) {
+          fail('Failed to save user');
+          done();
+        }
+      });
     });
   })
 
@@ -421,39 +355,23 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
+    })
+    .then(() => {
+      user.setPassword("asdf");
+      user.setUsername("user");
+      user.set('email', 'user@parse.com');
+      user.signUp();
     });
-    user.setPassword("asdf");
-    user.setUsername("user");
-    user.set('email', 'user@parse.com');
-    user.signUp();
   });
 
   it('redirects you to invalid link if you try to verify email incorrecly', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -461,28 +379,21 @@ describe("Email Verification", () => {
         sendMail: () => {}
       },
       publicServerURL: "http://localhost:8378/1"
-    });
-    request.get('http://localhost:8378/1/apps/test/verify_email', {
-      followRedirect: false,
-    }, (error, response, body) => {
-      expect(response.statusCode).toEqual(302);
-      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
-      done()
+    })
+    .then(() => {
+      request.get('http://localhost:8378/1/apps/test/verify_email', {
+        followRedirect: false,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        done()
+      });
     });
   });
 
   it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -490,13 +401,15 @@ describe("Email Verification", () => {
         sendMail: () => {}
       },
       publicServerURL: "http://localhost:8378/1"
-    });
-    request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
-      followRedirect: false,
-    }, (error, response, body) => {
-      expect(response.statusCode).toEqual(302);
-      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
-      done();
+    })
+    .then(() => {
+      request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
+        followRedirect: false,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        done();
+      });
     });
   });
 
@@ -519,30 +432,23 @@ describe("Email Verification", () => {
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.set('email', 'user@parse.com');
-    user.signUp(null, {
-      success: () => {},
-      error: function(userAgain, error) {
-        fail('Failed to save user');
-        done();
-      }
+    })
+    .then(() => {
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set('email', 'user@parse.com');
+      user.signUp(null, {
+        success: () => {},
+        error: function(userAgain, error) {
+          fail('Failed to save user');
+          done();
+        }
+      });
     });
   });
 });
@@ -570,47 +476,31 @@ describe("Password Reset", () => {
       },
       sendMail: () => {}
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    user.setPassword("asdf");
-    user.setUsername("zxcv+zxcv");
-    user.set('email', 'user@parse.com');
-    user.signUp().then(() => {
-      Parse.User.requestPasswordReset('user@parse.com', {
-        error: (err) => {
-          console.error(err);
-          fail("Should not fail requesting a password");
-          done();
-        }
+    })
+    .then(() => {
+      user.setPassword("asdf");
+      user.setUsername("zxcv+zxcv");
+      user.set('email', 'user@parse.com');
+      user.signUp().then(() => {
+        Parse.User.requestPasswordReset('user@parse.com', {
+          error: (err) => {
+            console.error(err);
+            fail("Should not fail requesting a password");
+            done();
+          }
+        });
       });
     });
   });
 
   it('redirects you to invalid link if you try to request password for a nonexistant users email', done => {
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: {
         sendVerificationEmail: () => Promise.resolve(),
@@ -618,13 +508,15 @@ describe("Password Reset", () => {
         sendMail: () => {}
       },
       publicServerURL: "http://localhost:8378/1"
-    });
-    request.get('http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga', {
-      followRedirect: false,
-    }, (error, response, body) => {
-      expect(response.statusCode).toEqual(302);
-      expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
-      done();
+    })
+    .then(() => {
+      request.get('http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga', {
+        followRedirect: false,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        done();
+      });
     });
   });
 
@@ -688,33 +580,25 @@ describe("Password Reset", () => {
       },
       sendMail: () => {}
     }
-    setServerConfiguration({
-      serverURL: 'http://localhost:8378/1',
-      appId: 'test',
+    reconfigureServer({
       appName: 'emailing app',
-      javascriptKey: 'test',
-      dotNetKey: 'windows',
-      clientKey: 'client',
-      restAPIKey: 'rest',
-      masterKey: 'test',
-      collectionPrefix: 'test_',
-      fileKey: 'test',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
       publicServerURL: "http://localhost:8378/1"
-    });
-    user.setPassword("asdf");
-    user.setUsername("zxcv");
-    user.set('email', 'user@parse.com');
-    user.signUp().then(() => {
-      Parse.User.requestPasswordReset('user@parse.com', {
-        error: (err) => {
-          console.error(err);
-          fail("Should not fail");
-          done();
-        }
+    })
+    .then(() => {
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set('email', 'user@parse.com');
+      user.signUp().then(() => {
+        Parse.User.requestPasswordReset('user@parse.com', {
+          error: (err) => {
+            console.error(err);
+            fail("Should not fail");
+            done();
+          }
+        });
       });
     });
   });
-
 })

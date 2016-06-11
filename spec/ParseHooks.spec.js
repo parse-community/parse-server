@@ -1,3 +1,4 @@
+"use strict";
 /* global describe, it, expect, fail, Parse */
 var request = require('request');
 var triggers = require('../src/triggers');
@@ -13,7 +14,7 @@ var hookServerURL = "http://localhost:"+port;
 var app = express();
 app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
-
+let AppCache = require('../src/cache').AppCache;
 
 describe('Hooks', () => {
 
@@ -257,7 +258,7 @@ describe('Hooks', () => {
          expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).toBeUndefined();
          expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).toBeUndefined();
        }
-       const hooksController = new HooksController(Parse.applicationId);
+       const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
        return hooksController.load()
      }, (err) => {
        console.error(err);
@@ -347,28 +348,30 @@ describe('Hooks', () => {
    });
 
    it("should not pass X-Parse-Webhook-Key if not provided", (done) => {
-     setServerConfiguration(Object.assign({}, defaultConfiguration, { webhookKey: undefined }));
-     app.post("/ExpectingKeyAlso", function(req, res) {
-       if (req.get('X-Parse-Webhook-Key') === 'hook') {
-         res.json({success: "correct key provided"});
-       } else {
-         res.json({error: "incorrect key provided"});
-       }
-     });
+     reconfigureServer({ webhookKey: undefined })
+     .then(() => {
+       app.post("/ExpectingKeyAlso", function(req, res) {
+         if (req.get('X-Parse-Webhook-Key') === 'hook') {
+           res.json({success: "correct key provided"});
+         } else {
+           res.json({error: "incorrect key provided"});
+         }
+       });
 
-     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKeyAlso").then(function(){
-       return Parse.Cloud.run("SOME_TEST_FUNCTION")
-     }, (err) => {
-       console.error(err);
-       fail("Should not fail creating a function");
-       done();
-     }).then(function(res){
-       fail("Should not succeed calling that function");
-       done();
-     }, (err) => {
-       expect(err.code).toBe(141);
-       expect(err.message).toEqual("incorrect key provided");
-       done();
+       Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKeyAlso").then(function(){
+         return Parse.Cloud.run("SOME_TEST_FUNCTION")
+       }, (err) => {
+         console.error(err);
+         fail("Should not fail creating a function");
+         done();
+       }).then(function(res){
+         fail("Should not succeed calling that function");
+         done();
+       }, (err) => {
+         expect(err.code).toBe(141);
+         expect(err.message).toEqual("incorrect key provided");
+         done();
+       });
      });
    });
 
