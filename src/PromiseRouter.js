@@ -6,8 +6,8 @@
 // components that external developers may be modifying.
 
 import express from 'express';
-import url from 'url';
-import log from './logger';
+import url     from 'url';
+import log     from './logger';
 
 export default class PromiseRouter {
   // Each entry should be an object with:

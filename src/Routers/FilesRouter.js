@@ -1,9 +1,9 @@
-import express from 'express';
-import BodyParser from 'body-parser';
-import * as Middlewares from '../middlewares';
+import express             from 'express';
+import BodyParser          from 'body-parser';
+import * as Middlewares    from '../middlewares';
 import { randomHexString } from '../cryptoUtils';
-import Config from '../Config';
-import mime from 'mime';
+import Config              from '../Config';
+import mime                from 'mime';
 
 export class FilesRouter {
 
@@ -77,8 +77,7 @@ export class FilesRouter {
       res.set('Location', result.url);
       res.json(result);
     }).catch((err) => {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
-        'Could not store file.'));
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.'));
     });
   }
 

@@ -65,6 +65,7 @@ export class MongoStorageAdapter {
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
       this.database = database;
     });
+
     return this.connectionPromise;
   }
 
@@ -102,9 +103,9 @@ export class MongoStorageAdapter {
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
       if (error.message == 'ns not found') {
-        return Promise.resolve();
+        return;
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
@@ -180,7 +181,7 @@ export class MongoStorageAdapter {
         throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided');
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
@@ -234,6 +235,28 @@ export class MongoStorageAdapter {
     return this.adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
     .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+  }
+
+  // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
+  // currently know which fields are nullable and which aren't, we ignore that criteria.
+  // As such, we shouldn't expose this function to users of parse until we have an out-of-band
+  // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
+  // which is why we use sparse indexes.
+  ensureUniqueness(className, fieldNames, schema) {
+    let indexCreationRequest = {};
+    let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
+    });
+    return this.adaptiveCollection(className)
+    .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
+    .catch(error => {
+      if (error.code === 11000) {
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
+      } else {
+        throw error;
+      }
+    });
   }
 
   // Used in tests

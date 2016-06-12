@@ -52,9 +52,9 @@ describe('error logs', () => {
 describe('verbose logs', () => {
 
   it("mask sensitive information in _User class", (done) => {
-    let customConfig = Object.assign({}, defaultConfiguration, {verbose: true});
-    setServerConfiguration(customConfig);
-    createTestUser().then(() => {
+    reconfigureServer({ verbose: true })
+    .then(() => createTestUser())
+    .then(() => {
       let fileLoggerAdapter = new FileLoggerAdapter();
       return fileLoggerAdapter.query({
         from: new Date(Date.now() - 500),

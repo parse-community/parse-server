@@ -83,6 +83,18 @@ export default class MongoCollection {
     return this._mongoCollection.deleteMany(query);
   }
 
+  _ensureSparseUniqueIndexInBackground(indexRequest) {
+    return new Promise((resolve, reject) => {
+      this._mongoCollection.ensureIndex(indexRequest, { unique: true, background: true, sparse: true }, (error, indexName) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
   drop() {
     return this._mongoCollection.drop();
   }

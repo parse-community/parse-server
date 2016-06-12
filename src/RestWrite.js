@@ -105,9 +105,9 @@ RestWrite.prototype.getUserAndRoleACL = function() {
     return this.auth.getUserRoles().then((roles) => {
       roles.push(this.auth.user.id);
       this.runOptions.acl = this.runOptions.acl.concat(roles);
-      return Promise.resolve();
+      return;
     });
-  }else{
+  } else {
     return Promise.resolve();
   }
 };
@@ -119,7 +119,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
       && sysClass.indexOf(this.className) === -1) {
     return this.config.database.collectionExists(this.className).then((hasClass) => {
       if (hasClass === true) {
-        return Promise.resolve();
+        return;
       }
 
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
@@ -309,7 +309,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
         }
       }
     }
-    return Promise.resolve();
+    return;
   });
 }
 
@@ -356,45 +356,43 @@ RestWrite.prototype.transformUser = function() {
       }
       return;
     }
+    // We need to a find to check for duplicate username in case they are missing the unique index on usernames
+    // TODO: Check if there is a unique index, and if so, skip this query.
     return this.config.database.find(
-      this.className, {
-        username: this.data.username,
-        objectId: {'$ne': this.objectId()}
-      }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.USERNAME_TAKEN,
-                                'Account already exists for this username');
-        }
-        return Promise.resolve();
-      });
-  }).then(() => {
+      this.className,
+      { username: this.data.username, objectId: {'$ne': this.objectId()} },
+      { limit: 1 }
+    )
+    .then(results => {
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+      }
+      return;
+    });
+  })
+  .then(() => {
     if (!this.data.email || this.data.email.__op === 'Delete') {
       return;
     }
     // Validate basic email address format
     if (!this.data.email.match(/^.+@.+$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS,
-                            'Email address format is invalid.');
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.');
     }
-    // Check for email uniqueness
+    // Same problem for email as above for username
     return this.config.database.find(
-      this.className, {
-        email: this.data.email,
-        objectId: {'$ne': this.objectId()}
-      }, {limit: 1}).then((results) => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN,
-                                'Account already exists for this email ' +
-                                'address');
-        }
-        return Promise.resolve();
-      }).then(() => {
-        // We updated the email, send a new validation
-        this.storage['sendVerificationEmail'] = true;
-        this.config.userController.setEmailVerifyToken(this.data);
-        return Promise.resolve();
-      })
-  });
+      this.className,
+      { email: this.data.email, objectId: {'$ne': this.objectId()} },
+      { limit: 1 }
+    )
+    .then(results => {
+      if (results.length > 0) {
+        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+      }
+      // We updated the email, send a new validation
+      this.storage['sendVerificationEmail'] = true;
+      this.config.userController.setEmailVerifyToken(this.data);
+    });
+  })
 };
 
 RestWrite.prototype.createSessionTokenIfNeeded = function() {
@@ -577,7 +575,7 @@ RestWrite.prototype.handleInstallation = function() {
                                 'deviceType may not be changed in this ' +
                                 'operation');
         }
-        return Promise.resolve();
+        return;
       });
     });
   }
@@ -762,6 +760,36 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
+    .catch(error => {
+      if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
+        throw error;
+      }
+      // If this was a failed user creation due to username or email already taken, we need to
+      // check whether it was username or email and return the appropriate error.
+
+      // TODO: See if we can later do this without additional queries by using named indexes.
+      return this.config.database.find(
+        this.className,
+        { username: this.data.username, objectId: {'$ne': this.objectId()} },
+        { limit: 1 }
+      )
+      .then(results => {
+        if (results.length > 0) {
+          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+        }
+        return this.config.database.find(
+          this.className,
+          { email: this.data.email, objectId: {'$ne': this.objectId()} },
+          { limit: 1 }
+        );
+      })
+      .then(results => {
+        if (results.length > 0) {
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+        }
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+      });
+    })
     .then(response => {
       response.objectId = this.data.objectId;
       response.createdAt = this.data.createdAt;
