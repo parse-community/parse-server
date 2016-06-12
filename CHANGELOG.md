@@ -1,5 +1,9 @@
 ## Parse Server Changelog
 
+### 2.2.13 (6/12/2016)
+
+* Hotfix: Pin version of deepcopy
+
 ### 2.2.12 (6/9/2016)
 
 * New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
