@@ -10,11 +10,11 @@ Parse.Hooks = require("../src/cloud-code/Parse.Hooks");
 
 var port = 12345;
 var hookServerURL = "http://localhost:"+port;
+let AppCache = require('../src/cache').AppCache;
 
 var app = express();
 app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
-let AppCache = require('../src/cache').AppCache;
 
 describe('Hooks', () => {
 

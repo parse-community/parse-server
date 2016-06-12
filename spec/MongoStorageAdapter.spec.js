@@ -9,7 +9,7 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 describe('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI })
-    .deleteAllSchemas()
+    .deleteAllClasses()
     .then(done, fail);
   });
 
@@ -49,7 +49,7 @@ describe('MongoStorageAdapter', () => {
 
   it('stores objectId in _id', done => {
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    adapter.createObject('Foo', { objectId: 'abcde' }, { fields: { objectId: 'String' } })
+    adapter.createObject('Foo', {}, { objectId: 'abcde' })
     .then(() => adapter._rawFind('Foo', {}))
     .then(results => {
       expect(results.length).toEqual(1);
@@ -70,10 +70,10 @@ describe('MongoStorageAdapter', () => {
       }
     };
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    adapter.createObject('APointerDarkly', obj, { fields: {
+    adapter.createObject('APointerDarkly', { fields: {
       objectId: { type: 'String' },
       aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
-    }})
+    }}, obj)
     .then(() => adapter._rawFind('APointerDarkly', {}))
     .then(results => {
       expect(results.length).toEqual(1);
@@ -90,7 +90,7 @@ describe('MongoStorageAdapter', () => {
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
     let schema = { fields : { subdoc: { type: 'Object' } } };
     let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
-    adapter.createObject('MyClass', obj, schema)
+    adapter.createObject('MyClass', schema, obj)
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
@@ -99,7 +99,7 @@ describe('MongoStorageAdapter', () => {
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
       let obj = { 'subdoc.wu': 'clan' };
-      return adapter.findOneAndUpdate('MyClass', {}, schema, obj);
+      return adapter.findOneAndUpdate('MyClass', schema, {}, obj);
     })
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
@@ -127,7 +127,7 @@ describe('MongoStorageAdapter', () => {
       object: { type: 'Object' },
       date: { type: 'Date' },
     } };
-    adapter.createObject('MyClass', obj, schema)
+    adapter.createObject('MyClass', schema, obj)
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
@@ -135,7 +135,7 @@ describe('MongoStorageAdapter', () => {
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date instanceof Date).toBe(true);
-      return adapter.find('MyClass', {}, schema, {});
+      return adapter.find('MyClass', schema, {}, {});
     })
     .then(results => {
       expect(results.length).toEqual(1);

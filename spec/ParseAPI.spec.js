@@ -20,7 +20,10 @@ describe('miscellaneous', function() {
       expect(typeof obj.id).toBe('string');
       expect(typeof obj.createdAt.toGMTString()).toBe('string');
       done();
-    }, function(err) { console.log(err); });
+    }, error => {
+      fail(JSON.stringify(error));
+      done();
+    });
   });
 
   it('get a TestObject', function(done) {
@@ -122,81 +125,63 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    reconfigureServer({})
+    let config = new Config('test');
     // Remove existing data to clear out unique index
-    .then(TestUtils.destroyAllDataPermanently)
+    TestUtils.destroyAllDataPermanently()
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'x', username: 'u' }))
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'y', username: 'u' }))
+    // Create a new server to try to recreate the unique indexes
+    .then(reconfigureServer)
+    .catch(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('zxcv');
+      // Sign up with new email still works
+      return user.signUp().catch(fail);
+    })
     .then(() => {
-      let adapter = new MongoStorageAdapter({
-        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
-        collectionPrefix: 'test_',
-      });
-      adapter.createObject('_User', { objectId: 'x', username: 'u' }, requiredUserFields)
-      .then(() => adapter.createObject('_User', { objectId: 'y', username: 'u' }, requiredUserFields))
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('zxcv');
-        return user.signUp();
-      })
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('u');
-        user.signUp()
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-          done();
-        });
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
-    }, () => {
-      fail('destroyAllDataPermanently failed')
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('u');
+      // sign up with duplicate username doens't
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
       done();
-    });
+    })
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    reconfigureServer({})
-    // Wipe out existing database with unique index so we can create a duplicate user
-    .then(TestUtils.destroyAllDataPermanently)
+    let config = new Config('test');
+    // Remove existing data to clear out unique index
+    TestUtils.destroyAllDataPermanently()
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'x', email: 'a@b.c' }))
+    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'y', email: 'a@b.c' }))
+    .then(reconfigureServer)
+    .catch(() => {
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('qqq');
+      user.setEmail('unique@unique.unique');
+      return user.signUp().catch(fail);
+    })
     .then(() => {
-      let adapter = new MongoStorageAdapter({
-        uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
-        collectionPrefix: 'test_',
-      });
-      adapter.createObject('_User', { objectId: 'x', email: 'a@b.c' }, requiredUserFields)
-      .then(() => adapter.createObject('_User', { objectId: 'y', email: 'a@b.c' }, requiredUserFields))
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('qqq');
-        user.setEmail('unique@unique.unique');
-        return user.signUp();
-      })
-      .then(() => {
-        let user = new Parse.User();
-        user.setPassword('asdf');
-        user.setUsername('www');
-        user.setEmail('a@b.c');
-        user.signUp()
-        .catch(error => {
-          expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-          done();
-        });
-      })
-      .catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
+      let user = new Parse.User();
+      user.setPassword('asdf');
+      user.setUsername('www');
+      user.setEmail('a@b.c');
+      return user.signUp()
+    })
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+      done();
     });
   });
 
   it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
-    config.database.adapter.ensureUniqueness('_User', ['randomField'], requiredUserFields)
+    config.database.adapter.ensureUniqueness('_User', requiredUserFields, ['randomField'])
     .then(() => {
       let user = new Parse.User();
       user.setPassword('asdf');
@@ -228,8 +213,7 @@ describe('miscellaneous', function() {
           expect(typeof user.id).toEqual('string');
           expect(user.get('password')).toBeUndefined();
           expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut();
-          done();
+          Parse.User.logOut().then(done);
         }, error: function(error) {
           fail(error);
         }
@@ -366,7 +350,7 @@ describe('miscellaneous', function() {
       return obj.save();
     }).then(() => {
       let config = new Config(appId);
-      return config.database.adapter.find('TestObject', {}, { fields: {} }, {});
+      return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
       expect(results[0]['foo']).toEqual('bar');

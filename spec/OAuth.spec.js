@@ -284,9 +284,9 @@ describe('OAuth', function() {
                "Expiration should be cleared");
             // make sure the auth data is properly deleted
             var config = new Config(Parse.applicationId);
-            config.database.adapter.find('_User', { objectId: model.id }, {
+            config.database.adapter.find('_User', {
               fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
-            }, {})
+            }, { objectId: model.id }, {})
             .then(res => {
               expect(res.length).toBe(1);
               expect(res[0]._auth_data_myoauth).toBeUndefined();

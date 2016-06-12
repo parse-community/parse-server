@@ -7,9 +7,12 @@ let Config = require('../src/Config');
 describe('a GlobalConfig', () => {
   beforeEach(done => {
     let config = new Config('test');
-    config.database.adapter.adaptiveCollection('_GlobalConfig')
-      .then(coll => coll.upsertOne({ '_id': 1 }, { $set: { params: { companies: ['US', 'DK'] } } }))
-      .then(() => { done(); });
+    config.database.adapter.upsertOneObject(
+      '_GlobalConfig',
+      { fields: {} },
+      { objectId: 1 },
+      { params: { companies: ['US', 'DK'] } }
+    ).then(done);
   });
 
   it('can be retrieved', (done) => {
@@ -90,22 +93,23 @@ describe('a GlobalConfig', () => {
 
   it('failed getting config when it is missing', (done) => {
     let config = new Config('test');
-    config.database.adapter.adaptiveCollection('_GlobalConfig')
-      .then(coll => coll.deleteOne({ '_id': 1 }))
-      .then(() => {
-        request.get({
-          url    : 'http://localhost:8378/1/config',
-          json   : true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key'    : 'test'
-          }
-        }, (error, response, body) => {
-          expect(response.statusCode).toEqual(200);
-          expect(body.params).toEqual({});
-          done();
-        });
+    config.database.adapter.deleteObjectsByQuery(
+      '_GlobalConfig',
+      { fields: { params: { __type: 'String' } } },
+      { objectId: 1 }
+    ).then(() => {
+      request.get({
+        url    : 'http://localhost:8378/1/config',
+        json   : true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key'    : 'test'
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(200);
+        expect(body.params).toEqual({});
+        done();
       });
+    });
   });
-
 });

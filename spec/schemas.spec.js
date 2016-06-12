@@ -327,9 +327,9 @@ describe('schemas', () => {
   });
 
   it('responds with all fields when getting incomplete schema', done => {
-    config.database.schemaCollection().then((schema) => {
-      return schema.addSchema('_User');
-    }).then(() => {
+    config.database.loadSchema()
+    .then(schemaController => schemaController.addClassIfNotExists('_User', {}, defaultClassLevelPermissions))
+    .then(() => {
       request.get({
         url: 'http://localhost:8378/1/schemas/_User',
         headers: masterKeyHeaders,

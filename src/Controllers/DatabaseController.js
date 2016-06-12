@@ -84,15 +84,11 @@ function DatabaseController(adapter, { skipValidation } = {}) {
 }
 
 DatabaseController.prototype.WithoutValidation = function() {
-  return new DatabaseController(this.adapter, {collectionPrefix: this.collectionPrefix, skipValidation: true});
+  return new DatabaseController(this.adapter, { skipValidation: true });
 }
 
-DatabaseController.prototype.schemaCollection = function() {
-  return this.adapter.schemaCollection();
-};
-
 DatabaseController.prototype.collectionExists = function(className) {
-  return this.adapter.collectionExists(className);
+  return this.adapter.classExists(className);
 };
 
 DatabaseController.prototype.validateClassName = function(className) {
@@ -105,16 +101,11 @@ DatabaseController.prototype.validateClassName = function(className) {
   return Promise.resolve();
 };
 
-// Returns a promise for a schema object.
-// If we are provided a acceptor, then we run it on the schema.
-// If the schema isn't accepted, we reload it at most once.
+// Returns a promise for a schemaController.
 DatabaseController.prototype.loadSchema = function() {
-
   if (!this.schemaPromise) {
-    this.schemaPromise = this.schemaCollection().then(collection => {
-      delete this.schemaPromise;
-      return SchemaController.load(collection, this.adapter);
-    });
+    this.schemaPromise = SchemaController.load(this.adapter);
+    this.schemaPromise.then(() => delete this.schemaPromise);
   }
   return this.schemaPromise;
 };
@@ -232,11 +223,11 @@ DatabaseController.prototype.update = function(className, query, update, {
         }
         update = transformObjectACL(update);
         if (many) {
-          return this.adapter.updateObjectsByQuery(className, query, schema, update);
+          return this.adapter.updateObjectsByQuery(className, schema, query, update);
         } else if (upsert) {
-          return this.adapter.upsertOneObject(className, query, schema, update);
+          return this.adapter.upsertOneObject(className, schema, query, update);
         } else {
-          return this.adapter.findOneAndUpdate(className, query, schema, update);
+          return this.adapter.findOneAndUpdate(className, schema, query, update);
         }
       });
     })
@@ -324,7 +315,7 @@ DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, 
     relatedId: toId,
     owningId : fromId
   };
-  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, doc, relationSchema, doc);
+  return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, relationSchema, doc, doc);
 };
 
 // Removes a relation.
@@ -335,7 +326,7 @@ DatabaseController.prototype.removeRelation = function(key, fromClassName, fromI
     relatedId: toId,
     owningId: fromId
   };
-  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, doc, relationSchema)
+  return this.adapter.deleteObjectsByQuery(`_Join:${key}:${fromClassName}`, relationSchema, doc)
   .catch(error => {
     // We don't care if they try to delete a non-existent relation.
     if (error.code == Parse.Error.OBJECT_NOT_FOUND) {
@@ -380,7 +371,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
         }
         throw error;
       })
-      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, query, parseFormatSchema))
+      .then(parseFormatSchema => this.adapter.deleteObjectsByQuery(className, parseFormatSchema, query))
       .catch(error => {
         // When deleting sessions while changing passwords, don't throw an error if they don't have any sessions.
         if (className === "_Session" && error.code === Parse.Error.OBJECT_NOT_FOUND) {
@@ -409,7 +400,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, object, schema))
+    .then(schema => this.adapter.createObject(className, schema, object))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };
@@ -434,7 +425,7 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
-  return this.adapter.deleteAllSchemas();
+  return this.adapter.deleteAllClasses();
 };
 
 // Finds the keys in a query. Returns a Set. REST format only
@@ -454,14 +445,14 @@ function keysForQuery(query) {
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
 DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  return this.adapter.find(joinTableName(className, key), { owningId }, relationSchema, {})
+  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, {})
   .then(results => results.map(result => result.relatedId));
 };
 
 // Returns a promise for a list of owning ids given some related ids.
 // className here is the owning className.
 DatabaseController.prototype.owningIds = function(className, key, relatedIds) {
-  return this.adapter.find(joinTableName(className, key), { relatedId: { '$in': relatedIds } }, relationSchema, {})
+  return this.adapter.find(joinTableName(className, key), relationSchema, { relatedId: { '$in': relatedIds } }, {})
   .then(results => results.map(result => result.owningId));
 };
 
@@ -689,9 +680,9 @@ DatabaseController.prototype.find = function(className, query, {
         }
         validateQuery(query);
         if (count) {
-          return this.adapter.count(className, query, schema);
+          return this.adapter.count(className, schema, query);
         } else {
-          return this.adapter.find(className, query, schema, { skip, limit, sort })
+          return this.adapter.find(className, schema, query, { skip, limit, sort })
           .then(objects => objects.map(object => {
             object = untransformObjectACL(object);
             return filterSensitiveData(isMaster, aclGroup, className, object)
@@ -727,19 +718,33 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
 }
 
 DatabaseController.prototype.deleteSchema = function(className) {
-  return this.collectionExists(className)
-  .then(exist => {
-    if (!exist) {
-      return Promise.resolve();
+  return this.loadSchema()
+  .then(schemaController => schemaController.getOneSchema(className))
+  .catch(error => {
+    if (error === undefined) {
+      return { fields: {} };
+    } else {
+      throw error;
     }
-    return this.adapter.count(className)
+  })
+  .then(schema => {
+    return this.collectionExists(className)
+    .then(exist => this.adapter.count(className))
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
       }
-      return this.adapter.deleteOneSchema(className);
+      return this.adapter.deleteClass(className);
     })
-  });
+    .then(wasParseCollection => {
+      if (wasParseCollection) {
+        const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
+        return Promise.all(relationFieldNames.map(name => this.adapter.deleteClass(joinTableName(className, name))));
+      } else {
+        return Promise.resolve();
+      }
+    });
+  })
 }
 
 DatabaseController.prototype.addPointerPermissions = function(schema, className, operation, query, aclGroup = []) {

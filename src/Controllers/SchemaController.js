@@ -233,13 +233,11 @@ const injectDefaultSchema = schema => ({
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 class SchemaController {
-  _collection;
   _dbAdapter;
   data;
   perms;
 
-  constructor(collection, databaseAdapter) {
-    this._collection = collection;
+  constructor(databaseAdapter) {
     this._dbAdapter = databaseAdapter;
 
     // this.data[className][fieldName] tells you the type of that field, in mongo format
@@ -251,7 +249,7 @@ class SchemaController {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this.getAllSchemas()
+    return this.getAllClasses()
     .then(allSchemas => {
       allSchemas.forEach(schema => {
         this.data[schema.className] = schema.fields;
@@ -269,8 +267,8 @@ class SchemaController {
     });
   }
 
-  getAllSchemas() {
-    return this._dbAdapter.getAllSchemas()
+  getAllClasses() {
+    return this._dbAdapter.getAllClasses()
     .then(allSchemas => allSchemas.map(injectDefaultSchema));
   }
 
@@ -278,7 +276,7 @@ class SchemaController {
     if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
       return Promise.resolve(this.data[className]);
     }
-    return this._dbAdapter.getOneSchema(className)
+    return this._dbAdapter.getClass(className)
     .then(injectDefaultSchema);
   }
 
@@ -295,12 +293,12 @@ class SchemaController {
       return Promise.reject(validationError);
     }
 
-    return this._collection.addSchema(className, fields, classLevelPermissions)
+    return this._dbAdapter.createClass(className, { fields, classLevelPermissions })
     .catch(error => {
-      if (error === undefined) {
+      if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
       } else {
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+        throw error;
       }
     });
   }
@@ -383,7 +381,7 @@ class SchemaController {
         'schema is frozen, cannot add: ' + className);
     }
     // We don't have this class. Update the schema
-    return this.addClassIfNotExists(className, []).then(() => {
+    return this.addClassIfNotExists(className, {}).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
     }, () => {
@@ -452,16 +450,8 @@ class SchemaController {
       return Promise.resolve();
     }
     validateCLP(perms, newSchema);
-    let update = {
-      _metadata: {
-        class_permissions: perms
-      }
-    };
-    update = {'$set': update};
-    return this._collection.updateSchema(className, update).then(() => {
-      // The update succeeded. Reload the schema
-      return this.reloadData();
-    });
+    return this._dbAdapter.setClassLevelPermissions(className, perms)
+    .then(() => this.reloadData());
   }
 
   // Returns a promise that resolves successfully to the new schema
@@ -511,7 +501,7 @@ class SchemaController {
         type = { type };
       }
 
-      return this._collection.addFieldIfNotExists(className, fieldName, type).then(() => {
+      return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
       }, () => {
@@ -558,16 +548,16 @@ class SchemaController {
       if (!this.data[className][fieldName]) {
         throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
       }
-
+    })
+    .then(() => this.getOneSchema(className))
+    .then(schema => {
       if (this.data[className][fieldName].type == 'Relation') {
         //For relations, drop the _Join table
-        return database.adapter.deleteFields(className, [fieldName], [])
-        .then(() => database.adapter.deleteOneSchema(`_Join:${fieldName}:${className}`));
+        return database.adapter.deleteFields(className, schema, [fieldName])
+        .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
 
-      const fieldNames = [fieldName];
-      const pointerFieldNames = this.data[className][fieldName].type === 'Pointer' ? [fieldName] : [];
-      return database.adapter.deleteFields(className, fieldNames, pointerFieldNames);
+      return database.adapter.deleteFields(className, schema, [fieldName]);
     });
   }
 
@@ -696,8 +686,8 @@ class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-function load(collection, dbAdapter) {
-  let schema = new SchemaController(collection, dbAdapter);
+const load = dbAdapter => {
+  let schema = new SchemaController(dbAdapter);
   return schema.reloadData().then(() => schema);
 }
 

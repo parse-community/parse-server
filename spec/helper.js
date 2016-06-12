@@ -11,24 +11,35 @@ var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+let databaseAdapter;
+if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+  var postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+  databaseAdapter = new PostgresStorageAdapter({
+    uri: postgresURI,
+    collectionPrefix: 'test_',
+  });
+} else {
+  databaseAdapter = new MongoStorageAdapter({
+    uri: mongoURI,
+    collectionPrefix: 'test_',
+  })
+}
 
 
 var port = 8378;
-
-let mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-let mongoAdapter = new MongoStorageAdapter({
-  uri: mongoURI,
-  collectionPrefix: 'test_',
-})
 
 let gridStoreAdapter = new GridStoreAdapter(mongoURI);
 
 // Default server configuration for tests.
 var defaultConfiguration = {
-  databaseAdapter: mongoAdapter,
   filesAdapter: gridStoreAdapter,
   serverURL: 'http://localhost:' + port + '/1',
+  databaseAdapter,
   appId: 'test',
   javascriptKey: 'test',
   dotNetKey: 'windows',
@@ -132,7 +143,7 @@ beforeEach(done => {
 
 afterEach(function(done) {
   Parse.Cloud._removeAllHooks();
-  mongoAdapter.getAllSchemas()
+  databaseAdapter.getAllClasses()
   .then(allSchemas => {
     allSchemas.forEach((schema) => {
       var className = schema.className;

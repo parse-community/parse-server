@@ -24,7 +24,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -42,7 +42,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -60,7 +60,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -79,7 +79,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -102,7 +102,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -200,7 +200,7 @@ describe('Installations', () => {
       'custom': 'allowed'
     };
   rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -224,7 +224,7 @@ describe('Installations', () => {
     var firstObject;
     var secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
@@ -233,7 +233,7 @@ describe('Installations', () => {
       input['foo'] = 'bar';
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
@@ -263,13 +263,13 @@ describe('Installations', () => {
     var firstObject;
     var secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input1)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
       return rest.create(config, auth.nobody(config), '_Installation', input2);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(2);
       if (results[0]['_id'] == firstObject._id) {
@@ -279,7 +279,7 @@ describe('Installations', () => {
       }
       return rest.create(config, auth.nobody(config), '_Installation', input3);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0]['_id']).toEqual(secondObject._id);
@@ -325,7 +325,7 @@ describe('Installations', () => {
       channels: ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var id = results[0].objectId;
@@ -334,7 +334,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', id, update);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].channels.length).toEqual(1);
@@ -356,7 +356,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = { 'installationId': installId2 };
@@ -379,7 +379,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = { 'deviceToken': b };
@@ -403,7 +403,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -413,7 +413,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(u);
@@ -429,7 +429,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -453,7 +453,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar']
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -461,7 +461,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0]['custom']).toEqual('allowed');
@@ -488,11 +488,11 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', {installationId: installId1}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {installationId: installId1}, {}))
     .then(results => {
       firstObject = results[0];
       expect(results.length).toEqual(1);
-      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+      return database.adapter.find('_Installation', installationSchema, {installationId: installId2}, {});
     }).then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
@@ -503,7 +503,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {objectId: firstObject.objectId}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {objectId: firstObject.objectId}, {}))
     .then(results => {
       // The first object should have been deleted
       expect(results.length).toEqual(0);
@@ -530,11 +530,11 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', {installationId: installId1}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {installationId: installId1}, {}))
     .then((results) => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
-      return database.adapter.find('_Installation', {installationId: installId2}, installationSchema, {});
+      return database.adapter.find('_Installation', installationSchema, {installationId: installId2}, {});
     })
     .then(results => {
       expect(results.length).toEqual(1);
@@ -546,7 +546,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {objectId: firstObject.objectId}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {objectId: firstObject.objectId}, {}))
     .then(results => {
       // The first object should have been deleted
       expect(results.length).toEqual(0);
@@ -570,7 +570,7 @@ describe('Installations', () => {
       input.appIdentifier = 'bar';
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       // The first object should have been deleted during merge
       expect(results.length).toEqual(1);
@@ -587,7 +587,7 @@ describe('Installations', () => {
       'deviceType': 'ios'
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -596,7 +596,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
@@ -621,7 +621,7 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', { deviceToken: t }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -631,7 +631,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
@@ -656,7 +656,7 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', { deviceToken: t }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -670,7 +670,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
@@ -691,7 +691,7 @@ describe('Installations', () => {
     var installObj;
     var tokenObj;
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       installObj = results[0];
@@ -701,7 +701,7 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', { deviceToken: t }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       tokenObj = results[0];
@@ -712,7 +712,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', installObj.objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', { objectId: tokenObj.objectId }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { objectId: tokenObj.objectId }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
@@ -731,7 +731,7 @@ describe('Installations', () => {
     var installObj;
     var tokenObj;
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       installObj = results[0];
@@ -741,7 +741,7 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', { deviceToken: t }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { deviceToken: t }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       tokenObj = results[0];
@@ -756,7 +756,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', installObj.objectId, input);
     })
-    .then(() => database.adapter.find('_Installation', { objectId: tokenObj.objectId }, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, { objectId: tokenObj.objectId }, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId);
@@ -784,7 +784,7 @@ describe('Installations', () => {
       'deviceType': 'ios'
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       input = {
@@ -794,7 +794,7 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
-    .then(() => database.adapter.find('_Installation', {}, installationSchema, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(t);

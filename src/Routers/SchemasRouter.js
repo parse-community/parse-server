@@ -16,7 +16,7 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 
 function getAllSchemas(req) {
   return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getAllSchemas())
+  .then(schemaController => schemaController.getAllClasses())
   .then(schemas => ({ response: { results: schemas } }));
 }
 
@@ -47,7 +47,7 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
     .then(schema => ({ response: schema }));
 }
 
@@ -64,33 +64,11 @@ function modifySchema(req) {
   .then(result => ({response: result}));
 }
 
-// A helper function that removes all join tables for a schema. Returns a promise.
-var removeJoinTables = (database, mongoSchema) => {
-  return Promise.all(Object.keys(mongoSchema)
-    .filter(field => field !== '_metadata' && mongoSchema[field].startsWith('relation<'))
-    .map(field => {
-      let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.adapter.deleteOneSchema(collectionName);
-    })
-  );
-};
-
-function deleteSchema(req) {
+const deleteSchema = req => {
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
   return req.config.database.deleteSchema(req.params.className)
-  .then(() => req.config.database.schemaCollection())
-  // We've dropped the collection now, so delete the item from _SCHEMA
-  // and clear the _Join collections
-  .then(coll => coll.findAndDeleteSchema(req.params.className))
-  .then(document => {
-    if (document === null) {
-      //tried to delete non-existent class
-      return Promise.resolve();
-    }
-    return removeJoinTables(req.config.database, document);
-  })
   .then(() => ({ response: {} }));
 }
 
