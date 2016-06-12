@@ -44,18 +44,6 @@ export default class MongoCollection {
     return this._mongoCollection.count(query, { skip, limit, sort });
   }
 
-  // Atomically finds and updates an object based on query.
-  // The result is the promise with an object that was in the database !AFTER! changes.
-  // Postgres Note: Translates directly to `UPDATE * SET * ... RETURNING *`, which will return data after the change is done.
-  findOneAndUpdate(query, update) {
-    // arguments: query, sort, update, options(optional)
-    // Setting `new` option to true makes it return the after document, not the before one.
-    return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
-  }
-
   insertOne(object) {
     return this._mongoCollection.insertOne(object);
   }

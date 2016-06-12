@@ -212,12 +212,14 @@ export class MongoStorageAdapter {
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
   }
 
-  // Hopefully we can get rid of this in favor of updateObjectsByQuery.
+  // Atomically finds and updates an object based on query.
+  // Resolve with the updated object.
   findOneAndUpdate(className, query, schema, update) {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this.adaptiveCollection(className)
-    .then(collection => collection.findOneAndUpdate(mongoWhere, mongoUpdate));
+    .then(collection => collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, { new: true }))
+    .then(result => result.value);
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
