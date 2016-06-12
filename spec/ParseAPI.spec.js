@@ -213,8 +213,7 @@ describe('miscellaneous', function() {
           expect(typeof user.id).toEqual('string');
           expect(user.get('password')).toBeUndefined();
           expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut();
-          done();
+          Parse.User.logOut().then(done);
         }, error: function(error) {
           fail(error);
         }
