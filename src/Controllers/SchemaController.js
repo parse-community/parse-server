@@ -220,6 +220,20 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
   return undefined;
 }
 
+const convertSchemaToAdapterSchema = schema => {
+  schema = injectDefaultSchema(schema);
+  delete schema.fields.ACL;
+  schema.fields._rperm = { type: 'Array' };
+  schema.fields._wperm = { type: 'Array' };
+
+  if (schema.className === '_User') {
+    delete schema.fields.password;
+    schema.fields._hashed_password = { type: 'String' };
+  }
+
+  return schema;
+}
+
 const injectDefaultSchema = schema => ({
   className: schema.className,
   fields: {
@@ -293,7 +307,7 @@ class SchemaController {
       return Promise.reject(validationError);
     }
 
-    return this._dbAdapter.createClass(className, { fields, classLevelPermissions })
+    return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -360,20 +374,15 @@ class SchemaController {
 
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
-  // If 'freeze' is true, refuse to modify the schema.
-  enforceClassExists(className, freeze) {
+  enforceClassExists(className) {
     if (this.data[className]) {
       return Promise.resolve(this);
     }
-    if (freeze) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-        'schema is frozen, cannot add: ' + className);
-    }
     // We don't have this class. Update the schema
-    return this.addClassIfNotExists(className, {}).then(() => {
+    return this.addClassIfNotExists(className).then(() => {
       // The schema update succeeded. Reload the schema
       return this.reloadData();
-    }, () => {
+    }, error => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
@@ -381,8 +390,12 @@ class SchemaController {
       return this.reloadData();
     }).then(() => {
       // Ensure that the schema now validates
-      return this.enforceClassExists(className, true);
-    }, () => {
+      if (this.data[className]) {
+        return this;
+      } else {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
+      }
+    }, error => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
@@ -826,4 +839,5 @@ export {
   buildMergedSchemaObject,
   systemClasses,
   defaultColumns,
+  convertSchemaToAdapterSchema,
 };

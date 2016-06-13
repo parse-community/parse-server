@@ -36,7 +36,10 @@ describe('miscellaneous', function() {
           expect(obj2.id).toEqual(obj.id);
           done();
         },
-        error: fail
+        error: error => {
+          fail(JSON.stringify(error));
+          done();
+        }
       });
     });
   });
@@ -47,8 +50,8 @@ describe('miscellaneous', function() {
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
       done();
-    }, function(err) {
-      fail(err);
+    }, error => {
+      fail(JSON.stringify(error));
       done();
     });
   });
@@ -85,7 +88,6 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that email is uniquely indexed', done => {
-    let numCreated = 0;
     let numFailed = 0;
 
     let user1 = new Parse.User();

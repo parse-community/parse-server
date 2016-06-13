@@ -3,6 +3,22 @@ const pgp = require('pg-promise')();
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 
+const parseTypeToPostgresType = type => {
+  switch (type.type) {
+    case 'String': return 'text';
+    case 'Date': return 'timestamp';
+    case 'Object': return 'jsonb';
+    case 'Boolean': return 'boolean';
+    case 'Pointer': return 'char(10)';
+    case 'Array':
+      if (type.contents && type.contents.type === 'String') {
+        return 'text[]';
+      } else {
+        throw `no type for ${JSON.stringify(type)} yet`;
+      }
+    default: throw `no type for ${JSON.stringify(type)} yet`;
+  }
+};
 
 export class PostgresStorageAdapter {
   // Private
@@ -37,13 +53,24 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this._client.query('CREATE TABLE $<className:name> ()', { className })
+    let valuesArray = [];
+    let patternsArray = [];
+    Object.keys(schema.fields).forEach((fieldName, index) => {
+      valuesArray.push(fieldName);
+      let parseType = schema.fields[fieldName];
+      if (['_rperm', '_wperm'].includes(fieldName)) {
+        parseType.contents = { type: 'String' };
+      }
+      valuesArray.push(parseTypeToPostgresType(parseType));
+      patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
+    });
+    return this._client.query(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray])
     .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
   }
 
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Doing this in a transaction is probably a good idea.
-    return this._client.query('ALTER TABLE "GameScore" ADD COLUMN "score" double precision', { className, fieldName })
+    return this._client.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> text', { className, fieldName })
     .catch(error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         return this.createClass(className, { fields: { [fieldName]: type } })
@@ -127,7 +154,7 @@ export class PostgresStorageAdapter {
     return this._client.query('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
     .then(result => {
       if (result.length === 1) {
-        return result;
+        return result[0];
       } else {
         throw undefined;
       }
@@ -136,15 +163,40 @@ export class PostgresStorageAdapter {
 
   // TODO: remove the mongo format dependency
   createObject(className, schema, object) {
-    return this._client.query('INSERT INTO "GameScore" (score) VALUES ($<score>)', { score: object.score })
-    .then(() => ({ ops: [object] }));
+    let columnsArray = [];
+    let valuesArray = [];
+    Object.keys(object).forEach(fieldName => {
+      columnsArray.push(fieldName);
+      switch (schema.fields[fieldName].type) {
+        case 'Date':
+          valuesArray.push(object[fieldName].iso);
+          break;
+        case 'Pointer':
+          valuesArray.push(object[fieldName].objectId);
+          break;
+        default:
+          valuesArray.push(object[fieldName]);
+          break;
+      }
+    });
+    let columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
+    let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}`).join(',');
+    return this._client.query(`INSERT INTO $1~ (${columnsPattern}) VALUES (${valuesPattern})`, [className, ...columnsArray, ...valuesArray])
+    .then(() => ({ ops: [object] }))
   }
 
   // Remove all objects that match the given Parse Query.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
-    return Promise.reject('Not implented yet.')
+    return this._client.query(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className })
+    .then(result => {
+      if (result[0].count === 0) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      } else {
+        return result[0].count;
+      }
+    });
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -164,7 +216,13 @@ export class PostgresStorageAdapter {
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, schema, query, { skip, limit, sort }) {
-    return this._client.query("SELECT * FROM $<className>", { className })
+    return this._client.query("SELECT * FROM $<className:name>", { className })
+    .then(results => results.map(object => {
+      Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
+        object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+      });
+      return object;
+    }))
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't

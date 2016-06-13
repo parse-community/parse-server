@@ -2288,7 +2288,7 @@ describe('Parse.User testing', () => {
               expect(err.code).toEqual(209);
               expect(err.message).toEqual("Session token is expired.");
               Parse.User.logOut() // Logout to prevent polluting CLI with messages
-              .then(done());
+              .then(done);
             });
           });
         });

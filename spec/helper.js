@@ -11,7 +11,6 @@ var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
@@ -29,7 +28,6 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
     collectionPrefix: 'test_',
   })
 }
-
 
 var port = 8378;
 
