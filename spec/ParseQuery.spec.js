@@ -1186,7 +1186,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("regexes with invalid options fail", function(done) {
+  fit("regexes with invalid options fail", function(done) {
     var query = new Parse.Query(TestObject);
     query.matches("myString", "FootBall", "some invalid option");
     query.find(expectError(Parse.Error.INVALID_QUERY, done));

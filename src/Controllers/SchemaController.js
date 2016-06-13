@@ -97,7 +97,7 @@ const requiredColumns = Object.freeze({
 
 const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
 
-const volatileClasses = Object.freeze(['_PushStatus']);
+const volatileClasses = Object.freeze(['_PushStatus', '_Hooks', '_GlobalConfig']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -244,6 +244,14 @@ const injectDefaultSchema = schema => ({
   classLevelPermissions: schema.classLevelPermissions,
 })
 
+const dbTypeMatchesObjectType = (dbType, objectType) => {
+  if (dbType.type !== objectType.type) return false;
+  if (dbType.targetClass !== objectType.targetClass) return false;
+  if (dbType === objectType.type) return true;
+  if (dbType.type === objectType.type) return true;
+  return false;
+}
+
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 class SchemaController {
@@ -358,7 +366,7 @@ class SchemaController {
       .then(() => {
         let promises = insertedFields.map(fieldName => {
           const type = submittedFields[fieldName];
-          return this.validateField(className, fieldName, type);
+          return this.enforceFieldExists(className, fieldName, type);
         });
         return Promise.all(promises);
       })
@@ -460,47 +468,34 @@ class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  validateField(className, fieldName, type, freeze) {
+  enforceFieldExists(className, fieldName, type, freeze) {
+    if (fieldName.indexOf(".") > 0) {
+      // subdocument key (x.y) => ok if x is of type 'object'
+      fieldName = fieldName.split(".")[ 0 ];
+      type = 'Object';
+    }
+    if (!fieldNameIsValid(fieldName)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+    }
+
+    // If someone tries to create a new field with null/undefined as the value, return;
+    if (!type) {
+      return Promise.resolve(this);
+    }
+
     return this.reloadData().then(() => {
-      if (fieldName.indexOf(".") > 0) {
-        // subdocument key (x.y) => ok if x is of type 'object'
-        fieldName = fieldName.split(".")[ 0 ];
-        type = 'Object';
-      }
-
-      if (!fieldNameIsValid(fieldName)) {
-        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
-      }
-
-      let expected = this.data[className][fieldName];
-      if (expected) {
-        expected = (expected === 'map' ? 'Object' : expected);
-        if (expected.type && type.type
-            && expected.type == type.type
-            && expected.targetClass == type.targetClass) {
-          return Promise.resolve(this);
-        } else if (expected == type || expected.type == type) {
-          return Promise.resolve(this);
-        } else {
-          throw new Parse.Error(
-            Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${expected.type || expected} but got ${type}`
-          );
-        }
-      }
-
-      if (freeze) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `schema is frozen, cannot add ${fieldName} field`);
-      }
-
-      // We don't have this field, but if the value is null or undefined,
-      // we won't update the schema until we get a value with a type.
-      if (!type) {
-        return Promise.resolve(this);
-      }
-
+      let expectedType = this.getExpectedType(className, fieldName);
       if (typeof type === 'string') {
         type = { type };
+      }
+
+      if (expectedType) {
+        if (!dbTypeMatchesObjectType(expectedType, type)) {
+          throw new Parse.Error(
+            Parse.Error.INCORRECT_TYPE,
+            `schema mismatch for ${className}.${fieldName}; expected ${expectedType.type || expectedType} but got ${type}`
+          );
+        }
       }
 
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
@@ -513,11 +508,10 @@ class SchemaController {
         return this.reloadData();
       }).then(() => {
         // Ensure that the schema now validates
-        return this.validateField(className, fieldName, type, true);
-      }, (error) => {
-        // The schema still doesn't validate. Give up
-        throw new Parse.Error(Parse.Error.INVALID_JSON,
-          'schema key will not revalidate');
+        if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
+        }
+        return this;
       });
     });
   }
@@ -674,9 +668,10 @@ class SchemaController {
 
   // Returns the expected type for a className+key combination
   // or undefined if the schema is not set
-  getExpectedType(className, key) {
+  getExpectedType(className, fieldName) {
     if (this.data && this.data[className]) {
-      return this.data[className][key];
+      const expectedType = this.data[className][fieldName]
+      return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
   };
@@ -727,7 +722,7 @@ function buildMergedSchemaObject(existingFields, putRequest) {
 // validates this field once the schema loads.
 function thenValidateField(schemaPromise, className, key, type) {
   return schemaPromise.then((schema) => {
-    return schema.validateField(className, key, type);
+    return schema.enforceFieldExists(className, key, type);
   });
 }
 

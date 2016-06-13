@@ -648,7 +648,10 @@ DatabaseController.prototype.find = function(className, query, {
   let classExists = true;
   return this.loadSchema()
   .then(schemaController => {
-    return schemaController.getOneSchema(className)
+    //Allow volatile classes if querying with Master (for _PushStatus)
+    //TODO: Move volatile classes concept into mongo adatper, postgres adapter shouldn't care
+    //that api.parse.com breaks when _PushStatus exists in mongo.
+    return schemaController.getOneSchema(className, isMaster)
     .catch(error => {
       // Behaviour for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
       // For now, pretend the class exists but has no objects,

@@ -45,7 +45,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('create a valid parse user', function(done) {
+  it('create a valid parse user', function(done) {
     createTestUser(function(data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
@@ -90,7 +90,7 @@ describe('miscellaneous', function() {
 
   it('ensure that email is uniquely indexed', done => {
     let numFailed = 0;
-
+    let numCreated = 0;
     let user1 = new Parse.User();
     user1.setPassword('asdf');
     user1.setUsername('u1');
@@ -207,47 +207,6 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('ensure that email is uniquely indexed', done => {
-    let numCreated = 0;
-    let numFailed = 0;
-
-    let user1 = new Parse.User();
-    user1.setPassword('asdf');
-    user1.setUsername('u1');
-    user1.setEmail('dupe@dupe.dupe');
-    let p1 = user1.signUp();
-    p1.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-    });
-
-    let user2 = new Parse.User();
-    user2.setPassword('asdf');
-    user2.setUsername('u2');
-    user2.setEmail('dupe@dupe.dupe');
-    let p2 = user2.signUp();
-    p2.then(user => {
-      numCreated++;
-      expect(numCreated).toEqual(1);
-    })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-    });
-    Parse.Promise.all([p1, p2])
-    .then(() => {
-      fail('one of the users should not have been created');
-      done();
-    })
-    .catch(done);
-  });
-
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
     let config = new Config('test');
     // Remove existing data to clear out unique index
@@ -318,7 +277,7 @@ describe('miscellaneous', function() {
     }, fail);
   });
 
-  fit('increment with a user object', function(done) {
+  it('increment with a user object', function(done) {
     createTestUser().then((user) => {
       user.increment('foo');
       return user.save();

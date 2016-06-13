@@ -166,6 +166,11 @@ export class PostgresStorageAdapter {
   createObject(className, schema, object) {
     let columnsArray = [];
     let valuesArray = [];
+    console.log('creating');
+    console.log(schema);
+    console.log(object);
+    console.log(className);
+    console.log(new Error().stack);
     Object.keys(object).forEach(fieldName => {
       columnsArray.push(fieldName);
       switch (schema.fields[fieldName].type) {

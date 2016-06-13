@@ -281,10 +281,14 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   }
 
   // Use the legacy mongo format for createdAt and updatedAt
-  mongoCreate._created_at = mongoCreate.createdAt.iso;
-  delete mongoCreate.createdAt;
-  mongoCreate._updated_at = mongoCreate.updatedAt.iso;
-  delete mongoCreate.updatedAt;
+  if (mongoCreate.createdAt) {
+    mongoCreate._created_at = new Date(mongoCreate.createdAt.iso || mongoCreate.createdAt);
+    delete mongoCreate.createdAt;
+  }
+  if (mongoCreate.updatedAt) {
+    mongoCreate._updated_at = new Date(mongoCreate.updatedAt.iso || mongoCreate.updatedAt);
+    delete mongoCreate.updatedAt;
+  }
 
   return mongoCreate;
 }
