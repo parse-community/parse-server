@@ -91,6 +91,21 @@ describe('rest create', () => {
     });
   });
 
+  it('handles create on existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+    .then(actualSchema => {
+      expect(actualSchema.className).toEqual('ClientClassCreation');
+      return rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    })
+    .then(() => {
+      done();
+    }, err => {
+      fail('Should not throw error')
+    });
+  });
+
   it('handles user signup', (done) => {
     var user = {
       username: 'asdf',

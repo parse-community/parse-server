@@ -114,17 +114,16 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestWrite.prototype.validateClientClassCreation = function() {
-  let sysClass = SchemaController.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
-      && sysClass.indexOf(this.className) === -1) {
-    return this.config.database.collectionExists(this.className).then((hasClass) => {
-      if (hasClass === true) {
-        return;
-      }
-
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                            'This user is not allowed to access ' +
-                            'non-existent class: ' + this.className);
+      && SchemaController.systemClasses.indexOf(this.className) === -1) {
+    return this.config.database.loadSchema()
+      .then(schemaController => schemaController.hasClass(this.className))
+      .then(hasClass => {
+        if (hasClass !== true) {
+          throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+                                'This user is not allowed to access ' +
+                                'non-existent class: ' + this.className);
+        }
     });
   } else {
     return Promise.resolve();
