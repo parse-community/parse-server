@@ -140,6 +140,12 @@ beforeEach(done => {
 });
 
 afterEach(function(done) {
+  let afterLogOut = () => {
+    if (Object.keys(openConnections).length > 0) {
+      fail('There were open connections to the server left after the test finished');
+    }
+    done();
+  };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
   .then(allSchemas => {
@@ -157,16 +163,7 @@ afterEach(function(done) {
     });
   })
   .then(() => Parse.User.logOut())
-  .then(() => {
-    if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
-    }
-    done();
-  })
-  .catch(error => {
-    fail(JSON.stringify(error));
-    done();
-  });
+  .then(afterLogOut, afterLogOut)
 });
 
 var TestObject = Parse.Object.extend({

@@ -49,7 +49,7 @@ describe('MongoStorageAdapter', () => {
 
   it('stores objectId in _id', done => {
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    adapter.createObject('Foo', {}, { objectId: 'abcde' })
+    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
     .then(() => adapter._rawFind('Foo', {}))
     .then(results => {
       expect(results.length).toEqual(1);

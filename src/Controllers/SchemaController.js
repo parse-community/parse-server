@@ -234,6 +234,20 @@ const convertSchemaToAdapterSchema = schema => {
   return schema;
 }
 
+const convertAdapterSchemaToParseSchema = ({...schema}) => {
+  delete schema.fields._rperm;
+  delete schema.fields._wperm;
+
+  schema.fields.ACL = { type: 'ACL' };
+
+  if (schema.className === '_User') {
+    delete schema.fields._hashed_password;
+    schema.fields.password = { type: 'String' };
+  }
+
+  return schema;
+}
+
 const injectDefaultSchema = schema => ({
   className: schema.className,
   fields: {
@@ -316,6 +330,7 @@ class SchemaController {
     }
 
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
+    .then(convertAdapterSchemaToParseSchema)
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -342,6 +357,8 @@ class SchemaController {
         }
       });
 
+      delete existingFields._rperm;
+      delete existingFields._wperm;
       let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
       let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions);
       if (validationError) {

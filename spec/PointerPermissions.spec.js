@@ -36,8 +36,8 @@ describe('Pointer Permissions', () => {
       expect(res.length).toBe(1);
       expect(res[0].id).toBe(obj.id);
       done();
-    }).catch((err) => {
-      fail('Should not fail');
+    }).catch(error => {
+      fail(JSON.stringify(error));
       done();
     });
   });

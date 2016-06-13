@@ -67,8 +67,8 @@ const validateQuery = query => {
   }
 
   Object.keys(query).forEach(key => {
-    if (query[key].$regex) {
-      if (typeof query[key].$options === 'string') {g
+    if (query && query[key] && query[key].$regex) {
+      if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxs]+$/)) {
           throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
         }
@@ -764,7 +764,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
   })
   .then(schema => {
     return this.collectionExists(className)
-    .then(exist => this.adapter.count(className))
+    .then(exist => this.adapter.count(className, { fields: {} }))
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);

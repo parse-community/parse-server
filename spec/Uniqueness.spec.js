@@ -100,12 +100,4 @@ describe('Uniqueness', function() {
       done();
     });
   });
-
-  it('adding a unique index to an existing field works even if it has nulls', done => {
-
-  });
-
-  it('adding a unique index to an existing field doesnt prevent you from adding new documents with nulls', done => {
-
-  });
 });

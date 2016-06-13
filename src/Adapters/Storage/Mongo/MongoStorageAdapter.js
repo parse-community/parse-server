@@ -34,6 +34,12 @@ const storageAdapterAllCollections = mongoAdapter => {
   });
 }
 
+const convertParseSchemaToMongoSchema = ({...schema}) => {
+  delete schema.fields._rperm;
+  delete schema.fields._wperm;
+  return schema;
+}
+
 export class MongoStorageAdapter {
   // Private
   _uri: string;
@@ -97,6 +103,7 @@ export class MongoStorageAdapter {
   }
 
   createClass(className, schema) {
+    schema = convertParseSchemaToMongoSchema(schema);
     return this._schemaCollection()
     .then(schemaCollection => schemaCollection.addSchema(className, schema.fields, schema.classLevelPermissions));
   }
@@ -192,6 +199,7 @@ export class MongoStorageAdapter {
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
   createObject(className, schema, object) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
     return this._adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
@@ -208,6 +216,7 @@ export class MongoStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
+    schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transformWhere(className, query, schema);
@@ -225,6 +234,7 @@ export class MongoStorageAdapter {
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
@@ -234,6 +244,7 @@ export class MongoStorageAdapter {
   // Atomically finds and updates an object based on query.
   // Return value not currently well specified.
   findOneAndUpdate(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
@@ -243,6 +254,7 @@ export class MongoStorageAdapter {
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
@@ -251,6 +263,7 @@ export class MongoStorageAdapter {
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, schema, query, { skip, limit, sort }) {
+    schema = convertParseSchemaToMongoSchema(schema);
     let mongoWhere = transformWhere(className, query, schema);
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
     return this._adaptiveCollection(className)
@@ -264,6 +277,7 @@ export class MongoStorageAdapter {
   // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
   // which is why we use sparse indexes.
   ensureUniqueness(className, schema, fieldNames) {
+    schema = convertParseSchemaToMongoSchema(schema);
     let indexCreationRequest = {};
     let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
     mongoFieldNames.forEach(fieldName => {
@@ -287,6 +301,7 @@ export class MongoStorageAdapter {
 
   // Executs a count.
   count(className, schema, query) {
+    schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
     .then(collection => collection.count(transformWhere(className, query, schema)));
   }
