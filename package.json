@@ -24,7 +24,7 @@
     "body-parser": "^1.14.2",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
-    "deepcopy": "0.6.1",
+    "deepcopy": "0.6.3",
     "express": "^4.13.4",
     "intersect": "^1.0.1",
     "lodash": "^4.8.2",
