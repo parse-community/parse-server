@@ -44,7 +44,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('create a valid parse user', function(done) {
+  it('create a valid parse user', function(done) {
     createTestUser(function(data) {
       expect(data.id).not.toBeUndefined();
       expect(data.getSessionToken()).not.toBeUndefined();
