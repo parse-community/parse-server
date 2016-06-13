@@ -89,7 +89,7 @@ RestWrite.prototype.execute = function() {
     return this.cleanUserAuthData();
   }).then(() => {
     return this.response;
-  });
+  })
 };
 
 // Uses the Auth object to get the list of roles, adds the user id
