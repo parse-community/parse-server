@@ -145,6 +145,22 @@ describe('rest query', () => {
     });
   });
 
+  it('query existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+    .then(actualSchema => {
+      expect(actualSchema.className).toEqual('ClientClassCreation');
+      return rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    })
+    .then((result) => {
+      expect(result.results.length).toEqual(0);
+      done();
+    }, err => {
+      fail('Should not throw error')
+    });
+  });
+
   it('query with wrongly encoded parameter', (done) => {
     rest.create(config, nobody, 'TestParameterEncode', {foo: 'bar'}
     ).then(() => {
