@@ -22,7 +22,6 @@ export class PostgresStorageAdapter {
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
-        return;
       } else {
         throw error;
       }
@@ -77,7 +76,7 @@ export class PostgresStorageAdapter {
     return this._client.query('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
       const classes = ['_SCHEMA', ...results.map(result => result.className)];
-      return Promise.all(classes.map(className => this._client.query('DROP TABLE $<className:name>', { className })));
+      return this._client.task(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         // No _SCHEMA collection. Don't delete anything.
