@@ -140,7 +140,7 @@ export class PostgresStorageAdapter {
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
-  // schemas cannot be retrieved, returns a promise that rejects. Rquirements for the
+  // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
