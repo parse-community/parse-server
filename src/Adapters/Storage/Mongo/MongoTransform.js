@@ -517,13 +517,7 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$options':
-      var options = constraint[key];
-      if (!answer['$regex'] || (typeof options !== 'string')
-          || !options.match(/^[imxs]+$/)) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                              'got a bad $options');
-      }
-      answer[key] = options;
+      answer[key] = constraint[key];
       break;
 
     case '$nearSphere':

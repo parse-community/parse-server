@@ -67,6 +67,13 @@ const validateQuery = query => {
   }
 
   Object.keys(query).forEach(key => {
+    if (query[key].$regex) {
+      if (typeof query[key].$options === 'string') {g
+        if (!query[key].$options.match(/^[imxs]+$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
+        }
+      }
+    }
     if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
