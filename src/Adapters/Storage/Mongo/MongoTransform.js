@@ -250,11 +250,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     return {key: restKey, value: value};
   }
 
-  // Handle update operators. TODO: handle within Parse Server. DB adapter shouldn't see update operators in creates.
-  if (typeof restValue === 'object' && '__op' in restValue) {
-    return {key: restKey, value: transformUpdateOperator(restValue, true)};
-  }
-
   // Handle normal objects by recursing
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -264,9 +259,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
 }
 
 const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
-  if (className == '_User') {
-     restCreate = transformAuthData(restCreate);
-  }
   restCreate = addLegacyACL(restCreate);
   let mongoCreate = {}
   for (let restKey in restCreate) {
@@ -295,10 +287,6 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
 
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
-  if (className == '_User') {
-    restUpdate = transformAuthData(restUpdate);
-  }
-
   let mongoUpdate = {};
   let acl = addLegacyACL(restUpdate)._acl;
   if (acl) {
@@ -329,23 +317,6 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   }
 
   return mongoUpdate;
-}
-
-function transformAuthData(restObject) {
-  if (restObject.authData) {
-    Object.keys(restObject.authData).forEach((provider) => {
-      let providerData = restObject.authData[provider];
-      if (providerData == null) {
-        restObject[`_auth_data_${provider}`] = {
-          __op: 'Delete'
-        }
-      } else {
-        restObject[`_auth_data_${provider}`] = providerData;
-      }
-    });
-    delete restObject.authData;
-  }
-  return restObject;
 }
 
 // Add the legacy _acl format.

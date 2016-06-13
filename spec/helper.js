@@ -303,6 +303,8 @@ function mockFacebook() {
   return facebook;
 }
 
+
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -322,6 +324,14 @@ global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
+
+global.it_exclude_dbs = excluded => {
+  if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
+    return notWorking;
+  } else {
+    return it;
+  }
+}
 
 // LiveQuery test setting
 require('../src/LiveQuery/PLog').logLevel = 'NONE';

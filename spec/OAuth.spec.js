@@ -218,26 +218,24 @@ describe('OAuth', function() {
     return request.post(options, callback);
   }
 
-  it("should create user with REST API", (done) => {
-
+  it_exclude_dbs(['postgres'])("should create user with REST API", done => {
     createOAuthUser((error, response, body) => {
-        expect(error).toBe(null);
-        var b = JSON.parse(body);
-        ok(b.sessionToken);
-        expect(b.objectId).not.toBeNull();
-        expect(b.objectId).not.toBeUndefined();
-        var sessionToken = b.sessionToken;
-        var q = new Parse.Query("_Session");
-        q.equalTo('sessionToken', sessionToken);
-        q.first({useMasterKey: true}).then((res) => {
-          expect(res.get("installationId")).toEqual('yolo');
-          done();
-        }).fail((err) => {
-          fail('should not fail fetching the session');
-          done();
-        })
-      });
-
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      ok(b.sessionToken);
+      expect(b.objectId).not.toBeNull();
+      expect(b.objectId).not.toBeUndefined();
+      var sessionToken = b.sessionToken;
+      var q = new Parse.Query("_Session");
+      q.equalTo('sessionToken', sessionToken);
+      q.first({useMasterKey: true}).then((res) => {
+        expect(res.get("installationId")).toEqual('yolo');
+        done();
+      }).fail((err) => {
+        fail('should not fail fetching the session');
+        done();
+      })
+    });
   });
 
   it("should only create a single user with REST API", (done) => {

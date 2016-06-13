@@ -72,18 +72,16 @@ function mongoSchemaToParseSchema(mongoSchema) {
 }
 
 function _mongoSchemaQueryFromNameQuery(name: string, query) {
-  return _mongoSchemaObjectFromNameFields(name, query);
-}
-
-function _mongoSchemaObjectFromNameFields(name: string, fields) {
   let object = { _id: name };
-  if (fields) {
-    Object.keys(fields).forEach(key => {
-      object[key] = fields[key];
+  if (query) {
+    Object.keys(query).forEach(key => {
+      object[key] = query[key];
     });
   }
   return object;
 }
+
+
 
 // Returns a type suitable for inserting into mongo _SCHEMA collection.
 // Does no validation. That is expected to be done in Parse Server.
@@ -100,33 +98,6 @@ function parseFieldTypeToMongoFieldType({ type, targetClass }) {
     case 'GeoPoint': return 'geopoint';
     case 'File':     return 'file';
   }
-}
-
-// Returns { code, error } if invalid, or { result }, an object
-// suitable for inserting into _SCHEMA collection, otherwise.
-function mongoSchemaFromFieldsAndClassNameAndCLP(fields, className, classLevelPermissions) {
-
-  let mongoObject = {
-    _id: className,
-    objectId: 'string',
-    updatedAt: 'string',
-    createdAt: 'string'
-  };
-
-  for (let fieldName in fields) {
-    mongoObject[fieldName] = parseFieldTypeToMongoFieldType(fields[fieldName]);
-  }
-
-  if (typeof classLevelPermissions !== 'undefined') {
-    mongoObject._metadata = mongoObject._metadata || {};
-    if (!classLevelPermissions) {
-      delete mongoObject._metadata.class_permissions;
-    } else {
-      mongoObject._metadata.class_permissions = classLevelPermissions;
-    }
-  }
-
-  return mongoObject;
 }
 
 class MongoSchemaCollection {
@@ -154,22 +125,6 @@ class MongoSchemaCollection {
   // Atomically find and delete an object based on query.
   findAndDeleteSchema(name: string) {
     return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []);
-  }
-
-  // Returns a promise that is expected to resolve with the newly created schema, in Parse format.
-  // If the class already exists, returns a promise that rejects with DUPLICATE_VALUE as the reason.
-  addSchema(name: string, fields, classLevelPermissions) {
-    let mongoSchema = mongoSchemaFromFieldsAndClassNameAndCLP(fields, name, classLevelPermissions);
-    let mongoObject = _mongoSchemaObjectFromNameFields(name, mongoSchema);
-    return this._collection.insertOne(mongoObject)
-    .then(result => mongoSchemaToParseSchema(result.ops[0]))
-    .catch(error => {
-      if (error.code === 11000) { //Mongo's duplicate key error
-        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
-      } else {
-        throw error;
-      }
-    });
   }
 
   updateSchema(name: string, update) {
@@ -225,5 +180,6 @@ class MongoSchemaCollection {
 // Exported for testing reasons and because we haven't moved all mongo schema format
 // related logic into the database adapter yet.
 MongoSchemaCollection._TESTmongoSchemaToParseSchema = mongoSchemaToParseSchema
+MongoSchemaCollection.parseFieldTypeToMongoFieldType = parseFieldTypeToMongoFieldType
 
 export default MongoSchemaCollection
