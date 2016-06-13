@@ -37,6 +37,15 @@ const storageAdapterAllCollections = mongoAdapter => {
 const convertParseSchemaToMongoSchema = ({...schema}) => {
   delete schema.fields._rperm;
   delete schema.fields._wperm;
+
+  if (schema.className === '_User') {
+    // Legacy mongo adapter knows about the difference between password and _hashed_password.
+    // Future database adapters will only know about _hashed_password.
+    // Note: Parse Server will bring back password with injectDefaultSchema, so we don't need
+    // to add _hashed_password back ever.
+    delete schema.fields._hashed_password;
+  }
+
   return schema;
 }
 
