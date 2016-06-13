@@ -46,6 +46,10 @@ export class PushController extends AdaptableController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Push adapter is not available');
     }
+    if (!this.options) {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+                            'Missing push configuration');
+    }
     PushController.validatePushType(where, pushAdapter.getValidPushTypes());
     // Replace the expiration_time with a valid Unix epoch milliseconds time
     body['expiration_time'] = PushController.getExpirationTime(body);

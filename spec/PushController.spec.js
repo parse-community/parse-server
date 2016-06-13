@@ -178,7 +178,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
@@ -226,7 +226,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
@@ -277,7 +277,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
@@ -342,7 +342,7 @@ describe('PushController', () => {
    var auth = {
     isMaster: true
    }
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    pushController.sendPush(payload, where, config, auth).then(() => {
      fail('should not succeed');
      done();
@@ -388,7 +388,7 @@ describe('PushController', () => {
      }
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    pushController.sendPush(payload, where, config, auth).then((result) => {
       done();
     }).catch((err) => {
