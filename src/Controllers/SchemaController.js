@@ -358,17 +358,6 @@ class SchemaController {
     })
   }
 
-
-  // Returns whether the schema knows the type of all these keys.
-  hasKeys(className, keys) {
-    for (let key of keys) {
-      if (!this.data[className] || !this.data[className][key]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
   // If 'freeze' is true, refuse to modify the schema.
@@ -622,7 +611,7 @@ class SchemaController {
     }
     return Promise.resolve(this);
   }
-  
+
   // Validates the base CLP for an operation
   testBaseCLP(className, aclGroup, operation) {
     if (!this.perms[className] || !this.perms[className][operation]) {
