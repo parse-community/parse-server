@@ -5,6 +5,7 @@
 var DatabaseAdapter = require('../src/DatabaseAdapter');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
+const rp = require('request-promise');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
@@ -1344,6 +1345,113 @@ describe('miscellaneous', function() {
         fileField: "data",
         geoField: [1,2],
       });
+      done();
+    });
+  });
+
+  it('purge all objects in class', (done) => {
+    let object = new Parse.Object('TestObject');
+    object.set('foo', 'bar');
+    let object2 = new Parse.Object('TestObject');
+    object2.set('alice', 'wonderland');
+    Parse.Object.saveAll([object, object2])
+    .then(() => {
+      let query = new Parse.Query(TestObject);
+      return query.count()
+    }).then((count) => {
+      expect(count).toBe(2);
+      let headers = {
+        'Content-Type': 'application/json',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test'
+      };
+      request.del({
+        headers: headers,
+        url: 'http://localhost:8378/1/purge/TestObject',
+        json: true
+      }, (err, res, body) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query(TestObject);
+        return query.count().then((count) => {
+          expect(count).toBe(0);
+          done();
+        });
+      });
+    });
+  });
+
+  it('fail on purge all objects in class without master key', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    rp({
+      method: 'DELETE',
+      headers: headers,
+      uri: 'http://localhost:8378/1/purge/TestObject',
+      json: true
+    }).then(body => {
+      fail('Should not succeed');
+    }).catch(err => {
+      expect(err.error.error).toEqual('unauthorized: master key is required');
+      done();
+    });
+  });
+
+  it('purge all objects in _Role also purge cache', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    var user, object;
+    createTestUser().then((x) => {
+      user = x;
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
+      let role = new Parse.Object('_Role');
+      role.set('name', 'TestRole');
+      role.setACL(acl);
+      let users = role.relation('users');
+      users.add(user);
+      return role.save({}, { useMasterKey: true });
+    }).then((x) => {
+      let query = new Parse.Query('_Role');
+      return query.find({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.length).toEqual(1);
+      let relation = x[0].relation('users').query();
+      return relation.first({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.id).toEqual(user.id);
+      object = new Parse.Object('TestObject');
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(false);
+      acl.setPublicWriteAccess(false);
+      acl.setRoleReadAccess('TestRole', true);
+      acl.setRoleWriteAccess('TestRole', true);
+      object.setACL(acl);
+      return object.save();
+    }).then((x) => {
+      let query = new Parse.Query('TestObject');
+      return query.find({ sessionToken: user.getSessionToken() });
+    }).then((x) => {
+      expect(x.length).toEqual(1);
+      return rp({
+        method: 'DELETE',
+        headers: headers,
+        uri: 'http://localhost:8378/1/purge/_Role',
+        json: true
+      });
+    }).then((x) => {
+      let query = new Parse.Query('TestObject');
+      return query.get(object.id, { sessionToken: user.getSessionToken() });
+    }).then((x) => {
+      fail('Should not succeed');
+    }, (e) => {
+      expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
       done();
     });
   });

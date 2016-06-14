@@ -36,7 +36,7 @@ export class FeaturesRouter extends PromiseRouter {
           removeField: true,
           addClass: true,
           removeClass: true,
-          clearAllDataFromClass: false,
+          clearAllDataFromClass: true,
           exportClass: false,
           editClassLevelPermissions: true,
           editPointerPermissions: true,
