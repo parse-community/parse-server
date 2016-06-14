@@ -15,8 +15,12 @@ describe('Parse Role testing', () => {
 
     createTestUser().then((x) => {
       user = x;
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
       role = new Parse.Object('_Role');
       role.set('name', 'Foos');
+      role.setACL(acl);
       var users = role.relation('users');
       users.add(user);
       return role.save({}, { useMasterKey: true });
@@ -56,6 +60,7 @@ describe('Parse Role testing', () => {
     }).then((x) => {
       fail('Should not have been able to save.');
     }, (e) => {
+      expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
       done();
     });
 
