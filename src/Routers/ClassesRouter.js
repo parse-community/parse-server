@@ -1,6 +1,5 @@
 
 import PromiseRouter from '../PromiseRouter';
-import * as middleware from '../middlewares';
 import rest          from '../rest';
 
 import url           from 'url';
@@ -114,19 +113,6 @@ export class ClassesRouter extends PromiseRouter {
       });
   }
 
-  handlePurge(req) {
-    return req.config.database.purgeCollection(req.params.className)
-    .then(() => {
-      var cacheAdapter = req.config.cacheController;
-      if (req.params.className == '_Session') {
-        cacheAdapter.user.clear();
-      } else if (req.params.className == '_Role') {
-        cacheAdapter.role.clear();
-      }
-      return {response: {}};
-    });
-  }
-
   static JSONFromQuery(query) {
     let json = {};
     for (let [key, value] of Object.entries(query)) {
@@ -145,7 +131,6 @@ export class ClassesRouter extends PromiseRouter {
     this.route('POST', '/classes/:className', (req) => { return this.handleCreate(req); });
     this.route('PUT', '/classes/:className/:objectId', (req) => { return this.handleUpdate(req); });
     this.route('DELETE',  '/classes/:className/:objectId', (req) => { return this.handleDelete(req); });
-    this.route('DELETE',  '/classes/:className', middleware.promiseEnforceMasterKeyAccess, (req) => { return this.handlePurge(req); });
   }
 }
 

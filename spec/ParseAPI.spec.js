@@ -1383,7 +1383,7 @@ describe('miscellaneous', function() {
       };
       request.del({
         headers: headers,
-        url: 'http://localhost:8378/1/classes/TestObject',
+        url: 'http://localhost:8378/1/purge/TestObject',
         json: true
       }, (err, res, body) => {
         expect(err).toBe(null);
@@ -1405,7 +1405,7 @@ describe('miscellaneous', function() {
     rp({
       method: 'DELETE',
       headers: headers,
-      uri: 'http://localhost:8378/1/classes/TestObject',
+      uri: 'http://localhost:8378/1/purge/TestObject',
       json: true
     }).then(body => {
       fail('Should not succeed');
@@ -1458,7 +1458,7 @@ describe('miscellaneous', function() {
       return rp({
         method: 'DELETE',
         headers: headers,
-        uri: 'http://localhost:8378/1/classes/_Role',
+        uri: 'http://localhost:8378/1/purge/_Role',
         json: true
       });
     }).then((x) => {
