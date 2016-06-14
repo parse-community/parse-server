@@ -38,7 +38,7 @@
     "parse-server-push-adapter": "^1.0.0",
     "parse-server-s3-adapter": "^1.0.1",
     "parse-server-simple-mailgun-adapter": "^1.0.0",
-    "pg-promise": "^4.4.0",
+    "pg-promise": "^4.6.4",
     "redis": "^2.5.0-1",
     "request": "^2.65.0",
     "request-promise": "^3.0.0",
