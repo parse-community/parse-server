@@ -288,6 +288,7 @@ export class PostgresStorageAdapter {
     let conditionPatterns = [];
     let updatePatterns = [];
     let values = [className]
+    let index = 2;
 
     for (let fieldName in update) {
       let fieldValue = update[fieldName];
@@ -307,7 +308,7 @@ export class PostgresStorageAdapter {
     let where = buildWhereClause({ schema, index, query })
     values.push(...where.values);
 
-    let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.patten} RETURNING *`;
+    let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     return this._client.query(qs, values)
     .then(val => {
       return val[0];
