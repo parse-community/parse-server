@@ -802,6 +802,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
+          if (schema.fields[key] && schema.fields[key].type === 'Bytes' && BytesCoder.isValidDatabaseObject(value)) {
+            restObject[key] = BytesCoder.databaseToJSON(value);
+            break;
+          }
         }
         restObject[key] = nestedMongoObjectToNestedParseObject(mongoObject[key]);
       }
@@ -839,12 +843,12 @@ var BytesCoder = {
   databaseToJSON(object) {
     return {
       __type: 'Bytes',
-      base64: object.buffer.toString('base64')
+      base64: object
     };
   },
 
   isValidDatabaseObject(object) {
-    return (object instanceof mongodb.Binary);
+    return (typeof object === 'string');
   },
 
   JSONToDatabase(json) {
