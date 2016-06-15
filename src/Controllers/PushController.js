@@ -124,11 +124,11 @@ export class PushController extends AdaptableController {
         } else {
           payload.data.badge = parseInt(badge);
         }
-        return this.adapter.send(payload, badgeInstallationsMap[badge]);
+        return this.adapter.send(payload, badgeInstallationsMap[badge], pushStatus.objectId);
       });
       return Promise.all(promises);
     }
-    return this.adapter.send(body, installations);
+    return this.adapter.send(body, installations, pushStatus.objectId);
   }
 
   /**
