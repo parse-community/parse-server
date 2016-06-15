@@ -71,7 +71,7 @@
     "test": "cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
     "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 ./node_modules/.bin/babel-node ./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/** ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "posttest": "./node_modules/.bin/mongodb-runner stop",
-    "coverage": "cross-env COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**' -x */PostgresStorageAdapter.js npm test",
+    "coverage": "cross-env COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**' npm test",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },
