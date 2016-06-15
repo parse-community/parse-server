@@ -27,7 +27,7 @@ branches:
 cache:
   directories:
   - "$HOME/.mongodb/versions/downloads"
-after_success: "./node_modules/.bin/codecov"
+after_script: "./node_modules/.bin/codecov"
 deploy:
   provider: npm
   email:
