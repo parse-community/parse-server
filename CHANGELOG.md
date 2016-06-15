@@ -1,10 +1,175 @@
 ## Parse Server Changelog
 
+### 2.2.13 (6/12/2016)
+
+* Hotfix: Pin version of deepcopy
+
+### 2.2.12 (6/9/2016)
+
+* New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Allow "get" on installations
+* Fix: Fix overly restrictive Class Level Permissions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Fix nested date parsing in Cloud Code, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Support very old file formats from Parse.com
+
+### 2.2.11 (5/31/2016)
+
+* Security: Censor user password in logs, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Add PARSE_SERVER_LOGS_FOLDER env var for setting log folder, thanks to [KartikeyaRokde](https://github.com/KartikeyaRokde)
+* New: Webhook key support, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Perf: Add cache adapter and default caching of certain objects, thanks to [Blayne Chard](https://github.com/blacha)
+* Improvement: Better error messages for schema type mismatches, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Improvement: Better error messages for reset password emails
+* Improvement: Webhook key support in CLI, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Remove read only fields when using beforeSave, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Use content type provided by JS SDK, thanks to [Blayne Chard](https://github.com/blacha) and [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Tell the dashboard the stored push data is available, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Add support for HTTP Basic Auth, thanks to [Hussam Moqhim](https://github.com/hmoqhim)
+* Fix: Support for MongoDB version 3.2.6, (note: do not use MongoDB 3.2 with migrated apps that still have traffic on Parse.com), thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Prevent `pm2` from crashing when push notifications fail, thanks to [benishak](https://github.com/benishak)
+* Fix: Add full list of default _Installation fields, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Strip objectId out of hooks responses, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix external webhook response format, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix beforeSave when object is passed to `success`, thanks to [Madhav Bhagat](https://github.com/codebreach)
+* Fix: Remove use of deprecated APIs, thanks to [Emad Ehsan](https://github.com/emadehsan)
+* Fix: Crash when multiple Parse Servers on the same machine try to write to the same logs folder, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Fix: Various issues with key names in `Parse.Object`s
+* Fix: Treat Bytes type properly
+* Fix: Caching bugs that caused writes by masterKey or other session token to not show up to users reading with a different session token
+* Fix: Pin mongo driver version, preventing a regression in version 2.1.19
+* Fix: Various issues with pointer fields not being treated properly
+* Fix: Issues with pointed getting un-fetched due to changes in beforeSave
+* Fix: Fixed crash when deleting classes that have CLPs
+
+### 2.2.10 (5/15/2016)
+
+* Fix: Write legacy ACLs to Mongo so that clients that still go through Parse.com can read them, thanks to [Tyler Brock](https://github.com/TylerBrock) and [carmenlau](https://github.com/carmenlau)
+* Fix: Querying installations with limit = 0 and count = 1 now works, thanks to [ssk7833](https://github.com/ssk7833)
+* Fix: Return correct error when violating unique index, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Allow unsetting user's email, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Support for Node 6.1
+
+### 2.2.9 (5/9/2016)
+
+* Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
+
+### 2.2.8 (5/8/2016)
+
+* New: Support for Pointer Permissions
+* New: Expose logger in Cloud Code
+* New: Option to revoke sessions on password reset
+* New: Option to expire inactive sessions
+* Perf: Improvements in ACL checking query
+* Fix: Issues when sending pushes to list of devices that contains invalid values
+* Fix: Issues caused by using babel-polyfill outside of Parse Server, but in the same express app
+* Fix: Remove creation of extra session tokens
+* Fix: Return authData when querying with master key
+* Fix: Bugs when deleting webhooks
+* Fix: Ignore _RevocableSession header, which might be sent by the JS SDK
+* Fix: Issues with querying via URL params
+* Fix: Properly encode "Date" parameters to cloud code functions
+
+
+### 2.2.7 (4/15/2016)
+
+* Adds support for --verbose and verbose option when running ParseServer [\#1414](https://github.com/ParsePlatform/parse-server/pull/1414) ([flovilmart](https://github.com/flovilmart))
+* Adds limit = 0 as a valid parameter for queries [\#1493](https://github.com/ParsePlatform/parse-server/pull/1493) ([seijiakiyama](https://github.com/seijiakiyama))
+* Makes sure we preserve Installations when updating a token  \(\#1475\) [\#1486](https://github.com/ParsePlatform/parse-server/pull/1486) ([flovilmart](https://github.com/flovilmart))
+* Hotfix for tests [\#1503](https://github.com/ParsePlatform/parse-server/pull/1503) ([flovilmart](https://github.com/flovilmart))
+* Enable logs [\#1502](https://github.com/ParsePlatform/parse-server/pull/1502) ([drew-gross](https://github.com/drew-gross))
+* Do some triple equals for great justice [\#1499](https://github.com/ParsePlatform/parse-server/pull/1499) ([TylerBrock](https://github.com/TylerBrock))
+* Apply credential stripping to all untransforms for \_User [\#1498](https://github.com/ParsePlatform/parse-server/pull/1498) ([TylerBrock](https://github.com/TylerBrock))
+* Checking if object has defined key for Pointer constraints in liveQuery [\#1487](https://github.com/ParsePlatform/parse-server/pull/1487) ([simonas-notcat](https://github.com/simonas-notcat))
+* Remove collection prefix and default mongo URI [\#1479](https://github.com/ParsePlatform/parse-server/pull/1479) ([drew-gross](https://github.com/drew-gross))
+* Store collection prefix in mongo adapter, and clean up adapter interface [\#1472](https://github.com/ParsePlatform/parse-server/pull/1472) ([drew-gross](https://github.com/drew-gross))
+* Move field deletion logic into mongo adapter [\#1471](https://github.com/ParsePlatform/parse-server/pull/1471) ([drew-gross](https://github.com/drew-gross))
+* Adds support for Long and Double mongodb types \(fixes \#1316\) [\#1470](https://github.com/ParsePlatform/parse-server/pull/1470) ([flovilmart](https://github.com/flovilmart))
+* Schema.js database agnostic [\#1468](https://github.com/ParsePlatform/parse-server/pull/1468) ([flovilmart](https://github.com/flovilmart))
+* Remove console.log [\#1465](https://github.com/ParsePlatform/parse-server/pull/1465) ([drew-gross](https://github.com/drew-gross))
+* Push status nits [\#1462](https://github.com/ParsePlatform/parse-server/pull/1462) ([flovilmart](https://github.com/flovilmart))
+* Fixes \#1444 [\#1451](https://github.com/ParsePlatform/parse-server/pull/1451) ([flovilmart](https://github.com/flovilmart))
+* Removing sessionToken and authData from \_User objects included in a query [\#1450](https://github.com/ParsePlatform/parse-server/pull/1450) ([simonas-notcat](https://github.com/simonas-notcat))
+* Move mongo field type logic into mongoadapter [\#1432](https://github.com/ParsePlatform/parse-server/pull/1432) ([drew-gross](https://github.com/drew-gross))
+* Prevents \_User lock out when setting ACL on signup or afterwards [\#1429](https://github.com/ParsePlatform/parse-server/pull/1429) ([flovilmart](https://github.com/flovilmart))
+* Update .travis.yml [\#1428](https://github.com/ParsePlatform/parse-server/pull/1428) ([flovilmart](https://github.com/flovilmart))
+* Adds relation fields to objects [\#1424](https://github.com/ParsePlatform/parse-server/pull/1424) ([flovilmart](https://github.com/flovilmart))
+* Update .travis.yml [\#1423](https://github.com/ParsePlatform/parse-server/pull/1423) ([flovilmart](https://github.com/flovilmart))
+* Sets the defaultSchemas keys in the SchemaCollection [\#1421](https://github.com/ParsePlatform/parse-server/pull/1421) ([flovilmart](https://github.com/flovilmart))
+* Fixes \#1417 [\#1420](https://github.com/ParsePlatform/parse-server/pull/1420) ([drew-gross](https://github.com/drew-gross))
+* Untransform should treat Array's as nested objects [\#1416](https://github.com/ParsePlatform/parse-server/pull/1416) ([blacha](https://github.com/blacha))
+* Adds X-Parse-Push-Status-Id header [\#1412](https://github.com/ParsePlatform/parse-server/pull/1412) ([flovilmart](https://github.com/flovilmart))
+* Schema format cleanup [\#1407](https://github.com/ParsePlatform/parse-server/pull/1407) ([drew-gross](https://github.com/drew-gross))
+* Updates the publicServerURL option [\#1397](https://github.com/ParsePlatform/parse-server/pull/1397) ([flovilmart](https://github.com/flovilmart))
+* Fix exception with non-expiring session tokens. [\#1386](https://github.com/ParsePlatform/parse-server/pull/1386) ([0x18B2EE](https://github.com/0x18B2EE))
+* Move mongo schema format related logic into mongo adapter [\#1385](https://github.com/ParsePlatform/parse-server/pull/1385) ([drew-gross](https://github.com/drew-gross))
+* WIP: Huge performance improvement on roles queries [\#1383](https://github.com/ParsePlatform/parse-server/pull/1383) ([flovilmart](https://github.com/flovilmart))
+* Removes GCS Adapter from provided adapters [\#1339](https://github.com/ParsePlatform/parse-server/pull/1339) ([flovilmart](https://github.com/flovilmart))
+* DBController refactoring [\#1228](https://github.com/ParsePlatform/parse-server/pull/1228) ([flovilmart](https://github.com/flovilmart))
+* Spotify authentication [\#1226](https://github.com/ParsePlatform/parse-server/pull/1226) ([1nput0utput](https://github.com/1nput0utput))
+* Expose DatabaseAdapter to simplify application tests [\#1121](https://github.com/ParsePlatform/parse-server/pull/1121) ([steven-supersolid](https://github.com/steven-supersolid))
+
+### 2.2.6 (4/5/2016)
+
+* Important Fix: Disables find on installation from clients [\#1374](https://github.com/ParsePlatform/parse-server/pull/1374) ([flovilmart](https://github.com/flovilmart))
+* Adds missing options to the CLI [\#1368](https://github.com/ParsePlatform/parse-server/pull/1368) ([flovilmart](https://github.com/flovilmart))
+* Removes only master on travis [\#1367](https://github.com/ParsePlatform/parse-server/pull/1367) ([flovilmart](https://github.com/flovilmart))
+* Auth.\_loadRoles should not query the same role twice. [\#1366](https://github.com/ParsePlatform/parse-server/pull/1366) ([blacha](https://github.com/blacha))
+
+### 2.2.5 (4/4/2016)
+
+* Improves config loading and tests [\#1363](https://github.com/ParsePlatform/parse-server/pull/1363) ([flovilmart](https://github.com/flovilmart))
+* Adds travis configuration to deploy NPM on new version tags [\#1361](https://github.com/ParsePlatform/parse-server/pull/1361) ([gfosco](https://github.com/gfosco))
+* Inject the default schemas properties when loading it [\#1357](https://github.com/ParsePlatform/parse-server/pull/1357) ([flovilmart](https://github.com/flovilmart))
+* Adds console transport when testing with VERBOSE=1 [\#1351](https://github.com/ParsePlatform/parse-server/pull/1351) ([flovilmart](https://github.com/flovilmart))
+* Make notEqual work on relations  [\#1350](https://github.com/ParsePlatform/parse-server/pull/1350) ([flovilmart](https://github.com/flovilmart))
+* Accept only bool for $exists in LiveQuery [\#1315](https://github.com/ParsePlatform/parse-server/pull/1315) ([drew-gross](https://github.com/drew-gross))
+* Adds more options when using CLI/config [\#1305](https://github.com/ParsePlatform/parse-server/pull/1305) ([flovilmart](https://github.com/flovilmart))
+* Update error message [\#1297](https://github.com/ParsePlatform/parse-server/pull/1297) ([drew-gross](https://github.com/drew-gross))
+* Properly let masterKey add fields [\#1291](https://github.com/ParsePlatform/parse-server/pull/1291) ([flovilmart](https://github.com/flovilmart))
+* Point to \#1271 as how to write a good issue report [\#1290](https://github.com/ParsePlatform/parse-server/pull/1290) ([drew-gross](https://github.com/drew-gross))
+* Adds ability to override mount with publicServerURL for production uses [\#1287](https://github.com/ParsePlatform/parse-server/pull/1287) ([flovilmart](https://github.com/flovilmart))
+* Single object queries to use include and keys [\#1280](https://github.com/ParsePlatform/parse-server/pull/1280) ([jeremyjackson89](https://github.com/jeremyjackson89))
+* Improves report for Push error in logs and \_PushStatus [\#1269](https://github.com/ParsePlatform/parse-server/pull/1269) ([flovilmart](https://github.com/flovilmart))
+* Removes all stdout/err logs while testing [\#1268](https://github.com/ParsePlatform/parse-server/pull/1268) ([flovilmart](https://github.com/flovilmart))
+* Matching queries with doesNotExist constraint [\#1250](https://github.com/ParsePlatform/parse-server/pull/1250) ([andrecardoso](https://github.com/andrecardoso))
+* Added session length option for session tokens to server configuration [\#997](https://github.com/ParsePlatform/parse-server/pull/997) ([Kenishi](https://github.com/Kenishi))
+* Regression test for \#1259 [\#1286](https://github.com/ParsePlatform/parse-server/pull/1286) ([drew-gross](https://github.com/drew-gross))
+* Regression test for \#871 [\#1283](https://github.com/ParsePlatform/parse-server/pull/1283) ([drew-gross](https://github.com/drew-gross))
+* Add a test to repro \#701 [\#1281](https://github.com/ParsePlatform/parse-server/pull/1281) ([drew-gross](https://github.com/drew-gross))
+* Fix for \#1334: using relative cloud code files broken  [\#1353](https://github.com/ParsePlatform/parse-server/pull/1353) ([airdrummingfool](https://github.com/airdrummingfool))
+* Fix Issue/1288 [\#1346](https://github.com/ParsePlatform/parse-server/pull/1346) ([flovilmart](https://github.com/flovilmart))
+* Fixes \#1271 [\#1295](https://github.com/ParsePlatform/parse-server/pull/1295) ([drew-gross](https://github.com/drew-gross))
+* Fixes issue \#1302 [\#1314](https://github.com/ParsePlatform/parse-server/pull/1314) ([flovilmart](https://github.com/flovilmart))
+* Fixes bug related to include in queries [\#1312](https://github.com/ParsePlatform/parse-server/pull/1312) ([flovilmart](https://github.com/flovilmart))
+
+
+### 2.2.4 (3/29/2016)
+
+* Hotfix: fixed imports issue for S3Adapter, GCSAdapter, FileSystemAdapter [\#1263](https://github.com/ParsePlatform/parse-server/pull/1263) ([drew-gross](https://github.com/drew-gross)
+* Fix: Clean null authData values on _User update [\#1199](https://github.com/ParsePlatform/parse-server/pull/1199) ([yuzeh](https://github.com/yuzeh))
+
+### 2.2.3 (3/29/2016)
+
+* Fixed bug with invalid email verification link on email update. [\#1253](https://github.com/ParsePlatform/parse-server/pull/1253) ([kzielonka](https://github.com/kzielonka))
+* Badge update supports increment as well as Increment [\#1248](https://github.com/ParsePlatform/parse-server/pull/1248) ([flovilmart](https://github.com/flovilmart))
+* Config/Push Tested with the dashboard. [\#1235](https://github.com/ParsePlatform/parse-server/pull/1235) ([drew-gross](https://github.com/drew-gross))
+* Better logging with winston [\#1234](https://github.com/ParsePlatform/parse-server/pull/1234) ([flovilmart](https://github.com/flovilmart))
+* Make GlobalConfig work like parse.com [\#1210](https://github.com/ParsePlatform/parse-server/pull/1210) ([framp](https://github.com/framp))
+* Improve flattening of results from pushAdapter [\#1204](https://github.com/ParsePlatform/parse-server/pull/1204) ([flovilmart](https://github.com/flovilmart))
+* Push adapters are provided by external packages [\#1195](https://github.com/ParsePlatform/parse-server/pull/1195) ([flovilmart](https://github.com/flovilmart))
+* Fix flaky test [\#1188](https://github.com/ParsePlatform/parse-server/pull/1188) ([drew-gross](https://github.com/drew-gross))
+* Fixes problem affecting finding array pointers [\#1185](https://github.com/ParsePlatform/parse-server/pull/1185) ([flovilmart](https://github.com/flovilmart))
+* Moves Files adapters to external packages [\#1172](https://github.com/ParsePlatform/parse-server/pull/1172) ([flovilmart](https://github.com/flovilmart))
+* Mark push as enabled in serverInfo endpoint [\#1164](https://github.com/ParsePlatform/parse-server/pull/1164) ([drew-gross](https://github.com/drew-gross))
+* Document email adapter [\#1144](https://github.com/ParsePlatform/parse-server/pull/1144) ([drew-gross](https://github.com/drew-gross))
+* Reset password fix [\#1133](https://github.com/ParsePlatform/parse-server/pull/1133) ([carmenlau](https://github.com/carmenlau))
+
 ### 2.2.2 (3/23/2016)
 
 * Important Fix: Mounts createLiveQueryServer, fix babel induced problem [\#1153](https://github.com/ParsePlatform/parse-server/pull/1153) (flovilmart)
 * Move ParseServer to it's own file [\#1166](https://github.com/ParsePlatform/parse-server/pull/1166) (flovilmart)
-* Update README.md - remove deploy buttons - replace with community links [\#1139](https://github.com/ParsePlatform/parse-server/pull/1139) (drew-gross)
+* Update README.md * remove deploy buttons * replace with community links [\#1139](https://github.com/ParsePlatform/parse-server/pull/1139) (drew-gross)
 * Adds bootstrap.sh [\#1138](https://github.com/ParsePlatform/parse-server/pull/1138) (flovilmart)
 * Fix: Do not override username [\#1142](https://github.com/ParsePlatform/parse-server/pull/1142) (flovilmart)
 * Fix: Add pushId back to GCM payload [\#1168](https://github.com/ParsePlatform/parse-server/pull/1168) (wangmengyan95)

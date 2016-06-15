@@ -6,6 +6,8 @@
 // components that external developers may be modifying.
 
 import express from 'express';
+import url     from 'url';
+import log     from './logger';
 
 export default class PromiseRouter {
   // Each entry should be an object with:
@@ -146,9 +148,6 @@ export default class PromiseRouter {
   }
 }
 
-// Global flag. Set this to true to log every request and response.
-PromiseRouter.verbose = process.env.VERBOSE || false;
-
 // A helper function to make an express handler out of a a promise
 // handler.
 // Express handlers should never throw; if a promise handler throws we
@@ -156,18 +155,14 @@ PromiseRouter.verbose = process.env.VERBOSE || false;
 function makeExpressHandler(promiseHandler) {
   return function(req, res, next) {
     try {
-      if (PromiseRouter.verbose) {
-        console.log(req.method, req.originalUrl, req.headers,
-                    JSON.stringify(req.body, null, 2));
-      }
+      log.verbose(req.method, maskSensitiveUrl(req), req.headers,
+                  JSON.stringify(maskSensitiveBody(req), null, 2));
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
-          console.log('BUG: the handler did not include a "response" or a "location" field');
+          log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-        if (PromiseRouter.verbose) {
-          console.log('response:', JSON.stringify(result, null, 2));
-        }
+        log.verbose(JSON.stringify(result, null, 2));
 
         var status = result.status || 200;
         res.status(status);
@@ -184,18 +179,50 @@ function makeExpressHandler(promiseHandler) {
             return res.send('Found. Redirecting to '+result.location);
           }
         }
+        if (result.headers) {
+          Object.keys(result.headers).forEach((header) => {
+            res.set(header, result.headers[header]);
+          })
+        }
         res.json(result.response);
       }, (e) => {
-        if (PromiseRouter.verbose) {
-          console.log('error:', e);
-        }
+        log.verbose('error:', e);
         next(e);
       });
     } catch (e) {
-      if (PromiseRouter.verbose) {
-        console.log('error:', e);
-      }
+      log.verbose('exception:', e);
       next(e);
     }
   }
+}
+
+function maskSensitiveBody(req) {
+  let maskBody = Object.assign({}, req.body);
+  let shouldMaskBody = (req.method === 'POST' && req.originalUrl.endsWith('/users')
+                       && !req.originalUrl.includes('classes')) ||
+                       (req.method === 'PUT' && /users\/\w+$/.test(req.originalUrl)
+                       && !req.originalUrl.includes('classes')) ||
+                       (req.originalUrl.includes('classes/_User'));
+  if (shouldMaskBody) {
+    for (let key of Object.keys(maskBody)) {
+      if (key == 'password') {
+        maskBody[key] = '********';
+        break;
+      }
+    }
+  }
+  return maskBody;
+}
+
+function maskSensitiveUrl(req) {
+  let maskUrl = req.originalUrl.toString();
+  let shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
+                      && !req.originalUrl.includes('classes');
+  if (shouldMaskUrl) {
+    let password = url.parse(req.originalUrl, true).query.password;
+    if (password) {
+      maskUrl = maskUrl.replace('password=' + password, 'password=********')
+    }
+  }
+  return maskUrl;
 }

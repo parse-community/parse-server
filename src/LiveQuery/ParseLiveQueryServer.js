@@ -26,8 +26,7 @@ class ParseLiveQueryServer {
 
     config = config || {};
     // Set LogLevel
-    PLog.logLevel = config.logLevel || 'INFO';
-
+    PLog.level = config.logLevel || 'INFO';
     // Store keys, convert obj to map
     let keyPairs = config.keyPairs || {};
     this.keyPairs = new Map();

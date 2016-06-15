@@ -2,7 +2,7 @@
 
 var express = require('express'),
   Parse = require('parse/node').Parse,
-  Schema = require('../Schema');
+  SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
@@ -15,22 +15,23 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.schemaCollection()
-    .then(collection => collection.getAllSchemas())
-    .then(schemas => schemas.map(Schema.mongoSchemaToSchemaAPIResponse))
-    .then(schemas => ({ response: { results: schemas } }));
+  return req.config.database.loadSchema()
+  .then(schemaController => schemaController.getAllClasses())
+  .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.schemaCollection()
-    .then(collection => collection.findSchema(className))
-    .then(mongoSchema => {
-      if (!mongoSchema) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      }
-      return { response: Schema.mongoSchemaToSchemaAPIResponse(mongoSchema) };
-    });
+  return req.config.database.loadSchema()
+  .then(schemaController => schemaController.getOneSchema(className))
+  .then(schema => ({ response: schema }))
+  .catch(error => {
+    if (error === undefined) {
+      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+    } else {
+      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+    }
+  });
 }
 
 function createSchema(req) {
@@ -46,8 +47,8 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
-    .then(result => ({ response: Schema.mongoSchemaToSchemaAPIResponse(result) }));
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
+    .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {
@@ -55,81 +56,20 @@ function modifySchema(req) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  var submittedFields = req.body.fields || {};
-  var className = req.params.className;
+  let submittedFields = req.body.fields || {};
+  let className = req.params.className;
 
   return req.config.database.loadSchema()
-    .then(schema => {
-      return schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database);
-    }).then((result) => {
-        return Promise.resolve({response: result});
-    });
+  .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
+  .then(result => ({response: result}));
 }
 
-function getSchemaPermissions(req) {
-  var className = req.params.className;
-  return req.config.database.loadSchema()
-    .then(schema => {
-      return Promise.resolve({response: schema.perms[className]});
-  });
-}
-
-// A helper function that removes all join tables for a schema. Returns a promise.
-var removeJoinTables = (database, mongoSchema) => {
-  return Promise.all(Object.keys(mongoSchema)
-    .filter(field => mongoSchema[field].startsWith('relation<'))
-    .map(field => {
-      let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.dropCollection(collectionName);
-    })
-  );
-};
-
-function deleteSchema(req) {
-  if (!Schema.classNameIsValid(req.params.className)) {
-    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, Schema.invalidClassNameMessage(req.params.className));
+const deleteSchema = req => {
+  if (!SchemaController.classNameIsValid(req.params.className)) {
+    throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
-
-  return req.config.database.collectionExists(req.params.className)
-    .then(exist => {
-      if (!exist) {
-        return Promise.resolve();
-      }
-      return req.config.database.adaptiveCollection(req.params.className)
-        .then(collection => {
-          return collection.count()
-            .then(count => {
-              if (count > 0) {
-                throw new Parse.Error(255, `Class ${req.params.className} is not empty, contains ${count} objects, cannot drop schema.`);
-              }
-              return collection.drop();
-            })
-        })
-    })
-    .then(() => {
-      // We've dropped the collection now, so delete the item from _SCHEMA
-      // and clear the _Join collections
-      return req.config.database.schemaCollection()
-        .then(coll => coll.findAndDeleteSchema(req.params.className))
-        .then(document => {
-          if (document === null) {
-            //tried to delete non-existent class
-            return Promise.resolve();
-          }
-          return removeJoinTables(req.config.database, document);
-        });
-    })
-    .then(() => {
-      // Success
-      return { response: {} };
-    }, error => {
-      if (error.message == 'ns not found') {
-        // If they try to delete a non-existent class, that's fine, just let them.
-        return { response: {} };
-      }
-
-      return Promise.reject(error);
-    });
+  return req.config.database.deleteSchema(req.params.className)
+  .then(() => ({ response: {} }));
 }
 
 export class SchemasRouter extends PromiseRouter {

@@ -1,8 +1,8 @@
 // testing-routes.js
-import cache from './cache';
+import AppCache         from './cache';
 import * as middlewares from './middlewares';
-import { ParseServer } from './index';
-import { Parse } from 'parse/node';
+import { ParseServer }  from './index';
+import { Parse }        from 'parse/node';
 
 var express = require('express'),
   cryptoUtils = require('./cryptoUtils');
@@ -14,6 +14,7 @@ function createApp(req, res) {
   var appId = cryptoUtils.randomHexString(32);
 
   ParseServer({
+    databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
     appId: appId,
     masterKey: 'master',
     serverURL: Parse.serverURL,
@@ -31,7 +32,7 @@ function createApp(req, res) {
   res.status(200).send(keys);
 }
 
-// deletes all collections with the collectionPrefix of the app
+// deletes all collections that belong to the app
 function clearApp(req, res) {
   if (!req.auth.isMaster) {
     return res.status(401).send({ "error": "unauthorized" });
@@ -47,7 +48,7 @@ function dropApp(req, res) {
     return res.status(401).send({ "error": "unauthorized" });
   }
   return req.config.database.deleteEverything().then(() => {
-    cache.apps.remove(req.config.applicationId);
+    AppCache.del(req.config.applicationId);
     res.status(200).send({});
   });
 }

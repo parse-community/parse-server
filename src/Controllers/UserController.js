@@ -43,40 +43,31 @@ export class UserController extends AdaptableController {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
       // TODO: Better error here.
-      return Promise.reject();
+      throw undefined;
     }
-
-    return this.config.database
-      .adaptiveCollection('_User')
-      .then(collection => {
-        // Need direct database access because verification token is not a parse field
-        return collection.findOneAndUpdate({
-          username: username,
-          _email_verify_token: token
-        }, {$set: {emailVerified: true}});
-      })
-      .then(document => {
-        if (!document) {
-          return Promise.reject();
-        }
-        return document;
-      });
+    let database = this.config.database.WithoutValidation();
+    return database.update('_User', {
+      username: username,
+      _email_verify_token: token
+    }, {emailVerified: true}).then(document => {
+      if (!document) {
+        throw undefined;
+      }
+      return Promise.resolve(document);
+    });
   }
 
   checkResetTokenValidity(username, token) {
-    return this.config.database.adaptiveCollection('_User')
-      .then(collection => {
-          return collection.find({
-            username: username,
-            _perishable_token: token
-          }, { limit: 1 });
-        })
-      .then(results => {
-        if (results.length != 1) {
-          return Promise.reject();
-        }
-        return results[0];
-      });
+    let database = this.config.database.WithoutValidation();
+    return database.find('_User', {
+      username: username,
+      _perishable_token: token
+    }, {limit: 1}).then(results => {
+      if (results.length != 1) {
+        throw undefined;
+      }
+      return results[0];
+    });
   }
 
   getUserIfNeeded(user) {
@@ -94,20 +85,19 @@ export class UserController extends AdaptableController {
     var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function(result){
       if (result.results.length != 1) {
-        return Promise.reject();
+        throw undefined;
       }
       return result.results[0];
     })
   }
 
-
   sendVerificationEmail(user) {
     if (!this.shouldVerifyEmails) {
       return;
     }
+    const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
-      const token = encodeURIComponent(user._email_verify_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
       let options = {
@@ -125,15 +115,8 @@ export class UserController extends AdaptableController {
 
   setPasswordResetToken(email) {
     let token = randomString(25);
-    return this.config.database
-      .adaptiveCollection('_User')
-      .then(collection => {
-        // Need direct database access because verification token is not a parse field
-        return collection.findOneAndUpdate(
-          { email: email}, // query
-          { $set: { _perishable_token: token } } // update
-        );
-      });
+    let database = this.config.database.WithoutValidation();
+    return database.update('_User', {email: email}, {_perishable_token: token});
   }
 
   sendPasswordResetEmail(email) {
@@ -167,14 +150,11 @@ export class UserController extends AdaptableController {
 
   updatePassword(username, token, password, config) {
    return this.checkResetTokenValidity(username, token).then((user) => {
-     return updateUserPassword(user._id, password, this.config);
+     return updateUserPassword(user.objectId, password, this.config);
    }).then(() => {
       // clear reset password token
-      return this.config.database.adaptiveCollection('_User').then(function (collection) {
-        // Need direct database access because verification token is not a parse field
-        return collection.findOneAndUpdate({ username: username },// query
-          { $unset: { _perishable_token: null } } // update
-        );
+      return this.config.database.WithoutValidation().update('_User', { username }, {
+        _perishable_token: {__op: 'Delete'}
       });
     });
   }

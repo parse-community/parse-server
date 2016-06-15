@@ -1,6 +1,7 @@
 var OAuth = require("../src/authDataManager/OAuth1Client");
 var request = require('request');
 var Config = require("../src/Config");
+var defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
 describe('OAuth', function() {
 
@@ -242,22 +243,21 @@ describe('OAuth', function() {
   it("should only create a single user with REST API", (done) => {
     var objectId;
     createOAuthUser((error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.objectId).not.toBeNull();
+      expect(b.objectId).not.toBeUndefined();
+      objectId = b.objectId;
+
+      createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
         var b = JSON.parse(body);
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
-        objectId = b.objectId;
-
-        createOAuthUser((error, response, body) => {
-          expect(error).toBe(null);
-          var b = JSON.parse(body);
-          expect(b.objectId).not.toBeNull();
-          expect(b.objectId).not.toBeUndefined();
-          expect(b.objectId).toBe(objectId);
-          done();
-        });
+        expect(b.objectId).toBe(objectId);
+        done();
       });
-
+    });
   });
 
   it("unlink and link with custom provider", (done) => {
@@ -284,9 +284,10 @@ describe('OAuth', function() {
                "Expiration should be cleared");
             // make sure the auth data is properly deleted
             var config = new Config(Parse.applicationId);
-            config.database.mongoFind('_User', {
-              _id: model.id
-            }).then((res) => {
+            config.database.adapter.find('_User', {
+              fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
+            }, { objectId: model.id }, {})
+            .then(res => {
               expect(res.length).toBe(1);
               expect(res[0]._auth_data_myoauth).toBeUndefined();
               expect(res[0]._auth_data_myoauth).not.toBeNull();

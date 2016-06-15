@@ -141,6 +141,7 @@ function matchesKeyConstraints(object, key, constraints) {
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
       return (
+        typeof object[key] !== 'undefined' &&
         constraints.className === object[key].className &&
         constraints.objectId === object[key].objectId
       );
@@ -206,7 +207,14 @@ function matchesKeyConstraints(object, key, constraints) {
         }
         break;
       case '$exists':
-        if (typeof object[key] === 'undefined') {
+        let propertyExists = typeof object[key] !== 'undefined';
+        let existenceIsRequired = constraints['$exists'];
+        if (typeof constraints['$exists'] !== 'boolean') {
+          // The SDK will never submit a non-boolean for $exists, but if someone
+          // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.
+          break;
+        }
+        if ((!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired)) {
           return false;
         }
         break;

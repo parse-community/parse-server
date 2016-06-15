@@ -1,7 +1,5 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
-import 'babel-polyfill';
-
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
     DatabaseAdapter = require('./DatabaseAdapter'),
@@ -9,9 +7,16 @@ var batch = require('./batch'),
     middlewares = require('./middlewares'),
     multer = require('multer'),
     Parse = require('parse/node').Parse,
+    path = require('path'),
     authDataManager = require('./authDataManager');
 
-import cache                    from './cache';
+if (!global._babelPolyfill) {
+  require('babel-polyfill');
+}
+
+import { logger,
+      configureLogger }         from './logger';
+import AppCache                 from './cache';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
 import PromiseRouter            from './PromiseRouter';
@@ -19,6 +24,8 @@ import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
+import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
+import { CacheController }      from './Controllers/CacheController';
 import { FileLoggerAdapter }    from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }      from './Controllers/FilesController';
 import { FilesRouter }          from './Routers/FilesRouter';
@@ -43,15 +50,21 @@ import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
+import { PurgeRouter }          from './Routers/PurgeRouter';
 
+import DatabaseController       from './Controllers/DatabaseController';
+const SchemaController = require('./Controllers/SchemaController');
 import ParsePushAdapter         from 'parse-server-push-adapter';
+import MongoStorageAdapter      from './Adapters/Storage/Mongo/MongoStorageAdapter';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
+
+const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+
+
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
-// "databaseAdapter": a class like DatabaseController providing create, find,
-//                    update, and delete
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like FileLoggerAdapter providing info, error,
@@ -71,8 +84,10 @@ addParseCloud();
 // "clientKey": optional key from Parse dashboard
 // "dotNetKey": optional key from Parse dashboard
 // "restAPIKey": optional key from Parse dashboard
+// "webhookKey": optional key from Parse dashboard
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
+// "sessionLength": optional length in seconds for how long Sessions should be valid for
 
 class ParseServer {
 
@@ -80,18 +95,20 @@ class ParseServer {
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
-    databaseAdapter,
     filesAdapter,
     push,
     loggerAdapter,
-    databaseURI = DatabaseAdapter.defaultDatabaseURI,
+    logsFolder,
+    databaseURI,
     databaseOptions,
+    databaseAdapter,
     cloud,
     collectionPrefix = '',
     clientKey,
     javascriptKey,
     dotNetKey,
     restAPIKey,
+    webhookKey,
     fileKey = 'invalid-file-key',
     facebookAppIds = [],
     enableAnonymousUsers = true,
@@ -100,6 +117,7 @@ class ParseServer {
     serverURL = requiredParameter('You must provide a serverURL!'),
     maxUploadSize = '20mb',
     verifyUserEmails = false,
+    cacheAdapter,
     emailAdapter,
     publicServerURL,
     customPages = {
@@ -108,22 +126,37 @@ class ParseServer {
       choosePassword: undefined,
       passwordResetSuccess: undefined
     },
-    liveQuery = {}
+    liveQuery = {},
+    sessionLength = 31536000, // 1 Year in seconds
+    expireInactiveSessions = true,
+    verbose = false,
+    revokeSessionOnPasswordReset = true,
+    __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
 
-    if (databaseAdapter) {
-      DatabaseAdapter.setAdapter(databaseAdapter);
+    if ((databaseOptions || databaseURI || collectionPrefix !== '') && databaseAdapter) {
+      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/connectionPrefix.';
+    } else if (!databaseAdapter) {
+      databaseAdapter = new MongoStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        mongoOptions: databaseOptions,
+      });
+    } else {
+      databaseAdapter = loadAdapter(databaseAdapter)
     }
 
-    if (databaseOptions) {
-      DatabaseAdapter.setAppDatabaseOptions(appId, databaseOptions);
+    if (!filesAdapter && !databaseURI) {
+      throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
     }
 
-    if (databaseURI) {
-      DatabaseAdapter.setAppDatabaseURI(appId, databaseURI);
+    if (logsFolder) {
+      configureLogger({
+        logsFolder
+      })
     }
 
     if (cloud) {
@@ -131,30 +164,49 @@ class ParseServer {
       if (typeof cloud === 'function') {
         cloud(Parse)
       } else if (typeof cloud === 'string') {
-        require(cloud);
+        require(path.resolve(process.cwd(), cloud));
       } else {
         throw "argument 'cloud' must either be a string or a function";
       }
     }
 
+    if (verbose || process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
+      configureLogger({level: 'silly'});
+    }
 
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
       return new GridStoreAdapter(databaseURI);
     });
     // Pass the push options too as it works with the default
-    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push);
+    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
     const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
     const emailControllerAdapter = loadAdapter(emailAdapter);
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const filesController = new FilesController(filesControllerAdapter, appId);
-    const pushController = new PushController(pushControllerAdapter, appId);
+    const pushController = new PushController(pushControllerAdapter, appId, push);
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
-    const hooksController = new HooksController(appId, collectionPrefix);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
+    const cacheController = new CacheController(cacheControllerAdapter, appId);
+    const databaseController = new DatabaseController(databaseAdapter);
+    const hooksController = new HooksController(appId, databaseController, webhookKey);
 
-    cache.apps.set(appId, {
+    let usernameUniqueness = databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['username'])
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      return Promise.reject();
+    });
+
+    let emailUniqueness = databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['email'])
+    .catch(error => {
+      logger.warn('Unabled to ensure uniqueness for user email addresses: ', error);
+      return Promise.reject();
+    })
+
+    AppCache.put(appId, {
       masterKey: masterKey,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
@@ -162,8 +214,10 @@ class ParseServer {
       javascriptKey: javascriptKey,
       dotNetKey: dotNetKey,
       restAPIKey: restAPIKey,
+      webhookKey: webhookKey,
       fileKey: fileKey,
       facebookAppIds: facebookAppIds,
+      cacheController: cacheController,
       filesController: filesController,
       pushController: pushController,
       loggerController: loggerController,
@@ -176,17 +230,26 @@ class ParseServer {
       publicServerURL: publicServerURL,
       customPages: customPages,
       maxUploadSize: maxUploadSize,
-      liveQueryController: liveQueryController
+      liveQueryController: liveQueryController,
+      sessionLength: Number(sessionLength),
+      expireInactiveSessions: expireInactiveSessions,
+      revokeSessionOnPasswordReset,
+      databaseController,
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
     if (process.env.FACEBOOK_APP_ID) {
-      cache.apps.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
+      AppCache.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
     }
 
-    Config.validate(cache.apps.get(appId));
-    this.config = cache.apps.get(appId);
+    Config.validate(AppCache.get(appId));
+    this.config = AppCache.get(appId);
     hooksController.load();
+
+    // Note: Tests will start to fail if any validation happens after this is called.
+    if (process.env.TESTING) {
+      __indexBuildCompletionCallbackForTests(Promise.all([usernameUniqueness, emailUniqueness]));
+    }
   }
 
   get app() {
@@ -229,6 +292,7 @@ class ParseServer {
       new IAPValidationRouter(),
       new FeaturesRouter(),
       new GlobalConfigRouter(),
+      new PurgeRouter(),
     ];
 
     if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
@@ -251,7 +315,7 @@ class ParseServer {
     if (!process.env.TESTING) {
       process.on('uncaughtException', (err) => {
         if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-          console.log(`Unable to listen on port ${err.port}. The port is already in use.`);
+          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
           throw err;

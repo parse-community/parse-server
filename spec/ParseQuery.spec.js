@@ -23,6 +23,105 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("notEqualTo with Relation is working", function(done) {
+    var user = new Parse.User();
+    user.setPassword("asdf");
+    user.setUsername("zxcv");
+
+    var user1 = new Parse.User();
+    user1.setPassword("asdf");
+    user1.setUsername("qwerty");
+
+    var user2 = new Parse.User();
+    user2.setPassword("asdf");
+    user2.setUsername("asdf");
+
+    var Cake = Parse.Object.extend("Cake");
+    var cake1 = new Cake();
+    var cake2 = new Cake();
+    var cake3 = new Cake();
+
+
+    user.signUp().then(function(){
+      return user1.signUp();
+    }).then(function(){
+      return user2.signUp();
+    }).then(function(){
+      var relLike1 = cake1.relation("liker");
+      relLike1.add([user, user1]);
+
+      var relDislike1 = cake1.relation("hater");
+      relDislike1.add(user2);
+      return cake1.save();
+    }).then(function(){
+      var rellike2 = cake2.relation("liker");
+      rellike2.add([user, user1]);
+
+      var relDislike2 = cake2.relation("hater");
+      relDislike2.add(user2);
+
+      return cake2.save();
+    }).then(function(){
+      var rellike3 = cake3.relation("liker");
+      rellike3.add(user);
+
+      var relDislike3 = cake3.relation("hater");
+      relDislike3.add([user1, user2]);
+      return cake3.save();
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // User2 likes nothing so we should receive 0
+      query.equalTo("liker", user2);
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // User1 likes two of three cakes
+      query.equalTo("liker", user1);
+      return query.find().then(function(results){
+        // It should return 2 -> cake 1 and cake 2
+        equal(results.length, 2);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // We want to know which cake the user1 is not appreciating -> cake3
+      query.notEqualTo("liker", user1);
+      return query.find().then(function(results){
+        // Should return 1 -> the cake 3
+        equal(results.length, 1);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // User2 is a hater of everything so we should receive 0
+      query.notEqualTo("hater", user2);
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // Only cake3 is liked by user
+      query.notContainedIn("liker", [user1]);
+      return query.find().then(function(results){
+        equal(results.length, 1);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      // All the users
+      query.containedIn("liker", [user, user1, user2]);
+      // Exclude user 1
+      query.notEqualTo("liker", user1);
+      // Only cake3 is liked only by user1
+      return query.find().then(function(results){
+        equal(results.length, 1);
+        let cake = results[0];
+        expect(cake.id).toBe(cake3.id);
+      });
+    }).then(function(){
+      done();
+    })
+  });
+
   it("query with limit", function(done) {
     var baz = new TestObject({ foo: 'baz' });
     var qux = new TestObject({ foo: 'qux' });
@@ -1422,6 +1521,153 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('properly includes array', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, () => {
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly includes array of mixed objects', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      total += objects.length;
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(10);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly nested array of mixed objects with bad ids', (done) => {
+    let objects = [];
+    let total = 0;
+    while(objects.length != 5) {
+      let object = new Parse.Object('AnObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    while(objects.length != 10) {
+      let object = new Parse.Object('AnotherObject');
+      object.set('key', objects.length);
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let object = new Parse.Object("AContainer");
+      for (var i=0; i<objects.length; i++) {
+        if (i%2 == 0) {
+          objects[i].id = 'randomThing'
+        } else {
+          total += objects[i].get('key');
+        }
+      }
+      object.set('objects', objects);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AContainer');
+      query.include('objects');
+      return query.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let res = results[0];
+      let objects = res.get('objects');
+      expect(objects.length).toBe(5);
+      objects.forEach((object) => {
+        total -= object.get('key');
+      });
+      expect(total).toBe(0);
+      done()
+    }, (err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('properly fetches nested pointers', (done) =>  {
+    let color = new Parse.Object('Color');
+    color.set('hex','#133733');
+    let circle = new Parse.Object('Circle');
+    circle.set('radius', 1337);
+
+    Parse.Object.saveAll([color, circle]).then(() => {
+      circle.set('color', color);
+      let badCircle = new Parse.Object('Circle');
+      badCircle.id = 'badId';
+      let complexFigure = new Parse.Object('ComplexFigure');
+      complexFigure.set('consistsOf', [circle, badCircle]);
+      return complexFigure.save();
+    }).then(() => {
+      let q = new Parse.Query('ComplexFigure');
+      q.include('consistsOf.color');
+      return q.find()
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let figure = results[0];
+      expect(figure.get('consistsOf').length).toBe(1);
+      expect(figure.get('consistsOf')[0].get('color').get('hex')).toBe('#133733');
+      done();
+    }, (err) => {
+      fail('should not fail');
+      done();
+    })
+
+  });
+
   it("result object creation uses current extension", function(done) {
     var ParentObject = Parse.Object.extend({ className: "ParentObject" });
     // Add a foo() method to ChildObject.
@@ -2208,5 +2454,82 @@ describe('Parse.Query testing', () => {
       done();
     })
   })
+
+  it('query with two OR subqueries (regression test #1259)', done => {
+    let relatedObject = new Parse.Object('Class2');
+    relatedObject.save().then(relatedObject => {
+      let anObject = new Parse.Object('Class1');
+      let relation = anObject.relation('relation');
+      relation.add(relatedObject);
+      return anObject.save();
+    }).then(anObject => {
+      let q1 = anObject.relation('relation').query();
+      q1.doesNotExist('nonExistantKey1');
+      let q2 = anObject.relation('relation').query();
+      q2.doesNotExist('nonExistantKey2');
+      let orQuery = Parse.Query.or(q1, q2).find().then(results => {
+        expect(results.length).toEqual(1);
+        expect(results[0].objectId).toEqual(q1.objectId);
+        done();
+      });
+    });
+  });
+
+  it('objectId containedIn with multiple large array', done => {
+    let obj = new Parse.Object('MyClass');
+    obj.save().then(obj => {
+      let longListOfStrings = [];
+      for (let i = 0; i < 130; i++) {
+        longListOfStrings.push(i.toString());
+      }
+      longListOfStrings.push(obj.id);
+      let q = new Parse.Query('MyClass');
+      q.containedIn('objectId', longListOfStrings);
+      q.containedIn('objectId', longListOfStrings);
+      return q.find();
+    }).then(results => {
+      expect(results.length).toEqual(1);
+      done();
+    });
+  });
+
+  it('include for specific object', function(done){
+    var child = new Parse.Object('Child');
+    var parent = new Parse.Object('Parent');
+    child.set('foo', 'bar');
+    parent.set('child', child);
+    Parse.Object.saveAll([child, parent], function(response){
+      var savedParent = response[1];
+      var parentQuery = new Parse.Query('Parent');
+      parentQuery.include('child');
+      parentQuery.get(savedParent.id, {
+        success: function(parentObj) {
+          var childPointer = parentObj.get('child');
+          ok(childPointer);
+          equal(childPointer.get('foo'), 'bar');
+          done();
+        }
+      });
+    });
+  });
+
+  it('select keys for specific object', function(done){
+    var Foobar = new Parse.Object('Foobar');
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.save({
+      success: function(savedFoobar){
+        var foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.select('fizz');
+        foobarQuery.get(savedFoobar.id,{
+          success: function(foobarObj){
+            equal(foobarObj.get('fizz'), 'buzz');
+            equal(foobarObj.get('foo'), undefined);
+            done();
+          }
+        });
+      }
+    })
+  });
 
 });

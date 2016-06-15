@@ -8,7 +8,6 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-import cache from './cache';
 import Auth from './Auth';
 
 var RestQuery = require('./RestQuery');
@@ -18,8 +17,14 @@ var triggers = require('./triggers');
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions) {
   enforceRoleSecurity('find', className, auth);
-  var query = new RestQuery(config, auth, className,
-                            restWhere, restOptions);
+  let query = new RestQuery(config, auth, className, restWhere, restOptions);
+  return query.execute();
+}
+
+// get is just like find but only queries an objectId.
+const get = (config, auth, className, objectId, restOptions) => {
+  enforceRoleSecurity('get', className, auth);
+  let query = new RestQuery(config, auth, className, { objectId }, restOptions);
   return query.execute();
 }
 
@@ -48,11 +53,13 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.users.remove(response.results[0].sessionToken);
+
+          var cacheAdapter = config.cacheController;
+          cacheAdapter.user.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
+          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -62,8 +69,8 @@ function del(config, auth, className, objectId) {
   }).then(() => {
     if (!auth.isMaster) {
       return auth.getUserRoles();
-    }else{
-      return Promise.resolve();
+    } else {
+      return;
     }
   }).then(() => {
     var options = {};
@@ -79,15 +86,14 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config.applicationId);
-    return Promise.resolve();
+    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
+    return;
   });
 }
 
 // Returns a promise for a {response, status, location} object.
 function create(config, auth, className, restObject) {
   enforceRoleSecurity('create', className, auth);
-
   var write = new RestWrite(config, auth, className, null, restObject);
   return write.execute();
 }
@@ -119,17 +125,18 @@ function update(config, auth, className, objectId, restObject) {
 
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
-  if (method === 'delete' && className === '_Installation' && !auth.isMaster) {
-    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                          'Clients aren\'t allowed to perform the ' +
-                          'delete operation on the installation collection.');
-
+  if (className === '_Installation' && !auth.isMaster) {
+    if (method === 'delete' || method === 'find') {
+      let error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+    }
   }
 }
 
 module.exports = {
-  create: create,
-  del: del,
-  find: find,
-  update: update
+  create,
+  del,
+  find,
+  get,
+  update
 };

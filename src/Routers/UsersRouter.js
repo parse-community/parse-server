@@ -1,7 +1,7 @@
 // These methods handle the User-related routes.
 
 import deepcopy       from 'deepcopy';
-
+import Config         from '../Config';
 import ClassesRouter  from './ClassesRouter';
 import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
@@ -46,7 +46,7 @@ export class UsersRouter extends ClassesRouter {
     }
     let sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
-      { _session_token: sessionToken },
+      { sessionToken },
       { include: 'user' })
       .then((response) => {
         if (!response.results ||
@@ -85,6 +85,7 @@ export class UsersRouter extends ClassesRouter {
         user = results[0];
         return passwordCrypto.compare(req.body.password, user.password);
       }).then((correct) => {
+
         if (!correct) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
@@ -108,9 +109,7 @@ export class UsersRouter extends ClassesRouter {
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        let expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
+        let expiresAt = req.config.generateSessionExpiresAt();
         let sessionData = {
           sessionToken: token,
           user: {
@@ -141,7 +140,7 @@ export class UsersRouter extends ClassesRouter {
     let success = {response: {}};
     if (req.info && req.info.sessionToken) {
       return rest.find(req.config, Auth.master(req.config), '_Session',
-        { _session_token: req.info.sessionToken }
+        { sessionToken: req.info.sessionToken }
       ).then((records) => {
         if (records.results && records.results.length) {
           return rest.del(req.config, Auth.master(req.config), '_Session',
@@ -157,19 +156,36 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleResetRequest(req) {
-     let { email } = req.body;
-     if (!email) {
-       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
-     }
-     let userController = req.config.userController;
-
-     return userController.sendPasswordResetEmail(email).then((token) => {
-        return Promise.resolve({
-          response: {}
-        });
-     }, (err) => {
-       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
-     });
+    try {
+      Config.validateEmailConfiguration({
+        verifyUserEmails: true, //A bit of a hack, as this isn't the intended purpose of this parameter
+        appName: req.config.appName,
+        publicServerURL: req.config.publicServerURL,
+      });
+    } catch (e) {
+      if (typeof e === 'string') {
+        // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset functionality.');
+      } else {
+        throw e;
+      }
+    }
+    let { email } = req.body;
+    if (!email) {
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+    }
+    let userController = req.config.userController;
+    return userController.sendPasswordResetEmail(email).then(token => {
+       return Promise.resolve({
+         response: {}
+       });
+    }, err => {
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
+      } else {
+        throw err;
+      }
+    });
   }
 
 

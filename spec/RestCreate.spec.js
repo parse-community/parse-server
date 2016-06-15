@@ -1,75 +1,79 @@
+"use strict";
 // These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
 var Config = require('../src/Config');
-var DatabaseAdapter = require('../src/DatabaseAdapter');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');
 
 var config = new Config('test');
-var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
+let database = config.database;
 
 describe('rest create', () => {
-  it('handles _id', (done) => {
-    rest.create(config, auth.nobody(config), 'Foo', {}).then(() => {
-      return database.mongoFind('Foo', {});
-    }).then((results) => {
+  it('handles _id', done => {
+    rest.create(config, auth.nobody(config), 'Foo', {})
+    .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
-      expect(typeof obj._id).toEqual('string');
-      expect(obj.objectId).toBeUndefined();
+      expect(typeof obj.objectId).toEqual('string');
+      expect(obj._id).toBeUndefined();
       done();
     });
   });
 
   it('handles array, object, date', (done) => {
+    let now = new Date();
     var obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
-      date: Parse._encode(new Date()),
+      date: Parse._encode(now),
     };
-    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
-      return database.mongoFind('MyClass', {}, {});
-    }).then((results) => {
+    rest.create(config, auth.nobody(config), 'MyClass', obj)
+    .then(() => database.adapter.find('MyClass', { fields: {
+      array: { type: 'Array' },
+      object: { type: 'Object' },
+      date: { type: 'Date' },
+    } }, {}, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
       var mob = results[0];
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
-      expect(mob.date instanceof Date).toBe(true);
+      expect(mob.date.__type).toBe('Date');
+      expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
       done();
     });
   });
 
-  it('handles object and subdocument', (done) => {
-    var obj = {
-      subdoc: {foo: 'bar', wu: 'tan'},
-    };
-    rest.create(config, auth.nobody(config), 'MyClass', obj).then(() => {
-      return database.mongoFind('MyClass', {}, {});
-    }).then((results) => {
+  it('handles object and subdocument', done => {
+    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    rest.create(config, auth.nobody(config), 'MyClass', obj)
+    .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+    .then(results => {
       expect(results.length).toEqual(1);
-      var mob = results[0];
+      let mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
-      expect(typeof mob._id).toEqual('string');
-
-      var obj = {
-        'subdoc.wu': 'clan',
-      };
-
-      rest.update(config, auth.nobody(config), 'MyClass', mob._id, obj).then(() => {
-        return database.mongoFind('MyClass', {}, {});
-      }).then((results) => {
-        expect(results.length).toEqual(1);
-        var mob = results[0];
-        expect(typeof mob.subdoc).toBe('object');
-        expect(mob.subdoc.foo).toBe('bar');
-        expect(mob.subdoc.wu).toBe('clan');
-        done();
-      });
-
+      expect(typeof mob.objectId).toEqual('string');
+      let obj = { 'subdoc.wu': 'clan' };
+      return rest.update(config, auth.nobody(config), 'MyClass', mob.objectId, obj)
+    })
+    .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let mob = results[0];
+      expect(typeof mob.subdoc).toBe('object');
+      expect(mob.subdoc.foo).toBe('bar');
+      expect(mob.subdoc.wu).toBe('clan');
+      done();
+    })
+    .catch(error => {
+      console.log(error);
+      fail();
+      done();
     });
   });
 
@@ -84,6 +88,21 @@ describe('rest create', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
+    });
+  });
+
+  it('handles create on existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+    .then(actualSchema => {
+      expect(actualSchema.className).toEqual('ClientClassCreation');
+      return rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    })
+    .then(() => {
+      done();
+    }, err => {
+      fail('Should not throw error')
     });
   });
 
@@ -240,8 +259,8 @@ describe('rest create', () => {
       });
   });
 
-  it('stores pointers with a _p_ prefix', (done) => {
-    var obj = {
+  it('stores pointers', done => {
+    let obj = {
       foo: 'bar',
       aPointer: {
         __type: 'Pointer',
@@ -250,17 +269,23 @@ describe('rest create', () => {
       }
     };
     rest.create(config, auth.nobody(config), 'APointerDarkly', obj)
-      .then((r) => {
-        return database.mongoFind('APointerDarkly', {});
-      }).then((results) => {
-        expect(results.length).toEqual(1);
-        var output = results[0];
-        expect(typeof output._id).toEqual('string');
-        expect(typeof output._p_aPointer).toEqual('string');
-        expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
-        expect(output.aPointer).toBeUndefined();
-        done();
+    .then(() => database.adapter.find('APointerDarkly', { fields: {
+      foo: { type: 'String' },
+      aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+    }}, {}, {}))
+    .then(results => {
+      expect(results.length).toEqual(1);
+      let output = results[0];
+      expect(typeof output.foo).toEqual('string');
+      expect(typeof output._p_aPointer).toEqual('undefined');
+      expect(output._p_aPointer).toBeUndefined();
+      expect(output.aPointer).toEqual({
+        __type: 'Pointer',
+        className: 'JustThePointer',
+        objectId: 'qwerty'
       });
+      done();
+    });
   });
 
   it("cannot set objectId", (done) => {
@@ -284,4 +309,99 @@ describe('rest create', () => {
     });
   });
 
+  it("test default session length", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar',
+    };
+    var now = new Date();
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        var actual = new Date(session.expiresAt.iso);
+        var expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
+
+        expect(actual.getFullYear()).toEqual(expected.getFullYear());
+        expect(actual.getMonth()).toEqual(expected.getMonth());
+        expect(actual.getDate()).toEqual(expected.getDate());
+        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+
+        done();
+      });
+  });
+
+  it("test specified session length", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar',
+    };
+    var sessionLength = 3600, // 1 Hour ahead
+        now = new Date(); // For reference later
+    config.sessionLength = sessionLength;
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+                          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        var actual = new Date(session.expiresAt.iso);
+        var expected = new Date(now.getTime() + (sessionLength*1000));
+
+        expect(actual.getFullYear()).toEqual(expected.getFullYear());
+        expect(actual.getMonth()).toEqual(expected.getMonth());
+        expect(actual.getDate()).toEqual(expected.getDate());
+        expect(actual.getHours()).toEqual(expected.getHours());
+        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+
+        done();
+      });
+  });
+
+  it("can create a session with no expiration", (done) => {
+    var user = {
+      username: 'asdf',
+      password: 'zxcv',
+      foo: 'bar'
+    };
+    config.expireInactiveSessions = false;
+
+    rest.create(config, auth.nobody(config), '_User', user)
+      .then((r) => {
+        expect(Object.keys(r.response).length).toEqual(3);
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        return rest.find(config, auth.master(config),
+          '_Session', {sessionToken: r.response.sessionToken});
+      })
+      .then((r) => {
+        expect(r.results.length).toEqual(1);
+
+        var session = r.results[0];
+        expect(session.expiresAt).toBeUndefined();
+
+        done();
+      });
+  });
 });

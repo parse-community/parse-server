@@ -10,6 +10,8 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
+April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
+
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
 ## Running Parse Server locally
@@ -104,7 +106,7 @@ Once you have a better understanding of how the project works, please refer to t
 
 We have provided a basic [Node.js application](https://github.com/ParsePlatform/parse-server-example) that uses the Parse Server module on Express and can be easily deployed to various infrastructure providers:
 
-* [Heroku and mLab](https://github.com/ParsePlatform/parse-server/wiki/Deploying-Parse-Server#deploying-to-heroku-and-mLab)
+* [Heroku and mLab](https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku)
 * [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
 * [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
@@ -147,7 +149,7 @@ The full documentation for Parse Server is available in the [wiki](https://githu
 
 ## Migrating an Existing Parse App
 
-The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. There are a few areas where Parse Server does not provide compatibility with the hosted version of Parse. Learn more in the [Migration guide](https://github.com/ParsePlatform/parse-server/wiki/Migrating-an-Existing-Parse-App).
+The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. There are a few areas where Parse Server does not provide compatibility with the hosted version of Parse. Learn more in the [Migration guide](https://parse.com/migration).
 
 ## Configuration
 
@@ -159,7 +161,7 @@ For the full list of available options, run `parse-server --help`.
 
 * `appId` **(required)** - The application id to host with this server instance. You can use any arbitrary string. For migrated apps, this should match your hosted Parse app.
 * `masterKey` **(required)** - The master key to use for overriding ACL security.  You can use any arbitrary string. Keep it secret! For migrated apps, this should match your hosted Parse app.
-* `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`.
+* `databaseURI` **(required)** - The connection string for your database, i.e. `mongodb://user:pass@host.com/dbname`. Be sure to [URL encode your password](https://app.zencoder.com/docs/guides/getting-started/special-characters-in-usernames-and-passwords) if your password has special characters.
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
@@ -179,13 +181,24 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
-* `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth).
+* `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/OAuth).
 * `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
 * `mountPath` - Mount path for the server. Defaults to `/parse`.
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
 * `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
-* `databaseAdapter` - The backing store can be changed by creating an adapter class (see `DatabaseAdapter.js`). Defaults to `MongoStorageAdapter`.
+* `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
+* `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
+
+##### Logging
+
+Use the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server` to save your server logfiles to the specified folder.
+
+Usage:
+
+```
+PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+```
 
 ##### Email verification and password reset
 
@@ -198,7 +211,8 @@ var server = ParseServer({
   verifyUserEmails: true,
   // The public URL of your app.
   // This will appear in the link that is used to verify email addresses and reset passwords.
-  publicServerURL: 'https://example.com',
+  // Set the mount path as it is in serverURL
+  publicServerURL: 'https://example.com/parse',
   // Your apps name. This will appear in the subject and body of the emails that are sent.
   appName: 'Parse App',
   // The email adapter
@@ -216,7 +230,7 @@ var server = ParseServer({
 });
 ```
 
-You can also use other email adapters contributed by the community such as [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter).
+You can also use other email adapters contributed by the community such as [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter) or [parse-server-mandrill-adapter](https://github.com/back4app/parse-server-mandrill-adapter).
 
 ### Using environment variables to configure Parse Server
 
@@ -238,6 +252,9 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
 
 For the full list of configurable environment variables, run `parse-server --help`.
+
+### Available Adapters
+[Parse Server Modules (Adapters)](https://github.com/parse-server-modules)
 
 ### Configuring File Adapters
 

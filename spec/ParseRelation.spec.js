@@ -248,46 +248,50 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("queries on relation fields with multiple ins", (done) => {
-    var ChildObject = Parse.Object.extend("ChildObject");
-    var childObjects = [];
-    for (var i = 0; i < 10; i++) {
+  it("queries on relation fields with multiple containedIn (regression test for #1271)", (done) => {
+    let ChildObject = Parse.Object.extend("ChildObject");
+    let childObjects = [];
+    for (let i = 0; i < 10; i++) {
       childObjects.push(new ChildObject({x: i}));
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-      var ParentObject = Parse.Object.extend("ParentObject");
-      var parent = new ParentObject();
+      let ParentObject = Parse.Object.extend("ParentObject");
+      let parent = new ParentObject();
       parent.set("x", 4);
-      var relation = parent.relation("child");
-      relation.add(childObjects[0]);
-      relation.add(childObjects[1]);
-      relation.add(childObjects[2]);
-      var parent2 = new ParentObject();
+      let parent1Children = parent.relation("child");
+      parent1Children.add(childObjects[0]);
+      parent1Children.add(childObjects[1]);
+      parent1Children.add(childObjects[2]);
+      let parent2 = new ParentObject();
       parent2.set("x", 3);
-      var relation2 = parent2.relation("child");
-      relation2.add(childObjects[4]);
-      relation2.add(childObjects[5]);
-      relation2.add(childObjects[6]);
+      let parent2Children = parent2.relation("child");
+      parent2Children.add(childObjects[4]);
+      parent2Children.add(childObjects[5]);
+      parent2Children.add(childObjects[6]);
 
-      var otherChild2 = parent2.relation("otherChild");
-      otherChild2.add(childObjects[0]);
-      otherChild2.add(childObjects[1]);
-      otherChild2.add(childObjects[2]);
+      let parent2OtherChildren = parent2.relation("otherChild");
+      parent2OtherChildren.add(childObjects[0]);
+      parent2OtherChildren.add(childObjects[1]);
+      parent2OtherChildren.add(childObjects[2]);
 
-      var parents = [];
-      parents.push(parent);
-      parents.push(parent2);
-      return Parse.Object.saveAll(parents);
+      return Parse.Object.saveAll([parent, parent2]);
     }).then(() => {
-      var query = new Parse.Query(ParentObject);
-      var objects = [];
-      objects.push(childObjects[0]);
-      query.containedIn("child", objects);
-      query.containedIn("otherChild", [childObjects[0]]);
-      return query.find();
-    }).then((list) => {
-      equal(list.length, 2, "There should be 2 results");
+      let objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
+      objectsWithChild0InBothChildren.containedIn("child", [childObjects[0]]);
+      objectsWithChild0InBothChildren.containedIn("otherChild", [childObjects[0]]);
+      return objectsWithChild0InBothChildren.find();
+    }).then(objectsWithChild0InBothChildren => {
+      //No parent has child 0 in both it's "child" and "otherChild" field;
+      expect(objectsWithChild0InBothChildren.length).toEqual(0);
+    }).then(() => {
+      let objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
+      objectsWithChild4andOtherChild1.containedIn("child", [childObjects[4]]);
+      objectsWithChild4andOtherChild1.containedIn("otherChild", [childObjects[1]]);
+      return objectsWithChild4andOtherChild1.find();
+    }).then(objects => {
+      // parent2 has child 4 and otherChild 1
+      expect(objects.length).toEqual(1);
       done();
     });
   });
@@ -650,6 +654,88 @@ describe('Parse.Relation testing', () => {
           done();
         }
       }));
+    });
+  });
+
+  it('relations are not bidirectional (regression test for #871)', done => {
+    let PersonObject = Parse.Object.extend("Person");
+    let p1 = new PersonObject();
+    let p2 = new PersonObject();
+    Parse.Object.saveAll([p1, p2]).then(results => {
+      let p1 = results[0];
+      let p2 = results[1];
+      let relation = p1.relation('relation');
+      relation.add(p2);
+      p1.save().then(() => {
+        let query = new Parse.Query(PersonObject);
+        query.equalTo('relation', p1);
+        query.find().then(results => {
+          expect(results.length).toEqual(0);
+
+          let query = new Parse.Query(PersonObject);
+          query.equalTo('relation', p2);
+          query.find().then(results => {
+            expect(results.length).toEqual(1);
+            expect(results[0].objectId).toEqual(p1.objectId);
+            done();
+          });
+        });
+      })
+    });
+  });
+
+  it('can query roles in Cloud Code (regession test #1489)', done => {
+    Parse.Cloud.define('isAdmin', (request, response) => {
+      let query = new Parse.Query(Parse.Role);
+      query.equalTo('name', 'admin');
+      query.first({ useMasterKey: true })
+      .then(role => {
+        let relation = new Parse.Relation(role, 'users');
+        let admins = relation.query();
+        admins.equalTo('username', request.user.get('username'));
+        admins.first({ useMasterKey: true })
+        .then(user => {
+          if (user) {
+            response.success(user);
+            done();
+          } else {
+            fail('Should have found admin user, found nothing instead');
+            done();
+          }
+        }, error => {
+          fail('User not admin');
+          done();
+        })
+      }, error => {
+        fail('Should have found admin user, errored instead');
+        fail(error);
+        done();
+      });
+    });
+
+    let adminUser = new Parse.User();
+    adminUser.set('username', 'name');
+    adminUser.set('password', 'pass');
+    adminUser.signUp()
+    .then(adminUser => {
+      let adminACL = new Parse.ACL();
+      adminACL.setPublicReadAccess(true);
+
+      // Create admin role
+      let adminRole = new Parse.Role('admin', adminACL);
+      adminRole.getUsers().add(adminUser);
+      adminRole.save()
+      .then(() => {
+        Parse.Cloud.run('isAdmin');
+      }, error => {
+        fail('failed to save role');
+        fail(error);
+        done()
+      });
+    }, error => {
+      fail('failed to sign up');
+      fail(error);
+      done();
     });
   });
 });

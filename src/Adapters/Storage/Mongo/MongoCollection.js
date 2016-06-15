@@ -17,7 +17,7 @@ export default class MongoCollection {
     return this._rawFind(query, { skip, limit, sort })
       .catch(error => {
         // Check for "no geoindex" error
-        if (error.code != 17007 || !error.message.match(/unable to find index for .geoNear/)) {
+        if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
           throw error;
         }
         // Figure out what key needs an index
@@ -28,7 +28,6 @@ export default class MongoCollection {
 
         var index = {};
         index[key] = '2d';
-        //TODO: condiser moving index creation logic into Schema.js
         return this._mongoCollection.createIndex(index)
           // Retry, but just once.
           .then(() => this._rawFind(query, { skip, limit, sort }));
@@ -43,18 +42,6 @@ export default class MongoCollection {
 
   count(query, { skip, limit, sort } = {}) {
     return this._mongoCollection.count(query, { skip, limit, sort });
-  }
-
-  // Atomically finds and updates an object based on query.
-  // The result is the promise with an object that was in the database !AFTER! changes.
-  // Postgres Note: Translates directly to `UPDATE * SET * ... RETURNING *`, which will return data after the change is done.
-  findOneAndUpdate(query, update) {
-    // arguments: query, sort, update, options(optional)
-    // Setting `new` option to true makes it return the after document, not the before one.
-    return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
   }
 
   insertOne(object) {
@@ -82,6 +69,18 @@ export default class MongoCollection {
 
   deleteMany(query) {
     return this._mongoCollection.deleteMany(query);
+  }
+
+  _ensureSparseUniqueIndexInBackground(indexRequest) {
+    return new Promise((resolve, reject) => {
+      this._mongoCollection.ensureIndex(indexRequest, { unique: true, background: true, sparse: true }, (error, indexName) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
   drop() {
