@@ -201,7 +201,7 @@ export class MongoStorageAdapter {
   // undefined as the reason.
   getClass(className) {
     return this._schemaCollection()
-    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className))
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,

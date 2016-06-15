@@ -100,12 +100,8 @@ DatabaseController.prototype.collectionExists = function(className) {
 
 DatabaseController.prototype.purgeCollection = function(className) {
   return this.loadSchema()
-  .then((schema) => {
-    schema.getOneSchema(className)
-  })
-  .then((schema) => {
-    this.adapter.deleteObjectsByQuery(className, {}, schema);
-  });
+  .then(schemaController => schemaController.getOneSchema(className))
+  .then(schema => this.adapter.deleteObjectsByQuery(className, schema, {}));
 };
 
 DatabaseController.prototype.validateClassName = function(className) {
