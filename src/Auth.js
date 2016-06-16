@@ -98,7 +98,7 @@ Auth.prototype._loadRoles = function() {
   var cacheAdapter = this.config.cacheController;
   return cacheAdapter.role.get(this.user.id).then((cachedRoles) => {
     if (cachedRoles != null) {
-      this.fetchedroles = true;
+      this.fetchedRoles = true;
       this.userRoles = cachedRoles;
       return Promise.resolve(cachedRoles);
     }
