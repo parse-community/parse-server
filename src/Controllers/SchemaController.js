@@ -534,19 +534,19 @@ class SchemaController {
       throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
     }
 
-    return this.reloadData()
-    .then(() => this.hasClass(className))
-    .then(hasClass => {
-      if (!hasClass) {
+    return this.getOneSchema(className)
+    .catch(error => {
+      if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      }
-      if (!this.data[className][fieldName]) {
-        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+      } else {
+        throw error;
       }
     })
-    .then(() => this.getOneSchema(className))
     .then(schema => {
-      if (this.data[className][fieldName].type == 'Relation') {
+      if (!schema.fields[fieldName]) {
+        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+      }
+      if (schema.fields[fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adapter.deleteFields(className, schema, [fieldName])
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
