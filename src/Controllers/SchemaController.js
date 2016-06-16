@@ -309,7 +309,7 @@ class SchemaController {
       if (!hasClass) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
       }
-      let existingFields = Object.assign(this.data[className], {_id: className});
+      let existingFields = { ...this.data[className], _id: className };
       Object.keys(submittedFields).forEach(name => {
         let field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {
