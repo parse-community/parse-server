@@ -210,7 +210,7 @@ describe('Parse.File testing', () => {
     }));
   });
 
-  it("save file in object", done => {
+  it_exclude_dbs(['postgres'])("save file in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -237,7 +237,7 @@ describe('Parse.File testing', () => {
     }));
   });
 
-  it("save file in object with escaped characters in filename", done => {
+  it_exclude_dbs(['postgres'])("save file in object with escaped characters in filename", done => {
     var file = new Parse.File("hello . txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -265,7 +265,7 @@ describe('Parse.File testing', () => {
     }));
   });
 
-  it("autosave file in object", done => {
+  it_exclude_dbs(['postgres'])("autosave file in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     var object = new Parse.Object("TestObject");
@@ -287,7 +287,7 @@ describe('Parse.File testing', () => {
     }));
   });
 
-  it("autosave file in object in object", done => {
+  it_exclude_dbs(['postgres'])("autosave file in object in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
 
@@ -355,7 +355,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it("file toJSON testing", done => {
+  it_exclude_dbs(['postgres'])("file toJSON testing", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     var object = new Parse.Object("TestObject");
@@ -491,7 +491,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('creates correct url for old files hosted on files.parsetfss.com', done => {
+  it_exclude_dbs(['postgres'])('creates correct url for old files hosted on files.parsetfss.com', done => {
     var file = {
       __type: 'File',
       url: 'http://irrelevant.elephant/',
@@ -511,7 +511,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('creates correct url for old files hosted on files.parse.com', done => {
+  it_exclude_dbs(['postgres'])('creates correct url for old files hosted on files.parse.com', done => {
     var file = {
       __type: 'File',
       url: 'http://irrelevant.elephant/',
@@ -531,7 +531,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('supports files in objects without urls', done => {
+  it_exclude_dbs(['postgres'])('supports files in objects without urls', done => {
     var file = {
       __type: 'File',
       name: '123.txt'

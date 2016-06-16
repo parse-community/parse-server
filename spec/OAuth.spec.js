@@ -4,7 +4,6 @@ var Config = require("../src/Config");
 var defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
 describe('OAuth', function() {
-
   it("Nonce should have right length", (done) => {
     jequal(OAuth.nonce().length, 30);
     done();
@@ -238,7 +237,7 @@ describe('OAuth', function() {
     });
   });
 
-  it("should only create a single user with REST API", (done) => {
+  it_exclude_dbs(['postgres'])("should only create a single user with REST API", (done) => {
     var objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
@@ -258,7 +257,7 @@ describe('OAuth', function() {
     });
   });
 
-  it("unlink and link with custom provider", (done) => {
+  it_exclude_dbs(['postgres'])("unlink and link with custom provider", (done) => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("myoauth", {

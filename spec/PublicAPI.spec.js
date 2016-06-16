@@ -38,7 +38,7 @@ describe("public API", () => {
 });
 
 describe("public API without publicServerURL", () => {
-    beforeEach(done => {
+  beforeEach(done => {
     reconfigureServer({ appName: 'unused' })
     .then(done, fail);
   })

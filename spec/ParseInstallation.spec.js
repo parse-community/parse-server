@@ -16,7 +16,7 @@ let defaultColumns = require('../src/Controllers/SchemaController').defaultColum
 const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };
 
 describe('Installations', () => {
-  it('creates an android installation with ids', (done) => {
+  it_exclude_dbs(['postgres'])('creates an android installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';
     var input = {
@@ -34,7 +34,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('creates an ios installation with ids', (done) => {
+  it_exclude_dbs(['postgres'])('creates an ios installation with ids', (done) => {
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var device = 'ios';
     var input = {
@@ -52,7 +52,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('creates an embedded installation with ids', (done) => {
+  it_exclude_dbs(['postgres'])('creates an embedded installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'embedded';
     var input = {
@@ -70,7 +70,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('creates an android installation with all fields', (done) => {
+  it_exclude_dbs(['postgres'])('creates an android installation with all fields', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';
     var input = {
@@ -93,7 +93,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('creates an ios installation with all fields', (done) => {
+  it_exclude_dbs(['postgres'])('creates an ios installation with all fields', (done) => {
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var device = 'ios';
     var input = {
@@ -137,7 +137,7 @@ describe('Installations', () => {
     });
   });
 
-  it('should properly queying installations with masterKey', (done) => {
+  it_exclude_dbs(['postgres'])('should properly queying installations with masterKey', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';
     var input = {
@@ -191,7 +191,7 @@ describe('Installations', () => {
     });
   });
 
-  it('creates an object with custom fields', (done) => {
+  it_exclude_dbs(['postgres'])('creates an object with custom fields', (done) => {
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var input = {
       'deviceToken': t,
@@ -211,7 +211,7 @@ describe('Installations', () => {
 
   // Note: did not port test 'TestObjectIDForIdentifiers'
 
-  it('merging when installationId already exists', (done) => {
+  it_exclude_dbs(['postgres'])('merging when installationId already exists', (done) => {
     var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var installId2 = '12345678-abcd-abcd-abcd-123456789abd';
@@ -244,7 +244,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('merging when two objects both only have one id', (done) => {
+  it_exclude_dbs(['postgres'])('merging when two objects both only have one id', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input1 = {
@@ -287,7 +287,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  notWorking('creating multiple devices with same device token works', (done) => {
+  xit('creating multiple devices with same device token works', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var installId3 = '33333333-abcd-abcd-abcd-123456789abc';
@@ -318,7 +318,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('updating with new channels', (done) => {
+  it_exclude_dbs(['postgres'])('updating with new channels', (done) => {
     var input = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
       deviceType: 'android',
@@ -347,7 +347,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update android fails with new installation id', (done) => {
+  it_exclude_dbs(['postgres'])('update android fails with new installation id', (done) => {
     var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
     var installId2 = '87654321-abcd-abcd-abcd-123456789abc';
     var input = {
@@ -370,7 +370,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update ios fails with new deviceToken and no installationId', (done) => {
+  it_exclude_dbs(['postgres'])('update ios fails with new deviceToken and no installationId', (done) => {
     var a = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var b = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var input = {
@@ -392,7 +392,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update ios updates device token', (done) => {
+  it_exclude_dbs(['postgres'])('update ios updates device token', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
     var u = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
@@ -421,7 +421,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update fails to change deviceType', (done) => {
+  it_exclude_dbs(['postgres'])('update fails to change deviceType', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var input = {
       'installationId': installId,
@@ -445,7 +445,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update android with custom field', (done) => {
+  it_exclude_dbs(['postgres'])('update android with custom field', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var input = {
       'installationId': installId,
@@ -469,7 +469,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update android device token with duplicate device token', (done) => {
+  it_exclude_dbs(['postgres'])('update android device token with duplicate device token', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -511,7 +511,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('update ios device token with duplicate device token', (done) => {
+  it_exclude_dbs(['postgres'])('update ios device token with duplicate device token', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -554,7 +554,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  notWorking('update ios device token with duplicate token different app', (done) => {
+  xit('update ios device token with duplicate token different app', (done) => {
     var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
     var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
@@ -579,7 +579,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update ios token and channels', (done) => {
+  it_exclude_dbs(['postgres'])('update ios token and channels', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input = {
@@ -606,7 +606,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update ios linking two existing objects', (done) => {
+  it_exclude_dbs(['postgres'])('update ios linking two existing objects', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input = {
@@ -641,7 +641,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update is linking two existing objects w/ increment', (done) => {
+  it_exclude_dbs(['postgres'])('update is linking two existing objects w/ increment', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input = {
@@ -681,7 +681,7 @@ describe('Installations', () => {
     });
   });
 
-  it('update is linking two existing with installation id', (done) => {
+  it_exclude_dbs(['postgres'])('update is linking two existing with installation id', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input = {
@@ -721,7 +721,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('update is linking two existing with installation id w/ op', (done) => {
+  it_exclude_dbs(['postgres'])('update is linking two existing with installation id w/ op', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
     var input = {
@@ -766,7 +766,7 @@ describe('Installations', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('ios merge existing same token no installation id', (done) => {
+  it_exclude_dbs(['postgres'])('ios merge existing same token no installation id', (done) => {
     // Test creating installation when there is an existing object with the
     // same device token but no installation ID.  This is possible when
     // developers import device tokens from another push provider; the import

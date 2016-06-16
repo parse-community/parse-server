@@ -4,7 +4,7 @@ let MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 let request = require('request');
 let Config = require("../src/Config");
 
-describe("Custom Pages Configuration", () => {
+describe("Custom Pages, Email Verification, Password Reset", () => {
   it("should set the custom pages", (done) => {
     reconfigureServer({
       appName: 'unused',
@@ -27,10 +27,8 @@ describe("Custom Pages Configuration", () => {
       done();
     });
   });
-});
 
-describe("Email Verification", () => {
-  it('sends verification email if email verification is enabled', done => {
+  it_exclude_dbs(['postgres'])('sends verification email if email verification is enabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -99,7 +97,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('does send a validation email when updating the email', done => {
+  it_exclude_dbs(['postgres'])('does send a validation email when updating the email', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -142,7 +140,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('does send a validation email with valid verification link when updating the email', done => {
+  it_exclude_dbs(['postgres'])('does send a validation email with valid verification link when updating the email', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -189,7 +187,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('does send with a simple adapter', done => {
+  it_exclude_dbs(['postgres'])('does send with a simple adapter', done => {
     var calls = 0;
     var emailAdapter = {
       sendMail: function(options){
@@ -240,7 +238,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
+  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: false,
@@ -305,7 +303,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('receives the app name and user in the adapter', done => {
+  it_exclude_dbs(['postgres'])('receives the app name and user in the adapter', done => {
     var emailAdapter = {
       sendVerificationEmail: options => {
         expect(options.appName).toEqual('emailing app');
@@ -336,7 +334,7 @@ describe("Email Verification", () => {
     });
   })
 
-  it('when you click the link in the email it sets emailVerified to true and redirects you', done => {
+  it_exclude_dbs(['postgres'])('when you click the link in the email it sets emailVerified to true and redirects you', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: options => {
@@ -417,7 +415,7 @@ describe("Email Verification", () => {
     });
   });
 
-  it('does not update email verified if you use an invalid token', done => {
+  it_exclude_dbs(['postgres'])('does not update email verified if you use an invalid token', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: options => {
@@ -455,11 +453,8 @@ describe("Email Verification", () => {
       });
     });
   });
-});
 
-describe("Password Reset", () => {
-
-  it('should send a password reset link', done => {
+  it_exclude_dbs(['postgres'])('should send a password reset link', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -524,7 +519,7 @@ describe("Password Reset", () => {
     });
   });
 
-  it('should programatically reset password', done => {
+  it_exclude_dbs(['postgres'])('should programatically reset password', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

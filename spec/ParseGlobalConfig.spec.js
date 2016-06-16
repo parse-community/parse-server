@@ -15,7 +15,7 @@ describe('a GlobalConfig', () => {
     ).then(done);
   });
 
-  it('can be retrieved', (done) => {
+  it_exclude_dbs(['postgres'])('can be retrieved', (done) => {
     request.get({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -30,7 +30,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('can be updated when a master key exists', (done) => {
+  it_exclude_dbs(['postgres'])('can be updated when a master key exists', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -46,7 +46,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('properly handles delete op', (done) => {
+  it_exclude_dbs(['postgres'])('properly handles delete op', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -75,7 +75,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('fail to update if master key is missing', (done) => {
+  it_exclude_dbs(['postgres'])('fail to update if master key is missing', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -91,7 +91,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it('failed getting config when it is missing', (done) => {
+  it_exclude_dbs(['postgres'])('failed getting config when it is missing', (done) => {
     let config = new Config('test');
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',

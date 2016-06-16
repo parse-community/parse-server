@@ -154,7 +154,7 @@ describe('schemas', () => {
     });
   });
 
-  it('creates _User schema when server starts', done => {
+  it_exclude_dbs(['postgres'])('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -165,7 +165,7 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with a list of schemas after creating objects', done => {
+  it_exclude_dbs(['postgres'])('responds with a list of schemas after creating objects', done => {
     var obj1 = hasAllPODobject();
     obj1.save().then(savedObj1 => {
       var obj2 = new Parse.Object('HasPointersAndRelations');
@@ -188,7 +188,7 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with a single schema', done => {
+  it_exclude_dbs(['postgres'])('responds with a single schema', done => {
     var obj = hasAllPODobject();
     obj.save().then(() => {
       request.get({
@@ -202,7 +202,7 @@ describe('schemas', () => {
     });
   });
 
-  it('treats class names case sensitively', done => {
+  it_exclude_dbs(['postgres'])('treats class names case sensitively', done => {
     var obj = hasAllPODobject();
     obj.save().then(() => {
       request.get({
@@ -312,7 +312,7 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with all fields when you create a class', done => {
+  it_exclude_dbs(['postgres'])('responds with all fields when you create a class', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas',
       headers: masterKeyHeaders,
@@ -341,7 +341,7 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with all fields when getting incomplete schema', done => {
+  it_exclude_dbs(['postgres'])('responds with all fields when getting incomplete schema', done => {
     config.database.loadSchema()
     .then(schemaController => schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions))
     .then(() => {
@@ -382,7 +382,7 @@ describe('schemas', () => {
     });
   });
 
-  it('lets you specify class name in both places', done => {
+  it_exclude_dbs(['postgres'])('lets you specify class name in both places', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -457,7 +457,7 @@ describe('schemas', () => {
     });
   });
 
-  it('refuses to put to existing fields, even if it would not be a change', done => {
+  it_exclude_dbs(['postgres'])('refuses to put to existing fields, even if it would not be a change', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -479,7 +479,7 @@ describe('schemas', () => {
     })
   });
 
-  it('refuses to delete non-existent fields', done => {
+  it_exclude_dbs(['postgres'])('refuses to delete non-existent fields', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -501,7 +501,7 @@ describe('schemas', () => {
     });
   });
 
-  it('refuses to add a geopoint to a class that already has one', done => {
+  it_exclude_dbs(['postgres'])('refuses to add a geopoint to a class that already has one', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -547,7 +547,7 @@ describe('schemas', () => {
     });
   });
 
-  it('allows you to delete and add a geopoint in the same request', done => {
+  it_exclude_dbs(['postgres'])('allows you to delete and add a geopoint in the same request', done => {
     var obj = new Parse.Object('NewClass');
     obj.set('geo1', new Parse.GeoPoint({latitude: 0, longitude: 0}));
     obj.save()
@@ -579,7 +579,7 @@ describe('schemas', () => {
     })
   });
 
-  it('put with no modifications returns all fields', done => {
+  it_exclude_dbs(['postgres'])('put with no modifications returns all fields', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -595,7 +595,7 @@ describe('schemas', () => {
     })
   });
 
-  it('lets you add fields', done => {
+  it_exclude_dbs(['postgres'])('lets you add fields', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -645,7 +645,7 @@ describe('schemas', () => {
     })
   });
 
-  it('lets you add fields to system schema', done => {
+  it_exclude_dbs(['postgres'])('lets you add fields to system schema', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
@@ -702,7 +702,7 @@ describe('schemas', () => {
     })
   });
 
-  it('lets you delete multiple fields and add fields', done => {
+  it_exclude_dbs(['postgres'])('lets you delete multiple fields and add fields', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
     .then(() => {
@@ -752,7 +752,7 @@ describe('schemas', () => {
     });
   });
 
-  it('will not delete any fields if the additions are invalid', done => {
+  it_exclude_dbs(['postgres'])('will not delete any fields if the additions are invalid', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -793,7 +793,7 @@ describe('schemas', () => {
     });
   });
 
-  it('refuses to delete non-empty collection', done => {
+  it_exclude_dbs(['postgres'])('refuses to delete non-empty collection', done => {
     var obj = hasAllPODobject();
     obj.save()
     .then(() => {
@@ -824,7 +824,7 @@ describe('schemas', () => {
     })
   });
 
-  it('does not fail when deleting nonexistant collections', done => {
+  it_exclude_dbs(['postgres'])('does not fail when deleting nonexistant collections', done => {
     request.del({
       url: 'http://localhost:8378/1/schemas/Missing',
       headers: masterKeyHeaders,
@@ -836,7 +836,7 @@ describe('schemas', () => {
     });
   });
 
-  it('deletes collections including join tables', done => {
+  it_exclude_dbs(['postgres'])('deletes collections including join tables', done => {
     var obj = new Parse.Object('MyClass');
     obj.set('data', 'data');
     obj.save()
@@ -887,7 +887,7 @@ describe('schemas', () => {
     });
   });
 
-  it('deletes schema when actual collection does not exist', done => {
+  it_exclude_dbs(['postgres'])('deletes schema when actual collection does not exist', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClassForDelete',
       headers: masterKeyHeaders,
@@ -915,7 +915,7 @@ describe('schemas', () => {
     });
   });
 
-  it('deletes schema when actual collection exists', done => {
+  it_exclude_dbs(['postgres'])('deletes schema when actual collection exists', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClassForDelete',
       headers: masterKeyHeaders,
@@ -958,7 +958,7 @@ describe('schemas', () => {
     });
   });
 
-  it('should set/get schema permissions', done => {
+  it_exclude_dbs(['postgres'])('should set/get schema permissions', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
@@ -1240,7 +1240,7 @@ describe('schemas', () => {
     });
   }
 
-  it('validate CLP 1', done => {
+  it_exclude_dbs(['postgres'])('validate CLP 1', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1289,7 +1289,7 @@ describe('schemas', () => {
     })
   });
 
-  it('validate CLP 2', done => {
+  it_exclude_dbs(['postgres'])('validate CLP 2', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1354,7 +1354,7 @@ describe('schemas', () => {
     })
   });
 
-  it('validate CLP 3', done => {
+  it_exclude_dbs(['postgres'])('validate CLP 3', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1412,7 +1412,7 @@ describe('schemas', () => {
     });
   });
 
-  it('validate CLP 4', done => {
+  it_exclude_dbs(['postgres'])('validate CLP 4', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1480,7 +1480,7 @@ describe('schemas', () => {
     })
   });
 
-  it('validate CLP 5', done => {
+  it_exclude_dbs(['postgres'])('validate CLP 5', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1562,7 +1562,7 @@ describe('schemas', () => {
     });
   });
 
-  it('can login when addFields is false (issue #1355)', (done) => {
+  it_exclude_dbs(['postgres'])('can login when addFields is false (issue #1355)', (done) => {
     setPermissionsOnClass('_User', {
       'create': {'*': true},
       'addField': {}
@@ -1577,7 +1577,7 @@ describe('schemas', () => {
     })
   })
 
-  it('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
+  it_exclude_dbs(['postgres'])('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
     new Parse.Object('MyClass').save({ data: 'foo'})
     .then(obj => obj.destroy())
     .then(() => setPermissionsOnClass('MyClass', { find: {}, get: {} }, true))
@@ -1594,7 +1594,7 @@ describe('schemas', () => {
     });
   });
 
-  it("regression test for #1991", done => {
+  it_exclude_dbs(['postgres'])("regression test for #1991", done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');

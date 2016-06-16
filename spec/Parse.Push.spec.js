@@ -3,7 +3,6 @@
 let request = require('request');
 
 describe('Parse.Push', () => {
-
   var setup = function() {
     var pushAdapter = {
       send: function(body, installations) {
@@ -51,7 +50,7 @@ describe('Parse.Push', () => {
     });
   }
 
-  it('should properly send push', (done) => {
+  it_exclude_dbs(['postgres'])('should properly send push', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -72,7 +71,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should properly send push with lowercaseIncrement', (done) => {
+  it_exclude_dbs(['postgres'])('should properly send push with lowercaseIncrement', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -92,7 +91,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should not allow clients to query _PushStatus', done => {
+  it_exclude_dbs(['postgres'])('should not allow clients to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -117,7 +116,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should allow master key to query _PushStatus', done => {
+  it_exclude_dbs(['postgres'])('should allow master key to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -145,7 +144,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should throw error if missing push configuration', done => {
+  it_exclude_dbs(['postgres'])('should throw error if missing push configuration', done => {
     reconfigureServer({push: null})
     .then(() => {
       return Parse.Push.send({

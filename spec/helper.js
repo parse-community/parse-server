@@ -202,9 +202,6 @@ function createTestUser(success, error) {
   }
 }
 
-// Mark the tests that are known to not work.
-function notWorking() {}
-
 // Shims for compatibility with the old qunit tests.
 function ok(bool, message) {
   expect(bool).toBeTruthy(message);
@@ -312,7 +309,6 @@ global.Item = Item;
 global.Container = Container;
 global.create = create;
 global.createTestUser = createTestUser;
-global.notWorking = notWorking;
 global.ok = ok;
 global.equal = equal;
 global.strictEqual = strictEqual;
@@ -327,7 +323,7 @@ global.defaultConfiguration = defaultConfiguration;
 
 global.it_exclude_dbs = excluded => {
   if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
-    return notWorking;
+    return xit;
   } else {
     return it;
   }

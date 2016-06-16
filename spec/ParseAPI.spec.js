@@ -128,7 +128,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it_exclude_dbs(['postgres'])('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -740,7 +740,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('beforeSave receives ACL', done => {
+  it_exclude_dbs(['postgres'])('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function(req, res) {
@@ -780,7 +780,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('afterSave receives ACL', done => {
+  it_exclude_dbs(['postgres'])('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
@@ -1173,7 +1173,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('gets relation fields', (done) => {
+  it_exclude_dbs(['postgres'])('gets relation fields', (done) => {
     let object = new Parse.Object('AnObject');
     let relatedObject = new Parse.Object('RelatedObject');
     Parse.Object.saveAll([object, relatedObject]).then(() => {
@@ -1286,7 +1286,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('bans interior keys containing . or $', done => {
+  it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
@@ -1306,7 +1306,7 @@ describe('miscellaneous', function() {
     })
   });
 
-  it('does not change inner object keys named _auth_data_something', done => {
+  it_exclude_dbs(['postgres'])('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
     .then(object => new Parse.Query('O').get(object.id))
     .then(object => {
@@ -1333,7 +1333,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
+  it_exclude_dbs(['postgres'])('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
     let file = new Parse.File('myfile.txt', { base64: 'eAo=' });
     file.save()
     .then(f => {

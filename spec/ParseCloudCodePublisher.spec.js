@@ -2,7 +2,6 @@ var ParseCloudCodePublisher = require('../src/LiveQuery/ParseCloudCodePublisher'
 var Parse = require('parse/node');
 
 describe('ParseCloudCodePublisher', function() {
-
   beforeEach(function(done) {
     // Mock ParsePubSub
     var mockParsePubSub = {
