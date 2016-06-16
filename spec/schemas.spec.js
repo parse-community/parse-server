@@ -677,7 +677,7 @@ describe('schemas', () => {
     })
   });
 
-  fit('lets you delete multiple fields and add fields', done => {
+  it('lets you delete multiple fields and add fields', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
     .then(() => {
