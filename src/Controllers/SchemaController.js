@@ -341,12 +341,9 @@ class SchemaController {
   }
 
   updateClass(className, submittedFields, classLevelPermissions, database) {
-    return this.hasClass(className)
-    .then(hasClass => {
-      if (!hasClass) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      }
-      let existingFields = Object.assign(this.data[className], {_id: className});
+    return this.getOneSchema(className)
+    .then(schema => {
+      let existingFields = schema.fields;
       Object.keys(submittedFields).forEach(name => {
         let field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {
@@ -360,7 +357,7 @@ class SchemaController {
       delete existingFields._rperm;
       delete existingFields._wperm;
       let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions);
+      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
       if (validationError) {
         throw new Parse.Error(validationError.code, validationError.error);
       }
@@ -394,6 +391,13 @@ class SchemaController {
         fields: this.data[className],
         classLevelPermissions: this.perms[className]
       }));
+    })
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw error;
+      }
     })
   }
 
@@ -436,25 +440,27 @@ class SchemaController {
         error: invalidClassNameMessage(className),
       };
     }
-    return this.validateSchemaData(className, fields, classLevelPermissions);
+    return this.validateSchemaData(className, fields, classLevelPermissions, []);
   }
 
-  validateSchemaData(className, fields, classLevelPermissions) {
+  validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
     for (let fieldName in fields) {
-      if (!fieldNameIsValid(fieldName)) {
-        return {
-          code: Parse.Error.INVALID_KEY_NAME,
-          error: 'invalid field name: ' + fieldName,
-        };
+      if (!existingFieldNames.includes(fieldName)) {
+        if (!fieldNameIsValid(fieldName)) {
+          return {
+            code: Parse.Error.INVALID_KEY_NAME,
+            error: 'invalid field name: ' + fieldName,
+          };
+        }
+        if (!fieldNameIsValidForClass(fieldName, className)) {
+          return {
+            code: 136,
+            error: 'field ' + fieldName + ' cannot be added',
+          };
+        }
+        const error = fieldTypeIsInvalid(fields[fieldName]);
+        if (error) return { code: error.code, error: error.message };
       }
-      if (!fieldNameIsValidForClass(fieldName, className)) {
-        return {
-          code: 136,
-          error: 'field ' + fieldName + ' cannot be added',
-        };
-      }
-      const error = fieldTypeIsInvalid(fields[fieldName]);
-      if (error) return { code: error.code, error: error.message };
     }
 
     for (let fieldName in defaultColumns[className]) {
@@ -552,19 +558,19 @@ class SchemaController {
       throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
     }
 
-    return this.reloadData()
-    .then(() => this.hasClass(className))
-    .then(hasClass => {
-      if (!hasClass) {
+    return this.getOneSchema(className)
+    .catch(error => {
+      if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      }
-      if (!this.data[className][fieldName]) {
-        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+      } else {
+        throw error;
       }
     })
-    .then(() => this.getOneSchema(className))
     .then(schema => {
-      if (this.data[className][fieldName].type == 'Relation') {
+      if (!schema.fields[fieldName]) {
+        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+      }
+      if (schema.fields[fieldName].type == 'Relation') {
         //For relations, drop the _Join table
         return database.adapter.deleteFields(className, schema, [fieldName])
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
