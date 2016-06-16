@@ -39,7 +39,7 @@
     "parse-server-s3-adapter": "1.0.3",
     "parse-server-simple-mailgun-adapter": "1.0.0",
     "pg-promise": "4.4.0",
-    "redis": "2.5.3",
+    "redis": "2.6.2",
     "request": "2.72.0",
     "request-promise": "3.0.0",
     "tv4": "1.2.7",
