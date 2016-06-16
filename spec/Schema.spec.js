@@ -238,7 +238,6 @@ describe('SchemaController', () => {
       });
       Promise.all([p1,p2])
       .catch(error => {
-        console.log(error);
         expect(error.code).toEqual(Parse.Error.INVALID_CLASS_NAME);
         expect(error.message).toEqual('Class NewClass already exists.');
         done();
