@@ -3,6 +3,23 @@ const pgp = require('pg-promise')();
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 
+const parseTypeToPostgresType = type => {
+  switch (type.type) {
+    case 'String': return 'text';
+    case 'Date': return 'timestamp';
+    case 'Object': return 'jsonb';
+    case 'Boolean': return 'boolean';
+    case 'Pointer': return 'char(10)';
+    case 'Number': return 'double precision';
+    case 'Array':
+      if (type.contents && type.contents.type === 'String') {
+        return 'text[]';
+      } else {
+        throw `no type for ${JSON.stringify(type)} yet`;
+      }
+    default: throw `no type for ${JSON.stringify(type)} yet`;
+  }
+};
 
 export class PostgresStorageAdapter {
   // Private
@@ -37,13 +54,24 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this._client.query('CREATE TABLE $<className:name> ()', { className })
+    let valuesArray = [];
+    let patternsArray = [];
+    Object.keys(schema.fields).forEach((fieldName, index) => {
+      valuesArray.push(fieldName);
+      let parseType = schema.fields[fieldName];
+      if (['_rperm', '_wperm'].includes(fieldName)) {
+        parseType.contents = { type: 'String' };
+      }
+      valuesArray.push(parseTypeToPostgresType(parseType));
+      patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
+    });
+    return this._client.query(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray])
     .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
   }
 
   addFieldIfNotExists(className, fieldName, type) {
-    // TODO: Doing this in a transaction is probably a good idea.
-    return this._client.query('ALTER TABLE "GameScore" ADD COLUMN "score" double precision', { className, fieldName })
+    // TODO: Doing this in a transaction might be a good idea.
+    return this._client.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', { className, fieldName, postgresType: parseTypeToPostgresType(type) })
     .catch(error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         return this.createClass(className, { fields: { [fieldName]: type } })
@@ -112,7 +140,7 @@ export class PostgresStorageAdapter {
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
-  // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
+  // schemas cannot be retrieved, returns a promise that rejects. Rquirements for the
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
@@ -127,24 +155,54 @@ export class PostgresStorageAdapter {
     return this._client.query('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
     .then(result => {
       if (result.length === 1) {
-        return result;
+        return result[0];
       } else {
         throw undefined;
       }
     });
   }
 
-  // TODO: remove the mongo format dependency
+  // TODO: remove the mongo format dependency in the return value
   createObject(className, schema, object) {
-    return this._client.query('INSERT INTO "GameScore" (score) VALUES ($<score>)', { score: object.score })
-    .then(() => ({ ops: [object] }));
+    let columnsArray = [];
+    let valuesArray = [];
+    console.log('creating');
+    console.log(schema);
+    console.log(object);
+    console.log(className);
+    console.log(new Error().stack);
+    Object.keys(object).forEach(fieldName => {
+      columnsArray.push(fieldName);
+      switch (schema.fields[fieldName].type) {
+        case 'Date':
+          valuesArray.push(object[fieldName].iso);
+          break;
+        case 'Pointer':
+          valuesArray.push(object[fieldName].objectId);
+          break;
+        default:
+          valuesArray.push(object[fieldName]);
+          break;
+      }
+    });
+    let columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
+    let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}`).join(',');
+    return this._client.query(`INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`, [className, ...columnsArray, ...valuesArray])
+    .then(() => ({ ops: [object] }))
   }
 
   // Remove all objects that match the given Parse Query.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
-    return Promise.reject('Not implented yet.')
+    return this._client.query(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className })
+    .then(result => {
+      if (result[0].count === 0) {
+        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+      } else {
+        return result[0].count;
+      }
+    });
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -152,9 +210,53 @@ export class PostgresStorageAdapter {
     return Promise.reject('Not implented yet.')
   }
 
-  // Hopefully we can get rid of this in favor of updateObjectsByQuery.
+  // Return value not currently well specified.
   findOneAndUpdate(className, schema, query, update) {
-    return Promise.reject('Not implented yet.')
+    let conditionPatterns = [];
+    let updatePatterns = [];
+    let values = []
+    values.push(className);
+    let index = 2;
+
+    for (let fieldName in update) {
+      let fieldValue = update[fieldName];
+      if (fieldValue.__op === 'Increment') {
+        updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
+        values.push(fieldName, fieldValue.amount);
+        index += 2;
+      } else if (fieldName === 'updatedAt') { //TODO: stop special casing this. It should check for __type === 'Date' and use .iso
+        updatePatterns.push(`$${index}:name = $${index + 1}`)
+        values.push(fieldName, new Date(fieldValue));
+        index += 2;
+      } else {
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this type of update yet`));
+      }
+    }
+
+    for (let fieldName in query) {
+      let fieldValue = query[fieldName];
+      if (typeof fieldValue === 'string') {
+        conditionPatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (Array.isArray(fieldValue.$in)) {
+        let inPatterns = [];
+        values.push(fieldName);
+        fieldValue.$in.forEach((listElem, listIndex) => {
+          values.push(listElem);
+          inPatterns.push(`$${index + 1 + listIndex}`);
+        });
+        conditionPatterns.push(`$${index}:name && ARRAY[${inPatterns.join(',')}]`);
+        index = index + 1 + inPatterns.length;
+      } else {
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this type of request yet`));
+      }
+    }
+    let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${conditionPatterns.join(' AND ')} RETURNING *`;
+    return this._client.query(qs, values)
+    .then(val => {
+      return val[0];
+    })
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
@@ -164,7 +266,63 @@ export class PostgresStorageAdapter {
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
   find(className, schema, query, { skip, limit, sort }) {
-    return this._client.query("SELECT * FROM $<className>", { className })
+    let conditionPatterns = [];
+    let values = [];
+    values.push(className);
+    let index = 2;
+
+    for (let fieldName in query) {
+      let fieldValue = query[fieldName];
+      if (typeof fieldValue === 'string') {
+        conditionPatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (fieldValue.$ne) {
+        conditionPatterns.push(`$${index}:name <> $${index + 1}`);
+        values.push(fieldName, fieldValue.$ne)
+        index += 2;
+      } else if (Array.isArray(fieldValue.$in)) {
+        let inPatterns = [];
+        values.push(fieldName);
+        fieldValue.$in.forEach((listElem, listIndex) => {
+          values.push(listElem);
+          inPatterns.push(`$${index + 1 + listIndex}`);
+        });
+        conditionPatterns.push(`$${index}:name IN (${inPatterns.join(',')})`);
+        index = index + 1 + inPatterns.length;
+      } else if (fieldValue.__type === 'Pointer') {
+        conditionPatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.objectId);
+        index += 2;
+      } else {
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, "Postgres doesn't support this query type yet"));
+      }
+    }
+
+    return this._client.query(`SELECT * FROM $1:name WHERE ${conditionPatterns.join(' AND ')}`, values)
+    .then(results => results.map(object => {
+      Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
+        object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+      });
+      //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
+      if (object.createdAt) {
+        object.createdAt = object.createdAt.toISOString();
+      }
+      if (object.updatedAt) {
+        object.updatedAt = object.updatedAt.toISOString();
+      }
+      if (object.expiresAt) {
+        object.expiresAt = { __type: 'Date', iso: object.expiresAt.toISOString() };
+      }
+
+      for (let fieldName in object) {
+        if (object[fieldName] === null) {
+          delete object[fieldName];
+        }
+      }
+
+      return object;
+    }))
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't

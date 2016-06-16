@@ -11,7 +11,6 @@ var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/index').TestUtils;
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
@@ -29,7 +28,6 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
     collectionPrefix: 'test_',
   })
 }
-
 
 var port = 8378;
 
@@ -142,6 +140,12 @@ beforeEach(done => {
 });
 
 afterEach(function(done) {
+  let afterLogOut = () => {
+    if (Object.keys(openConnections).length > 0) {
+      fail('There were open connections to the server left after the test finished');
+    }
+    done();
+  };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
   .then(allSchemas => {
@@ -159,16 +163,7 @@ afterEach(function(done) {
     });
   })
   .then(() => Parse.User.logOut())
-  .then(() => {
-    if (Object.keys(openConnections).length > 0) {
-      fail('There were open connections to the server left after the test finished');
-    }
-    done();
-  })
-  .catch(error => {
-    fail(JSON.stringify(error));
-    done();
-  });
+  .then(afterLogOut, afterLogOut)
 });
 
 var TestObject = Parse.Object.extend({

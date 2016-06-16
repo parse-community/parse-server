@@ -1,4 +1,3 @@
-
 import MongoCollection from './MongoCollection';
 
 function mongoFieldToParseSchemaField(type) {

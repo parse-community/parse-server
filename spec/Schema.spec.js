@@ -693,7 +693,7 @@ describe('SchemaController', () => {
           objectId: { type: 'String' },
           updatedAt: { type: 'Date' },
           createdAt: { type: 'Date' },
-          ACL: { type: 'ACL' }
+          ACL: { type: 'ACL' },
         };
         expect(dd(schema.data.NewClass, expectedSchema)).toEqual(undefined);
         done();

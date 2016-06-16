@@ -197,20 +197,12 @@ function transformWhere(className, restWhere, schema) {
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
-  case 'createdAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_created_at', value: coercedToDate};
-  case 'updatedAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
     transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
@@ -271,8 +263,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue,
   return {key: restKey, value};
 }
 
-// Main exposed method to create new objects.
-// restCreate is the "create" clause in REST API form.
 const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   if (className == '_User') {
      restCreate = transformAuthData(restCreate);
@@ -281,7 +271,6 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   let mongoCreate = {}
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      className,
       restKey,
       restCreate[restKey],
       schema
@@ -290,6 +279,17 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
       mongoCreate[key] = value;
     }
   }
+
+  // Use the legacy mongo format for createdAt and updatedAt
+  if (mongoCreate.createdAt) {
+    mongoCreate._created_at = new Date(mongoCreate.createdAt.iso || mongoCreate.createdAt);
+    delete mongoCreate.createdAt;
+  }
+  if (mongoCreate.updatedAt) {
+    mongoCreate._updated_at = new Date(mongoCreate.updatedAt.iso || mongoCreate.updatedAt);
+    delete mongoCreate.updatedAt;
+  }
+
   return mongoCreate;
 }
 
@@ -517,13 +517,7 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$options':
-      var options = constraint[key];
-      if (!answer['$regex'] || (typeof options !== 'string')
-          || !options.match(/^[imxs]+$/)) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                              'got a bad $options');
-      }
-      answer[key] = options;
+      answer[key] = constraint[key];
       break;
 
     case '$nearSphere':
@@ -735,7 +729,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         restObject['objectId'] = '' + mongoObject[key];
         break;
       case '_hashed_password':
-        restObject['password'] = mongoObject[key];
+        restObject._hashed_password = mongoObject[key];
         break;
       case '_acl':
       case '_email_verify_token':

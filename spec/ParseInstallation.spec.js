@@ -24,7 +24,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -42,7 +42,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];
@@ -60,7 +60,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(() => config.database.adapter.find('_Installation', installationSchema, {}, {}))
+    .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       var obj = results[0];

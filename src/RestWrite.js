@@ -31,8 +31,7 @@ function RestWrite(config, auth, className, query, data, originalData) {
   this.runOptions = {};
 
   if (!query && data.objectId) {
-    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId ' +
-                          'is an invalid field name.');
+    throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId is an invalid field name.');
   }
 
   // When the operation is complete, this.response may have several
@@ -712,8 +711,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
   if (this.className === '_User' &&
       this.query &&
       !this.auth.couldUpdateUserId(this.query.objectId)) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'cannot modify user ' + this.query.objectId);
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, `Cannot modify user ${this.query.objectId}.`);
   }
 
   if (this.className === '_Product' && this.data.download) {

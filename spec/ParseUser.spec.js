@@ -10,6 +10,7 @@
 var request = require('request');
 var passwordCrypto = require('../src/password');
 var Config = require('../src/Config');
+const rp = require('request-promise');
 
 function verifyACL(user) {
   const ACL = user.getACL();
@@ -2131,7 +2132,7 @@ describe('Parse.User testing', () => {
     let database = new Config(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
-      password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
+      _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
       _auth_data_facebook: null
     }, {}).then(() => {
       return new Promise((resolve, reject) => {
@@ -2258,42 +2259,43 @@ describe('Parse.User testing', () => {
   });
 
   it('should fail to become user with expired token', (done) => {
-    Parse.User.signUp("auser", "somepass", null, {
-      success: function(user) {
-        request.get({
-          url: 'http://localhost:8378/1/classes/_Session',
-          json: true,
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
-        }, (error, response, body) => {
-          var id = body.results[0].objectId;
-          var expiresAt = new Date((new Date()).setYear(2015));
-          var token = body.results[0].sessionToken;
-          request.put({
-            url: "http://localhost:8378/1/classes/_Session/" + id,
-            json: true,
-            headers: {
-              'X-Parse-Application-Id': 'test',
-              'X-Parse-Master-Key': 'test',
-            },
-            body: {
-              expiresAt: { __type: "Date", iso: expiresAt.toISOString() },
-            },
-          }, (error, response, body) => {
-            Parse.User.become(token)
-            .then(() => { fail("Should not have succeded"); })
-            .fail((err) => {
-              expect(err.code).toEqual(209);
-              expect(err.message).toEqual("Session token is expired.");
-              Parse.User.logOut() // Logout to prevent polluting CLI with messages
-              .then(done());
-            });
-          });
-        });
-      }
-    });
+    let token;
+    Parse.User.signUp("auser", "somepass", null)
+    .then(user => rp({
+      method: 'GET',
+      url: 'http://localhost:8378/1/classes/_Session',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+    }))
+    .then(body => {
+      var id = body.results[0].objectId;
+      var expiresAt = new Date((new Date()).setYear(2015));
+      token = body.results[0].sessionToken;
+      return rp({
+        method: 'PUT',
+        url: "http://localhost:8378/1/classes/_Session/" + id,
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        body: {
+          expiresAt: { __type: "Date", iso: expiresAt.toISOString() },
+        },
+      })
+    })
+    .then(() => Parse.User.become(token))
+    .then(() => {
+      fail("Should not have succeded")
+      done();
+    }, error => {
+      expect(error.code).toEqual(209);
+      expect(error.message).toEqual("Session token is expired.");
+      done();
+    })
   });
 
   it('should not create extraneous session tokens', (done) => {

@@ -67,6 +67,13 @@ const validateQuery = query => {
   }
 
   Object.keys(query).forEach(key => {
+    if (query && query[key] && query[key].$regex) {
+      if (typeof query[key].$options === 'string') {
+        if (!query[key].$options.match(/^[imxs]+$/)) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
+        }
+      }
+    }
     if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
@@ -93,12 +100,8 @@ DatabaseController.prototype.collectionExists = function(className) {
 
 DatabaseController.prototype.purgeCollection = function(className) {
   return this.loadSchema()
-  .then((schema) => {
-    schema.getOneSchema(className)
-  })
-  .then((schema) => {
-    this.adapter.deleteObjectsByQuery(className, {}, schema);
-  });
+  .then(schemaController => schemaController.getOneSchema(className))
+  .then(schema => this.adapter.deleteObjectsByQuery(className, schema, {}));
 };
 
 DatabaseController.prototype.validateClassName = function(className) {
@@ -158,6 +161,9 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   if (className !== '_User') {
     return object;
   }
+
+  object.password = object._hashed_password;
+  delete object._hashed_password;
 
   delete object.sessionToken;
 
@@ -237,7 +243,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         } else if (upsert) {
           return this.adapter.upsertOneObject(className, schema, query, update);
         } else {
-          return this.adapter.findOneAndUpdate(className, schema, query, update);
+          return this.adapter.findOneAndUpdate(className, schema, query, update)
         }
       });
     })
@@ -400,6 +406,9 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
   let originalObject = object;
   object = transformObjectACL(object);
 
+  object.createdAt = { iso: object.createdAt, __type: 'Date' };
+  object.updatedAt = { iso: object.updatedAt, __type: 'Date' };
+
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
 
@@ -410,7 +419,7 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
     .then(() => this.handleRelationUpdates(className, null, object))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.getOneSchema(className, true))
-    .then(schema => this.adapter.createObject(className, schema, object))
+    .then(schema => this.adapter.createObject(className, SchemaController.convertSchemaToAdapterSchema(schema), object))
     .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
   })
 };
@@ -639,13 +648,18 @@ DatabaseController.prototype.find = function(className, query, {
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
   let op = typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find';
+  let classExists = true;
   return this.loadSchema()
   .then(schemaController => {
-    return schemaController.getOneSchema(className)
+    //Allow volatile classes if querying with Master (for _PushStatus)
+    //TODO: Move volatile classes concept into mongo adatper, postgres adapter shouldn't care
+    //that api.parse.com breaks when _PushStatus exists in mongo.
+    return schemaController.getOneSchema(className, isMaster)
     .catch(error => {
-      // If the schema doesn't exist, pretend it exists with no fields. This behaviour
-      // will likely need revisiting.
+      // Behaviour for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
+      // For now, pretend the class exists but has no objects,
       if (error === undefined) {
+        classExists = false;
         return { fields: {} };
       }
       throw error;
@@ -679,10 +693,9 @@ DatabaseController.prototype.find = function(className, query, {
         }
         if (!query) {
           if (op == 'get') {
-            return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-              'Object not found.'));
+            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
           } else {
-            return Promise.resolve([]);
+            return [];
           }
         }
         if (!isMaster) {
@@ -690,13 +703,21 @@ DatabaseController.prototype.find = function(className, query, {
         }
         validateQuery(query);
         if (count) {
-          return this.adapter.count(className, schema, query);
+          if (!classExists) {
+            return 0;
+          } else {
+            return this.adapter.count(className, schema, query);
+          }
         } else {
-          return this.adapter.find(className, schema, query, { skip, limit, sort })
-          .then(objects => objects.map(object => {
-            object = untransformObjectACL(object);
-            return filterSensitiveData(isMaster, aclGroup, className, object)
-          }));
+          if (!classExists) {
+            return [];
+          } else {
+            return this.adapter.find(className, schema, query, { skip, limit, sort })
+            .then(objects => objects.map(object => {
+              object = untransformObjectACL(object);
+              return filterSensitiveData(isMaster, aclGroup, className, object)
+            }));
+          }
         }
       });
     });
@@ -739,7 +760,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
   })
   .then(schema => {
     return this.collectionExists(className)
-    .then(exist => this.adapter.count(className))
+    .then(exist => this.adapter.count(className, { fields: {} }))
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);

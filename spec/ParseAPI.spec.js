@@ -37,7 +37,10 @@ describe('miscellaneous', function() {
           expect(obj2.id).toEqual(obj.id);
           done();
         },
-        error: fail
+        error: error => {
+          fail(JSON.stringify(error));
+          done();
+        }
       });
     });
   });
@@ -48,8 +51,8 @@ describe('miscellaneous', function() {
       expect(data.getSessionToken()).not.toBeUndefined();
       expect(data.get('password')).toBeUndefined();
       done();
-    }, function(err) {
-      fail(err);
+    }, error => {
+      fail(JSON.stringify(error));
       done();
     });
   });
@@ -86,9 +89,8 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that email is uniquely indexed', done => {
-    let numCreated = 0;
     let numFailed = 0;
-
+    let numCreated = 0;
     let user1 = new Parse.User();
     user1.setPassword('asdf');
     user1.setUsername('u1');
@@ -215,8 +217,9 @@ describe('miscellaneous', function() {
           expect(user.get('password')).toBeUndefined();
           expect(user.getSessionToken()).not.toBeUndefined();
           Parse.User.logOut().then(done);
-        }, error: function(error) {
-          fail(error);
+        }, error: error => {
+          fail(JSON.stringify(error));
+          done();
         }
       });
     }, fail);
@@ -232,15 +235,14 @@ describe('miscellaneous', function() {
       expect(user.get('foo')).toEqual(1);
       user.increment('foo');
       return user.save();
-    }).then(() => {
-      Parse.User.logOut();
-      return Parse.User.logIn('test', 'moon-y');
-    }).then((user) => {
+    }).then(() => Parse.User.logOut())
+    .then(() => Parse.User.logIn('test', 'moon-y'))
+    .then((user) => {
       expect(user.get('foo')).toEqual(2);
       Parse.User.logOut()
       .then(done);
     }, (error) => {
-      fail(error);
+      fail(JSON.stringify(error));
       done();
     });
   });
