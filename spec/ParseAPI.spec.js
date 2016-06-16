@@ -207,58 +207,6 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    let config = new Config('test');
-    // Remove existing data to clear out unique index
-    TestUtils.destroyAllDataPermanently()
-    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'x', email: 'a@b.c' }))
-    .then(() => config.database.adapter.createObject('_User', requiredUserFields, { objectId: 'y', email: 'a@b.c' }))
-    .then(reconfigureServer)
-    .catch(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('qqq');
-      user.setEmail('unique@unique.unique');
-      return user.signUp().catch(fail);
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('www');
-      user.setEmail('a@b.c');
-      return user.signUp()
-    })
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      done();
-    });
-  });
-
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
-    let config = new Config('test');
-    config.database.adapter.ensureUniqueness('_User', requiredUserFields, ['randomField'])
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('1');
-      user.setEmail('1@b.c');
-      user.set('randomField', 'a');
-      return user.signUp()
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('2');
-      user.setEmail('2@b.c');
-      user.set('randomField', 'a');
-      return user.signUp()
-    })
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-      done();
-    });
-  });
-
   it('succeed in logging in', function(done) {
     createTestUser(function(u) {
       expect(typeof u.id).toEqual('string');
