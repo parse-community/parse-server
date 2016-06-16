@@ -304,12 +304,9 @@ class SchemaController {
   }
 
   updateClass(className, submittedFields, classLevelPermissions, database) {
-    return this.hasClass(className)
-    .then(hasClass => {
-      if (!hasClass) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-      }
-      let existingFields = { ...this.data[className], _id: className };
+    return this.getOneSchema(className)
+    .then(schema => {
+      let existingFields = schema.fields;
       Object.keys(submittedFields).forEach(name => {
         let field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {
@@ -355,6 +352,13 @@ class SchemaController {
         fields: this.data[className],
         classLevelPermissions: this.perms[className]
       }));
+    })
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw error;
+      }
     })
   }
 
