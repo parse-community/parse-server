@@ -318,7 +318,7 @@ class SchemaController {
       });
 
       let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions);
+      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
       if (validationError) {
         throw new Parse.Error(validationError.code, validationError.error);
       }
@@ -402,25 +402,27 @@ class SchemaController {
         error: invalidClassNameMessage(className),
       };
     }
-    return this.validateSchemaData(className, fields, classLevelPermissions);
+    return this.validateSchemaData(className, fields, classLevelPermissions, []);
   }
 
-  validateSchemaData(className, fields, classLevelPermissions) {
+  validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
     for (let fieldName in fields) {
-      if (!fieldNameIsValid(fieldName)) {
-        return {
-          code: Parse.Error.INVALID_KEY_NAME,
-          error: 'invalid field name: ' + fieldName,
-        };
+      if (!existingFieldNames.includes(fieldName)) {
+        if (!fieldNameIsValid(fieldName)) {
+          return {
+            code: Parse.Error.INVALID_KEY_NAME,
+            error: 'invalid field name: ' + fieldName,
+          };
+        }
+        if (!fieldNameIsValidForClass(fieldName, className)) {
+          return {
+            code: 136,
+            error: 'field ' + fieldName + ' cannot be added',
+          };
+        }
+        const error = fieldTypeIsInvalid(fields[fieldName]);
+        if (error) return { code: error.code, error: error.message };
       }
-      if (!fieldNameIsValidForClass(fieldName, className)) {
-        return {
-          code: 136,
-          error: 'field ' + fieldName + ' cannot be added',
-        };
-      }
-      const error = fieldTypeIsInvalid(fields[fieldName]);
-      if (error) return { code: error.code, error: error.message };
     }
 
     for (let fieldName in defaultColumns[className]) {
