@@ -138,12 +138,6 @@ export class MongoStorageAdapter {
     }));
   }
 
-  // Returns a promise that is expected to resolve with the newly created schema, in Parse format.
-  // If the class already exists, returns a promise that rejects with DUPLICATE_VALUE as the reason.
-  addSchema(name: string, fields, classLevelPermissions) {
-
-  }
-
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
     let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);

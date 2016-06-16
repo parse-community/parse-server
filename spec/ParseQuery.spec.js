@@ -537,7 +537,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it("objectId equalTo queries", function(done) {
+  it_exclude_dbs(['postgres'])("objectId equalTo queries", function(done) {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
