@@ -29,7 +29,6 @@ const defaultColumns = Object.freeze({
   _User: {
     "username":      {type:'String'},
     "password":      {type:'String'},
-    "authData":      {type:'Object'},
     "email":         {type:'String'},
     "emailVerified": {type:'Boolean'},
   },
@@ -241,6 +240,7 @@ const convertAdapterSchemaToParseSchema = ({...schema}) => {
   schema.fields.ACL = { type: 'ACL' };
 
   if (schema.className === '_User') {
+    delete schema.fields.authData; //Auth data is implicit
     delete schema.fields._hashed_password;
     schema.fields.password = { type: 'String' };
   }
@@ -248,14 +248,14 @@ const convertAdapterSchemaToParseSchema = ({...schema}) => {
   return schema;
 }
 
-const injectDefaultSchema = schema => ({
-  className: schema.className,
+const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
+  className,
   fields: {
     ...defaultColumns._Default,
-    ...(defaultColumns[schema.className] || {}),
-    ...schema.fields,
+    ...(defaultColumns[className] || {}),
+    ...fields,
   },
-  classLevelPermissions: schema.classLevelPermissions,
+  classLevelPermissions,
 })
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
@@ -313,7 +313,7 @@ class SchemaController {
       return Promise.resolve(this.data[className]);
     }
     return this._dbAdapter.getClass(className)
-    .then(injectDefaultSchema);
+    .then(injectDefaultSchema)
   }
 
   // Create a new class that includes the three default fields.
@@ -524,12 +524,14 @@ class SchemaController {
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
-      }, () => {
+      }, error => {
+        //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
+
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
         return this.reloadData();
-      }).then(() => {
+      }).then(error => {
         // Ensure that the schema now validates
         if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
@@ -609,7 +611,8 @@ class SchemaController {
         // Every object has ACL implicitly.
         continue;
       }
-      promise = thenValidateField(promise, className, fieldName, expected);
+
+      promise = promise.then(schema => schema.enforceFieldExists(className, fieldName, expected));
     }
     promise = thenValidateRequiredColumns(promise, className, object, query);
     return promise;
@@ -739,14 +742,6 @@ function buildMergedSchemaObject(existingFields, putRequest) {
     }
   }
   return newSchema;
-}
-
-// Given a schema promise, construct another schema promise that
-// validates this field once the schema loads.
-function thenValidateField(schemaPromise, className, key, type) {
-  return schemaPromise.then((schema) => {
-    return schema.enforceFieldExists(className, key, type);
-  });
 }
 
 // Given a schema promise, construct another schema promise that

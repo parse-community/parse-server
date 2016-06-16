@@ -86,6 +86,21 @@ var pointersAndRelationsSchema = {
   classLevelPermissions: defaultClassLevelPermissions
 }
 
+const userSchema = {
+  "className": "_User",
+  "fields": {
+    "objectId": {"type": "String"},
+    "createdAt": {"type": "Date"},
+    "updatedAt": {"type": "Date"},
+    "ACL": {"type": "ACL"},
+    "username": {"type": "String"},
+    "password": {"type": "String"},
+    "email": {"type": "String"},
+    "emailVerified": {"type": "Boolean"}
+  },
+  "classLevelPermissions": defaultClassLevelPermissions,
+}
+
 var noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
 };
@@ -139,13 +154,13 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with empty list when there are no schemas', done => {
+  it('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
       headers: masterKeyHeaders,
     }, (error, response, body) => {
-      expect(body.results).toEqual([]);
+      expect(dd(body.results, [userSchema])).toEqual();
       done();
     });
   });
@@ -165,9 +180,9 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
       }, (error, response, body) => {
         var expected = {
-          results: [plainOldDataSchema,pointersAndRelationsSchema]
+          results: [userSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
-        expect(body).toEqual(expected);
+        expect(dd(body, expected)).toEqual(undefined);
         done();
       })
     });
@@ -328,31 +343,43 @@ describe('schemas', () => {
 
   it('responds with all fields when getting incomplete schema', done => {
     config.database.loadSchema()
-    .then(schemaController => schemaController.addClassIfNotExists('_User', {}, defaultClassLevelPermissions))
+    .then(schemaController => schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions))
     .then(() => {
       request.get({
-        url: 'http://localhost:8378/1/schemas/_User',
+        url: 'http://localhost:8378/1/schemas/_Installation',
         headers: masterKeyHeaders,
         json: true
       }, (error, response, body) => {
-        expect(body).toEqual({
-          className: '_User',
+        expect(dd(body,{
+          className: '_Installation',
           fields: {
             objectId: {type: 'String'},
             updatedAt: {type: 'Date'},
             createdAt: {type: 'Date'},
-            username: {type: 'String'},
-            password: {type: 'String'},
-            authData: {type: 'Object'},
-            email: {type: 'String'},
-            emailVerified: {type: 'Boolean'},
+            installationId: {type: 'String'},
+            deviceToken: {type: 'String'},
+            channels: {type: 'Array'},
+            deviceType: {type: 'String'},
+            pushType: {type: 'String'},
+            GCMSenderId: {type: 'String'},
+            timeZone: {type: 'String'},
+            badge: {type: 'Number'},
+            appIdentifier: {type: 'String'},
+            localeIdentifier: {type: 'String'},
+            appVersion: {type: 'String'},
+            appName: {type: 'String'},
+            parseVersion: {type: 'String'},
             ACL: {type: 'ACL'}
           },
           classLevelPermissions: defaultClassLevelPermissions
-        });
+        })).toBeUndefined();
         done();
       });
     })
+    .catch(error => {
+      fail(JSON.stringify(error))
+      done();
+    });
   });
 
   it('lets you specify class name in both places', done => {
@@ -634,7 +661,7 @@ describe('schemas', () => {
           }
         }
       }, (error, response, body) => {
-        expect(body).toEqual({
+        expect(dd(body,{
           className: '_User',
           fields: {
             objectId: {type: 'String'},
@@ -642,20 +669,19 @@ describe('schemas', () => {
             createdAt: {type: 'Date'},
             username: {type: 'String'},
             password: {type: 'String'},
-            authData: {type: 'Object'},
             email: {type: 'String'},
             emailVerified: {type: 'Boolean'},
             newField: {type: 'String'},
             ACL: {type: 'ACL'}
           },
           classLevelPermissions: defaultClassLevelPermissions
-        });
+        })).toBeUndefined();
         request.get({
           url: 'http://localhost:8378/1/schemas/_User',
           headers: masterKeyHeaders,
           json: true
         }, (error, response, body) => {
-          expect(body).toEqual({
+          expect(dd(body,{
             className: '_User',
             fields: {
               objectId: {type: 'String'},
@@ -663,14 +689,13 @@ describe('schemas', () => {
               createdAt: {type: 'Date'},
               username: {type: 'String'},
               password: {type: 'String'},
-              authData: {type: 'Object'},
               email: {type: 'String'},
               emailVerified: {type: 'Boolean'},
               newField: {type: 'String'},
               ACL: {type: 'ACL'}
             },
             classLevelPermissions: defaultClassLevelPermissions
-          });
+          })).toBeUndefined();
           done();
         });
       });
@@ -1541,14 +1566,13 @@ describe('schemas', () => {
     setPermissionsOnClass('_User', {
       'create': {'*': true},
       'addField': {}
-    }).then(() => {
+    }, true).then(() => {
       return Parse.User.signUp('foo', 'bar');
     }).then((user) => {
       expect(user.getUsername()).toBe('foo');
       done()
-    }, (err) => {
-      console.error(err);
-      fail('should create user');
+    }, error => {
+      fail(JSON.stringify(error));
       done();
     })
   })

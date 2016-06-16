@@ -788,11 +788,10 @@ describe('SchemaController', () => {
       _id: '_User',
       username: { type: 'String' },
       password: { type: 'String' },
-      authData: { type: 'Object' },
       email: { type: 'String' },
       emailVerified: { type: 'Boolean' },
     },{
-      authData: { type: 'String' },
+      emailVerified: { type: 'String' },
       customField: { type: 'String' },
     })).toEqual({
       customField: { type: 'String' }
