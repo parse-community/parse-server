@@ -7,8 +7,7 @@ var Auth = require("../src/Auth").Auth;
 var Config = require("../src/Config");
 
 describe('Parse Role testing', () => {
-  it('Do a bunch of basic role testing', (done) => {
-
+  it_exclude_dbs(['postgres'])('Do a bunch of basic role testing', done => {
     var user;
     var role;
 
