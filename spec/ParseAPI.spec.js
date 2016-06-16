@@ -1356,7 +1356,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('purge all objects in class', (done) => {
+  it_exclude_dbs(['postgres'])('purge all objects in class', (done) => {
     let object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     let object2 = new Parse.Object('TestObject');
@@ -1406,7 +1406,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('purge all objects in _Role also purge cache', (done) => {
+  it_exclude_dbs(['postgres'])('purge all objects in _Role also purge cache', (done) => {
     let headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
