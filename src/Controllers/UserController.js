@@ -45,8 +45,7 @@ export class UserController extends AdaptableController {
       // TODO: Better error here.
       throw undefined;
     }
-    let database = this.config.database.WithoutValidation();
-    return database.update('_User', {
+    return this.config.database.update('_User', {
       username: username,
       _email_verify_token: token
     }, {emailVerified: true}).then(document => {
