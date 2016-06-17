@@ -133,6 +133,7 @@ export class PostgresStorageAdapter {
       }
     })
     .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    .then(() => schema);
   }
 
   addFieldIfNotExists(className, fieldName, type) {
@@ -212,7 +213,7 @@ export class PostgresStorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.map('SELECT * FROM "_SCHEMA"'), null, row => ({ className: row.className, ...row.schema }));
+    .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If

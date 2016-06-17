@@ -137,7 +137,7 @@ describe('InstallationsRouter', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('query installations with limit = 0 and count = 1', (done) => {
+  it('query installations with limit = 0 and count = 1', (done) => {
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'

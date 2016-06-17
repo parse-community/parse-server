@@ -408,23 +408,25 @@ class SchemaController {
       return Promise.resolve(this);
     }
     // We don't have this class. Update the schema
-    return this.addClassIfNotExists(className).then(() => {
-      // The schema update succeeded. Reload the schema
-      return this.reloadData();
-    }, error => {
+    return this.addClassIfNotExists(className)
+    // The schema update succeeded. Reload the schema
+    .then(() => this.reloadData())
+    .catch(error => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
       // So just reload the schema.
       return this.reloadData();
-    }).then(() => {
+    })
+    .then(() => {
       // Ensure that the schema now validates
       if (this.data[className]) {
         return this;
       } else {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
       }
-    }, error => {
+    })
+    .catch(error => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
