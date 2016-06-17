@@ -24,7 +24,6 @@ var definitions = {
 }
 
 describe("commander additions", () => {
-
   afterEach((done) => {
     commander.options = [];
     delete commander.arg0;

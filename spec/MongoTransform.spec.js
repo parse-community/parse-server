@@ -6,7 +6,6 @@ let dd = require('deep-diff');
 let mongodb = require('mongodb');
 
 describe('parseObjectToMongoObjectForCreate', () => {
-
   it('a basic number', (done) => {
     var input = {five: 5};
     var output = transform.parseObjectToMongoObjectForCreate(null, input, {
@@ -51,7 +50,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
 
   //TODO: object creation requests shouldn't be seeing __op delete, it makes no sense to
   //have __op delete in a new object. Figure out what this should actually be testing.
-  notWorking('a delete op', (done) => {
+  xit('a delete op', (done) => {
     var input = {deleteMe: {__op: 'Delete'}};
     var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
     jequal(output, {});
@@ -64,37 +63,33 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  describe('GeoPoints', () => {
-    it('plain', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
-        fields: {location: {type: 'GeoPoint'}}
-      });
-      expect(out.location).toEqual([180, -180]);
-      done();
+  it('plain', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
+      fields: {location: {type: 'GeoPoint'}}
     });
-
-    it('in array', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, {locations: [geoPoint, geoPoint]},{
-        fields: {locations: {type: 'Array'}}
-      });
-      expect(out.locations).toEqual([geoPoint, geoPoint]);
-      done();
-    });
-
-    it('in sub-object', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, { locations: { start: geoPoint }},{
-        fields: {locations: {type: 'Object'}}
-      });
-      expect(out).toEqual({ locations: { start: geoPoint } });
-      done();
-    });
+    expect(out.location).toEqual([180, -180]);
+    done();
   });
-});
 
-describe('transformWhere', () => {
+  it('in array', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, {locations: [geoPoint, geoPoint]},{
+      fields: {locations: {type: 'Array'}}
+    });
+    expect(out.locations).toEqual([geoPoint, geoPoint]);
+    done();
+  });
+
+  it('in sub-object', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, { locations: { start: geoPoint }},{
+      fields: {locations: {type: 'Object'}}
+    });
+    expect(out).toEqual({ locations: { start: geoPoint } });
+    done();
+  });
+
   it('objectId', (done) => {
     var out = transform.transformWhere(null, {objectId: 'foo'});
     expect(out._id).toEqual('foo');
@@ -109,9 +104,7 @@ describe('transformWhere', () => {
     jequal(input.objectId, output._id);
     done();
   });
-});
 
-describe('mongoObjectToParseObject', () => {
   it('built-in timestamps', (done) => {
     var input = {createdAt: new Date(), updatedAt: new Date()};
     var output = transform.mongoObjectToParseObject(null, input, { fields: {} });
@@ -191,9 +184,6 @@ describe('mongoObjectToParseObject', () => {
     expect(dd(output, input)).toEqual(undefined);
     done();
   });
-});
-
-describe('transform schema key changes', () => {
 
   it('changes new pointer key', (done) => {
     var input = {

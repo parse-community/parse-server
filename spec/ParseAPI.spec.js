@@ -128,7 +128,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it_exclude_dbs(['postgres'])('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -137,7 +137,8 @@ describe('miscellaneous', function() {
     .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'y', username: 'u' }).catch(fail))
     // Create a new server to try to recreate the unique indexes
     .then(reconfigureServer)
-    .catch(() => {
+    .catch(error => {
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
       let user = new Parse.User();
       user.setPassword('asdf');
       user.setUsername('zxcv');
@@ -370,166 +371,164 @@ describe('miscellaneous', function() {
     })
   });
 
-  describe('beforeSave', () => {
-    it('object is set on create and update', done => {
-      let triggerTime = 0;
-      // Register a mock beforeSave hook
-      Parse.Cloud.beforeSave('GameScore', (req, res) => {
-        let object = req.object;
-        expect(object instanceof Parse.Object).toBeTruthy();
-        expect(object.get('fooAgain')).toEqual('barAgain');
-        if (triggerTime == 0) {
-          // Create
-          expect(object.get('foo')).toEqual('bar');
-          // No objectId/createdAt/updatedAt
-          expect(object.id).toBeUndefined();
-          expect(object.createdAt).toBeUndefined();
-          expect(object.updatedAt).toBeUndefined();
-        } else if (triggerTime == 1) {
-          // Update
-          expect(object.get('foo')).toEqual('baz');
-          expect(object.id).not.toBeUndefined();
-          expect(object.createdAt).not.toBeUndefined();
-          expect(object.updatedAt).not.toBeUndefined();
-        } else {
-          res.error();
-        }
-        triggerTime++;
-        res.success();
-      });
-
-      let obj = new Parse.Object('GameScore');
-      obj.set('foo', 'bar');
-      obj.set('fooAgain', 'barAgain');
-      obj.save().then(() => {
-        // We only update foo
-        obj.set('foo', 'baz');
-        return obj.save();
-      }).then(() => {
-        // Make sure the checking has been triggered
-        expect(triggerTime).toBe(2);
-        done();
-      }, error => {
-        fail(error);
-        done();
-      });
+  it('object is set on create and update', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+      let object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      expect(object.get('fooAgain')).toEqual('barAgain');
+      if (triggerTime == 0) {
+        // Create
+        expect(object.get('foo')).toEqual('bar');
+        // No objectId/createdAt/updatedAt
+        expect(object.id).toBeUndefined();
+        expect(object.createdAt).toBeUndefined();
+        expect(object.updatedAt).toBeUndefined();
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.get('foo')).toEqual('baz');
+        expect(object.id).not.toBeUndefined();
+        expect(object.createdAt).not.toBeUndefined();
+        expect(object.updatedAt).not.toBeUndefined();
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
     });
-    it('works when object is passed to success', done => {
-      let triggerTime = 0;
-      // Register a mock beforeSave hook
-      Parse.Cloud.beforeSave('GameScore', (req, res) => {
-        let object = req.object;
-        object.set('foo', 'bar');
-        triggerTime++;
-        res.success(object);
-      });
 
-      let obj = new Parse.Object('GameScore');
+    let obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
+    obj.save().then(() => {
+      // We only update foo
       obj.set('foo', 'baz');
-      obj.save().then(() => {
-        expect(triggerTime).toBe(1);
-        expect(obj.get('foo')).toEqual('bar');
-        done();
-      }, error => {
-        fail(error);
-        done();
-      });
+      return obj.save();
+    }).then(() => {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      done();
+    }, error => {
+      fail(error);
+      done();
+    });
+  });
+  it('works when object is passed to success', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+      let object = req.object;
+      object.set('foo', 'bar');
+      triggerTime++;
+      res.success(object);
     });
 
-    it('original object is set on update', done => {
-      let triggerTime = 0;
-      // Register a mock beforeSave hook
-      Parse.Cloud.beforeSave('GameScore', (req, res) => {
-        let object = req.object;
-        expect(object instanceof Parse.Object).toBeTruthy();
-        expect(object.get('fooAgain')).toEqual('barAgain');
-        let originalObject = req.original;
-        if (triggerTime == 0) {
-          // No id/createdAt/updatedAt
-          expect(object.id).toBeUndefined();
-          expect(object.createdAt).toBeUndefined();
-          expect(object.updatedAt).toBeUndefined();
-          // Create
-          expect(object.get('foo')).toEqual('bar');
-          // Check the originalObject is undefined
-          expect(originalObject).toBeUndefined();
-        } else if (triggerTime == 1) {
-          // Update
-          expect(object.id).not.toBeUndefined();
-          expect(object.createdAt).not.toBeUndefined();
-          expect(object.updatedAt).not.toBeUndefined();
-          expect(object.get('foo')).toEqual('baz');
-          // Check the originalObject
-          expect(originalObject instanceof Parse.Object).toBeTruthy();
-          expect(originalObject.get('fooAgain')).toEqual('barAgain');
-          expect(originalObject.id).not.toBeUndefined();
-          expect(originalObject.createdAt).not.toBeUndefined();
-          expect(originalObject.updatedAt).not.toBeUndefined();
-          expect(originalObject.get('foo')).toEqual('bar');
-        } else {
-          res.error();
-        }
-        triggerTime++;
+    let obj = new Parse.Object('GameScore');
+    obj.set('foo', 'baz');
+    obj.save().then(() => {
+      expect(triggerTime).toBe(1);
+      expect(obj.get('foo')).toEqual('bar');
+      done();
+    }, error => {
+      fail(error);
+      done();
+    });
+  });
+
+  it('original object is set on update', done => {
+    let triggerTime = 0;
+    // Register a mock beforeSave hook
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+      let object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+      expect(object.get('fooAgain')).toEqual('barAgain');
+      let originalObject = req.original;
+      if (triggerTime == 0) {
+        // No id/createdAt/updatedAt
+        expect(object.id).toBeUndefined();
+        expect(object.createdAt).toBeUndefined();
+        expect(object.updatedAt).toBeUndefined();
+        // Create
+        expect(object.get('foo')).toEqual('bar');
+        // Check the originalObject is undefined
+        expect(originalObject).toBeUndefined();
+      } else if (triggerTime == 1) {
+        // Update
+        expect(object.id).not.toBeUndefined();
+        expect(object.createdAt).not.toBeUndefined();
+        expect(object.updatedAt).not.toBeUndefined();
+        expect(object.get('foo')).toEqual('baz');
+        // Check the originalObject
+        expect(originalObject instanceof Parse.Object).toBeTruthy();
+        expect(originalObject.get('fooAgain')).toEqual('barAgain');
+        expect(originalObject.id).not.toBeUndefined();
+        expect(originalObject.createdAt).not.toBeUndefined();
+        expect(originalObject.updatedAt).not.toBeUndefined();
+        expect(originalObject.get('foo')).toEqual('bar');
+      } else {
+        res.error();
+      }
+      triggerTime++;
+      res.success();
+    });
+
+    let obj = new Parse.Object('GameScore');
+    obj.set('foo', 'bar');
+    obj.set('fooAgain', 'barAgain');
+    obj.save().then(() => {
+      // We only update foo
+      obj.set('foo', 'baz');
+      return obj.save();
+    }).then(() => {
+      // Make sure the checking has been triggered
+      expect(triggerTime).toBe(2);
+      done();
+    }, error => {
+      fail(error);
+      done();
+    });
+  });
+
+  it('pointer mutation properly saves object', done => {
+    let className = 'GameScore';
+
+    Parse.Cloud.beforeSave(className, (req, res) => {
+      let object = req.object;
+      expect(object instanceof Parse.Object).toBeTruthy();
+
+      let child = object.get('child');
+      expect(child instanceof Parse.Object).toBeTruthy();
+      child.set('a', 'b');
+      child.save().then(() => {
         res.success();
       });
-
-      let obj = new Parse.Object('GameScore');
-      obj.set('foo', 'bar');
-      obj.set('fooAgain', 'barAgain');
-      obj.save().then(() => {
-        // We only update foo
-        obj.set('foo', 'baz');
-        return obj.save();
-      }).then(() => {
-        // Make sure the checking has been triggered
-        expect(triggerTime).toBe(2);
-        done();
-      }, error => {
-        fail(error);
-        done();
-      });
     });
 
-    it('pointer mutation properly saves object', done => {
-      let className = 'GameScore';
+    let obj = new Parse.Object(className);
+    obj.set('foo', 'bar');
 
-      Parse.Cloud.beforeSave(className, (req, res) => {
-        let object = req.object;
-        expect(object instanceof Parse.Object).toBeTruthy();
+    let child = new Parse.Object('Child');
+    child.save().then(() => {
+      obj.set('child', child);
+      return obj.save();
+    }).then(() => {
+      let query = new Parse.Query(className);
+      query.include('child');
+      return query.get(obj.id).then(objAgain => {
+        expect(objAgain.get('foo')).toEqual('bar');
 
-        let child = object.get('child');
-        expect(child instanceof Parse.Object).toBeTruthy();
-        child.set('a', 'b');
-        child.save().then(() => {
-          res.success();
-        });
+        let childAgain = objAgain.get('child');
+        expect(childAgain instanceof Parse.Object).toBeTruthy();
+        expect(childAgain.get('a')).toEqual('b');
+
+        return Promise.resolve();
       });
-
-      let obj = new Parse.Object(className);
-      obj.set('foo', 'bar');
-
-      let child = new Parse.Object('Child');
-      child.save().then(() => {
-        obj.set('child', child);
-        return obj.save();
-      }).then(() => {
-        let query = new Parse.Query(className);
-        query.include('child');
-        return query.get(obj.id).then(objAgain => {
-          expect(objAgain.get('foo')).toEqual('bar');
-
-          let childAgain = objAgain.get('child');
-          expect(childAgain instanceof Parse.Object).toBeTruthy();
-          expect(childAgain.get('a')).toEqual('b');
-
-          return Promise.resolve();
-        });
-      }).then(() => {
-        done();
-      }, error => {
-        fail(error);
-        done();
-      });
+    }).then(() => {
+      done();
+    }, error => {
+      fail(error);
+      done();
     });
   });
 
@@ -741,7 +740,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('beforeSave receives ACL', done => {
+  it_exclude_dbs(['postgres'])('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function(req, res) {
@@ -781,7 +780,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('afterSave receives ACL', done => {
+  it_exclude_dbs(['postgres'])('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
@@ -821,7 +820,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('should return the updated fields on PUT', (done) => {
+  it_exclude_dbs(['postgres'])('should return the updated fields on PUT', done => {
     let obj = new Parse.Object('GameScore');
     obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
       var headers = {
@@ -1174,7 +1173,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('gets relation fields', (done) => {
+  it_exclude_dbs(['postgres'])('gets relation fields', (done) => {
     let object = new Parse.Object('AnObject');
     let relatedObject = new Parse.Object('RelatedObject');
     Parse.Object.saveAll([object, relatedObject]).then(() => {
@@ -1287,7 +1286,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('bans interior keys containing . or $', done => {
+  it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
     .catch(error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
@@ -1307,7 +1306,7 @@ describe('miscellaneous', function() {
     })
   });
 
-  it('does not change inner object keys named _auth_data_something', done => {
+  it_exclude_dbs(['postgres'])('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
     .then(object => new Parse.Query('O').get(object.id))
     .then(object => {
@@ -1334,7 +1333,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
+  it_exclude_dbs(['postgres'])('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
     let file = new Parse.File('myfile.txt', { base64: 'eAo=' });
     file.save()
     .then(f => {
@@ -1357,7 +1356,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('purge all objects in class', (done) => {
+  it_exclude_dbs(['postgres'])('purge all objects in class', (done) => {
     let object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     let object2 = new Parse.Object('TestObject');
@@ -1407,7 +1406,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('purge all objects in _Role also purge cache', (done) => {
+  it_exclude_dbs(['postgres'])('purge all objects in _Role also purge cache', (done) => {
     let headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',

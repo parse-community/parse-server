@@ -11,7 +11,7 @@ var config = new Config('test');
 let database = config.database;
 
 describe('rest create', () => {
-  it('handles _id', done => {
+  it_exclude_dbs(['postgres'])('handles _id', done => {
     rest.create(config, auth.nobody(config), 'Foo', {})
     .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
     .then(results => {
@@ -23,7 +23,7 @@ describe('rest create', () => {
     });
   });
 
-  it('handles array, object, date', (done) => {
+  it_exclude_dbs(['postgres'])('handles array, object, date', (done) => {
     let now = new Date();
     var obj = {
       array: [1, 2, 3],
@@ -47,7 +47,7 @@ describe('rest create', () => {
     });
   });
 
-  it('handles object and subdocument', done => {
+  it_exclude_dbs(['postgres'])('handles object and subdocument', done => {
     let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     rest.create(config, auth.nobody(config), 'MyClass', obj)
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
@@ -77,7 +77,7 @@ describe('rest create', () => {
     });
   });
 
-  it('handles create on non-existent class when disabled client class creation', (done) => {
+  it_exclude_dbs(['postgres'])('handles create on non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
@@ -91,7 +91,7 @@ describe('rest create', () => {
     });
   });
 
-  it('handles create on existent class when disabled client class creation', (done) => {
+  it_exclude_dbs(['postgres'])('handles create on existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
@@ -122,7 +122,7 @@ describe('rest create', () => {
       });
   });
 
-  it('handles anonymous user signup', (done) => {
+  it_exclude_dbs(['postgres'])('handles anonymous user signup', (done) => {
     var data1 = {
       authData: {
         anonymous: {
@@ -166,7 +166,7 @@ describe('rest create', () => {
       });
   });
 
-  it('handles anonymous user signup and upgrade to new user', (done) => {
+  it_exclude_dbs(['postgres'])('handles anonymous user signup and upgrade to new user', (done) => {
     var data1 = {
       authData: {
         anonymous: {
@@ -226,7 +226,7 @@ describe('rest create', () => {
     })
   });
 
-  it('test facebook signup and login', (done) => {
+  it_exclude_dbs(['postgres'])('test facebook signup and login', (done) => {
     var data = {
       authData: {
         facebook: {
@@ -259,7 +259,7 @@ describe('rest create', () => {
       });
   });
 
-  it('stores pointers', done => {
+  it_exclude_dbs(['postgres'])('stores pointers', done => {
     let obj = {
       foo: 'bar',
       aPointer: {
@@ -309,7 +309,7 @@ describe('rest create', () => {
     });
   });
 
-  it("test default session length", (done) => {
+  it_exclude_dbs(['postgres'])("test default session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
@@ -342,7 +342,7 @@ describe('rest create', () => {
       });
   });
 
-  it("test specified session length", (done) => {
+  it_exclude_dbs(['postgres'])("test specified session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
@@ -378,7 +378,7 @@ describe('rest create', () => {
       });
   });
 
-  it("can create a session with no expiration", (done) => {
+  it_exclude_dbs(['postgres'])("can create a session with no expiration", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',

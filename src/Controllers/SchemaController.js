@@ -288,7 +288,7 @@ class SchemaController {
     return this.getAllClasses()
     .then(allSchemas => {
       allSchemas.forEach(schema => {
-        this.data[schema.className] = schema.fields;
+        this.data[schema.className] = injectDefaultSchema(schema).fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
 

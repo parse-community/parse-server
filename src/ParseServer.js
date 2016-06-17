@@ -194,23 +194,23 @@ class ParseServer {
     const databaseController = new DatabaseController(databaseAdapter);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
+    // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
+    // have a Parse app without it having a _User collection.
     let userClassPromise = databaseController.loadSchema()
     .then(schema => schema.enforceClassExists('_User'))
-
-
 
     let usernameUniqueness = userClassPromise
     .then(() => databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
-      return Promise.reject();
+      return Promise.reject(error);
     });
 
     let emailUniqueness = userClassPromise
     .then(() => databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
       logger.warn('Unabled to ensure uniqueness for user email addresses: ', error);
-      return Promise.reject();
+      return Promise.reject(error);
     })
 
     AppCache.put(appId, {

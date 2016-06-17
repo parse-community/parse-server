@@ -49,6 +49,33 @@ const convertParseSchemaToMongoSchema = ({...schema}) => {
   return schema;
 }
 
+// Returns { code, error } if invalid, or { result }, an object
+// suitable for inserting into _SCHEMA collection, otherwise.
+const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions) => {
+  let mongoObject = {
+    _id: className,
+    objectId: 'string',
+    updatedAt: 'string',
+    createdAt: 'string'
+  };
+
+  for (let fieldName in fields) {
+    mongoObject[fieldName] = MongoSchemaCollection.parseFieldTypeToMongoFieldType(fields[fieldName]);
+  }
+
+  if (typeof classLevelPermissions !== 'undefined') {
+    mongoObject._metadata = mongoObject._metadata || {};
+    if (!classLevelPermissions) {
+      delete mongoObject._metadata.class_permissions;
+    } else {
+      mongoObject._metadata.class_permissions = classLevelPermissions;
+    }
+  }
+
+  return mongoObject;
+}
+
+
 export class MongoStorageAdapter {
   // Private
   _uri: string;
@@ -113,8 +140,18 @@ export class MongoStorageAdapter {
 
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
+    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);
+    mongoObject._id = className;
     return this._schemaCollection()
-    .then(schemaCollection => schemaCollection.addSchema(className, schema.fields, schema.classLevelPermissions));
+    .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
+    .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
+    .catch(error => {
+      if (error.code === 11000) { //Mongo's duplicate key error
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+      } else {
+        throw error;
+      }
+    })
   }
 
   addFieldIfNotExists(className, fieldName, type) {

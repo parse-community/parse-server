@@ -202,9 +202,6 @@ function createTestUser(success, error) {
   }
 }
 
-// Mark the tests that are known to not work.
-function notWorking() {}
-
 // Shims for compatibility with the old qunit tests.
 function ok(bool, message) {
   expect(bool).toBeTruthy(message);
@@ -303,6 +300,8 @@ function mockFacebook() {
   return facebook;
 }
 
+
+
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;
@@ -310,7 +309,6 @@ global.Item = Item;
 global.Container = Container;
 global.create = create;
 global.createTestUser = createTestUser;
-global.notWorking = notWorking;
 global.ok = ok;
 global.equal = equal;
 global.strictEqual = strictEqual;
@@ -322,6 +320,14 @@ global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
+
+global.it_exclude_dbs = excluded => {
+  if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
+    return xit;
+  } else {
+    return it;
+  }
+}
 
 // LiveQuery test setting
 require('../src/LiveQuery/PLog').logLevel = 'NONE';

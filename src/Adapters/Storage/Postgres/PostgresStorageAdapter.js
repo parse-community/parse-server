@@ -17,7 +17,7 @@ const parseTypeToPostgresType = type => {
       if (type.contents && type.contents.type === 'String') {
         return 'text[]';
       } else {
-        throw `no type for ${JSON.stringify(type)} yet`;
+        return 'jsonb';
       }
     default: throw `no type for ${JSON.stringify(type)} yet`;
   }
@@ -242,8 +242,27 @@ export class PostgresStorageAdapter {
         case 'Pointer':
           valuesArray.push(object[fieldName].objectId);
           break;
-        default:
+        case 'Array':
+          if (['_rperm', '_wperm'].includes(fieldName)) {
+            valuesArray.push(object[fieldName]);
+          } else {
+            valuesArray.push(JSON.stringify(object[fieldName]));
+          }
+          break;
+        case 'Object':
           valuesArray.push(object[fieldName]);
+          break;
+        case 'String':
+          valuesArray.push(object[fieldName]);
+          break;
+        case 'Number':
+          valuesArray.push(object[fieldName]);
+          break;
+        case 'Boolean':
+          valuesArray.push(object[fieldName]);
+          break;
+        default:
+          throw `Type ${schema.fields[fieldName].type} not supported yet`;
           break;
       }
     });
@@ -294,12 +313,24 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
         values.push(fieldName, fieldValue.amount);
         index += 2;
+      } else if (fieldValue.__op === 'Add') {
+        updatePatterns.push(`$${index}:name = COALESCE($${index}:name, '[]'::jsonb) || $${index + 1}`);
+        values.push(fieldName, fieldValue.objects);
+        index += 2;
+      } else if (fieldValue.__op === 'Remove') {
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support Remove operator.'));
+      } else if (fieldValue.__op === 'AddUnique') {
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support AddUnique operator'));
       } else if (fieldName === 'updatedAt') { //TODO: stop special casing this. It should check for __type === 'Date' and use .iso
         updatePatterns.push(`$${index}:name = $${index + 1}`)
         values.push(fieldName, new Date(fieldValue));
         index += 2;
+      } else if (typeof fieldValue === 'string') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
       } else {
-        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this type of update yet`));
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
       }
     }
 
@@ -345,6 +376,9 @@ export class PostgresStorageAdapter {
         if (object[fieldName] === null) {
           delete object[fieldName];
         }
+        if (object[fieldName] instanceof Date) {
+          object[fieldName] = { __type: 'Date', iso: object[fieldName].toISOString() };
+        }
       }
 
       return object;
@@ -363,6 +397,13 @@ export class PostgresStorageAdapter {
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join(',')})`;
     return this._client.query(qs,[className, constraintName, ...fieldNames])
+    .catch(error => {
+      if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
+        // Index already exists. Ignore error.
+      } else {
+        throw error;
+      }
+    });
   }
 
   // Executes a count.

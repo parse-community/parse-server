@@ -2,7 +2,6 @@ var Client = require('../src/LiveQuery/Client').Client;
 var ParseWebSocket = require('../src/LiveQuery/ParseWebSocketServer').ParseWebSocket;
 
 describe('Client', function() {
-
   it('can be initialized', function() {
     var parseWebSocket = new ParseWebSocket({});
     var client = new Client(1, parseWebSocket);

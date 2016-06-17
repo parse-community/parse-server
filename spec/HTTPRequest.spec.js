@@ -36,7 +36,6 @@ app.listen(13371);
 
 
 describe("httpRequest", () => {
-  
   it("should do /hello", (done) => {
     httpRequest({
       url: httpRequestServer+"/hello"
@@ -51,7 +50,7 @@ describe("httpRequest", () => {
       done();
     })
   });
-  
+
   it("should do /hello with callback and promises", (done) => {
     var calls = 0;
     httpRequest({
@@ -70,7 +69,7 @@ describe("httpRequest", () => {
       done();
     })
   });
-  
+
   it("should do not follow redirects by default", (done) => {
 
     httpRequest({
@@ -83,7 +82,7 @@ describe("httpRequest", () => {
       done();
     })
   });
-  
+
   it("should follow redirects when set", (done) => {
 
     httpRequest({
@@ -100,17 +99,17 @@ describe("httpRequest", () => {
       done();
     })
   });
-  
+
   it("should fail on 404", (done) => {
     var calls = 0;
     httpRequest({
       url: httpRequestServer+"/404",
-      success: function() { 
+      success: function() {
         calls++;
         fail("should not succeed");
         done();
       },
-      error: function(httpResponse) { 
+      error: function(httpResponse) {
         calls++;
         expect(calls).toBe(1);
         expect(httpResponse.status).toBe(404);
@@ -121,7 +120,7 @@ describe("httpRequest", () => {
       }
     });
   })
-  
+
   it("should fail on 404", (done) => {
     httpRequest({
       url: httpRequestServer+"/404",
@@ -136,7 +135,7 @@ describe("httpRequest", () => {
       done();
     })
   })
-  
+
   it("should post on echo", (done) => {
     var calls = 0;
     httpRequest({
@@ -160,27 +159,27 @@ describe("httpRequest", () => {
       done();
     })
   });
-  
+
   it("should encode a query string body by default", (done) => {
     let options = {
-      body: {"foo": "bar"}, 
+      body: {"foo": "bar"},
     }
     let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('foo=bar');
     expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
     done();
-    
+
   })
-  
+
   it("should encode a JSON body", (done) => {
     let options = {
-      body: {"foo": "bar"}, 
+      body: {"foo": "bar"},
       headers: {'Content-Type': 'application/json'}
     }
     let result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('{"foo":"bar"}');
     done();
-    
+
   })
    it("should encode a www-form body", (done) => {
     let options = {
@@ -193,7 +192,7 @@ describe("httpRequest", () => {
   });
   it("should not encode a wrong content type", (done) => {
     let options = {
-      body:{"foo": "bar", "bar": "baz"}, 
+      body:{"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'mime/jpeg'}
     }
     let result = httpRequest.encodeBody(options);
@@ -204,18 +203,18 @@ describe("httpRequest", () => {
   it("should fail gracefully", (done) => {
     httpRequest({
       url: "http://not a good url",
-      success: function() { 
+      success: function() {
         fail("should not succeed");
         done();
       },
-      error: function(error) { 
+      error: function(error) {
         expect(error).not.toBeUndefined();
         expect(error).not.toBeNull();
         done();
       }
     });
   });
-  
+
   it("should params object to query string", (done) => {
     httpRequest({
       url: httpRequestServer+"/qs",

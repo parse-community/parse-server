@@ -26,7 +26,7 @@ describe('Uniqueness', function() {
     });
   });
 
-  it('unique indexing works on pointer fields', done => {
+  it_exclude_dbs(['postgres'])('unique indexing works on pointer fields', done => {
     let obj = new Parse.Object('UniquePointer');
     obj.save({ string: 'who cares' })
     .then(() => obj.save({ ptr: obj }))
@@ -52,7 +52,7 @@ describe('Uniqueness', function() {
     });
   });
 
-  it('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
+  it_exclude_dbs(['postgres'])('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
     let o1 = new Parse.Object('UniqueFail');
     o1.set('key', 'val');
     let o2 = new Parse.Object('UniqueFail');
@@ -68,7 +68,7 @@ describe('Uniqueness', function() {
     });
   });
 
-  it('can do compound uniqueness', done => {
+  it_exclude_dbs(['postgres'])('can do compound uniqueness', done => {
     let config = new Config('test');
     config.database.adapter.ensureUniqueness('CompoundUnique', { fields: { k1: { __type: 'String' }, k2: { __type: 'String' } } }, ['k1', 'k2'])
     .then(() => {

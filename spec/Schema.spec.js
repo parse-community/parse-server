@@ -95,7 +95,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('class-level permissions test user', (done) => {
+  it_exclude_dbs(['postgres'])('class-level permissions test user', (done) => {
     var user;
     createTestUser().then((u) => {
       user = u;
@@ -120,7 +120,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('class-level permissions test get', (done) => {
+  it_exclude_dbs(['postgres'])('class-level permissions test get', (done) => {
     var obj;
     createTestUser()
     .then(user => {
@@ -159,7 +159,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can add classes without needing an object', done => {
+  it_exclude_dbs(['postgres'])('can add classes without needing an object', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       foo: {type: 'String'}
@@ -207,7 +207,7 @@ describe('SchemaController', () => {
       });
   });
 
-  it('will resolve class creation races appropriately', done => {
+  it_exclude_dbs(['postgres'])('will resolve class creation races appropriately', done => {
     // If two callers race to create the same schema, the response to the
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema()
@@ -384,7 +384,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('will create classes', done => {
+  it_exclude_dbs(['postgres'])('will create classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       aNumber: {type: 'Number'},
@@ -432,7 +432,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('creates the default fields for non-custom classes', done => {
+  it_exclude_dbs(['postgres'])('creates the default fields for non-custom classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Installation', {
       foo: {type: 'Number'},
@@ -474,7 +474,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('creates non-custom classes which include relation field', done => {
+  it_exclude_dbs(['postgres'])('creates non-custom classes which include relation field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Role', {}))
     .then(actualSchema => {
@@ -503,7 +503,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('creates non-custom classes which include pointer field', done => {
+  it_exclude_dbs(['postgres'])('creates non-custom classes which include pointer field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Session', {}))
     .then(actualSchema => {
@@ -548,7 +548,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can check if a class exists', done => {
+  it_exclude_dbs(['postgres'])('can check if a class exists', done => {
     config.database.loadSchema()
     .then(schema => {
       return schema.addClassIfNotExists('NewClass', {})
@@ -613,7 +613,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('refuses to delete fields that dont exist', done => {
+  it_exclude_dbs(['postgres'])('refuses to delete fields that dont exist', done => {
     hasAllPODobject().save()
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
@@ -624,7 +624,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('drops related collection when deleting relation field', done => {
+  it_exclude_dbs(['postgres'])('drops related collection when deleting relation field', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
       .then(savedObj1 => {
@@ -655,7 +655,7 @@ describe('SchemaController', () => {
       });
   });
 
-  it('can delete relation field when related _Join collection not exist', done => {
+  it_exclude_dbs(['postgres'])('can delete relation field when related _Join collection not exist', done => {
     config.database.loadSchema()
     .then(schema => {
       schema.addClassIfNotExists('NewClass', {
@@ -701,7 +701,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can delete string fields and resave as number field', done => {
+  it_exclude_dbs(['postgres'])('can delete string fields and resave as number field', done => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
@@ -729,7 +729,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it('can delete pointer fields and resave as string', done => {
+  it_exclude_dbs(['postgres'])('can delete pointer fields and resave as string', done => {
     Parse.Object.disableSingleInstance();
     var obj1 = new Parse.Object('NewClass');
     obj1.save()
