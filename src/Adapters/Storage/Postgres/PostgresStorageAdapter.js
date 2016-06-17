@@ -104,11 +104,11 @@ export class PostgresStorageAdapter {
   };
 
   classExists(name) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
   createClass(className, schema) {
@@ -136,7 +136,7 @@ export class PostgresStorageAdapter {
   }
 
   addFieldIfNotExists(className, fieldName, type) {
-    // TODO: Doing this in a transaction might be a good idea.
+    // TODO: Must be re-done into a transaction!
     return this._client.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', { className, fieldName, postgresType: parseTypeToPostgresType(type) })
     .catch(error => {
       if (error.code === PostgresRelationDoesNotExistError) {
@@ -165,10 +165,10 @@ export class PostgresStorageAdapter {
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
-  // Delete all data known to this adatper. Used for testing.
+  // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
     return this._client.query('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
@@ -192,29 +192,21 @@ export class PostgresStorageAdapter {
   // deleted do not exist, this function should return successfully anyways. Checking for
   // attempts to delete non-existent fields is the responsibility of Parse Server.
 
-  // Pointer field names are passed for legacy reasons: the original mongo
-  // format stored pointer field names differently in the database, and therefore
-  // needed to know the type of the field before it could delete it. Future database
-  // adatpers should ignore the pointerFieldNames argument. All the field names are in
-  // fieldNames, they show up additionally in the pointerFieldNames database for use
-  // by the mongo adapter, which deals with the legacy mongo format.
-
   // This function is not obligated to delete fields atomically. It is given the field
   // names in a list so that databases that are capable of deleting fields atomically
   // may do so.
 
   // Returns a Promise.
   deleteFields(className, schema, fieldNames) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
-  // schemas cannot be retrieved, returns a promise that rejects. Rquirements for the
+  // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.query('SELECT * FROM "_SCHEMA"'))
-    .then(results => results.map(result => ({ className: result.className, ...result.schema })))
+    .then(() => this._client.map('SELECT * FROM "_SCHEMA"'), null, row => ({ className: row.className, ...row.schema }));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -280,7 +272,7 @@ export class PostgresStorageAdapter {
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
   // Return value not currently well specified.
@@ -310,14 +302,12 @@ export class PostgresStorageAdapter {
 
     let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     return this._client.query(qs, values)
-    .then(val => {
-      return val[0];
-    })
+    .then(val => val[0]); // TODO: This is unsafe, verification is needed, or a different query method;
   }
 
-  // Hopefully we can get rid of this. It's only used for config and hooks.
+  // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 
   find(className, schema, query, { skip, limit, sort }) {
@@ -369,9 +359,9 @@ export class PostgresStorageAdapter {
     return this._client.query(qs,[className, constraintName, ...fieldNames])
   }
 
-  // Executs a count.
+  // Executes a count.
   count(className, schema, query) {
-    return Promise.reject('Not implented yet.')
+    return Promise.reject('Not implemented yet.')
   }
 }
 
