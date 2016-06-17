@@ -149,14 +149,12 @@ export class UserController extends AdaptableController {
   }
 
   updatePassword(username, token, password, config) {
-   return this.checkResetTokenValidity(username, token).then((user) => {
-     return updateUserPassword(user.objectId, password, this.config);
-   }).then(() => {
-      // clear reset password token
-      return this.config.database.WithoutValidation().update('_User', { username }, {
-        _perishable_token: {__op: 'Delete'}
-      });
-    });
+    return this.checkResetTokenValidity(username, token)
+    .then(user => updateUserPassword(user.objectId, password, this.config))
+    // clear reset password token
+    .then(() => this.config.database.update('_User', { username }, {
+      _perishable_token: {__op: 'Delete'}
+    }));
   }
 
   defaultVerificationEmail({link, user, appName, }) {
