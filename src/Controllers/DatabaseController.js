@@ -80,18 +80,13 @@ const validateQuery = query => {
   });
 }
 
-function DatabaseController(adapter, { skipValidation } = {}) {
+function DatabaseController(adapter) {
   this.adapter = adapter;
 
   // We don't want a mutable this.schema, because then you could have
   // one request that uses different schemas for different parts of
   // it. Instead, use loadSchema to get a schema.
   this.schemaPromise = null;
-  this.skipValidation = !!skipValidation;
-}
-
-DatabaseController.prototype.WithoutValidation = function() {
-  return new DatabaseController(this.adapter, { skipValidation: true });
 }
 
 DatabaseController.prototype.collectionExists = function(className) {
@@ -105,9 +100,6 @@ DatabaseController.prototype.purgeCollection = function(className) {
 };
 
 DatabaseController.prototype.validateClassName = function(className) {
-  if (this.skipValidation) {
-    return Promise.resolve();
-  }
   if (!SchemaController.classNameIsValid(className)) {
     return Promise.reject(new Parse.Error(Parse.Error.INVALID_CLASS_NAME, 'invalid className: ' + className));
   }
@@ -189,8 +181,7 @@ DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,
   upsert,
-} = {}) {
-
+} = {}, skipSanitization = false) {
   const originalUpdate = update;
   // Make a copy of the object, so we don't mutate the incoming data.
   update = deepcopy(update);
@@ -252,7 +243,7 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (!result) {
         return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.'));
       }
-      if (this.skipValidation) {
+      if (skipSanitization) {
         return Promise.resolve(result);
       }
       return sanitizeDatabaseResult(originalUpdate, result);

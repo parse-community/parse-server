@@ -57,8 +57,7 @@ export class UserController extends AdaptableController {
   }
 
   checkResetTokenValidity(username, token) {
-    let database = this.config.database.WithoutValidation();
-    return database.find('_User', {
+    return this.config.database.find('_User', {
       username: username,
       _perishable_token: token
     }, {limit: 1}).then(results => {
@@ -113,9 +112,7 @@ export class UserController extends AdaptableController {
   }
 
   setPasswordResetToken(email) {
-    let token = randomString(25);
-    let database = this.config.database.WithoutValidation();
-    return database.update('_User', {email: email}, {_perishable_token: token});
+    return this.config.database.update('_User', { email }, { _perishable_token: randomString(25) }, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -125,8 +122,8 @@ export class UserController extends AdaptableController {
       return;
     }
 
-    return this.setPasswordResetToken(email).then((user) => {
-
+    return this.setPasswordResetToken(email)
+    .then(user => {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
