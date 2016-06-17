@@ -133,6 +133,7 @@ export class PostgresStorageAdapter {
       }
     })
     .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    .then(() => schema);
   }
 
   addFieldIfNotExists(className, fieldName, type) {
@@ -212,7 +213,7 @@ export class PostgresStorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.map('SELECT * FROM "_SCHEMA"'), null, row => ({ className: row.className, ...row.schema }));
+    .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -329,6 +330,10 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
+      } else if (fieldValue.__type === 'Pointer') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.objectId);
+        index += 2;
       } else {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
       }
@@ -352,7 +357,10 @@ export class PostgresStorageAdapter {
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
 
-    const qs = `SELECT * FROM $1:name WHERE ${where.pattern} ${limit !== undefined ? `LIMIT $${values.length + 1}` : ''}`;
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const limitPattern = limit !== undefined ? `LIMIT $${values.length + 1}` : '';
+
+    const qs = `SELECT * FROM $1:name ${wherePattern} ${limitPattern}`;
     if (limit !== undefined) {
       values.push(limit);
     }
@@ -408,7 +416,14 @@ export class PostgresStorageAdapter {
 
   // Executes a count.
   count(className, schema, query) {
-    return Promise.reject('Not implemented yet.')
+    let values = [className];
+    let where = buildWhereClause({ schema, query, index: 2 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const qs = `SELECT COUNT(*) FROM $1:name ${wherePattern}`;
+    return this._client.query(qs, values)
+    .then(result => parseInt(result[0].count))
   }
 }
 

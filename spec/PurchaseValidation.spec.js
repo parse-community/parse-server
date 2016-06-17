@@ -135,8 +135,7 @@ describe("test validate_receipt endpoint", () => {
     });
   });
 
-  it("should fail at appstore validation", (done) => {
-
+  it("should fail at appstore validation", done => {
    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',

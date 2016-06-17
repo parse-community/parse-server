@@ -103,7 +103,7 @@ describe('InstallationsRouter', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('query installations with count = 1', (done) => {
+  it('query installations with count = 1', done => {
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -130,10 +130,14 @@ describe('InstallationsRouter', () => {
       expect(response.results.length).toEqual(2);
       expect(response.count).toEqual(2);
       done();
-    });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    })
   });
 
-  it_exclude_dbs(['postgres'])('query installations with limit = 0 and count = 1', (done) => {
+  it('query installations with limit = 0 and count = 1', (done) => {
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'

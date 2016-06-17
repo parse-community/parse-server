@@ -49,7 +49,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("save cycle", function(done) {
+  it("save cycle", done => {
     var a = new Parse.Object("TestObject");
     var b = new Parse.Object("TestObject");
     a.set("b", b);
@@ -1478,7 +1478,7 @@ describe('Parse.Object testing', () => {
                           expectError(Parse.Error.MISSING_OBJECT_ID, done));
   });
 
-  it("fetchAll error on deleted object", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll error on deleted object", function(done) {
     var numItems = 11;
     var container = new Container();
     var subContainer = new Container();
