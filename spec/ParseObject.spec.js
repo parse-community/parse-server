@@ -1478,7 +1478,7 @@ describe('Parse.Object testing', () => {
                           expectError(Parse.Error.MISSING_OBJECT_ID, done));
   });
 
-  it("fetchAll error on deleted object", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll error on deleted object", function(done) {
     var numItems = 11;
     var container = new Container();
     var subContainer = new Container();

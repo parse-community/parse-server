@@ -356,7 +356,10 @@ export class PostgresStorageAdapter {
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
 
-    const qs = `SELECT * FROM $1:name WHERE ${where.pattern} ${limit !== undefined ? `LIMIT $${values.length + 1}` : ''}`;
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const limitPattern = limit !== undefined ? `LIMIT $${values.length + 1}` : '';
+
+    const qs = `SELECT * FROM $1:name ${wherePattern} ${limitPattern}`;
     if (limit !== undefined) {
       values.push(limit);
     }
@@ -412,7 +415,14 @@ export class PostgresStorageAdapter {
 
   // Executes a count.
   count(className, schema, query) {
-    return Promise.reject('Not implemented yet.')
+    let values = [className];
+    let where = buildWhereClause({ schema, query, index: 2 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const qs = `SELECT COUNT(*) FROM $1:name ${wherePattern}`;
+    return this._client.query(qs, values)
+    .then(result => parseInt(result[0].count))
   }
 }
 
