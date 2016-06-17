@@ -1,7 +1,7 @@
 "use strict"
 // Sets up a Parse API server for testing.
 
-jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 3000;
+jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 var cache = require('../src/cache').default;
 var DatabaseAdapter = require('../src/DatabaseAdapter');

@@ -329,6 +329,10 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
+      } else if (fieldValue.__type === 'Pointer') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.objectId);
+        index += 2;
       } else {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
       }
