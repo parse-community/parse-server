@@ -136,30 +136,36 @@ export class PostgresStorageAdapter {
   }
 
   addFieldIfNotExists(className, fieldName, type) {
-    // TODO: Must be re-done into a transaction!
-    return this._client.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', { className, fieldName, postgresType: parseTypeToPostgresType(type) })
-    .catch(error => {
-      if (error.code === PostgresRelationDoesNotExistError) {
-        return this.createClass(className, { fields: { [fieldName]: type } })
-      } else if (error.code === PostgresDuplicateColumnError) {
-        // Column already exists, created by other request. Carry on to
-        // See if it's the right type.
-      } else {
-        throw error;
-      }
-    })
-    .then(() => this._client.query('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', { className }))
-    .then(result => {
-      if (fieldName in result[0].schema) {
-        throw "Attempted to add a field that already exists";
-      } else {
-        result[0].schema.fields[fieldName] = type;
-        return this._client.query(
-          'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
-          { schema: result[0].schema, className }
-        );
-      }
-    })
+    // TODO: Must be revised for invalid logic...
+    return this._client.tx("addFieldIfNotExists", t=> {
+      return t.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
+        className,
+        fieldName,
+        postgresType: parseTypeToPostgresType(type)
+      })
+        .catch(error => {
+          if (error.code === PostgresRelationDoesNotExistError) {
+            return this.createClass(className, {fields: {[fieldName]: type}})
+          } else if (error.code === PostgresDuplicateColumnError) {
+            // Column already exists, created by other request. Carry on to
+            // See if it's the right type.
+          } else {
+            throw error;
+          }
+        })
+        .then(() => t.query('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className}))
+        .then(result => {
+          if (fieldName in result[0].schema) {
+            throw "Attempted to add a field that already exists";
+          } else {
+            result[0].schema.fields[fieldName] = type;
+            return t.query(
+              'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
+              {schema: result[0].schema, className}
+            );
+          }
+        })
+    });
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -173,7 +179,7 @@ export class PostgresStorageAdapter {
     return this._client.query('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
       const classes = ['_SCHEMA', ...results.map(result => result.className)];
-      return this._client.task(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
+      return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         // No _SCHEMA collection. Don't delete anything.
