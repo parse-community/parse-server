@@ -1,5 +1,5 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
-import { logger } from './logger';
+import { logger }               from './logger';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 
@@ -19,7 +19,7 @@ export default function pushStatusHandler(config) {
   let initialPromise;
   let pushStatus;
   let objectId = newObjectId();
-  let database = config.database.WithoutValidation();
+  let database = config.database;
 
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
     let now = new Date();
