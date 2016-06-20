@@ -131,7 +131,8 @@ export function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
       // Use the JSON response
-      if (response && request.triggerName === Types.beforeSave) {
+      if (response && !request.object.equals(response)
+          && request.triggerName === Types.beforeSave) {
         return resolve(response);
       }
       response = {};
