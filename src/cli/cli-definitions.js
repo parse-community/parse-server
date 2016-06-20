@@ -86,6 +86,10 @@ export default {
     env: "PARSE_SERVER_DOT_NET_KEY",
     help: "Key for Unity and .Net SDK"
   },
+  "webhookKey": {
+    env: "PARSE_SERVER_WEBHOOK_KEY",
+    help: "Key sent with outgoing webhook calls"
+  },
   "cloud": {
     env: "PARSE_SERVER_CLOUD_CODE_MAIN",
     help: "Full path to your cloud code main.js"

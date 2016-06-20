@@ -44,18 +44,6 @@ export default class MongoCollection {
     return this._mongoCollection.count(query, { skip, limit, sort });
   }
 
-  // Atomically finds and updates an object based on query.
-  // The result is the promise with an object that was in the database !AFTER! changes.
-  // Postgres Note: Translates directly to `UPDATE * SET * ... RETURNING *`, which will return data after the change is done.
-  findOneAndUpdate(query, update) {
-    // arguments: query, sort, update, options(optional)
-    // Setting `new` option to true makes it return the after document, not the before one.
-    return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
-  }
-
   insertOne(object) {
     return this._mongoCollection.insertOne(object);
   }
@@ -64,7 +52,7 @@ export default class MongoCollection {
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
   upsertOne(query, update) {
-    return this._mongoCollection.update(query, update, { upsert: true });
+    return this._mongoCollection.update(query, update, { upsert: true })
   }
 
   updateOne(query, update) {
@@ -81,6 +69,18 @@ export default class MongoCollection {
 
   deleteMany(query) {
     return this._mongoCollection.deleteMany(query);
+  }
+
+  _ensureSparseUniqueIndexInBackground(indexRequest) {
+    return new Promise((resolve, reject) => {
+      this._mongoCollection.ensureIndex(indexRequest, { unique: true, background: true, sparse: true }, (error, indexName) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
   drop() {

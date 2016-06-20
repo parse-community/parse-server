@@ -6,11 +6,19 @@ let dd = require('deep-diff');
 let mongodb = require('mongodb');
 
 describe('parseObjectToMongoObjectForCreate', () => {
-
   it('a basic number', (done) => {
     var input = {five: 5};
     var output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {five: {type: 'Number'}}
+    });
+    jequal(input, output);
+    done();
+  });
+
+  it('an object with null values', (done) => {
+    var input = {objectWithNullValues: {isNull: null, notNull: 3}};
+    var output = transform.parseObjectToMongoObjectForCreate(null, input, {
+      fields: {objectWithNullValues: {type: 'object'}}
     });
     jequal(input, output);
     done();
@@ -42,51 +50,46 @@ describe('parseObjectToMongoObjectForCreate', () => {
 
   //TODO: object creation requests shouldn't be seeing __op delete, it makes no sense to
   //have __op delete in a new object. Figure out what this should actually be testing.
-  notWorking('a delete op', (done) => {
+  xit('a delete op', (done) => {
     var input = {deleteMe: {__op: 'Delete'}};
     var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
     jequal(output, {});
     done();
   });
 
-  it('basic ACL', (done) => {
+  it('Doesnt allow ACL, as Parse Server should tranform ACL to _wperm + _rperm', done => {
     var input = {ACL: {'0123': {'read': true, 'write': true}}};
-    var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
-    // This just checks that it doesn't crash, but it should check format.
+    expect(() => transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} })).toThrow();
     done();
   });
 
-  describe('GeoPoints', () => {
-    it('plain', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
-        fields: {location: {type: 'GeoPoint'}}
-      });
-      expect(out.location).toEqual([180, -180]);
-      done();
+  it('plain', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
+      fields: {location: {type: 'GeoPoint'}}
     });
-
-    it('in array', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, {locations: [geoPoint, geoPoint]},{
-        fields: {locations: {type: 'Array'}}
-      });
-      expect(out.locations).toEqual([geoPoint, geoPoint]);
-      done();
-    });
-
-    it('in sub-object', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(null, { locations: { start: geoPoint }},{
-        fields: {locations: {type: 'Object'}}
-      });
-      expect(out).toEqual({ locations: { start: geoPoint } });
-      done();
-    });
+    expect(out.location).toEqual([180, -180]);
+    done();
   });
-});
 
-describe('transformWhere', () => {
+  it('in array', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, {locations: [geoPoint, geoPoint]},{
+      fields: {locations: {type: 'Array'}}
+    });
+    expect(out.locations).toEqual([geoPoint, geoPoint]);
+    done();
+  });
+
+  it('in sub-object', (done) => {
+    var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    var out = transform.parseObjectToMongoObjectForCreate(null, { locations: { start: geoPoint }},{
+      fields: {locations: {type: 'Object'}}
+    });
+    expect(out).toEqual({ locations: { start: geoPoint } });
+    done();
+  });
+
   it('objectId', (done) => {
     var out = transform.transformWhere(null, {objectId: 'foo'});
     expect(out._id).toEqual('foo');
@@ -101,9 +104,7 @@ describe('transformWhere', () => {
     jequal(input.objectId, output._id);
     done();
   });
-});
 
-describe('mongoObjectToParseObject', () => {
   it('built-in timestamps', (done) => {
     var input = {createdAt: new Date(), updatedAt: new Date()};
     var output = transform.mongoObjectToParseObject(null, input, { fields: {} });
@@ -183,9 +184,6 @@ describe('mongoObjectToParseObject', () => {
     expect(dd(output, input)).toEqual(undefined);
     done();
   });
-});
-
-describe('transform schema key changes', () => {
 
   it('changes new pointer key', (done) => {
     var input = {
@@ -211,28 +209,10 @@ describe('transform schema key changes', () => {
     done();
   });
 
-  it('changes ACL storage to _rperm and _wperm', (done) => {
-    var input = {
-      ACL: {
-        "*": { "read": true },
-        "Kevin": { "write": true }
-      }
-    };
-    var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
-    expect(typeof output._rperm).toEqual('object');
-    expect(typeof output._wperm).toEqual('object');
-    expect(output.ACL).toBeUndefined();
-    expect(output._rperm[0]).toEqual('*');
-    expect(output._wperm[0]).toEqual('Kevin');
-    done();
-  });
-
   it('writes the old ACL format in addition to rperm and wperm', (done) => {
     var input = {
-      ACL: {
-        "*": { "read": true },
-        "Kevin": { "write": true }
-      }
+      _rperm: ['*'],
+      _wperm: ['Kevin'],
     };
 
     var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
@@ -248,11 +228,9 @@ describe('transform schema key changes', () => {
       _wperm: ["Kevin"]
     };
     var output = transform.mongoObjectToParseObject(null, input, { fields: {} });
-    expect(typeof output.ACL).toEqual('object');
-    expect(output._rperm).toBeUndefined();
-    expect(output._wperm).toBeUndefined();
-    expect(output.ACL['*']['read']).toEqual(true);
-    expect(output.ACL['Kevin']['write']).toEqual(true);
+    expect(output._rperm).toEqual(['*']);
+    expect(output._wperm).toEqual(['Kevin']);
+    expect(output.ACL).toBeUndefined()
     done();
   });
 

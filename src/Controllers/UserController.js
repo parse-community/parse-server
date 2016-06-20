@@ -43,7 +43,7 @@ export class UserController extends AdaptableController {
     if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
       // TODO: Better error here.
-      return Promise.reject();
+      throw undefined;
     }
     let database = this.config.database.WithoutValidation();
     return database.update('_User', {
@@ -51,7 +51,7 @@ export class UserController extends AdaptableController {
       _email_verify_token: token
     }, {emailVerified: true}).then(document => {
       if (!document) {
-        return Promise.reject();
+        throw undefined;
       }
       return Promise.resolve(document);
     });
@@ -64,7 +64,7 @@ export class UserController extends AdaptableController {
       _perishable_token: token
     }, {limit: 1}).then(results => {
       if (results.length != 1) {
-        return Promise.reject();
+        throw undefined;
       }
       return results[0];
     });
@@ -85,7 +85,7 @@ export class UserController extends AdaptableController {
     var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function(result){
       if (result.results.length != 1) {
-        return Promise.reject();
+        throw undefined;
       }
       return result.results[0];
     })

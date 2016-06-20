@@ -4,9 +4,9 @@ var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request("tokeninfo?access_token="+authData.access_token)
+  return request("tokeninfo?id_token="+authData.access_token)
     .then((response) => {
-      if (response && response.user_id == authData.id) {
+      if (response && response.sub == authData.id) {
         return;
       }
       throw new Parse.Error(
@@ -23,7 +23,7 @@ function validateAppId() {
 // A promisey wrapper for api requests
 function request(path) {
   return new Promise(function(resolve, reject) {
-    https.get("https://www.googleapis.com/oauth2/v1/" + path, function(res) {
+    https.get("https://www.googleapis.com/oauth2/v3/" + path, function(res) {
       var data = '';
       res.on('data', function(chunk) {
         data += chunk;

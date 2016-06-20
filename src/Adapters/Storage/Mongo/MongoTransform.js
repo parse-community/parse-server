@@ -83,7 +83,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 }
 
 const transformInteriorValue = restValue => {
-  if (typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+  if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
   // Handle atomic values
@@ -197,20 +197,12 @@ function transformWhere(className, restWhere, schema) {
   return mongoWhere;
 }
 
-const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue, schema) => {
+const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) => {
   // Check if the schema is known since it's a built-in field.
   let transformedValue;
   let coercedToDate;
   switch(restKey) {
   case 'objectId': return {key: '_id', value: restValue};
-  case 'createdAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_created_at', value: coercedToDate};
-  case 'updatedAt':
-    transformedValue = transformTopLevelAtom(restValue);
-    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
-    return {key: '_updated_at', value: coercedToDate};
   case 'expiresAt':
     transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
@@ -258,11 +250,6 @@ const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue,
     return {key: restKey, value: value};
   }
 
-  // Handle update operators. TODO: handle within Parse Server. DB adapter shouldn't see update operators in creates.
-  if (typeof restValue === 'object' && '__op' in restValue) {
-    return {key: restKey, value: transformUpdateOperator(restValue, true)};
-  }
-
   // Handle normal objects by recursing
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -271,16 +258,11 @@ const parseObjectKeyValueToMongoObjectKeyValue = (className, restKey, restValue,
   return {key: restKey, value};
 }
 
-// Main exposed method to create new objects.
-// restCreate is the "create" clause in REST API form.
-function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
-  if (className == '_User') {
-     restCreate = transformAuthData(restCreate);
-  }
-  var mongoCreate = transformACL(restCreate);
+const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
+  restCreate = addLegacyACL(restCreate);
+  let mongoCreate = {}
   for (let restKey in restCreate) {
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
-      className,
       restKey,
       restCreate[restKey],
       schema
@@ -289,27 +271,34 @@ function parseObjectToMongoObjectForCreate(className, restCreate, schema) {
       mongoCreate[key] = value;
     }
   }
+
+  // Use the legacy mongo format for createdAt and updatedAt
+  if (mongoCreate.createdAt) {
+    mongoCreate._created_at = new Date(mongoCreate.createdAt.iso || mongoCreate.createdAt);
+    delete mongoCreate.createdAt;
+  }
+  if (mongoCreate.updatedAt) {
+    mongoCreate._updated_at = new Date(mongoCreate.updatedAt.iso || mongoCreate.updatedAt);
+    delete mongoCreate.updatedAt;
+  }
+
   return mongoCreate;
 }
 
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
-  if (className == '_User') {
-    restUpdate = transformAuthData(restUpdate);
-  }
-
-  var mongoUpdate = {};
-  var acl = transformACL(restUpdate);
-  if (acl._rperm || acl._wperm || acl._acl) {
-    mongoUpdate['$set'] = {};
+  let mongoUpdate = {};
+  let acl = addLegacyACL(restUpdate)._acl;
+  if (acl) {
+    mongoUpdate.$set = {};
     if (acl._rperm) {
-      mongoUpdate['$set']['_rperm'] = acl._rperm;
+      mongoUpdate.$set._rperm = acl._rperm;
     }
     if (acl._wperm) {
-      mongoUpdate['$set']['_wperm'] = acl._wperm;
+      mongoUpdate.$set._wperm = acl._wperm;
     }
     if (acl._acl) {
-      mongoUpdate['$set']['_acl'] = acl._acl;
+      mongoUpdate.$set._acl = acl._acl;
     }
   }
   for (var restKey in restUpdate) {
@@ -330,83 +319,34 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   return mongoUpdate;
 }
 
-function transformAuthData(restObject) {
-  if (restObject.authData) {
-    Object.keys(restObject.authData).forEach((provider) => {
-      let providerData = restObject.authData[provider];
-      if (providerData == null) {
-        restObject[`_auth_data_${provider}`] = {
-          __op: 'Delete'
-        }
+// Add the legacy _acl format.
+const addLegacyACL = restObject => {
+  let restObjectCopy = {...restObject};
+  let _acl = {};
+
+  if (restObject._wperm) {
+    restObject._wperm.forEach(entry => {
+      _acl[entry] = { w: true };
+    });
+  }
+
+  if (restObject._rperm) {
+    restObject._rperm.forEach(entry => {
+      if (!(entry in _acl)) {
+        _acl[entry] = { r: true };
       } else {
-        restObject[`_auth_data_${provider}`] = providerData;
+        _acl[entry].r = true;
       }
     });
-    delete restObject.authData;
   }
-  return restObject;
+
+  if (Object.keys(_acl).length > 0) {
+    restObjectCopy._acl = _acl;
+  }
+
+  return restObjectCopy;
 }
 
-// Transforms a REST API formatted ACL object to our two-field mongo format.
-// This mutates the restObject passed in to remove the ACL key.
-function transformACL(restObject) {
-  var output = {};
-  if (!restObject['ACL']) {
-    return output;
-  }
-  var acl = restObject['ACL'];
-  var rperm = [];
-  var wperm = [];
-  var _acl = {}; // old format
-
-  for (var entry in acl) {
-    if (acl[entry].read) {
-      rperm.push(entry);
-      _acl[entry] = _acl[entry] || {};
-      _acl[entry]['r'] = true;
-    }
-    if (acl[entry].write) {
-      wperm.push(entry);
-      _acl[entry] = _acl[entry] || {};
-      _acl[entry]['w'] = true;
-    }
-  }
-  output._rperm = rperm;
-  output._wperm = wperm;
-  output._acl = _acl;
-  delete restObject.ACL;
-  return output;
-}
-
-// Transforms a mongo format ACL to a REST API format ACL key
-// This mutates the mongoObject passed in to remove the _rperm/_wperm keys
-function untransformACL(mongoObject) {
-  var output = {};
-  if (!mongoObject['_rperm'] && !mongoObject['_wperm']) {
-    return output;
-  }
-  var acl = {};
-  var rperm = mongoObject['_rperm'] || [];
-  var wperm = mongoObject['_wperm'] || [];
-  rperm.map((entry) => {
-    if (!acl[entry]) {
-      acl[entry] = {read: true};
-    } else {
-      acl[entry]['read'] = true;
-    }
-  });
-  wperm.map((entry) => {
-    if (!acl[entry]) {
-      acl[entry] = {write: true};
-    } else {
-      acl[entry]['write'] = true;
-    }
-  });
-  output['ACL'] = acl;
-  delete mongoObject._rperm;
-  delete mongoObject._wperm;
-  return output;
-}
 
 // A sentinel value that helper transformations return when they
 // cannot perform a transformation
@@ -548,13 +488,7 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$options':
-      var options = constraint[key];
-      if (!answer['$regex'] || (typeof options !== 'string')
-          || !options.match(/^[imxs]+$/)) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                              'got a bad $options');
-      }
-      answer[key] = options;
+      answer[key] = constraint[key];
       break;
 
     case '$nearSphere':
@@ -752,14 +686,21 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    var restObject = untransformACL(mongoObject);
+    let restObject = {};
+    if (mongoObject._rperm || mongoObject._wperm) {
+      restObject._rperm = mongoObject._rperm || [];
+      restObject._wperm = mongoObject._wperm || [];
+      delete mongoObject._rperm;
+      delete mongoObject._wperm;
+    }
+
     for (var key in mongoObject) {
       switch(key) {
       case '_id':
         restObject['objectId'] = '' + mongoObject[key];
         break;
       case '_hashed_password':
-        restObject['password'] = mongoObject[key];
+        restObject._hashed_password = mongoObject[key];
         break;
       case '_acl':
       case '_email_verify_token':

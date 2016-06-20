@@ -1,3 +1,4 @@
+'use strict'
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
 var cache = require('../src/cache');
@@ -7,10 +8,8 @@ var rest = require('../src/rest');
 var querystring = require('querystring');
 var request = require('request');
 
-var DatabaseAdapter = require('../src/DatabaseAdapter');
-var database = DatabaseAdapter.getDatabaseConnection('test', 'test_');
-
 var config = new Config('test');
+let database = config.database;
 var nobody = auth.nobody(config);
 
 describe('rest query', () => {
@@ -38,42 +37,38 @@ describe('rest query', () => {
     });
   });
 
-  describe('query for user w/ legacy credentials', () => {
-    var data = {
-      username: 'blah',
-      password: 'pass',
-      sessionToken: 'abc123',
-    }
-    describe('without masterKey', () => {
-      it('has them stripped from results', (done) => {
-        database.create('_User', data).then(() => {
-          return rest.find(config, nobody, '_User')
-        }).then((result) => {
-          var user = result.results[0];
-          expect(user.username).toEqual('blah');
-          expect(user.sessionToken).toBeUndefined();
-          expect(user.password).toBeUndefined();
-          done();
-        });
-      });
+  var data = {
+    username: 'blah',
+    password: 'pass',
+    sessionToken: 'abc123',
+  }
+
+  it_exclude_dbs(['postgres'])('query for user w/ legacy credentials without masterKey has them stripped from results', done => {
+    database.create('_User', data).then(() => {
+      return rest.find(config, nobody, '_User')
+    }).then((result) => {
+      var user = result.results[0];
+      expect(user.username).toEqual('blah');
+      expect(user.sessionToken).toBeUndefined();
+      expect(user.password).toBeUndefined();
+      done();
     });
-    describe('with masterKey', () => {
-      it('has them stripped from results', (done) => {
-        database.create('_User', data).then(() => {
-          return rest.find(config, {isMaster: true}, '_User')
-        }).then((result) => {
-          var user = result.results[0];
-          expect(user.username).toEqual('blah');
-          expect(user.sessionToken).toBeUndefined();
-          expect(user.password).toBeUndefined();
-          done();
-        });
-      });
+  });
+
+  it_exclude_dbs(['postgres'])('query for user w/ legacy credentials with masterKey has them stripped from results', done => {
+    database.create('_User', data).then(() => {
+      return rest.find(config, {isMaster: true}, '_User')
+    }).then((result) => {
+      var user = result.results[0];
+      expect(user.username).toEqual('blah');
+      expect(user.sessionToken).toBeUndefined();
+      expect(user.password).toBeUndefined();
+      done();
     });
   });
 
   // Created to test a scenario in AnyPic
-  it('query with include', (done) => {
+  it_exclude_dbs(['postgres'])('query with include', (done) => {
     var photo = {
       foo: 'bar'
     };
@@ -132,7 +127,7 @@ describe('rest query', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it('query non-existent class when disabled client class creation', (done) => {
+  it_exclude_dbs(['postgres'])('query non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
@@ -143,6 +138,22 @@ describe('rest query', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('query existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+    .then(actualSchema => {
+      expect(actualSchema.className).toEqual('ClientClassCreation');
+      return rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    })
+    .then((result) => {
+      expect(result.results.length).toEqual(0);
+      done();
+    }, err => {
+      fail('Should not throw error')
     });
   });
 
@@ -203,7 +214,7 @@ describe('rest query', () => {
     });
   });
 
-  it('query with limit = 0 and count = 1', (done) => {
+  it_exclude_dbs(['postgres'])('query with limit = 0 and count = 1', (done) => {
     rest.create(config, nobody, 'TestObject', {foo: 'baz'}
     ).then(() => {
       return rest.create(config, nobody,
@@ -217,5 +228,4 @@ describe('rest query', () => {
       done();
     });
   });
-
 });

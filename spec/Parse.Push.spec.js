@@ -3,7 +3,6 @@
 let request = require('request');
 
 describe('Parse.Push', () => {
-
   var setup = function() {
     var pushAdapter = {
       send: function(body, installations) {
@@ -28,29 +27,30 @@ describe('Parse.Push', () => {
       }
     }
 
-    setServerConfiguration({
+    return reconfigureServer({
       appId: Parse.applicationId,
       masterKey: Parse.masterKey,
       serverURL: Parse.serverURL,
       push: {
         adapter: pushAdapter
       }
+    })
+    .then(() => {
+      var installations = [];
+      while(installations.length != 10) {
+        var installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_"+installations.length);
+        installation.set("deviceToken","device_token_"+installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
     });
-
-    var installations = [];
-    while(installations.length != 10) {
-      var installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
-      installation.set("badge", installations.length);
-      installation.set("originalBadge", installations.length);
-      installation.set("deviceType", "ios");
-      installations.push(installation);
-    }
-    return Parse.Object.saveAll(installations);
   }
 
-  it('should properly send push', (done) => {
+  it_exclude_dbs(['postgres'])('should properly send push', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -71,7 +71,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should properly send push with lowercaseIncrement', (done) => {
+  it_exclude_dbs(['postgres'])('should properly send push with lowercaseIncrement', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -91,7 +91,7 @@ describe('Parse.Push', () => {
     });
   });
 
-  it('should not allow clients to query _PushStatus', done => {
+  it_exclude_dbs(['postgres'])('should not allow clients to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -110,13 +110,13 @@ describe('Parse.Push', () => {
           'X-Parse-Application-Id': 'test',
         },
       }, (error, response, body) => {
-        expect(body.results.length).toEqual(0);
+        expect(body.error).toEqual('unauthorized');
         done();
       });
     });
   });
 
-  it('should allow master key to query _PushStatus', done => {
+  it_exclude_dbs(['postgres'])('should allow master key to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -141,6 +141,26 @@ describe('Parse.Push', () => {
         expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
         done();
       });
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('should throw error if missing push configuration', done => {
+    reconfigureServer({push: null})
+    .then(() => {
+      return Parse.Push.send({
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
+    }).then((response) => {
+      fail('should not succeed');
+    }, (err) => {
+      expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
+      done();
     });
   });
 });

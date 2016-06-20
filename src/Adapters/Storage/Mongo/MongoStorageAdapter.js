@@ -34,6 +34,48 @@ const storageAdapterAllCollections = mongoAdapter => {
   });
 }
 
+const convertParseSchemaToMongoSchema = ({...schema}) => {
+  delete schema.fields._rperm;
+  delete schema.fields._wperm;
+
+  if (schema.className === '_User') {
+    // Legacy mongo adapter knows about the difference between password and _hashed_password.
+    // Future database adapters will only know about _hashed_password.
+    // Note: Parse Server will bring back password with injectDefaultSchema, so we don't need
+    // to add _hashed_password back ever.
+    delete schema.fields._hashed_password;
+  }
+
+  return schema;
+}
+
+// Returns { code, error } if invalid, or { result }, an object
+// suitable for inserting into _SCHEMA collection, otherwise.
+const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions) => {
+  let mongoObject = {
+    _id: className,
+    objectId: 'string',
+    updatedAt: 'string',
+    createdAt: 'string'
+  };
+
+  for (let fieldName in fields) {
+    mongoObject[fieldName] = MongoSchemaCollection.parseFieldTypeToMongoFieldType(fields[fieldName]);
+  }
+
+  if (typeof classLevelPermissions !== 'undefined') {
+    mongoObject._metadata = mongoObject._metadata || {};
+    if (!classLevelPermissions) {
+      delete mongoObject._metadata.class_permissions;
+    } else {
+      mongoObject._metadata.class_permissions = classLevelPermissions;
+    }
+  }
+
+  return mongoObject;
+}
+
+
 export class MongoStorageAdapter {
   // Private
   _uri: string;
@@ -65,28 +107,23 @@ export class MongoStorageAdapter {
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
       this.database = database;
     });
+
     return this.connectionPromise;
   }
 
-  collection(name: string) {
-    return this.connect().then(() => {
-      return this.database.collection(name);
-    });
-  }
-
-  adaptiveCollection(name: string) {
+  _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))
       .then(rawCollection => new MongoCollection(rawCollection));
   }
 
-  schemaCollection() {
+  _schemaCollection() {
     return this.connect()
-      .then(() => this.adaptiveCollection(MongoSchemaCollectionName))
+      .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
   }
 
-  collectionExists(name: string) {
+  classExists(name) {
     return this.connect().then(() => {
       return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
     }).then(collections => {
@@ -94,22 +131,53 @@ export class MongoStorageAdapter {
     });
   }
 
-  // Deletes a schema. Resolve if successful. If the schema doesn't
-  // exist, resolve with undefined. If schema exists, but can't be deleted for some other reason,
-  // reject with INTERNAL_SERVER_ERROR.
-  deleteOneSchema(className: string) {
-    return this.collection(this._collectionPrefix + className).then(collection => collection.drop())
+  setClassLevelPermissions(className, CLPs) {
+    return this._schemaCollection()
+    .then(schemaCollection => schemaCollection.updateSchema(className, {
+      $set: { _metadata: { class_permissions: CLPs } }
+    }));
+  }
+
+  createClass(className, schema) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    let mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);
+    mongoObject._id = className;
+    return this._schemaCollection()
+    .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
+    .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
+    .catch(error => {
+      if (error.code === 11000) { //Mongo's duplicate key error
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+      } else {
+        throw error;
+      }
+    })
+  }
+
+  addFieldIfNotExists(className, fieldName, type) {
+    return this._schemaCollection()
+    .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type));
+  }
+
+  // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
+  // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
+  deleteClass(className) {
+    return this._adaptiveCollection(className)
+    .then(collection => collection.drop())
     .catch(error => {
       // 'ns not found' means collection was already gone. Ignore deletion attempt.
       if (error.message == 'ns not found') {
-        return Promise.resolve();
+        return;
       }
-      return Promise.reject(error);
-    });
+      throw error;
+    })
+    // We've dropped the collection, now remove the _SCHEMA document
+    .then(() => this._schemaCollection())
+    .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
   }
 
   // Delete all data known to this adatper. Used for testing.
-  deleteAllSchemas() {
+  deleteAllClasses() {
     return storageAdapterAllCollections(this)
     .then(collections => Promise.all(collections.map(collection => collection.drop())));
   }
@@ -134,9 +202,14 @@ export class MongoStorageAdapter {
   // may do so.
 
   // Returns a Promise.
-  deleteFields(className: string, fieldNames, pointerFieldNames) {
-    const nonPointerFieldNames = _.difference(fieldNames, pointerFieldNames);
-    const mongoFormatNames = nonPointerFieldNames.concat(pointerFieldNames.map(name => `_p_${name}`));
+  deleteFields(className, schema, fieldNames) {
+    const mongoFormatNames = fieldNames.map(fieldName => {
+      if (schema.fields[fieldName].type === 'Pointer') {
+        return `_p_${fieldName}`
+      } else {
+        return fieldName;
+      }
+    });
     const collectionUpdate = { '$unset' : {} };
     mongoFormatNames.forEach(name => {
       collectionUpdate['$unset'][name] = null;
@@ -147,48 +220,50 @@ export class MongoStorageAdapter {
       schemaUpdate['$unset'][name] = null;
     });
 
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.updateMany({}, collectionUpdate))
-    .then(updateResult => this.schemaCollection())
+    .then(() => this._schemaCollection())
     .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
-  getAllSchemas() {
-    return this.schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
+  getAllClasses() {
+    return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
-  getOneSchema(className) {
-    return this.schemaCollection()
-    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className));
+  getClass(className) {
+    return this._schemaCollection()
+    .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className))
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
   // the schem only for the legacy mongo format. We'll figure that out later.
-  createObject(className, object, schema) {
+  createObject(className, schema, object) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.insertOne(mongoObject))
     .catch(error => {
       if (error.code === 11000) { // Duplicate value
         throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
             'A duplicate value for a field with unique values was provided');
       }
-      return Promise.reject(error);
+      throw error;
     });
   }
 
   // Remove all objects that match the given Parse Query.
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
-  deleteObjectsByQuery(className, query, schema) {
-    return this.adaptiveCollection(className)
+  deleteObjectsByQuery(className, schema, query) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    return this._adaptiveCollection(className)
     .then(collection => {
       let mongoWhere = transformWhere(className, query, schema);
       return collection.deleteMany(mongoWhere)
@@ -204,41 +279,76 @@ export class MongoStorageAdapter {
   }
 
   // Apply the update to all objects that match the given Parse Query.
-  updateObjectsByQuery(className, query, schema, update) {
+  updateObjectsByQuery(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
   }
 
-  // Hopefully we can get rid of this in favor of updateObjectsByQuery.
-  findOneAndUpdate(className, query, schema, update) {
+  // Atomically finds and updates an object based on query.
+  // Return value not currently well specified.
+  findOneAndUpdate(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
-    .then(collection => collection.findOneAndUpdate(mongoWhere, mongoUpdate));
+    return this._adaptiveCollection(className)
+    .then(collection => collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, { new: true }))
+    .then(result => result.value);
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
-  upsertOneObject(className, query, schema, update) {
+  upsertOneObject(className, schema, query, update) {
+    schema = convertParseSchemaToMongoSchema(schema);
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
-  find(className, query, schema, { skip, limit, sort }) {
+  find(className, schema, query, { skip, limit, sort }) {
+    schema = convertParseSchemaToMongoSchema(schema);
     let mongoWhere = transformWhere(className, query, schema);
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
-    return this.adaptiveCollection(className)
+    return this._adaptiveCollection(className)
     .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort }))
-    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+  }
+
+  // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
+  // currently know which fields are nullable and which aren't, we ignore that criteria.
+  // As such, we shouldn't expose this function to users of parse until we have an out-of-band
+  // Way of determining if a field is nullable. Undefined doesn't count against uniqueness,
+  // which is why we use sparse indexes.
+  ensureUniqueness(className, schema, fieldNames) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    let indexCreationRequest = {};
+    let mongoFieldNames = fieldNames.map(fieldName => transformKey(className, fieldName, schema));
+    mongoFieldNames.forEach(fieldName => {
+      indexCreationRequest[fieldName] = 1;
+    });
+    return this._adaptiveCollection(className)
+    .then(collection => collection._ensureSparseUniqueIndexInBackground(indexCreationRequest))
+    .catch(error => {
+      if (error.code === 11000) {
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
+      } else {
+        throw error;
+      }
+    });
+  }
+
+  // Used in tests
+  _rawFind(className, query) {
+    return this._adaptiveCollection(className).then(collection => collection.find(query));
   }
 
   // Executs a count.
-  count(className, query, schema) {
-    return this.adaptiveCollection(className)
+  count(className, schema, query) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    return this._adaptiveCollection(className)
     .then(collection => collection.count(transformWhere(className, query, schema)));
   }
 }

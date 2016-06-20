@@ -4,7 +4,7 @@ var Schema = require('../src/Controllers/SchemaController');
 var Config = require('../src/Config');
 
 describe('Pointer Permissions', () => {
-  it('should work with find', (done) => {
+  it_exclude_dbs(['postgres'])('should work with find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -36,14 +36,14 @@ describe('Pointer Permissions', () => {
       expect(res.length).toBe(1);
       expect(res[0].id).toBe(obj.id);
       done();
-    }).catch((err) => {
-      fail('Should not fail');
+    }).catch(error => {
+      fail(JSON.stringify(error));
       done();
     });
   });
 
 
-  it('should work with write', (done) => {
+  it_exclude_dbs(['postgres'])('should work with write', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -108,7 +108,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('should let a proper user find', (done) => {
+  it_exclude_dbs(['postgres'])('should let a proper user find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -168,7 +168,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('should not allow creating objects', (done) => {
+  it_exclude_dbs(['postgres'])('should not allow creating objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     user.set({
@@ -194,7 +194,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('should handle multiple writeUserFields', (done) => {
+  it_exclude_dbs(['postgres'])('should handle multiple writeUserFields', done => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -207,27 +207,24 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2])
+    .then(() => {
       obj.set('owner', user);
       obj.set('otherOwner', user2);
       return obj.save();
-    }).then(() => {
-      return config.database.loadSchema().then((schema) => {
-        return schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']});
-      });
-    }).then(() => {
-      return Parse.User.logIn('user1', 'password');
-    }).then(() => {
-      return obj.save({hello: 'fromUser1'});
-    }).then(() => {
-      return Parse.User.logIn('user2', 'password');
-    }).then(() => {
-      return obj.save({hello: 'fromUser2'});
-    }).then(() => {
-      Parse.User.logOut();
+    })
+    .then(() => config.database.loadSchema())
+    .then(schema => schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']}))
+    .then(() => Parse.User.logIn('user1', 'password'))
+    .then(() => obj.save({hello: 'fromUser1'}))
+    .then(() => Parse.User.logIn('user2', 'password'))
+    .then(() => obj.save({hello: 'fromUser2'}))
+    .then(() => Parse.User.logOut())
+    .then(() => {
       let q = new Parse.Query('AnObject');
       return q.first();
-    }).then((result) => {
+    })
+    .then(result => {
       expect(result.get('hello')).toBe('fromUser2');
       done();
     }).catch(err => {
@@ -279,10 +276,10 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
 
@@ -300,7 +297,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -310,7 +307,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
@@ -326,10 +323,10 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
      */
@@ -355,7 +352,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
@@ -371,10 +368,10 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
     /*
       tests:
-      CLP: update open ({"*": true})
+      CLP: update closed ({})
       PointerPerm: "owner"
       ACL: logged in user has access
      */
@@ -400,7 +397,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {update: {"*": true}, writeUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
@@ -416,10 +413,10 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
     /*
       tests:
-      CLP: find/get open ({"*": true})
+      CLP: find/get open ({})
       PointerPerm: "owner" : read
       ACL: logged in user has access
 
@@ -447,7 +444,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
+        return schema.updateClass('AnObject', {}, {find: {}, get: {}, readUserFields: ['owner']});
       });
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
@@ -463,7 +460,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -510,7 +507,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
+  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -555,7 +552,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it('should let master key find objects', (done) => {
+  it_exclude_dbs(['postgres'])('should let master key find objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -585,7 +582,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('should let master key get objects', (done) => {
+  it_exclude_dbs(['postgres'])('should let master key get objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -617,7 +614,7 @@ describe('Pointer Permissions', () => {
   });
 
 
-  it('should let master key update objects', (done) => {
+  it_exclude_dbs(['postgres'])('should let master key update objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -645,7 +642,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it('should let master key delete objects', (done) => {
+  it_exclude_dbs(['postgres'])('should let master key delete objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -693,5 +690,4 @@ describe('Pointer Permissions', () => {
       done();
      });
   })
-
 });

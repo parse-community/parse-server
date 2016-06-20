@@ -6,7 +6,7 @@ var ChildObject = Parse.Object.extend({className: "ChildObject"});
 var ParentObject = Parse.Object.extend({className: "ParentObject"});
 
 describe('Parse.Relation testing', () => {
-  it("simple add and remove relation", (done) => {
+  it_exclude_dbs(['postgres'])("simple add and remove relation", (done) => {
     var child = new ChildObject();
     child.set("x", 2);
     var parent = new ParentObject();
@@ -41,7 +41,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("query relation without schema", (done) => {
+  it_exclude_dbs(['postgres'])("query relation without schema", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -75,7 +75,7 @@ describe('Parse.Relation testing', () => {
     }));
   });
 
-  it("relations are constructed right from query", (done) => {
+  it_exclude_dbs(['postgres'])("relations are constructed right from query", (done) => {
 
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -121,7 +121,7 @@ describe('Parse.Relation testing', () => {
 
   });
 
-  it("compound add and remove relation", (done) => {
+  it_exclude_dbs(['postgres'])("compound add and remove relation", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -164,7 +164,7 @@ describe('Parse.Relation testing', () => {
   });
 
 
-  it("queries with relations", (done) => {
+  it_exclude_dbs(['postgres'])("queries with relations", (done) => {
 
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -202,7 +202,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("queries on relation fields", (done) => {
+  it_exclude_dbs(['postgres'])("queries on relation fields", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -248,7 +248,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("queries on relation fields with multiple containedIn (regression test for #1271)", (done) => {
+  it_exclude_dbs(['postgres'])("queries on relation fields with multiple containedIn (regression test for #1271)", (done) => {
     let ChildObject = Parse.Object.extend("ChildObject");
     let childObjects = [];
     for (let i = 0; i < 10; i++) {
@@ -296,7 +296,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("query on pointer and relation fields with equal", (done) => {
+  it_exclude_dbs(['postgres'])("query on pointer and relation fields with equal", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -334,7 +334,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("query on pointer and relation fields with equal bis", (done) => {
+  it_exclude_dbs(['postgres'])("query on pointer and relation fields with equal bis", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -374,7 +374,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("or queries on pointer and relation fields", (done) => {
+  it_exclude_dbs(['postgres'])("or queries on pointer and relation fields", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -419,7 +419,7 @@ describe('Parse.Relation testing', () => {
   });
 
 
-  it("Get query on relation using un-fetched parent object", (done) => {
+  it_exclude_dbs(['postgres'])("Get query on relation using un-fetched parent object", (done) => {
     // Setup data model
     var Wheel = Parse.Object.extend('Wheel');
     var Car = Parse.Object.extend('Car');
@@ -452,7 +452,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("Find query on relation using un-fetched parent object", (done) => {
+  it_exclude_dbs(['postgres'])("Find query on relation using un-fetched parent object", (done) => {
     // Setup data model
     var Wheel = Parse.Object.extend('Wheel');
     var Car = Parse.Object.extend('Car');
@@ -486,7 +486,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it('Find objects with a related object using equalTo', (done) => {
+  it_exclude_dbs(['postgres'])('Find objects with a related object using equalTo', (done) => {
     // Setup the objects
     var Card = Parse.Object.extend('Card');
     var House = Parse.Object.extend('House');
@@ -506,7 +506,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it('should properly get related objects with unfetched queries', (done) => {
+  it_exclude_dbs(['postgres'])('should properly get related objects with unfetched queries', (done) => {
     let objects = [];
     let owners = [];
     let allObjects = [];
@@ -575,7 +575,7 @@ describe('Parse.Relation testing', () => {
     })
   });
 
-  it("select query", function(done) {
+  it_exclude_dbs(['postgres'])("select query", function(done) {
     var RestaurantObject = Parse.Object.extend("Restaurant");
     var PersonObject = Parse.Object.extend("Person");
     var OwnerObject = Parse.Object.extend('Owner');
@@ -615,7 +615,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("dontSelect query", function(done) {
+  it_exclude_dbs(['postgres'])("dontSelect query", function(done) {
     var RestaurantObject = Parse.Object.extend("Restaurant");
     var PersonObject = Parse.Object.extend("Person");
     var OwnerObject = Parse.Object.extend('Owner');
@@ -657,7 +657,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it('relations are not bidirectional (regression test for #871)', done => {
+  it_exclude_dbs(['postgres'])('relations are not bidirectional (regression test for #871)', done => {
     let PersonObject = Parse.Object.extend("Person");
     let p1 = new PersonObject();
     let p2 = new PersonObject();
@@ -684,7 +684,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it('can query roles in Cloud Code (regession test #1489)', done => {
+  it_exclude_dbs(['postgres'])('can query roles in Cloud Code (regession test #1489)', done => {
     Parse.Cloud.define('isAdmin', (request, response) => {
       let query = new Parse.Query(Parse.Role);
       query.equalTo('name', 'admin');
@@ -696,6 +696,7 @@ describe('Parse.Relation testing', () => {
         admins.first({ useMasterKey: true })
         .then(user => {
           if (user) {
+            response.success(user);
             done();
           } else {
             fail('Should have found admin user, found nothing instead');

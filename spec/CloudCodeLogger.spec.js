@@ -3,7 +3,6 @@ var LoggerController = require('../src/Controllers/LoggerController').LoggerCont
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 
 describe("Cloud Code Logger", () => {
-
     it("should expose log to functions", (done) => {
         var logController = new LoggerController(new FileLoggerAdapter());
 

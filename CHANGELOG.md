@@ -1,5 +1,47 @@
 ## Parse Server Changelog
 
+### 2.2.13 (6/12/2016)
+
+* Hotfix: Pin version of deepcopy
+
+### 2.2.12 (6/9/2016)
+
+* New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Allow "get" on installations
+* Fix: Fix overly restrictive Class Level Permissions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Fix nested date parsing in Cloud Code, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Support very old file formats from Parse.com
+
+### 2.2.11 (5/31/2016)
+
+* Security: Censor user password in logs, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Add PARSE_SERVER_LOGS_FOLDER env var for setting log folder, thanks to [KartikeyaRokde](https://github.com/KartikeyaRokde)
+* New: Webhook key support, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Perf: Add cache adapter and default caching of certain objects, thanks to [Blayne Chard](https://github.com/blacha)
+* Improvement: Better error messages for schema type mismatches, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Improvement: Better error messages for reset password emails
+* Improvement: Webhook key support in CLI, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Remove read only fields when using beforeSave, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Use content type provided by JS SDK, thanks to [Blayne Chard](https://github.com/blacha) and [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Tell the dashboard the stored push data is available, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Add support for HTTP Basic Auth, thanks to [Hussam Moqhim](https://github.com/hmoqhim)
+* Fix: Support for MongoDB version 3.2.6, (note: do not use MongoDB 3.2 with migrated apps that still have traffic on Parse.com), thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Prevent `pm2` from crashing when push notifications fail, thanks to [benishak](https://github.com/benishak)
+* Fix: Add full list of default _Installation fields, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Strip objectId out of hooks responses, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix external webhook response format, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix beforeSave when object is passed to `success`, thanks to [Madhav Bhagat](https://github.com/codebreach)
+* Fix: Remove use of deprecated APIs, thanks to [Emad Ehsan](https://github.com/emadehsan)
+* Fix: Crash when multiple Parse Servers on the same machine try to write to the same logs folder, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Fix: Various issues with key names in `Parse.Object`s
+* Fix: Treat Bytes type properly
+* Fix: Caching bugs that caused writes by masterKey or other session token to not show up to users reading with a different session token
+* Fix: Pin mongo driver version, preventing a regression in version 2.1.19
+* Fix: Various issues with pointer fields not being treated properly
+* Fix: Issues with pointed getting un-fetched due to changes in beforeSave
+* Fix: Fixed crash when deleting classes that have CLPs
+
 ### 2.2.10 (5/15/2016)
 
 * Fix: Write legacy ACLs to Mongo so that clients that still go through Parse.com can read them, thanks to [Tyler Brock](https://github.com/TylerBrock) and [carmenlau](https://github.com/carmenlau)

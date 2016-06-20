@@ -1,7 +1,6 @@
 var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
 
 describe('EventEmitterPubSub', function() {
-
   it('can publish and subscribe', function() {
     var publisher = EventEmitterPubSub.createPublisher();
     var subscriber = EventEmitterPubSub.createSubscriber();

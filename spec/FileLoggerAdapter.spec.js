@@ -5,7 +5,6 @@ var Parse = require('parse/node').Parse;
 var request = require('request');
 
 describe('info logs', () => {
-
   it("Verify INFO logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.info('testing info logs', () => {
@@ -27,7 +26,6 @@ describe('info logs', () => {
 });
 
 describe('error logs', () => {
-
   it("Verify ERROR logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.error('testing error logs', () => {
@@ -50,11 +48,10 @@ describe('error logs', () => {
 });
 
 describe('verbose logs', () => {
-
   it("mask sensitive information in _User class", (done) => {
-    let customConfig = Object.assign({}, defaultConfiguration, {verbose: true});
-    setServerConfiguration(customConfig);
-    createTestUser().then(() => {
+    reconfigureServer({ verbose: true })
+    .then(() => createTestUser())
+    .then(() => {
       let fileLoggerAdapter = new FileLoggerAdapter();
       return fileLoggerAdapter.query({
         from: new Date(Date.now() - 500),

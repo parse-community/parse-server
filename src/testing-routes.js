@@ -14,6 +14,7 @@ function createApp(req, res) {
   var appId = cryptoUtils.randomHexString(32);
 
   ParseServer({
+    databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
     appId: appId,
     masterKey: 'master',
     serverURL: Parse.serverURL,

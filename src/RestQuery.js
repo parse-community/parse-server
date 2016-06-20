@@ -171,17 +171,16 @@ RestQuery.prototype.redirectClassNameForKey = function() {
 
 // Validates this operation against the allowClientClassCreation config.
 RestQuery.prototype.validateClientClassCreation = function() {
-  let sysClass = SchemaController.systemClasses;
   if (this.config.allowClientClassCreation === false && !this.auth.isMaster
-      && sysClass.indexOf(this.className) === -1) {
-    return this.config.database.collectionExists(this.className).then((hasClass) => {
-      if (hasClass === true) {
-        return Promise.resolve();
-      }
-
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                            'This user is not allowed to access ' +
-                            'non-existent class: ' + this.className);
+      && SchemaController.systemClasses.indexOf(this.className) === -1) {
+    return this.config.database.loadSchema()
+      .then(schemaController => schemaController.hasClass(this.className))
+      .then(hasClass => {
+        if (hasClass !== true) {
+          throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+                                'This user is not allowed to access ' +
+                                'non-existent class: ' + this.className);
+        }
     });
   } else {
     return Promise.resolve();
@@ -527,16 +526,14 @@ function findPointers(object, path) {
   }
 
   if (typeof object !== 'object') {
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'can only include pointer fields');
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'can only include pointer fields');
   }
 
   if (path.length == 0) {
     if (object.__type == 'Pointer') {
       return [object];
     }
-    throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'can only include pointer fields');
+    throw new Parse.Error(Parse.Error.INVALID_QUERY, 'can only include pointer fields');
   }
 
   var subobject = object[path[0]];

@@ -17,8 +17,14 @@ var triggers = require('./triggers');
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions) {
   enforceRoleSecurity('find', className, auth);
-  var query = new RestQuery(config, auth, className,
-                            restWhere, restOptions);
+  let query = new RestQuery(config, auth, className, restWhere, restOptions);
+  return query.execute();
+}
+
+// get is just like find but only queries an objectId.
+const get = (config, auth, className, objectId, restOptions) => {
+  enforceRoleSecurity('get', className, auth);
+  let query = new RestQuery(config, auth, className, { objectId }, restOptions);
   return query.execute();
 }
 
@@ -63,8 +69,8 @@ function del(config, auth, className, objectId) {
   }).then(() => {
     if (!auth.isMaster) {
       return auth.getUserRoles();
-    }else{
-      return Promise.resolve();
+    } else {
+      return;
     }
   }).then(() => {
     var options = {};
@@ -81,7 +87,7 @@ function del(config, auth, className, objectId) {
     }, options);
   }).then(() => {
     triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
-    return Promise.resolve();
+    return;
   });
 }
 
@@ -111,8 +117,7 @@ function update(config, auth, className, objectId, restObject) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className,
-                              {objectId: objectId}, restObject, originalRestObject);
+    var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject);
     return write.execute();
   });
 }
@@ -128,8 +133,9 @@ function enforceRoleSecurity(method, className, auth) {
 }
 
 module.exports = {
-  create: create,
-  del: del,
-  find: find,
-  update: update
+  create,
+  del,
+  find,
+  get,
+  update
 };
