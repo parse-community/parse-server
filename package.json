@@ -49,7 +49,7 @@
   },
   "devDependencies": {
     "babel-cli": "6.8.0",
-    "babel-core": "6.9.1",
+    "babel-core": "6.10.4",
     "babel-istanbul": "0.6.1",
     "babel-plugin-syntax-flow": "6.8.0",
     "babel-plugin-transform-flow-strip-types": "6.8.0",
