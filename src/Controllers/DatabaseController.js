@@ -1,4 +1,4 @@
-// A database adapter that works with data exported from the hosted
+﻿// A database adapter that works with data exported from the hosted
 // Parse database.
 
 import intersect from 'intersect';
@@ -129,7 +129,7 @@ DatabaseController.prototype.loadSchema = function() {
 DatabaseController.prototype.redirectClassNameForKey = function(className, key) {
   return this.loadSchema().then((schema) => {
     var t = schema.getExpectedType(className, key);
-    if (t && t.type == 'Relation') {
+    if (t &&  t.type == 'Relation') {
       return t.targetClass;
     } else {
       return className;
