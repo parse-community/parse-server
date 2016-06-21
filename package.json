@@ -21,7 +21,7 @@
     "babel-polyfill": "6.8.0",
     "babel-runtime": "6.6.1",
     "bcrypt-nodejs": "0.0.3",
-    "body-parser": "1.15.1",
+    "body-parser": "1.15.2",
     "colors": "1.1.2",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
