@@ -2,8 +2,8 @@
 export default class HTTPResponse {
   constructor(response, body) {
     this.status = response.statusCode;
-    this.headers = response.headers;
-    this.cookies = response.headers["set-cookie"];
+    this.headers = response.headers || {};
+    this.cookies = this.headers["set-cookie"];
     
     this.body = body;
     if (typeof body == 'string') {

@@ -1,6 +1,7 @@
 'use strict';
 
 var httpRequest = require("../src/cloud-code/httpRequest"),
+    HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
     bodyParser = require('body-parser'),
     express = require("express");
 
@@ -244,5 +245,13 @@ describe("httpRequest", () => {
       done();
     })
   });
+
+  it('should not crash with undefined body', () => {
+    let httpResponse = new HTTPResponse({});
+    expect(httpResponse.body).toBeUndefined();
+    expect(httpResponse.data).toBeUndefined();
+    expect(httpResponse.text).toBeUndefined();
+    expect(httpResponse.buffer).toBeUndefined();
+  })
 
 });
