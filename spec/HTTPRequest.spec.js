@@ -256,6 +256,10 @@ describe("httpRequest", () => {
 
   it('serialized httpResponse correctly with body string', () => {
     let httpResponse = new HTTPResponse({}, 'hello');
+    expect(httpResponse.text).toBe('hello');
+    expect(httpResponse.data).toBe(undefined);
+    expect(httpResponse.body).toBe('hello');
+
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
     expect(result.text).toBe('hello');
@@ -265,8 +269,14 @@ describe("httpRequest", () => {
 
   it('serialized httpResponse correctly with body object', () => {
     let httpResponse = new HTTPResponse({}, {foo: "bar"});
+    let encodedResponse = Parse._encode(httpResponse);
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
+    
+    expect(httpResponse.text).toEqual('{"foo":"bar"}');
+    expect(httpResponse.data).toEqual({foo: 'bar'});
+    expect(httpResponse.body).toEqual({foo: 'bar'});
+
     expect(result.text).toEqual('{"foo":"bar"}');
     expect(result.data).toEqual({foo: 'bar'});
     expect(result.body).toEqual({foo: 'bar'});
@@ -274,6 +284,9 @@ describe("httpRequest", () => {
 
   it('serialized httpResponse correctly with body buffer string', () => {
     let httpResponse = new HTTPResponse({}, new Buffer('hello'));
+    expect(httpResponse.text).toBe('hello');
+    expect(httpResponse.data).toBe(undefined);
+
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
     expect(result.text).toBe('hello');
@@ -287,6 +300,23 @@ describe("httpRequest", () => {
     let result = JSON.parse(serialized);
     expect(result.text).toEqual('{"foo":"bar"}');
     expect(result.data).toEqual({foo: 'bar'});
+  });
+
+  it('serialized httpResponse with Parse._encode should be allright', () => {
+    let json = '{"foo":"bar"}';
+    let httpResponse = new HTTPResponse({}, new Buffer(json));
+    let encoded = Parse._encode(httpResponse);
+    let foundData, foundText = false;
+    for(var key in encoded) {
+      if (key == 'data') {
+        foundData = true;
+      }
+      if (key == 'text') {
+        foundText = true;
+      }
+    }
+    expect(foundData).toBe(true);
+    expect(foundText).toBe(true);
   });
 
 });
