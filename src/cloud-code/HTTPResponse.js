@@ -16,20 +16,20 @@ export default class HTTPResponse {
 
     let getText = () => {
       if (!_text && this.buffer) {
-          _text = this.buffer.toString('utf-8');
-        } else if (!_text && _data) {
-          _text = JSON.stringify(_data);
-        }
-        return _text; 
+        _text = this.buffer.toString('utf-8');
+      } else if (!_text && _data) {
+        _text = JSON.stringify(_data);
+      }
+      return _text; 
     }
 
     let getData = () => {
       if (!_data) {
-          try {
-              _data = JSON.parse(getText());
-          } catch (e) {}
-        }
-        return _data;
+        try {
+            _data = JSON.parse(getText());
+        } catch (e) {}
+      }
+      return _data;
     }
 
     Object.defineProperty(this, 'body', {
