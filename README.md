@@ -230,7 +230,10 @@ var server = ParseServer({
 });
 ```
 
-You can also use other email adapters contributed by the community such as [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter), [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter) or [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter).
+You can also use other email adapters contributed by the community such as:
+- [parse-server-postmark-adapter](https://www.npmjs.com/package/parse-server-postmark-adapter)
+- [parse-server-sendgrid-adapter](https://www.npmjs.com/package/parse-server-sendgrid-adapter)
+- [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
 
 ### Using environment variables to configure Parse Server
 
