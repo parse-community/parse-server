@@ -252,6 +252,41 @@ describe("httpRequest", () => {
     expect(httpResponse.data).toBeUndefined();
     expect(httpResponse.text).toBeUndefined();
     expect(httpResponse.buffer).toBeUndefined();
-  })
+  });
+
+  it('serialized httpResponse correctly with body string', () => {
+    let httpResponse = new HTTPResponse({}, 'hello');
+    let serialized = JSON.stringify(httpResponse);
+    let result = JSON.parse(serialized);
+    expect(result.text).toBe('hello');
+    expect(result.data).toBe(undefined);
+    expect(result.body).toBe('hello');
+  });
+
+  it('serialized httpResponse correctly with body object', () => {
+    let httpResponse = new HTTPResponse({}, {foo: "bar"});
+    let serialized = JSON.stringify(httpResponse);
+    let result = JSON.parse(serialized);
+    expect(result.text).toEqual('{"foo":"bar"}');
+    expect(result.data).toEqual({foo: 'bar'});
+    expect(result.body).toEqual({foo: 'bar'});
+  });
+
+  it('serialized httpResponse correctly with body buffer string', () => {
+    let httpResponse = new HTTPResponse({}, new Buffer('hello'));
+    let serialized = JSON.stringify(httpResponse);
+    let result = JSON.parse(serialized);
+    expect(result.text).toBe('hello');
+    expect(result.data).toBe(undefined);
+  });
+
+  it('serialized httpResponse correctly with body buffer JSON Object', () => {
+    let json = '{"foo":"bar"}';
+    let httpResponse = new HTTPResponse({}, new Buffer(json));
+    let serialized = JSON.stringify(httpResponse);
+    let result = JSON.parse(serialized);
+    expect(result.text).toEqual('{"foo":"bar"}');
+    expect(result.data).toEqual({foo: 'bar'});
+  });
 
 });

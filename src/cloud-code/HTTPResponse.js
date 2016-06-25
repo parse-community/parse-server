@@ -18,6 +18,8 @@ export default class HTTPResponse {
   get text() {
     if (!this._text && this.buffer) {
       this._text = this.buffer.toString('utf-8');
+    } else if (!this._text && this._data) {
+      this._text = JSON.stringify(this._data);
     }
     return this._text;
   }
@@ -29,5 +31,14 @@ export default class HTTPResponse {
       } catch (e) {}
     }
     return this._data;
+  }
+
+  toJSON() {
+    let plainObject = Object.assign({}, this);
+    plainObject.text = this.text;
+    plainObject.data = this.data;
+    delete plainObject._text;
+    delete plainObject._data;
+    return plainObject;
   }
 }
