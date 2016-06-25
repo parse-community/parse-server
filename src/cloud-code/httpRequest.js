@@ -62,7 +62,7 @@ module.exports = function(options) {
       }
       return promise.reject(error);
     }
-    let httpResponse = new HTTPResponse(response);
+    let httpResponse = new HTTPResponse(response, body);
 
     // Consider <200 && >= 400 as errors
     if (httpResponse.status < 200 || httpResponse.status >= 400) {
