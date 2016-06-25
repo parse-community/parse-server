@@ -1,5 +1,9 @@
 ## Parse Server Changelog
 
+### 2.2.14 (6/25/2016)
+
+* Hotfix: Fix Parse.Cloud.HTTPResponse serialization
+
 ### 2.2.13 (6/12/2016)
 
 * Hotfix: Pin version of deepcopy
