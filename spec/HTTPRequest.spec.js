@@ -264,7 +264,7 @@ describe("httpRequest", () => {
     let result = JSON.parse(serialized);
     expect(result.text).toBe('hello');
     expect(result.data).toBe(undefined);
-    expect(result.body).toBe('hello');
+    expect(result.body).toBe(undefined);
   });
 
   it('serialized httpResponse correctly with body object', () => {
@@ -279,7 +279,7 @@ describe("httpRequest", () => {
 
     expect(result.text).toEqual('{"foo":"bar"}');
     expect(result.data).toEqual({foo: 'bar'});
-    expect(result.body).toEqual({foo: 'bar'});
+    expect(result.body).toEqual(undefined);
   });
 
   it('serialized httpResponse correctly with body buffer string', () => {
@@ -306,7 +306,7 @@ describe("httpRequest", () => {
     let json = '{"foo":"bar"}';
     let httpResponse = new HTTPResponse({}, new Buffer(json));
     let encoded = Parse._encode(httpResponse);
-    let foundData, foundText = false;
+    let foundData, foundText, foundBody = false;
     for(var key in encoded) {
       if (key == 'data') {
         foundData = true;
@@ -314,9 +314,13 @@ describe("httpRequest", () => {
       if (key == 'text') {
         foundText = true;
       }
+      if (key == 'body') {
+        foundBody = true;
+      }
     }
     expect(foundData).toBe(true);
     expect(foundText).toBe(true);
+    expect(foundBody).toBe(false);
   });
 
 });

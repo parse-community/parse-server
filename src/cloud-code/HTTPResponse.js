@@ -5,8 +5,7 @@ export default class HTTPResponse {
     this.status = response.statusCode;
     this.headers = response.headers || {};
     this.cookies = this.headers["set-cookie"];
-    
-    this.body = body;
+
     if (typeof body == 'string') {
       _text = body;
     } else if (Buffer.isBuffer(body)) {
@@ -32,6 +31,10 @@ export default class HTTPResponse {
         }
         return _data;
     }
+
+    Object.defineProperty(this, 'body', {
+      get: () => { return body }
+    });
 
     Object.defineProperty(this, 'text', {
       enumerable: true,
