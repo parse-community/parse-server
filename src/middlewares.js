@@ -223,9 +223,7 @@ var allowMethodOverride = function(req, res, next) {
 };
 
 var handleParseErrors = function(err, req, res, next) {
-  log.verbose(req.method, req.originalUrl.toString(), req.headers,
-                  JSON.stringify(req.body, null, 2));
-  log.verbose('error:', err);
+  // TODO: Add logging as those errors won't make it to the PromiseRouter
   if (err instanceof Parse.Error) {
     var httpStatus;
 
