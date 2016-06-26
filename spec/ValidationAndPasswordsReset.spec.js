@@ -304,11 +304,12 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it_exclude_dbs(['postgres'])('receives the app name and user in the adapter', done => {
+    var emailSent = false;
     var emailAdapter = {
       sendVerificationEmail: options => {
         expect(options.appName).toEqual('emailing app');
         expect(options.user.get('email')).toEqual('user@parse.com');
-        done();
+        emailSent = true;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
@@ -325,7 +326,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set('email', 'user@parse.com');
       user.signUp(null, {
-        success: () => {},
+        success: () => {
+          expect(emailSent).toBe(true);
+          done();
+        },
         error: function(userAgain, error) {
           fail('Failed to save user');
           done();
@@ -336,23 +340,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
 
   it_exclude_dbs(['postgres'])('when you click the link in the email it sets emailVerified to true and redirects you', done => {
     var user = new Parse.User();
+    var sendEmailOptions;
     var emailAdapter = {
       sendVerificationEmail: options => {
-        request.get(options.link, {
-          followRedirect: false,
-        }, (error, response, body) => {
-          expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
-          user.fetch()
-          .then(() => {
-            expect(user.get('emailVerified')).toEqual(true);
-            done();
-          }, (err) => {
-            console.error(err);
-            fail("this should not fail");
-            done();
-          });
-        });
+        sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
@@ -364,10 +355,32 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       publicServerURL: "http://localhost:8378/1"
     })
     .then(() => {
-      user.setPassword("asdf");
+      user.setPassword("other-password");
       user.setUsername("user");
       user.set('email', 'user@parse.com');
-      user.signUp();
+      return user.signUp();
+    }).then(() => {
+      expect(sendEmailOptions).not.toBeUndefined();
+      request.get(sendEmailOptions.link, {
+          followRedirect: false,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
+        user.fetch()
+        .then(() => {
+          expect(user.get('emailVerified')).toEqual(true);
+          done();
+        }, (err) => {
+          console.error(err);
+          fail("this should not fail");
+          done();
+        }).catch((err) =>
+        {
+          console.error(err);
+          fail(err);
+          done();
+        })
+      });
     });
   });
 

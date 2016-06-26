@@ -329,6 +329,14 @@ global.it_exclude_dbs = excluded => {
   }
 }
 
+global.fit_exclude_dbs = excluded => {
+  if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
+    return xit;
+  } else {
+    return fit;
+  }
+}
+
 // LiveQuery test setting
 require('../src/LiveQuery/PLog').logLevel = 'NONE';
 var libraryCache = {};
