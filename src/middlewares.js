@@ -130,6 +130,10 @@ function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
+  if (req.url == "/login") {
+    delete info.sessionToken;
+  }
+
   if (!info.sessionToken) {
     req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
     next();
@@ -219,6 +223,9 @@ var allowMethodOverride = function(req, res, next) {
 };
 
 var handleParseErrors = function(err, req, res, next) {
+  log.verbose(req.method, req.originalUrl.toString(), req.headers,
+                  JSON.stringify(req.body, null, 2));
+  log.verbose('error:', err);
   if (err instanceof Parse.Error) {
     var httpStatus;
 
