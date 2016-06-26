@@ -114,11 +114,10 @@ describe('rest create', () => {
     };
     rest.create(config, auth.nobody(config), '_User', user)
       .then((r) => {
-        expect(Object.keys(r.response).length).toEqual(4);
+        expect(Object.keys(r.response).length).toEqual(3);
         expect(typeof r.response.objectId).toEqual('string');
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.sessionToken).toEqual('string');
-        expect(typeof r.response.username).toEqual('string');
         done();
       });
   });
