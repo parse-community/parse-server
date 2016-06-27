@@ -366,6 +366,7 @@ export class PostgresStorageAdapter {
     }
     return this._client.query(qs, values)
     .then(results => results.map(object => {
+      // TODO: This looks like a bug, using a map, but returning nothing while inside a callback
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
         object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
       });
@@ -422,8 +423,7 @@ export class PostgresStorageAdapter {
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `SELECT COUNT(*) FROM $1:name ${wherePattern}`;
-    return this._client.query(qs, values)
-    .then(result => parseInt(result[0].count))
+    return this._client.one(qs, values, res=>parseInt(res.count));
   }
 }
 
