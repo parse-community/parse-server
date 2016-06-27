@@ -45,8 +45,7 @@ export class UserController extends AdaptableController {
       // TODO: Better error here.
       throw undefined;
     }
-    let database = this.config.database.WithoutValidation();
-    return database.update('_User', {
+    return this.config.database.update('_User', {
       username: username,
       _email_verify_token: token
     }, {emailVerified: true}).then(document => {
@@ -58,8 +57,7 @@ export class UserController extends AdaptableController {
   }
 
   checkResetTokenValidity(username, token) {
-    let database = this.config.database.WithoutValidation();
-    return database.find('_User', {
+    return this.config.database.find('_User', {
       username: username,
       _perishable_token: token
     }, {limit: 1}).then(results => {
@@ -114,9 +112,7 @@ export class UserController extends AdaptableController {
   }
 
   setPasswordResetToken(email) {
-    let token = randomString(25);
-    let database = this.config.database.WithoutValidation();
-    return database.update('_User', {email: email}, {_perishable_token: token});
+    return this.config.database.update('_User', { email }, { _perishable_token: randomString(25) }, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -126,8 +122,8 @@ export class UserController extends AdaptableController {
       return;
     }
 
-    return this.setPasswordResetToken(email).then((user) => {
-
+    return this.setPasswordResetToken(email)
+    .then(user => {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
@@ -149,14 +145,12 @@ export class UserController extends AdaptableController {
   }
 
   updatePassword(username, token, password, config) {
-   return this.checkResetTokenValidity(username, token).then((user) => {
-     return updateUserPassword(user.objectId, password, this.config);
-   }).then(() => {
-      // clear reset password token
-      return this.config.database.WithoutValidation().update('_User', { username }, {
-        _perishable_token: {__op: 'Delete'}
-      });
-    });
+    return this.checkResetTokenValidity(username, token)
+    .then(user => updateUserPassword(user.objectId, password, this.config))
+    // clear reset password token
+    .then(() => this.config.database.update('_User', { username }, {
+      _perishable_token: {__op: 'Delete'}
+    }));
   }
 
   defaultVerificationEmail({link, user, appName, }) {
