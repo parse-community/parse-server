@@ -1589,7 +1589,7 @@ describe('Parse.User testing', () => {
       bob.setPassword('meower');
       return bob.save();
     }).then(() => {
-      return Parse.User.logIn('bob', 'meower');
+      return Parse.User.logIn('bob', 'meower');  
     }).then((bob) => {
       expect(bob.getUsername()).toEqual('bob');
       done();
@@ -2091,7 +2091,7 @@ describe('Parse.User testing', () => {
       fail('Save should have failed.');
       done();
     }, (e) => {
-      expect(e.code).toEqual(Parse.Error.SESSION_MISSING);
+      expect(e.code).toEqual(Parse.Error.INVALID_SESSION_TOKEN);
       done();
     });
   });
@@ -2118,6 +2118,26 @@ describe('Parse.User testing', () => {
           },
         }, (error, response, body) => {
           expect(body.results[0].expiresAt.__type).toEqual('Date');
+          done();
+        })
+      }
+    });
+  });
+
+  it("invalid session tokens are rejected", (done) => {
+    Parse.User.signUp("asdf", "zxcv", null, {
+      success: function(user) {
+        request.get({
+          url: 'http://localhost:8378/1/classes/AClass',
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Rest-API-Key': 'rest',
+            'X-Parse-Session-Token': 'text'
+          },
+        }, (error, response, body) => {
+          expect(body.code).toBe(209);
+          expect(body.error).toBe('invalid session token');
           done();
         })
       }
@@ -2374,7 +2394,7 @@ describe('Parse.User testing', () => {
         })
         .then(() => obj.fetch())
         .catch(error => {
-          expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+          expect(error.code).toEqual(Parse.Error.INVALID_SESSION_TOKEN);
           done();
         });
       })

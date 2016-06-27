@@ -130,6 +130,10 @@ function handleParseHeaders(req, res, next) {
     return invalidRequest(req, res);
   }
 
+  if (req.url == "/login") {
+    delete info.sessionToken;
+  }
+
   if (!info.sessionToken) {
     req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
     next();
@@ -219,6 +223,7 @@ var allowMethodOverride = function(req, res, next) {
 };
 
 var handleParseErrors = function(err, req, res, next) {
+  // TODO: Add logging as those errors won't make it to the PromiseRouter
   if (err instanceof Parse.Error) {
     var httpStatus;
 
