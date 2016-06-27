@@ -286,12 +286,12 @@ export class PostgresStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
-    return this._client.query(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className })
-    .then(result => {
-      if (result[0].count === 0) {
+    return this._client.one(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className }, res=>parseInt(res.count))
+    .then(count => {
+      if (count === 0) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       } else {
-        return result[0].count;
+        return count;
       }
     });
   }
