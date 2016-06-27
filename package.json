@@ -59,7 +59,7 @@
     "codecov": "1.0.1",
     "cross-env": "1.0.7",
     "deep-diff": "0.3.4",
-    "gaze": "1.0.0",
+    "gaze": "1.1.0",
     "jasmine": "2.4.1",
     "mongodb-runner": "3.3.2",
     "nodemon": "1.9.2"
