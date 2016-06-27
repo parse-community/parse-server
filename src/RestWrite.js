@@ -351,6 +351,7 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.username) {
       if (!this.query) {
         this.data.username = cryptoUtils.randomString(25);
+        this.responseShouldHaveUsername = true;
       }
       return;
     }
@@ -790,6 +791,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     .then(response => {
       response.objectId = this.data.objectId;
       response.createdAt = this.data.createdAt;
+      
+      if (this.responseShouldHaveUsername) {
+        response.username = this.data.username;
+      }
       if (this.storage.changedByTrigger) {
         Object.keys(this.data).forEach(fieldName => {
           response[fieldName] = response[fieldName] || this.data[fieldName];

@@ -143,6 +143,7 @@ describe('rest create', () => {
         expect(typeof r.response.objectId).toEqual('string');
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.sessionToken).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
         return rest.create(config, auth.nobody(config), '_User', data1);
       }).then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
