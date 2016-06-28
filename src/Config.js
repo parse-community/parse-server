@@ -36,6 +36,7 @@ export class Config {
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
+    this.allowLoginForUnverifiedEmail = cacheInfo.allowLoginForUnverifiedEmail;
     this.appName = cacheInfo.appName;
 
     this.cacheController = cacheInfo.cacheController;
@@ -61,11 +62,13 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    allowLoginForUnverifiedEmail,
   }) {
     this.validateEmailConfiguration({
       verifyUserEmails: verifyUserEmails,
       appName: appName,
-      publicServerURL: publicServerURL
+      publicServerURL: publicServerURL,
+      allowLoginForUnverifiedEmail: allowLoginForUnverifiedEmail,
     })
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
@@ -81,7 +84,7 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
   }
 
-  static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
+  static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL, allowLoginForUnverifiedEmail}) {
     if (verifyUserEmails) {
       if (typeof appName !== 'string') {
         throw 'An app name is required when using email verification.';
@@ -89,6 +92,9 @@ export class Config {
       if (typeof publicServerURL !== 'string') {
         throw 'A public server url is required when using email verification.';
       }
+    }
+    if (!allowLoginForUnverifiedEmail && !verifyUserEmails) {
+      throw 'You can disallow login for unverified email only if the verifyUserEmails flag is set to true';
     }
   }
 
