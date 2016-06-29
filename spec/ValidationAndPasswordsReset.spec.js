@@ -238,10 +238,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, set verifyUserEmails to false, dont set a publicServerURL, and try to send a password reset email (regression test for #1649)', done => {
+  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
-      appName: 'unused',
-      verifyUserEmails: false,
+      appName: undefined,
+      publicServerURL: 'http://localhost:1337/1',
       emailAdapter: MockEmailAdapterWithOptions({
         fromAddress: 'parse@example.com',
         apiKey: 'k',
@@ -278,6 +278,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     }
     reconfigureServer({
       appName: 'unused',
+      publicServerURL: 'http://localhost:1337/1',
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
     })
