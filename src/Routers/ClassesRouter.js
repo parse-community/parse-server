@@ -16,7 +16,7 @@ export class ClassesRouter extends PromiseRouter {
 
     for (let key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid paramater for query: ${key}`);
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
     }
 
