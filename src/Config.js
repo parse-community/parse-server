@@ -56,17 +56,17 @@ export class Config {
 
   static validate({
     verifyUserEmails,
+    userController,
     appName,
     publicServerURL,
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
   }) {
-    this.validateEmailConfiguration({
-      verifyUserEmails: verifyUserEmails,
-      appName: appName,
-      publicServerURL: publicServerURL
-    })
+    const emailAdapter = userController.adapter;
+    if (verifyUserEmails) {
+      this.validateEmailConfiguration({emailAdapter, appName, publicServerURL});
+    }
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -81,13 +81,13 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
   }
 
-  static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
-    if (verifyUserEmails) {
+  static validateEmailConfiguration({emailAdapter, appName, publicServerURL}) {
+    if (emailAdapter) {
       if (typeof appName !== 'string') {
-        throw 'An app name is required when using email verification.';
+        throw 'An app name is required for e-mail verification and password resets.';
       }
       if (typeof publicServerURL !== 'string') {
-        throw 'A public server url is required when using email verification.';
+        throw 'A public server url is required for e-mail verification and password resets.';
       }
     }
   }

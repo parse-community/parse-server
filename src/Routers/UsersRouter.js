@@ -158,7 +158,7 @@ export class UsersRouter extends ClassesRouter {
   handleResetRequest(req) {
     try {
       Config.validateEmailConfiguration({
-        verifyUserEmails: true, //A bit of a hack, as this isn't the intended purpose of this parameter
+        emailAdapter: req.config.userController,
         appName: req.config.appName,
         publicServerURL: req.config.publicServerURL,
       });
