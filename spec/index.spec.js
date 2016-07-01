@@ -235,10 +235,11 @@ describe('server', () => {
     done();
   });
 
-  it_exclude_dbs(['postgres'])('core adapters are not exposed anymore', done => {
+  it_exclude_dbs(['postgres'])('exposes correct adapters', done => {
     expect(ParseServer.S3Adapter).toThrow();
     expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
+    expect(ParseServer.InMemoryCacheAdapter).toThrow();
     done();
   });
 
