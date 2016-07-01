@@ -1,5 +1,17 @@
 ## Parse Server Changelog
 
+### 2.2.15 (6/30/2016)
+
+* Fix: Type in description for Parse.Error.INVALID_QUERY, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improvement: Stop requiring verifyUserEmails for password reset functionality, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Improvement: Kill without validation, thanks to [Drew Gross](https://github.com/drew-gross)
+* Fix: Deleting a file does not delete from fs.files, thanks to [David Keita](https://github.com/maninga)
+* Fix: Postgres stoage adapter fix, thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+* Fix: Results invalid session when providing an invalid session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: issue creating an anonymous user, thanks to [Hussam Moqhim](https://github.com/hmoqhim)
+* Fix: make http response serializable, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Add postmark email adapter alternative [Glenn Reyes](https://github.com/glennreyes)
+
 ### 2.2.14 (6/25/2016)
 
 * Hotfix: Fix Parse.Cloud.HTTPResponse serialization
@@ -357,5 +369,3 @@
 * Fix: Various files related bugs
 * Fix: Force minimum node version 4.3 due to security issues in earlier version
 * Performance Improvement: Improved caching
-
-
