@@ -146,6 +146,11 @@ export default {
     help: "Enable (or disable) user email validation, defaults to false",
     action: booleanParser
   },
+  "preventLoginWithUnverifiedEmail": {
+    env: "PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL",
+    help: "Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false",
+    action: booleanParser
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"

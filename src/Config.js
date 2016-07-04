@@ -36,6 +36,7 @@ export class Config {
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
+    this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
     this.appName = cacheInfo.appName;
 
     this.cacheController = cacheInfo.cacheController;

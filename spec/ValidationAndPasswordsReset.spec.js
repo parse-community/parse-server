@@ -238,6 +238,129 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
+  it_exclude_dbs(['postgres'])('prevents user from login if email is not verified but preventLoginWithUnverifiedEmail is set to true', done => {
+    reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.logIn("zxcv", "asdf"))
+      .then(result => {
+        fail('login should have failed');
+        done();
+      }, error => {
+        expect(error.message).toEqual('User email is not verified.')
+        done();
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', done => {
+    var user = new Parse.User();
+    var sendEmailOptions;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    })
+    .then(() => {
+      user.setPassword("other-password");
+      user.setUsername("user");
+      user.set('email', 'user@parse.com');
+      return user.signUp();
+    }).then(() => {
+      expect(sendEmailOptions).not.toBeUndefined();
+      request.get(sendEmailOptions.link, {
+          followRedirect: false,
+      }, (error, response, body) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
+        user.fetch()
+        .then(() => {
+          expect(user.get('emailVerified')).toEqual(true);
+
+          Parse.User.logIn("user", "other-password")
+          .then(user => {
+            expect(typeof user).toBe('object');
+            expect(user.get('emailVerified')).toBe(true);
+            done();
+          }, error => {
+            fail('login should have succeeded');
+            done();
+          });
+        }, (err) => {
+          console.error(err);
+          fail("this should not fail");
+          done();
+        }).catch((err) =>
+        {
+          console.error(err);
+          fail(err);
+          done();
+        })
+      });
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('allows user to login if email is not verified but preventLoginWithUnverifiedEmail is set to false', done => {
+    reconfigureServer({
+      appName: 'test',
+      publicServerURL: 'http://localhost:1337/1',
+      verifyUserEmails: true,
+      preventLoginWithUnverifiedEmail: false,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.logIn("zxcv", "asdf"))
+      .then(user => {
+        expect(typeof user).toBe('object');
+        expect(user.get('emailVerified')).toBe(false);
+        done();
+      }, error => {
+        fail('login should have succeeded');
+        done();
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
   it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
