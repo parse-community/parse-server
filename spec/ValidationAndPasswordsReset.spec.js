@@ -270,6 +270,94 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
+  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, have an appName, but have no publicServerURL and send a password reset email', done => {
+    reconfigureServer({
+      appName: undefined,
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(result => {
+        console.log(result);
+        fail('sending password reset email should not have succeeded');
+        done();
+      }, error => {
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        done();
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('fails if you set a publicServerURL, have an appName, but no emailAdapter and send a password reset email', done => {
+    reconfigureServer({
+      appName: 'unused',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: undefined,
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(result => {
+        console.log(result);
+        fail('sending password reset email should not have succeeded');
+        done();
+      }, error => {
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        done();
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('succeeds sending a password reset email if appName, publicServerURL, and email adapter are prodvided', done => {
+    reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: MockEmailAdapterWithOptions({
+        fromAddress: 'parse@example.com',
+        apiKey: 'k',
+        domain: 'd',
+      }),
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("zxcv");
+      user.set("email", "testInvalidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(result => {
+        done();
+      }, error => {
+        done(error);
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
   it('does not send verification email if email verification is disabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

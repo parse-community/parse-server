@@ -82,13 +82,14 @@ export class Config {
   }
 
   static validateEmailConfiguration({emailAdapter, appName, publicServerURL}) {
-    if (emailAdapter) {
-      if (typeof appName !== 'string') {
-        throw 'An app name is required for e-mail verification and password resets.';
-      }
-      if (typeof publicServerURL !== 'string') {
-        throw 'A public server url is required for e-mail verification and password resets.';
-      }
+    if (!emailAdapter) {
+      throw 'An emailAdapter is required for e-mail verification and password resets.';
+    }
+    if (typeof appName !== 'string') {
+      throw 'An app name is required for e-mail verification and password resets.';
+    }
+    if (typeof publicServerURL !== 'string') {
+      throw 'A public server url is required for e-mail verification and password resets.';
     }
   }
 
