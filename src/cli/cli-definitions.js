@@ -151,6 +151,11 @@ export default {
     help: "Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false",
     action: booleanParser
   },
+  "emailVerifyTokenValidityDuration": {
+    env: "PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION",
+    help: "Email verification token validity duration",
+    action: numberParser("emailVerifyTokenValidityDuration")
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"

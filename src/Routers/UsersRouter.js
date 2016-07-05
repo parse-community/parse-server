@@ -166,6 +166,7 @@ export class UsersRouter extends ClassesRouter {
         emailAdapter: req.config.userController.adapter,
         appName: req.config.appName,
         publicServerURL: req.config.publicServerURL,
+        emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration
       });
     } catch (e) {
       if (typeof e === 'string') {
