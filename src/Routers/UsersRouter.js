@@ -163,7 +163,7 @@ export class UsersRouter extends ClassesRouter {
   handleResetRequest(req) {
     try {
       Config.validateEmailConfiguration({
-        emailAdapter: req.config.userController,
+        emailAdapter: req.config.userController.adapter,
         appName: req.config.appName,
         publicServerURL: req.config.publicServerURL,
       });
