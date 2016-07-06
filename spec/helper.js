@@ -281,23 +281,27 @@ function range(n) {
   return answer;
 }
 
-function mockFacebook() {
+function mockFacebookAuthenticator(id, token) {
   var facebook = {};
   facebook.validateAuthData = function(authData) {
-    if (authData.id === '8675309' && authData.access_token === 'jenny') {
+    if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
       throw undefined;
     }
   };
   facebook.validateAppId = function(appId, authData) {
-    if (authData.access_token === 'jenny') {
+    if (authData.access_token.startsWith(token)) {
       return Promise.resolve();
     } else {
       throw undefined;
     }
   };
   return facebook;
+}
+
+function mockFacebook() {
+  return mockFacebookAuthenticator('8675309', 'jenny');
 }
 
 
@@ -320,6 +324,7 @@ global.jequal = jequal;
 global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
+global.mockFacebookAuthenticator = mockFacebookAuthenticator;
 
 global.it_exclude_dbs = excluded => {
   if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
