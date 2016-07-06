@@ -1466,6 +1466,47 @@ describe('Parse.User testing', () => {
     });
   });
 
+  fit_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+    var provider = getMockFacebookProvider();
+    var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
+
+    var errorHandler = function(model, error) {
+      console.error(error);
+      fail('Should not fail');
+      done();
+    }
+    var mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.User._registerAuthenticationProvider(mockProvider);
+        let objectId = model.id;
+        model._linkWith("myoauth", {
+          success: function(model) {
+            Parse.User._registerAuthenticationProvider(secondProvider);
+            Parse.User.logOut().then(() => {
+              return Parse.User._logInWith("facebook", {
+                success: () => {
+                  Parse.User.logOut().then(() => {
+                    return Parse.User._logInWith("myoauth", {
+                      success: (user) => {
+                        expect(user.id).toBe(objectId);
+                        done();
+                      }
+                    })
+                  })
+                },
+                error: errorHandler
+              });
+            })
+          },
+          error: errorHandler
+        })
+      },
+      error: errorHandler
+    });
+  });
+
   it_exclude_dbs(['postgres'])("link multiple providers and update token", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
