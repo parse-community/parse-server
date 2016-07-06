@@ -1466,7 +1466,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  fit_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+  it_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
