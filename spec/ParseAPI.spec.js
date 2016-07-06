@@ -1038,6 +1038,23 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('can handle date params in cloud functions (#2214)', done => {
+    let date = new Date();
+    Parse.Cloud.define('dateFunc', (request, response) => {
+      expect(request.params.date.__type).toEqual('Date');
+      expect(request.params.date.iso).toEqual(date.toISOString());
+      response.success('yay');
+    });
+
+    Parse.Cloud.run('func', {date: date})
+    .then(() => {
+      done()
+    }, e => {
+      fail('cloud code call failed');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
