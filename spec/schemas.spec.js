@@ -1054,7 +1054,7 @@ describe('schemas', () => {
         fail('should not be able to add a field');
         done();
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action addField on class AClass.');
         done();
       })
     })
@@ -1270,7 +1270,7 @@ describe('schemas', () => {
       return query.find().then((err) => {
         fail('Use should hot be able to find!')
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
@@ -1319,7 +1319,7 @@ describe('schemas', () => {
       return query.find().then((err) => {
         fail('User should not be able to find!')
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
@@ -1384,7 +1384,7 @@ describe('schemas', () => {
       return query.find().then((err) => {
         fail('User should not be able to find!')
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
@@ -1442,7 +1442,7 @@ describe('schemas', () => {
       return query.find().then((err) => {
         fail('User should not be able to find!')
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
@@ -1461,7 +1461,7 @@ describe('schemas', () => {
       return query.find().then((result) => {
         fail('User should not be able to find!')
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       });
     }).then(() => {
@@ -1528,7 +1528,7 @@ describe('schemas', () => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
-      expect(err.message).toEqual('Permission denied for this action.');
+      expect(err.message).toEqual('Permission denied for action create on class AClass.');
       return Promise.resolve();
     }).then(() => {
       return Parse.User.logIn('user2', 'user2');
@@ -1539,7 +1539,7 @@ describe('schemas', () => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
-      expect(err.message).toEqual('Permission denied for this action.');
+      expect(err.message).toEqual('Permission denied for action find on class AClass.');
       return Promise.resolve();
     }).then(() => {
       done();
