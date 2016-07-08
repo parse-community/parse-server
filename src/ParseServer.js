@@ -118,7 +118,7 @@ class ParseServer {
     maxUploadSize = '20mb',
     verifyUserEmails = false,
     preventLoginWithUnverifiedEmail = false,
-      useOnlyFilesAdapter = false,
+    useOnlyFilesAdapter = false,
     cacheAdapter,
     emailAdapter,
     publicServerURL,
