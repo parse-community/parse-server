@@ -2529,4 +2529,30 @@ describe('Parse.Query testing', () => {
       }
     })
   });
+
+  it('properly handles nested ors', function(done) {
+    var objects = [];
+    while(objects.length != 4) {
+      var obj = new Parse.Object('Object');
+      obj.set('x', objects.length);
+      objects.push(obj)
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      let q0 = new Parse.Query('Object');
+      q0.equalTo('x', 0);
+      let q1 = new Parse.Query('Object');
+      q1.equalTo('x', 1);
+      let q2 = new Parse.Query('Object');
+      q2.equalTo('x', 2);
+      let or01 = Parse.Query.or(q0,q1);
+      return Parse.Query.or(or01, q2).find();
+    }).then((results) => {
+      expect(results.length).toBe(3);
+      done();
+    }).catch((error) => {
+      fail('should not fail');
+      console.error(error);
+      done();
+    })
+  });
 });
