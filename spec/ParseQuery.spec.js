@@ -2530,7 +2530,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it('properly handles nested ors', function(done) {
+  it_exclude_dbs(['postgres'])('properly handles nested ors', function(done) {
     var objects = [];
     while(objects.length != 4) {
       var obj = new Parse.Object('Object');
