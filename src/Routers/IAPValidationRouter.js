@@ -91,6 +91,6 @@ export class IAPValidationRouter extends PromiseRouter {
   }
   
   mountRoutes() {
-    this.route("POST","/validate_purchase", this.handleRequest);
+    this.route("POST","/validate_purchase", req => { return this.handleRequest(req); });
   }
 }
