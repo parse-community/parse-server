@@ -220,9 +220,13 @@ export class PostgresStorageAdapter {
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   getClass(className) {
-    return this._client.one('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className }, res=>res.schema)
-    .catch(error => {
+    return this._client.query('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
+    .then(result => {
+      if (result.length === 1) {
+        return result[0].schema;
+      } else {
         throw undefined;
+      }
     });
   }
 
