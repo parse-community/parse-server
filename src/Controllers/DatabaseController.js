@@ -540,8 +540,10 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
     return Promise.all(ors.map((aQuery, index) => {
       return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
         query['$or'][index] = aQuery;
-      })
-    }));
+      });
+    })).then(() => {
+      return Promise.resolve(query);
+    });
   }
 
   let promises = Object.keys(query).map((key) => {
