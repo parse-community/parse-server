@@ -19,7 +19,7 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 ```
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
-$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
+$ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
 
 You can use any arbitrary string as your application id and master key. These will be used by your clients to authenticate with the Parse Server.
