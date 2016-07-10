@@ -109,7 +109,7 @@ class ParseServer {
     dotNetKey,
     restAPIKey,
     webhookKey,
-    fileKey = 'invalid-file-key',
+    fileKey = undefined,
     facebookAppIds = [],
     enableAnonymousUsers = true,
     allowClientClassCreation = true,
