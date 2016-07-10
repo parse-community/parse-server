@@ -290,14 +290,41 @@ RestWrite.prototype.handleAuthData = function(authData) {
     if (results.length > 0) {
       if (!this.query) {
         // Login with auth data
-        // Short circuit
         delete results[0].password;
+        let userResult = results[0];
+        
         // need to set the objectId first otherwise location has trailing undefined
-        this.data.objectId = results[0].objectId;
+        this.data.objectId = userResult.objectId;
+        
+        // Determine if authData was updated
+        let mutatedAuthData = {};
+        Object.keys(authData).forEach((provider) => {
+          let providerData = authData[provider];
+          let userAuthData = userResult.authData[provider];
+          if (!_.isEqual(providerData, userAuthData)) {
+            mutatedAuthData[provider] = providerData;
+          }
+        });
+        
         this.response = {
-          response: results[0],
+          response: userResult,
           location: this.location()
         };
+
+        // We have authData that is updated on login
+        // that can happen when token are refreshed,
+        // We should update the token and let the user in
+        if (Object.keys(mutatedAuthData).length > 0) {
+          // Assign the new authData in the response
+          Object.keys(mutatedAuthData).forEach((provider) => {
+            this.response.response.authData[provider] = mutatedAuthData[provider];
+          });
+          // Run the DB update directly, as 'master'
+          // Just update the authData part
+          return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
+        }
+        return;
+        
       } else if (this.query && this.query.objectId) {
         // Trying to update auth data but users
         // are different

@@ -907,13 +907,11 @@ describe('Parse.User testing', () => {
     }));
   });
 
-  // Note that this mocks out client-side Facebook action rather than
-  // server-side.
-  var getMockFacebookProvider = function() {
+  var getMockFacebookProviderWithIdToken = function(id, token) {
     return {
       authData: {
-        id: "8675309",
-        access_token: "jenny",
+        id: id,
+        access_token: token,
         expiration_date: new Date().toJSON(),
       },
       shouldError: false,
@@ -951,6 +949,12 @@ describe('Parse.User testing', () => {
         this.restoreAuthentication(null);
       }
     };
+  }
+
+  // Note that this mocks out client-side Facebook action rather than
+  // server-side.
+  var getMockFacebookProvider = function() {
+    return getMockFacebookProviderWithIdToken('8675309', 'jenny');
   };
 
   var getMockMyOauthProvider = function() {
@@ -1022,6 +1026,40 @@ describe('Parse.User testing', () => {
         ok(false, "linking should have worked");
         done();
       }
+    });
+  });
+
+  it_exclude_dbs(['postgres'])("log in with provider and update token", (done) => {
+    var provider = getMockFacebookProvider();
+    var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
+    var errorHandler = function(err) {
+      fail('should not fail');
+      done();
+    }
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: (model) => {
+        Parse.User._registerAuthenticationProvider(secondProvider);
+        return Parse.User.logOut().then(() => {
+          Parse.User._logInWith("facebook", {
+            success: (model) => {
+              expect(secondProvider.synchronizedAuthToken).toEqual('jenny_valid_token');
+              // Make sure we can login with the new token again
+              Parse.User.logOut().then(() => {
+                Parse.User._logInWith("facebook", {
+                  success: done,
+                  error: errorHandler
+                });
+              });
+            },
+            error: errorHandler
+          });
+        })
+      },
+      error: errorHandler
+    }).catch((err) => {
+      errorHandler(err);
+      done();
     });
   });
 
@@ -1425,6 +1463,47 @@ describe('Parse.User testing', () => {
         ok(false, "linking should have worked");
         done();
       }
+    });
+  });
+
+  it_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+    var provider = getMockFacebookProvider();
+    var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
+
+    var errorHandler = function(model, error) {
+      console.error(error);
+      fail('Should not fail');
+      done();
+    }
+    var mockProvider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        Parse.User._registerAuthenticationProvider(mockProvider);
+        let objectId = model.id;
+        model._linkWith("myoauth", {
+          success: function(model) {
+            Parse.User._registerAuthenticationProvider(secondProvider);
+            Parse.User.logOut().then(() => {
+              return Parse.User._logInWith("facebook", {
+                success: () => {
+                  Parse.User.logOut().then(() => {
+                    return Parse.User._logInWith("myoauth", {
+                      success: (user) => {
+                        expect(user.id).toBe(objectId);
+                        done();
+                      }
+                    })
+                  })
+                },
+                error: errorHandler
+              });
+            })
+          },
+          error: errorHandler
+        })
+      },
+      error: errorHandler
     });
   });
 
