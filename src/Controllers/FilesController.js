@@ -64,7 +64,7 @@ export class FilesController extends AdaptableController {
         // all filenames starting with "tfss-" should be from files.parsetfss.com
         // all filenames starting with a "-" seperated UUID should be from files.parse.com
         // all other filenames have been migrated or created from Parse Server
-        if (config.useOnlyFilesAdapter === true) {
+        if (config.fileKey === undefined) {
           fileObject['url'] = this.adapter.getFileLocation(config, filename);
         } else {
           if (filename.indexOf('tfss-') === 0) {
