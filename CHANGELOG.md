@@ -1,5 +1,16 @@
 ## Parse Server Changelog
 
+### 2.2.16 (7/10/2016)
+
+* New: Expose InMemoryCacheAdapter publicly, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* New: Add ability to prevent login with unverified email, thanks to [Diwakar Cherukumilli](https://github.com/cherukumilli)
+* Improved: Better error message for incorrect type, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improved: Better error message for permission denied, thanks to [Blayne Chard](https://github.com/blacha)
+* Improved: Update authData on login, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improved: Ability to not check for old files on Parse.com, thanks to [OzgeAkin](https://github.com/OzgeAkin)
+* Fix: Issues with email adapter validation, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Issues with nested $or queries, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.2.15 (6/30/2016)
 
 * Fix: Type in description for Parse.Error.INVALID_QUERY, thanks to [Andrew Lane](https://github.com/AndrewLane)
