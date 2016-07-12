@@ -751,4 +751,29 @@ describe('Cloud Code', () => {
       done();
     })
   });
+
+  it_exclude_dbs(['postgres'])('should not include relation op (regression test for #1606)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+    let testObj;
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      testObj = new TestObject();
+      testObj.save().then(() => {
+        object.relation('testsRelation').add(testObj);
+        res.success();
+      })
+    });
+
+    let object = new BeforeSaveObject();
+    object.save().then((objectAgain) => {
+      // Originally it would throw as it would be a non-relation
+      expect(() => { objectAgain.relation('testsRelation') }).not.toThrow();
+      done();
+    }).fail((err) => {
+      console.error(err);
+      done();
+    })
+  });
 });

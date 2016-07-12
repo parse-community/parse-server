@@ -916,10 +916,15 @@ RestWrite.prototype.updateResponseWithData = function(response, data) {
   Object.keys(data).forEach(fieldName => {
     let dataValue = data[fieldName];
     let responseValue = response[fieldName];
-    if (!clientSupportsDelete && dataValue && dataValue.__op === 'Delete') {
+
+    response[fieldName] = responseValue || dataValue;
+    
+    // Strips operations from responses
+    if (response[fieldName] && response[fieldName].__op) {
       delete response[fieldName];
-    } else {
-      response[fieldName] = responseValue || dataValue;
+      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+        response[fieldName] = dataValue;
+      }
     }
   });
   return response;
