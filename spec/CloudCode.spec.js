@@ -667,7 +667,7 @@ describe('Cloud Code', () => {
     });
   });
 
-  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+  it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
     var TestObject = Parse.Object.extend('TestObject');
     var NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
     var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
