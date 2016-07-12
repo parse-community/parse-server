@@ -66,4 +66,24 @@ describe('middlewares', () => {
             });
         });
     });
+
+    it('should properly parse the SDK versions', () => {
+        let clientSDKFromVersion = middlewares.clientSDKFromVersion;
+        expect(clientSDKFromVersion('i1.1.1')).toEqual({
+            sdk: 'i',
+            version: '1.1.1'
+        });
+        expect(clientSDKFromVersion('i1')).toEqual({
+            sdk: 'i',
+            version: '1'
+        });
+        expect(clientSDKFromVersion('apple-tv1.13.0')).toEqual({
+            sdk: 'apple-tv',
+            version: '1.13.0'
+        });
+        expect(clientSDKFromVersion('js1.9.0')).toEqual({
+            sdk: 'js',
+            version: '1.9.0'
+        });
+    })
 });

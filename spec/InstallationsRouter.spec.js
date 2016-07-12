@@ -23,7 +23,8 @@ describe('InstallationsRouter', () => {
           deviceType: 'android'
         }
       },
-      query: {}
+      query: {},
+      info: {}
     };
 
     var router = new InstallationsRouter();
@@ -56,7 +57,8 @@ describe('InstallationsRouter', () => {
         where: {
           deviceType: 'android'
         }
-      }
+      },
+      info: {}
     };
 
     var router = new InstallationsRouter();
@@ -87,7 +89,8 @@ describe('InstallationsRouter', () => {
       body: {},
       query: {
         limit: 0
-      }
+      },
+      info: {}
     };
 
     var router = new InstallationsRouter();
@@ -118,7 +121,8 @@ describe('InstallationsRouter', () => {
       body: {},
       query: {
         count: 1
-      }
+      },
+      info: {}
     };
 
     var router = new InstallationsRouter();
@@ -153,7 +157,8 @@ describe('InstallationsRouter', () => {
       query: {
         limit: 0,
         count: 1
-      }
+      },
+      info: {}
     };
 
     var router = new InstallationsRouter();

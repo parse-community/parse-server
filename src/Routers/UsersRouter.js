@@ -47,7 +47,7 @@ export class UsersRouter extends ClassesRouter {
     let sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
       { sessionToken },
-      { include: 'user' })
+      { include: 'user' }, req.info.clientSDK)
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
@@ -145,7 +145,7 @@ export class UsersRouter extends ClassesRouter {
     let success = {response: {}};
     if (req.info && req.info.sessionToken) {
       return rest.find(req.config, Auth.master(req.config), '_Session',
-        { sessionToken: req.info.sessionToken }
+        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
       ).then((records) => {
         if (records.results && records.results.length) {
           return rest.del(req.config, Auth.master(req.config), '_Session',
