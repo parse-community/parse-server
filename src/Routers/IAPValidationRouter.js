@@ -43,7 +43,7 @@ function validateWithAppStore(url, receipt) {
 }
 
 function getFileForProductIdentifier(productIdentifier, req) {
-  return rest.find(req.config, req.auth, '_Product', { productIdentifier: productIdentifier }).then(function(result){
+  return rest.find(req.config, req.auth, '_Product', { productIdentifier: productIdentifier }, undefined, req.info.clientSDK).then(function(result){
     const products = result.results;
     if (!products || products.length != 1) {
       // Error not found or too many

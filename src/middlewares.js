@@ -6,6 +6,17 @@ var Parse = require('parse/node').Parse;
 var auth = require('./Auth');
 var Config = require('./Config');
 
+function clientSDKFromVersion(version) {
+  let versionRE = /([-a-zA-Z]+)([0-9\.]+)/;
+  let match = version.toLowerCase().match(versionRE);
+  if (match && match.length === 3) {
+    return {
+      sdk: match[1],
+      version: match[2]
+    }
+  }
+}
+
 // Checks that the request is authorized for this app and checks user
 // auth too.
 // The bodyparser should run before this middleware.
@@ -25,7 +36,8 @@ function handleParseHeaders(req, res, next) {
     clientKey: req.get('X-Parse-Client-Key'),
     javascriptKey: req.get('X-Parse-Javascript-Key'),
     dotNetKey: req.get('X-Parse-Windows-Key'),
-    restAPIKey: req.get('X-Parse-REST-API-Key')
+    restAPIKey: req.get('X-Parse-REST-API-Key'),
+    clientVersion: req.get('X-Parse-Client-Version')
   };
 
   var basicAuth = httpAuth(req);
@@ -91,6 +103,10 @@ function handleParseHeaders(req, res, next) {
     } else {
       return invalidRequest(req, res);
     }
+  }
+
+  if (info.clientVersion) {
+    info.clientSDK = clientSDKFromVersion(info.clientVersion);
   }
 
   if (fileViaJSON) {
@@ -283,5 +299,6 @@ module.exports = {
   handleParseErrors: handleParseErrors,
   handleParseHeaders: handleParseHeaders,
   enforceMasterKeyAccess: enforceMasterKeyAccess,
-  promiseEnforceMasterKeyAccess
+  promiseEnforceMasterKeyAccess,
+  clientSDKFromVersion
 };

@@ -26,7 +26,7 @@ export class InstallationsRouter extends ClassesRouter {
     }
 
     return rest.find(req.config, req.auth,
-      '_Installation', body.where, options)
+      '_Installation', body.where, options, req.info.clientSDK)
       .then((response) => {
         return {response: response};
       });

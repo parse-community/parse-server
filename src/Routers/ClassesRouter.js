@@ -46,7 +46,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest.find(req.config, req.auth, req.params.className, body.where, options)
+    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
       .then((response) => {
         if (response && response.results) {
           for (let result of response.results) {
@@ -77,7 +77,7 @@ export class ClassesRouter extends PromiseRouter {
       options.include = String(body.include);
     }
 
-    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options)
+    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options, req.info.clientSDK)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
@@ -99,15 +99,15 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
-    return rest.create(req.config, req.auth, req.params.className, req.body);
+    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK);
   }
 
   handleUpdate(req) {
-    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body);
+    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body, req.info.clientSDK);
   }
 
   handleDelete(req) {
-    return rest.del(req.config, req.auth, req.params.className, req.params.objectId)
+    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK)
       .then(() => {
         return {response: {}};
       });
