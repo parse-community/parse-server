@@ -5,8 +5,6 @@ var triggers = require('../src/triggers');
 var HooksController = require('../src/Controllers/HooksController').default;
 var express = require("express");
 var bodyParser = require('body-parser');
-// Inject the hooks API
-Parse.Hooks = require("../src/cloud-code/Parse.Hooks");
 
 var port = 12345;
 var hookServerURL = "http://localhost:"+port;
@@ -55,7 +53,7 @@ describe('Hooks', () => {
       expect(res.functionName).toBe("My-Test-Function");
       expect(res.url).toBe("http://anotherurl")
       // delete
-      return Parse.Hooks.deleteFunction("My-Test-Function")
+      return Parse.Hooks.removeFunction("My-Test-Function")
     })
     .then((res) => {
       // Find again! but should be deleted
@@ -67,7 +65,7 @@ describe('Hooks', () => {
         return Promise.resolve();
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe("no function named: My-Test-Function is defined")
+        expect(err.message).toBe("no function named: My-Test-Function is defined")
         done();
         return Promise.resolve();
       })
@@ -104,7 +102,7 @@ describe('Hooks', () => {
        expect(res.url).toBe("http://anotherurl")
        expect(res.objectId).toBeUndefined();
 
-       return Parse.Hooks.deleteTrigger("MyClass","beforeDelete");
+       return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
      }, (err) => {
        fail(err);
        done();
@@ -121,7 +119,7 @@ describe('Hooks', () => {
        expect(err).not.toBe(null);
        expect(err).not.toBe(undefined);
        expect(err.code).toBe(143);
-       expect(err.error).toBe("class MyClass does not exist")
+       expect(err.message).toBe("class MyClass does not exist")
        done();
      });
    });
@@ -151,8 +149,8 @@ describe('Hooks', () => {
         expect(err).not.toBe(undefined);
         expect(err).not.toBe(null);
         expect(err.code).toBe(143);
-        expect(err.error).toBe('function name: my_new_function already exits')
-        return Parse.Hooks.deleteFunction("my_new_function");
+        expect(err.message).toBe('function name: my_new_function already exits')
+        return Parse.Hooks.removeFunction("my_new_function");
       }).then(() => {
         done();
       }, (err) => {
@@ -170,8 +168,8 @@ describe('Hooks', () => {
         fail("should not be able to create the same trigger");
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe('class MyClass already has trigger beforeSave')
-        return Parse.Hooks.deleteTrigger("MyClass", "beforeSave");
+        expect(err.message).toBe('class MyClass already has trigger beforeSave')
+        return Parse.Hooks.removeTrigger("MyClass", "beforeSave");
       }).then(() => {
         done();
       }, (err) => {
@@ -185,14 +183,14 @@ describe('Hooks', () => {
         fail("Should not succeed")
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
         return Parse.Hooks.getFunction("A_COOL_FUNCTION")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
         done();
       });
    });
@@ -202,14 +200,14 @@ describe('Hooks', () => {
         fail("Should not succeed")
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe('class AClassName does not exist');
+        expect(err.message).toBe('class AClassName does not exist');
         return Parse.Hooks.getTrigger("AClassName","beforeSave")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
         expect(err.code).toBe(143);
-        expect(err.error).toBe('class AClassName does not exist');
+        expect(err.message).toBe('class AClassName does not exist');
         done();
       });
    });
