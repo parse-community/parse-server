@@ -5,17 +5,7 @@ var Parse = require('parse/node').Parse;
 
 var auth = require('./Auth');
 var Config = require('./Config');
-
-function clientSDKFromVersion(version) {
-  let versionRE = /([-a-zA-Z]+)([0-9\.]+)/;
-  let match = version.toLowerCase().match(versionRE);
-  if (match && match.length === 3) {
-    return {
-      sdk: match[1],
-      version: match[2]
-    }
-  }
-}
+var ClientSDK = require('./ClientSDK');
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -106,7 +96,7 @@ function handleParseHeaders(req, res, next) {
   }
 
   if (info.clientVersion) {
-    info.clientSDK = clientSDKFromVersion(info.clientVersion);
+    info.clientSDK = ClientSDK.fromString(info.clientVersion);
   }
 
   if (fileViaJSON) {
@@ -300,5 +290,4 @@ module.exports = {
   handleParseHeaders: handleParseHeaders,
   enforceMasterKeyAccess: enforceMasterKeyAccess,
   promiseEnforceMasterKeyAccess,
-  clientSDKFromVersion
 };

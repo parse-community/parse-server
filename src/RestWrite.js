@@ -11,6 +11,7 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 
@@ -763,7 +764,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     .then(response => {
       response.updatedAt = this.updatedAt;
       if (this.storage.changedByTrigger) {
-        updateResponseWithData(response, this.data);
+        this.updateResponseWithData(response, this.data);
       }
       this.response = { response };
     });
@@ -821,7 +822,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
         response.username = this.data.username;
       }
       if (this.storage.changedByTrigger) {
-        updateResponseWithData(response, this.data);
+        this.updateResponseWithData(response, this.data);
       }
       this.response = {
         status: 201,
@@ -910,11 +911,16 @@ RestWrite.prototype.cleanUserAuthData = function() {
   }
 };
 
-function updateResponseWithData(response, data) {
+RestWrite.prototype.updateResponseWithData = function(response, data) {
+  let clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   Object.keys(data).forEach(fieldName => {
     let dataValue = data[fieldName];
     let responseValue = response[fieldName];
-    response[fieldName] = responseValue || dataValue;
+    if (!clientSupportsDelete && dataValue && dataValue.__op === 'Delete') {
+      delete response[fieldName];
+    } else {
+      response[fieldName] = responseValue || dataValue;
+    }
   });
   return response;
 }
