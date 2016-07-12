@@ -2312,18 +2312,28 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('include on the wrong key type', (done) => {
-    var obj = new Parse.Object('TestObject');
-    obj.set('foo', 'bar');
-    obj.save().then(() => {
-      var query = new Parse.Query('TestObject');
-      query.include('foo');
-      return query.find();
-    }).then((results) => {
-      console.log('results:', results);
-      fail('Should have failed to query.');
+  it_exclude_dbs(['postgres'])('supports include on the wrong key type (#2262)', function(done) {
+    let childObject = new Parse.Object('TestChildObject');
+    childObject.set('hello', 'world');
+    childObject.save().then(() => {
+      let obj = new Parse.Object('TestObject');
+      obj.set('foo', 'bar');
+      obj.set('child', childObject);
+      return obj.save();
+    }).then(() => {
+      let q = new Parse.Query('TestObject');
+      q.include('child');
+      q.include('child.parent');
+      q.include('createdAt');
+      q.include('createdAt.createdAt');
+      return q.find();
+    }).then((objs) => {
+      expect(objs.length).toBe(1);
+      expect(objs[0].get('child').get('hello')).toEqual('world');
+      expect(objs[0].createdAt instanceof Date).toBe(true);
       done();
-    }, (error) => {
+    }, (err) => {
+      fail('should not fail');
       done();
     });
   });
