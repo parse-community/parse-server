@@ -367,6 +367,7 @@ RestWrite.prototype.transformUser = function() {
     }
     if (this.query && !this.auth.isMaster ) {
       this.storage['clearSessions'] = true;
+      this.storage['generateNewSession'] = true;
     }
     return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
       this.data._hashed_password = hashedPassword;
@@ -428,6 +429,10 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.query) {
     return;
   }
+  return this.createSessionToken();
+}
+
+RestWrite.prototype.createSessionToken = function() {
   var token = 'r:' + cryptoUtils.newToken();
 
   var expiresAt = this.config.generateSessionExpiresAt();
@@ -464,7 +469,13 @@ RestWrite.prototype.handleFollowup = function() {
         }
     };
     delete this.storage['clearSessions'];
-    this.config.database.destroy('_Session', sessionQuery)
+    return this.config.database.destroy('_Session', sessionQuery)
+    .then(this.handleFollowup.bind(this));
+  }
+  
+  if (this.storage && this.storage['generateNewSession']) {
+    delete this.storage['generateNewSession'];
+    return this.createSessionToken()
     .then(this.handleFollowup.bind(this));
   }
 
@@ -472,7 +483,7 @@ RestWrite.prototype.handleFollowup = function() {
     delete this.storage['sendVerificationEmail'];
     // Fire and forget!
     this.config.userController.sendVerificationEmail(this.data);
-    this.handleFollowup.bind(this);
+    return this.handleFollowup.bind(this);
   }
 };
 
