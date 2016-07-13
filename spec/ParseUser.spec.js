@@ -2257,12 +2257,14 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it('should cleanup null authData keys ParseUser update (regression test for #1198)', (done) => {
+  it_exclude_dbs(['postgres'])('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
     Parse.Cloud.beforeSave('_User', (req, res) => {
       req.object.set('foo', 'bar');
       res.success();
     });
-
+    
+    let originalSessionToken;
+    let originalUserId;
     // Simulate anonymous user save
     new Promise((resolve, reject) => {
       request.post({
@@ -2280,6 +2282,8 @@ describe('Parse.User testing', () => {
         }
       });
     }).then((user) => {
+      originalSessionToken = user.sessionToken;
+      originalUserId = user.objectId;
       // Simulate registration
       return new Promise((resolve, reject) => {
         request.put({
@@ -2291,7 +2295,7 @@ describe('Parse.User testing', () => {
           },
           json: {
             authData: {anonymous: null},
-            user: 'user',
+            username: 'user',
             password: 'password',
           }
         }, (err, res, body) => {
@@ -2305,8 +2309,84 @@ describe('Parse.User testing', () => {
     }).then((user) => {
       expect(typeof user).toEqual('object');
       expect(user.authData).toBeUndefined();
+      expect(user.sessionToken).not.toBeUndefined();
+      // Session token should have changed
+      expect(user.sessionToken).not.toEqual(originalSessionToken);
+      // test that the sessionToken is valid
+      return new Promise((resolve, reject) => {
+        request.get({
+          url: 'http://localhost:8378/1/users/me',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Session-Token': user.sessionToken,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: true
+        }, (err, res, body) => {
+          expect(body.username).toEqual(user.username);
+          expect(body.objectId).toEqual(originalUserId);
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+          done();
+        });
+      });
+    }).catch((err) => {
+      fail('no request should fail: ' + JSON.stringify(err));
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('should send email when upgrading from anon', (done) => {
+    
+    let emailCalled = false;
+    let emailOptions;
+    var emailAdapter = {
+      sendVerificationEmail: (options) => {
+        emailOptions = options;
+        emailCalled = true;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    })
+    // Simulate anonymous user save
+    return rp.post({
+        url: 'http://localhost:8378/1/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((user) => {
+      return rp.put({
+        url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Session-Token': user.sessionToken,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {
+          authData: {anonymous: null},
+          username: 'user',
+          email: 'user@email.com',
+          password: 'password',
+        }
+      });
+    }).then(() => {
+      expect(emailCalled).toBe(true);
+      expect(emailOptions).not.toBeUndefined();
+      expect(emailOptions.user.get('email')).toEqual('user@email.com');
       done();
     }).catch((err) => {
+      console.error(err);
       fail('no request should fail: ' + JSON.stringify(err));
       done();
     });
@@ -2471,9 +2551,16 @@ describe('Parse.User testing', () => {
           user.set('password', 'password');
           return user.save()
         })
+        .then(() => {
+          // Session token should have been recycled
+          expect(body.sessionToken).not.toEqual(user.getSessionToken());
+        })
         .then(() => obj.fetch())
+        .then((res) => {
+          done();
+        })
         .catch(error => {
-          expect(error.code).toEqual(Parse.Error.INVALID_SESSION_TOKEN);
+          fail('should not fail')
           done();
         });
       })
