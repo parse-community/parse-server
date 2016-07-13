@@ -2257,7 +2257,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it('should cleanup null authData keys ParseUser update (regression test for #1198)', (done) => {
+  it_exclude_dbs(['postgres'])('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
     Parse.Cloud.beforeSave('_User', (req, res) => {
       req.object.set('foo', 'bar');
       res.success();
@@ -2334,6 +2334,59 @@ describe('Parse.User testing', () => {
         });
       });
     }).catch((err) => {
+      fail('no request should fail: ' + JSON.stringify(err));
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('should send email when upgrading from anon', (done) => {
+    
+    let emailCalled = false;
+    let emailOptions;
+    var emailAdapter = {
+      sendVerificationEmail: (options) => {
+        emailOptions = options;
+        emailCalled = true;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    })
+    // Simulate anonymous user save
+    return rp.post({
+        url: 'http://localhost:8378/1/classes/_User',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((user) => {
+      return rp.put({
+        url: 'http://localhost:8378/1/classes/_User/' + user.objectId,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Session-Token': user.sessionToken,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {
+          authData: {anonymous: null},
+          username: 'user',
+          email: 'user@email.com',
+          password: 'password',
+        }
+      });
+    }).then(() => {
+      expect(emailCalled).toBe(true);
+      expect(emailOptions).not.toBeUndefined();
+      expect(emailOptions.user.get('email')).toEqual('user@email.com');
+      done();
+    }).catch((err) => {
+      console.error(err);
       fail('no request should fail: ' + JSON.stringify(err));
       done();
     });
