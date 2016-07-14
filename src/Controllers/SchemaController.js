@@ -273,19 +273,22 @@ class SchemaController {
   data;
   perms;
 
-  constructor(databaseAdapter) {
+  constructor(databaseAdapter, schemaCache) {
     this._dbAdapter = databaseAdapter;
-
+    this._cache = schemaCache;
     // this.data[className][fieldName] tells you the type of that field, in mongo format
     this.data = {};
     // this.perms[className][operation] tells you the acl-style permissions
     this.perms = {};
   }
 
-  reloadData() {
+  reloadData(clearCache = false) {
     this.data = {};
     this.perms = {};
-    return this.getAllClasses()
+    if (clearCache) {
+      this._cache.reset();
+    }
+    return this.getAllClasses(clearCache)
     .then(allSchemas => {
       allSchemas.forEach(schema => {
         this.data[schema.className] = injectDefaultSchema(schema).fields;
@@ -303,17 +306,39 @@ class SchemaController {
     });
   }
 
-  getAllClasses() {
+  getAllClasses(clearCache = false) {
+    if (clearCache) {
+      this._cache.reset();
+    }
+    let allClasses = this._cache.get();
+    if (allClasses && allClasses.length && !clearCache) {
+      return Promise.resolve(allClasses);
+    }
     return this._dbAdapter.getAllClasses()
-    .then(allSchemas => allSchemas.map(injectDefaultSchema));
+    .then(allSchemas => allSchemas.map(injectDefaultSchema))
+    .then(allSchemas => {
+      this._cache.set(allSchemas);
+      return allSchemas;
+    })
   }
 
-  getOneSchema(className, allowVolatileClasses = false) {
+  getOneSchema(className, allowVolatileClasses = false, clearCache) {
+    if (clearCache) {
+      this._cache.reset();
+    }
+    let cached = this._cache.getOneSchema(className);
+    if (cached && !clearCache) {
+      return Promise.resolve(cached);
+    }
     if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
       return Promise.resolve(this.data[className]);
     }
     return this._dbAdapter.getClass(className)
     .then(injectDefaultSchema)
+    .then((result) => {
+      this._cache.setOneSchema(className, result);
+      return result;
+    })
   }
 
   // Create a new class that includes the three default fields.
@@ -331,6 +356,10 @@ class SchemaController {
 
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
+    .then((res) => {
+      this._cache.reset();
+      return res;
+    })
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
@@ -376,7 +405,7 @@ class SchemaController {
       });
 
       return Promise.all(deletePromises) // Delete Everything
-      .then(() => this.reloadData()) // Reload our Schema, so we have all the new values
+      .then(() => this.reloadData(true)) // Reload our Schema, so we have all the new values
       .then(() => {
         let promises = insertedFields.map(fieldName => {
           const type = submittedFields[fieldName];
@@ -410,13 +439,13 @@ class SchemaController {
     // We don't have this class. Update the schema
     return this.addClassIfNotExists(className)
     // The schema update succeeded. Reload the schema
-    .then(() => this.reloadData())
+    .then(() => this.reloadData(true))
     .catch(error => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
       // So just reload the schema.
-      return this.reloadData();
+      return this.reloadData(true);
     })
     .then(() => {
       // Ensure that the schema now validates
@@ -486,7 +515,7 @@ class SchemaController {
     }
     validateCLP(perms, newSchema);
     return this._dbAdapter.setClassLevelPermissions(className, perms)
-    .then(() => this.reloadData());
+    .then(() => this.reloadData(true));
   }
 
   // Returns a promise that resolves successfully to the new schema
@@ -521,23 +550,26 @@ class SchemaController {
             `schema mismatch for ${className}.${fieldName}; expected ${expectedType.type || expectedType} but got ${type.type}`
           );
         }
+        return this;
       }
 
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
-        return this.reloadData();
+        return this.reloadData(true);
       }, error => {
         //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
 
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
-        return this.reloadData();
+        return this.reloadData(true);
       }).then(error => {
         // Ensure that the schema now validates
         if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
         }
+        // Remove the cached schema
+        this._cache.reset();
         return this;
       });
     });
@@ -562,7 +594,7 @@ class SchemaController {
       throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
     }
 
-    return this.getOneSchema(className)
+    return this.getOneSchema(className, false, true)
     .catch(error => {
       if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
@@ -579,8 +611,9 @@ class SchemaController {
         return database.adapter.deleteFields(className, schema, [fieldName])
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
-
       return database.adapter.deleteFields(className, schema, [fieldName]);
+    }).then(() => {
+      this._cache.reset();
     });
   }
 
@@ -711,9 +744,9 @@ class SchemaController {
 }
 
 // Returns a promise for a new Schema.
-const load = dbAdapter => {
-  let schema = new SchemaController(dbAdapter);
-  return schema.reloadData().then(() => schema);
+const load = (dbAdapter, schemaCache, clearCache) => {
+  let schema = new SchemaController(dbAdapter, schemaCache);
+  return schema.reloadData(clearCache).then(() => schema);
 }
 
 // Builds a new schema (in schema API response format) out of an

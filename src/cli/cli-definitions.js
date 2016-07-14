@@ -197,5 +197,10 @@ export default {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
     action: booleanParser
+  },
+  "schemaCacheTTL": {
+    env: "PARSE_SERVER_SCHEMA_CACHE_TTL",
+    help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to -1; disabled.",
+    action: numberParser("schemaCacheTTL"),
   }
 };

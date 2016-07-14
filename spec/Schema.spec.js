@@ -20,6 +20,10 @@ var hasAllPODobject = () => {
 };
 
 describe('SchemaController', () => {
+  beforeEach(() => {
+    config.database.schemaCache.reset();
+  });
+
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});

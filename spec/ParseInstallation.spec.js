@@ -16,6 +16,11 @@ let defaultColumns = require('../src/Controllers/SchemaController').defaultColum
 const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };
 
 describe('Installations', () => {
+
+  beforeEach(() => {
+    config.database.schemaCache.reset();
+  });
+
   it_exclude_dbs(['postgres'])('creates an android installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';

@@ -15,15 +15,15 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getAllClasses())
+  return req.config.database.loadSchema(true)
+  .then(schemaController => schemaController.getAllClasses(true))
   .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getOneSchema(className))
+  return req.config.database.loadSchema(true)
+  .then(schemaController => schemaController.getOneSchema(className, true))
   .then(schema => ({ response: schema }))
   .catch(error => {
     if (error === undefined) {
@@ -46,7 +46,7 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return req.config.database.loadSchema()
+  return req.config.database.loadSchema(true)
     .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
     .then(schema => ({ response: schema }));
 }
@@ -59,7 +59,7 @@ function modifySchema(req) {
   let submittedFields = req.body.fields || {};
   let className = req.params.className;
 
-  return req.config.database.loadSchema()
+  return req.config.database.loadSchema(true)
   .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
   .then(result => ({response: result}));
 }
