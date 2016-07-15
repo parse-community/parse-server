@@ -104,11 +104,11 @@ export class PostgresStorageAdapter {
   };
 
   classExists(name) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   createClass(className, schema) {
@@ -172,7 +172,7 @@ export class PostgresStorageAdapter {
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   // Delete all data known to this adapter. Used for testing.
@@ -205,7 +205,7 @@ export class PostgresStorageAdapter {
 
   // Returns a Promise.
   deleteFields(className, schema, fieldNames) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
@@ -298,7 +298,7 @@ export class PostgresStorageAdapter {
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   // Return value not currently well specified.
@@ -349,7 +349,7 @@ export class PostgresStorageAdapter {
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
-    return Promise.reject('Not implemented yet.')
+    return notImplemented();
   }
 
   find(className, schema, query, { skip, limit, sort }) {
@@ -425,6 +425,10 @@ export class PostgresStorageAdapter {
     return this._client.query(qs, values)
     .then(result => parseInt(result[0].count))
   }
+}
+
+function notImplemented() {
+    return Promise.reject(new Error('Not implemented yet.'));
 }
 
 export default PostgresStorageAdapter;
