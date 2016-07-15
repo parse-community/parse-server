@@ -286,7 +286,7 @@ class SchemaController {
     this.data = {};
     this.perms = {};
     if (clearCache) {
-      this._cache.reset();
+      this._cache.clear();
     }
     return this.getAllClasses(clearCache)
     .then(allSchemas => {
@@ -308,37 +308,39 @@ class SchemaController {
 
   getAllClasses(clearCache = false) {
     if (clearCache) {
-      this._cache.reset();
+      this._cache.clear();
     }
-    let allClasses = this._cache.get();
-    if (allClasses && allClasses.length && !clearCache) {
-      return Promise.resolve(allClasses);
-    }
-    return this._dbAdapter.getAllClasses()
-    .then(allSchemas => allSchemas.map(injectDefaultSchema))
-    .then(allSchemas => {
-      this._cache.set(allSchemas);
-      return allSchemas;
-    })
+    return this._cache.getAllClasses().then((allClasses) => {
+      if (allClasses && allClasses.length && !clearCache) {
+        return Promise.resolve(allClasses);
+      }
+      return this._dbAdapter.getAllClasses()
+        .then(allSchemas => allSchemas.map(injectDefaultSchema))
+        .then(allSchemas => {
+          this._cache.setAllClasses(allSchemas);
+          return allSchemas;
+        })
+    });
   }
 
   getOneSchema(className, allowVolatileClasses = false, clearCache) {
     if (clearCache) {
-      this._cache.reset();
+      this._cache.clear();
     }
-    let cached = this._cache.getOneSchema(className);
-    if (cached && !clearCache) {
-      return Promise.resolve(cached);
-    }
-    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
-      return Promise.resolve(this.data[className]);
-    }
-    return this._dbAdapter.getClass(className)
-    .then(injectDefaultSchema)
-    .then((result) => {
-      this._cache.setOneSchema(className, result);
-      return result;
-    })
+    return this._cache.getOneSchema(className).then((cached) => {
+      if (cached && !clearCache) {
+        return Promise.resolve(cached);
+      }
+      if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+        return Promise.resolve(this.data[className]);
+      }
+      return this._dbAdapter.getClass(className)
+      .then(injectDefaultSchema)
+      .then((result) => {
+        this._cache.setOneSchema(className, result);
+        return result;
+      });
+    });
   }
 
   // Create a new class that includes the three default fields.
@@ -357,7 +359,7 @@ class SchemaController {
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
     .then((res) => {
-      this._cache.reset();
+      this._cache.clear();
       return res;
     })
     .catch(error => {
@@ -569,7 +571,7 @@ class SchemaController {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
         }
         // Remove the cached schema
-        this._cache.reset();
+        this._cache.clear();
         return this;
       });
     });
@@ -613,7 +615,7 @@ class SchemaController {
       }
       return database.adapter.deleteFields(className, schema, [fieldName]);
     }).then(() => {
-      this._cache.reset();
+      this._cache.clear();
     });
   }
 

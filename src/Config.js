@@ -37,7 +37,7 @@ export class Config {
 
     // Create a new DatabaseController per request
     if (cacheInfo.databaseController) {
-      this.database = new DatabaseController(cacheInfo.databaseController.adapter, new SchemaCache(applicationId, cacheInfo.schemaCacheTTL));
+      this.database = new DatabaseController(cacheInfo.databaseController.adapter, new SchemaCache(cacheInfo.schemaCacheTTL));
     }
 
     this.serverURL = cacheInfo.serverURL;

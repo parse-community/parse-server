@@ -7,7 +7,9 @@ import _         from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-var SchemaController = require('../Controllers/SchemaController');
+var SchemaController = require('./SchemaController');
+import SchemaCache from './SchemaCache';
+
 const deepcopy = require('deepcopy');
 
 function addWriteACL(query, acl) {

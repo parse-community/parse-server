@@ -18,7 +18,7 @@ const installationSchema = { fields: Object.assign({}, defaultColumns._Default, 
 describe('Installations', () => {
 
   beforeEach(() => {
-    config.database.schemaCache.reset();
+    config.database.schemaCache.clear();
   });
 
   it_exclude_dbs(['postgres'])('creates an android installation with ids', (done) => {

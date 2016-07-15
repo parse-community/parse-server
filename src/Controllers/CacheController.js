@@ -13,9 +13,10 @@ function joinKeys(...keys) {
  * eg "Role" or "Session"
  */
 export class SubCache {
-  constructor(prefix, cacheController) {
+  constructor(prefix, cacheController, ttl) {
     this.prefix = prefix;
     this.cache = cacheController;
+    this.ttl = ttl;
   }
 
   get(key) {

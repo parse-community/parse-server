@@ -1,50 +1,46 @@
-import Parse from 'parse/node';
-import LRU from 'lru-cache';
+import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 
-let MAIN_SCHEMA = "__MAIN_SCHEMA";
-
+const CACHED_KEYS = "__CACHED_KEYS";
+const MAIN_SCHEMA = "__MAIN_SCHEMA";
+const SCHEMA_CACHE_PREFIX = "__SCHEMA";
 export default class SchemaCache {
   cache: Object;
 
-  constructor(appId: string, timeout: number = 0, maxSize: number = 10000) {
-    this.appId = appId;
-    this.timeout = timeout;
-    this.maxSize = maxSize;
-    this.cache = new LRU({
-      max: maxSize,
-      maxAge: timeout
-    });
-  }
+  constructor(ttl) {
+    this.ttl = ttl;
+    this.cache = new InMemoryCacheAdapter({ ttl });
+}
 
-  get() {
-    if (this.timeout <= 0) {
+  getAllClasses() {
+    if (this.ttl <= 0) {
       return;
     }
-    return this.cache.get(this.appId+MAIN_SCHEMA);
+    return this.cache.get(SCHEMA_CACHE_PREFIX+MAIN_SCHEMA);
   }
 
-  set(schema) {
-    if (this.timeout <= 0) {
+  setAllClasses(schema) {
+    if (this.ttl <= 0) {
       return;
     }
-    this.cache.set(this.appId+MAIN_SCHEMA, schema);
+    this.cache.put(SCHEMA_CACHE_PREFIX+MAIN_SCHEMA, schema, this.ttl);
   }
 
   setOneSchema(className, schema) {
-    if (this.timeout <= 0) {
+    if (this.ttl <= 0) {
       return;
     }
-     this.cache.set(this.appId+className, schema);
+    this.cache.put(SCHEMA_CACHE_PREFIX+className, schema, this.ttl);
   }
 
   getOneSchema(className) {
-    if (this.timeout <= 0) {
+    if (this.ttl <= 0) {
       return;
     }
-    return this.cache.get(this.appId+className);
+    return this.cache.get(SCHEMA_CACHE_PREFIX+className);
   }
 
-  reset() {
-    this.cache.reset();
+  clear() {
+    // That clears all caches...
+   this.cache.clear();
   }
 }

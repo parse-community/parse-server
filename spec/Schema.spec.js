@@ -21,7 +21,7 @@ var hasAllPODobject = () => {
 
 describe('SchemaController', () => {
   beforeEach(() => {
-    config.database.schemaCache.reset();
+    config.database.schemaCache.clear();
   });
 
   it('can validate one object', (done) => {

@@ -6,7 +6,7 @@ var Config = require('../src/Config');
 describe('Pointer Permissions', () => {
 
   beforeEach(() => {
-    new Config(Parse.applicationId).database.schemaCache.reset();
+    new Config(Parse.applicationId).database.schemaCache.clear();
   });
 
   it_exclude_dbs(['postgres'])('should work with find', (done) => {
