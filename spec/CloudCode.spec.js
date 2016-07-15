@@ -666,4 +666,114 @@ describe('Cloud Code', () => {
       done();
     });
   });
+
+  it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      res.success();
+    });
+
+    Parse.Cloud.define('removeme', (req, res) => {
+      var testObject = new TestObject();
+      testObject.save()
+      .then(testObject => {
+        var object = new NoBeforeSaveObject({remove: testObject});
+        return object.save();
+      })
+      .then(object => {
+        object.unset('remove');
+        return object.save();
+      })
+      .then(object => {
+        res.success(object);
+      });
+    });
+
+    Parse.Cloud.define('removeme2', (req, res) => {
+      var testObject = new TestObject();
+      testObject.save()
+      .then(testObject => {
+        var object = new BeforeSaveObject({remove: testObject});
+        return object.save();
+      })
+      .then(object => {
+        object.unset('remove');
+        return object.save();
+      })
+      .then(object => {
+        res.success(object);
+      });
+    });
+
+    Parse.Cloud.run('removeme')
+    .then(aNoBeforeSaveObj => {
+      expect(aNoBeforeSaveObj.get('remove')).toEqual(undefined);
+
+      return Parse.Cloud.run('removeme2');
+    })
+    .then(aBeforeSaveObj => {
+      expect(aBeforeSaveObj.get('before')).toEqual('save');
+      expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      object.unset('remove');
+      res.success();
+    });
+
+    let object;
+    let testObject = new TestObject({key: 'value'});
+    testObject.save().then(() => {
+       object = new BeforeSaveObject();
+       return object.save().then(() => {
+          object.set({remove:testObject})
+          return object.save();
+       });
+    }).then((objectAgain) => {
+       expect(objectAgain.get('remove')).toBeUndefined();
+       expect(object.get('remove')).toBeUndefined();
+       done();
+    }).fail((err) => {
+      console.error(err);
+      done();
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('should not include relation op (regression test for #1606)', done => {
+    var TestObject = Parse.Object.extend('TestObject');
+    var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
+    let testObj;
+    Parse.Cloud.beforeSave('BeforeSaveChanged', (req, res) => {
+      var object = req.object;
+      object.set('before', 'save');
+      testObj = new TestObject();
+      testObj.save().then(() => {
+        object.relation('testsRelation').add(testObj);
+        res.success();
+      })
+    });
+
+    let object = new BeforeSaveObject();
+    object.save().then((objectAgain) => {
+      // Originally it would throw as it would be a non-relation
+      expect(() => { objectAgain.relation('testsRelation') }).not.toThrow();
+      done();
+    }).fail((err) => {
+      console.error(err);
+      done();
+    })
+  });
 });

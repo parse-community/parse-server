@@ -11,6 +11,7 @@ var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
+var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 
@@ -774,9 +775,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     .then(response => {
       response.updatedAt = this.updatedAt;
       if (this.storage.changedByTrigger) {
-        Object.keys(this.data).forEach(fieldName => {
-          response[fieldName] = response[fieldName] || this.data[fieldName];
-        });
+        this.updateResponseWithData(response, this.data);
       }
       this.response = { response };
     });
@@ -834,9 +833,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
         response.username = this.data.username;
       }
       if (this.storage.changedByTrigger) {
-        Object.keys(this.data).forEach(fieldName => {
-          response[fieldName] = response[fieldName] || this.data[fieldName];
-        });
+        this.updateResponseWithData(response, this.data);
       }
       this.response = {
         status: 201,
@@ -924,6 +921,25 @@ RestWrite.prototype.cleanUserAuthData = function() {
     }
   }
 };
+
+RestWrite.prototype.updateResponseWithData = function(response, data) {
+  let clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
+  Object.keys(data).forEach(fieldName => {
+    let dataValue = data[fieldName];
+    let responseValue = response[fieldName];
+
+    response[fieldName] = responseValue || dataValue;
+    
+    // Strips operations from responses
+    if (response[fieldName] && response[fieldName].__op) {
+      delete response[fieldName];
+      if (clientSupportsDelete && dataValue.__op == 'Delete') {
+        response[fieldName] = dataValue;
+      }
+    }
+  });
+  return response;
+}
 
 export default RestWrite;
 module.exports = RestWrite;
