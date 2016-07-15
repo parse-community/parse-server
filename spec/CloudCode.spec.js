@@ -323,6 +323,8 @@ describe('Cloud Code', () => {
       expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
       expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
       expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
+      expect(req.params.file instanceof Parse.File).toBe(true);
+      expect(req.params.file.url()).toEqual('https://some.url');
       return res.success({});
     });
 
@@ -361,7 +363,12 @@ describe('Cloud Code', () => {
             }
           }
         ]
-      }
+      },
+      'file': Parse.File.fromJSON({
+        __type: 'File',
+        name: 'name',
+        url: 'https://some.url'
+      })
     };
     Parse.Cloud.run('params', params).then((result) => {
       done();
