@@ -140,7 +140,7 @@ class ParseServer {
     expireInactiveSessions = true,
     verbose = false,
     revokeSessionOnPasswordReset = true,
-    schemaCacheTTL = -1, // -1 = no cache
+    schemaCacheTTL = 0, // 0 = no cache
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically

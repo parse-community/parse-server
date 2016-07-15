@@ -200,7 +200,7 @@ export default {
   },
   "schemaCacheTTL": {
     env: "PARSE_SERVER_SCHEMA_CACHE_TTL",
-    help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to -1; disabled.",
+    help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0; disabled.",
     action: numberParser("schemaCacheTTL"),
   }
 };
