@@ -184,6 +184,10 @@ export default {
     env: "VERBOSE",
     help: "Set the logging to verbose"
   },
+  "jsonLogs": {
+    env: "JSON_LOGS",
+    help: "Log as structured JSON objects"
+  },
   "revokeSessionOnPasswordReset": {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",

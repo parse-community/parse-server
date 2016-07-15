@@ -5,9 +5,11 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import express from 'express';
-import url     from 'url';
-import log     from './logger';
+import AppCache  from './cache';
+import express   from 'express';
+import url       from 'url';
+import log       from './logger';
+import {inspect} from 'util';
 
 export default class PromiseRouter {
   // Each entry should be an object with:
@@ -19,8 +21,9 @@ export default class PromiseRouter {
   //     status: optional. the http status code. defaults to 200
   //     response: a json object with the content of the response
   //     location: optional. a location header
-  constructor(routes = []) {
+  constructor(routes = [], appId) {
     this.routes = routes;
+    this.appId = appId;
     this.mountRoutes();
   }
 
@@ -107,16 +110,16 @@ export default class PromiseRouter {
     for (var route of this.routes) {
       switch(route.method) {
       case 'POST':
-        expressApp.post(route.path, makeExpressHandler(route.handler));
+        expressApp.post(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'GET':
-        expressApp.get(route.path, makeExpressHandler(route.handler));
+        expressApp.get(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'PUT':
-        expressApp.put(route.path, makeExpressHandler(route.handler));
+        expressApp.put(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'DELETE':
-        expressApp.delete(route.path, makeExpressHandler(route.handler));
+        expressApp.delete(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       default:
         throw 'unexpected code branch';
@@ -129,16 +132,16 @@ export default class PromiseRouter {
     for (var route of this.routes) {
       switch(route.method) {
       case 'POST':
-        expressApp.post(route.path, makeExpressHandler(route.handler));
+        expressApp.post(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'GET':
-        expressApp.get(route.path, makeExpressHandler(route.handler));
+        expressApp.get(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'PUT':
-        expressApp.put(route.path, makeExpressHandler(route.handler));
+        expressApp.put(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       case 'DELETE':
-        expressApp.delete(route.path, makeExpressHandler(route.handler));
+        expressApp.delete(route.path, makeExpressHandler(this.appId, route.handler));
         break;
       default:
         throw 'unexpected code branch';
@@ -152,17 +155,30 @@ export default class PromiseRouter {
 // handler.
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
-function makeExpressHandler(promiseHandler) {
+function makeExpressHandler(appId, promiseHandler) {
+  let config = AppCache.get(appId);
   return function(req, res, next) {
     try {
-      log.verbose(req.method, maskSensitiveUrl(req), req.headers,
-                  JSON.stringify(maskSensitiveBody(req), null, 2));
+      let url = maskSensitiveUrl(req);
+      let body = maskSensitiveBody(req);
+      let stringifiedBody = JSON.stringify(body, null, 2);
+      log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
+        method: req.method,
+        url: url,
+        headers: req.headers,
+        body: body
+      });
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
           log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-        log.verbose(JSON.stringify(result, null, 2));
+
+        let stringifiedResponse = JSON.stringify(result, null, 2);
+        log.verbose(
+          `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
+          {result: result}
+        );
 
         var status = result.status || 200;
         res.status(status);
@@ -186,11 +202,11 @@ function makeExpressHandler(promiseHandler) {
         }
         res.json(result.response);
       }, (e) => {
-        log.verbose('error:', e);
+        log.error(`Error generating response. ${inspect(e)}`, {error: e});
         next(e);
       });
     } catch (e) {
-      log.verbose('exception:', e);
+      log.error(`Error handling request: ${inspect(e)}`, {error: e});
       next(e);
     }
   }
