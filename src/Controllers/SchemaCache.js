@@ -1,14 +1,12 @@
-import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
-
 const CACHED_KEYS = "__CACHED_KEYS";
 const MAIN_SCHEMA = "__MAIN_SCHEMA";
 const SCHEMA_CACHE_PREFIX = "__SCHEMA";
 export default class SchemaCache {
   cache: Object;
 
-  constructor(ttl) {
+  constructor(adapter, ttl) {
     this.ttl = ttl;
-    this.cache = new InMemoryCacheAdapter({ ttl });
+    this.cache = adapter;
 }
 
   getAllClasses() {

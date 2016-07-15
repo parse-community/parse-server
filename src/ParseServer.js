@@ -191,6 +191,10 @@ class ParseServer {
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
 
+    const createSchemaCache = function() {
+      let adapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: schemaCacheTTL});
+      return new SchemaCache(adapter, schemaCacheTTL);
+    }
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const filesController = new FilesController(filesControllerAdapter, appId);
@@ -199,7 +203,7 @@ class ParseServer {
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
     const liveQueryController = new LiveQueryController(liveQuery);
     const cacheController = new CacheController(cacheControllerAdapter, appId);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter, createSchemaCache());
     const hooksController = new HooksController(appId, databaseController, webhookKey);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
@@ -256,7 +260,8 @@ class ParseServer {
       jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
-      schemaCacheTTL
+      schemaCacheTTL,
+      createSchemaCache
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
