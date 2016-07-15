@@ -59,7 +59,10 @@ describe('verbose logs', () => {
         level: 'verbose'
       });
     }).then((results) => {
-      expect(results[1].body.password).toEqual("********");
+      let logString = JSON.stringify(results);
+      expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+      expect(logString.match(/moon-y/g)).toBe(null);
+
       var headers = {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
@@ -74,11 +77,16 @@ describe('verbose logs', () => {
           size: 100,
           level: 'verbose'
         }).then((results) => {
-          expect(results[1].url.includes('password=********')).toEqual(true);
+          let logString = JSON.stringify(results);
+          expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+          expect(logString.match(/moon-y/g)).toBe(null);
           done();
         });
       });
-    });
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    })
   });
 
   it("should not mask information in non _User class", (done) => {
