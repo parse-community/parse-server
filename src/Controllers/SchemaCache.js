@@ -1,6 +1,6 @@
-const CACHED_KEYS = "__CACHED_KEYS";
 const MAIN_SCHEMA = "__MAIN_SCHEMA";
 const SCHEMA_CACHE_PREFIX = "__SCHEMA";
+
 export default class SchemaCache {
   cache: Object;
 
