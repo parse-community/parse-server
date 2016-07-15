@@ -49,11 +49,21 @@ if (!options.appId || !options.masterKey || !options.serverURL) {
   process.exit(1);
 }
 
+// create S3Adapter object if FILES_ADAPTER is S3
+if ('parse-server-s3-adapter' == process.env.PARSE_SERVER_FILES_ADAPTER) {
+  options.filesAdapter = new _index.S3Adapter({
+        accessKey: process.env.S3_ACCESS_KEY || '',
+        secretKey: process.env.S3_SECRET_KEY || '',
+        bucket: process.env.S3_BUCKET || '',
+        region: process.env.S3_REGION || ''
+  });
+}
+
 const app = express();
 const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-var server = app.listen(options.port, function() {
+var server = app.listen(options.port, process.env.HOST || '0.0.0.0', function() {
 
   for (let key in options) {
     let value = options[key];
