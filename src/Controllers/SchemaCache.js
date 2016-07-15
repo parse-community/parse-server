@@ -11,28 +11,28 @@ export default class SchemaCache {
 
   getAllClasses() {
     if (this.ttl <= 0) {
-      return;
+      return Promise.resolve(null);
     }
     return this.cache.get(SCHEMA_CACHE_PREFIX+MAIN_SCHEMA);
   }
 
   setAllClasses(schema) {
     if (this.ttl <= 0) {
-      return;
+      return Promise.resolve(null);
     }
     this.cache.put(SCHEMA_CACHE_PREFIX+MAIN_SCHEMA, schema, this.ttl);
   }
 
   setOneSchema(className, schema) {
     if (this.ttl <= 0) {
-      return;
+      return Promise.resolve(null);
     }
     this.cache.put(SCHEMA_CACHE_PREFIX+className, schema, this.ttl);
   }
 
   getOneSchema(className) {
     if (this.ttl <= 0) {
-      return;
+      return Promise.resolve(null);
     }
     return this.cache.get(SCHEMA_CACHE_PREFIX+className);
   }
