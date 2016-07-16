@@ -13,7 +13,7 @@ function parseObject(obj) {
         return parseObject(item);
       });
   } else if (obj && obj.__type == 'Date') {
-    return new Date(obj.iso);
+    return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
     return Parse.File.fromJSON(obj);
   } else if (obj && typeof obj === 'object') {

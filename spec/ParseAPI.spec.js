@@ -1046,7 +1046,7 @@ describe('miscellaneous', function() {
       response.success('yay');
     });
 
-    Parse.Cloud.run('func', {date: date})
+    Parse.Cloud.run('dateFunc', {date: date})
     .then(() => {
       done()
     }, e => {
