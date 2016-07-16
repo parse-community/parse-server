@@ -738,4 +738,35 @@ describe('Parse.Relation testing', () => {
       done();
     });
   });
+
+  it_exclude_dbs(['postgres'])("regression test #2301", (done) => {
+    let list = [];
+    while(list.length != 10) {
+      let object = new Parse.Object('Event');
+      object.set('date', [2016, 7, 1+list.length]);
+      list.push(object);
+    }
+    
+    let me = new Parse.User();
+    Parse.Object.saveAll(list).then(() => {
+      // add object with date = [2016, 7, 1]
+      me.relation('eventHistory').add(list[0]);
+      return me.save({
+        username: 'me',
+        password: 'me'
+      })
+    }).then(() => {
+      let query = me.relation('eventHistory').query();
+      // add object with date = [2016, 7, 2]
+      // Should not be here
+      query.containsAll('date', [2016, 7, 2]);
+      return query.first();
+    }).then((res) => {
+      expect(res).toBeUndefined();
+      done();
+    }).catch((err)  => {
+      fail('should not fail');
+      done();
+    })
+  })
 });
