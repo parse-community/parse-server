@@ -323,8 +323,16 @@ describe('Cloud Code', () => {
       expect(req.params.complexStructure.deepDate.date[0].getTime()).toBe(1463907600000);
       expect(req.params.complexStructure.deepDate2[0].date instanceof Date).toBe(true);
       expect(req.params.complexStructure.deepDate2[0].date.getTime()).toBe(1463907600000);
+      // Regression for #2294
       expect(req.params.file instanceof Parse.File).toBe(true);
       expect(req.params.file.url()).toEqual('https://some.url');
+      // Regression for #2204
+      expect(req.params.array).toEqual(['a', 'b', 'c']);
+      expect(Array.isArray(req.params.array)).toBe(true);
+      expect(req.params.arrayOfArray).toEqual([['a', 'b', 'c'], ['d', 'e','f']]);
+      expect(Array.isArray(req.params.arrayOfArray)).toBe(true);
+      expect(Array.isArray(req.params.arrayOfArray[0])).toBe(true);
+      expect(Array.isArray(req.params.arrayOfArray[1])).toBe(true);
       return res.success({});
     });
 
@@ -368,7 +376,9 @@ describe('Cloud Code', () => {
         __type: 'File',
         name: 'name',
         url: 'https://some.url'
-      })
+      }),
+      'array': ['a', 'b', 'c'],
+      'arrayOfArray': [['a', 'b', 'c'], ['d', 'e', 'f']]
     };
     Parse.Cloud.run('params', params).then((result) => {
       done();
