@@ -1017,7 +1017,7 @@ describe('miscellaneous', function() {
       fail('Validation should not have succeeded');
       done();
     }, (e) => {
-      expect(e.code).toEqual(141);
+      expect(e.code).toEqual(142);
       expect(e.message).toEqual('Validation failed.');
       done();
     });

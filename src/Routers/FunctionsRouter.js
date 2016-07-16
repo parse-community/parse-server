@@ -73,7 +73,7 @@ export class FunctionsRouter extends PromiseRouter {
       if (theValidator && typeof theValidator === "function") {
         var result = theValidator(request);
         if (!result) {
-          throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Validation failed.');
+          throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Validation failed.');
         }
       }
 
