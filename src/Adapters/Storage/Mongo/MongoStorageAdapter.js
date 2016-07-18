@@ -105,7 +105,20 @@ export class MongoStorageAdapter {
     const encodedUri = formatUrl(parseUrl(this._uri));
 
     this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
+      if (!database) {
+        delete this.connectionPromise;
+        return;
+      }
+      database.on('error', (error) => {
+        delete this.connectionPromise;
+      });
+      database.on('close', (error) => {
+        delete this.connectionPromise;
+      });
       this.database = database;
+    }).catch((err) => {
+      delete this.connectionPromise;
+      return Promise.reject(err);
     });
 
     return this.connectionPromise;
