@@ -798,4 +798,31 @@ describe('SchemaController', () => {
     });
     done();
   });
+
+  it_exclude_dbs(['postgres'])('should not write _PushStaths to the schema on getOneSchema', (done) => {
+    var schema;
+    var config = new Config(Parse.applicationId);
+    var called;
+    config.database.loadSchema().then((aSchema) => {
+      schema = aSchema;
+      return schema.getOneSchema('_PushStatus');
+    }).catch(err => {
+      called = true;
+      return schema.getOneSchema('_PushStatus', true);
+    }).then((res) => {
+      expect(called).toBe(true);
+      expect(res).not.toBeUndefined();
+      return config.database.adapter._rawFind("_SCHEMA")
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      results.forEach((result) => {
+        expect(result._id).not.toEqual('_PushStatus');
+      });
+      done();
+    }).catch((err) => {
+      console.error(err);
+      fail(err);
+      done();
+    });
+  });
 });
