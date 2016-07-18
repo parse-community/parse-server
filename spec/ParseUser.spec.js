@@ -2595,5 +2595,22 @@ describe('Parse.User testing', () => {
         })
       });
     });
-  })
+  });
+
+  it_exclude_dbs(['postgres'])('should not fail querying non existing relations', done => { 
+    let user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world'
+    })
+    user.signUp().then(() => {
+      return Parse.User.current().relation('relation').query().find();
+    }).then((res) => {
+      expect(res.length).toBe(0);
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
+  });
 });
