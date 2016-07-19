@@ -109,9 +109,9 @@ DatabaseController.prototype.validateClassName = function(className) {
 };
 
 // Returns a promise for a schemaController.
-DatabaseController.prototype.loadSchema = function(force = false) {
+DatabaseController.prototype.loadSchema = function(options = {clearCache: false}) {
   if (!this.schemaPromise) {
-    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, force);
+    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
     this.schemaPromise.then(() => delete this.schemaPromise,
                              () => delete this.schemaPromise);
   }
