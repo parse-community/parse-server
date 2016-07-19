@@ -158,7 +158,7 @@ describe('rest query', () => {
     });
   });
 
-  fit('query with wrongly encoded parameter', (done) => {
+  it('query with wrongly encoded parameter', (done) => {
     rest.create(config, nobody, 'TestParameterEncode', {foo: 'bar'}
     ).then(() => {
       return rest.create(config, nobody,

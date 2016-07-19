@@ -310,7 +310,7 @@ describe('rest create', () => {
     });
   });
 
-  fit_exclude_dbs(['postgres'])("test default session length", (done) => {
+  it_exclude_dbs(['postgres'])("test default session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
