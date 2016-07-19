@@ -65,6 +65,8 @@ describe('server', () => {
         expect(response.statusCode).toEqual(500);
         expect(body.code).toEqual(1);
         expect(body.message).toEqual('Internal server error.');
+        // Reconfigure with null so the next beforeEach don't fail trying to delete
+        reconfigureServer({ databaseAdapter: null });
         done();
       });
     });
