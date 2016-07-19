@@ -19,23 +19,14 @@ env:
 before_install:
 - if [ "$PARSE_SERVER_TEST_DB" = "postgres" ]; then
     exit 0;
-  else if [ "`echo "$MONGODB_VERSION" | sed -e 's/\(.\).*/\1/'`" = '2' ]; then
-    travis_retry sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 &&
-    echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' |
-      sudo tee /etc/apt/sources.list.d/mongodb.list &&
-    travis_retry sudo apt-get update &&
-    if [ "`echo "$MONGODB_VERSION" | sed -e 's/.\.\(.\).*/\1/'`" = '4' ]; then
-      travis_retry sudo apt-get install -y mongodb-10gen=$MONGODB_VERSION;
-      sudo service mongodb start;
-    else
-      travis_retry sudo apt-get install -y mongodb-org=$MONGODB_VERSION;
-    fi
   else
     sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 &&
-    echo "deb http://repo.mongodb.org/apt/ubuntu "$(lsb_release -sc)"/mongodb-org/3.0 multiverse" |
-      sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list &&
-    travis_retry sudo apt-get update &&
-    travis_retry sudo apt-get install -y mongodb-org=$MONGODB_VERSION;
+    echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list &&
+    sudo apt-get update &&
+    sudo apt-get install -y mongodb-org=$MONGODB_VERSION mongodb-org-server=$MONGODB_VERSION mongodb-org-shell=$MONGODB_VERSION mongodb-org-mongos=$MONGODB_VERSION mongodb-org-tools=$MONGODB_VERSION
+    sleep 15 #mongo may not be responded directly. See http://docs.travis-ci.com/user/database-setup/#MongoDB
+    mongo --version
+    sudo service mongodb start;
   fi
 - sleep 15 # mongo may not be responded directly. See http://docs.travis-ci.com/user/database-setup/#MongoDB
 - mongo --version
