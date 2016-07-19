@@ -2257,6 +2257,27 @@ describe('Parse.User testing', () => {
     })
   });
 
+  it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {
+    let database = new Config(Parse.applicationId).database;
+    database.create('_User', {
+      username: 'user',
+      _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
+      _auth_data_facebook: null
+    }, {}).then(() => {
+      return new Parse.Query(Parse.User)
+        .equalTo('username', 'user')
+        .first({useMasterKey: true});
+    }).then((user) => {
+      let authData = user.get('authData');
+      expect(user.get('username')).toEqual('user');
+      expect(authData).toBeUndefined();
+      done();
+    }).catch((err) => {
+      fail('this should not fail');
+      done();
+    })
+  });
+
   it_exclude_dbs(['postgres'])('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
     Parse.Cloud.beforeSave('_User', (req, res) => {
       req.object.set('foo', 'bar');
