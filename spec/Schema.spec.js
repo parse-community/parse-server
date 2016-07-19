@@ -1040,6 +1040,9 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         'update': {
           'requiresAuthentication': true
+        },
+        'create': {
+          '*': true
         }
       });
     }).then((user) => {
@@ -1072,6 +1075,12 @@ describe('Class Level Permissions for requiredAuth', () => {
         },
         'update': {
           'requiresAuthentication': true
+        },
+        'create': {
+          '*': true
+        },
+        'get': {
+          '*': true
         }
       });
     }).then((user) => {

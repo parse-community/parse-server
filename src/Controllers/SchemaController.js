@@ -123,7 +123,9 @@ const roleRegex = /^role:.*/;
 // * permission
 const publicRegex = /^\*$/
 
-const permissionKeyRegex = Object.freeze([userIdRegex, roleRegex, publicRegex]);
+const requireAuthenticationRegex = /^requiresAuthentication$/
+
+const permissionKeyRegex = Object.freeze([userIdRegex, roleRegex, publicRegex, requireAuthenticationRegex]);
 
 function verifyPermissionKey(key) {
   let result = permissionKeyRegex.reduce((isGood, regEx) => {
