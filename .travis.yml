@@ -6,8 +6,6 @@ services:
   - postgresql
 addons:
   postgresql: '9.4'
-before_script:
-  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
@@ -16,20 +14,18 @@ env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
-before_install:
+before_script:
 - if [ "$PARSE_SERVER_TEST_DB" = "postgres" ]; then
-    exit 0;
+    psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres;
   else
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 &&
+    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
     echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list &&
-    sudo apt-get update &&
+    sudo apt-get update
     sudo apt-get install -y mongodb-org=$MONGODB_VERSION mongodb-org-server=$MONGODB_VERSION mongodb-org-shell=$MONGODB_VERSION mongodb-org-mongos=$MONGODB_VERSION mongodb-org-tools=$MONGODB_VERSION
-    sleep 15 #mongo may not be responded directly. See http://docs.travis-ci.com/user/database-setup/#MongoDB
+    sleep 15
     mongo --version
     sudo service mongodb start;
   fi
-- sleep 15 # mongo may not be responded directly. See http://docs.travis-ci.com/user/database-setup/#MongoDB
-- mongo --version
 matrix:
   fast_finish: true,
 branches:
