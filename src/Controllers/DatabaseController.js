@@ -110,7 +110,8 @@ DatabaseController.prototype.validateClassName = function(className) {
 DatabaseController.prototype.loadSchema = function() {
   if (!this.schemaPromise) {
     this.schemaPromise = SchemaController.load(this.adapter);
-    this.schemaPromise.then(() => delete this.schemaPromise);
+    this.schemaPromise.then(() => delete this.schemaPromise,
+                             () => delete this.schemaPromise);
   }
   return this.schemaPromise;
 };
