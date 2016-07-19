@@ -39,6 +39,7 @@ export class Config {
     this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
     this.appName = cacheInfo.appName;
 
+    this.analyticsController = cacheInfo.analyticsController;
     this.cacheController = cacheInfo.cacheController;
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;
