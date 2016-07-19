@@ -310,7 +310,7 @@ describe('rest create', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("test default session length", (done) => {
+  fit_exclude_dbs(['postgres'])("test default session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
@@ -337,7 +337,8 @@ describe('rest create', () => {
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());
         expect(actual.getDate()).toEqual(expected.getDate());
-        expect(actual.getMinutes()).toEqual(expected.getMinutes());
+        // less than a minute, if test happen at the wrong time :/
+        expect(actual.getMinutes() - expected.getMinutes() <= 1).toBe(true);
 
         done();
       });
