@@ -7,26 +7,24 @@ var express = require('express'),
 import PromiseRouter from '../PromiseRouter';
 import _ from 'lodash';
 
-function parseDate(params) {
-  return _.mapValues(params, (obj) => {
-    if (Array.isArray(obj)) {
+function parseObject(obj) {
+  if (Array.isArray(obj)) {
       return obj.map((item) => {
-        if (item && item.__type == 'Date') {
-          return new Date(item.iso);
-        } else if (item && typeof item === 'object') {
-          return parseDate(item);
-        } else {
-          return item;
-        }
+        return parseObject(item);
       });
-    } else if (obj && obj.__type == 'Date') {
-      return new Date(obj.iso);
-    } else if (obj && typeof obj === 'object') {
-      return parseDate(obj);
-    } else {
-      return obj;
-    }
-  });
+  } else if (obj && obj.__type == 'Date') {
+    return Object.assign(new Date(obj.iso), obj);
+  } else if (obj && obj.__type == 'File') {
+    return Parse.File.fromJSON(obj);
+  } else if (obj && typeof obj === 'object') {
+    return parseParams(obj);
+  } else {
+    return obj;
+  }
+}
+
+function parseParams(params) {
+  return _.mapValues(params, parseObject);
 }
 
 export class FunctionsRouter extends PromiseRouter {
@@ -60,7 +58,7 @@ export class FunctionsRouter extends PromiseRouter {
     var theValidator = triggers.getValidator(req.params.functionName, applicationId);
     if (theFunction) {
       let params = Object.assign({}, req.body, req.query);
-      params = parseDate(params);
+      params = parseParams(params);
       var request = {
         params: params,
         master: req.auth && req.auth.isMaster,
