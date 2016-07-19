@@ -379,6 +379,9 @@ export class PostgresStorageAdapter {
       if (object.expiresAt) {
         object.expiresAt = { __type: 'Date', iso: object.expiresAt.toISOString() };
       }
+      if (object._email_verify_token_expires_at) {
+        object._email_verify_token_expires_at = { __type: 'Date', iso: object._email_verify_token_expires_at.toISOString() };
+      }
 
       for (let fieldName in object) {
         if (object[fieldName] === null) {
