@@ -218,7 +218,7 @@ PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATIO
 
 ##### Email verification and password reset
 
-Verifying user email addresses and enabling password reset via email requries an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
+Verifying user email addresses and enabling password reset via email requires an email adapter. As part of the `parse-server` package we provide an adapter for sending email through Mailgun. To use it, sign up for Mailgun, and add this to your initialization code:
 
 ```js
 var server = ParseServer({
@@ -235,7 +235,7 @@ var server = ParseServer({
   // `emailVerifyTokenValidityDuration` defaults to `undefined`
   //
   // email verify token below expires in 2 hours (= 2 * 60 * 60 == 7200 seconds)
-  emailVerifyTokenValidityDuration = 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
+  emailVerifyTokenValidityDuration: 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
 
   // set preventLoginWithUnverifiedEmail to false to allow user to login without verifying their email
   // set preventLoginWithUnverifiedEmail to true to prevent user from login if their email is not verified
