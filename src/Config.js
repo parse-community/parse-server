@@ -41,6 +41,7 @@ export class Config {
     this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
     this.appName = cacheInfo.appName;
 
+    this.analyticsController = cacheInfo.analyticsController;
     this.cacheController = cacheInfo.cacheController;
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;

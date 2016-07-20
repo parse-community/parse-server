@@ -25,7 +25,9 @@ import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
 import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
+import { AnalyticsController }  from './Controllers/AnalyticsController';
 import { CacheController }      from './Controllers/CacheController';
+import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
 import { FileLoggerAdapter }    from './Adapters/Logger/FileLoggerAdapter';
 import { FilesController }      from './Controllers/FilesController';
 import { FilesRouter }          from './Routers/FilesRouter';
@@ -65,6 +67,7 @@ const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Defau
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
+// "analyticsAdapter": an adapter class for analytics
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
 // "loggerAdapter": a class like FileLoggerAdapter providing info, error,
@@ -96,6 +99,7 @@ class ParseServer {
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
+    analyticsAdapter = undefined,
     filesAdapter,
     push,
     loggerAdapter,
@@ -140,7 +144,6 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-
     if ((databaseOptions || databaseURI || collectionPrefix !== '') && databaseAdapter) {
       throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/connectionPrefix.';
     } else if (!databaseAdapter) {
@@ -184,6 +187,7 @@ class ParseServer {
     const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
 
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
@@ -195,6 +199,7 @@ class ParseServer {
     const cacheController = new CacheController(cacheControllerAdapter, appId);
     const databaseController = new DatabaseController(databaseAdapter);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
+    const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
     // have a Parse app without it having a _User collection.
@@ -227,6 +232,7 @@ class ParseServer {
       webhookKey: webhookKey,
       fileKey: fileKey,
       facebookAppIds: facebookAppIds,
+      analyticsController: analyticsController,
       cacheController: cacheController,
       filesController: filesController,
       pushController: pushController,
