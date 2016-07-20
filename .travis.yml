@@ -10,7 +10,7 @@ before_script:
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
   global:
-  - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
+  - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
   matrix:
   - PARSE_SERVER_TEST_DB=postgres
   - MONGODB_VERSION=2.6.11
