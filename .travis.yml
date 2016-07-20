@@ -18,15 +18,12 @@ before_install:
 - if [ "$PARSE_SERVER_TEST_DB" = "postgres" ]; then
     psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres;
   else
-    sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10 && 
-    echo "deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen" | sudo tee /etc/apt/sources.list.d/mongodb.list &&
-    echo "deb http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.0.list &&
-    echo "deb http://repo.mongodb.org/apt/ubuntu precise/mongodb-org/3.2 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-3.2.list &&
-    sudo apt-get update && 
-    sudo apt-get install -y --force-yes mongodb-org=$MONGODB_VERSION && mongodb-org-server=$MONGODB_VERSION mongodb-org-shell=$MONGODB_VERSION mongodb-org-mongos=$MONGODB_VERSION mongodb-org-tools=$MONGODB_VERSION
-    sleep 15 &&
-    mongo --version &&
-    sudo service mongod start;
+    MONGODB_PATH=~/.mongodb/versions/mongodb-$MONGODB_VERSION-linux-64 &&
+    mkdir -p $MONGODB_PATH &&
+    curl -O https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGODB_VERSION.tgz &&
+    tar -zxvf mongodb-linux-x86_64-$MONGODB_VERSION.tgz &&
+    cp -R -n mongodb-linux-x86_64-$MONGODB_VERSION/ $MONGODB_PATH &&
+    ln -s ~/.mongodb/versions/mongodb-current $MONGODB_PATH
   fi
 matrix:
   fast_finish: true,
