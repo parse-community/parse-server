@@ -60,6 +60,7 @@ var defaultConfiguration = {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
   },
+  schemaCacheTTL: process.env.TEST_SCHEMA_CACHE || 0
 };
 
 let openConnections = {};
