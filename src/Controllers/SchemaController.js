@@ -283,12 +283,15 @@ class SchemaController {
   }
 
   reloadData(options = {clearCache: false}) {
-    this.data = {};
-    this.perms = {};
     if (options.clearCache) {
       this._cache.clear();
     }
-    return this.getAllClasses(options)
+    if (this.reloadDataPromise && !options.clearCache) {
+      return this.reloadDataPromise;
+    }
+    this.data = {};
+    this.perms = {};
+    this.reloadDataPromise = this.getAllClasses(options)
     .then(allSchemas => {
       allSchemas.forEach(schema => {
         this.data[schema.className] = injectDefaultSchema(schema).fields;
@@ -303,7 +306,12 @@ class SchemaController {
           classLevelPermissions: {}
         });
       });
+      delete this.reloadDataPromise;
+    }, (err) => {
+      delete this.reloadDataPromise;
+      throw err;
     });
+    return this.reloadDataPromise;
   }
 
   getAllClasses(options = {clearCache: false}) {
