@@ -6,8 +6,6 @@ services:
   - postgresql
 addons:
   postgresql: '9.4'
-before_script:
-  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
   global:
   - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
@@ -16,6 +14,9 @@ env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
+before_install:
+- ls -al "$HOME/.mongodb/versions"
+- test "$MONGODB_VERSION" != "" && npm install -g mongodb-version-manager && m use $MONGODB_VERSION || echo ""
 matrix:
   fast_finish: true,
 branches:
@@ -24,8 +25,11 @@ branches:
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
 cache:
   directories:
-  - "$HOME/.mongodb/versions/downloads"
-after_script: "./node_modules/.bin/codecov"
+  - "$HOME/.mongodb/versions"
+before_script:
+- ls -al "$HOME/.mongodb/versions"
+after_script: 
+- "./node_modules/.bin/codecov"
 deploy:
   provider: npm
   email:
