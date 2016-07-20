@@ -18,12 +18,12 @@ before_install:
 - if [ "$PARSE_SERVER_TEST_DB" = "postgres" ]; then
     psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres;
   else
-    MONGODB_PATH=~/.mongodb/versions/mongodb-$MONGODB_VERSION-linux-64 &&
-    mkdir -p $MONGODB_PATH &&
-    curl -O https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGODB_VERSION.tgz &&
-    tar -zxvf mongodb-linux-x86_64-$MONGODB_VERSION.tgz &&
-    cp -R -n mongodb-linux-x86_64-$MONGODB_VERSION/ $MONGODB_PATH &&
-    ln -s ~/.mongodb/versions/mongodb-current $MONGODB_PATH
+    MONGODB_PATH=~/.mongodb/versions/mongodb-$MONGODB_VERSION-linux-64
+    mkdir -p $MONGODB_PATH
+    curl -O https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGODB_VERSION.tgz
+    tar -zxvf mongodb-linux-x86_64-$MONGODB_VERSION.tgz
+    cp -R -n mongodb-linux-x86_64-$MONGODB_VERSION/ $MONGODB_PATH
+    ln -s $MONGODB_PATH ~/.mongodb/versions/mongodb-current
   fi
 matrix:
   fast_finish: true,
