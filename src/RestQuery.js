@@ -504,7 +504,7 @@ function includePath(config, auth, response, path) {
         obj.__type = 'Object';
         obj.className = includeResponse.className;
 
-        if (obj.className == "_User") {
+        if (obj.className == "_User" && !auth.isMaster) {
           delete obj.sessionToken;
           delete obj.authData;
         }
