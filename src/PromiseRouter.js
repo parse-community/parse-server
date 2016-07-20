@@ -139,6 +139,19 @@ export default class PromiseRouter {
     this.mountOnto(expressApp);
     return expressApp;
   }
+
+  tryRouteRequest(method, path, request) {
+    var match = this.match(method, path);
+    if (!match) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'cannot route ' + method + ' ' + path);
+    }
+    request.params = match.params;
+    return new Promise((resolve, reject) => {
+      match.handler(request).then(resolve, reject);
+    });
+  }
 }
 
 // A helper function to make an express handler out of a a promise
