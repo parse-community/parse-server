@@ -24,7 +24,7 @@ branches:
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
 cache:
   directories:
-  - "$HOME/.mongodb/versions/downloads"
+  - "$HOME/.mongodb/versions"
 after_script: "./node_modules/.bin/codecov"
 deploy:
   provider: npm
