@@ -13,7 +13,7 @@ import {inspect} from 'util';
 import {
   logRequest,
   logResponse
-} from './SensitiveLogger';
+} from './sensitiveLogger';
 
 const Layer = require('express/lib/router/layer');
 
