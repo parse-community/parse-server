@@ -1029,7 +1029,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("regression test #2342", (done) => {
+  it_exclude_dbs(['postgres'])("user authData should be available in cloudcode (#2342)", (done) => {
 
     Parse.Cloud.define('checkLogin', (req, res) => {
       expect(req.user).not.toBeUndefined();
