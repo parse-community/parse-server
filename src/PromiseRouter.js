@@ -10,6 +10,26 @@ import express   from 'express';
 import url       from 'url';
 import log       from './logger';
 import {inspect} from 'util';
+import {
+  logRequest,
+  logResponse
+} from './SensitiveLogger';
+
+const Layer = require('express/lib/router/layer');
+
+function validateParameter(key, value) {
+  if (key == 'className') {
+    if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
+      return value;
+    }
+  }else if (key == 'objectId') {
+    if (value.match(/[A-Za-z0-9]+/)) {
+      return value;
+    }
+  } else {
+    return value;
+  }
+}
 
 export default class PromiseRouter {
   // Each entry should be an object with:
@@ -65,7 +85,8 @@ export default class PromiseRouter {
     this.routes.push({
       path: path,
       method: method,
-      handler: handler
+      handler: handler,
+      layer: new Layer(path, null, handler)
     });
   };
 
@@ -78,30 +99,16 @@ export default class PromiseRouter {
       if (route.method != method) {
         continue;
       }
-      // NOTE: we can only route the specific wildcards :className and
-      // :objectId, and in that order.
-      // This is pretty hacky but I don't want to rebuild the entire
-      // express route matcher. Maybe there's a way to reuse its logic.
-      var pattern = '^' + route.path + '$';
 
-      pattern = pattern.replace(':className',
-                                '(_?[A-Za-z][A-Za-z_0-9]*)');
-      pattern = pattern.replace(':objectId',
-                                '([A-Za-z0-9]+)');
-      var re = new RegExp(pattern);
-      var m = path.match(re);
-      if (!m) {
-        continue;
+      let layer = route.layer || new Layer(route.path, null, route.handler);
+      let match = layer.match(path);
+      if (match) {
+        let params = layer.params;
+        Object.keys(params).forEach((key) => {
+          params[key] = validateParameter(key, params[key]);
+        });
+        return {params: params, handler: route.handler};
       }
-      var params = {};
-      if (m[1]) {
-        params.className = m[1];
-      }
-      if (m[2]) {
-        params.objectId = m[2];
-      }
-
-      return {params: params, handler: route.handler};
     }
   };
 
@@ -129,24 +136,7 @@ export default class PromiseRouter {
 
   expressApp() {
     var expressApp = express();
-    for (var route of this.routes) {
-      switch(route.method) {
-      case 'POST':
-        expressApp.post(route.path, makeExpressHandler(this.appId, route.handler));
-        break;
-      case 'GET':
-        expressApp.get(route.path, makeExpressHandler(this.appId, route.handler));
-        break;
-      case 'PUT':
-        expressApp.put(route.path, makeExpressHandler(this.appId, route.handler));
-        break;
-      case 'DELETE':
-        expressApp.delete(route.path, makeExpressHandler(this.appId, route.handler));
-        break;
-      default:
-        throw 'unexpected code branch';
-      }
-    }
+    this.mountOnto(expressApp);
     return expressApp;
   }
 }
@@ -159,26 +149,15 @@ function makeExpressHandler(appId, promiseHandler) {
   let config = AppCache.get(appId);
   return function(req, res, next) {
     try {
-      let url = maskSensitiveUrl(req);
-      let body = maskSensitiveBody(req);
-      let stringifiedBody = JSON.stringify(body, null, 2);
-      log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
-        method: req.method,
-        url: url,
-        headers: req.headers,
-        body: body
-      });
+      logRequest(req.originalUrl, req.method, req.body, req.headers);
+
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
           log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
 
-        let stringifiedResponse = JSON.stringify(result, null, 2);
-        log.verbose(
-          `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
-          {result: result}
-        );
+        logResponse(req.originalUrl, req.method, result);
 
         var status = result.status || 200;
         res.status(status);
@@ -213,35 +192,4 @@ function makeExpressHandler(appId, promiseHandler) {
       next(e);
     }
   }
-}
-
-function maskSensitiveBody(req) {
-  let maskBody = Object.assign({}, req.body);
-  let shouldMaskBody = (req.method === 'POST' && req.originalUrl.endsWith('/users')
-                       && !req.originalUrl.includes('classes')) ||
-                       (req.method === 'PUT' && /users\/\w+$/.test(req.originalUrl)
-                       && !req.originalUrl.includes('classes')) ||
-                       (req.originalUrl.includes('classes/_User'));
-  if (shouldMaskBody) {
-    for (let key of Object.keys(maskBody)) {
-      if (key == 'password') {
-        maskBody[key] = '********';
-        break;
-      }
-    }
-  }
-  return maskBody;
-}
-
-function maskSensitiveUrl(req) {
-  let maskUrl = req.originalUrl.toString();
-  let shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
-                      && !req.originalUrl.includes('classes');
-  if (shouldMaskUrl) {
-    let password = url.parse(req.originalUrl, true).query.password;
-    if (password) {
-      maskUrl = maskUrl.replace('password=' + password, 'password=********')
-    }
-  }
-  return maskUrl;
 }
