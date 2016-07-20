@@ -2,7 +2,7 @@ var LoggerController = require('../src/Controllers/LoggerController').LoggerCont
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 
 describe('LoggerController', () => {
-  it('can check process a query witout throwing', (done) => {
+  it('can check process a query without throwing', (done) => {
     // Make mock request
     var query = {};
 
@@ -38,7 +38,7 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can process a query witout throwing', (done) => {
+  it('can process a query without throwing', (done) => {
     // Make mock request
     var query = {
       from: "2016-01-01Z00:00:00",
@@ -59,7 +59,7 @@ describe('LoggerController', () => {
     done();
   });
 
-  it('can check process a query witout throwing', (done) => {
+  it('can check process a query without throwing', (done) => {
     // Make mock request
     var query = {
       from: "2016-01-01",
