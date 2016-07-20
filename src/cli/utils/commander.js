@@ -86,7 +86,7 @@ function parseConfigFile(program) {
         options[key] = action(value);
       }
     })
-    console.log(`Configuation loaded from ${jsonPath}`)
+    console.log(`Configuration loaded from ${jsonPath}`)
   }
   return options;
 }
