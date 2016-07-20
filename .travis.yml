@@ -16,10 +16,7 @@ env:
   - MONGODB_VERSION=3.2.6
 before_install:
 - ls -al "$HOME/.mongodb/versions"
-- if [ "$MONGODB_VERSION" != "" ]; then 
-    npm install -g mongodb-version-manager && export PATH="$(m path):$PATH" &&
-    m use $MONGODB_VERSION
-  fi
+- test "$MONGODB_VERSION" != "" && npm install -g mongodb-version-manager && m use $MONGODB_VERSION
 matrix:
   fast_finish: true,
 branches:
@@ -27,7 +24,6 @@ branches:
   - master
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
 cache:
-  timeout: 10000
   directories:
   - "$HOME/.mongodb/versions"
 before_script:
