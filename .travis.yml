@@ -15,16 +15,9 @@ env:
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
 before_install:
-- if [ "$PARSE_SERVER_TEST_DB" = "postgres" ]; then
-    psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres;
-  else
-    MONGODB_PATH=~/.mongodb/versions/mongodb-$MONGODB_VERSION-linux-64
-    mkdir -p $MONGODB_PATH
-    curl -O https://fastdl.mongodb.org/linux/mongodb-linux-x86_64-$MONGODB_VERSION.tgz
-    tar -zxvf mongodb-linux-x86_64-$MONGODB_VERSION.tgz
-    cp -R -n mongodb-linux-x86_64-$MONGODB_VERSION/ $MONGODB_PATH
-    ln -s $MONGODB_PATH ~/.mongodb/versions/mongodb-current
-  fi
+- npm install -g mongodb-version-manager
+- export PATH="`m path`:$PATH"
+- m use $MONGODB_VERSION || exit 0
 matrix:
   fast_finish: true,
 branches:
@@ -32,10 +25,12 @@ branches:
   - master
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
 cache:
+  timeout: 10000
   directories:
-  - "$HOME/.mongodb/versions/downloads"
+  - "$HOME/.mongodb/versions"
+before_script:
+- ls -al "$HOME/.mongodb/versions"
 after_script: 
-- sudo service mongod stop
 - "./node_modules/.bin/codecov"
 deploy:
   provider: npm
