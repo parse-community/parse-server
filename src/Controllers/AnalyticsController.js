@@ -2,9 +2,22 @@ import AdaptableController from './AdaptableController';
 import { AnalyticsAdapter } from '../Adapters/Analytics/AnalyticsAdapter';
 
 export class AnalyticsController extends AdaptableController {
-  post(req) {
-    var analyticsAdapter = this.adapter;
-    return analyticsAdapter.post(req);
+  appOpened(req) {
+    return this.adapter.appOpened(req.body, req).then(
+      function(response) {
+        return { response: response };
+      }).catch((err) => {
+        return { response: {} };
+      });
+  }
+
+  trackEvent(req) {
+    return this.adapter.trackEvent(req.params.eventName, req.body, req).then(
+      function(response) {
+        return { response: response };
+      }).catch((err) => {
+        return { response: {} };
+      });
   }
 
   expectedAdapterType() {

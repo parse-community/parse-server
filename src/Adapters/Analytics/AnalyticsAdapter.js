@@ -1,8 +1,10 @@
 export class AnalyticsAdapter {
-  post(req) {
-    return Promise.resolve({
-        response: {}
-      });
+  appOpened(parameters, req) {
+    return Promise.resolve({});
+  }
+
+  trackEvent(eventName, parameters, req) {
+    return Promise.resolve({});
   }
 }
 
