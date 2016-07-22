@@ -1,9 +1,10 @@
-import winston           from 'winston';
-import ParseServer       from './ParseServer';
-import S3Adapter         from 'parse-server-s3-adapter'
-import FileSystemAdapter from 'parse-server-fs-adapter'
-import TestUtils         from './TestUtils';
-import { useExternal }   from './deprecated'
+import ParseServer          from './ParseServer';
+import logger            from './logger';
+import S3Adapter            from 'parse-server-s3-adapter'
+import FileSystemAdapter    from 'parse-server-fs-adapter'
+import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter'
+import TestUtils            from './TestUtils';
+import { useExternal }      from './deprecated'
 
 // Factory function
 let _ParseServer = function(options) {
@@ -16,4 +17,4 @@ _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 let GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, TestUtils, _ParseServer as ParseServer };
+export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, TestUtils, logger, _ParseServer as ParseServer };

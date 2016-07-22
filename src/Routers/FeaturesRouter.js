@@ -19,16 +19,16 @@ export class FeaturesRouter extends PromiseRouter {
           delete: false,
         },
         logs: {
-          level: false,
-          size: false,
-          order: false,
-          until: false,
-          from: false,
+          level: true,
+          size: true,
+          order: true,
+          until: true,
+          from: true,
         },
         push: {
           immediatePush: req.config.pushController.pushIsAvailable,
           scheduledPush: false,
-          storedPushData: false,
+          storedPushData: req.config.pushController.pushIsAvailable,
           pushAudiences: false,
         },
         schemas: {
@@ -36,9 +36,10 @@ export class FeaturesRouter extends PromiseRouter {
           removeField: true,
           addClass: true,
           removeClass: true,
-          clearAllDataFromClass: false,
+          clearAllDataFromClass: true,
           exportClass: false,
           editClassLevelPermissions: true,
+          editPointerPermissions: true,
         },
       };
 

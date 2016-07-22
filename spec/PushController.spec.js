@@ -130,7 +130,7 @@ describe('PushController', () => {
     done();
   });
 
-  it('properly increment badges', (done) => {
+  it_exclude_dbs(['postgres'])('properly increment badges', (done) => {
 
    var payload = {data:{
      alert: "Hello World!",
@@ -178,20 +178,19 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });
 
   });
 
-  it('properly set badges to 1', (done) => {
+  it_exclude_dbs(['postgres'])('properly set badges to 1', (done) => {
 
    var payload = {data: {
      alert: "Hello World!",
@@ -227,20 +226,19 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
    }, (err) => {
-     console.error(err);
      fail("should not fail");
      done();
    });
 
   });
 
-  it('properly creates _PushStatus', (done) => {
+  it_exclude_dbs(['postgres'])('properly creates _PushStatus', (done) => {
 
     var installations = [];
     while(installations.length != 10) {
@@ -279,7 +277,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
@@ -295,6 +293,7 @@ describe('PushController', () => {
      expect(results.length).toBe(1);
      let result = results[0];
      expect(result.createdAt instanceof Date).toBe(true);
+     expect(result.updatedAt instanceof Date).toBe(true);
      expect(result.id.length).toBe(10);
      expect(result.get('source')).toEqual('rest');
      expect(result.get('query')).toEqual(JSON.stringify({}));
@@ -319,7 +318,7 @@ describe('PushController', () => {
 
   });
 
-  it('should properly report failures in _PushStatus', (done) => {
+  it_exclude_dbs(['postgres'])('should properly report failures in _PushStatus', (done) => {
     var pushAdapter = {
      send: function(body, installations) {
        return installations.map((installation) => {
@@ -343,7 +342,7 @@ describe('PushController', () => {
    var auth = {
     isMaster: true
    }
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    pushController.sendPush(payload, where, config, auth).then(() => {
      fail('should not succeed');
      done();
@@ -358,7 +357,7 @@ describe('PushController', () => {
    })
   });
 
-  it('should support full RESTQuery for increment', (done) => {
+  it_exclude_dbs(['postgres'])('should support full RESTQuery for increment', (done) => {
     var payload = {data: {
      alert: "Hello World!",
      badge: 'Increment',
@@ -389,7 +388,7 @@ describe('PushController', () => {
      }
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId);
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
    pushController.sendPush(payload, where, config, auth).then((result) => {
       done();
     }).catch((err) => {

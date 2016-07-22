@@ -7,7 +7,6 @@ var testUserId = 'userId';
 var testClassName = 'TestObject';
 
 describe('ParseLiveQueryServer', function() {
-
   beforeEach(function(done) {
     // Mock ParseWebSocketServer
     var mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');

@@ -1,8 +1,8 @@
 
 import ClassesRouter from './ClassesRouter';
 import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
-import Auth from '../Auth';
+import rest          from '../rest';
+import Auth          from '../Auth';
 
 export class SessionsRouter extends ClassesRouter {
   handleFind(req) {
@@ -36,7 +36,7 @@ export class SessionsRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
         'Session token required.');
     }
-    return rest.find(req.config, Auth.master(req.config), '_Session', { _session_token: req.info.sessionToken })
+    return rest.find(req.config, Auth.master(req.config), '_Session', { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,

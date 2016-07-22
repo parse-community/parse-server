@@ -2,7 +2,7 @@
 // configured.
 // mount is the URL for the root of the API; includes http, domain, etc.
 
-import cache from './cache';
+import AppCache from './cache';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -16,28 +16,33 @@ function removeTrailingSlash(str) {
 
 export class Config {
   constructor(applicationId: string, mount: string) {
-    let DatabaseAdapter = require('./DatabaseAdapter');
-    let cacheInfo = cache.apps.get(applicationId);
+    let cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
 
     this.applicationId = applicationId;
+    this.jsonLogs = cacheInfo.jsonLogs;
     this.masterKey = cacheInfo.masterKey;
     this.clientKey = cacheInfo.clientKey;
     this.javascriptKey = cacheInfo.javascriptKey;
     this.dotNetKey = cacheInfo.dotNetKey;
     this.restAPIKey = cacheInfo.restAPIKey;
+    this.webhookKey = cacheInfo.webhookKey;
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.database = DatabaseAdapter.getDatabaseConnection(applicationId, cacheInfo.collectionPrefix);
+    this.database = cacheInfo.databaseController;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
+    this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
+    this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
     this.appName = cacheInfo.appName;
 
+    this.analyticsController = cacheInfo.analyticsController;
+    this.cacheController = cacheInfo.cacheController;
     this.hooksController = cacheInfo.hooksController;
     this.filesController = cacheInfo.filesController;
     this.pushController = cacheInfo.pushController;
@@ -48,29 +53,55 @@ export class Config {
     this.mount = removeTrailingSlash(mount);
     this.liveQueryController = cacheInfo.liveQueryController;
     this.sessionLength = cacheInfo.sessionLength;
+    this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
+    this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
+    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
   }
 
-  static validate(options) {
-    this.validateEmailConfiguration({verifyUserEmails: options.verifyUserEmails, 
-                                appName: options.appName, 
-                                publicServerURL: options.publicServerURL})
-    if (options.publicServerURL) {
-      if (!options.publicServerURL.startsWith("http://") && !options.publicServerURL.startsWith("https://")) {
+  static validate({
+    verifyUserEmails,
+    userController,
+    appName,
+    publicServerURL,
+    revokeSessionOnPasswordReset,
+    expireInactiveSessions,
+    sessionLength,
+    emailVerifyTokenValidityDuration
+  }) {
+    const emailAdapter = userController.adapter;
+    if (verifyUserEmails) {
+      this.validateEmailConfiguration({emailAdapter, appName, publicServerURL, emailVerifyTokenValidityDuration});
+    }
+
+    if (typeof revokeSessionOnPasswordReset !== 'boolean') {
+      throw 'revokeSessionOnPasswordReset must be a boolean value';
+    }
+
+    if (publicServerURL) {
+      if (!publicServerURL.startsWith("http://") && !publicServerURL.startsWith("https://")) {
         throw "publicServerURL should be a valid HTTPS URL starting with https://"
       }
     }
 
-    this.validateSessionLength(options.sessionLength);
+    this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
   }
 
-  static validateEmailConfiguration({verifyUserEmails, appName, publicServerURL}) {
-    if (verifyUserEmails) {
-      if (typeof appName !== 'string') {
-        throw 'An app name is required when using email verification.';
-      }
-      if (typeof publicServerURL !== 'string') {
-        throw 'A public server url is required when using email verification.';
+static validateEmailConfiguration({emailAdapter, appName, publicServerURL, emailVerifyTokenValidityDuration}) {
+    if (!emailAdapter) {
+      throw 'An emailAdapter is required for e-mail verification and password resets.';
+    }
+    if (typeof appName !== 'string') {
+      throw 'An app name is required for e-mail verification and password resets.';
+    }
+    if (typeof publicServerURL !== 'string') {
+      throw 'A public server url is required for e-mail verification and password resets.';
+    }
+    if (emailVerifyTokenValidityDuration) {
+      if (isNaN(emailVerifyTokenValidityDuration)) {
+        throw 'Email verify token validity duration must be a valid number.';
+      } else if (emailVerifyTokenValidityDuration <= 0) {
+        throw 'Email verify token validity duration must be a value greater than 0.'
       }
     }
   }
@@ -87,16 +118,29 @@ export class Config {
     this._mount = newValue;
   }
 
-  static validateSessionLength(sessionLength) {
-    if(isNaN(sessionLength)) {
-      throw 'Session length must be a valid number.';
-    }
-    else if(sessionLength <= 0) {
-      throw 'Session length must be a value greater than 0.'
+  static validateSessionConfiguration(sessionLength, expireInactiveSessions) {
+    if (expireInactiveSessions) {
+      if (isNaN(sessionLength)) {
+        throw 'Session length must be a valid number.';
+      }
+      else if (sessionLength <= 0) {
+        throw 'Session length must be a value greater than 0.'
+      }
     }
   }
 
+  generateEmailVerifyTokenExpiresAt() {
+    if (!this.verifyUserEmails || !this.emailVerifyTokenValidityDuration) {
+      return undefined;
+    }
+    var now = new Date();
+    return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration*1000));
+  }
+
   generateSessionExpiresAt() {
+    if (!this.expireInactiveSessions) {
+      return undefined;
+    }
     var now = new Date();
     return new Date(now.getTime() + (this.sessionLength*1000));
   }
@@ -124,7 +168,7 @@ export class Config {
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }
-};
+}
 
 export default Config;
 module.exports = Config;

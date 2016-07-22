@@ -1,13 +1,13 @@
 
 import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
+import rest          from '../rest';
 
-import url from 'url';
+import url           from 'url';
 
 const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 
 export class ClassesRouter extends PromiseRouter {
-  
+
   handleFind(req) {
     let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     let options = {};
@@ -16,14 +16,14 @@ export class ClassesRouter extends PromiseRouter {
 
     for (let key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
     }
 
     if (body.skip) {
       options.skip = Number(body.skip);
     }
-    if (body.limit) {
+    if (body.limit || body.limit === 0) {
       options.limit = Number(body.limit);
     } else {
       options.limit = Number(100);
@@ -46,7 +46,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest.find(req.config, req.auth, req.params.className, body.where, options)
+    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
       .then((response) => {
         if (response && response.results) {
           for (let result of response.results) {
@@ -77,37 +77,37 @@ export class ClassesRouter extends PromiseRouter {
       options.include = String(body.include);
     }
 
-    return rest.find(req.config, req.auth, req.params.className, {objectId: req.params.objectId}, options)
+    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options, req.info.clientSDK)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
-        
+
         if (req.params.className === "_User") {
-          
+
           delete response.results[0].sessionToken;
-          
+
           const user =  response.results[0];
-         
+
           if (req.auth.user && user.objectId == req.auth.user.id) {
             // Force the session token
             response.results[0].sessionToken = req.info.sessionToken;
           }
-        }        
+        }
         return { response: response.results[0] };
       });
   }
 
   handleCreate(req) {
-    return rest.create(req.config, req.auth, req.params.className, req.body);
+    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK);
   }
 
   handleUpdate(req) {
-    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body);
+    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body, req.info.clientSDK);
   }
 
   handleDelete(req) {
-    return rest.del(req.config, req.auth, req.params.className, req.params.objectId)
+    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK)
       .then(() => {
         return {response: {}};
       });
@@ -124,7 +124,7 @@ export class ClassesRouter extends PromiseRouter {
     }
     return json
   }
-  
+
   mountRoutes() {
     this.route('GET', '/classes/:className', (req) => { return this.handleFind(req); });
     this.route('GET', '/classes/:className/:objectId', (req) => { return this.handleGet(req); });

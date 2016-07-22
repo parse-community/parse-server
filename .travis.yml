@@ -1,20 +1,32 @@
 language: node_js
 node_js:
 - '4.3'
+- '6.1'
+services:
+  - postgresql
+addons:
+  postgresql: '9.4'
+before_script:
+  - ls -al "$HOME/.mongodb/versions"
+  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 env:
   global:
-  - COVERAGE_OPTION='./node_modules/babel-istanbul/lib/cli.js cover -x **/spec/**'
+  - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
   matrix:
+  - PARSE_SERVER_TEST_DB=postgres
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
+  - MONGODB_VERSION=3.2.6
+matrix:
+  fast_finish: true,
 branches:
   only:
   - master
-  - /^[0-9].[0-9].[0-9](-.*)?$/
+  - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
 cache:
   directories:
-  - "$HOME/.mongodb/versions/downloads"
-after_success: "./node_modules/.bin/codecov"
+  - "$HOME/.mongodb/versions"
+after_script: "./node_modules/.bin/codecov"
 deploy:
   provider: npm
   email:

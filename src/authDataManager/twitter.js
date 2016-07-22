@@ -1,4 +1,4 @@
-// Helper functions for accessing the meetup API.
+// Helper functions for accessing the twitter API.
 var OAuth = require('./OAuth1Client');
 var Parse = require('parse/node').Parse;
 

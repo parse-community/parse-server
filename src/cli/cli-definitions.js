@@ -86,6 +86,10 @@ export default {
     env: "PARSE_SERVER_DOT_NET_KEY",
     help: "Key for Unity and .Net SDK"
   },
+  "webhookKey": {
+    env: "PARSE_SERVER_WEBHOOK_KEY",
+    help: "Key sent with outgoing webhook calls"
+  },
   "cloud": {
     env: "PARSE_SERVER_CLOUD_CODE_MAIN",
     help: "Full path to your cloud code main.js"
@@ -142,6 +146,16 @@ export default {
     help: "Enable (or disable) user email validation, defaults to false",
     action: booleanParser
   },
+  "preventLoginWithUnverifiedEmail": {
+    env: "PARSE_SERVER_PREVENT_LOGIN_WITH_UNVERIFIED_EMAIL",
+    help: "Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false",
+    action: booleanParser
+  },
+  "emailVerifyTokenValidityDuration": {
+    env: "PARSE_SERVER_EMAIL_VERIFY_TOKEN_VALIDITY_DURATION",
+    help: "Email verification token validity duration",
+    action: numberParser("emailVerifyTokenValidityDuration")
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"
@@ -174,5 +188,14 @@ export default {
   "verbose": {
     env: "VERBOSE",
     help: "Set the logging to verbose"
+  },
+  "jsonLogs": {
+    env: "JSON_LOGS",
+    help: "Log as structured JSON objects"
+  },
+  "revokeSessionOnPasswordReset": {
+    env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
+    help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
+    action: booleanParser
   }
 };

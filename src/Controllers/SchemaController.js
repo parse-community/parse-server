@@ -15,9 +15,7 @@
 // TODO: hide all schema logic inside the database adapter.
 
 const Parse = require('parse/node').Parse;
-const transform = require('./transform');
-import MongoSchemaCollection from './Adapters/Storage/Mongo/MongoSchemaCollection';
-import _                     from 'lodash';
+import _ from 'lodash';
 
 const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -31,11 +29,10 @@ const defaultColumns = Object.freeze({
   _User: {
     "username":      {type:'String'},
     "password":      {type:'String'},
-    "authData":      {type:'Object'},
     "email":         {type:'String'},
     "emailVerified": {type:'Boolean'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {
     "installationId":   {type:'String'},
     "deviceToken":      {type:'String'},
@@ -45,15 +42,19 @@ const defaultColumns = Object.freeze({
     "GCMSenderId":      {type:'String'},
     "timeZone":         {type:'String'},
     "localeIdentifier": {type:'String'},
-    "badge":            {type:'Number'}
+    "badge":            {type:'Number'},
+    "appVersion":       {type:'String'},
+    "appName":          {type:'String'},
+    "appIdentifier":    {type:'String'},
+    "parseVersion":     {type:'String'},
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Role collection (in addition to DefaultCols)
   _Role: {
     "name":  {type:'String'},
     "users": {type:'Relation', targetClass:'_User'},
     "roles": {type:'Relation', targetClass:'_Role'}
   },
-  // The additional default columns for the _User collection (in addition to DefaultCols)
+  // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {
     "restricted":     {type:'Boolean'},
     "user":           {type:'Pointer', targetClass:'_User'},
@@ -93,7 +94,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
+
+const volatileClasses = Object.freeze(['_PushStatus', '_Hooks', '_GlobalConfig']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -114,8 +117,8 @@ function verifyPermissionKey(key) {
   }
 }
 
-const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField']);
-function validateCLP(perms) {
+const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
+function validateCLP(perms, fields) {
   if (!perms) {
     return;
   }
@@ -123,6 +126,20 @@ function validateCLP(perms) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+
+    if (operation === 'readUserFields' || operation === 'writeUserFields') {
+      if (!Array.isArray(perms[operation])) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
+      } else {
+        perms[operation].forEach((key) => {
+          if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
+             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
+          }
+        });
+      }
+      return;
+    }
+
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
       let perm = perms[operation][key];
@@ -202,15 +219,62 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
   return undefined;
 }
 
+const convertSchemaToAdapterSchema = schema => {
+  schema = injectDefaultSchema(schema);
+  delete schema.fields.ACL;
+  schema.fields._rperm = { type: 'Array' };
+  schema.fields._wperm = { type: 'Array' };
+
+  if (schema.className === '_User') {
+    delete schema.fields.password;
+    schema.fields._hashed_password = { type: 'String' };
+  }
+
+  return schema;
+}
+
+const convertAdapterSchemaToParseSchema = ({...schema}) => {
+  delete schema.fields._rperm;
+  delete schema.fields._wperm;
+
+  schema.fields.ACL = { type: 'ACL' };
+
+  if (schema.className === '_User') {
+    delete schema.fields.authData; //Auth data is implicit
+    delete schema.fields._hashed_password;
+    schema.fields.password = { type: 'String' };
+  }
+
+  return schema;
+}
+
+const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
+  className,
+  fields: {
+    ...defaultColumns._Default,
+    ...(defaultColumns[className] || {}),
+    ...fields,
+  },
+  classLevelPermissions,
+})
+
+const dbTypeMatchesObjectType = (dbType, objectType) => {
+  if (dbType.type !== objectType.type) return false;
+  if (dbType.targetClass !== objectType.targetClass) return false;
+  if (dbType === objectType.type) return true;
+  if (dbType.type === objectType.type) return true;
+  return false;
+}
+
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
-class Schema {
-  _collection;
+class SchemaController {
+  _dbAdapter;
   data;
   perms;
 
-  constructor(collection) {
-    this._collection = collection;
+  constructor(databaseAdapter) {
+    this._dbAdapter = databaseAdapter;
 
     // this.data[className][fieldName] tells you the type of that field, in mongo format
     this.data = {};
@@ -221,17 +285,35 @@ class Schema {
   reloadData() {
     this.data = {};
     this.perms = {};
-    return this._collection.getAllSchemas().then(allSchemas => {
+    return this.getAllClasses()
+    .then(allSchemas => {
       allSchemas.forEach(schema => {
-        const parseFormatSchema = {
-          ...defaultColumns._Default,
-          ...(defaultColumns[schema.className] || {}),
-          ...schema.fields,
-        }
-        this.data[schema.className] = parseFormatSchema;
+        this.data[schema.className] = injectDefaultSchema(schema).fields;
         this.perms[schema.className] = schema.classLevelPermissions;
       });
+
+      // Inject the in-memory classes
+      volatileClasses.forEach(className => {
+        this.data[className] = injectDefaultSchema({
+          className,
+          fields: {},
+          classLevelPermissions: {}
+        });
+      });
     });
+  }
+
+  getAllClasses() {
+    return this._dbAdapter.getAllClasses()
+    .then(allSchemas => allSchemas.map(injectDefaultSchema));
+  }
+
+  getOneSchema(className, allowVolatileClasses = false) {
+    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+      return Promise.resolve(this.data[className]);
+    }
+    return this._dbAdapter.getClass(className)
+    .then(injectDefaultSchema)
   }
 
   // Create a new class that includes the three default fields.
@@ -247,113 +329,104 @@ class Schema {
       return Promise.reject(validationError);
     }
 
-    return this._collection.addSchema(className, fields, classLevelPermissions)
-    .then(res => {
-      return Promise.resolve(res);
-    })
+    return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
+    .then(convertAdapterSchemaToParseSchema)
     .catch(error => {
-      if (error === undefined) {
+      if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`);
       } else {
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+        throw error;
       }
     });
   }
 
   updateClass(className, submittedFields, classLevelPermissions, database) {
-    if (!this.data[className]) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-    }
-    let existingFields = Object.assign(this.data[className], {_id: className});
-    Object.keys(submittedFields).forEach(name => {
-      let field = submittedFields[name];
-      if (existingFields[name] && field.__op !== 'Delete') {
-        throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
-      }
-      if (!existingFields[name] && field.__op === 'Delete') {
-        throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
-      }
-    });
+    return this.getOneSchema(className)
+    .then(schema => {
+      let existingFields = schema.fields;
+      Object.keys(submittedFields).forEach(name => {
+        let field = submittedFields[name];
+        if (existingFields[name] && field.__op !== 'Delete') {
+          throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
+        }
+        if (!existingFields[name] && field.__op === 'Delete') {
+          throw new Parse.Error(255, `Field ${name} does not exist, cannot delete.`);
+        }
+      });
 
-    let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-    let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions);
-    if (validationError) {
-      throw new Parse.Error(validationError.code, validationError.error);
-    }
-
-    // Finally we have checked to make sure the request is valid and we can start deleting fields.
-    // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
-    let deletePromises = [];
-    let insertedFields = [];
-    Object.keys(submittedFields).forEach(fieldName => {
-      if (submittedFields[fieldName].__op === 'Delete') {
-        const promise = this.deleteField(fieldName, className, database);
-        deletePromises.push(promise);
-      } else {
-        insertedFields.push(fieldName);
+      delete existingFields._rperm;
+      delete existingFields._wperm;
+      let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
+      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
+      if (validationError) {
+        throw new Parse.Error(validationError.code, validationError.error);
       }
-    });
 
-    return Promise.all(deletePromises) // Delete Everything
+      // Finally we have checked to make sure the request is valid and we can start deleting fields.
+      // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
+      let deletePromises = [];
+      let insertedFields = [];
+      Object.keys(submittedFields).forEach(fieldName => {
+        if (submittedFields[fieldName].__op === 'Delete') {
+          const promise = this.deleteField(fieldName, className, database);
+          deletePromises.push(promise);
+        } else {
+          insertedFields.push(fieldName);
+        }
+      });
+
+      return Promise.all(deletePromises) // Delete Everything
       .then(() => this.reloadData()) // Reload our Schema, so we have all the new values
       .then(() => {
         let promises = insertedFields.map(fieldName => {
           const type = submittedFields[fieldName];
-          return this.validateField(className, fieldName, type);
+          return this.enforceFieldExists(className, fieldName, type);
         });
         return Promise.all(promises);
       })
-      .then(() => {
-        return this.setPermissions(className, classLevelPermissions)
-      })
+      .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
       //TODO: Move this logic into the database adapter
-      .then(() => {
-        return { className: className,
-              fields: this.data[className],
-              classLevelPermissions: this.perms[className] }
-      });
-  }
-
-
-  // Returns whether the schema knows the type of all these keys.
-  hasKeys(className, keys) {
-    for (let key of keys) {
-      if (!this.data[className] || !this.data[className][key]) {
-        return false;
+      .then(() => ({
+        className: className,
+        fields: this.data[className],
+        classLevelPermissions: this.perms[className]
+      }));
+    })
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw error;
       }
-    }
-    return true;
+    })
   }
 
   // Returns a promise that resolves successfully to the new schema
   // object or fails with a reason.
-  // If 'freeze' is true, refuse to update the schema.
-  // WARNING: this function has side-effects, and doesn't actually
-  // do any validation of the format of the className. You probably
-  // should use classNameIsValid or addClassIfNotExists or something
-  // like that instead. TODO: rename or remove this function.
-  validateClassName(className, freeze) {
+  enforceClassExists(className) {
     if (this.data[className]) {
       return Promise.resolve(this);
     }
-    if (freeze) {
-      throw new Parse.Error(Parse.Error.INVALID_JSON,
-        'schema is frozen, cannot add: ' + className);
-    }
     // We don't have this class. Update the schema
-    return this.addClassIfNotExists(className, []).then(() => {
-      // The schema update succeeded. Reload the schema
-      return this.reloadData();
-    }, () => {
+    return this.addClassIfNotExists(className)
+    // The schema update succeeded. Reload the schema
+    .then(() => this.reloadData())
+    .catch(error => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
       // So just reload the schema.
       return this.reloadData();
-    }).then(() => {
+    })
+    .then(() => {
       // Ensure that the schema now validates
-      return this.validateClassName(className, true);
-    }, () => {
+      if (this.data[className]) {
+        return this;
+      } else {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
+      }
+    })
+    .catch(error => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
@@ -369,25 +442,27 @@ class Schema {
         error: invalidClassNameMessage(className),
       };
     }
-    return this.validateSchemaData(className, fields, classLevelPermissions);
+    return this.validateSchemaData(className, fields, classLevelPermissions, []);
   }
 
-  validateSchemaData(className, fields, classLevelPermissions) {
+  validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
     for (let fieldName in fields) {
-      if (!fieldNameIsValid(fieldName)) {
-        return {
-          code: Parse.Error.INVALID_KEY_NAME,
-          error: 'invalid field name: ' + fieldName,
-        };
+      if (!existingFieldNames.includes(fieldName)) {
+        if (!fieldNameIsValid(fieldName)) {
+          return {
+            code: Parse.Error.INVALID_KEY_NAME,
+            error: 'invalid field name: ' + fieldName,
+          };
+        }
+        if (!fieldNameIsValidForClass(fieldName, className)) {
+          return {
+            code: 136,
+            error: 'field ' + fieldName + ' cannot be added',
+          };
+        }
+        const error = fieldTypeIsInvalid(fields[fieldName]);
+        if (error) return { code: error.code, error: error.message };
       }
-      if (!fieldNameIsValidForClass(fieldName, className)) {
-        return {
-          code: 136,
-          error: 'field ' + fieldName + ' cannot be added',
-        };
-      }
-      const error = fieldTypeIsInvalid(fields[fieldName]);
-      if (error) return { code: error.code, error: error.message };
     }
 
     for (let fieldName in defaultColumns[className]) {
@@ -401,95 +476,69 @@ class Schema {
         error: 'currently, only one GeoPoint field may exist in an object. Adding ' + geoPoints[1] + ' when ' + geoPoints[0] + ' already exists.',
       };
     }
-    validateCLP(classLevelPermissions);
+    validateCLP(classLevelPermissions, fields);
   }
 
   // Sets the Class-level permissions for a given className, which must exist.
-  setPermissions(className, perms) {
+  setPermissions(className, perms, newSchema) {
     if (typeof perms === 'undefined') {
       return Promise.resolve();
     }
-    validateCLP(perms);
-    let update = {
-      _metadata: {
-        class_permissions: perms
-      }
-    };
-    update = {'$set': update};
-    return this._collection.updateSchema(className, update).then(() => {
-      // The update succeeded. Reload the schema
-      return this.reloadData();
-    });
+    validateCLP(perms, newSchema);
+    return this._dbAdapter.setClassLevelPermissions(className, perms)
+    .then(() => this.reloadData());
   }
 
   // Returns a promise that resolves successfully to the new schema
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  validateField(className, fieldName, type, freeze) {
-    return this.reloadData().then(() => {
-      // Just to check that the fieldName is valid
-      transform.transformKey(this, className, fieldName);
+  enforceFieldExists(className, fieldName, type, freeze) {
+    if (fieldName.indexOf(".") > 0) {
+      // subdocument key (x.y) => ok if x is of type 'object'
+      fieldName = fieldName.split(".")[ 0 ];
+      type = 'Object';
+    }
+    if (!fieldNameIsValid(fieldName)) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
+    }
 
-      if( fieldName.indexOf(".") > 0 ) {
-        // subdocument key (x.y) => ok if x is of type 'object'
-        fieldName = fieldName.split(".")[ 0 ];
-        type = 'Object';
+    // If someone tries to create a new field with null/undefined as the value, return;
+    if (!type) {
+      return Promise.resolve(this);
+    }
+
+    return this.reloadData().then(() => {
+      let expectedType = this.getExpectedType(className, fieldName);
+      if (typeof type === 'string') {
+        type = { type };
       }
 
-      let expected = this.data[className][fieldName];
-      if (expected) {
-        expected = (expected === 'map' ? 'Object' : expected);
-        if (expected.type && type.type
-            && expected.type == type.type
-            && expected.targetClass == type.targetClass) {
-          return Promise.resolve(this);
-        } else if (expected == type || expected.type == type) {
-          return Promise.resolve(this);
-        } else {
+      if (expectedType) {
+        if (!dbTypeMatchesObjectType(expectedType, type)) {
           throw new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${expected} but got ${type}`
+            `schema mismatch for ${className}.${fieldName}; expected ${expectedType.type || expectedType} but got ${type.type}`
           );
         }
       }
 
-      if (freeze) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `schema is frozen, cannot add ${fieldName} field`);
-      }
-
-      // We don't have this field, but if the value is null or undefined,
-      // we won't update the schema until we get a value with a type.
-      if (!type) {
-        return Promise.resolve(this);
-      }
-
-      if (type === 'GeoPoint') {
-        // Make sure there are not other geopoint fields
-        for (let otherKey in this.data[className]) {
-          if (this.data[className][otherKey].type === 'GeoPoint') {
-            throw new Parse.Error(
-              Parse.Error.INCORRECT_TYPE,
-              'there can only be one geopoint field in a class');
-          }
-        }
-      }
-
-      return this._collection.updateField(className, fieldName, type).then(() => {
+      return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData();
-      }, () => {
+      }, error => {
+        //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
+
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
         return this.reloadData();
-      }).then(() => {
+      }).then(error => {
         // Ensure that the schema now validates
-        return this.validateField(className, fieldName, type, true);
-      }, (error) => {
-        // The schema still doesn't validate. Give up
-        throw new Parse.Error(Parse.Error.INVALID_JSON,
-          'schema key will not revalidate');
+        if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
+        }
+        return this;
       });
     });
   }
@@ -513,33 +562,25 @@ class Schema {
       throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
     }
 
-    return this.reloadData()
-    .then(() => this.hasClass(className))
-    .then(hasClass => {
-      if (!hasClass) {
+    return this.getOneSchema(className)
+    .catch(error => {
+      if (error === undefined) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw error;
       }
-      if (!this.data[className][fieldName]) {
+    })
+    .then(schema => {
+      if (!schema.fields[fieldName]) {
         throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
       }
-
-      if (this.data[className][fieldName].type == 'Relation') {
+      if (schema.fields[fieldName].type == 'Relation') {
         //For relations, drop the _Join table
-        return database.adapter.deleteFields(className, [fieldName], [])
-        .then(() => database.dropCollection(`_Join:${fieldName}:${className}`))
-        .catch(error => {
-          // 'ns not found' means collection was already gone. Ignore deletion attempt.
-          // TODO: 'ns not found' is a mongo implementation detail. Move it into mongo adapter.
-          if (error.message == 'ns not found') {
-            return Promise.resolve();
-          }
-          return Promise.reject(error);
-        });
+        return database.adapter.deleteFields(className, schema, [fieldName])
+        .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
 
-      const fieldNames = [fieldName];
-      const pointerFieldNames = this.data[className][fieldName].type === 'Pointer' ? [fieldName] : [];
-      return database.adapter.deleteFields(className, fieldNames, pointerFieldNames);
+      return database.adapter.deleteFields(className, schema, [fieldName]);
     });
   }
 
@@ -548,7 +589,7 @@ class Schema {
   // valid.
   validateObject(className, object, query) {
     let geocount = 0;
-    let promise = this.validateClassName(className);
+    let promise = this.enforceClassExists(className);
     for (let fieldName in object) {
       if (object[fieldName] === undefined) {
         continue;
@@ -572,7 +613,8 @@ class Schema {
         // Every object has ACL implicitly.
         continue;
       }
-      promise = thenValidateField(promise, className, fieldName, expected);
+
+      promise = promise.then(schema => schema.enforceFieldExists(className, fieldName, expected));
     }
     promise = thenValidateRequiredColumns(promise, className, object, query);
     return promise;
@@ -605,76 +647,72 @@ class Schema {
     return Promise.resolve(this);
   }
 
-  // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className, aclGroup, operation) {
+  // Validates the base CLP for an operation
+  testBaseCLP(className, aclGroup, operation) {
     if (!this.perms[className] || !this.perms[className][operation]) {
-      return Promise.resolve();
+      return true;
     }
-    let perms = this.perms[className][operation];
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
-      return Promise.resolve();
+      return true;
     }
     // Check permissions against the aclGroup provided (array of userId/roles)
-    let found = false;
-    for (let i = 0; i < aclGroup.length && !found; i++) {
-      if (perms[aclGroup[i]]) {
-        found = true;
-      }
+    if (aclGroup.some(acl => { return perms[acl] === true })) {
+      return true;
     }
-    if (!found) {
-      // TODO: Verify correct error code
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-        'Permission denied for this action.');
+    return false;
+  }
+
+  // Validates an operation passes class-level-permissions set in the schema
+  validatePermission(className, aclGroup, operation) {
+    if (this.testBaseCLP(className, aclGroup, operation)) {
+      return Promise.resolve();
     }
+
+    if (!this.perms[className] || !this.perms[className][operation]) {
+      return true;
+    }
+    let classPerms = this.perms[className];
+    let perms = classPerms[operation];
+    // No matching CLP, let's check the Pointer permissions
+    // And handle those later
+    let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+
+    // Reject create when write lockdown
+    if (permissionField == 'writeUserFields' && operation == 'create') {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        `Permission denied for action ${operation} on class ${className}.`);
+    }
+
+    // Process the readUserFields later
+    if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
+        return Promise.resolve();
+    }
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
+        `Permission denied for action ${operation} on class ${className}.`);
   };
 
   // Returns the expected type for a className+key combination
   // or undefined if the schema is not set
-  getExpectedType(className, key) {
+  getExpectedType(className, fieldName) {
     if (this.data && this.data[className]) {
-      return this.data[className][key];
+      const expectedType = this.data[className][fieldName]
+      return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
   };
 
-  // Checks if a given class is in the schema. Needs to load the
-  // schema first, which is kinda janky. Hopefully we can refactor
-  // and make this be a regular value.
+  // Checks if a given class is in the schema.
   hasClass(className) {
     return this.reloadData().then(() => !!(this.data[className]));
-  }
-
-  // Helper function to check if a field is a pointer, returns true or false.
-  isPointer(className, key) {
-    let expected = this.getExpectedType(className, key);
-    if (expected && expected.charAt(0) == '*') {
-      return true;
-    }
-    return false;
-  };
-
-  getRelationFields(className) {
-    if (this.data && this.data[className]) {
-      let classData = this.data[className];
-      return Object.keys(classData).filter((field) => {
-        return classData[field].type === 'Relation';
-      }).reduce((memo, field) => {
-        let type = classData[field];
-        memo[field] = {
-          __type: 'Relation',
-          className: type.targetClass
-        };
-        return memo;
-      }, {});
-    }
-    return {};
   }
 }
 
 // Returns a promise for a new Schema.
-function load(collection) {
-  let schema = new Schema(collection);
+const load = dbAdapter => {
+  let schema = new SchemaController(dbAdapter);
   return schema.reloadData().then(() => schema);
 }
 
@@ -706,14 +744,6 @@ function buildMergedSchemaObject(existingFields, putRequest) {
     }
   }
   return newSchema;
-}
-
-// Given a schema promise, construct another schema promise that
-// validates this field once the schema loads.
-function thenValidateField(schemaPromise, className, key, type) {
-  return schemaPromise.then((schema) => {
-    return schema.validateField(className, key, type);
-  });
 }
 
 // Given a schema promise, construct another schema promise that
@@ -819,8 +849,10 @@ function getObjectType(obj) {
 export {
   load,
   classNameIsValid,
+  fieldNameIsValid,
   invalidClassNameMessage,
   buildMergedSchemaObject,
   systemClasses,
   defaultColumns,
+  convertSchemaToAdapterSchema,
 };

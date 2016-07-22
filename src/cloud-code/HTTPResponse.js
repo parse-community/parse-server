@@ -1,21 +1,49 @@
 
 export default class HTTPResponse {
-  constructor(response) {
+  constructor(response, body) {
+    let _text, _data;
     this.status = response.statusCode;
-    this.headers = response.headers;
-    this.buffer = response.body;
-    this.cookies = response.headers["set-cookie"];
-  }
-  
-  get text() {
-    return this.buffer.toString('utf-8');
-  }
-  get data() {
-    if (!this._data) {
-      try {
-        this._data = JSON.parse(this.text);
-      } catch (e) {}
+    this.headers = response.headers || {};
+    this.cookies = this.headers["set-cookie"];
+
+    if (typeof body == 'string') {
+      _text = body;
+    } else if (Buffer.isBuffer(body)) {
+      this.buffer = body;
+    } else if (typeof body == 'object') {
+      _data = body;
     }
-    return this._data;
+
+    let getText = () => {
+      if (!_text && this.buffer) {
+        _text = this.buffer.toString('utf-8');
+      } else if (!_text && _data) {
+        _text = JSON.stringify(_data);
+      }
+      return _text; 
+    }
+
+    let getData = () => {
+      if (!_data) {
+        try {
+            _data = JSON.parse(getText());
+        } catch (e) {}
+      }
+      return _data;
+    }
+
+    Object.defineProperty(this, 'body', {
+      get: () => { return body }
+    });
+
+    Object.defineProperty(this, 'text', {
+      enumerable: true,
+      get: getText
+    });
+
+    Object.defineProperty(this, 'data', {
+      enumerable: true,
+      get: getData
+    });
   }
 }

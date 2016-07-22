@@ -43,7 +43,7 @@ export class GridStoreAdapter extends FilesAdapter {
 
   deleteFile(filename: string) {
     return this._connect().then(database => {
-      let gridStore = new GridStore(database, filename, 'w');
+      let gridStore = new GridStore(database, filename, 'r');
       return gridStore.open();
     }).then((gridStore) => {
       return gridStore.unlink();

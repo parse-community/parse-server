@@ -1,6 +1,5 @@
 export function loadAdapter(adapter, defaultAdapter, options) {
-  if (!adapter)
-  {
+  if (!adapter) {
     if (!defaultAdapter) {
       return options;
     }

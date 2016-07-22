@@ -1,7 +1,5 @@
 var request = require("request");
 
-
-
 function createProduct() {
   const file = new Parse.File("name", {
     base64: new Buffer("download_file", "utf-8").toString("base64")
@@ -9,7 +7,7 @@ function createProduct() {
   return file.save().then(function(){
     var product = new Parse.Object("_Product");
     product.set({
-      download: file, 
+      download: file,
       icon: file,
       title: "a product",
       subtitle: "a product",
@@ -18,21 +16,19 @@ function createProduct() {
     })
     return product.save();
   })
-  
+
 }
 
-
 describe("test validate_receipt endpoint", () => {
-  
   beforeEach( done => {
     createProduct().then(done).fail(function(err){
       console.error(err);
       done();
     })
   })
-  
-  it("should bypass appstore validation", (done) => {
-   
+
+  it_exclude_dbs(['postgres'])("should bypass appstore validation", (done) => {
+
    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -40,7 +36,7 @@ describe("test validate_receipt endpoint", () => {
       url: 'http://localhost:8378/1/validate_purchase',
       json: true,
       body: {
-        productIdentifier: "a-product", 
+        productIdentifier: "a-product",
         receipt: {
           __type: "Bytes",
           base64: new Buffer("receipt", "utf-8").toString("base64")
@@ -63,7 +59,7 @@ describe("test validate_receipt endpoint", () => {
       }
     });
   });
-  
+
   it("should fail for missing receipt", (done) => {
    request.post({
       headers: {
@@ -72,7 +68,7 @@ describe("test validate_receipt endpoint", () => {
       url: 'http://localhost:8378/1/validate_purchase',
       json: true,
       body: {
-        productIdentifier: "a-product", 
+        productIdentifier: "a-product",
         bypassAppStoreValidation: true
       }
     }, function(err, res, body){
@@ -85,7 +81,7 @@ describe("test validate_receipt endpoint", () => {
       }
     });
   });
-  
+
   it("should fail for missing product identifier", (done) => {
    request.post({
       headers: {
@@ -110,9 +106,9 @@ describe("test validate_receipt endpoint", () => {
       }
     });
   });
-  
+
   it("should bypass appstore validation and not find product", (done) => {
-   
+
    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -120,7 +116,7 @@ describe("test validate_receipt endpoint", () => {
       url: 'http://localhost:8378/1/validate_purchase',
       json: true,
       body: {
-        productIdentifier: "another-product", 
+        productIdentifier: "another-product",
         receipt: {
           __type: "Bytes",
           base64: new Buffer("receipt", "utf-8").toString("base64")
@@ -138,9 +134,8 @@ describe("test validate_receipt endpoint", () => {
       }
     });
   });
-   
-  it("should fail at appstore validation", (done) => {
-   
+
+  it("should fail at appstore validation", done => {
    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
@@ -148,7 +143,7 @@ describe("test validate_receipt endpoint", () => {
       url: 'http://localhost:8378/1/validate_purchase',
       json: true,
       body: {
-        productIdentifier: "a-product", 
+        productIdentifier: "a-product",
         receipt: {
           __type: "Bytes",
           base64: new Buffer("receipt", "utf-8").toString("base64")
@@ -164,8 +159,8 @@ describe("test validate_receipt endpoint", () => {
       done();
     });
   });
-  
-  it("should not create a _Product", (done) => {
+
+  it_exclude_dbs(['postgres'])("should not create a _Product", (done) => {
       var product = new Parse.Object("_Product");
       product.save().then(function(){
         fail("Should not be able to save");
@@ -175,8 +170,8 @@ describe("test validate_receipt endpoint", () => {
         done();
       })
   });
-  
-  it("should be able to update a _Product", (done) => {
+
+  it_exclude_dbs(['postgres'])("should be able to update a _Product", (done) => {
       var query = new Parse.Query("_Product");
       query.first().then(function(product){
         product.set("title", "a new title");
@@ -190,8 +185,8 @@ describe("test validate_receipt endpoint", () => {
         done();
       });
   });
-  
-  it("should not be able to remove a require key in a _Product", (done) => {
+
+  it_exclude_dbs(['postgres'])("should not be able to remove a require key in a _Product", (done) => {
       var query = new Parse.Query("_Product");
       query.first().then(function(product){
         product.unset("title");
@@ -205,5 +200,4 @@ describe("test validate_receipt endpoint", () => {
         done();
       });
   });
-   
 });

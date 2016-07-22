@@ -37,16 +37,13 @@ function validateWithAppStore(url, receipt) {
         return fulfill();
       }
       // receipt is from test and should go to test
-      if (status == 21007) {
-        return validateWithAppStore(IAP_SANDBOX_URL);
-      } 
       return reject(body);
     });
   });
 }
 
 function getFileForProductIdentifier(productIdentifier, req) {
-  return rest.find(req.config, req.auth, '_Product', { productIdentifier: productIdentifier }).then(function(result){
+  return rest.find(req.config, req.auth, '_Product', { productIdentifier: productIdentifier }, undefined, req.info.clientSDK).then(function(result){
     const products = result.results;
     if (!products || products.length != 1) {
       // Error not found or too many
@@ -82,11 +79,30 @@ export class IAPValidationRouter extends PromiseRouter {
     if (process.env.NODE_ENV == "test" && req.body.bypassAppStoreValidation) {
       return getFileForProductIdentifier(productIdentifier, req);
     }
+
+    function successCallback() {
+        return getFileForProductIdentifier(productIdentifier, req);
+    };
+
+    function errorCallback(error) {
+        return Promise.resolve({response: appStoreError(error.status) });
+    }
     
     return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
-      return getFileForProductIdentifier(productIdentifier, req);
+      
+      return successCallback();
+
     }, (error) => {
-      return Promise.resolve({response: appStoreError(error.status) });
+      if (error.status == 21007) {
+        return validateWithAppStore(IAP_SANDBOX_URL, receipt).then( () => {
+            return successCallback();
+          }, (error) => {
+            return errorCallback(error);
+          }
+        );
+      } 
+
+      return errorCallback(error);
     });
   }
   

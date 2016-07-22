@@ -10,7 +10,6 @@ MockController.prototype = Object.create(AdaptableController.prototype);
 MockController.prototype.constructor = AdaptableController;
 
 describe("AdaptableController", ()=>{
-
   it("should use the provided adapter", (done) => {
     var adapter = new FilesAdapter();
     var controller = new FilesController(adapter);

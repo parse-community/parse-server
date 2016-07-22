@@ -8,7 +8,6 @@
 // things.
 
 var Parse = require('parse/node').Parse;
-import cache from './cache';
 import Auth from './Auth';
 
 var RestQuery = require('./RestQuery');
@@ -16,15 +15,21 @@ var RestWrite = require('./RestWrite');
 var triggers = require('./triggers');
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(config, auth, className, restWhere, restOptions) {
+function find(config, auth, className, restWhere, restOptions, clientSDK) {
   enforceRoleSecurity('find', className, auth);
-  var query = new RestQuery(config, auth, className,
-                            restWhere, restOptions);
+  let query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+  return query.execute();
+}
+
+// get is just like find but only queries an objectId.
+const get = (config, auth, className, objectId, restOptions, clientSDK) => {
+  enforceRoleSecurity('get', className, auth);
+  let query = new RestQuery(config, auth, className, { objectId }, restOptions, clientSDK);
   return query.execute();
 }
 
 // Returns a promise that doesn't resolve to any useful value.
-function del(config, auth, className, objectId) {
+function del(config, auth, className, objectId, clientSDK) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON,
                           'bad objectId');
@@ -48,11 +53,13 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-          cache.users.remove(response.results[0].sessionToken);
+
+          var cacheAdapter = config.cacheController;
+          cacheAdapter.user.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config.applicationId);
+          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
         }
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                               'Object not found for delete.');
@@ -62,8 +69,8 @@ function del(config, auth, className, objectId) {
   }).then(() => {
     if (!auth.isMaster) {
       return auth.getUserRoles();
-    }else{
-      return Promise.resolve();
+    } else {
+      return;
     }
   }).then(() => {
     var options = {};
@@ -79,22 +86,22 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config.applicationId);
-    return Promise.resolve();
+    triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
+    return;
   });
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject) {
+function create(config, auth, className, restObject, clientSDK) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(config, auth, className, null, restObject);
+  var write = new RestWrite(config, auth, className, null, restObject, clientSDK);
   return write.execute();
 }
 
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, objectId, restObject) {
+function update(config, auth, className, objectId, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve().then(() => {
@@ -110,8 +117,7 @@ function update(config, auth, className, objectId, restObject) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className,
-                              {objectId: objectId}, restObject, originalRestObject);
+    var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject, clientSDK);
     return write.execute();
   });
 }
@@ -127,8 +133,9 @@ function enforceRoleSecurity(method, className, auth) {
 }
 
 module.exports = {
-  create: create,
-  del: del,
-  find: find,
-  update: update
+  create,
+  del,
+  find,
+  get,
+  update
 };
