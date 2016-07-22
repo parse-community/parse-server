@@ -325,8 +325,9 @@ class SchemaController {
       return this._dbAdapter.getAllClasses()
         .then(allSchemas => allSchemas.map(injectDefaultSchema))
         .then(allSchemas => {
-          this._cache.setAllClasses(allSchemas);
-          return allSchemas;
+          return this._cache.setAllClasses(allSchemas).then(() => {
+            return allSchemas;
+          });
         })
     });
   }
@@ -345,8 +346,9 @@ class SchemaController {
       return this._dbAdapter.getClass(className)
       .then(injectDefaultSchema)
       .then((result) => {
-        this._cache.setOneSchema(className, result);
-        return result;
+        return this._cache.setOneSchema(className, result).then(() => {
+          return result;
+        })
       });
     });
   }

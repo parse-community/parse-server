@@ -17,7 +17,6 @@ env:
   - MONGODB_VERSION=2.6.11
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
-  - MONGODB_VERSION=3.2.6 TEST_SCHEMA_CACHE=3600
 matrix:
   fast_finish: true,
 branches:

@@ -8,7 +8,6 @@ var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
 var SchemaController = require('./SchemaController');
-import SchemaCache from './SchemaCache';
 
 const deepcopy = require('deepcopy');
 
