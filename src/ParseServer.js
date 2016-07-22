@@ -216,7 +216,7 @@ class ParseServer {
     let emailUniqueness = userClassPromise
     .then(() => databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
-      logger.warn('Unabled to ensure uniqueness for user email addresses: ', error);
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       return Promise.reject(error);
     })
 
