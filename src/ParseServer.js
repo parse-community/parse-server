@@ -28,7 +28,7 @@ import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsController }  from './Controllers/AnalyticsController';
 import { CacheController }      from './Controllers/CacheController';
 import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
-import { FileLoggerAdapter }    from './Adapters/Logger/FileLoggerAdapter';
+import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
 import { FilesController }      from './Controllers/FilesController';
 import { FilesRouter }          from './Routers/FilesRouter';
 import { FunctionsRouter }      from './Routers/FunctionsRouter';
@@ -71,7 +71,7 @@ const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Defau
 // "analyticsAdapter": an adapter class for analytics
 // "filesAdapter": a class like GridStoreAdapter providing create, get,
 //                 and delete
-// "loggerAdapter": a class like FileLoggerAdapter providing info, error,
+// "loggerAdapter": a class like WinstonLoggerAdapter providing info, error,
 //                 and query
 // "jsonLogs": log as structured JSON objects
 // "databaseURI": a uri like mongodb://localhost:27017/dbname to tell us
@@ -186,7 +186,7 @@ class ParseServer {
     });
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, FileLoggerAdapter);
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter);
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
