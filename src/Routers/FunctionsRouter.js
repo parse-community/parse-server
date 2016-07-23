@@ -6,6 +6,7 @@ var express = require('express'),
 
 import PromiseRouter from '../PromiseRouter';
 import _ from 'lodash';
+import { logger } from '../logger';
 
 function parseObject(obj) {
   if (Array.isArray(obj)) {
@@ -76,7 +77,21 @@ export class FunctionsRouter extends PromiseRouter {
       }
 
       return new Promise(function (resolve, reject) {
-        var response = FunctionsRouter.createResponseObject(resolve, reject);
+        var response = FunctionsRouter.createResponseObject((result) => {
+          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nResult: ${JSON.stringify(result.response.result)}`, {
+            functionName: req.params.functionName,
+            params,
+            result: result.response.resut
+          });
+          resolve(result);
+        }, (error) => {
+          logger.error(`Failed running cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\Error: ${JSON.stringify(error)}`, {
+            functionName: req.params.functionName,
+            params,
+            error
+          });
+          reject(error);
+        });
         // Force the keys before the function calls.
         Parse.applicationId = req.config.applicationId;
         Parse.javascriptKey = req.config.javascriptKey;
