@@ -16,9 +16,14 @@ describe("Cloud Code Logger", () => {
             return logController.getLogs({from: Date.now() - 500, size: 1000});
         }).then((res) => {
             expect(res.length).not.toBe(0);
-            let lastLogs =  res.slice(0, 2);
-            let errorMessage = lastLogs[0];
-            let infoMessage = lastLogs[1];
+            let lastLogs =  res.slice(0, 3);
+            let cloudFunctionMessage = lastLogs[0];
+            let errorMessage = lastLogs[1];
+            let infoMessage = lastLogs[2];
+            expect(cloudFunctionMessage.level).toBe('info');
+            expect(cloudFunctionMessage.params).toEqual({});
+            expect(cloudFunctionMessage.message).toEqual('Ran cloud function loggerTest with:\nInput: {}\nResult: {}');
+            expect(cloudFunctionMessage.functionName).toEqual('loggerTest');
             expect(errorMessage.level).toBe('error');
             expect(errorMessage.error).toBe('there was an error');
             expect(errorMessage.message).toBe('logTest error log');
@@ -43,9 +48,13 @@ describe("Cloud Code Logger", () => {
             return logController.getLogs({from: Date.now() - 500, size: 1000})
         }).then((res) => {
             expect(res.length).not.toBe(0);
-            let lastLogs =  res.slice(1, 3);
-            let errorMessage = lastLogs[0];
-            let infoMessage = lastLogs[1];
+            let lastLogs =  res.slice(0, 3);
+            let cloudTriggerMessage = lastLogs[0];
+            let errorMessage = lastLogs[1];
+            let infoMessage = lastLogs[2];
+            expect(cloudTriggerMessage.level).toBe('info');
+            expect(cloudTriggerMessage.input).toEqual({});
+            expect(cloudTriggerMessage.message).toEqual('beforeSave triggered for MyObject\nInput: {}\nResult: {}');
             expect(errorMessage.level).toBe('error');
             expect(errorMessage.error).toBe('there was an error');
             expect(errorMessage.message).toBe('beforeSave MyObject error log');
