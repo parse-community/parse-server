@@ -117,6 +117,9 @@ function matchesQuery(object: any, query: any): boolean {
  * Determines whether an object matches a single key's constraints
  */
 function matchesKeyConstraints(object, key, constraints) {
+  if (constraints === null) {
+    return false;
+  }
   var i;
   if (key === '$or') {
     for (i = 0; i < constraints.length; i++) {
