@@ -1,6 +1,7 @@
 // triggers.js
 import Parse    from 'parse/node';
 import AppCache from './cache';
+import { logger } from './logger';
 
 export const Types = {
   beforeSave: 'beforeSave',
@@ -152,6 +153,36 @@ export function getResponseObject(request, resolve, reject) {
   }
 };
 
+function logTrigger(triggerType, className, input) {
+  if (triggerType.indexOf('after') != 0) {
+    return;
+  }
+  logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}`, {
+    className, 
+    triggerType,
+    input
+  });
+}
+
+function logTriggerSuccess(triggerType, className, input, result) {
+  logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}\nResult: ${JSON.stringify(result)}`, {
+    className, 
+    triggerType,
+    input,
+    result
+  });
+}
+
+function logTriggerError(triggerType, className, input, error) {
+  logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\Error: ${JSON.stringify(error)}`, {
+    className, 
+    triggerType,
+    input,
+    error
+  });
+}
+
+
 // To be used as part of the promise chain when saving/deleting an object
 // Will resolve successfully if no trigger is configured
 // Resolves to an object, empty or containing an object key. A beforeSave
@@ -165,11 +196,19 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, resolve, reject);
+    var response = getResponseObject(request, (object) => {
+      logTriggerSuccess(triggerType, parseObject.className, parseObject.toJSON(), object);
+      resolve(object);
+    }, (error) => {
+      logTriggerError(triggerType, parseObject.className, parseObject.toJSON(), error);
+      reject(error);
+    });
     // Force the current Parse app before the trigger
     Parse.applicationId = config.applicationId;
     Parse.javascriptKey = config.javascriptKey || '';
     Parse.masterKey = config.masterKey;
+    // For the afterSuccess / afterDelete
+    logTrigger(triggerType, parseObject.className, parseObject.toJSON());
     trigger(request, response);
   });
 };

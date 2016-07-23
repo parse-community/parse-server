@@ -43,7 +43,7 @@ describe("Cloud Code Logger", () => {
             return logController.getLogs({from: Date.now() - 500, size: 1000})
         }).then((res) => {
             expect(res.length).not.toBe(0);
-            let lastLogs =  res.slice(0, 2);
+            let lastLogs =  res.slice(1, 3);
             let errorMessage = lastLogs[0];
             let infoMessage = lastLogs[1];
             expect(errorMessage.level).toBe('error');
