@@ -9,13 +9,19 @@ let Parse = require('parse/node').Parse;
 let rest = require('../src/rest');
 let request = require("request");
 
-let config = new Config('test');
-let database = config.database;
+let config;
+let database;
 let defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
 const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };
 
 describe('Installations', () => {
+
+  beforeEach(() => {
+    config = new Config('test');
+    database = config.database;
+  });
+
   it_exclude_dbs(['postgres'])('creates an android installation with ids', (done) => {
     var installId = '12345678-abcd-abcd-abcd-123456789abc';
     var device = 'android';

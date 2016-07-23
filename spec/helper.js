@@ -59,7 +59,7 @@ var defaultConfiguration = {
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
     }
-  },
+  }
 };
 
 let openConnections = {};

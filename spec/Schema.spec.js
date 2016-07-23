@@ -4,7 +4,7 @@ var Config = require('../src/Config');
 var SchemaController = require('../src/Controllers/SchemaController');
 var dd = require('deep-diff');
 
-var config = new Config('test');
+var config;
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');
@@ -20,6 +20,10 @@ var hasAllPODobject = () => {
 };
 
 describe('SchemaController', () => {
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});

@@ -7,7 +7,8 @@ import _         from 'lodash';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
-var SchemaController = require('../Controllers/SchemaController');
+var SchemaController = require('./SchemaController');
+
 const deepcopy = require('deepcopy');
 
 function addWriteACL(query, acl) {
@@ -80,9 +81,9 @@ const validateQuery = query => {
   });
 }
 
-function DatabaseController(adapter) {
+function DatabaseController(adapter, schemaCache) {
   this.adapter = adapter;
-
+  this.schemaCache = schemaCache;
   // We don't want a mutable this.schema, because then you could have
   // one request that uses different schemas for different parts of
   // it. Instead, use loadSchema to get a schema.
@@ -107,9 +108,9 @@ DatabaseController.prototype.validateClassName = function(className) {
 };
 
 // Returns a promise for a schemaController.
-DatabaseController.prototype.loadSchema = function() {
+DatabaseController.prototype.loadSchema = function(options = {clearCache: false}) {
   if (!this.schemaPromise) {
-    this.schemaPromise = SchemaController.load(this.adapter);
+    this.schemaPromise = SchemaController.load(this.adapter, this.schemaCache, options);
     this.schemaPromise.then(() => delete this.schemaPromise,
                              () => delete this.schemaPromise);
   }
@@ -805,8 +806,8 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
 }
 
 DatabaseController.prototype.deleteSchema = function(className) {
-  return this.loadSchema()
-  .then(schemaController => schemaController.getOneSchema(className))
+  return this.loadSchema(true)
+  .then(schemaController => schemaController.getOneSchema(className, true))
   .catch(error => {
     if (error === undefined) {
       return { fields: {} };

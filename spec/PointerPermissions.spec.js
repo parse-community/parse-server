@@ -4,6 +4,11 @@ var Schema = require('../src/Controllers/SchemaController');
 var Config = require('../src/Config');
 
 describe('Pointer Permissions', () => {
+
+  beforeEach(() => {
+    new Config(Parse.applicationId).database.schemaCache.clear();
+  });
+
   it_exclude_dbs(['postgres'])('should work with find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();

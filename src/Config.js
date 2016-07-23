@@ -3,6 +3,8 @@
 // mount is the URL for the root of the API; includes http, domain, etc.
 
 import AppCache from './cache';
+import SchemaCache from './Controllers/SchemaCache';
+import DatabaseController from './Controllers/DatabaseController';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -32,7 +34,14 @@ export class Config {
     this.fileKey = cacheInfo.fileKey;
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.database = cacheInfo.databaseController;
+
+    // Create a new DatabaseController per request
+    if (cacheInfo.databaseController) {
+      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL);
+      this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+    }
+
+    this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);

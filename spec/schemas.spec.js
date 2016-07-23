@@ -116,6 +116,11 @@ var masterKeyHeaders = {
 };
 
 describe('schemas', () => {
+
+  beforeEach(() => {
+     config.database.schemaCache.clear();
+  });
+
   it('requires the master key to get all schemas', (done) => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
