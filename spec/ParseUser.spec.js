@@ -1029,6 +1029,36 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it_exclude_dbs(['postgres'])("user authData should be available in cloudcode (#2342)", (done) => {
+
+    Parse.Cloud.define('checkLogin', (req, res) => {
+      expect(req.user).not.toBeUndefined();
+      expect(Parse.FacebookUtils.isLinked(req.user)).toBe(true);
+      res.success();
+    });
+
+    var provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("facebook", {
+      success: function(model) {
+        ok(model instanceof Parse.User, "Model should be a Parse.User");
+        strictEqual(Parse.User.current(), model);
+        ok(model.extended(), "Should have used subclass.");
+        strictEqual(provider.authData.id, provider.synchronizedUserId);
+        strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+        strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
+        ok(model._isLinked("facebook"), "User should be linked to facebook");
+
+        Parse.Cloud.run('checkLogin').then(done, done);
+      },
+      error: function(model, error) {
+        console.error(model, error);
+        ok(false, "linking should have worked");
+        done();
+      }
+    });
+  });
+
   it_exclude_dbs(['postgres'])("log in with provider and update token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
