@@ -290,6 +290,20 @@ class SchemaController {
       return this.reloadDataPromise;
     }
     this.data = {};
+    
+    /*
+     * This block of code ensures that the schema for volatile classes is always available
+     * and should never be created in _SCHEMA. Without this change, the invocation in DatabaseController
+     * causes the _PushStatus document to be added to _SCHEMA.
+     */ 
+    volatileClasses.forEach(className => {
+      this.data[className] = injectDefaultSchema({
+        className,
+        fields: {},
+        classLevelPermissions: {}
+      });
+    });
+
     this.perms = {};
     this.reloadDataPromise = this.getAllClasses(options)
     .then(allSchemas => {
