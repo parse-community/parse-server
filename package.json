@@ -45,7 +45,7 @@
     "semver": "^5.2.0",
     "tv4": "1.2.7",
     "winston": "2.2.0",
-    "winston-daily-rotate-file": "1.1.5",
+    "winston-daily-rotate-file": "1.2.0",
     "ws": "1.1.1"
   },
   "devDependencies": {
