@@ -1,7 +1,8 @@
-import { randomString } from '../cryptoUtils';
-import { inflate } from '../triggers';
+import { randomString }    from '../cryptoUtils';
+import { inflate }         from '../triggers';
 import AdaptableController from './AdaptableController';
-import MailAdapter from '../Adapters/Email/MailAdapter';
+import MailAdapter         from '../Adapters/Email/MailAdapter';
+import rest                from '../rest';
 
 var DatabaseAdapter = require('../DatabaseAdapter');
 var RestWrite = require('../RestWrite');
@@ -22,69 +23,65 @@ export class UserController extends AdaptableController {
     }
     super.validateAdapter(adapter);
   }
-  
+
   expectedAdapterType() {
     return MailAdapter;
   }
-  
+
   get shouldVerifyEmails() {
     return this.options.verifyUserEmails;
   }
-  
+
   setEmailVerifyToken(user) {
     if (this.shouldVerifyEmails) {
       user._email_verify_token = randomString(25);
       user.emailVerified = false;
+
+      if (this.config.emailVerifyTokenValidityDuration) {
+        user._email_verify_token_expires_at = Parse._encode(this.config.generateEmailVerifyTokenExpiresAt());
+      }
     }
   }
-  
-  
+
   verifyEmail(username, token) {
-    
-    return new Promise((resolve, reject) => {
-      
+    if (!this.shouldVerifyEmails) {
       // Trying to verify email when not enabled
-      if (!this.shouldVerifyEmails) {
-        reject();
-        return;
+      // TODO: Better error here.
+      throw undefined;
+    }
+
+    let query = {username: username, _email_verify_token: token};
+    let updateFields = { emailVerified: true, _email_verify_token: {__op: 'Delete'}};
+
+    // if the email verify token needs to be validated then
+    // add additional query params and additional fields that need to be updated
+    if (this.config.emailVerifyTokenValidityDuration) {
+      query.emailVerified = false;
+      query._email_verify_token_expires_at = { $gt: Parse._encode(new Date()) };
+
+      updateFields._email_verify_token_expires_at = {__op: 'Delete'};
+    }
+
+    return this.config.database.update('_User', query, updateFields).then((document) => {
+      if (!document) {
+        throw undefined;
       }
-      
-      var database = this.config.database;
-     
-      database.collection('_User').then(coll => {
-        // Need direct database access because verification token is not a parse field
-        return coll.findAndModify({
-          username: username,
-          _email_verify_token: token,
-        }, null, {$set: {emailVerified: true}}, (err, doc) => {
-          if (err || !doc.value) {
-            reject(err);
-          } else {
-            resolve(doc.value);
-          }
-        });
-      });
-       
-    });    
-  }
-  
-  checkResetTokenValidity(username, token) {
-    return new Promise((resolve, reject) => {
-      return this.config.database.collection('_User').then(coll => {
-        return coll.findOne({
-          username: username,
-          _perishable_token: token,
-        }, (err, doc) => {
-          if (err || !doc) {
-            reject(err);
-          } else {
-            resolve(doc);
-          }
-        });
-      });
+      return Promise.resolve(document);
     });
   }
-  
+
+  checkResetTokenValidity(username, token) {
+    return this.config.database.find('_User', {
+      username: username,
+      _perishable_token: token
+    }, {limit: 1}).then(results => {
+      if (results.length != 1) {
+        throw undefined;
+      }
+      return results[0];
+    });
+  }
+
   getUserIfNeeded(user) {
     if (user.username && user.email) {
       return Promise.resolve(user);
@@ -96,24 +93,23 @@ export class UserController extends AdaptableController {
     if (user.email) {
       where.email = user.email;
     }
-    
+
     var query = new RestQuery(this.config, Auth.master(this.config), '_User', where);
     return query.execute().then(function(result){
       if (result.results.length != 1) {
-        return Promise.reject();
+        throw undefined;
       }
       return result.results[0];
     })
   }
-  
 
   sendVerificationEmail(user) {
     if (!this.shouldVerifyEmails) {
       return;
     }
+    const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
-      const token = encodeURIComponent(user._email_verify_token);
       const username = encodeURIComponent(user.username);
       let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
       let options = {
@@ -128,26 +124,9 @@ export class UserController extends AdaptableController {
       }
     });
   }
-  
+
   setPasswordResetToken(email) {
-    var database = this.config.database;
-    var token = randomString(25);
-    return new Promise((resolve, reject) => {
-      return database.collection('_User').then(coll => {
-        // Need direct database access because verification token is not a parse field
-        return coll.findAndModify({
-          email: email,
-        }, null, {$set: {_perishable_token: token}}, (err, doc) => {
-          if (err || !doc.value) {
-            console.error(err);
-            reject(err);
-          } else {
-            doc.value._perishable_token = token;
-            resolve(doc.value);
-          }
-        });
-      });
-    });
+    return this.config.database.update('_User', { email }, { _perishable_token: randomString(25) }, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -156,11 +135,11 @@ export class UserController extends AdaptableController {
       //  TODO: No adapter?
       return;
     }
-    
-    return this.setPasswordResetToken(email).then((user) => {
 
+    return this.setPasswordResetToken(email)
+    .then(user => {
       const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);    
+      const username = encodeURIComponent(user.username);
       let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
 
       let options = {
@@ -168,7 +147,7 @@ export class UserController extends AdaptableController {
         link: link,
         user: inflate('_User', user),
       };
-      
+
       if (this.adapter.sendPasswordResetEmail) {
         this.adapter.sendPasswordResetEmail(options);
       } else {
@@ -178,25 +157,28 @@ export class UserController extends AdaptableController {
       return Promise.resolve(user);
     });
   }
-  
+
   updatePassword(username, token, password, config) {
-   return this.checkResetTokenValidity(username, token).then(() => {
-     return updateUserPassword(username, token, password, this.config);
-   });
+    return this.checkResetTokenValidity(username, token)
+    .then(user => updateUserPassword(user.objectId, password, this.config))
+    // clear reset password token
+    .then(() => this.config.database.update('_User', { username }, {
+      _perishable_token: {__op: 'Delete'}
+    }));
   }
-  
+
   defaultVerificationEmail({link, user, appName, }) {
     let text = "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.email + " with " + appName + "\n\n" +
+	      "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
 	      "" +
 	      "Click here to confirm it:\n" + link;
     let to = user.get("email");
     let subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
   }
-  
+
   defaultResetPasswordEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" + 
+    let text = "Hi,\n\n" +
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
@@ -207,12 +189,10 @@ export class UserController extends AdaptableController {
 }
 
 // Mark this private
-function updateUserPassword(username, token, password, config) { 
-    var write = new RestWrite(config, Auth.master(config), '_User', {
-            username: username, 
-            _perishable_token: token
-          }, {password: password, _perishable_token: null }, undefined);
-    return write.execute();
+function updateUserPassword(userId, password, config) {
+    return rest.update(config, Auth.master(config), '_User', userId, {
+      password: password
+    });
  }
 
 export default UserController;

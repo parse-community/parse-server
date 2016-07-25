@@ -1,15 +1,8 @@
-import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import { HooksController } from '../Controllers/HooksController';
- 
-function enforceMasterKeyAccess(req) {
-  if (!req.auth.isMaster) {
-    throw new Parse.Error(403, "unauthorized: master key is required");
-  }
-} 
+import { Parse }       from 'parse/node';
+import PromiseRouter   from '../PromiseRouter';
+import * as middleware from "../middlewares";
 
 export class HooksRouter extends PromiseRouter {
-  
   createHook(aHook, config) {
     return config.hooksController.createHook(aHook).then( (hook) => ({response: hook}));
   };
@@ -32,7 +25,7 @@ export class HooksRouter extends PromiseRouter {
         return Promise.resolve({response: foundFunction});
       });
     }
-    
+
     return hooksController.getFunctions().then((functions) => {
       return { response: functions || [] };
     }, (err) => {
@@ -43,7 +36,7 @@ export class HooksRouter extends PromiseRouter {
   handleGetTriggers(req) {
     var hooksController = req.config.hooksController;
     if (req.params.className && req.params.triggerName) {
-      
+
       return hooksController.getTrigger(req.params.className, req.params.triggerName).then((foundTrigger) => {
         if (!foundTrigger) {
           throw new Parse.Error(143,`class ${req.params.className} does not exist`);
@@ -51,7 +44,7 @@ export class HooksRouter extends PromiseRouter {
         return Promise.resolve({response: foundTrigger});
       });
     }
-    
+
     return hooksController.getTriggers().then((triggers) => ({ response: triggers || [] }));
   }
 
@@ -79,10 +72,10 @@ export class HooksRouter extends PromiseRouter {
       hook.url = req.body.url
     } else {
       throw new Parse.Error(143, "invalid hook declaration");
-    } 
+    }
     return this.updateHook(hook, req.config);
   }
-  
+
   handlePut(req) {
     var body = req.body;
     if (body.__op == "Delete") {
@@ -91,16 +84,16 @@ export class HooksRouter extends PromiseRouter {
       return this.handleUpdate(req);
     }
   }
-  
+
   mountRoutes() {
-    this.route('GET',  '/hooks/functions', enforceMasterKeyAccess, this.handleGetFunctions.bind(this));
-    this.route('GET',  '/hooks/triggers', enforceMasterKeyAccess, this.handleGetTriggers.bind(this));
-    this.route('GET',  '/hooks/functions/:functionName', enforceMasterKeyAccess, this.handleGetFunctions.bind(this));
-    this.route('GET',  '/hooks/triggers/:className/:triggerName', enforceMasterKeyAccess, this.handleGetTriggers.bind(this));
-    this.route('POST', '/hooks/functions', enforceMasterKeyAccess, this.handlePost.bind(this));
-    this.route('POST', '/hooks/triggers', enforceMasterKeyAccess, this.handlePost.bind(this));
-    this.route('PUT',  '/hooks/functions/:functionName', enforceMasterKeyAccess, this.handlePut.bind(this));
-    this.route('PUT',  '/hooks/triggers/:className/:triggerName', enforceMasterKeyAccess, this.handlePut.bind(this));
+    this.route('GET',  '/hooks/functions', middleware.promiseEnforceMasterKeyAccess, this.handleGetFunctions.bind(this));
+    this.route('GET',  '/hooks/triggers', middleware.promiseEnforceMasterKeyAccess, this.handleGetTriggers.bind(this));
+    this.route('GET',  '/hooks/functions/:functionName', middleware.promiseEnforceMasterKeyAccess, this.handleGetFunctions.bind(this));
+    this.route('GET',  '/hooks/triggers/:className/:triggerName', middleware.promiseEnforceMasterKeyAccess, this.handleGetTriggers.bind(this));
+    this.route('POST', '/hooks/functions', middleware.promiseEnforceMasterKeyAccess, this.handlePost.bind(this));
+    this.route('POST', '/hooks/triggers', middleware.promiseEnforceMasterKeyAccess, this.handlePost.bind(this));
+    this.route('PUT',  '/hooks/functions/:functionName', middleware.promiseEnforceMasterKeyAccess, this.handlePut.bind(this));
+    this.route('PUT',  '/hooks/triggers/:className/:triggerName', middleware.promiseEnforceMasterKeyAccess, this.handlePut.bind(this));
   }
 }
 

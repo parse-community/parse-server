@@ -1,57 +1,51 @@
-import PushController from '../Controllers/PushController'
-import PromiseRouter from '../PromiseRouter';
+import PromiseRouter   from '../PromiseRouter';
+import * as middleware from "../middlewares";
+import { Parse }       from "parse/node";
 
 export class PushRouter extends PromiseRouter {
 
   mountRoutes() {
-    this.route("POST", "/push", req => { return this.handlePOST(req); });
-  }
-  
-  /**
-   * Check whether the api call has master key or not.
-   * @param {Object} request A request object
-   */ 
-  static validateMasterKey(req) {
-    if (req.info.masterKey !== req.config.masterKey) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Master key is invalid, you should only use master key to send push');
-    }
+    this.route("POST", "/push", middleware.promiseEnforceMasterKeyAccess, PushRouter.handlePOST);
   }
 
-  handlePOST(req) {
-    // TODO: move to middlewares when support for Promise middlewares
-    PushRouter.validateMasterKey(req);
-    
+  static handlePOST(req) {
     const pushController = req.config.pushController;
     if (!pushController) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Push controller is not set');
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Push controller is not set');
     }
 
-    var where = PushRouter.getQueryCondition(req);
-
-    pushController.sendPush(req.body, where, req.config, req.auth);
-    return Promise.resolve({
-        response: {
-          'result': true
-        }
+    let where = PushRouter.getQueryCondition(req);
+    let resolve;
+    let promise = new Promise((_resolve) => {
+      resolve = _resolve;
     });
+    pushController.sendPush(req.body, where, req.config, req.auth, (pushStatusId) => {
+      resolve({
+        headers: {
+          'X-Parse-Push-Status-Id': pushStatusId
+        },
+        response: {
+          result: true
+        }
+      });
+    });
+    return promise;
   }
-  
-    /**
+
+  /**
    * Get query condition from the request body.
-   * @param {Object} request A request object
+   * @param {Object} req A request object
    * @returns {Object} The query condition, the where field in a query api call
    */
   static getQueryCondition(req) {
-    var body = req.body || {};
-    var hasWhere = typeof body.where !== 'undefined';
-    var hasChannels = typeof body.channels !== 'undefined';
+    let body = req.body || {};
+    let hasWhere = typeof body.where !== 'undefined';
+    let hasChannels = typeof body.channels !== 'undefined';
 
-    var where;
+    let where;
     if (hasWhere && hasChannels) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Channels and query can not be set at the same time.');
+        'Channels and query can not be set at the same time.');
     } else if (hasWhere) {
       where = body.where;
     } else if (hasChannels) {
@@ -61,12 +55,10 @@ export class PushRouter extends PromiseRouter {
         }
       }
     } else {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Channels and query should be set at least one.');
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Sending a push requires either "channels" or a "where" query.');
     }
     return where;
   }
-  
 }
 
 export default PushRouter;

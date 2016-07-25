@@ -1,7 +1,7 @@
 // These methods handle the User-related routes.
 
 import deepcopy       from 'deepcopy';
-
+import Config         from '../Config';
 import ClassesRouter  from './ClassesRouter';
 import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
@@ -27,17 +27,7 @@ export class UsersRouter extends ClassesRouter {
     req.body = data;
     req.params.className = '_User';
 
-    //req.config.userController.setEmailVerifyToken(req.body);
-
     return super.handleCreate(req);
-  
-  // if (req.config.verifyUserEmails) {
-  //     // Send email as fire-and-forget once the user makes it into the DB.
-  //     p.then(() => {
-  //       req.config.userController.sendVerificationEmail(req.body);
-  //     });
-  //   }
-  //   return p;
   }
 
   handleUpdate(req) {
@@ -56,8 +46,8 @@ export class UsersRouter extends ClassesRouter {
     }
     let sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
-      { _session_token: sessionToken },
-      { include: 'user' })
+      { sessionToken },
+      { include: 'user' }, req.info.clientSDK)
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
@@ -93,8 +83,14 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
         user = results[0];
+
+        if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
+          throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+        }
+
         return passwordCrypto.compare(req.body.password, user.password);
       }).then((correct) => {
+
         if (!correct) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
@@ -103,11 +99,22 @@ export class UsersRouter extends ClassesRouter {
         user.sessionToken = token;
         delete user.password;
 
+        // Sometimes the authData still has null on that keys
+        // https://github.com/ParsePlatform/parse-server/issues/935
+        if (user.authData) {
+          Object.keys(user.authData).forEach((provider) => {
+            if (user.authData[provider] === null) {
+              delete user.authData[provider];
+            }
+          });
+          if (Object.keys(user.authData).length == 0) {
+            delete user.authData;
+          }
+        }
+
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        let expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
+        let expiresAt = req.config.generateSessionExpiresAt();
         let sessionData = {
           sessionToken: token,
           user: {
@@ -138,7 +145,7 @@ export class UsersRouter extends ClassesRouter {
     let success = {response: {}};
     if (req.info && req.info.sessionToken) {
       return rest.find(req.config, Auth.master(req.config), '_Session',
-        { _session_token: req.info.sessionToken }
+        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
       ).then((records) => {
         if (records.results && records.results.length) {
           return rest.del(req.config, Auth.master(req.config), '_Session',
@@ -152,23 +159,41 @@ export class UsersRouter extends ClassesRouter {
     }
     return Promise.resolve(success);
   }
-  
+
   handleResetRequest(req) {
-     let { email } = req.body;
-     if (!email) {
-       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
-     }
-     let userController = req.config.userController;
-     
-     return userController.sendPasswordResetEmail(email).then((token) => {
-        return Promise.resolve({
-          response: {}
-        });
-     }, (err) => {
-       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
-     });
+    try {
+      Config.validateEmailConfiguration({
+        emailAdapter: req.config.userController.adapter,
+        appName: req.config.appName,
+        publicServerURL: req.config.publicServerURL,
+        emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration
+      });
+    } catch (e) {
+      if (typeof e === 'string') {
+        // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset functionality.');
+      } else {
+        throw e;
+      }
+    }
+    let { email } = req.body;
+    if (!email) {
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+    }
+    let userController = req.config.userController;
+    return userController.sendPasswordResetEmail(email).then(token => {
+       return Promise.resolve({
+         response: {}
+       });
+    }, err => {
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
+      } else {
+        throw err;
+      }
+    });
   }
-  
+
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });

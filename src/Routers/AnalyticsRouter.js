@@ -1,17 +1,20 @@
 // AnalyticsRouter.js
 import PromiseRouter from '../PromiseRouter';
 
-// Returns a promise that resolves to an empty object response
-function ignoreAndSucceed(req) {
-  return Promise.resolve({
-    response: {}
-  });
+function appOpened(req) {
+  const analyticsController = req.config.analyticsController;
+  return analyticsController.appOpened(req);
+}
+
+function trackEvent(req) {
+  const analyticsController = req.config.analyticsController;
+  return analyticsController.trackEvent(req);
 }
 
 
 export class AnalyticsRouter extends PromiseRouter {
   mountRoutes() {
-    this.route('POST','/events/AppOpened', ignoreAndSucceed);
-    this.route('POST','/events/:eventName', ignoreAndSucceed);
+    this.route('POST','/events/AppOpened', appOpened);
+    this.route('POST','/events/:eventName', trackEvent);
   }
 }

@@ -1,3 +1,4 @@
+"use strict";
 // This is a port of the test suite:
 // hungry/js/test/parse_object_test.js
 //
@@ -48,7 +49,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("save cycle", function(done) {
+  it("save cycle", done => {
     var a = new Parse.Object("TestObject");
     var b = new Parse.Object("TestObject");
     a.set("b", b);
@@ -116,7 +117,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("relational fields", function(done) {
+  it_exclude_dbs(['postgres'])("relational fields", function(done) {
     var item = new Item();
     item.set("property", "x");
     var container = new Container();
@@ -204,7 +205,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("createdAt doesn't change", function(done) {
+  it_exclude_dbs(['postgres'])("createdAt doesn't change", function(done) {
     var object = new TestObject({ foo: "bar" });
     object.save(null, {
       success: function() {
@@ -267,7 +268,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("can set null", function(done) {
+  it_exclude_dbs(['postgres'])("can set null", function(done) {
     var obj = new Parse.Object("TestObject");
     obj.set("foo", null);
     obj.save(null, {
@@ -336,7 +337,35 @@ describe('Parse.Object testing', () => {
     item.save({ "foo^bar": "baz" }).then(fail, done);
   });
 
-  it("simple field deletion", function(done) {
+  it("invalid __type", function(done) {
+    var item = new Parse.Object("Item");
+    var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes'];
+    var Error = Parse.Error;
+    var tests = types.map(type => {
+      var test = new Parse.Object("Item");
+      test.set('foo', {
+        __type: type
+      });
+      return test;
+    });
+    var next = function(index) {
+      if (index < tests.length) {
+        tests[index].save().then(fail, error => {
+          expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
+          next(index + 1);
+        });
+      } else {
+        done();
+      }
+    }
+    item.save({
+      "foo": {
+        __type: "IvalidName"
+      }
+    }).then(fail, err => next(0));
+  });
+
+  it_exclude_dbs(['postgres'])("simple field deletion", function(done) {
     var simple = new Parse.Object("SimpleObject");
     simple.save({
       foo: "bar"
@@ -410,7 +439,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("relation deletion", function(done) {
+  it_exclude_dbs(['postgres'])("relation deletion", function(done) {
     var simple = new Parse.Object("SimpleObject");
     var child = new Parse.Object("Child");
     simple.save({
@@ -549,7 +578,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("addUnique", function(done) {
+  it_exclude_dbs(['postgres'])("addUnique", function(done) {
     var x1 = new Parse.Object('X');
     x1.set('stuff', [1, 2]);
     x1.save().then(() => {
@@ -564,6 +593,49 @@ describe('Parse.Object testing', () => {
       return query.get(x1.id);
     }).then((x3) => {
       expect(x3.get('stuff')).toEqual([1, 2, 3]);
+      done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])("addUnique with object", function(done) {
+    var x1 = new Parse.Object('X');
+    x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
+    x1.save().then(() => {
+      var objectId = x1.id;
+      var x2 = new Parse.Object('X', {objectId: objectId});
+      x2.addUnique('stuff', {'hello': 'world'});
+      x2.addUnique('stuff', {'bar': 'baz'});
+      expect(x2.get('stuff')).toEqual([{'hello': 'world'}, {'bar': 'baz'}]);
+      return x2.save();
+    }).then(() => {
+      var query = new Parse.Query('X');
+      return query.get(x1.id);
+    }).then((x3) => {
+      expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
+      done();
+    }, (error) => {
+      fail(error);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])("removes with object", function(done) {
+    var x1 = new Parse.Object('X');
+    x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
+    x1.save().then(() => {
+      var objectId = x1.id;
+      var x2 = new Parse.Object('X', {objectId: objectId});
+      x2.remove('stuff', {'hello': 'world'});
+      expect(x2.get('stuff')).toEqual([]);
+      return x2.save();
+    }).then(() => {
+      var query = new Parse.Query('X');
+      return query.get(x1.id);
+    }).then((x3) => {
+      expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
       fail(error);
@@ -596,7 +668,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("dirty keys", function(done) {
+  it_exclude_dbs(['postgres'])("dirty keys", function(done) {
     var object = new Parse.Object("TestObject");
     object.set("gogo", "good");
     object.set("sito", "sexy");
@@ -691,7 +763,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("old attribute unset then unset", function(done) {
+  it_exclude_dbs(['postgres'])("old attribute unset then unset", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -760,7 +832,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("old attribute unset then clear", function(done) {
+  it_exclude_dbs(['postgres'])("old attribute unset then clear", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -829,7 +901,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("old attribute clear then unset", function(done) {
+  it_exclude_dbs(['postgres'])("old attribute clear then unset", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -898,7 +970,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("old attribute clear then clear", function(done) {
+  it_exclude_dbs(['postgres'])("old attribute clear then clear", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -967,7 +1039,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("saving children in an array", function(done) {
+  it_exclude_dbs(['postgres'])("saving children in an array", function(done) {
     var Parent = Parse.Object.extend("Parent");
     var Child = Parse.Object.extend("Child");
 
@@ -1232,7 +1304,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("bytes work", function(done) {
+  it_exclude_dbs(['postgres'])("bytes work", function(done) {
     Parse.Promise.as().then(function() {
       var obj = new TestObject();
       obj.set("bytes", { __type: "Bytes", base64: "ZnJveW8=" });
@@ -1270,7 +1342,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAll", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1317,7 +1389,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAll updates dates", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll updates dates", function(done) {
     var updatedObject;
     var object = new TestObject();
     object.set("x", 7);
@@ -1337,7 +1409,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAll backbone-style callbacks", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll backbone-style callbacks", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1406,7 +1478,7 @@ describe('Parse.Object testing', () => {
                           expectError(Parse.Error.MISSING_OBJECT_ID, done));
   });
 
-  it("fetchAll error on deleted object", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAll error on deleted object", function(done) {
     var numItems = 11;
     var container = new Container();
     var subContainer = new Container();
@@ -1432,7 +1504,7 @@ describe('Parse.Object testing', () => {
 
   // TODO: Verify that with Sessions, this test is wrong... A fetch on
   //       user should not bring down a session token.
-  notWorking("fetchAll User attributes get merged", function(done) {
+  xit("fetchAll User attributes get merged", function(done) {
     var sameUser;
     var user = new Parse.User();
     user.set("username", "asdf");
@@ -1464,7 +1536,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAllIfNeeded", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAllIfNeeded", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1502,7 +1574,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("fetchAllIfNeeded backbone-style callbacks", function(done) {
+  it_exclude_dbs(['postgres'])("fetchAllIfNeeded backbone-style callbacks", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1706,7 +1778,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it('dictionary fetched pointers do not lose data on fetch', (done) => {
+  it_exclude_dbs(['postgres'])('dictionary fetched pointers do not lose data on fetch', (done) => {
     var parent = new Parse.Object('Parent');
     var dict = {};
     for (var i = 0; i < 5; i++) {
@@ -1763,6 +1835,55 @@ describe('Parse.Object testing', () => {
       console.error(err);
       fail("should not fail");
       done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('should have undefined includes when object is missing', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 =  new Parse.Object("AnObject");
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      obj1.set("obj", obj2);
+      // Save the pointer, delete the pointee
+      return obj1.save().then(() => { return obj2.destroy() });
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("obj");
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get("obj")).toBe(undefined);
+      let query = new Parse.Query("AnObject");
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get("obj")).not.toBe(undefined);
+      return res[0].get("obj").fetch();
+    }).then(() => {
+      fail("Should not fetch a deleted object");
+    }, (err) => {
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
     })
-  })
+  });
+
+  it_exclude_dbs(['postgres'])('should have undefined includes when object is missing on deeper path', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 =  new Parse.Object("AnObject");
+    let obj3 = new Parse.Object("AnObject");
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      obj1.set("obj", obj2);
+      obj2.set("obj", obj3);
+      // Save the pointer, delete the pointee
+      return Parse.Object.saveAll([obj1, obj2]).then(() => { return obj3.destroy() });
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("obj.obj");
+      return query.get(obj1.id);
+    }).then((res) => {
+      expect(res.get("obj")).not.toBe(undefined);
+      expect(res.get("obj").get("obj")).toBe(undefined);
+      done();
+    });
+  });
 });

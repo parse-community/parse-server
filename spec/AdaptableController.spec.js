@@ -10,7 +10,6 @@ MockController.prototype = Object.create(AdaptableController.prototype);
 MockController.prototype.constructor = AdaptableController;
 
 describe("AdaptableController", ()=>{
-  
   it("should use the provided adapter", (done) => {
     var adapter = new FilesAdapter();
     var controller = new FilesController(adapter);
@@ -22,7 +21,7 @@ describe("AdaptableController", ()=>{
     expect(controller.adapter).toBe(adapter);
     done();
   });
-  
+
   it("should throw when creating a new mock controller", (done) => {
     var adapter = new FilesAdapter();
     expect(() => {
@@ -30,7 +29,7 @@ describe("AdaptableController", ()=>{
     }).toThrow();
     done();
   });
-  
+
   it("should fail setting the wrong adapter to the controller", (done) => {
     function WrongAdapter() {};
     var adapter = new FilesAdapter();
@@ -41,7 +40,7 @@ describe("AdaptableController", ()=>{
     }).toThrow();
     done();
   });
-  
+
   it("should fail to instantiate a controller with wrong adapter", (done) => {
     function WrongAdapter() {};
     var adapter = new WrongAdapter();
@@ -50,14 +49,14 @@ describe("AdaptableController", ()=>{
     }).toThrow();
     done();
   });
-  
+
   it("should fail to instantiate a controller without an adapter", (done) => {
     expect(() => {
       new FilesController();
     }).toThrow();
     done();
   });
-  
+
   it("should accept an object adapter", (done) => {
     var adapter = {
       createFile: function(config, filename, data) { },
@@ -70,14 +69,14 @@ describe("AdaptableController", ()=>{
     }).not.toThrow();
     done();
   });
-  
+
   it("should accept an object adapter", (done) => {
     function AGoodAdapter() {};
     AGoodAdapter.prototype.createFile = function(config, filename, data) { };
     AGoodAdapter.prototype.deleteFile = function(config, filename) { };
     AGoodAdapter.prototype.getFileData = function(config, filename) { };
     AGoodAdapter.prototype.getFileLocation = function(config, filename) { };
-    
+
     var adapter = new AGoodAdapter();
     expect(() => {
       new FilesController(adapter);

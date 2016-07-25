@@ -1,3 +1,6 @@
+'use strict';
+
+const request = require('request');
 var LogsRouter = require('../src/Routers/LogsRouter').LogsRouter;
 var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
@@ -20,7 +23,7 @@ describe('LogsRouter', () => {
     var router = new LogsRouter();
 
     expect(() => {
-      router.handleGET(request);
+      router.validateRequest(request);
     }).not.toThrow();
     done();
   });
@@ -40,28 +43,23 @@ describe('LogsRouter', () => {
     var router = new LogsRouter();
 
     expect(() => {
-      router.handleGET(request);
+      router.validateRequest(request);
     }).toThrow();
     done();
   });
 
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      auth: {
-        isMaster: false
-      },
-      query: {},
-      config: {
-        loggerController: loggerController
+  it('can check invalid master key of request', done => {
+    request.get({
+      url: 'http://localhost:8378/1/scriptlog',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
       }
-    };
-
-   var router = new LogsRouter();
-
-    expect(() => {
-      router.handleGET(request);
-    }).toThrow();
-    done();
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(403);
+      expect(body.error).toEqual('unauthorized: master key is required');
+      done();
+    });
   });
 });

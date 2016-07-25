@@ -6,25 +6,27 @@ import rest from '../rest';
 
 export class InstallationsRouter extends ClassesRouter {
   handleFind(req) {
+    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     var options = {};
-    if (req.body.skip) {
-      options.skip = Number(req.body.skip);
+
+    if (body.skip) {
+      options.skip = Number(body.skip);
     }
-    if (req.body.limit) {
-      options.limit = Number(req.body.limit);
+    if (body.limit || body.limit === 0) {
+      options.limit = Number(body.limit);
     }
-    if (req.body.order) {
-      options.order = String(req.body.order);
+    if (body.order) {
+      options.order = String(body.order);
     }
-    if (req.body.count) {
+    if (body.count) {
       options.count = true;
     }
-    if (req.body.include) {
-      options.include = String(req.body.include);
+    if (body.include) {
+      options.include = String(body.include);
     }
 
     return rest.find(req.config, req.auth,
-      '_Installation', req.body.where, options)
+      '_Installation', body.where, options, req.info.clientSDK)
       .then((response) => {
         return {response: response};
       });

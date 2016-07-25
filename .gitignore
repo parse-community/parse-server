@@ -1,5 +1,6 @@
 # Logs
 logs
+test_logs
 *.log
 
 # Runtime data
@@ -40,3 +41,9 @@ lib/
 
 # cache folder
 .cache
+
+# Mac DS_Store files
+.DS_Store
+
+# Folder created by FileSystemAdapter
+/files

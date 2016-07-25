@@ -1,21 +1,24 @@
-
+"use strict";
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
+var RestQuery = require("../src/RestQuery");
 var Auth = require("../src/Auth").Auth;
 var Config = require("../src/Config");
 
 describe('Parse Role testing', () => {
-
-  it('Do a bunch of basic role testing', (done) => {
-
+  it_exclude_dbs(['postgres'])('Do a bunch of basic role testing', done => {
     var user;
     var role;
 
     createTestUser().then((x) => {
       user = x;
+      let acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      acl.setPublicWriteAccess(false);
       role = new Parse.Object('_Role');
       role.set('name', 'Foos');
+      role.setACL(acl);
       var users = role.relation('users');
       users.add(user);
       return role.save({}, { useMasterKey: true });
@@ -55,46 +58,115 @@ describe('Parse Role testing', () => {
     }).then((x) => {
       fail('Should not have been able to save.');
     }, (e) => {
+      expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
       done();
     });
 
   });
-  
-  it("should recursively load roles", (done) => {
-    
-    var rolesNames = ["FooRole", "BarRole", "BazRole"];
-    
-    var createRole = function(name, parent, user) {
-      var role = new Parse.Object("_Role")
-      role.set("name", name);
-      if (user) {
-        var users = role.relation('users');
-        users.add(user); 
-      }
-      if (parent) {
-        role.relation('roles').add(parent);
-      }
-      return role.save({}, { useMasterKey: true });
+
+  var createRole = function(name, sibling, user) {
+    var role = new Parse.Role(name, new Parse.ACL());
+    if (user) {
+      var users = role.relation('users');
+      users.add(user);
     }
+    if (sibling) {
+      role.relation('roles').add(sibling);
+    }
+    return role.save({}, { useMasterKey: true });
+  };
+
+  it_exclude_dbs(['postgres'])("should not recursively load the same role multiple times", (done) => {
+    var rootRole = "RootRole";
+    var roleNames = ["FooRole", "BarRole", "BazRole"];
+    var allRoles = [rootRole].concat(roleNames);
+
+    var roleObjs = {};
+    var createAllRoles = function(user) {
+      var promises = allRoles.map(function(roleName) {
+        return createRole(roleName, null, user)
+          .then(function(roleObj) {
+            roleObjs[roleName] = roleObj;
+            return roleObj;
+          });
+      });
+      return Promise.all(promises);
+    };
+
+    var restExecute = spyOn(RestQuery.prototype, "execute").and.callThrough();
+
+    var user,
+      auth,
+      getAllRolesSpy;
+    createTestUser().then( (newUser) => {
+      user = newUser;
+      return createAllRoles(user);
+    }).then ( (roles) => {
+      var rootRoleObj = roleObjs[rootRole];
+      roles.forEach(function(role, i) {
+        // Add all roles to the RootRole
+        if (role.id !== rootRoleObj.id) {
+          role.relation("roles").add(rootRoleObj);
+        }
+        // Add all "roleNames" roles to the previous role
+        if (i > 0) {
+          role.relation("roles").add(roles[i - 1]);
+        }
+      });
+
+      return Parse.Object.saveAll(roles, { useMasterKey: true });
+    }).then( () => {
+      auth = new Auth({config: new Config("test"), isMaster: true, user: user});
+      getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
+
+      return auth._loadRoles();
+    }).then ( (roles) => {
+      expect(roles.length).toEqual(4);
+
+      allRoles.forEach(function(name) {
+        expect(roles.indexOf("role:"+name)).not.toBe(-1);
+      });
+
+      // 1 Query for the initial setup
+      // 1 query for the parent roles
+      expect(restExecute.calls.count()).toEqual(2);
+
+      // 1 call for the 1st layer of roles
+      // 1 call for the 2nd layer
+      expect(getAllRolesSpy.calls.count()).toEqual(2);
+      done()
+    }).catch( (err) =>  {
+      fail("should succeed");
+      done();
+    });
+
+  });
+
+  it_exclude_dbs(['postgres'])("should recursively load roles", (done) => {
+    var rolesNames = ["FooRole", "BarRole", "BazRole"];
     var roleIds = {};
      createTestUser().then( (user) => {
-       
-       return createRole(rolesNames[0], null, null).then( (aRole) => {
+       // Put the user on the 1st role
+       return createRole(rolesNames[0], null, user).then( (aRole) => {
          roleIds[aRole.get("name")] = aRole.id;
+         // set the 1st role as a sibling of the second
+         // user will should have 2 role now
           return createRole(rolesNames[1], aRole, null);
        }).then( (anotherRole) => {
          roleIds[anotherRole.get("name")] = anotherRole.id;
-         return createRole(rolesNames[2], anotherRole, user);
+         // set this role as a sibling of the last
+         // the user should now have 3 roles
+         return createRole(rolesNames[2], anotherRole, null);
        }).then( (lastRole) => {
          roleIds[lastRole.get("name")] = lastRole.id;
-         var auth = new Auth(new Config("test") , true, user);
+         var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
          return auth._loadRoles();
        })
      }).then( (roles) => {
        expect(roles.length).toEqual(3);
        rolesNames.forEach( (name) => {
         expect(roles.indexOf('role:'+name)).not.toBe(-1);
-       })
+       });
        done();
      }, function(err){
        fail("should succeed")
@@ -102,5 +174,177 @@ describe('Parse Role testing', () => {
      });
   });
 
-});
+  it_exclude_dbs(['postgres'])("_Role object should not save without name.", (done) => {
+    var role = new Parse.Role();
+    role.save(null,{useMasterKey:true})
+    .then((r) => {
+      fail("_Role object should not save without name.");
+    }, (error) => {
+      expect(error.code).toEqual(111);
+      role.set('name','testRole');
+      role.save(null,{useMasterKey:true})
+      .then((r2)=>{
+        fail("_Role object should not save without ACL.");
+      }, (error2) =>{
+        expect(error2.code).toEqual(111);
+        done();
+      });
+    });
+  });
 
+  it("Should properly resolve roles", (done) => {
+    let admin = new Parse.Role("Admin", new Parse.ACL());
+    let moderator = new Parse.Role("Moderator", new Parse.ACL());
+    let superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
+    let contentManager = new Parse.Role('ContentManager', new Parse.ACL());
+    let superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
+      contentManager.getRoles().add([moderator, superContentManager]);
+      moderator.getRoles().add([admin, superModerator]);
+      superContentManager.getRoles().add(superModerator);
+      return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
+    }).then(() => {
+      var auth = new Auth({ config: new Config("test"), isMaster: true });
+      // For each role, fetch their sibling, what they inherit
+      // return with result and roleId for later comparison
+      let promises = [admin, moderator, contentManager, superModerator].map((role) => {
+        return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
+          return Parse.Promise.as({
+            id: role.id,
+            name: role.get('name'),
+            roleNames: result
+          });
+        })
+      });
+
+      return Parse.Promise.when(promises);
+    }).then((results) => {
+      results.forEach((result) => {
+        let id = result.id;
+        let roleNames = result.roleNames;
+        if (id == admin.id) {
+          expect(roleNames.length).toBe(2);
+          expect(roleNames.indexOf("Moderator")).not.toBe(-1);
+          expect(roleNames.indexOf("ContentManager")).not.toBe(-1);
+        } else if (id == moderator.id) {
+          expect(roleNames.length).toBe(1);
+          expect(roleNames.indexOf("ContentManager")).toBe(0);
+        } else if (id == contentManager.id) {
+          expect(roleNames.length).toBe(0);
+        } else if (id == superModerator.id) {
+          expect(roleNames.length).toBe(3);
+          expect(roleNames.indexOf("Moderator")).not.toBe(-1);
+          expect(roleNames.indexOf("ContentManager")).not.toBe(-1);
+          expect(roleNames.indexOf("SuperContentManager")).not.toBe(-1);
+        }
+      });
+      done();
+    }).fail((err) => {
+      done();
+    })
+
+  });
+
+  it_exclude_dbs(['postgres'])('can create role and query empty users', (done)=> {
+    var roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    var role = new Parse.Role('subscribers', roleACL);
+    role.save({}, {useMasterKey : true})
+      .then((x)=>{
+        var query = role.relation('users').query();
+        query.find({useMasterKey : true})
+          .then((users)=>{
+            done();
+          }, (e)=>{
+            fail('should not have errors');
+            done();
+          });
+      }, (e) => {
+        fail('should not have errored');
+      });
+  });
+
+  // Based on various scenarios described in issues #827 and #683,
+  it_exclude_dbs(['postgres'])('should properly handle role permissions on objects', (done) => {
+    var user, user2, user3;
+    var role, role2, role3;
+    var obj, obj2;
+
+    var prACL = new Parse.ACL();
+    prACL.setPublicReadAccess(true);
+    var adminACL, superACL, customerACL;
+
+    createTestUser().then((x) => {
+      user = x;
+      user2 = new Parse.User();
+      return user2.save({ username: 'user2', password: 'omgbbq' });
+    }).then((x) => {
+      user3 = new Parse.User();
+      return user3.save({ username: 'user3', password: 'omgbbq' });
+    }).then((x) => {
+      role = new Parse.Role('Admin', prACL);
+      role.getUsers().add(user);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      adminACL = new Parse.ACL();
+      adminACL.setRoleReadAccess("Admin", true);
+      adminACL.setRoleWriteAccess("Admin", true);
+
+      role2 = new Parse.Role('Super', prACL);
+      role2.getUsers().add(user2);
+      return role2.save({}, { useMasterKey: true });
+    }).then(() => {
+      superACL = new Parse.ACL();
+      superACL.setRoleReadAccess("Super", true);
+      superACL.setRoleWriteAccess("Super", true);
+
+      role.getRoles().add(role2);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      role3 = new Parse.Role('Customer', prACL);
+      role3.getUsers().add(user3);
+      role3.getRoles().add(role);
+      return role3.save({}, { useMasterKey: true });
+    }).then(() => {
+      customerACL = new Parse.ACL();
+      customerACL.setRoleReadAccess("Customer", true);
+      customerACL.setRoleWriteAccess("Customer", true);
+
+      var query = new Parse.Query('_Role');
+      return query.find({ useMasterKey: true });
+    }).then((x) => {
+      expect(x.length).toEqual(3);
+
+      obj = new Parse.Object('TestObjectRoles');
+      obj.set('ACL', customerACL);
+      return obj.save(null, { useMasterKey: true });
+    }).then(() => {
+      // Above, the Admin role was added to the Customer role.
+      // An object secured by the Customer ACL should be able to be edited by the Admin user.
+      obj.set('changedByAdmin', true);
+      return obj.save(null, { sessionToken: user.getSessionToken() });
+    }).then(() => {
+      obj2 = new Parse.Object('TestObjectRoles');
+      obj2.set('ACL', adminACL);
+      return obj2.save(null, { useMasterKey: true });
+    }, (e) => {
+      fail('Admin user should have been able to save.');
+      done();
+    }).then(() => {
+      // An object secured by the Admin ACL should not be able to be edited by a Customer role user.
+      obj2.set('changedByCustomer', true);
+      return obj2.save(null, { sessionToken: user3.getSessionToken() });
+    }).then(() => {
+      fail('Customer user should not have been able to save.');
+      done();
+    }, (e) => {
+      if (e) {
+        expect(e.code).toEqual(101);
+      } else {
+        fail('should return an error');
+      }
+      done();
+    })
+  });
+
+});

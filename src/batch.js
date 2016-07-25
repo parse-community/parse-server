@@ -52,7 +52,8 @@ function handleBatch(router, req) {
       body: restRequest.body,
       params: match.params,
       config: req.config,
-      auth: req.auth
+      auth: req.auth,
+      info: req.info
     };
 
     promises.push(match.handler(request).then((response) => {

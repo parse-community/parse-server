@@ -1,9 +1,9 @@
-import express from 'express';
-import BodyParser from 'body-parser';
-import * as Middlewares from '../middlewares';
+import express             from 'express';
+import BodyParser          from 'body-parser';
+import * as Middlewares    from '../middlewares';
 import { randomHexString } from '../cryptoUtils';
-import mime from 'mime';
-import Config from '../Config';
+import Config              from '../Config';
+import mime                from 'mime';
 
 export class FilesRouter {
 
@@ -41,7 +41,7 @@ export class FilesRouter {
       var contentType = mime.lookup(filename);
       res.set('Content-Type', contentType);
       res.end(data);
-    }).catch(() => {
+    }).catch((err) => {
       res.status(404);
       res.set('Content-Type', 'text/plain');
       res.end('File not found.');
@@ -66,26 +66,18 @@ export class FilesRouter {
         'Filename contains invalid characters.'));
       return;
     }
-    let extension = '';
 
-    // Not very safe there.
-    const hasExtension = req.params.filename.indexOf('.') > 0;
+    const filename = req.params.filename;
     const contentType = req.get('Content-type');
-    if (!hasExtension && contentType && mime.extension(contentType)) {
-      extension = '.' + mime.extension(contentType);
-    }
-
-    const filename = req.params.filename + extension;
     const config = req.config;
     const filesController = config.filesController;
 
-    filesController.createFile(config, filename, req.body).then((result) => {
+    filesController.createFile(config, filename, req.body, contentType).then((result) => {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);
     }).catch((err) => {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR,
-        'Could not store file.'));
+      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.'));
     });
   }
 

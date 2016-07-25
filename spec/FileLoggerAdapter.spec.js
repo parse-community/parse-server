@@ -1,64 +1,107 @@
+'use strict';
+
 var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
 var Parse = require('parse/node').Parse;
 var request = require('request');
-var fs = require('fs');
-
-var LOGS_FOLDER = './test_logs/';
-
-var deleteFolderRecursive = function(path) {
-  if( fs.existsSync(path) ) {
-    fs.readdirSync(path).forEach(function(file,index){
-      var curPath = path + "/" + file;
-      if(fs.lstatSync(curPath).isDirectory()) { // recurse
-        deleteFolderRecursive(curPath);
-      } else { // delete file
-        fs.unlinkSync(curPath);
-      }
-    });
-    fs.rmdirSync(path);
-  }
-};
 
 describe('info logs', () => {
-
-  afterEach((done) => {
-    deleteFolderRecursive(LOGS_FOLDER);
-    done();
-  });
-
   it("Verify INFO logs", (done) => {
-    var fileLoggerAdapter = new FileLoggerAdapter({
-      logsFolder: LOGS_FOLDER
-    });
+    var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.info('testing info logs', () => {
       fileLoggerAdapter.query({
-        size: 1,
+        from: new Date(Date.now() - 500),
+        size: 100,
         level: 'info'
       }, (results) => {
-        expect(results[0].message).toEqual('testing info logs');
-        done();
+        if(results.length == 0) {
+          fail('The adapter should return non-empty results');
+          done();
+        } else {
+          expect(results[0].message).toEqual('testing info logs');
+          done();
+        }
       });
     });
   });
 });
 
 describe('error logs', () => {
-
-  afterEach((done) => {
-    deleteFolderRecursive(LOGS_FOLDER);
-    done();
-  });
-
   it("Verify ERROR logs", (done) => {
     var fileLoggerAdapter = new FileLoggerAdapter();
     fileLoggerAdapter.error('testing error logs', () => {
       fileLoggerAdapter.query({
-        size: 1,
+        from: new Date(Date.now() - 500),
+        size: 100,
         level: 'error'
       }, (results) => {
-        expect(results[0].message).toEqual('testing error logs');
-        done();
+        if(results.length == 0) {
+          fail('The adapter should return non-empty results');
+          done();
+        }
+        else {
+          expect(results[0].message).toEqual('testing error logs');
+          done();
+        }
       });
+    });
+  });
+});
+
+describe('verbose logs', () => {
+  it("mask sensitive information in _User class", (done) => {
+    reconfigureServer({ verbose: true })
+    .then(() => createTestUser())
+    .then(() => {
+      let fileLoggerAdapter = new FileLoggerAdapter();
+      return fileLoggerAdapter.query({
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'verbose'
+      });
+    }).then((results) => {
+      let logString = JSON.stringify(results);
+      expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+      expect(logString.match(/moon-y/g)).toBe(null);
+
+      var headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/login?username=test&password=moon-y'
+      }, (error, response, body) => {
+        let fileLoggerAdapter = new FileLoggerAdapter();
+        return fileLoggerAdapter.query({
+          from: new Date(Date.now() - 500),
+          size: 100,
+          level: 'verbose'
+        }).then((results) => {
+          let logString = JSON.stringify(results);
+          expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
+          expect(logString.match(/moon-y/g)).toBe(null);
+          done();
+        });
+      });
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    })
+  });
+
+  it("should not mask information in non _User class", (done) => {
+    let obj = new Parse.Object('users');
+    obj.set('password', 'pw');
+    obj.save().then(() => {
+      let fileLoggerAdapter = new FileLoggerAdapter();
+      return fileLoggerAdapter.query({
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'verbose'
+      });
+    }).then((results) => {
+      expect(results[1].body.password).toEqual("pw");
+      done();
     });
   });
 });

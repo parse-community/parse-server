@@ -3,13 +3,14 @@ import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
+import { mergeWithOptions } from './utils/commander';
 import colors from 'colors';
 
 program.loadDefinitions(definitions);
 
 program
   .usage('[options] <path/to/configuration.json>');
-    
+
 program.on('--help', function(){
   console.log('  Get Started guide:');
   console.log('');
@@ -31,42 +32,29 @@ program.on('--help', function(){
   console.log('    $ parse-server -- --appId APP_ID --masterKey MASTER_KEY --serverURL serverURL');
   console.log('');
 });
-  
+
 program.parse(process.argv, process.env);
 
-let options = {};
-if (program.args.length > 0 ) {
-  let jsonPath = program.args[0];
-  jsonPath = path.resolve(jsonPath);
-  options = require(jsonPath);
-  console.log(`Configuation loaded from ${jsonPath}`)
-} 
-
-if (!program.appId || !program.masterKey || !program.serverURL) {
-  program.outputHelp();
-  console.error("");
-  console.error(colors.red("ERROR: appId, masterKey and serverURL are required"));
-  console.error("");
-  process.exit(1);
-}
-
-options = Object.keys(definitions).reduce(function (options, key) {
-  if (program[key]) {
-    options[key] = program[key];
-  }
-  return options;
-}, options);
+let options = program.getOptions();
 
 if (!options.serverURL) {
   options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+}
+
+if (!options.appId || !options.masterKey || !options.serverURL) {
+  program.outputHelp();
+  console.error("");
+  console.error(colors.red("ERROR: appId and masterKey are required"));
+  console.error("");
+  process.exit(1);
 }
 
 const app = express();
 const api = new ParseServer(options);
 app.use(options.mountPath, api);
 
-app.listen(options.port, function() {
-  
+var server = app.listen(options.port, function() {
+
   for (let key in options) {
     let value = options[key];
     if (key == "masterKey") {
@@ -77,3 +65,12 @@ app.listen(options.port, function() {
   console.log('');
   console.log('parse-server running on '+options.serverURL);
 });
+
+var handleShutdown = function() {
+  console.log('Termination signal received. Shutting down.');
+  server.close(function () {
+    process.exit(0);
+  });
+};
+process.on('SIGTERM', handleShutdown);
+process.on('SIGINT', handleShutdown);

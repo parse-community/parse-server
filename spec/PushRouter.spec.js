@@ -2,40 +2,6 @@ var PushRouter = require('../src/Routers/PushRouter').PushRouter;
 var request = require('request');
 
 describe('PushRouter', () => {
-    it('can check valid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      info: {
-        masterKey: 'masterKey'
-      },
-      config: {
-        masterKey: 'masterKey'
-      }
-    }
-
-    expect(() => {
-      PushRouter.validateMasterKey(request);
-    }).not.toThrow();
-    done();
-  });
-
-  it('can check invalid master key of request', (done) => {
-    // Make mock request
-    var request = {
-      info: {
-        masterKey: 'masterKey'
-      },
-      config: {
-        masterKey: 'masterKeyAgain'
-      }
-    }
-
-    expect(() => {
-      PushRouter.validateMasterKey(request);
-    }).toThrow();
-    done();
-  });
-
   it('can get query condition when channels is set', (done) => {
     // Make mock request
     var request = {
@@ -101,8 +67,8 @@ describe('PushRouter', () => {
     }).toThrow();
     done();
   });
-  
-  it('sends a push through REST', (done) => {
+
+  it_exclude_dbs(['postgres'])('sends a push through REST', (done) => {
     request.post({
       url: Parse.serverURL+"/push",
       json: true,
@@ -116,6 +82,9 @@ describe('PushRouter', () => {
         'X-Parse-Master-Key': Parse.masterKey
       }
     }, function(err, res, body){
+      expect(res.headers['x-parse-push-status-id']).not.toBe(undefined);
+      expect(res.headers['x-parse-push-status-id'].length).toBe(10);
+      expect(res.headers[''])
       expect(body.result).toBe(true);
       done();
     });

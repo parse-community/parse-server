@@ -1,68 +1,21 @@
-/** @flow weak */
-// Database Adapter
-//
-// Allows you to change the underlying database.
-//
-// Adapter classes must implement the following methods:
-// * a constructor with signature (connectionString, optionsObject)
-// * connect()
-// * loadSchema()
-// * create(className, object)
-// * find(className, query, options)
-// * update(className, query, update, options)
-// * destroy(className, query, options)
-// * This list is incomplete and the database process is not fully modularized.
-//
-// Default is MongoStorageAdapter.
-
-import DatabaseController from './Controllers/DatabaseController';
-import MongoStorageAdapter from './Adapters/Storage/Mongo/MongoStorageAdapter';
-
-const DefaultDatabaseURI = 'mongodb://localhost:27017/parse';
-
-let adapter = MongoStorageAdapter;
-let dbConnections = {};
-let databaseURI = DefaultDatabaseURI;
-let appDatabaseURIs = {};
-
-function setAdapter(databaseAdapter) {
-  adapter = databaseAdapter;
-}
-
-function setDatabaseURI(uri) {
-  databaseURI = uri;
-}
-
-function setAppDatabaseURI(appId, uri) {
-  appDatabaseURIs[appId] = uri;
-}
+import AppCache from './cache';
 
 //Used by tests
-function clearDatabaseURIs() {
-  appDatabaseURIs = {};
-  dbConnections = {};
-}
-
-function getDatabaseConnection(appId: string, collectionPrefix: string) {
-  if (dbConnections[appId]) {
-    return dbConnections[appId];
+function destroyAllDataPermanently() {
+  if (process.env.TESTING) {
+    // This is super janky, but destroyAllDataPermanently is
+    // a janky interface, so we need to have some jankyness
+    // to support it
+    return Promise.all(Object.keys(AppCache.cache).map(appId => {
+      const app = AppCache.get(appId);
+      if (app.databaseController) {
+        return app.databaseController.deleteEverything();
+      } else {
+        return Promise.resolve();
+      }
+    }));
   }
-
-  var dbURI = (appDatabaseURIs[appId] ? appDatabaseURIs[appId] : databaseURI);
-
-  let storageAdapter = new adapter(dbURI);
-  dbConnections[appId] = new DatabaseController(storageAdapter, {
-    collectionPrefix: collectionPrefix
-  });
-  return dbConnections[appId];
+  throw 'Only supported in test environment';
 }
 
-module.exports = {
-  dbConnections: dbConnections,
-  getDatabaseConnection: getDatabaseConnection,
-  setAdapter: setAdapter,
-  setDatabaseURI: setDatabaseURI,
-  setAppDatabaseURI: setAppDatabaseURI,
-  clearDatabaseURIs: clearDatabaseURIs,
-  defaultDatabaseURI: databaseURI
-};
+module.exports = { destroyAllDataPermanently };
