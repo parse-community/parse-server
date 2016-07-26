@@ -206,6 +206,11 @@ function decodeBase64(str) {
 }
 
 var allowCrossDomain = function(req, res, next) {
+  if (res.headersSent) {
+    next(); // skip to the next middleware
+    return;
+  }
+
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
   res.header('Access-Control-Allow-Headers', 'X-Parse-Master-Key, X-Parse-REST-API-Key, X-Parse-Javascript-Key, X-Parse-Application-Id, X-Parse-Client-Version, X-Parse-Session-Token, X-Requested-With, X-Parse-Revocable-Session, Content-Type');
@@ -229,6 +234,11 @@ var allowMethodOverride = function(req, res, next) {
 };
 
 var handleParseErrors = function(err, req, res, next) {
+  if (res.headersSent) {
+    next(err); // skip to the next middleware
+    return;
+  }
+
   // TODO: Add logging as those errors won't make it to the PromiseRouter
   if (err instanceof Parse.Error) {
     var httpStatus;
