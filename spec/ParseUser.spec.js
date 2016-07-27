@@ -2374,7 +2374,7 @@ describe('Parse.User testing', () => {
           },
           json: true
         }, (err, res, body) => {
-          expect(body.username).toEqual(user.username);
+          expect(body.username).toEqual('user');
           expect(body.objectId).toEqual(originalUserId);
           if (err) {
             reject(err);
