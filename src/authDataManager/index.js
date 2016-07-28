@@ -8,6 +8,7 @@ let twitter = require("./twitter");
 let spotify = require("./spotify");
 let digits = require("./twitter"); // digits tokens are validated by twitter
 let janrainengage = require("./janrainengage");
+let janraincapture = require("./janraincapture");
 
 let anonymous = {
   validateAuthData: () => {
@@ -29,7 +30,8 @@ let providers = {
   spotify,
   anonymous,
   digits,
-  janrainengage
+  janrainengage,
+  janraincapture
 }
 
 module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
