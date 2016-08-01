@@ -36,16 +36,24 @@ export class FilesRouter {
     const config = new Config(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
-    filesController.getFileData(config, filename).then((data) => {
-      res.status(200);
-      var contentType = mime.lookup(filename);
-      res.set('Content-Type', contentType);
-      res.end(data);
-    }).catch((err) => {
-      res.status(404);
-      res.set('Content-Type', 'text/plain');
-      res.end('File not found.');
-    });
+    const contentType = mime.lookup(filename);
+    if (contentType == 'video/mp4' || contentType == 'video/quicktime') {
+      filesController.handleVideoStream(filename, req.get("Range"), res, contentType).catch((err) => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
+    }else{
+      filesController.getFileData(config, filename).then((data) => {
+        res.status(200);
+        res.set('Content-Type', contentType);
+        res.end(data);
+      }).catch((err) => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
+    }
   }
 
   createHandler(req, res, next) {

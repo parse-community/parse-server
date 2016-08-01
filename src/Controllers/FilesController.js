@@ -82,6 +82,19 @@ export class FilesController extends AdaptableController {
   expectedAdapterType() {
     return FilesAdapter;
   }
+
+
+    /**
+    * Stream video file by serving data in chunks if FilesAdapter is GridStoreAdapter.
+    * If not; handle the request as usual with "getFileData".
+    */
+  handleVideoStream(filename, range, res, contentType) {
+      if (this.adapter.constructor.name == 'GridStoreAdapter') {
+        return this.adapter.handleVideoStream(filename,range,res,contentType);
+      }else{
+        return this.adapter.getFileData(filename);
+      }
+   }
 }
 
 export default FilesController;
