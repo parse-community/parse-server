@@ -71,6 +71,9 @@ export class PushController extends AdaptableController {
       let updateWhere = deepcopy(where);
 
       badgeUpdate = () => {
+        if (updateWhere.arn){
+            return;
+        }
         updateWhere.deviceType = 'ios';
         // Build a real RestQuery so we can use it in RestWrite
         let restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
@@ -88,6 +91,12 @@ export class PushController extends AdaptableController {
       onPushStatusSaved(pushStatus.objectId);
       return badgeUpdate();
     }).then(() => {
+      if (this.adapter.snsConfig && where.arn){
+        body.data.badge = null // skip badge increment by bulk push send
+        return {
+            results : where
+        }
+      }
       return rest.find(config, auth, '_Installation', where);
     }).then((response) => {
       if (!response.results) {
