@@ -69,10 +69,11 @@
     "dev": "npm run build && node bin/dev",
     "build": "babel src/ -d lib/",
     "pretest": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 mongodb-runner start",
-    "test": "cross-env NODE_ENV=test TESTING=1 babel-node $COVERAGE_OPTION ./node_modules/.bin/jasmine",
-    "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/.bin/istanbul cover jasmine && npm run posttest",
+    "test": "cross-env NODE_ENV=test TESTING=1 babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
+    "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "posttest": "mongodb-runner stop",
     "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/istanbul cover' npm test",
+    "coverage:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/babel-istanbul/lib/cli.js cover ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },
