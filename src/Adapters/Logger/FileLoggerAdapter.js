@@ -6,8 +6,6 @@
 // {"level":"info","message":"Your Message","timestamp":"2016-02-04T05:59:27.412Z"}
 //
 import { LoggerAdapter } from './LoggerAdapter';
-import winston from 'winston';
-import fs from 'fs';
 import { Parse } from 'parse/node';
 import { logger, configure } from '../../logger';
 
