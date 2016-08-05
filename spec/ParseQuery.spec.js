@@ -118,6 +118,16 @@ describe('Parse.Query testing', () => {
         expect(cake.id).toBe(cake3.id);
       });
     }).then(function(){
+      var query = new Parse.Query(Cake);
+      // Exclude user1
+      query.notEqualTo("liker", user1);
+      // Only cake1
+      query.equalTo("objectId", cake1.id)
+      // user1 likes cake1 so this should return no results
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
       done();
     })
   });
