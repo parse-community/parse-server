@@ -11,7 +11,7 @@ function validateAuthData(authData) {
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Meetup auth is invalid for this user.');
+        'Linkedin auth is invalid for this user.');
     });
 }
 
