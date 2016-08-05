@@ -684,6 +684,44 @@ describe('Cloud Code', () => {
     });
   });
 
+it('beforeSave should not affect fetched pointers', done => {
+    Parse.Cloud.beforeSave('BeforeSaveUnchanged', (req, res) => {
+      res.success();
+    });
+
+    Parse.Cloud.beforeSave('BeforeSaveChanged', function(req, res) {
+      req.object.set('foo', 'baz');
+      res.success();
+    });
+
+    var TestObject =  Parse.Object.extend("TestObject");
+    var BeforeSaveUnchangedObject = Parse.Object.extend("BeforeSaveUnchanged");
+    var BeforeSaveChangedObject = Parse.Object.extend("BeforeSaveChanged");
+
+    var aTestObject = new TestObject();
+    aTestObject.set("foo", "bar");
+    aTestObject.save()
+    .then(aTestObject => {
+      var aBeforeSaveUnchangedObject = new BeforeSaveUnchangedObject();
+      aBeforeSaveUnchangedObject.set("aTestObject", aTestObject);
+      expect(aBeforeSaveUnchangedObject.get("aTestObject").get("foo")).toEqual("bar");
+      return aBeforeSaveUnchangedObject.save();
+    })
+    .then(aBeforeSaveUnchangedObject => {
+      expect(aBeforeSaveUnchangedObject.get("aTestObject").get("foo")).toEqual("bar");
+
+      var aBeforeSaveChangedObject = new BeforeSaveChangedObject();
+      aBeforeSaveChangedObject.set("aTestObject", aTestObject);
+      expect(aBeforeSaveChangedObject.get("aTestObject").get("foo")).toEqual("bar");
+      return aBeforeSaveChangedObject.save();
+    })
+    .then(aBeforeSaveChangedObject => {
+      expect(aBeforeSaveChangedObject.get("aTestObject").get("foo")).toEqual("bar");
+      expect(aBeforeSaveChangedObject.get("foo")).toEqual("baz");
+      done();
+    });
+  });
+
   it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
     var TestObject = Parse.Object.extend('TestObject');
     var NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');

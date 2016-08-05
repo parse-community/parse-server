@@ -165,9 +165,12 @@ RestWrite.prototype.runBeforeTrigger = function() {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
     if (response && response.object) {
-      if (!_.isEqual(this.data, response.object)) {
-        this.storage.changedByTrigger = true;
-      }
+      this.storage.fieldsChangedByTrigger = _.reduce(response.object, (result, value, key) => {
+        if (!_.isEqual(this.data[key], value)) {
+          result.push(key);
+        }
+        return result;
+      }, []);
       this.data = response.object;
       // We should delete the objectId for an update write
       if (this.query && this.query.objectId) {
@@ -792,9 +795,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return this.config.database.update(this.className, this.query, this.data, this.runOptions)
     .then(response => {
       response.updatedAt = this.updatedAt;
-      if (this.storage.changedByTrigger) {
-        this.updateResponseWithData(response, this.data);
-      }
+      this._updateResponseWithData(response, this.data);
       this.response = { response };
     });
   } else {
@@ -850,9 +851,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       if (this.responseShouldHaveUsername) {
         response.username = this.data.username;
       }
-      if (this.storage.changedByTrigger) {
-        this.updateResponseWithData(response, this.data);
-      }
+      this._updateResponseWithData(response, this.data);
       this.response = {
         status: 201,
         response,
@@ -940,9 +939,12 @@ RestWrite.prototype.cleanUserAuthData = function() {
   }
 };
 
-RestWrite.prototype.updateResponseWithData = function(response, data) {
+RestWrite.prototype._updateResponseWithData = function(response, data) {
+  if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
+    return response;
+  }
   let clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
-  Object.keys(data).forEach(fieldName => {
+  this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     let dataValue = data[fieldName];
     let responseValue = response[fieldName];
 
