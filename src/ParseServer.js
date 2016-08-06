@@ -290,11 +290,6 @@ class ParseServer {
 
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
-    // TODO: separate this from the regular ParseServer object
-    if (process.env.TESTING == 1) {
-      api.use('/', require('./testing-routes').router);
-    }
-
     api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
 

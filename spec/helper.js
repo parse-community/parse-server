@@ -87,6 +87,7 @@ const reconfigureServer = changedConfiguration => {
         cache.clear();
         app = express();
         api = new ParseServer(newConfiguration);
+        api.use(require('../src/testing-routes').router);
         app.use('/1', api);
 
         server = app.listen(port);
