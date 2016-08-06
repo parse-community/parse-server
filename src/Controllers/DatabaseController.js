@@ -1,15 +1,13 @@
 ﻿// A database adapter that works with data exported from the hosted
 // Parse database.
 
-import intersect from 'intersect';
-import _         from 'lodash';
-
-var mongodb = require('mongodb');
-var Parse = require('parse/node').Parse;
-
-var SchemaController = require('./SchemaController');
-
-const deepcopy = require('deepcopy');
+import { Parse }              from 'parse/node';
+import _                      from 'lodash';
+import mongdb                 from 'mongodb';
+import intersect              from 'intersect';
+import deepcopy               from 'deepcopy';
+import logger                 from '../logger';
+import * as SchemaController  from './SchemaController';
 
 function addWriteACL(query, acl) {
   let newQuery = _.cloneDeep(query);
@@ -874,6 +872,28 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   } else {
     return query;
   }
+}
+
+DatabaseController.prototype.performInitizalization = function() {
+  const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+
+  let userClassPromise = this.loadSchema()
+    .then(schema => schema.enforceClassExists('_User'))
+
+  let usernameUniqueness = userClassPromise
+    .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      return Promise.reject(error);
+    });
+
+  let emailUniqueness = userClassPromise
+    .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+      return Promise.reject(error);
+    });
+  return Promise.all([usernameUniqueness, emailUniqueness]);
 }
 
 function joinTableName(className, key) {

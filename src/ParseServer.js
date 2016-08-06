@@ -56,15 +56,10 @@ import { PurgeRouter }          from './Routers/PurgeRouter';
 
 import DatabaseController       from './Controllers/DatabaseController';
 import SchemaCache              from './Controllers/SchemaCache';
-const SchemaController = require('./Controllers/SchemaController');
 import ParsePushAdapter         from 'parse-server-push-adapter';
 import MongoStorageAdapter      from './Adapters/Storage/Mongo/MongoStorageAdapter';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
-
-
-const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
-
 
 // ParseServer works like a constructor of an express app.
 // The args that we understand are:
@@ -205,22 +200,7 @@ class ParseServer {
 
     // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
     // have a Parse app without it having a _User collection.
-    let userClassPromise = databaseController.loadSchema()
-    .then(schema => schema.enforceClassExists('_User'))
-
-    let usernameUniqueness = userClassPromise
-    .then(() => databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
-    .catch(error => {
-      logger.warn('Unable to ensure uniqueness for usernames: ', error);
-      return Promise.reject(error);
-    });
-
-    let emailUniqueness = userClassPromise
-    .then(() => databaseController.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
-    .catch(error => {
-      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-      return Promise.reject(error);
-    })
+    const dbInitPromise = databaseController.performInitizalization();
 
     AppCache.put(appId, {
       appId,
@@ -270,7 +250,7 @@ class ParseServer {
 
     // Note: Tests will start to fail if any validation happens after this is called.
     if (process.env.TESTING) {
-      __indexBuildCompletionCallbackForTests(Promise.all([usernameUniqueness, emailUniqueness]));
+      __indexBuildCompletionCallbackForTests(dbInitPromise);
     }
   }
 
