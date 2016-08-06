@@ -284,11 +284,11 @@ class ParseServer {
     var api = express();
     //api.use("/apps", express.static(__dirname + "/public"));
     // File handling needs to be before default middlewares are applied
-    api.use('/', middlewares.allowCrossDomain, new FilesRouter().getExpressRouter({
+    api.use('/', middlewares.allowCrossDomain, new FilesRouter().expressRouter({
       maxUploadSize: maxUploadSize
     }));
 
-    api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressApp());
+    api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
     // TODO: separate this from the regular ParseServer object
     if (process.env.TESTING == 1) {
@@ -296,9 +296,7 @@ class ParseServer {
     }
 
     api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
-    api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
-    api.use(middlewares.handleParseHeaders);
 
     let routers = [
       new ClassesRouter(),
@@ -323,10 +321,12 @@ class ParseServer {
     }, []);
 
     let appRouter = new PromiseRouter(routes, appId);
-
+    appRouter.use(middlewares.allowCrossDomain);
+    appRouter.use(middlewares.handleParseHeaders);
+    
     batch.mountOnto(appRouter);
 
-    api.use(appRouter.expressApp());
+    api.use(appRouter.expressRouter());
 
     api.use(middlewares.handleParseErrors);
 
