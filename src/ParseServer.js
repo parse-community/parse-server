@@ -315,11 +315,8 @@ class ParseServer {
       new FeaturesRouter(),
       new GlobalConfigRouter(),
       new PurgeRouter(),
+      new HooksRouter()
     ];
-
-    if (process.env.PARSE_EXPERIMENTAL_HOOKS_ENABLED || process.env.TESTING) {
-      routers.push(new HooksRouter());
-    }
 
     let routes = routers.reduce((memo, router) => {
       return memo.concat(router.routes);
