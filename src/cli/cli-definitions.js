@@ -172,7 +172,7 @@ export default {
   },
   "customPages": {
     env: "PARSE_SERVER_CUSTOM_PAGES",
-    help: "custom pages for pasword validation and reset",
+    help: "custom pages for password validation and reset",
     action: objectParser
   },
   "maxUploadSize": {

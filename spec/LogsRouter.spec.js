@@ -3,9 +3,9 @@
 const request = require('request');
 var LogsRouter = require('../src/Routers/LogsRouter').LogsRouter;
 var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
+var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
-const loggerController = new LoggerController(new FileLoggerAdapter());
+const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
 describe('LogsRouter', () => {
   it('can check valid master key of request', (done) => {
