@@ -1,63 +1,39 @@
 import { LoggerAdapter } from './LoggerAdapter';
-import { logger, addTransport } from '../../logger';
+import { logger, addTransport, configureLogger } from './WinstonLogger';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
-const CACHE_TIME = 1000 * 60;
-
-let currentDate = new Date();
-
-let simpleCache = {
-  timestamp: null,
-  from: null,
-  until: null,
-  order: null,
-  data: [],
-  level: 'info',
-};
 
 // returns Date object rounded to nearest day
 let _getNearestDay = (date) => {
   return new Date(date.getFullYear(), date.getMonth(), date.getDate());
 }
 
-// returns Date object of previous day
-let _getPrevDay = (date) => {
-  return new Date(date - MILLISECONDS_IN_A_DAY);
-}
-
-// returns the iso formatted file name
-let _getFileName = () => {
-  return _getNearestDay(currentDate).toISOString()
-}
-
-// check for valid cache when both from and util match.
-// cache valid for up to 1 minute
-let _hasValidCache = (from, until, level) => {
-  if (String(from) === String(simpleCache.from) &&
-    String(until) === String(simpleCache.until) &&
-    new Date() - simpleCache.timestamp < CACHE_TIME &&
-    level === simpleCache.level) {
-    return true;
-  }
-  return false;
-}
-
-// check that log entry has valid time stamp based on query
-let _isValidLogEntry = (from, until, entry) => {
-  var _entry = JSON.parse(entry),
-    timestamp = new Date(_entry.timestamp);
-  return timestamp >= from && timestamp <= until
-    ? true
-    : false
-};
-
 export class WinstonLoggerAdapter extends LoggerAdapter {
+  constructor(options) {
+    super();
+    if (options) {
+      configureLogger(options);
+    }
+  }
+
   info() {
     return logger.info.apply(undefined, arguments);
   }
 
   error() {
     return logger.error.apply(undefined, arguments);
+  }
+
+  warn() {
+    return logger.warn.apply(undefined, arguments);
+  }
+
+  verbose() {
+    return logger.verbose.apply(undefined, arguments);
+  }
+
+  log() {
+    return logger.log.apply(undefined, arguments);
   }
 
   addTransport(transport) {

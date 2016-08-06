@@ -60,6 +60,10 @@ export class LoggerController extends AdaptableController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Logger adapter is not availabe');
     }
+    if (typeof this.adapter.query !== 'function') {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+        'Querying logs is not supported with this adapter');
+    }
     options = LoggerController.parseOptions(options);
     return this.adapter.query(options);
   }

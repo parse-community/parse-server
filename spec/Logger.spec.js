@@ -1,4 +1,4 @@
-var logger = require('../src/logger');
+var logging = require('../src/Adapters/Logger/WinstonLogger');
 var winston = require('winston');
 
 class TestTransport extends winston.Transport {
@@ -8,11 +8,15 @@ class TestTransport extends winston.Transport {
 }
 
 describe('Logger', () => {
+  // Test is excluded as will be refactored
   it('should add transport', () => {
-    const testTransport = new (TestTransport)({});
+    const testTransport = new (TestTransport)({
+      name: 'test'
+    });
     spyOn(testTransport, 'log');
-    logger.addTransport(testTransport);
-    logger.logger.info('hi');
+    logging.addTransport(testTransport);
+    logging.logger.info('hi');
     expect(testTransport.log).toHaveBeenCalled();
+    logging.removeTransport(testTransport);
   });
 });

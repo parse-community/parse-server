@@ -5,13 +5,16 @@
 // Adapter classes must implement the following functions:
 // * info(obj1 [, obj2, .., objN])
 // * error(obj1 [, obj2, .., objN])
-// * query(options, callback)
+// * query(options, callback) /* optional */
+// * configureLogger(options)
 // Default is WinstonLoggerAdapter.js
 
 export class LoggerAdapter {
+  constructor(options) {}
   info() {}
   error() {}
-  query(options, callback) {}
+  warn() {}
+  verbose() {}
 }
 
 export default LoggerAdapter;

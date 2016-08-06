@@ -352,8 +352,6 @@ global.describe_only_db = db => {
   }
 }
 
-// LiveQuery test setting
-require('../src/LiveQuery/PLog').logLevel = 'NONE';
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
   var original = require(library)[name];

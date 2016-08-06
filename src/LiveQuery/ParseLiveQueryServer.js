@@ -3,7 +3,7 @@ import Parse from 'parse/node';
 import { Subscription } from './Subscription';
 import { Client } from './Client';
 import { ParseWebSocketServer } from './ParseWebSocketServer';
-import PLog from './PLog';
+import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
@@ -25,15 +25,14 @@ class ParseLiveQueryServer {
     this.subscriptions = new Map();
 
     config = config || {};
-    // Set LogLevel
-    PLog.level = config.logLevel || 'INFO';
+
     // Store keys, convert obj to map
     let keyPairs = config.keyPairs || {};
     this.keyPairs = new Map();
     for (let key of Object.keys(keyPairs)) {
       this.keyPairs.set(key, keyPairs[key]);
     }
-    PLog.verbose('Support key pairs', this.keyPairs);
+    logger.verbose('Support key pairs', this.keyPairs);
 
     // Initialize Parse
     Parse.Object.disableSingleInstance();
@@ -62,7 +61,7 @@ class ParseLiveQueryServer {
     // Register message handler for subscriber. When publisher get messages, it will publish message
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
-      PLog.verbose('Subscribe messsage %j', messageStr);
+      logger.verbose('Subscribe messsage %j', messageStr);
       let message = JSON.parse(messageStr);
       this._inflateParseObject(message);
       if (channel === 'afterSave') {
@@ -70,7 +69,7 @@ class ParseLiveQueryServer {
       } else if (channel === 'afterDelete') {
         this._onAfterDelete(message);
       } else {
-        PLog.error('Get message %s from unknown channel %j', message, channel);
+        logger.error('Get message %s from unknown channel %j', message, channel);
       }
     });
 
@@ -100,16 +99,16 @@ class ParseLiveQueryServer {
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
   _onAfterDelete(message: any): void {
-    PLog.verbose('afterDelete is triggered');
+    logger.verbose('afterDelete is triggered');
 
     let deletedParseObject = message.currentParseObject.toJSON();
     let className = deletedParseObject.className;
-    PLog.verbose('ClassName: %j | ObjectId: %s', className, deletedParseObject.id);
-    PLog.verbose('Current client number : %d', this.clients.size);
+    logger.verbose('ClassName: %j | ObjectId: %s', className, deletedParseObject.id);
+    logger.verbose('Current client number : %d', this.clients.size);
 
     let classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      PLog.error('Can not find subscriptions under this class ' + className);
+      logger.error('Can not find subscriptions under this class ' + className);
       return;
     }
     for (let subscription of classSubscriptions.values()) {
@@ -131,7 +130,7 @@ class ParseLiveQueryServer {
             }
             client.pushDelete(requestId, deletedParseObject);
           }, (error) => {
-            PLog.error('Matching ACL error : ', error);
+            logger.error('Matching ACL error : ', error);
           });
         }
       }
@@ -141,7 +140,7 @@ class ParseLiveQueryServer {
   // Message is the JSON object from publisher after inflated. Message.currentParseObject is the ParseObject after changes.
   // Message.originalParseObject is the original ParseObject.
   _onAfterSave(message: any): void {
-    PLog.verbose('afterSave is triggered');
+    logger.verbose('afterSave is triggered');
 
     let originalParseObject = null;
     if (message.originalParseObject) {
@@ -149,12 +148,12 @@ class ParseLiveQueryServer {
     }
     let currentParseObject = message.currentParseObject.toJSON();
     let className = currentParseObject.className;
-    PLog.verbose('ClassName: %s | ObjectId: %s', className, currentParseObject.id);
-    PLog.verbose('Current client number : %d', this.clients.size);
+    logger.verbose('ClassName: %s | ObjectId: %s', className, currentParseObject.id);
+    logger.verbose('Current client number : %d', this.clients.size);
 
     let classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      PLog.error('Can not find subscriptions under this class ' + className);
+      logger.error('Can not find subscriptions under this class ' + className);
       return;
     }
     for (let subscription of classSubscriptions.values()) {
@@ -192,7 +191,7 @@ class ParseLiveQueryServer {
             originalACLCheckingPromise,
             currentACLCheckingPromise
           ).then((isOriginalMatched, isCurrentMatched) => {
-            PLog.verbose('Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
+            logger.verbose('Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
               originalParseObject,
               currentParseObject,
               isOriginalSubscriptionMatched,
@@ -220,7 +219,7 @@ class ParseLiveQueryServer {
             let functionName = 'push' + type;
             client[functionName](requestId, currentParseObject);
           }, (error) => {
-            PLog.error('Matching ACL error : ', error);
+            logger.error('Matching ACL error : ', error);
           });
         }
       }
@@ -232,12 +231,12 @@ class ParseLiveQueryServer {
       if (typeof request === 'string') {
         request = JSON.parse(request);
       }
-      PLog.verbose('Request: %j', request);
+      logger.verbose('Request: %j', request);
 
       // Check whether this request is a valid request, return error directly if not
       if (!tv4.validate(request, RequestSchema['general']) || !tv4.validate(request, RequestSchema[request.op])) {
         Client.pushError(parseWebsocket, 1, tv4.error.message);
-        PLog.error('Connect message error %s', tv4.error.message);
+        logger.error('Connect message error %s', tv4.error.message);
         return;
       }
 
@@ -253,15 +252,15 @@ class ParseLiveQueryServer {
           break;
         default:
           Client.pushError(parseWebsocket, 3, 'Get unknown operation');
-          PLog.error('Get unknown operation', request.op);
+          logger.error('Get unknown operation', request.op);
       }
     });
 
     parseWebsocket.on('disconnect', () => {
-      PLog.log('Client disconnect: %d', parseWebsocket.clientId);
+      logger.info('Client disconnect: %d', parseWebsocket.clientId);
       let clientId = parseWebsocket.clientId;
       if (!this.clients.has(clientId)) {
-        PLog.error('Can not find client %d on disconnect', clientId);
+        logger.error('Can not find client %d on disconnect', clientId);
         return;
       }
 
@@ -285,8 +284,8 @@ class ParseLiveQueryServer {
         }
       }
 
-      PLog.verbose('Current clients %d', this.clients.size);
-      PLog.verbose('Current subscriptions %d', this.subscriptions.size);
+      logger.verbose('Current clients %d', this.clients.size);
+      logger.verbose('Current subscriptions %d', this.subscriptions.size);
     });
   }
 
@@ -331,14 +330,14 @@ class ParseLiveQueryServer {
   _handleConnect(parseWebsocket: any, request: any): any {
     if (!this._validateKeys(request, this.keyPairs)) {
       Client.pushError(parseWebsocket, 4, 'Key in request is not valid');
-      PLog.error('Key in request is not valid');
+      logger.error('Key in request is not valid');
       return;
     }
     let client = new Client(this.clientId, parseWebsocket);
     parseWebsocket.clientId = this.clientId;
     this.clientId += 1;
     this.clients.set(parseWebsocket.clientId, client);
-    PLog.log('Create new client: %d', parseWebsocket.clientId);
+    logger.info('Create new client: %d', parseWebsocket.clientId);
     client.pushConnect();
   }
 
@@ -361,7 +360,7 @@ class ParseLiveQueryServer {
     // If we can not find this client, return error to client
     if (!parseWebsocket.hasOwnProperty('clientId')) {
       Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before subscribing');
-      PLog.error('Can not find this client, make sure you connect to server before subscribing');
+      logger.error('Can not find this client, make sure you connect to server before subscribing');
       return;
     }
     let client = this.clients.get(parseWebsocket.clientId);
@@ -400,15 +399,15 @@ class ParseLiveQueryServer {
 
     client.pushSubscribe(request.requestId);
 
-    PLog.verbose('Create client %d new subscription: %d', parseWebsocket.clientId, request.requestId);
-    PLog.verbose('Current client number: %d', this.clients.size);
+    logger.verbose('Create client %d new subscription: %d', parseWebsocket.clientId, request.requestId);
+    logger.verbose('Current client number: %d', this.clients.size);
   }
 
   _handleUnsubscribe(parseWebsocket: any, request: any): any {
     // If we can not find this client, return error to client
     if (!parseWebsocket.hasOwnProperty('clientId')) {
       Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before unsubscribing');
-      PLog.error('Can not find this client, make sure you connect to server before unsubscribing');
+      logger.error('Can not find this client, make sure you connect to server before unsubscribing');
       return;
     }
     let requestId = request.requestId;
@@ -416,7 +415,7 @@ class ParseLiveQueryServer {
     if (typeof client === 'undefined') {
       Client.pushError(parseWebsocket, 2, 'Cannot find client with clientId '  + parseWebsocket.clientId +
         '. Make sure you connect to live query server before unsubscribing.');
-      PLog.error('Can not find this client ' + parseWebsocket.clientId);
+      logger.error('Can not find this client ' + parseWebsocket.clientId);
       return;
     }
 
@@ -424,7 +423,7 @@ class ParseLiveQueryServer {
     if (typeof subscriptionInfo === 'undefined') {
       Client.pushError(parseWebsocket, 2, 'Cannot find subscription with clientId '  + parseWebsocket.clientId +
         ' subscriptionId ' + requestId + '. Make sure you subscribe to live query server before unsubscribing.');
-      PLog.error('Can not find subscription with clientId ' + parseWebsocket.clientId +  ' subscriptionId ' + requestId);
+      logger.error('Can not find subscription with clientId ' + parseWebsocket.clientId +  ' subscriptionId ' + requestId);
       return;
     }
 
@@ -446,12 +445,8 @@ class ParseLiveQueryServer {
 
     client.pushUnsubscribe(request.requestId);
 
-    PLog.verbose('Delete client: %d | subscription: %d', parseWebsocket.clientId, request.requestId);
+    logger.verbose('Delete client: %d | subscription: %d', parseWebsocket.clientId, request.requestId);
   }
-}
-
-ParseLiveQueryServer.setLogLevel = function(logLevel) {
-  PLog.logLevel = logLevel;
 }
 
 export {

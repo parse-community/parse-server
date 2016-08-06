@@ -13,8 +13,7 @@ if (!global._babelPolyfill) {
   require('babel-polyfill');
 }
 
-import { logger,
-      configureLogger }         from './logger';
+import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
@@ -98,8 +97,10 @@ class ParseServer {
     filesAdapter,
     push,
     loggerAdapter,
-    jsonLogs,
-    logsFolder,
+    jsonLogs = logging.defaults.jsonLogs,
+    logsFolder = logging.defaults.logsFolder,
+    verbose = logging.defaults.verbose,
+    logLevel = logging.defaults.level,
     databaseURI,
     databaseOptions,
     databaseAdapter,
@@ -132,7 +133,6 @@ class ParseServer {
     liveQuery = {},
     sessionLength = 31536000, // 1 Year in seconds
     expireInactiveSessions = true,
-    verbose = false,
     revokeSessionOnPasswordReset = true,
     schemaCacheTTL = 5, // cache for 5s
     __indexBuildCompletionCallbackForTests = () => {},
@@ -156,10 +156,6 @@ class ParseServer {
       throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
     }
 
-    if (logsFolder) {
-      configureLogger({logsFolder, jsonLogs});
-    }
-
     if (cloud) {
       addParseCloud();
       if (typeof cloud === 'function') {
@@ -171,16 +167,16 @@ class ParseServer {
       }
     }
 
-    if (verbose || process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
-      configureLogger({level: 'silly', jsonLogs});
-    }
-
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
       return new GridStoreAdapter(databaseURI);
     });
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter);
+
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel });
+
+    logging.setLogger(loggerControllerAdapter);
+
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);

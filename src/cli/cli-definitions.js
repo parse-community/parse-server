@@ -193,6 +193,14 @@ export default {
     env: "JSON_LOGS",
     help: "Log as structured JSON objects"
   },
+  "logLevel": {
+    env: "PARSE_SERVER_LOG_LEVEL",
+    help: "Sets the level for logs"
+  },
+  "logsFolder": {
+    env: "PARSE_SERVER_LOGS_FOLDER",
+    help: "Folder for the logs (defaults to './logs')",
+  },
   "revokeSessionOnPasswordReset": {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
