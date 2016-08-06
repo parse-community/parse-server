@@ -16,24 +16,28 @@ let currentLogsFolder = LOGS_FOLDER;
 const additionalTransports = [];
 
 function generateTransports(level, options = {}) {
-  let transports = [
-    new (DailyRotateFile)(
-      Object.assign({
-        filename: 'parse-server.info',
-        dirname: currentLogsFolder,
-        name: 'parse-server',
-        level: level
-      }, options)
-    ),
-    new (DailyRotateFile)(
-      Object.assign({
+  let transports = [];
+
+  if (currentLogsFolder !== '/dev/null') {
+    transports = [
+      new (DailyRotateFile)(
+        Object.assign({
+          filename: 'parse-server.info',
+          dirname: currentLogsFolder,
+          name: 'parse-server',
+          level: level
+        }, options)
+      ),
+      new (DailyRotateFile)(
+        Object.assign({
           filename: 'parse-server.err',
           dirname: currentLogsFolder,
           name: 'parse-server-error',
           level: 'error'
-        }
-      ), options)
-  ].concat(additionalTransports);
+        }, options)
+      )
+    ].concat(additionalTransports);
+  }
   if (!process.env.TESTING || process.env.VERBOSE) {
     transports = [
       new (winston.transports.Console)(
