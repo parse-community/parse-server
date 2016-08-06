@@ -2,7 +2,6 @@
 
 var batch = require('./batch'),
     bodyParser = require('body-parser'),
-    DatabaseAdapter = require('./DatabaseAdapter'),
     express = require('express'),
     middlewares = require('./middlewares'),
     multer = require('multer'),

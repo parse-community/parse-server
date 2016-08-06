@@ -1,6 +1,5 @@
 /** @flow weak */
 
-import * as DatabaseAdapter from "../DatabaseAdapter";
 import * as triggers        from "../triggers";
 import * as Parse           from "parse/node";
 import * as request         from "request";
