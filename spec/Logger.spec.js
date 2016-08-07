@@ -39,7 +39,7 @@ describe('Logger', () => {
     });
   });
 
-  it('should enable JSON logs', (done) => {
+  xit('should enable JSON logs', (done) => {
     // Force console transport
     process.env.VERBOSE=1;
     reconfigureServer({
