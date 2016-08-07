@@ -15,11 +15,7 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
       configureLogger(options);
     }
   }
-
-  info() {
-    return logger.info.apply(undefined, arguments);
-  }
-
+  
   error() {
     return logger.error.apply(undefined, arguments);
   }
@@ -28,8 +24,20 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
     return logger.warn.apply(undefined, arguments);
   }
 
+  info() {
+    return logger.info.apply(undefined, arguments);
+  }
+
   verbose() {
     return logger.verbose.apply(undefined, arguments);
+  }
+
+  debug() {
+    return logger.debug.apply(undefined, arguments);
+  }
+
+  silly() {
+    return logger.silly.apply(undefined, arguments);
   }
 
   log() {

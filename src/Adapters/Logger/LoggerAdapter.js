@@ -3,18 +3,26 @@
 // Allows you to change the logger mechanism
 //
 // Adapter classes must implement the following functions:
-// * info(obj1 [, obj2, .., objN])
-// * error(obj1 [, obj2, .., objN])
+// * log() {}
+// * error() {}
+// * warn() {}
+// * info() {}
+// * verbose() {}
+// * debug() {}
+// * silly() {}
 // * query(options, callback) /* optional */
 // * configureLogger(options)
 // Default is WinstonLoggerAdapter.js
 
 export class LoggerAdapter {
   constructor(options) {}
-  info() {}
+  log() {}
   error() {}
   warn() {}
+  info() {}
   verbose() {}
+  debug() {}
+  silly() {}
 }
 
 export default LoggerAdapter;
