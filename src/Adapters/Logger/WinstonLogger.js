@@ -14,7 +14,7 @@ function updateTransports(options) {
     if (_.isNull(options.dirname)) {
       delete transports['parse-server'];
       delete transports['parse-server-error'];
-    } else {
+    } else if (!_.isUndefined(options.dirname)) {
       transports['parse-server'] = new (DailyRotateFile)(
         Object.assign({
           filename: 'parse-server.info',
