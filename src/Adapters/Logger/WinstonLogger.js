@@ -14,7 +14,7 @@ function updateTransports(options) {
     if (_.isNull(options.dirname)) {
       delete transports['parse-server'];
       delete transports['parse-server-error'];
-    } else if (!_.isUndefined(options.dirname)) {
+    } else {
       transports['parse-server'] = new (DailyRotateFile)(
         Object.assign({
           filename: 'parse-server.info',
@@ -34,6 +34,8 @@ function updateTransports(options) {
           colorize: true,
           name: 'console'
         }, options));
+    } else {
+      delete transports['console'];
     }
   }
   // Mount the additional transports
@@ -86,7 +88,10 @@ export function removeTransport(transport) {
   delete transports[transportName];
   logger.configure({
     transports: _.values(transports)
-  })
+  });
+  _.remove(additionalTransports, (transport) => {
+    return transport.name === transportName;
+  });
 }
 
 export { logger, addTransport, configureLogger, removeTransport };
