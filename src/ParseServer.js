@@ -101,6 +101,7 @@ class ParseServer {
     logsFolder = logging.defaults.logsFolder,
     verbose = logging.defaults.verbose,
     logLevel = logging.defaults.level,
+    silent = logging.defaults.silent,
     databaseURI,
     databaseOptions,
     databaseAdapter,
@@ -173,7 +174,7 @@ class ParseServer {
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
 
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel });
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
 
     logging.setLogger(loggerControllerAdapter);
 

@@ -14,17 +14,18 @@ describe('Logger', () => {
     });
     spyOn(testTransport, 'log');
     logging.addTransport(testTransport);
+    expect(Object.keys(logging.logger.transports).length).toBe(4);
     logging.logger.info('hi');
     expect(testTransport.log).toHaveBeenCalled();
     logging.removeTransport(testTransport);
-    expect(Object.keys(logging.logger.transports).length).toBe(2);
+    expect(Object.keys(logging.logger.transports).length).toBe(3);
   });
 
   it('should have files transports', (done) => {
     reconfigureServer().then(() => {
       let transports = logging.logger.transports;
       let transportKeys = Object.keys(transports);
-      expect(transportKeys.length).toBe(2);
+      expect(transportKeys.length).toBe(3);
       done();
     });
   });
@@ -35,24 +36,23 @@ describe('Logger', () => {
     }).then(() => {
       let transports = logging.logger.transports;
       let transportKeys = Object.keys(transports);
-      expect(transportKeys.length).toBe(0);
+      expect(transportKeys.length).toBe(1);
       done();
     });
   });
 
   it('should enable JSON logs', (done) => {
     // Force console transport
-    process.env.VERBOSE=1;
     reconfigureServer({
       logsFolder: null,
-      jsonLogs: true
+      jsonLogs: true,
+      silent: false
     }).then(() => {
       let spy = spyOn(process.stdout, 'write');
       logging.logger.info('hi', {key: 'value'});
       expect(process.stdout.write).toHaveBeenCalled();
       var firstLog = process.stdout.write.calls.first().args[0];
       expect(firstLog).toEqual(JSON.stringify({key: 'value', level: 'info', message: 'hi' })+'\n');
-      delete process.env.VERBOSE;
       return reconfigureServer({
         jsonLogs: false
       });

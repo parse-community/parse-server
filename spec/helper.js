@@ -45,6 +45,7 @@ var defaultConfiguration = {
   webhookKey: 'hook',
   masterKey: 'test',
   fileKey: 'test',
+  silent: true,
   push: {
     'ios': {
       cert: 'prodCert.pem',

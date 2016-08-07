@@ -11,6 +11,8 @@ const additionalTransports = [];
 function updateTransports(options) {
   let transports = Object.assign({}, logger.transports);
   if (options) {
+    let silent = options.silent;
+    delete options.silent;
     if (_.isNull(options.dirname)) {
       delete transports['parse-server'];
       delete transports['parse-server-error'];
@@ -28,15 +30,12 @@ function updateTransports(options) {
         }, options));
     }
 
-    if (!process.env.TESTING || process.env.VERBOSE) {
-      transports.console = new (winston.transports.Console)(
-        Object.assign({
-          colorize: true,
-          name: 'console'
-        }, options));
-    } else {
-      delete transports['console'];
-    }
+    transports.console = new (winston.transports.Console)(
+      Object.assign({
+        colorize: true,
+        name: 'console',
+        silent
+      }, options));
   }
   // Mount the additional transports
   additionalTransports.forEach((transport) => {
@@ -51,7 +50,8 @@ export function configureLogger({
   logsFolder = defaults.logsFolder,
   jsonLogs = defaults.jsonLogs,
   logLevel = winston.level,
-  verbose = defaults.verbose } = {}) {
+  verbose = defaults.verbose,
+  silent = defaults.silent } = {}) {
 
   if (verbose) {
     logLevel = 'verbose';
@@ -70,6 +70,8 @@ export function configureLogger({
   }
   options.dirname = logsFolder;
   options.level = logLevel;
+  options.silent = silent;
+
   if (jsonLogs) {
     options.json = true;
     options.stringify = true;

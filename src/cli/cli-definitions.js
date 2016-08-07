@@ -201,6 +201,9 @@ export default {
     env: "PARSE_SERVER_LOGS_FOLDER",
     help: "Folder for the logs (defaults to './logs')",
   },
+  "silent": {
+    help: "Disables console output",
+  },
   "revokeSessionOnPasswordReset": {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",

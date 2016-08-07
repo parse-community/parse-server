@@ -19,7 +19,8 @@ export const defaults = {
   jsonLogs: process.env.JSON_LOGS || false,
   logsFolder,
   verbose,
-  level
+  level,
+  silent: false
 }
 
 export function setLogger(aLogger) {
