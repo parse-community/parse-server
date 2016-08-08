@@ -3,7 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import DailyRotateFile from 'winston-daily-rotate-file';
 import _ from 'lodash';
-import defaults  from '../../logger';
+import defaults  from '../../defaults';
 
 const logger = new winston.Logger();
 const additionalTransports = [];

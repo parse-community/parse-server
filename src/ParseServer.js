@@ -13,6 +13,7 @@ if (!global._babelPolyfill) {
   require('babel-polyfill');
 }
 
+import defaults                 from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
@@ -93,15 +94,15 @@ class ParseServer {
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
-    analyticsAdapter = undefined,
+    analyticsAdapter,
     filesAdapter,
     push,
     loggerAdapter,
-    jsonLogs = logging.defaults.jsonLogs,
-    logsFolder = logging.defaults.logsFolder,
-    verbose = logging.defaults.verbose,
-    logLevel = logging.defaults.level,
-    silent = logging.defaults.silent,
+    jsonLogs = defaults.jsonLogs,
+    logsFolder = defaults.logsFolder,
+    verbose = defaults.verbose,
+    logLevel = defaults.level,
+    silent = defaults.silent,
     databaseURI,
     databaseOptions,
     databaseAdapter,
@@ -112,15 +113,15 @@ class ParseServer {
     dotNetKey,
     restAPIKey,
     webhookKey,
-    fileKey = undefined,
+    fileKey,
     facebookAppIds = [],
-    enableAnonymousUsers = true,
-    allowClientClassCreation = true,
+    enableAnonymousUsers = defaults.enableAnonymousUsers,
+    allowClientClassCreation = defaults.allowClientClassCreation,
     oauth = {},
     serverURL = requiredParameter('You must provide a serverURL!'),
-    maxUploadSize = '20mb',
-    verifyUserEmails = false,
-    preventLoginWithUnverifiedEmail = false,
+    maxUploadSize = defaults.maxUploadSize,
+    verifyUserEmails = defaults.verifyUserEmails,
+    preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
     emailVerifyTokenValidityDuration,
     cacheAdapter,
     emailAdapter,
@@ -132,10 +133,10 @@ class ParseServer {
       passwordResetSuccess: undefined
     },
     liveQuery = {},
-    sessionLength = 31536000, // 1 Year in seconds
-    expireInactiveSessions = true,
-    revokeSessionOnPasswordReset = true,
-    schemaCacheTTL = 5, // cache for 5s
+    sessionLength = defaults.sessionLength, // 1 Year in seconds
+    expireInactiveSessions = defaults.expireInactiveSessions,
+    revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
+    schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
