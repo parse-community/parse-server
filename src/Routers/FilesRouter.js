@@ -7,7 +7,7 @@ import mime                from 'mime';
 
 export class FilesRouter {
 
-  getExpressRouter(options = {}) {
+  expressRouter(options = {}) {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
 

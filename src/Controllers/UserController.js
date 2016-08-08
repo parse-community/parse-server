@@ -4,7 +4,6 @@ import AdaptableController from './AdaptableController';
 import MailAdapter         from '../Adapters/Email/MailAdapter';
 import rest                from '../rest';
 
-var DatabaseAdapter = require('../DatabaseAdapter');
 var RestWrite = require('../RestWrite');
 var RestQuery = require('../RestQuery');
 var hash = require('../password').hash;
