@@ -647,11 +647,13 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
     idsIntersection = intersect(allIds);
   }
 
-  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
-  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
-  // is expected though.
-  if (!('objectId' in query) || typeof query.objectId === 'string') {
+  // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
+  if (!('objectId' in query)) {
     query.objectId = {};
+  } else if (typeof query.objectId === 'string') {
+    query.objectId = {
+      $eq: query.objectId
+    };
   }
   query.objectId['$in'] = idsIntersection;
 
@@ -670,11 +672,13 @@ DatabaseController.prototype.addNotInObjectIdsIds = function(ids = null, query) 
     idsIntersection = intersect(allIds);
   }
 
-  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
-  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
-  // is expected though.
-  if (!('objectId' in query) || typeof query.objectId === 'string') {
+  // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
+  if (!('objectId' in query)) {
     query.objectId = {};
+  } else if (typeof query.objectId === 'string') {
+    query.objectId = {
+      $eq: query.objectId
+    };
   }
   query.objectId['$nin'] = idsIntersection;
 
