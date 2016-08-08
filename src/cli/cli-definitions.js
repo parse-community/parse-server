@@ -206,7 +206,7 @@ export default {
   },
   "logsFolder": {
     env: "PARSE_SERVER_LOGS_FOLDER",
-    help: "Folder for the logs (defaults to './logs')",
+    help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
     action: nullParser
   },
   "silent": {
