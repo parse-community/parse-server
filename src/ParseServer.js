@@ -157,17 +157,6 @@ class ParseServer {
       throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
     }
 
-    if (cloud) {
-      addParseCloud();
-      if (typeof cloud === 'function') {
-        cloud(Parse)
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
-      }
-    }
-
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
     logging.setLogger(loggerController);
@@ -247,6 +236,17 @@ class ParseServer {
     // Note: Tests will start to fail if any validation happens after this is called.
     if (process.env.TESTING) {
       __indexBuildCompletionCallbackForTests(dbInitPromise);
+    }
+
+    if (cloud) {
+      addParseCloud();
+      if (typeof cloud === 'function') {
+        cloud(Parse)
+      } else if (typeof cloud === 'string') {
+        require(path.resolve(process.cwd(), cloud));
+      } else {
+        throw "argument 'cloud' must either be a string or a function";
+      }
     }
   }
 
