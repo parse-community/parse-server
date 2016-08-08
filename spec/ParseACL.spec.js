@@ -1093,7 +1093,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it("acl saveAll with permissions", (done) => {
+  it_exclude_dbs(['postgres'])("acl saveAll with permissions", (done) => {
     Parse.User.signUp("alice", "wonderland", null, {
       success: function(alice) {
         var acl = new Parse.ACL(alice);

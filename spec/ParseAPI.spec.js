@@ -348,7 +348,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('test rest_create_app', function(done) {
+  it_exclude_dbs(['postgres'])('test rest_create_app', function(done) {
     var appId;
     Parse._request('POST', 'rest_create_app').then((res) => {
       expect(typeof res.application_id).toEqual('string');
