@@ -32,6 +32,13 @@ function booleanParser(opt) {
   return false;
 }
 
+function nullParser(opt) {
+  if (opt == 'null') {
+    return null;
+  }
+  return opt;
+}
+
 export default {
   "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
@@ -200,6 +207,7 @@ export default {
   "logsFolder": {
     env: "PARSE_SERVER_LOGS_FOLDER",
     help: "Folder for the logs (defaults to './logs')",
+    action: nullParser
   },
   "silent": {
     help: "Disables console output",

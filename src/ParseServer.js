@@ -168,30 +168,33 @@ class ParseServer {
       }
     }
 
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
+    const loggerController = new LoggerController(loggerControllerAdapter, appId);
+    logging.setLogger(loggerController);
+
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
       return new GridStoreAdapter(databaseURI);
     });
+    const filesController = new FilesController(filesControllerAdapter, appId);
+
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
-    const emailControllerAdapter = loadAdapter(emailAdapter);
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
-    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
-
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
-    const filesController = new FilesController(filesControllerAdapter, appId);
     const pushController = new PushController(pushControllerAdapter, appId, push);
-    const loggerController = new LoggerController(loggerControllerAdapter, appId);
+
+    const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
-    const liveQueryController = new LiveQueryController(liveQuery);
+
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const cacheController = new CacheController(cacheControllerAdapter, appId);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
-    const hooksController = new HooksController(appId, databaseController, webhookKey);
+
+    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
-    logging.setLogger(loggerController);
+    const liveQueryController = new LiveQueryController(liveQuery);
+    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();
 
