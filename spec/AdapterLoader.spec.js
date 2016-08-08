@@ -45,6 +45,19 @@ describe("AdapterLoader", ()=>{
     done();
   });
 
+  it("should instantiate an adapter from npm module", (done) => {
+    var adapter = loadAdapter({
+      module: 'parse-server-fs-adapter'
+    });
+
+    expect(typeof adapter).toBe('object');
+    expect(typeof adapter.createFile).toBe('function');
+    expect(typeof adapter.deleteFile).toBe('function');
+    expect(typeof adapter.getFileData).toBe('function');
+    expect(typeof adapter.getFileLocation).toBe('function');
+    done();
+  });
+
   it("should instantiate an adapter from function/Class", (done) => {
     var adapter = loadAdapter({
       adapter: FilesAdapter
