@@ -8,7 +8,7 @@ const rp = require('request-promise');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 const SchemaController = require('../src/Controllers/SchemaController');
-var TestUtils = require('./TestUtils');
+var TestUtils = require('../src/TestUtils');
 const deepcopy = require('deepcopy');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
