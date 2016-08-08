@@ -13,6 +13,7 @@ let { verbose, level } = (() => {
 })();
 
 export default {
+  DefaultMongoURI: 'mongodb://localhost:27017/parse',
   jsonLogs: process.env.JSON_LOGS || false,
   logsFolder,
   verbose,

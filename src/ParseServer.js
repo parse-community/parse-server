@@ -103,7 +103,7 @@ class ParseServer {
     verbose = defaults.verbose,
     logLevel = defaults.level,
     silent = defaults.silent,
-    databaseURI,
+    databaseURI = defaults.DefaultMongoURI,
     databaseOptions,
     databaseAdapter,
     cloud,
@@ -142,7 +142,7 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || databaseURI || collectionPrefix !== '') && databaseAdapter) {
+    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
       throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/connectionPrefix.';
     } else if (!databaseAdapter) {
       databaseAdapter = new MongoStorageAdapter({

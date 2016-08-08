@@ -17,7 +17,6 @@ let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
 
 const MongoSchemaCollectionName = '_SCHEMA';
-const DefaultMongoURI = 'mongodb://localhost:27017/parse';
 
 const storageAdapterAllCollections = mongoAdapter => {
   return mongoAdapter.connect()
@@ -86,7 +85,7 @@ export class MongoStorageAdapter {
   database;
 
   constructor({
-    uri = DefaultMongoURI,
+    uri = defaults.DefaultMongoURI,
     collectionPrefix = '',
     mongoOptions = {},
   }) {
