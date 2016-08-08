@@ -342,6 +342,16 @@ global.fit_exclude_dbs = excluded => {
   }
 }
 
+global.describe_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return describe;
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return describe;
+  } else {
+    return () => {};
+  }
+}
+
 // LiveQuery test setting
 require('../src/LiveQuery/PLog').logLevel = 'NONE';
 var libraryCache = {};
