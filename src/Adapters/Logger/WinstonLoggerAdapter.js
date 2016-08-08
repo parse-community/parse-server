@@ -15,33 +15,9 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
       configureLogger(options);
     }
   }
-  
-  error() {
-    return logger.error.apply(undefined, arguments);
-  }
-
-  warn() {
-    return logger.warn.apply(undefined, arguments);
-  }
-
-  info() {
-    return logger.info.apply(undefined, arguments);
-  }
-
-  verbose() {
-    return logger.verbose.apply(undefined, arguments);
-  }
-
-  debug() {
-    return logger.debug.apply(undefined, arguments);
-  }
-
-  silly() {
-    return logger.silly.apply(undefined, arguments);
-  }
 
   log() {
-    return logger.log.apply(undefined, arguments);
+    return logger.log.apply(logger, arguments);
   }
 
   addTransport(transport) {

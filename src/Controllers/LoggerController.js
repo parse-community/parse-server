@@ -16,7 +16,35 @@ export const LogOrder = {
 }
 
 export class LoggerController extends AdaptableController {
+  
+  log(level, args) {
+    args = [].concat(level, [...args]);
+    this.adapter.log.apply(this.adapter, args);
+  }
 
+  info() {
+    return this.log('info', arguments);
+  }
+  
+  error() {
+    return this.log('error', arguments);
+  }
+
+  warn() {
+    return this.log('warn', arguments);
+  }
+
+  verbose() {
+    return this.log('verbose', arguments);
+  }
+
+  debug() {
+    return this.log('debug', arguments);
+  }
+
+  silly() {
+    return this.log('silly', arguments);
+  }
   // check that date input is valid
   static validDateTime(date) {
     if (!date) {

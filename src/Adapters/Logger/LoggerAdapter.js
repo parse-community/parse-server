@@ -4,25 +4,12 @@
 //
 // Adapter classes must implement the following functions:
 // * log() {}
-// * error() {}
-// * warn() {}
-// * info() {}
-// * verbose() {}
-// * debug() {}
-// * silly() {}
 // * query(options, callback) /* optional */
-// * configureLogger(options)
 // Default is WinstonLoggerAdapter.js
 
 export class LoggerAdapter {
   constructor(options) {}
-  log() {}
-  error() {}
-  warn() {}
-  info() {}
-  verbose() {}
-  debug() {}
-  silly() {}
+  log(level, message, /* meta */) {}
 }
 
 export default LoggerAdapter;

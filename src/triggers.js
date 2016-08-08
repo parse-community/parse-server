@@ -102,7 +102,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController && config.loggerController.adapter
+    log: config.loggerController
   };
 
   if (originalParseObject) {
