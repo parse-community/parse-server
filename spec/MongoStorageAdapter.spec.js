@@ -6,7 +6,7 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 
 // These tests are specific to the mongo storage adapter + mongo storage format
 // and will eventually be moved into their own repo
-describe('MongoStorageAdapter', () => {
+describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI })
     .deleteAllClasses()

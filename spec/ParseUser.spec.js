@@ -1698,7 +1698,7 @@ describe('Parse.User testing', () => {
       bob.setPassword('meower');
       return bob.save();
     }).then(() => {
-      return Parse.User.logIn('bob', 'meower');  
+      return Parse.User.logIn('bob', 'meower');
     }).then((bob) => {
       expect(bob.getUsername()).toEqual('bob');
       done();
