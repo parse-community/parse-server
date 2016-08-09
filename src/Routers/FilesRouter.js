@@ -129,7 +129,7 @@ function handleRangeRequest(gridFile, req, res, contentType) {
     }else{
       end = start + (buffer_size);
     }
-      chunksize = (end - start) + 1;
+    chunksize = (end - start) + 1;
   }
 
   if (start == 0 && end == 2) {
