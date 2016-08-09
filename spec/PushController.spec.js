@@ -397,6 +397,47 @@ describe('PushController', () => {
     });
   });
 
+  it_exclude_dbs(['postgres'])('should support object type for alert', (done) => {
+    var payload = {data: {
+     alert: {
+      'loc-key': 'hello_world',
+    },
+   }}
+
+   var pushAdapter = {
+    send: function(body, installations) {
+      return successfulTransmissions(body, installations);
+    },
+    getValidPushTypes: function() {
+      return ["ios"];
+    }
+  }
+
+   var config = new Config(Parse.applicationId);
+   var auth = {
+    isMaster: true
+   }
+
+   let where = {
+     'deviceToken': {
+       '$inQuery': {
+         'where': {
+           'deviceType': 'ios'
+         },
+         className: '_Installation'
+       }
+     }
+   }
+
+   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   pushController.sendPush(payload, where, config, auth).then((result) => {
+      done();
+    }).catch((err) => {
+      fail('should not fail');
+      done();
+    });
+  });
+
   it('should flatten', () => {
     var res = pushStatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
     expect(res).toEqual([1,2,3,4,5,6]);
