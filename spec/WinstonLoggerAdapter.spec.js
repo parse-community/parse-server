@@ -1,35 +1,36 @@
 'use strict';
 
-var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
+var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 var Parse = require('parse/node').Parse;
 var request = require('request');
 
 describe('info logs', () => {
+
   it("Verify INFO logs", (done) => {
-    var fileLoggerAdapter = new FileLoggerAdapter();
-    fileLoggerAdapter.info('testing info logs', () => {
-      fileLoggerAdapter.query({
-        from: new Date(Date.now() - 500),
-        size: 100,
-        level: 'info'
-      }, (results) => {
-        if(results.length == 0) {
-          fail('The adapter should return non-empty results');
-          done();
-        } else {
-          expect(results[0].message).toEqual('testing info logs');
-          done();
-        }
+      var winstonLoggerAdapter = new WinstonLoggerAdapter();
+      winstonLoggerAdapter.info('testing info logs', () => {
+        winstonLoggerAdapter.query({
+          from: new Date(Date.now() - 500),
+          size: 100,
+          level: 'info'
+        }, (results) => {
+          if (results.length == 0) {
+            fail('The adapter should return non-empty results');
+            done();
+          } else {
+            expect(results[0].message).toEqual('testing info logs');
+            done();
+          }
+        });
       });
     });
-  });
 });
 
 describe('error logs', () => {
   it("Verify ERROR logs", (done) => {
-    var fileLoggerAdapter = new FileLoggerAdapter();
-    fileLoggerAdapter.error('testing error logs', () => {
-      fileLoggerAdapter.query({
+    var winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.error('testing error logs', () => {
+      winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
         size: 100,
         level: 'error'
@@ -52,8 +53,8 @@ describe('verbose logs', () => {
     reconfigureServer({ verbose: true })
     .then(() => createTestUser())
     .then(() => {
-      let fileLoggerAdapter = new FileLoggerAdapter();
-      return fileLoggerAdapter.query({
+      let winstonLoggerAdapter = new WinstonLoggerAdapter();
+      return winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
         size: 100,
         level: 'verbose'
@@ -71,8 +72,8 @@ describe('verbose logs', () => {
         headers: headers,
         url: 'http://localhost:8378/1/login?username=test&password=moon-y'
       }, (error, response, body) => {
-        let fileLoggerAdapter = new FileLoggerAdapter();
-        return fileLoggerAdapter.query({
+        let winstonLoggerAdapter = new WinstonLoggerAdapter();
+        return winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
           size: 100,
           level: 'verbose'
@@ -93,8 +94,8 @@ describe('verbose logs', () => {
     let obj = new Parse.Object('users');
     obj.set('password', 'pw');
     obj.save().then(() => {
-      let fileLoggerAdapter = new FileLoggerAdapter();
-      return fileLoggerAdapter.query({
+      let winstonLoggerAdapter = new WinstonLoggerAdapter();
+      return winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
         size: 100,
         level: 'verbose'

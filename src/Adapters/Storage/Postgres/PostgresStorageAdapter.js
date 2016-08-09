@@ -93,7 +93,7 @@ export class PostgresStorageAdapter {
   }
 
   _ensureSchemaCollectionExists() {
-    return this._client.query('CREATE TABLE "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
+    return this._client.none('CREATE TABLE "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -124,7 +124,7 @@ export class PostgresStorageAdapter {
       patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
     });
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.query(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray]))
+    .then(() => this._client.none(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray]))
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -132,14 +132,14 @@ export class PostgresStorageAdapter {
         throw error;
       }
     })
-    .then(() => this._client.query('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
     .then(() => schema);
   }
 
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
     return this._client.tx("addFieldIfNotExists", t=> {
-      return t.query('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
+      return t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
         className,
         fieldName,
         postgresType: parseTypeToPostgresType(type)
@@ -154,13 +154,13 @@ export class PostgresStorageAdapter {
             throw error;
           }
         })
-        .then(() => t.query('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className}))
+        .then(() => t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className}))
         .then(result => {
           if (fieldName in result[0].schema) {
             throw "Attempted to add a field that already exists";
           } else {
             result[0].schema.fields[fieldName] = type;
-            return t.query(
+            return t.none(
               'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
               {schema: result[0].schema, className}
             );
@@ -177,7 +177,7 @@ export class PostgresStorageAdapter {
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
-    return this._client.query('SELECT "className" FROM "_SCHEMA"')
+    return this._client.any('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
       const classes = ['_SCHEMA', ...results.map(result => result.className)];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
@@ -220,7 +220,7 @@ export class PostgresStorageAdapter {
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
   getClass(className) {
-    return this._client.query('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
+    return this._client.any('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
     .then(result => {
       if (result.length === 1) {
         return result[0].schema;
@@ -271,7 +271,7 @@ export class PostgresStorageAdapter {
     let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}${(['_rperm','_wperm'].includes(columnsArray[index])) ? '::text[]' : ''}`).join(',');
     let qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     let values = [className, ...columnsArray, ...valuesArray]
-    return this._client.query(qs, values)
+    return this._client.none(qs, values)
     .then(() => ({ ops: [object] }))
     .catch(error => {
       if (error.code === PostgresUniqueIndexViolationError) {
@@ -286,7 +286,7 @@ export class PostgresStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
-    return this._client.one(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className }, res=>parseInt(res.count))
+    return this._client.one(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className }, a => +a.count)
     .then(count => {
       if (count === 0) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
@@ -343,7 +343,7 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
-    return this._client.query(qs, values)
+    return this._client.any(qs, values)
     .then(val => val[0]); // TODO: This is unsafe, verification is needed, or a different query method;
   }
 
@@ -364,7 +364,7 @@ export class PostgresStorageAdapter {
     if (limit !== undefined) {
       values.push(limit);
     }
-    return this._client.query(qs, values)
+    return this._client.any(qs, values)
     .then(results => results.map(object => {
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
         object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
@@ -407,7 +407,7 @@ export class PostgresStorageAdapter {
     const constraintName = `unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join(',')})`;
-    return this._client.query(qs,[className, constraintName, ...fieldNames])
+    return this._client.none(qs,[className, constraintName, ...fieldNames])
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
         // Index already exists. Ignore error.
@@ -424,9 +424,8 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `SELECT COUNT(*) FROM $1:name ${wherePattern}`;
-    return this._client.query(qs, values)
-    .then(result => parseInt(result[0].count))
+    const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
+    return this._client.one(qs, values, a => +a.count);
   }
 }
 

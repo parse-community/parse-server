@@ -4,12 +4,11 @@
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 var cache = require('../src/cache').default;
-var DatabaseAdapter = require('../src/DatabaseAdapter');
 var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
-var TestUtils = require('../src/index').TestUtils;
+var TestUtils = require('../src/TestUtils');
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
@@ -87,6 +86,7 @@ const reconfigureServer = changedConfiguration => {
         cache.clear();
         app = express();
         api = new ParseServer(newConfiguration);
+        api.use(require('./testing-routes').router);
         app.use('/1', api);
 
         server = app.listen(port);
@@ -339,6 +339,16 @@ global.fit_exclude_dbs = excluded => {
     return xit;
   } else {
     return fit;
+  }
+}
+
+global.describe_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return describe;
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return describe;
+  } else {
+    return () => {};
   }
 }
 

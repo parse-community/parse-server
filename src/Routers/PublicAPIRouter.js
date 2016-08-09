@@ -152,10 +152,10 @@ export class PublicAPIRouter extends PromiseRouter {
       req => { return this.requestResetPassword(req); });
   }
 
-  expressApp() {
-    let router = express();
+  expressRouter() {
+    let router = express.Router();
     router.use("/apps", express.static(public_html));
-    router.use("/", super.expressApp());
+    router.use("/", super.expressRouter());
     return router;
   }
 }

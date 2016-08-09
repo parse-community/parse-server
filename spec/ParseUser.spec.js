@@ -1698,7 +1698,7 @@ describe('Parse.User testing', () => {
       bob.setPassword('meower');
       return bob.save();
     }).then(() => {
-      return Parse.User.logIn('bob', 'meower');  
+      return Parse.User.logIn('bob', 'meower');
     }).then((bob) => {
       expect(bob.getUsername()).toEqual('bob');
       done();
@@ -2374,7 +2374,7 @@ describe('Parse.User testing', () => {
           },
           json: true
         }, (err, res, body) => {
-          expect(body.username).toEqual(user.username);
+          expect(body.username).toEqual('user');
           expect(body.objectId).toEqual(originalUserId);
           if (err) {
             reject(err);

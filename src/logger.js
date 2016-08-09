@@ -13,6 +13,7 @@ LOGS_FOLDER = process.env.PARSE_SERVER_LOGS_FOLDER || LOGS_FOLDER;
 const JSON_LOGS = process.env.JSON_LOGS || false;
 
 let currentLogsFolder = LOGS_FOLDER;
+const additionalTransports = [];
 
 function generateTransports(level, options = {}) {
   let transports = [
@@ -32,7 +33,7 @@ function generateTransports(level, options = {}) {
           level: 'error'
         }
       ), options)
-  ];
+  ].concat(additionalTransports);
   if (!process.env.TESTING || process.env.VERBOSE) {
     transports = [
       new (winston.transports.Console)(
@@ -90,5 +91,14 @@ export function addGroup(groupName) {
   return winston.loggers.get(groupName);
 }
 
-export { logger };
+export function addTransport(transport) {
+  const level = winston.level;
+  additionalTransports.push(transport);
+  const transports = generateTransports(level);
+  logger.configure({
+    transports: transports
+  });
+}
+
+export { logger, addTransport };
 export default logger;
