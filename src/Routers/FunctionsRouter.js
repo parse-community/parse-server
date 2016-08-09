@@ -66,7 +66,8 @@ export class FunctionsRouter extends PromiseRouter {
         user: req.auth && req.auth.user,
         installationId: req.info.installationId,
         log: req.config.loggerController && req.config.loggerController.adapter,
-        headers: req.headers
+        headers: req.headers,
+        functionName: req.params.functionName
       };
 
       if (theValidator && typeof theValidator === "function") {
