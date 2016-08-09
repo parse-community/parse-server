@@ -2,14 +2,13 @@
 // It would probably be better to refactor them into different files.
 'use strict';
 
-var DatabaseAdapter = require('../src/DatabaseAdapter');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
 const rp = require('request-promise');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 const SchemaController = require('../src/Controllers/SchemaController');
-var TestUtils = require('../src/index').TestUtils;
+var TestUtils = require('../src/TestUtils');
 const deepcopy = require('deepcopy');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
@@ -348,7 +347,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('test rest_create_app', function(done) {
+  it_exclude_dbs(['postgres'])('test rest_create_app', function(done) {
     var appId;
     Parse._request('POST', 'rest_create_app').then((res) => {
       expect(typeof res.application_id).toEqual('string');

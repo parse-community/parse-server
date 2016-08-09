@@ -1,11 +1,11 @@
 // testing-routes.js
-import AppCache         from './cache';
-import * as middlewares from './middlewares';
-import { ParseServer }  from './index';
+import AppCache         from '../src/cache';
+import * as middlewares from '../src/middlewares';
+import { ParseServer }  from '../src/index';
 import { Parse }        from 'parse/node';
 
 var express = require('express'),
-  cryptoUtils = require('./cryptoUtils');
+  cryptoUtils = require('../src/cryptoUtils');
 
 var router = express.Router();
 

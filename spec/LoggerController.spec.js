@@ -1,12 +1,12 @@
 var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
+var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 describe('LoggerController', () => {
   it('can check process a query without throwing', (done) => {
     // Make mock request
     var query = {};
 
-    var loggerController = new LoggerController(new FileLoggerAdapter());
+    var loggerController = new LoggerController(new WinstonLoggerAdapter());
 
     expect(() => {
       loggerController.getLogs(query).then(function(res) {
@@ -69,7 +69,7 @@ describe('LoggerController', () => {
       level: 'error'
     };
 
-    var loggerController = new LoggerController(new FileLoggerAdapter());
+    var loggerController = new LoggerController(new WinstonLoggerAdapter());
 
     expect(() => {
       loggerController.getLogs(query).then(function(res) {

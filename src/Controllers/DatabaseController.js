@@ -1,15 +1,13 @@
 ﻿// A database adapter that works with data exported from the hosted
 // Parse database.
 
-import intersect from 'intersect';
-import _         from 'lodash';
-
-var mongodb = require('mongodb');
-var Parse = require('parse/node').Parse;
-
-var SchemaController = require('./SchemaController');
-
-const deepcopy = require('deepcopy');
+import { Parse }              from 'parse/node';
+import _                      from 'lodash';
+import mongdb                 from 'mongodb';
+import intersect              from 'intersect';
+import deepcopy               from 'deepcopy';
+import logger                 from '../logger';
+import * as SchemaController  from './SchemaController';
 
 function addWriteACL(query, acl) {
   let newQuery = _.cloneDeep(query);
@@ -647,11 +645,13 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
     idsIntersection = intersect(allIds);
   }
 
-  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
-  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
-  // is expected though.
-  if (!('objectId' in query) || typeof query.objectId === 'string') {
+  // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
+  if (!('objectId' in query)) {
     query.objectId = {};
+  } else if (typeof query.objectId === 'string') {
+    query.objectId = {
+      $eq: query.objectId
+    };
   }
   query.objectId['$in'] = idsIntersection;
 
@@ -670,11 +670,13 @@ DatabaseController.prototype.addNotInObjectIdsIds = function(ids = null, query) 
     idsIntersection = intersect(allIds);
   }
 
-  // Need to make sure we don't clobber existing $lt or other constraints on objectId.
-  // Clobbering $eq, $in and shorthand $eq (query.objectId === 'string') constraints
-  // is expected though.
-  if (!('objectId' in query) || typeof query.objectId === 'string') {
+  // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
+  if (!('objectId' in query)) {
     query.objectId = {};
+  } else if (typeof query.objectId === 'string') {
+    query.objectId = {
+      $eq: query.objectId
+    };
   }
   query.objectId['$nin'] = idsIntersection;
 
@@ -874,6 +876,28 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   } else {
     return query;
   }
+}
+
+DatabaseController.prototype.performInitizalization = function() {
+  const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+
+  let userClassPromise = this.loadSchema()
+    .then(schema => schema.enforceClassExists('_User'))
+
+  let usernameUniqueness = userClassPromise
+    .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for usernames: ', error);
+      return Promise.reject(error);
+    });
+
+  let emailUniqueness = userClassPromise
+    .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+      return Promise.reject(error);
+    });
+  return Promise.all([usernameUniqueness, emailUniqueness]);
 }
 
 function joinTableName(className, key) {

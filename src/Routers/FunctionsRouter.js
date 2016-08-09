@@ -81,7 +81,7 @@ export class FunctionsRouter extends PromiseRouter {
           logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nResult: ${JSON.stringify(result.response.result)}`, {
             functionName: req.params.functionName,
             params,
-            result: result.response.resut
+            result: result.response.result
           });
           resolve(result);
         }, (error) => {

@@ -7,7 +7,7 @@ import mime                from 'mime';
 
 export class FilesRouter {
 
-  getExpressRouter(options = {}) {
+  expressRouter(options = {}) {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
 
@@ -40,6 +40,7 @@ export class FilesRouter {
       res.status(200);
       var contentType = mime.lookup(filename);
       res.set('Content-Type', contentType);
+      res.set('Content-Length', data.length);
       res.end(data);
     }).catch((err) => {
       res.status(404);

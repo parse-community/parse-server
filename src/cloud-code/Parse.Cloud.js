@@ -41,11 +41,6 @@ ParseCloud.afterDelete = function(parseClass, handler) {
   triggers.addTrigger(triggers.Types.afterDelete, className, handler, Parse.applicationId);
 };
 
-ParseCloud._removeHook = function(category, name, type, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  triggers._unregister(applicationId, category, name, type);
-};
-
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
 }

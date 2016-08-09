@@ -1,15 +1,20 @@
-import { destroyAllDataPermanently } from './DatabaseAdapter';
+import AppCache from './cache';
 
-let unsupported = function() {
-  throw 'Only supported in test environment';
-};
-
-let _destroyAllDataPermanently;
-if (process.env.TESTING) {
-  _destroyAllDataPermanently = destroyAllDataPermanently;
-} else {
-  _destroyAllDataPermanently = unsupported;
+//Used by tests
+function destroyAllDataPermanently() {
+  if (!process.env.TESTING) {
+    throw 'Only supported in test environment';
+  }
+  return Promise.all(Object.keys(AppCache.cache).map(appId => {
+      const app = AppCache.get(appId);
+      if (app.databaseController) {
+        return app.databaseController.deleteEverything();
+      } else {
+        return Promise.resolve();
+      }
+    }));
 }
 
-export default {
-    destroyAllDataPermanently: _destroyAllDataPermanently};
+export {
+  destroyAllDataPermanently
+}
