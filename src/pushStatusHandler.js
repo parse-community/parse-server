@@ -44,7 +44,7 @@ export default function pushStatusHandler(config) {
       expiry: body.expiration_time,
       status: "pending",
       numSent: 0,
-      pushHash: pushHash,
+      pushHash,
       // lockdown!
       ACL: {}
     }
