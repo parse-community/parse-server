@@ -27,7 +27,7 @@
     "deepcopy": "0.6.3",
     "express": "4.14.0",
     "intersect": "1.0.1",
-    "lodash": "4.14.0",
+    "lodash": "4.14.2",
     "lru-cache": "4.0.1",
     "mailgun-js": "0.7.10",
     "mime": "1.3.4",
