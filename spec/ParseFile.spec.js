@@ -491,27 +491,6 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('supports byte-range requests when requesting a video', done => {
-    var headers = {
-      'Content-Type': 'video/mp4',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest'
-    };
-    request.post({
-      headers: headers,
-      url: 'http://localhost:8378/1/files/file',
-      body: '101010101001010101010101010101010010110101010101010101010'
-    }, (error, response, body) => {
-      expect(error).toBe(null);
-      var b = JSON.parse(body);
-      request.get(b.url, (error, response, body) =>{
-        expect(response.headers['content-type']).toMatch(/^video\/mp4/);
-        expect(response.headers['accept-ranges']).toMatch(/^bytes/);
-        done();
-      });
-    });
-  });
-
   it_exclude_dbs(['postgres'])('creates correct url for old files hosted on files.parsetfss.com', done => {
     var file = {
       __type: 'File',

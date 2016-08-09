@@ -37,13 +37,19 @@ export class FilesRouter {
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.lookup(filename);
-    if (contentType == 'video/mp4' || contentType == 'video/quicktime') {
-      filesController.handleVideoStream(filename, req.get("Range"), res, contentType).catch((err) => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    }else{
+    if (req.get['Range']) {
+      if (typeof filesController.adapter.constructor.name !== 'undefined') {
+        if (filesController.adapter.constructor.name == 'GridStoreAdapter') {
+          filesController.getFileRange(config, filename).then((gridFile) => {
+            handleRangeRequest(gridFile, req, res, contentType);
+          }).catch((err) => {
+            res.status(404);
+            res.set('Content-Type', 'text/plain');
+            res.end('File not found.');
+          });
+        }
+      }
+    } else {
       filesController.getFileData(config, filename).then((data) => {
         res.status(200);
         res.set('Content-Type', contentType);
@@ -100,4 +106,82 @@ export class FilesRouter {
         'Could not delete file.'));
     });
   }
+}
+
+function handleRangeRequest(gridFile, req, res, contentType) {
+  var buffer_size = 1024 * 1024;//1024Kb
+  // Range request, partiall stream the file
+  var parts = req.get["Range"].replace(/bytes=/, "").split("-");
+  var partialstart = parts[0];
+  var partialend = parts[1];
+  var start = partialstart ? parseInt(partialstart, 10) : 0;
+  var end = partialend ? parseInt(partialend, 10) : gridFile.length - 1;
+  var chunksize = (end - start) + 1;
+
+  if (chunksize == 1) {
+    start = 0;
+    partialend = false;
+  }
+
+  if (!partialend) {
+    if (((gridFile.length-1) - start) < (buffer_size)) {
+        end = gridFile.length - 1;
+    }else{
+      end = start + (buffer_size);
+    }
+      chunksize = (end - start) + 1;
+  }
+
+  if (start == 0 && end == 2) {
+    chunksize = 1;
+  }
+
+  res.writeHead(206, {
+    'Content-Range': 'bytes ' + start + '-' + end + '/' + gridFile.length,
+    'Accept-Ranges': 'bytes',
+    'Content-Length': chunksize,
+    'Content-Type': contentType,
+  });
+
+  gridFile.seek(start, function () {
+    // get gridFile stream
+    var stream = gridFile.stream(true);
+    var ended = false;
+    var bufferIdx = 0;
+    var bufferAvail = 0;
+    var range = (end - start) + 1;
+    var totalbyteswanted = (end - start) + 1;
+    var totalbyteswritten = 0;
+    // write to response
+    stream.on('data', function (buff) {
+      bufferAvail += buff.length;
+      //Ok check if we have enough to cover our range
+      if (bufferAvail < range) {
+        //Not enough bytes to satisfy our full range
+        if (bufferAvail > 0) {
+          //Write full buffer
+          res.write(buff);
+          totalbyteswritten += buff.length;
+          range -= buff.length;
+          bufferIdx += buff.length;
+          bufferAvail -= buff.length;
+        }
+      }else{
+        //Enough bytes to satisfy our full range!
+        if (bufferAvail > 0) {
+          const buffer = buff.slice(0,range);
+          res.write(buffer);
+          totalbyteswritten += buffer.length;
+          bufferIdx += range;
+          bufferAvail -= range;
+        }
+      }
+      if (totalbyteswritten >= totalbyteswanted) {
+        //totalbytes = 0;
+        gridFile.close();
+        res.end();
+        this.destroy();
+      }
+    });
+  });
 }
