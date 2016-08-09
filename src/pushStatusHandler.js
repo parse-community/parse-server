@@ -25,6 +25,14 @@ export default function pushStatusHandler(config) {
     let now = new Date();
     let data =  body.data || {};
     let payloadString = JSON.stringify(data);
+    let pushHash;
+    if (typeof data.alert === 'string') {
+      pushHash = md5Hash(data.alert);
+    } else if (typeof data.alert === 'object') {
+      pushHash = md5Hash(JSON.stringify(data.alert));
+    } else {
+      pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
+    }
     let object = {
       objectId,
       createdAt: now,
@@ -36,7 +44,7 @@ export default function pushStatusHandler(config) {
       expiry: body.expiration_time,
       status: "pending",
       numSent: 0,
-      pushHash: md5Hash(JSON.stringify(data.alert) || ''),
+      pushHash: pushHash,
       // lockdown!
       ACL: {}
     }
