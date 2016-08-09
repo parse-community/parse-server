@@ -37,18 +37,14 @@ export class FilesRouter {
     const filesController = config.filesController;
     const filename = req.params.filename;
     const contentType = mime.lookup(filename);
-    if (req.get['Range']) {
-      if (typeof filesController.adapter.constructor.name !== 'undefined') {
-        if (filesController.adapter.constructor.name == 'GridStoreAdapter') {
-          filesController.getFileRange(config, filename).then((gridFile) => {
-            handleRangeRequest(gridFile, req, res, contentType);
-          }).catch((err) => {
-            res.status(404);
-            res.set('Content-Type', 'text/plain');
-            res.end('File not found.');
-          });
-        }
-      }
+    if (isFileStreamable(req, filesController)) {
+      filesController.getFileStream(config, filename).then((stream) => {
+        handleFileStream(stream, req, res, contentType);
+      }).catch((err) => {
+        res.status(404);
+        res.set('Content-Type', 'text/plain');
+        res.end('File not found.');
+      });
     } else {
       filesController.getFileData(config, filename).then((data) => {
         res.status(200);
@@ -109,14 +105,30 @@ export class FilesRouter {
   }
 }
 
-function handleRangeRequest(gridFile, req, res, contentType) {
+function isFileStreamable(req, filesController){
+  if (req.get['Range']) {
+    if (!(typeof filesController.adapter.getFileStream === 'function')) {
+      return false;
+    }
+    if (typeof filesController.adapter.constructor.name !== 'undefined') {
+      if (filesController.adapter.constructor.name == 'GridStoreAdapter') {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+// handleFileStream is licenced under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
+// Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
+function handleFileStream(stream, req, res, contentType) {
   var buffer_size = 1024 * 1024;//1024Kb
   // Range request, partiall stream the file
   var parts = req.get["Range"].replace(/bytes=/, "").split("-");
   var partialstart = parts[0];
   var partialend = parts[1];
   var start = partialstart ? parseInt(partialstart, 10) : 0;
-  var end = partialend ? parseInt(partialend, 10) : gridFile.length - 1;
+  var end = partialend ? parseInt(partialend, 10) : stream.length - 1;
   var chunksize = (end - start) + 1;
 
   if (chunksize == 1) {
@@ -125,8 +137,8 @@ function handleRangeRequest(gridFile, req, res, contentType) {
   }
 
   if (!partialend) {
-    if (((gridFile.length-1) - start) < (buffer_size)) {
-        end = gridFile.length - 1;
+    if (((stream.length-1) - start) < (buffer_size)) {
+        end = stream.length - 1;
     }else{
       end = start + (buffer_size);
     }
@@ -138,15 +150,15 @@ function handleRangeRequest(gridFile, req, res, contentType) {
   }
 
   res.writeHead(206, {
-    'Content-Range': 'bytes ' + start + '-' + end + '/' + gridFile.length,
+    'Content-Range': 'bytes ' + start + '-' + end + '/' + stream.length,
     'Accept-Ranges': 'bytes',
     'Content-Length': chunksize,
     'Content-Type': contentType,
   });
 
-  gridFile.seek(start, function () {
+  stream.seek(start, function () {
     // get gridFile stream
-    var stream = gridFile.stream(true);
+    var gridFileStream = stream.stream(true);
     var ended = false;
     var bufferIdx = 0;
     var bufferAvail = 0;
@@ -154,7 +166,7 @@ function handleRangeRequest(gridFile, req, res, contentType) {
     var totalbyteswanted = (end - start) + 1;
     var totalbyteswritten = 0;
     // write to response
-    stream.on('data', function (buff) {
+    gridFileStream.on('data', function (buff) {
       bufferAvail += buff.length;
       //Ok check if we have enough to cover our range
       if (bufferAvail < range) {
@@ -167,7 +179,7 @@ function handleRangeRequest(gridFile, req, res, contentType) {
           bufferIdx += buff.length;
           bufferAvail -= buff.length;
         }
-      }else{
+      } else {
         //Enough bytes to satisfy our full range!
         if (bufferAvail > 0) {
           const buffer = buff.slice(0,range);
@@ -179,7 +191,7 @@ function handleRangeRequest(gridFile, req, res, contentType) {
       }
       if (totalbyteswritten >= totalbyteswanted) {
         //totalbytes = 0;
-        gridFile.close();
+        stream.close();
         res.end();
         this.destroy();
       }

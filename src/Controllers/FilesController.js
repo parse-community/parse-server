@@ -83,8 +83,8 @@ export class FilesController extends AdaptableController {
     return FilesAdapter;
   }
 
-  getFileRange(config, filename) {
-    return this.adapter.getFileRange(filename);
+  getFileStream(config, filename) {
+    return this.adapter.getFileStream(filename);
    }
 }
 

@@ -68,7 +68,7 @@ export class GridStoreAdapter extends FilesAdapter {
     return (config.mount + '/files/' + config.applicationId + '/' + encodeURIComponent(filename));
   }
 
-  getFileRange(filename: string) {
+  getFileStream(filename: string) {
     return this._connect().then(database => {
       return GridStore.exist(database, filename).then(() => {
         let gridStore = new GridStore(database, filename, 'r');
