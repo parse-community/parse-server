@@ -27,5 +27,5 @@ export default {
   sessionLength: 31536000,
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
-  schemaCacheTTL: 5
+  schemaCacheTTL: 5000 // in ms
 }
