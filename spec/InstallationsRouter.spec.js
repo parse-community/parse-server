@@ -71,6 +71,9 @@ describe('InstallationsRouter', () => {
       var results = res.response.results;
       expect(results.length).toEqual(1);
       done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
     });
   });
 
@@ -171,6 +174,9 @@ describe('InstallationsRouter', () => {
       var response = res.response;
       expect(response.results.length).toEqual(0);
       expect(response.count).toEqual(2);
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
       done();
     });
   });
