@@ -1478,4 +1478,37 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it_exclude_dbs(['postgres'])('should have _acl when locking down (regression for #2465)', (done) =>  {
+    let headers = {
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    }
+    rp({
+        method: 'POST',
+        headers: headers,
+        uri: 'http://localhost:8378/1/classes/Report',
+        body: {
+          ACL: {},
+          name: 'My Report'
+        },
+        json: true
+      }).then(() => {
+        let config = new Config('test');
+        let adapter = config.database.adapter;
+        return adapter._adaptiveCollection("Report")
+          .then(collection => collection.find({}))
+      }).then((results) => {
+        expect(results.length).toBe(1);
+        let result = results[0];
+        expect(result.name).toEqual('My Report');
+        expect(result._wperm).toEqual([]);
+        expect(result._rperm).toEqual([]);
+        expect(result._acl).toEqual({});
+        done();
+      }).catch((err) => {
+        fail(JSON.stringify(err));
+        done();
+      });
+  });
 });
