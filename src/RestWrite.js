@@ -296,10 +296,10 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // Login with auth data
         delete results[0].password;
         let userResult = results[0];
-        
+
         // need to set the objectId first otherwise location has trailing undefined
         this.data.objectId = userResult.objectId;
-        
+
         // Determine if authData was updated
         let mutatedAuthData = {};
         Object.keys(authData).forEach((provider) => {
@@ -309,7 +309,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
             mutatedAuthData[provider] = providerData;
           }
         });
-        
+
         this.response = {
           response: userResult,
           location: this.location()
@@ -328,7 +328,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
           return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
         }
         return;
-        
+
       } else if (this.query && this.query.objectId) {
         // Trying to update auth data but users
         // are different
@@ -476,7 +476,7 @@ RestWrite.prototype.handleFollowup = function() {
     return this.config.database.destroy('_Session', sessionQuery)
     .then(this.handleFollowup.bind(this));
   }
-  
+
   if (this.storage && this.storage['generateNewSession']) {
     delete this.storage['generateNewSession'];
     return this.createSessionToken()
@@ -847,7 +847,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     .then(response => {
       response.objectId = this.data.objectId;
       response.createdAt = this.data.createdAt;
-      
+
       if (this.responseShouldHaveUsername) {
         response.username = this.data.username;
       }
@@ -895,7 +895,7 @@ RestWrite.prototype.runAfterTrigger = function() {
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
   // Run afterSave trigger
-  triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
+  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
 };
 
 // A helper to figure out what location this operation happens at.
@@ -949,7 +949,7 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
     let responseValue = response[fieldName];
 
     response[fieldName] = responseValue || dataValue;
-    
+
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {
       delete response[fieldName];
