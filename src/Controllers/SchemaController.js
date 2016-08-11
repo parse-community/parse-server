@@ -268,7 +268,7 @@ const dbTypeMatchesObjectType = (dbType, objectType) => {
 
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
-class SchemaController {
+export default class SchemaController {
   _dbAdapter;
   data;
   perms;

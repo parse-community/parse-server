@@ -1,10 +1,10 @@
 'use strict';
 var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var FileLoggerAdapter = require('../src/Adapters/Logger/FileLoggerAdapter').FileLoggerAdapter;
+var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 describe("Cloud Code Logger", () => {
     it("should expose log to functions", (done) => {
-        var logController = new LoggerController(new FileLoggerAdapter());
+        var logController = new LoggerController(new WinstonLoggerAdapter());
 
         Parse.Cloud.define("loggerTest", (req, res) => {
             req.log.info('logTest', 'info log', {info: 'some log' });
@@ -35,7 +35,7 @@ describe("Cloud Code Logger", () => {
     });
 
     it("should expose log to trigger", (done) => {
-        var logController = new LoggerController(new FileLoggerAdapter());
+        var logController = new LoggerController(new WinstonLoggerAdapter());
 
         Parse.Cloud.beforeSave("MyObject", (req, res) => {
             req.log.info('beforeSave MyObject', 'info log', {info: 'some log' });

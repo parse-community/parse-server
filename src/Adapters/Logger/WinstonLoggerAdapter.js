@@ -1,22 +1,8 @@
-// Logger
-//
-// Wrapper around Winston logging library with custom query
-//
-// expected log entry to be in the shape of:
-// {"level":"info","message":"Your Message","timestamp":"2016-02-04T05:59:27.412Z"}
-//
 import { LoggerAdapter } from './LoggerAdapter';
-import { Parse } from 'parse/node';
-import { logger, configure } from '../../logger';
+import { logger, addTransport } from '../../logger';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 const CACHE_TIME = 1000 * 60;
-
-let LOGS_FOLDER = './logs/';
-
-if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-  LOGS_FOLDER = './test_logs/'
-}
 
 let currentDate = new Date();
 
@@ -65,14 +51,20 @@ let _isValidLogEntry = (from, until, entry) => {
     : false
 };
 
-export class FileLoggerAdapter extends LoggerAdapter {
-
+export class WinstonLoggerAdapter extends LoggerAdapter {
   info() {
     return logger.info.apply(undefined, arguments);
   }
 
   error() {
     return logger.error.apply(undefined, arguments);
+  }
+
+  addTransport(transport) {
+    // Note that this is calling addTransport
+    // from logger.  See import - confusing.
+    // but this is not recursive.
+    addTransport(transport);
   }
 
   // custom query as winston is currently limited
@@ -114,4 +106,4 @@ export class FileLoggerAdapter extends LoggerAdapter {
   }
 }
 
-export default FileLoggerAdapter;
+export default WinstonLoggerAdapter;

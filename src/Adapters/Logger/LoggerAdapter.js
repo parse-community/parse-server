@@ -6,7 +6,7 @@
 // * info(obj1 [, obj2, .., objN])
 // * error(obj1 [, obj2, .., objN])
 // * query(options, callback)
-// Default is FileLoggerAdapter.js
+// Default is WinstonLoggerAdapter.js
 
 export class LoggerAdapter {
   info() {}
