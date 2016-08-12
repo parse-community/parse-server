@@ -137,7 +137,7 @@ describe('OAuth', function() {
     })
   });
 
-  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter"].map(function(providerName){
+  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture"].map(function(providerName){
     it("Should validate structure of "+providerName, (done) => {
       var provider = require("../src/authDataManager/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
