@@ -5,7 +5,7 @@ var InstallationsRouter = require('../src/Routers/InstallationsRouter').Installa
 
 var config = new Config('test');
 
-describe('InstallationsRouter', () => {
+describe_only_db(['mongo'])('InstallationsRouter', () => {
   it('uses find condition from request.body', (done) => {
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
