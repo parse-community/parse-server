@@ -341,6 +341,7 @@ const addLegacyACL = restObject => {
     restObject._wperm.forEach(entry => {
       _acl[entry] = { w: true };
     });
+    restObjectCopy._acl = _acl;
   }
 
   if (restObject._rperm) {
@@ -351,9 +352,6 @@ const addLegacyACL = restObject => {
         _acl[entry].r = true;
       }
     });
-  }
-
-  if (Object.keys(_acl).length > 0) {
     restObjectCopy._acl = _acl;
   }
 
