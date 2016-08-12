@@ -5,7 +5,7 @@ var InstallationsRouter = require('../src/Routers/InstallationsRouter').Installa
 
 var config = new Config('test');
 
-describe('InstallationsRouter', () => {
+describe_only_db(['mongo'])('InstallationsRouter', () => {
   it('uses find condition from request.body', (done) => {
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
@@ -70,6 +70,9 @@ describe('InstallationsRouter', () => {
     }).then((res) => {
       var results = res.response.results;
       expect(results.length).toEqual(1);
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
       done();
     });
   });
@@ -171,6 +174,9 @@ describe('InstallationsRouter', () => {
       var response = res.response;
       expect(response.results.length).toEqual(0);
       expect(response.count).toEqual(2);
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
       done();
     });
   });

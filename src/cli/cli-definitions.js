@@ -32,6 +32,13 @@ function booleanParser(opt) {
   return false;
 }
 
+function nullParser(opt) {
+  if (opt == 'null') {
+    return null;
+  }
+  return opt;
+}
+
 export default {
   "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
@@ -192,6 +199,18 @@ export default {
   "jsonLogs": {
     env: "JSON_LOGS",
     help: "Log as structured JSON objects"
+  },
+  "logLevel": {
+    env: "PARSE_SERVER_LOG_LEVEL",
+    help: "Sets the level for logs"
+  },
+  "logsFolder": {
+    env: "PARSE_SERVER_LOGS_FOLDER",
+    help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
+    action: nullParser
+  },
+  "silent": {
+    help: "Disables console output",
   },
   "revokeSessionOnPasswordReset": {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",

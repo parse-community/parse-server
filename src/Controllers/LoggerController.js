@@ -16,7 +16,35 @@ export const LogOrder = {
 }
 
 export class LoggerController extends AdaptableController {
+  
+  log(level, args) {
+    args = [].concat(level, [...args]);
+    this.adapter.log.apply(this.adapter, args);
+  }
 
+  info() {
+    return this.log('info', arguments);
+  }
+  
+  error() {
+    return this.log('error', arguments);
+  }
+
+  warn() {
+    return this.log('warn', arguments);
+  }
+
+  verbose() {
+    return this.log('verbose', arguments);
+  }
+
+  debug() {
+    return this.log('debug', arguments);
+  }
+
+  silly() {
+    return this.log('silly', arguments);
+  }
   // check that date input is valid
   static validDateTime(date) {
     if (!date) {
@@ -59,6 +87,10 @@ export class LoggerController extends AdaptableController {
     if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Logger adapter is not availabe');
+    }
+    if (typeof this.adapter.query !== 'function') {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+        'Querying logs is not supported with this adapter');
     }
     options = LoggerController.parseOptions(options);
     return this.adapter.query(options);

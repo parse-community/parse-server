@@ -45,6 +45,7 @@ var defaultConfiguration = {
   webhookKey: 'hook',
   masterKey: 'test',
   fileKey: 'test',
+  silent: !process.env.VERBOSE,
   push: {
     'ios': {
       cert: 'prodCert.pem',
@@ -352,8 +353,6 @@ global.describe_only_db = db => {
   }
 }
 
-// LiveQuery test setting
-require('../src/LiveQuery/PLog').logLevel = 'NONE';
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
   var original = require(library)[name];

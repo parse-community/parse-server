@@ -8,14 +8,13 @@
 
 import { MongoClient, GridStore, Db} from 'mongodb';
 import { FilesAdapter }              from './FilesAdapter';
-
-const DefaultMongoURI = 'mongodb://localhost:27017/parse';
+import defaults                      from '../../defaults';
 
 export class GridStoreAdapter extends FilesAdapter {
   _databaseURI: string;
   _connectionPromise: Promise<Db>;
 
-  constructor(mongoDatabaseURI = DefaultMongoURI) {
+  constructor(mongoDatabaseURI = defaults.DefaultMongoURI) {
     super();
     this._databaseURI = mongoDatabaseURI;
     this._connect();

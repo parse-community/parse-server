@@ -1,5 +1,5 @@
-import {matchesQuery, queryHash} from './QueryTools';
-import PLog from './PLog';
+import {matchesQuery, queryHash}  from './QueryTools';
+import logger from '../logger';
 
 export type FlattenedObjectData = { [attr: string]: any };
 export type QueryData = { [attr: string]: any };
@@ -29,13 +29,13 @@ class Subscription {
   deleteClientSubscription(clientId: number, requestId: number): void {
     let requestIds = this.clientRequestIds.get(clientId);
     if (typeof requestIds === 'undefined') {
-      PLog.error('Can not find client %d to delete', clientId);
+      logger.error('Can not find client %d to delete', clientId);
       return;
     }
 
     let index = requestIds.indexOf(requestId);
     if (index < 0) {
-      PLog.error('Can not find client %d subscription %d to delete', clientId, requestId);
+      logger.error('Can not find client %d subscription %d to delete', clientId, requestId);
       return;
     }
     requestIds.splice(index, 1);

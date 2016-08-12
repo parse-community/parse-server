@@ -3,11 +3,12 @@ const SCHEMA_CACHE_PREFIX = "__SCHEMA";
 const ALL_KEYS = "__ALL_KEYS";
 
 import { randomString } from '../cryptoUtils';
+import defaults from '../defaults';
 
 export default class SchemaCache {
   cache: Object;
 
-  constructor(cacheController, ttl = 30) {
+  constructor(cacheController, ttl = defaults.schemaCacheTTL) {
     this.ttl = ttl;
     if (typeof ttl == 'string') {
       this.ttl = parseInt(ttl);

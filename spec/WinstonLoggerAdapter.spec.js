@@ -8,7 +8,7 @@ describe('info logs', () => {
 
   it("Verify INFO logs", (done) => {
       var winstonLoggerAdapter = new WinstonLoggerAdapter();
-      winstonLoggerAdapter.info('testing info logs', () => {
+      winstonLoggerAdapter.log('info', 'testing info logs', () => {
         winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
           size: 100,
@@ -29,7 +29,7 @@ describe('info logs', () => {
 describe('error logs', () => {
   it("Verify ERROR logs", (done) => {
     var winstonLoggerAdapter = new WinstonLoggerAdapter();
-    winstonLoggerAdapter.error('testing error logs', () => {
+    winstonLoggerAdapter.log('error', 'testing error logs', () => {
       winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
         size: 100,
