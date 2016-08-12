@@ -14,18 +14,28 @@ const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridS
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
+// need to bind for mocking mocha
+
+let startDB = () => {};
+let stopDB = () => {};
+
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-  var postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
   databaseAdapter = new PostgresStorageAdapter({
     uri: postgresURI,
     collectionPrefix: 'test_',
   });
 } else {
+  startDB = require('mongodb-runner/mocha/before').bind({
+    timeout: () => {},
+    slow: () => {}
+  });
+  stopDB = require('mongodb-runner/mocha/after');;
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
-  })
+  });
 }
 
 var port = 8378;
@@ -65,17 +75,15 @@ var defaultConfiguration = {
 let openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var api = new ParseServer(defaultConfiguration);
 var app = express();
+var api = new ParseServer(defaultConfiguration);
 app.use('/1', api);
-
 var server = app.listen(port);
 server.on('connection', connection => {
   let key = `${connection.remoteAddress}:${connection.remotePort}`;
   openConnections[key] = connection;
   connection.on('close', () => { delete openConnections[key] });
 });
-
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
@@ -110,6 +118,11 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 // This is needed because we ported a bunch of tests from the non-A+ way.
 // TODO: update tests to work in an A+ way
 Parse.Promise.disableAPlusCompliant();
+
+// 10 minutes timeout
+beforeAll(startDB, 10*60*1000);
+
+afterAll(stopDB);
 
 beforeEach(done => {
   try {

@@ -63,15 +63,14 @@
     "istanbul": "1.0.0-alpha.1",
     "jasmine": "2.4.1",
     "mongodb-runner": "3.3.2",
-    "nodemon": "1.10.0"
+    "nodemon": "1.10.0",
+    "nor-pgrunner": "^1.0.2"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
     "build": "babel src/ -d lib/",
-    "pretest": "test -z \"$PARSE_SERVER_TEST_DB\" && cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 mongodb-runner start || echo",
-    "test": "cross-env NODE_ENV=test TESTING=1 babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
+    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
     "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
-    "posttest": "mongodb-runner stop",
     "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/istanbul cover' npm test",
     "coverage:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/babel-istanbul/lib/cli.js cover ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "start": "node ./bin/parse-server",
