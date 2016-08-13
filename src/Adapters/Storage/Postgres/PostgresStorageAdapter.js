@@ -318,6 +318,10 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = COALESCE($${index}:name, '[]'::jsonb) || $${index + 1}`);
         values.push(fieldName, fieldValue.objects);
         index += 2;
+      } else if (fieldValue.__op === 'Delete') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`)
+        values.push(fieldName, 'NULL');
+        index += 2;
       } else if (fieldValue.__op === 'Remove') {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support Remove operator.'));
       } else if (fieldValue.__op === 'AddUnique') {

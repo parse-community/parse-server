@@ -722,7 +722,7 @@ it('beforeSave should not affect fetched pointers', done => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
     var TestObject = Parse.Object.extend('TestObject');
     var NoBeforeSaveObject = Parse.Object.extend('NoBeforeSave');
     var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
@@ -746,7 +746,7 @@ it('beforeSave should not affect fetched pointers', done => {
       })
       .then(object => {
         res.success(object);
-      });
+      }).catch(res.error);
     });
 
     Parse.Cloud.define('removeme2', (req, res) => {
@@ -762,7 +762,7 @@ it('beforeSave should not affect fetched pointers', done => {
       })
       .then(object => {
         res.success(object);
-      });
+      }).catch(res.error);
     });
 
     Parse.Cloud.run('removeme')
@@ -775,10 +775,13 @@ it('beforeSave should not affect fetched pointers', done => {
       expect(aBeforeSaveObj.get('before')).toEqual('save');
       expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
       done();
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
+  it('should fully delete objects when using `unset` with beforeSave (regression test for #1840)', done => {
     var TestObject = Parse.Object.extend('TestObject');
     var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
 
@@ -802,9 +805,9 @@ it('beforeSave should not affect fetched pointers', done => {
        expect(object.get('remove')).toBeUndefined();
        done();
     }).fail((err) => {
-      console.error(err);
+      jfail(err);
       done();
-    })
+    });
   });
 
   it_exclude_dbs(['postgres'])('should not include relation op (regression test for #1606)', done => {
@@ -818,7 +821,7 @@ it('beforeSave should not affect fetched pointers', done => {
       testObj.save().then(() => {
         object.relation('testsRelation').add(testObj);
         res.success();
-      })
+      }, res.error);
     });
 
     let object = new BeforeSaveObject();
@@ -827,7 +830,7 @@ it('beforeSave should not affect fetched pointers', done => {
       expect(() => { objectAgain.relation('testsRelation') }).not.toThrow();
       done();
     }).fail((err) => {
-      console.error(err);
+      jfail(err);
       done();
     })
   });
