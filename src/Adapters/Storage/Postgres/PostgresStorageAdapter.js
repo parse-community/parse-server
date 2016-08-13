@@ -95,9 +95,10 @@ export class PostgresStorageAdapter {
   _ensureSchemaCollectionExists() {
     return this._client.none('CREATE TABLE "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
     .catch(error => {
-      if (error.code === PostgresDuplicateRelationError) {
+      if (error.code === PostgresDuplicateRelationError || error.code === PostgresUniqueIndexViolationError) {
         // Table already exists, must have been created by a different request. Ignore error.
       } else {
+        console.error('error ensuring...');
         throw error;
       }
     });
@@ -184,8 +185,9 @@ export class PostgresStorageAdapter {
   deleteAllClasses() {
     return this._client.any('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
-      const classes = ['_PushStatus','_Hooks','_GlobalConfig','_SCHEMA', ...results.map(result => result.className)];
-      return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
+      const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className)];
+      return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
+      return Promise.all(tx);
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         // No _SCHEMA collection. Don't delete anything.
