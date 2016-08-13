@@ -2,7 +2,7 @@
 
 let request = require('request');
 
-describe_only_db('mongo')('Parse.Push', () => {
+describe('Parse.Push', () => {
   var setup = function() {
     var pushAdapter = {
       send: function(body, installations) {
@@ -47,7 +47,9 @@ describe_only_db('mongo')('Parse.Push', () => {
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
-    });
+    }).catch((err) => {
+      console.error(err);
+    })
   }
 
   it('should properly send push', (done) => {
@@ -137,9 +139,13 @@ describe_only_db('mongo')('Parse.Push', () => {
           'X-Parse-Master-Key': 'test',
         },
       }, (error, response, body) => {
-        expect(body.results.length).toEqual(1);
-        expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-        expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
+        try {
+          expect(body.results.length).toEqual(1);
+          expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
+          expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
+        } catch(e) {
+          jfail(e);
+        }
         done();
       });
     }).catch((err) => {

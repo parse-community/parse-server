@@ -54,9 +54,7 @@ export default function pushStatusHandler(config) {
           objectId
         };
         return Promise.resolve(pushStatus);
-      }).catch((err) => {
-        logger.error(err);
-      })
+      });
     });
     return lastPromise;
   }

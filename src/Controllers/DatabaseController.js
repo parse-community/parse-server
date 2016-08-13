@@ -899,7 +899,15 @@ DatabaseController.prototype.performInitizalization = function() {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       return Promise.reject(error);
     });
-  return Promise.all([usernameUniqueness, emailUniqueness]);
+
+  // Create tables for volatile classes 
+  let creations = SchemaController.VolatilesClassesDefinitions.forEach((schema) => {
+    if (this.adapter.createTable) {
+      schema = SchemaController.convertSchemaToAdapterSchema(schema);
+      return this.adapter.createTable(schema.className, schema);
+    }
+  });
+  return Promise.all([usernameUniqueness, emailUniqueness, Promise.all(creations)]).catch(() => {});
 }
 
 function joinTableName(className, key) {

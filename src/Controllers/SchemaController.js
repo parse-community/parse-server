@@ -76,7 +76,7 @@ const defaultColumns = Object.freeze({
     "pushTime":     {type:'String'},
     "source":       {type:'String'}, // rest or webui
     "query":        {type:'String'}, // the stringified JSON query
-    "payload":      {type:'Object'}, // the JSON payload,
+    "payload":      {type:'String'}, // the stringified JSON payload,
     "title":        {type:'String'},
     "expiry":       {type:'Number'},
     "status":       {type:'String'},
@@ -256,7 +256,15 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
     ...fields,
   },
   classLevelPermissions,
-})
+});
+
+const VolatilesClassesDefinitions = volatileClasses.map((className) => {
+  return injectDefaultSchema({
+    className,
+    fields: {},
+    classLevelPermissions: {}
+  });
+});
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;
@@ -900,4 +908,5 @@ export {
   systemClasses,
   defaultColumns,
   convertSchemaToAdapterSchema,
+  VolatilesClassesDefinitions
 };

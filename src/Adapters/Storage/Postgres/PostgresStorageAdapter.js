@@ -112,6 +112,13 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
+    return this.createTable(className, schema)
+    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    .then(() => schema);
+  }
+
+  // Just create a table, do not insert in schema
+  createTable(className, schema) {
     let valuesArray = [];
     let patternsArray = [];
     Object.keys(schema.fields).forEach((fieldName, index) => {
@@ -131,9 +138,7 @@ export class PostgresStorageAdapter {
       } else {
         throw error;
       }
-    })
-    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
-    .then(() => schema);
+    });
   }
 
   addFieldIfNotExists(className, fieldName, type) {
@@ -179,7 +184,7 @@ export class PostgresStorageAdapter {
   deleteAllClasses() {
     return this._client.any('SELECT "className" FROM "_SCHEMA"')
     .then(results => {
-      const classes = ['_SCHEMA', ...results.map(result => result.className)];
+      const classes = ['_PushStatus','_Hooks','_GlobalConfig','_SCHEMA', ...results.map(result => result.className)];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
