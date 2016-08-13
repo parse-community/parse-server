@@ -148,7 +148,10 @@ beforeEach(done => {
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
   }, error => {
-    fail(JSON.stringify(error));
+    console.error('Error reconfiguring server', error);
+    Parse.initialize('test', 'test', 'test');
+    Parse.serverURL = 'http://localhost:' + port + '/1';
+    // fail(JSON.stringify(error));
     done();
   })
 });
