@@ -19,10 +19,8 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "babel-polyfill": "6.13.0",
-    "babel-runtime": "6.11.6",
     "bcrypt-nodejs": "0.0.3",
     "body-parser": "1.15.2",
-    "colors": "1.1.2",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
     "express": "4.14.0",
@@ -41,7 +39,6 @@
     "pg-promise": "5.2.7",
     "redis": "2.6.2",
     "request": "2.74.0",
-    "request-promise": "4.1.1",
     "semver": "5.2.0",
     "tv4": "1.2.7",
     "winston": "2.2.0",
@@ -56,14 +53,14 @@
     "babel-preset-es2015": "6.13.2",
     "babel-preset-stage-0": "6.5.0",
     "babel-register": "6.11.6",
-    "codecov": "1.0.1",
     "cross-env": "2.0.0",
     "deep-diff": "0.3.4",
     "gaze": "1.1.1",
     "istanbul": "1.0.0-alpha.1",
     "jasmine": "2.4.1",
     "mongodb-runner": "3.3.2",
-    "nodemon": "1.10.0"
+    "nodemon": "1.10.0",
+    "request-promise": "^4.1.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",

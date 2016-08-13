@@ -26,7 +26,8 @@ branches:
 cache:
   directories:
   - "$HOME/.mongodb/versions"
-after_script: "./node_modules/.bin/codecov"
+after_script:
+- bash <(curl -s https://codecov.io/bash)
 deploy:
   provider: npm
   email:
