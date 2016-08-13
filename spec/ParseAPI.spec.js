@@ -835,21 +835,25 @@ describe('miscellaneous', function() {
           selfThing: {"__type":"Pointer","className":"GameScore","objectId":obj.id},
         })
       }, (error, response, body) => {
-        body = JSON.parse(body);
-        expect(body.a).toBeUndefined();
-        expect(body.c).toEqual(3); // 2+1
-        expect(body.d.length).toBe(2);
-        expect(body.d.indexOf('1') > -1).toBe(true);
-        expect(body.d.indexOf('2') > -1).toBe(true);
-        expect(body.e.length).toBe(2);
-        expect(body.e.indexOf('1') > -1).toBe(true);
-        expect(body.e.indexOf('2') > -1).toBe(true);
-        expect(body.f.length).toBe(1);
-        expect(body.f.indexOf('1') > -1).toBe(true);
-        // return nothing on other self
-        expect(body.selfThing).toBeUndefined();
-        // updatedAt is always set
-        expect(body.updatedAt).not.toBeUndefined();
+        try {
+          body = JSON.parse(body);
+          expect(body.a).toBeUndefined();
+          expect(body.c).toEqual(3); // 2+1
+          expect(body.d.length).toBe(2);
+          expect(body.d.indexOf('1') > -1).toBe(true);
+          expect(body.d.indexOf('2') > -1).toBe(true);
+          expect(body.e.length).toBe(2);
+          expect(body.e.indexOf('1') > -1).toBe(true);
+          expect(body.e.indexOf('2') > -1).toBe(true);
+          expect(body.f.length).toBe(1);
+          expect(body.f.indexOf('1') > -1).toBe(true);
+          // return nothing on other self
+          expect(body.selfThing).toBeUndefined();
+          // updatedAt is always set
+          expect(body.updatedAt).not.toBeUndefined();
+        }catch(e) {
+          jfail(e);
+        }
         done();
       });
     }).fail((err) => {
@@ -1210,6 +1214,9 @@ describe('miscellaneous', function() {
         })
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     })
   });
 
@@ -1299,22 +1306,31 @@ describe('miscellaneous', function() {
 
   it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+      done();
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       done();
-    })
+    });
   });
 
   it_exclude_dbs(['postgres'])('does not change inner object keys named _auth_data_something', done => {
@@ -1363,6 +1379,9 @@ describe('miscellaneous', function() {
         fileField: "data",
         geoField: [1,2],
       });
+      done();
+    }).catch((e) => {
+      jfail(e);
       done();
     });
   });

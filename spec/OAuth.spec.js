@@ -228,6 +228,11 @@ describe('OAuth', function() {
       var q = new Parse.Query("_Session");
       q.equalTo('sessionToken', sessionToken);
       q.first({useMasterKey: true}).then((res) => {
+        if (!res) {
+           fail('should not fail fetching the session');
+           done();
+           return;
+        }
         expect(res.get("installationId")).toEqual('yolo');
         done();
       }).fail((err) => {
