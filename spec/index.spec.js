@@ -8,8 +8,8 @@ var express = require('express');
 
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
-describe('server', () => {
-  it_exclude_dbs(['postgres'])('requires a master key and app id', done => {
+describe_only_db('mongo')('server', () => {
+   it_exclude_dbs(['postgres'])('requires a master key and app id', done => {
     reconfigureServer({ appId: undefined })
     .catch(error => {
       expect(error).toEqual('You must provide an appId!');
@@ -221,7 +221,11 @@ describe('server', () => {
         })
         .catch(error => {
           fail(JSON.stringify(error))
-          done();
+          if (server) {
+            server.close(done);
+          } else {
+            done();
+          }
         });
       }}
     ));

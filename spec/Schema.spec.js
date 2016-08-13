@@ -30,7 +30,7 @@ describe('SchemaController', () => {
     }).then((schema) => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -41,7 +41,7 @@ describe('SchemaController', () => {
     }).then((schema) => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -573,7 +573,7 @@ describe('SchemaController', () => {
       })
       .catch(error => {
         fail('Couldn\'t create class');
-        fail(error);
+        jfail(error);
       });
     })
     .catch(error => fail('Couldn\'t load schema'));
@@ -654,7 +654,7 @@ describe('SchemaController', () => {
         }
         done();
       }, error => {
-        fail(error);
+        jfail(error);
         done();
       });
   });
@@ -728,7 +728,7 @@ describe('SchemaController', () => {
       });
     })
     .catch(error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });

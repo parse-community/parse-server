@@ -4,7 +4,7 @@ const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const request = require('request');
 const MongoClient = require("mongodb").MongoClient;
 
-describe_only_db('mongodb')("Email Verification Token Expiration: ", () => {
+describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
 
   it('show the invalid link page, if the user clicks on the verify email link after the email verify token expires', done => {
     var user = new Parse.User();

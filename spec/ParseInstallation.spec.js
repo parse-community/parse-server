@@ -290,7 +290,10 @@ describe('Installations', () => {
       expect(results.length).toEqual(1);
       expect(results[0]['_id']).toEqual(secondObject._id);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { 
+      jfail(error); 
+      done(); 
+    });
   });
 
   xit('creating multiple devices with same device token works', (done) => {
@@ -347,8 +350,7 @@ describe('Installations', () => {
       expect(results[0].channels[0]).toEqual('baz');
       done();
     }).catch(error => {
-      console.log(error);
-      fail();
+      jfail(error);
       done();
     });
   });
@@ -424,7 +426,10 @@ describe('Installations', () => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(u);
       done();
-    });
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
   });
 
   it_exclude_dbs(['postgres'])('update fails to change deviceType', (done) => {
@@ -514,7 +519,10 @@ describe('Installations', () => {
       // The first object should have been deleted
       expect(results.length).toEqual(0);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch(error => {
+      jfail(error);
+      done();
+    });
   });
 
   it_exclude_dbs(['postgres'])('update ios device token with duplicate device token', (done) => {
@@ -557,7 +565,10 @@ describe('Installations', () => {
       // The first object should have been deleted
       expect(results.length).toEqual(0);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch(error => {
+      jfail(error);
+      done();
+    });
   });
 
   xit('update ios device token with duplicate token different app', (done) => {
@@ -581,6 +592,9 @@ describe('Installations', () => {
       // The first object should have been deleted during merge
       expect(results.length).toEqual(1);
       expect(results[0].installationId).toEqual(installId2);
+      done();
+    }).catch(error => {
+      jfail(error);
       done();
     });
   });
@@ -608,6 +622,9 @@ describe('Installations', () => {
       expect(results[0].installationId).toEqual(installId);
       expect(results[0].deviceToken).toEqual(t);
       expect(results[0].channels.length).toEqual(0);
+      done();
+    }).catch(error => {
+      jfail(error);
       done();
     });
   });
@@ -643,6 +660,9 @@ describe('Installations', () => {
       expect(results[0].installationId).toEqual(installId);
       expect(results[0].deviceToken).toEqual(t);
       expect(results[0].deviceType).toEqual('ios');
+      done();
+    }).catch(error => {
+      jfail(error);
       done();
     });
   });
@@ -684,6 +704,9 @@ describe('Installations', () => {
       expect(results[0].deviceType).toEqual('ios');
       expect(results[0].score).toEqual(1);
       done();
+    }).catch(error => {
+      jfail(error);
+      done();
     });
   });
 
@@ -724,7 +747,10 @@ describe('Installations', () => {
       expect(results[0].installationId).toEqual(installId);
       expect(results[0].deviceToken).toEqual(t);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch(error => {
+      jfail(error);
+      done();
+    });
   });
 
   it_exclude_dbs(['postgres'])('update is linking two existing with installation id w/ op', (done) => {
@@ -769,7 +795,10 @@ describe('Installations', () => {
       expect(results[0].deviceToken).toEqual(t);
       expect(results[0].score).toEqual(1);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch(error => {
+      jfail(error);
+      done();
+    });
   });
 
   it_exclude_dbs(['postgres'])('ios merge existing same token no installation id', (done) => {

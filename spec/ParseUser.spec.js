@@ -148,6 +148,9 @@ describe('Parse.User testing', () => {
       ok(fileAgain.name());
       ok(fileAgain.url());
       done();
+    }).catch(err => {
+      jfail(err);
+      done();
     });
   });
 
@@ -171,7 +174,7 @@ describe('Parse.User testing', () => {
     }).then(() => {
       done();
     }, error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -1128,7 +1131,7 @@ describe('Parse.User testing', () => {
     }).then(() => {
       done();
     }, error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -1164,7 +1167,7 @@ describe('Parse.User testing', () => {
             done();
           },
           error: function(model, error) {
-            fail(error);
+            jfail(error);
             ok(false, "LogIn should have worked");
             done();
           }
@@ -1750,7 +1753,7 @@ describe('Parse.User testing', () => {
           access_token: "jenny",
           expiration_date: new Date().toJSON()
         }).then(done, (error) => {
-          fail(error);
+          jfail(error);
           done();
         });
       }
@@ -2073,10 +2076,14 @@ describe('Parse.User testing', () => {
         url: 'http://localhost:8378/1/sessions'
       }, (error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.results.length).toEqual(1);
-        expect(typeof b.results[0].user).toEqual('object');
-        expect(b.results[0].user.objectId).toEqual(user.id);
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          expect(typeof b.results[0].user).toEqual('object');
+          expect(b.results[0].user.objectId).toEqual(user.id);
+        } catch(e) {
+          jfail(e);
+        }
         done();
       });
     });
@@ -2097,9 +2104,16 @@ describe('Parse.User testing', () => {
         url: 'http://localhost:8378/1/sessions'
       }, (error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.results.length).toEqual(1);
-        var objId = b.results[0].objectId;
+        var objId;
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          objId = b.results[0].objectId;
+        } catch(e) {
+          jfail(e);
+          done();
+          return;
+        }
         request.del({
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -2577,7 +2591,7 @@ describe('Parse.User testing', () => {
     }))
     .catch(error => {
       fail('Unexpected failure testing in unlink user test');
-      fail(error);
+      jfail(error);
       done();
     });
   });

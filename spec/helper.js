@@ -229,12 +229,12 @@ function strictEqual(a, b, message) {
 function notEqual(a, b, message) {
   expect(a).not.toEqual(b, message);
 }
-function expectSuccess(params) {
+function expectSuccess(params, done) {
   return {
     success: params.success,
     error: function(e) {
-      console.log('got error', e);
       fail('failure happened in expectSuccess');
+      done ? done() : null;
     },
   }
 }
@@ -365,7 +365,9 @@ global.describe_only_db = db => {
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return describe;
   } else {
-    return () => {};
+    return (a) => {
+      console.log('skipping ', a);
+    };
   }
 }
 

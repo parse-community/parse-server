@@ -2,7 +2,7 @@
 
 let request = require('request');
 
-describe('Parse.Push', () => {
+describe_only_db('mongo')('Parse.Push', () => {
   var setup = function() {
     var pushAdapter = {
       send: function(body, installations) {
@@ -50,7 +50,7 @@ describe('Parse.Push', () => {
     });
   }
 
-  it_exclude_dbs(['postgres'])('should properly send push', (done) => {
+  it('should properly send push', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -64,13 +64,13 @@ describe('Parse.Push', () => {
     })
     .then(() => {
       done();
-    }, (err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should properly send push with lowercaseIncrement', (done) => {
+  it('should properly send push with lowercaseIncrement', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -83,13 +83,13 @@ describe('Parse.Push', () => {
      }, {useMasterKey: true})
     }).then(() => {
       done();
-    }, (err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not allow clients to query _PushStatus', done => {
+  it('should not allow clients to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -111,10 +111,13 @@ describe('Parse.Push', () => {
         expect(body.error).toEqual('unauthorized');
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should allow master key to query _PushStatus', done => {
+  it('should allow master key to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -139,10 +142,13 @@ describe('Parse.Push', () => {
         expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should throw error if missing push configuration', done => {
+  it('should throw error if missing push configuration', done => {
     reconfigureServer({push: null})
     .then(() => {
       return Parse.Push.send({
@@ -158,6 +164,9 @@ describe('Parse.Push', () => {
       fail('should not succeed');
     }, (err) => {
       expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
+      done();
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });

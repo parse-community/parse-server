@@ -1852,13 +1852,19 @@ describe('Parse.Object testing', () => {
       return query.find();
     }).then((res) => {
       expect(res.length).toBe(1);
-      expect(res[0].get("obj")).toBe(undefined);
+      if (res[0]) {
+        expect(res[0].get("obj")).toBe(undefined);
+      }
       let query = new Parse.Query("AnObject");
       return query.find();
     }).then((res) => {
       expect(res.length).toBe(1);
-      expect(res[0].get("obj")).not.toBe(undefined);
-      return res[0].get("obj").fetch();
+      if (res[0]) {
+        expect(res[0].get("obj")).not.toBe(undefined);
+        return res[0].get("obj").fetch();
+      } else {
+        done();
+      }
     }).then(() => {
       fail("Should not fetch a deleted object");
     }, (err) => {
@@ -1884,6 +1890,9 @@ describe('Parse.Object testing', () => {
       expect(res.get("obj")).not.toBe(undefined);
       expect(res.get("obj").get("obj")).toBe(undefined);
       done();
-    });
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
   });
 });

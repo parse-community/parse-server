@@ -129,6 +129,9 @@ describe('Parse.Query testing', () => {
       });
     }).then(function(){
       done();
+    }).catch((err) => {
+      jfail(err);
+      done();
     })
   });
 
@@ -172,12 +175,12 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          fail(e);
+          jfail(e);
           done();
         }
       });
     }, (e) => {
-      fail(e);
+      jfail(e);
       done();
     });
   });
@@ -198,10 +201,13 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(err) {
-          fail(err);
+          jfail(err);
           done();
         },
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
@@ -221,6 +227,9 @@ describe('Parse.Query testing', () => {
           done();
         }
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
@@ -273,7 +282,7 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          fail(e);
+          jfail(e);
           done();
         },
       });
@@ -996,7 +1005,7 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          fail(e);
+          jfail(e);
           done();
         },
       });
@@ -1802,7 +1811,7 @@ describe('Parse.Query testing', () => {
       expect(results.length).toEqual(2);
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
