@@ -23,12 +23,32 @@ const parseTypeToPostgresType = type => {
   }
 };
 
+const ParseToPosgresComparator = {
+  '$gt': '>',
+  '$lt': '<',
+  '$gte': '>=',
+  '$lte': '<='
+}
+
+const toPostresValue = value => {
+  if (typeof value === 'object') {
+    if (value.__type === 'Date') {
+      return value.iso;
+    }
+  }
+  return value;
+}
+
 const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
   let values = [];
   for (let fieldName in query) {
     let fieldValue = query[fieldName];
     if (typeof fieldValue === 'string') {
+      patterns.push(`$${index}:name = $${index + 1}`);
+      values.push(fieldName, fieldValue);
+      index += 2;
+    } else if (typeof fieldValue === 'boolean') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
@@ -73,7 +93,19 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue.objectId);
       index += 2;
     } else {
-      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this query type yet`);
+      let handled = false;
+      Object.keys(ParseToPosgresComparator).forEach(cmp => {
+        if (fieldValue[cmp]) {
+          let pgComparator = ParseToPosgresComparator[cmp];
+          patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
+          values.push(fieldName, toPostresValue(fieldValue[cmp]));
+          index += 2;
+          handled = true;
+        }
+      });
+      if (!handled) {
+        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this query type yet`);
+      }
     }
   }
   return { pattern: patterns.join(' AND '), values };
@@ -122,9 +154,14 @@ export class PostgresStorageAdapter {
   createTable(className, schema) {
     let valuesArray = [];
     let patternsArray = [];
-    Object.keys(schema.fields).forEach((fieldName, index) => {
+    let fields = Object.assign({}, schema.fields);
+    if (className === '_User') {
+      fields._email_verify_token_expires_at = {type: 'Date'};
+      fields._email_verify_token = {type: 'String'};
+    }
+    Object.keys(fields).forEach((fieldName, index) => {
       valuesArray.push(fieldName);
-      let parseType = schema.fields[fieldName];
+      let parseType = fields[fieldName];
       if (['_rperm', '_wperm'].includes(fieldName)) {
         parseType.contents = { type: 'String' };
       }
@@ -240,9 +277,19 @@ export class PostgresStorageAdapter {
   // TODO: remove the mongo format dependency in the return value
   createObject(className, schema, object) {
     let columnsArray = [];
+    let newFieldsArray = [];
     let valuesArray = [];
     Object.keys(object).forEach(fieldName => {
       columnsArray.push(fieldName);
+      if (!schema.fields[fieldName] && className === '_User') {
+        if (fieldName == '_email_verify_token') {
+          valuesArray.push(object[fieldName]);
+        }
+        if (fieldName == '_email_verify_token_expires_at') {
+          valuesArray.push(object[fieldName].iso);
+        }
+        return;
+      }
       switch (schema.fields[fieldName].type) {
         case 'Date':
           valuesArray.push(object[fieldName].iso);
@@ -327,7 +374,7 @@ export class PostgresStorageAdapter {
         index += 2;
       } else if (fieldValue.__op === 'Delete') {
         updatePatterns.push(`$${index}:name = $${index + 1}`)
-        values.push(fieldName, 'NULL');
+        values.push(fieldName, null);
         index += 2;
       } else if (fieldValue.__op === 'Remove') {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support Remove operator.'));
@@ -341,9 +388,17 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
+      } else if (typeof fieldValue === 'boolean') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
       } else if (fieldValue.__type === 'Pointer') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue.objectId);
+        index += 2;
+      } else if (fieldValue.__type === 'Date') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, toPostresValue(fieldValue));
         index += 2;
       } else {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
@@ -354,7 +409,7 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
-    return this._client.any(qs, values)
+    return this._client.any(qs, values) 
     .then(val => val[0]); // TODO: This is unsafe, verification is needed, or a different query method;
   }
 

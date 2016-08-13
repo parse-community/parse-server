@@ -159,12 +159,18 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 
   delete object.sessionToken;
 
-  if (isMaster || (aclGroup.indexOf(object.objectId) > -1)) {
+  if (isMaster) {
     return object;
   }
+  delete object._email_verify_token;
+  delete object._perishable_token;
+  delete object._tombstone;
+  delete object._email_verify_token_expires_at;
 
+  if ((aclGroup.indexOf(object.objectId) > -1)) {
+    return object;
+  }
   delete object.authData;
-
   return object;
 };
 

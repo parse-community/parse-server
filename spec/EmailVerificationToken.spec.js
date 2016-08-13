@@ -2,9 +2,9 @@
 
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const request = require('request');
-const MongoClient = require("mongodb").MongoClient;
+const Config = require('../src/Config');
 
-describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
+describe("Email Verification Token Expiration: ", () => {
 
   it('show the invalid link page, if the user clicks on the verify email link after the email verify token expires', done => {
     var user = new Parse.User();
@@ -242,14 +242,12 @@ describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
       return user.signUp();
     })
     .then(() => {
-      const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-      return MongoClient.connect(databaseURI);
+      let config = new Config('test');
+      return config.database.find('_User', {username: 'sets_email_verify_token_expires_at'});
     })
-    .then(database => {
-      expect(typeof database).toBe('object');
-      return database.collection('test__User').findOne({username: 'sets_email_verify_token_expires_at'});
-    })
-    .then(user => {
+    .then(results => {
+      expect(results.length).toBe(1);
+      let user = results[0];
       expect(typeof user).toBe('object');
       expect(user.emailVerified).toEqual(false);
       expect(typeof user._email_verify_token).toBe('string');
@@ -290,12 +288,10 @@ describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
           followRedirect: false,
       }, (error, response, body) => {
         expect(response.statusCode).toEqual(302);
-
-        const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-        MongoClient.connect(databaseURI)
-        .then(database => {
-          expect(typeof database).toBe('object');
-          return database.collection('test__User').findOne({username: 'unsets_email_verify_token_expires_at'});
+        let config = new Config('test');
+        return config.database.find('_User', {username: 'unsets_email_verify_token_expires_at'}).then((results) => {
+          expect(results.length).toBe(1);
+          return results[0];
         })
         .then(user => {
           expect(typeof user).toBe('object');
@@ -424,7 +420,6 @@ describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
 
   it('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
 
-    const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
     let db;
 
     let user = new Parse.User();
@@ -454,12 +449,10 @@ describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
       return user.signUp();
     })
     .then(() => {
-      return MongoClient.connect(databaseURI);
-    })
-    .then(database => {
-      expect(typeof database).toBe('object');
-      db = database; //save the db object for later use
-      return db.collection('test__User').findOne({username: 'newEmailVerifyTokenOnEmailReset'});
+      let config = new Config('test');
+      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
+        return results[0];
+      });
     })
     .then(userFromDb => {
       expect(typeof userFromDb).toBe('object');
@@ -473,8 +466,10 @@ describe_only_db('mongo')("Email Verification Token Expiration: ", () => {
       });
     })
     .then(() => {
-      // get user data after email reset and new token generation
-      return db.collection('test__User').findOne({username: 'newEmailVerifyTokenOnEmailReset'});
+      let config = new Config('test');
+      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
+        return results[0];
+      });
     })
     .then(userAfterEmailReset => {
       expect(typeof userAfterEmailReset).toBe('object');
