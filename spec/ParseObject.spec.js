@@ -595,7 +595,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, 2, 3]);
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -617,7 +617,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -638,7 +638,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
