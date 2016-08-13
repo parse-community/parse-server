@@ -369,6 +369,17 @@ global.describe_only_db = db => {
   }
 }
 
+global.on_db = (db, callback, elseCallback) => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return callback();
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return callback();
+  }
+  if (elseCallback) {
+    elseCallback();
+  }
+}
+
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
   var original = require(library)[name];

@@ -117,7 +117,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("relational fields", function(done) {
+  it("relational fields", function(done) {
     var item = new Item();
     item.set("property", "x");
     var container = new Container();
@@ -205,7 +205,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("createdAt doesn't change", function(done) {
+  it("createdAt doesn't change", function(done) {
     var object = new TestObject({ foo: "bar" });
     object.save(null, {
       success: function() {
@@ -268,16 +268,28 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("can set null", function(done) {
+  it("can set null", function(done) {
+    var errored = false;
     var obj = new Parse.Object("TestObject");
     obj.set("foo", null);
     obj.save(null, {
       success: function(obj) {
-        equal(obj.get("foo"), null);
+        on_db('mongo', () => {
+          equal(obj.get("foo"), null);
+        });
+        on_db('postgres', () => {
+          fail('should not succeed');
+        });
         done();
       },
       error: function(obj, error) {
-        ok(false, error.message);
+        errored = true;
+        on_db('mongo', () => {
+          fail('should not fail');
+        });
+        on_db('postgres', () => {
+          expect(errored).toBe(true);
+        });
         done();
       }
     });
@@ -365,7 +377,7 @@ describe('Parse.Object testing', () => {
     }).then(fail, err => next(0));
   });
 
-  it_exclude_dbs(['postgres'])("simple field deletion", function(done) {
+  it("simple field deletion", function(done) {
     var simple = new Parse.Object("SimpleObject");
     simple.save({
       foo: "bar"
@@ -439,7 +451,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("relation deletion", function(done) {
+  it("relation deletion", function(done) {
     var simple = new Parse.Object("SimpleObject");
     var child = new Parse.Object("Child");
     simple.save({
@@ -578,7 +590,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("addUnique", function(done) {
+  it("addUnique", function(done) {
     var x1 = new Parse.Object('X');
     x1.set('stuff', [1, 2]);
     x1.save().then(() => {
@@ -595,12 +607,17 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, 2, 3]);
       done();
     }, (error) => {
-      jfail(error);
+      on_db('mongo', () => {
+        jfail(error);
+      });
+      on_db('postgres', () => {
+        expect(error.message).toEqual("Postgres does not support AddUnique operator.");
+      });
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])("addUnique with object", function(done) {
+  it("addUnique with object", function(done) {
     var x1 = new Parse.Object('X');
     x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
     x1.save().then(() => {
@@ -617,12 +634,17 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
       done();
     }, (error) => {
-      jfail(error);
+      on_db('mongo', () => {
+        jfail(error);
+      });
+      on_db('postgres', () => {
+        expect(error.message).toEqual("Postgres does not support AddUnique operator.");
+      });
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])("removes with object", function(done) {
+  it("removes with object", function(done) {
     var x1 = new Parse.Object('X');
     x1.set('stuff', [ 1, {'hello': 'world'},  {'foo': 'bar'}]);
     x1.save().then(() => {
@@ -638,7 +660,12 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
-      jfail(error);
+      on_db('mongo', () => {
+        jfail(error);
+      });
+      on_db('postgres', () => {
+        expect(error.message).toEqual("Postgres does not support Remove operator.");
+      });
       done();
     });
   });
@@ -668,7 +695,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("dirty keys", function(done) {
+  it("dirty keys", function(done) {
     var object = new Parse.Object("TestObject");
     object.set("gogo", "good");
     object.set("sito", "sexy");
@@ -763,7 +790,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("old attribute unset then unset", function(done) {
+  it("old attribute unset then unset", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -832,7 +859,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("old attribute unset then clear", function(done) {
+  it("old attribute unset then clear", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -901,7 +928,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("old attribute clear then unset", function(done) {
+  it("old attribute clear then unset", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -970,7 +997,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("old attribute clear then clear", function(done) {
+  it("old attribute clear then clear", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
     obj.set("x", 3);
@@ -1039,7 +1066,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("saving children in an array", function(done) {
+  it("saving children in an array", function(done) {
     var Parent = Parse.Object.extend("Parent");
     var Child = Parse.Object.extend("Child");
 
@@ -1342,7 +1369,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("fetchAll", function(done) {
+  it("fetchAll", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1389,7 +1416,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("fetchAll updates dates", function(done) {
+  it("fetchAll updates dates", function(done) {
     var updatedObject;
     var object = new TestObject();
     object.set("x", 7);
@@ -1409,7 +1436,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("fetchAll backbone-style callbacks", function(done) {
+  it("fetchAll backbone-style callbacks", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1478,7 +1505,7 @@ describe('Parse.Object testing', () => {
                           expectError(Parse.Error.MISSING_OBJECT_ID, done));
   });
 
-  it_exclude_dbs(['postgres'])("fetchAll error on deleted object", function(done) {
+  it("fetchAll error on deleted object", function(done) {
     var numItems = 11;
     var container = new Container();
     var subContainer = new Container();
@@ -1536,7 +1563,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("fetchAllIfNeeded", function(done) {
+  it("fetchAllIfNeeded", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1574,7 +1601,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("fetchAllIfNeeded backbone-style callbacks", function(done) {
+  it("fetchAllIfNeeded backbone-style callbacks", function(done) {
     var numItems = 11;
     var container = new Container();
     var items = [];
@@ -1778,7 +1805,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('dictionary fetched pointers do not lose data on fetch', (done) => {
+  it('dictionary fetched pointers do not lose data on fetch', (done) => {
     var parent = new Parse.Object('Parent');
     var dict = {};
     for (var i = 0; i < 5; i++) {

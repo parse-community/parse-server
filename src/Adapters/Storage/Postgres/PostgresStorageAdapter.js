@@ -8,7 +8,7 @@ const PostgresUniqueIndexViolationError = '23505';
 const parseTypeToPostgresType = type => {
   switch (type.type) {
     case 'String': return 'text';
-    case 'Date': return 'timestamp';
+    case 'Date': return 'timestamp with time zone';
     case 'Object': return 'jsonb';
     case 'Boolean': return 'boolean';
     case 'Pointer': return 'char(10)';
@@ -130,7 +130,6 @@ export class PostgresStorageAdapter {
       if (error.code === PostgresDuplicateRelationError || error.code === PostgresUniqueIndexViolationError) {
         // Table already exists, must have been created by a different request. Ignore error.
       } else {
-        console.error('error ensuring...');
         throw error;
       }
     });
@@ -379,10 +378,10 @@ export class PostgresStorageAdapter {
       } else if (fieldValue.__op === 'Remove') {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support Remove operator.'));
       } else if (fieldValue.__op === 'AddUnique') {
-        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support AddUnique operator'));
+        return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Postgres does not support AddUnique operator.'));
       } else if (fieldName === 'updatedAt') { //TODO: stop special casing this. It should check for __type === 'Date' and use .iso
         updatePatterns.push(`$${index}:name = $${index + 1}`)
-        values.push(fieldName, new Date(fieldValue));
+        values.push(fieldName, fieldValue);
         index += 2;
       } else if (typeof fieldValue === 'string') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
@@ -399,6 +398,10 @@ export class PostgresStorageAdapter {
       } else if (fieldValue.__type === 'Date') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostresValue(fieldValue));
+        index += 2;
+      } else if (typeof fieldValue === 'number') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
         index += 2;
       } else {
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
@@ -433,7 +436,9 @@ export class PostgresStorageAdapter {
     return this._client.any(qs, values)
     .then(results => results.map(object => {
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
-        object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+        if (object[fieldName]) {
+          object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+        }
       });
       //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
       if (object.createdAt) {
