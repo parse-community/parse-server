@@ -8,8 +8,8 @@ var express = require('express');
 
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
-describe_only_db('mongo')('server', () => {
-   it_exclude_dbs(['postgres'])('requires a master key and app id', done => {
+describe('server', () => {
+   it('requires a master key and app id', done => {
     reconfigureServer({ appId: undefined })
     .catch(error => {
       expect(error).toEqual('You must provide an appId!');
@@ -25,7 +25,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('support http basic authentication with masterkey', done => {
+  it('support http basic authentication with masterkey', done => {
     request.get({
       url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
@@ -37,7 +37,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('support http basic authentication with javascriptKey', done => {
+  it('support http basic authentication with javascriptKey', done => {
     request.get({
       url: 'http://localhost:8378/1/classes/TestObject',
       headers: {
@@ -49,7 +49,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if database is unreachable', done => {
+  it('fails if database is unreachable', done => {
     reconfigureServer({ databaseAdapter: new MongoStorageAdapter({ uri: 'mongodb://fake:fake@localhost:43605/drew3' }) })
     .catch(() => {
       //Need to use rest api because saving via JS SDK results in fail() not getting called
@@ -70,7 +70,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can load email adapter via object', done => {
+  it('can load email adapter via object', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -83,7 +83,7 @@ describe_only_db('mongo')('server', () => {
     }).then(done, fail);
   });
 
-  it_exclude_dbs(['postgres'])('can load email adapter via class', done => {
+  it('can load email adapter via class', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -99,7 +99,7 @@ describe_only_db('mongo')('server', () => {
     }).then(done, fail);
   });
 
-  it_exclude_dbs(['postgres'])('can load email adapter via module name', done => {
+  it('can load email adapter via module name', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -115,7 +115,7 @@ describe_only_db('mongo')('server', () => {
     }).then(done, fail);
   });
 
-  it_exclude_dbs(['postgres'])('can load email adapter via only module name', done => {
+  it('can load email adapter via only module name', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -128,7 +128,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('throws if you initialize email adapter incorrecly', done => {
+  it('throws if you initialize email adapter incorrecly', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -146,7 +146,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can report the server version', done => {
+  it('can report the server version', done => {
     request.get({
       url: 'http://localhost:8378/1/serverInfo',
       headers: {
@@ -160,7 +160,7 @@ describe_only_db('mongo')('server', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('can create a parse-server v1', done => {
+  it('can create a parse-server v1', done => {
     var parseServer = new ParseServer.default(Object.assign({},
       defaultConfiguration, {
       appId: "aTestApp",
@@ -191,7 +191,7 @@ describe_only_db('mongo')('server', () => {
     );
   });
 
-  it_exclude_dbs(['postgres'])('can create a parse-server v2', done => {
+  it('can create a parse-server v2', done => {
     let objId;
     let server
     let parseServer = ParseServer.ParseServer(Object.assign({},
@@ -231,7 +231,7 @@ describe_only_db('mongo')('server', () => {
     ));
   });
 
-  it_exclude_dbs(['postgres'])('has createLiveQueryServer', done => {
+  it('has createLiveQueryServer', done => {
     // original implementation through the factory
     expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
     // For import calls
@@ -239,7 +239,7 @@ describe_only_db('mongo')('server', () => {
     done();
   });
 
-  it_exclude_dbs(['postgres'])('exposes correct adapters', done => {
+  it('exposes correct adapters', done => {
     expect(ParseServer.S3Adapter).toThrow();
     expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
@@ -247,7 +247,7 @@ describe_only_db('mongo')('server', () => {
     done();
   });
 
-  it_exclude_dbs(['postgres'])('properly gives publicServerURL when set', done => {
+  it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
     .then(() => {
       var config = new Config('test', 'http://localhost:8378/1');
@@ -256,7 +256,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('properly removes trailing slash in mount', done => {
+  it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
     .then(() => {
       var config = new Config('test', 'http://localhost:8378/1/');
@@ -265,7 +265,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should throw when getting invalid mount', done => {
+  it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' })
     .catch(error => {
       expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
@@ -273,7 +273,7 @@ describe_only_db('mongo')('server', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('fails if the session length is not a number', done => {
+  it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
     .catch(error => {
       expect(error).toEqual('Session length must be a valid number.');
@@ -281,7 +281,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if the session length is less than or equal to 0', done => {
+  it('fails if the session length is less than or equal to 0', done => {
     reconfigureServer({ sessionLength: '-33' })
     .catch(error => {
       expect(error).toEqual('Session length must be a value greater than 0.');
@@ -293,7 +293,7 @@ describe_only_db('mongo')('server', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('ignores the session length when expireInactiveSessions set to false', (done) => {
+  it('ignores the session length when expireInactiveSessions set to false', (done) => {
     reconfigureServer({
       sessionLength: '-33',
       expireInactiveSessions: false
@@ -305,7 +305,7 @@ describe_only_db('mongo')('server', () => {
     .then(done);
   })
 
-  it_exclude_dbs(['postgres'])('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
+  it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
     .catch(done);
   });
