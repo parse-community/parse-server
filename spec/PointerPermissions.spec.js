@@ -167,7 +167,7 @@ describe('Pointer Permissions', () => {
       expect(res.length).toBe(1);
       done();
     }).catch((err) => {
-      console.error(err);
+      jfail(err);
       fail('should not fail');
       done();
     })

@@ -1630,7 +1630,7 @@ describe('schemas', () => {
       done();
     }).catch((err) => {
       fail('should not fail');
-      console.error(err);
+      jfail(err);
       done();
     });
   });

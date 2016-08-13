@@ -13,7 +13,7 @@ describe("PromiseRouter", () => {
     });
 
     router.routes[0].handler({}).then((result) => {
-      console.error(result);
+      jfail(result);
       fail("this should not be called");
       done();
     }, (error)=> {

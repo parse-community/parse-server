@@ -314,13 +314,11 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             done();
           });
         }, (err) => {
-          console.error(err);
+          jfail(err);
           fail("this should not fail");
           done();
-        }).catch((err) =>
-        {
-          console.error(err);
-          fail(err);
+        }).catch((err) => {
+          jfail(err);
           done();
         })
       });
@@ -583,13 +581,11 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           expect(user.get('emailVerified')).toEqual(true);
           done();
         }, (err) => {
-          console.error(err);
+          jfail(err);
           fail("this should not fail");
           done();
-        }).catch((err) =>
-        {
-          console.error(err);
-          fail(err);
+        }).catch((err) => {
+          jfail(err);
           done();
         })
       });
@@ -688,7 +684,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           followRedirect: false,
         }, (error, response, body) => {
           if (error) {
-            console.error(error);
+            jfail(err);
             fail("Failed to get the reset link");
             return;
           }
@@ -713,7 +709,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user@parse.com', {
           error: (err) => {
-            console.error(err);
+            jfail(err);
             fail("Should not fail requesting a password");
             done();
           }
@@ -753,7 +749,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           followRedirect: false,
         }, (error, response, body) => {
           if (error) {
-            console.error(error);
+            jfail(error);
             fail("Failed to get the reset link");
             return;
           }
@@ -776,7 +772,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             followRedirect: false,
           }, (error, response, body) => {
             if (error) {
-              console.error(error);
+              jfail(error);
               fail("Failed to POST request password reset");
               return;
             }
@@ -793,7 +789,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
                 done();
               });
             }, (err) => {
-              console.error(err);
+              jfail(err);
               fail("should login with new password");
               done();
             });
@@ -816,7 +812,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user@parse.com', {
           error: (err) => {
-            console.error(err);
+            jfail(err);
             fail("Should not fail");
             done();
           }

@@ -7,7 +7,7 @@ var FilesController = require('../src/Controllers/FilesController').default;
 
 
 // Small additional tests to improve overall coverage
-describe("GridStoreAdapter",() =>{
+describe_only_db('mongo')("GridStoreAdapter",() =>{
   it("should properly instanciate the GridStore when deleting a file", (done) => {
 
     var databaseURI = 'mongodb://localhost:27017/parse';

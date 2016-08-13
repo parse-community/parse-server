@@ -1642,7 +1642,7 @@ describe('Parse.Query testing', () => {
       expect(total).toBe(0);
       done()
     }, (err) => {
-      console.error(err);
+      jfail(err);
       fail('should not fail');
       done();
     })
@@ -2391,7 +2391,7 @@ describe('Parse.Query testing', () => {
     query.find().then((result) => {
       done();
     }, (err) => {
-      console.error(err);
+      jfail(err);
       fail("should not failt");
       done();
     })
@@ -2428,7 +2428,7 @@ describe('Parse.Query testing', () => {
       done();
       done();
     }, (err) => {
-      console.error(err);
+      jfail(err);
       fail("should not fail");
       done();
     });
@@ -2467,7 +2467,7 @@ describe('Parse.Query testing', () => {
       }
       done();
     }).fail((err) => {
-      console.error(err);
+      jfail(err);
       fail('should not fail');
       done();
     })
@@ -2571,7 +2571,7 @@ describe('Parse.Query testing', () => {
       done();
     }).catch((error) => {
       fail('should not fail');
-      console.error(error);
+      jfail(error);
       done();
     })
   });

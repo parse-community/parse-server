@@ -201,7 +201,7 @@ describe('rest query', () => {
       });
       return Promise.all([p0, p1]);
     }).then(done).catch((err) => {
-      console.error(err);
+      jfail(err);
       fail('should not fail');
       done();
     })

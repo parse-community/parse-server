@@ -339,6 +339,9 @@ global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
+global.jfail = function(err) {
+  fail(JSON.stringify(err));
+}
 
 global.it_exclude_dbs = excluded => {
   if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {

@@ -65,8 +65,7 @@ describe('Parse.Push', () => {
     .then(() => {
       done();
     }, (err) => {
-      console.error();
-      fail('should not fail sending push')
+      jfail(err);
       done();
     });
   });
@@ -85,8 +84,7 @@ describe('Parse.Push', () => {
     }).then(() => {
       done();
     }, (err) => {
-      console.error();
-      fail('should not fail sending push')
+      jfail(err);
       done();
     });
   });

@@ -647,8 +647,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -695,8 +694,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -733,8 +731,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -773,8 +770,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -813,8 +809,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });

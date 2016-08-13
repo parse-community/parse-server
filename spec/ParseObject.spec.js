@@ -1832,7 +1832,7 @@ describe('Parse.Object testing', () => {
       expect(foo["_more"]["_nested"]).toEqual("key");
       done();
     }).fail( err => {
-      console.error(err);
+      jfail(err);
       fail("should not fail");
       done();
     });

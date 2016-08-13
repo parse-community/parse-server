@@ -58,7 +58,7 @@ describe('Parse.User testing', () => {
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       },
       error: function(err) {
-        console.error(err);
+        jfail(err);
         fail("Shit should not fail");
         done();
       }
@@ -1022,7 +1022,7 @@ describe('Parse.User testing', () => {
         done();
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "linking should have worked");
         done();
       }
@@ -1052,7 +1052,7 @@ describe('Parse.User testing', () => {
         Parse.Cloud.run('checkLogin').then(done, done);
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "linking should have worked");
         done();
       }
@@ -1171,7 +1171,7 @@ describe('Parse.User testing', () => {
         });
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "LogIn should have worked");
         done();
       }
@@ -1483,7 +1483,7 @@ describe('Parse.User testing', () => {
             done();
           },
           error: function(error) {
-            console.error(error);
+            jfail(error);
             fail('SHould not fail');
             done();
           }
@@ -1501,7 +1501,7 @@ describe('Parse.User testing', () => {
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
     var errorHandler = function(model, error) {
-      console.error(error);
+      jfail(error);
       fail('Should not fail');
       done();
     }
@@ -1570,7 +1570,7 @@ describe('Parse.User testing', () => {
             })
           },
           error: function(error) {
-            console.error(error);
+            jfail(error);
             fail('SHould not fail');
             done();
           }
@@ -2437,7 +2437,7 @@ describe('Parse.User testing', () => {
       expect(emailOptions.user.get('email')).toEqual('user@email.com');
       done();
     }).catch((err) => {
-      console.error(err);
+      jfail(err);
       fail('no request should fail: ' + JSON.stringify(err));
       done();
     });
