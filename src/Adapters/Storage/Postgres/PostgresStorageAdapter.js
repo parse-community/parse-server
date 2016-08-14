@@ -200,8 +200,10 @@ export class PostgresStorageAdapter {
       valuesArray.push(parseTypeToPostgresType(parseType));
       patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
     });
+    const qs = `CREATE TABLE $1:name (${patternsArray.join(',')}, PRIMARY KEY ("objectId"))`;
+    const values = [className, ...valuesArray];
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.none(`CREATE TABLE $1:name (${patternsArray.join(',')})`, [className, ...valuesArray]))
+    .then(() => this._client.none(qs, values))
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -257,7 +259,6 @@ export class PostgresStorageAdapter {
     .then(results => {
       const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className)];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
-      return Promise.all(tx);
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
         // No _SCHEMA collection. Don't delete anything.
@@ -507,10 +508,11 @@ export class PostgresStorageAdapter {
     let sortPattern = '';
     if (sort) {
       let sorting = Object.keys(sort).map((key) => {
+        // Using $idx pattern gives:  non-integer constant in ORDER BY
         if (sort[key] === 1) {
-          return `${key} ASC`;
+          return `"${key}" ASC`;
         }
-        return `${key} DESC`;
+        return `"${key}" DESC`;
       }).join(',');
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }

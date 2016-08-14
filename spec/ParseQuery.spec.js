@@ -2258,7 +2258,7 @@ describe('Parse.Query testing', () => {
       }).then(function() {
         done();
       }, function(err) {
-        ok(false, JSON.stringify(err));
+        jfail(err);
         done();
       });
     });
