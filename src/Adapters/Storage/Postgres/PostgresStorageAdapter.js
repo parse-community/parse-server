@@ -72,14 +72,25 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue);
       index += 2;
     } else if (fieldValue.$ne) {
-      patterns.push(`$${index}:name <> $${index + 1}`);
+      if (fieldValue.$ne === null) {
+        patterns.push(`$${index}:name <> $${index + 1}`);
+      } else {
+        // if not null, we need to manually exclude null
+        patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
+      }
       values.push(fieldName, fieldValue.$ne);
       index += 2;
     } else if (fieldName === '$or') {
-      fieldValue.map(subQuery => buildWhereClause({ schema, query: subQuery, index })).forEach(result => {
-        patterns.push(result.pattern);
-        values.push(...result.values);
+      let clauses = [];
+      let clauseValues = [];
+      fieldValue.forEach((subQuery, idx) =>  {
+        let clause = buildWhereClause({ schema, query: subQuery, index });
+        clauses.push(clause.pattern);
+        clauseValues.push(...clause.values);
+        index += clause.values.length;
       });
+      patterns.push(`(${clauses.join(' OR ')})`);
+      values.push(...clauseValues);
     } else if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
       let inPatterns = [];
       let allowNull = false;
@@ -368,7 +379,14 @@ export class PostgresStorageAdapter {
   // If no objects match, reject with OBJECT_NOT_FOUND. If objects are found and deleted, resolve with undefined.
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
-    return this._client.one(`WITH deleted AS (DELETE FROM $<className:name> RETURNING *) SELECT count(*) FROM deleted`, { className }, a => +a.count)
+    debug('deleteObjectsByQuery', className, query);
+    let values = [className];
+    let index = 2;
+    let where = buildWhereClause({ schema, index, query })
+    values.push(...where.values);
+    let qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
+    debug(qs, values);
+    return this._client.one(qs, values , a => +a.count)
     .then(count => {
       if (count === 0) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
@@ -447,6 +465,12 @@ export class PostgresStorageAdapter {
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type == 'Object') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (Array.isArray(fieldValue)
+                    && schema.fields[fieldName]
+                    && schema.fields[fieldName].type == 'Array') {
+        updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::text[])::jsonb`);
         values.push(fieldName, fieldValue);
         index += 2;
       } else {
