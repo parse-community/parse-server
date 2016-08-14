@@ -127,7 +127,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it_exclude_dbs(['postgres'])('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -137,7 +137,12 @@ describe('miscellaneous', function() {
     // Create a new server to try to recreate the unique indexes
     .then(reconfigureServer)
     .catch(error => {
-      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      on_db('mongo', () => {
+        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      });
+      on_db('postgres', () => {
+        expect(error.code).toEqual('23505');
+      });
       let user = new Parse.User();
       user.setPassword('asdf');
       user.setUsername('zxcv');
