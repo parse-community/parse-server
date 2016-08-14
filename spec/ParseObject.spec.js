@@ -1066,7 +1066,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("saving children in an array", function(done) {
+  it_exclude_dbs(['postgres'])("saving children in an array", function(done) {
     var Parent = Parse.Object.extend("Parent");
     var Child = Parse.Object.extend("Child");
 
@@ -1865,7 +1865,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should have undefined includes when object is missing', (done) => {
+  it('should have undefined includes when object is missing', (done) => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
 
@@ -1900,7 +1900,7 @@ describe('Parse.Object testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should have undefined includes when object is missing on deeper path', (done) => {
+  it('should have undefined includes when object is missing on deeper path', (done) => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
     let obj3 = new Parse.Object("AnObject");

@@ -173,7 +173,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should not allow creating objects', (done) => {
+  it('should not allow creating objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     user.set({

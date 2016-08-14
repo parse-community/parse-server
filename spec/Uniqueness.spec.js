@@ -26,7 +26,7 @@ describe('Uniqueness', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('unique indexing works on pointer fields', done => {
+  it('unique indexing works on pointer fields', done => {
     let obj = new Parse.Object('UniquePointer');
     obj.save({ string: 'who cares' })
     .then(() => obj.save({ ptr: obj }))

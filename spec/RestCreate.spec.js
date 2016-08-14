@@ -11,7 +11,7 @@ var config = new Config('test');
 let database = config.database;
 
 describe('rest create', () => {
-  it_exclude_dbs(['postgres'])('handles _id', done => {
+  it('handles _id', done => {
     rest.create(config, auth.nobody(config), 'Foo', {})
     .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
     .then(results => {
@@ -23,7 +23,7 @@ describe('rest create', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('handles array, object, date', (done) => {
+  it('handles array, object, date', (done) => {
     let now = new Date();
     var obj = {
       array: [1, 2, 3],
@@ -77,7 +77,7 @@ describe('rest create', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('handles create on non-existent class when disabled client class creation', (done) => {
+  it('handles create on non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
@@ -91,7 +91,7 @@ describe('rest create', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('handles create on existent class when disabled client class creation', (done) => {
+  it('handles create on existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
@@ -122,7 +122,7 @@ describe('rest create', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('handles anonymous user signup', (done) => {
+  it('handles anonymous user signup', (done) => {
     var data1 = {
       authData: {
         anonymous: {
@@ -310,7 +310,7 @@ describe('rest create', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("test default session length", (done) => {
+  it("test default session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',

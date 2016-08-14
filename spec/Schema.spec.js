@@ -552,7 +552,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can check if a class exists', done => {
+  it('can check if a class exists', done => {
     config.database.loadSchema()
     .then(schema => {
       return schema.addClassIfNotExists('NewClass', {})

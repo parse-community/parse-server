@@ -298,7 +298,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("cannot saveAll with non-authed user", (done) => {
+  it("cannot saveAll with non-authed user", (done) => {
     var user = new Parse.User();
     user.signUp({
       "password": "asdf",
@@ -719,7 +719,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("saving user after browser refresh", (done) => {
+  it("saving user after browser refresh", (done) => {
     var _ = Parse._;
     var id;
 
@@ -1380,7 +1380,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink with provider", (done) => {
+  it("unlink with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1416,7 +1416,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink and link", (done) => {
+  it("unlink and link", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1617,7 +1617,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fail linking with existing', (done) => {
+  it('should fail linking with existing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1944,7 +1944,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('unset user email', (done) => {
+  it('unset user email', (done) => {
     var user = new Parse.User();
     user.set('username', 'test');
     user.set('password', 'test');
@@ -2181,7 +2181,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('test parse user become', (done) => {
+  it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {
       return Parse.User.signUp("flessard", "folo",{'foo':1});
@@ -2601,7 +2601,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should revoke sessions when converting anonymous user to "normal" user', done => {
+  it('should revoke sessions when converting anonymous user to "normal" user', done => {
     request.post({
       url: 'http://localhost:8378/1/classes/_User',
       headers: {
@@ -2637,7 +2637,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
+  it('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: false })
     .then(() => {
       request.post({

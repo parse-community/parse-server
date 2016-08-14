@@ -11,9 +11,9 @@ for (var i = 0; i < str.length; i++) {
   data.push(str.charCodeAt(i));
 }
 
-describe('Parse.File testing', () => {
-  describe('creating files', () => {
-    it_exclude_dbs(['postgres'])('works with Content-Type', done => {
+describe_only_db('mongo')('Parse.File testing', () => {
+  describe_only_db('mongo')('creating files', () => {
+    it('works with Content-Type', done => {
       var headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',
@@ -37,7 +37,7 @@ describe('Parse.File testing', () => {
     });
 
 
-    it_exclude_dbs(['postgres'])('works with _ContentType', done => {
+    it('works with _ContentType', done => {
 
       request.post({
         url: 'http://localhost:8378/1/files/file',
@@ -65,7 +65,7 @@ describe('Parse.File testing', () => {
       });
     });
 
-    it_exclude_dbs(['postgres'])('works without Content-Type', done => {
+    it('works without Content-Type', done => {
       var headers = {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
@@ -136,7 +136,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('blocks file deletions with missing or incorrect master-key header', done => {
+  it('blocks file deletions with missing or incorrect master-key header', done => {
     var headers = {
       'Content-Type': 'image/jpeg',
       'X-Parse-Application-Id': 'test',
@@ -181,7 +181,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('handles other filetypes', done => {
+  it('handles other filetypes', done => {
     var headers = {
       'Content-Type': 'image/jpeg',
       'X-Parse-Application-Id': 'test',
@@ -218,7 +218,7 @@ describe('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("save file in object", done => {
+  it("save file in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -245,7 +245,7 @@ describe('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("save file in object with escaped characters in filename", done => {
+  it("save file in object with escaped characters in filename", done => {
     var file = new Parse.File("hello . txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -295,7 +295,7 @@ describe('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("autosave file in object in object", done => {
+  it("autosave file in object in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
 
@@ -324,7 +324,7 @@ describe('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("saving an already saved file", done => {
+  it("saving an already saved file", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -345,7 +345,7 @@ describe('Parse.File testing', () => {
     },  done));
   });
 
-  it_exclude_dbs(['postgres'])("two saves at the same time", done => {
+  it("two saves at the same time", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
 
     var firstName;
@@ -363,7 +363,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("file toJSON testing", done => {
+  it("file toJSON testing", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     var object = new Parse.Object("TestObject");
@@ -377,7 +377,7 @@ describe('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("content-type used with no extension", done => {
+  it("content-type used with no extension", done => {
     var headers = {
       'Content-Type': 'text/html',
       'X-Parse-Application-Id': 'test',
@@ -402,7 +402,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("filename is url encoded", done => {
+  it("filename is url encoded", done => {
     var headers = {
       'Content-Type': 'text/html',
       'X-Parse-Application-Id': 'test',
@@ -552,7 +552,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('supports files in objects without urls', done => {
+  it('supports files in objects without urls', done => {
     var file = {
       __type: 'File',
       name: '123.txt'

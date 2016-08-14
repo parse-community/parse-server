@@ -375,7 +375,7 @@ describe('miscellaneous', function() {
     })
   });
 
-  it('object is set on create and update', done => {
+  it_exclude_dbs(['postgres'])('object is set on create and update', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
@@ -1338,7 +1338,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('does not change inner object keys named _auth_data_something', done => {
+  it('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
     .then(object => new Parse.Query('O').get(object.id))
     .then(object => {

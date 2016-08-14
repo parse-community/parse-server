@@ -26,7 +26,7 @@ describe("test validate_receipt endpoint", () => {
     });
   })
 
-  it("should bypass appstore validation", (done) => {
+  it_exclude_dbs(['postgres'])("should bypass appstore validation", (done) => {
 
    request.post({
       headers: {
@@ -170,7 +170,7 @@ describe("test validate_receipt endpoint", () => {
       })
   });
 
-  it("should be able to update a _Product", (done) => {
+  it_exclude_dbs(['postgres'])("should be able to update a _Product", (done) => {
       var query = new Parse.Query("_Product");
       query.first().then(function(product) {
         if (!product) {
@@ -188,7 +188,7 @@ describe("test validate_receipt endpoint", () => {
       });
   });
 
-  it("should not be able to remove a require key in a _Product", (done) => {
+  it_exclude_dbs(['postgres'])("should not be able to remove a require key in a _Product", (done) => {
       var query = new Parse.Query("_Product");
       query.first().then(function(product){
         if (!product) {

@@ -28,7 +28,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('sends verification email if email verification is enabled', done => {
+  it('sends verification email if email verification is enabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -97,7 +97,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('does send a validation email when updating the email', done => {
+  it('does send a validation email when updating the email', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -140,7 +140,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('does send a validation email with valid verification link when updating the email', done => {
+  it('does send a validation email with valid verification link when updating the email', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
@@ -238,7 +238,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('prevents user from login if email is not verified but preventLoginWithUnverifiedEmail is set to true', done => {
+  it('prevents user from login if email is not verified but preventLoginWithUnverifiedEmail is set to true', done => {
     reconfigureServer({
       appName: 'test',
       publicServerURL: 'http://localhost:1337/1',
@@ -325,7 +325,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('allows user to login if email is not verified but preventLoginWithUnverifiedEmail is set to false', done => {
+  it('allows user to login if email is not verified but preventLoginWithUnverifiedEmail is set to false', done => {
     reconfigureServer({
       appName: 'test',
       publicServerURL: 'http://localhost:1337/1',
@@ -513,7 +513,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('receives the app name and user in the adapter', done => {
+  it('receives the app name and user in the adapter', done => {
     var emailSent = false;
     var emailAdapter = {
       sendVerificationEmail: options => {
@@ -548,7 +548,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   })
 
-  it_exclude_dbs(['postgres'])('when you click the link in the email it sets emailVerified to true and redirects you', done => {
+  it('when you click the link in the email it sets emailVerified to true and redirects you', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
@@ -636,7 +636,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('does not update email verified if you use an invalid token', done => {
+  it('does not update email verified if you use an invalid token', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: options => {
