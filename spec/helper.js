@@ -377,7 +377,7 @@ global.describe_only_db = db => {
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return describe;
   } else {
-    return xdescribe;
+    return () => {};
   }
 }
 
