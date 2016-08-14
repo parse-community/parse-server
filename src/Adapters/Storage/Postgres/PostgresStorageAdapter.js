@@ -99,14 +99,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       }
       index = index + 1 + inPatterns.length;
     } else if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'String') {
-      let inPatterns = [];
-      values.push(fieldName);
-      fieldValue.$in.forEach((listElem, listIndex) => {
-        values.push(listElem);
-        inPatterns.push(`$${index + 1 + listIndex}`);
-      });
-      patterns.push(`$${index}:name IN (${inPatterns.join(',')})`);
-      index = index + 1 + inPatterns.length;
+      if (fieldValue.$in.length > 0) {
+        let inPatterns = [];
+        values.push(fieldName);
+        fieldValue.$in.forEach((listElem, listIndex) => {
+          values.push(listElem);
+          inPatterns.push(`$${index + 1 + listIndex}`);
+        });
+        patterns.push(`$${index}:name IN (${inPatterns.join(',')})`);
+        index = index + 1 + inPatterns.length;
+      }
     } else if (fieldValue.__type === 'Pointer') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue.objectId);
@@ -379,7 +381,7 @@ export class PostgresStorageAdapter {
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
     debug('updateObjectsByQuery', className, query, update);
-    return notImplemented();
+    return this.findOneAndUpdate(className, schema, query, update);
   }
 
   // Return value not currently well specified.
@@ -438,6 +440,12 @@ export class PostgresStorageAdapter {
         values.push(fieldName, toPostresValue(fieldValue));
         index += 2;
       } else if (typeof fieldValue === 'number') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
+        index += 2;
+      } else if (typeof fieldValue === 'object'
+                    && schema.fields[fieldName]
+                    && schema.fields[fieldName].type == 'Object') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;

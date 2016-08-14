@@ -210,7 +210,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         query = addWriteACL(query, acl);
       }
       validateQuery(query);
-      return schemaController.getOneSchema(className)
+      return schemaController.getOneSchema(className, true)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
         // will likely need revisiting.
