@@ -41,7 +41,16 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
 var port = 8378;
 
 let gridStoreAdapter = new GridStoreAdapter(mongoURI);
-
+let logLevel = 'info';
+let silent = true;
+if (process.env.VERBOSE) {
+  silent = false;
+  logLevel = 'verbose';
+}
+if (process.env.PARSE_SERVER_LOG_LEVEL) {
+  silent = false;
+  logLevel = process.env.PARSE_SERVER_LOG_LEVEL;
+}
 // Default server configuration for tests.
 var defaultConfiguration = {
   filesAdapter: gridStoreAdapter,
@@ -55,7 +64,8 @@ var defaultConfiguration = {
   webhookKey: 'hook',
   masterKey: 'test',
   fileKey: 'test',
-  silent: !process.env.VERBOSE,
+  silent,
+  logLevel,
   push: {
     'ios': {
       cert: 'prodCert.pem',

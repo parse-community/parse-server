@@ -217,7 +217,7 @@ describe('OAuth', function() {
     return request.post(options, callback);
   }
 
-  it_exclude_dbs(['postgres'])("should create user with REST API", done => {
+  it("should create user with REST API", done => {
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
@@ -242,7 +242,7 @@ describe('OAuth', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])("should only create a single user with REST API", (done) => {
+  it("should only create a single user with REST API", (done) => {
     var objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
@@ -262,7 +262,7 @@ describe('OAuth', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink and link with custom provider", (done) => {
+  it("unlink and link with custom provider", (done) => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("myoauth", {

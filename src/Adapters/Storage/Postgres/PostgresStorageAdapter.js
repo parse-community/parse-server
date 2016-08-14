@@ -4,6 +4,14 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresUniqueIndexViolationError = '23505';
+const logger = require('../../../logger');
+
+const debug = function(){
+  let args = [...arguments];
+  args = ['PG: '+arguments[0]].concat(args.slice(1, args.length));
+  let log = logger.getLogger();
+  log.debug.apply(log, args);
+}
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
@@ -44,7 +52,17 @@ const buildWhereClause = ({ schema, query, index }) => {
   let values = [];
   for (let fieldName in query) {
     let fieldValue = query[fieldName];
-    if (typeof fieldValue === 'string') {
+    if (fieldName.indexOf('.') >= 0) {
+      let components = fieldName.split('.').map((cmpt, index) => {
+        if (index == 0) {
+          return `"${cmpt}"`;
+        }
+        return `'${cmpt}'`; 
+      });
+      let name = components.slice(0, components.length-1).join('->');
+      name+='->>'+components[components.length-1];
+      patterns.push(`${name} = '${fieldValue}'`);
+    } else if (typeof fieldValue === 'string') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
@@ -151,6 +169,7 @@ export class PostgresStorageAdapter {
 
   // Just create a table, do not insert in schema
   createTable(className, schema) {
+    debug('createTable', className, schema);
     let valuesArray = [];
     let patternsArray = [];
     let fields = Object.assign({}, schema.fields);
@@ -180,6 +199,7 @@ export class PostgresStorageAdapter {
 
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
+    debug('addFieldIfNotExists', className, fieldName, type);
     return this._client.tx("addFieldIfNotExists", t=> {
       return t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
         className,
@@ -275,10 +295,20 @@ export class PostgresStorageAdapter {
 
   // TODO: remove the mongo format dependency in the return value
   createObject(className, schema, object) {
+    debug('createObject', className, object);
     let columnsArray = [];
     let newFieldsArray = [];
     let valuesArray = [];
     Object.keys(object).forEach(fieldName => {
+      var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      if (authDataMatch) {
+        var provider = authDataMatch[1];
+        object['authData'] = object['authData'] || {};
+        object['authData'][provider] = object[fieldName];
+        delete object[fieldName];
+        fieldName = 'authData';
+      }
+      
       columnsArray.push(fieldName);
       if (!schema.fields[fieldName] && className === '_User') {
         if (fieldName == '_email_verify_token') {
@@ -324,6 +354,7 @@ export class PostgresStorageAdapter {
     let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}${(['_rperm','_wperm'].includes(columnsArray[index])) ? '::text[]' : ''}`).join(',');
     let qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     let values = [className, ...columnsArray, ...valuesArray]
+    debug(qs, values);
     return this._client.none(qs, values)
     .then(() => ({ ops: [object] }))
     .catch(error => {
@@ -351,11 +382,13 @@ export class PostgresStorageAdapter {
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
+    debug('updateObjectsByQuery', className, query, update);
     return notImplemented();
   }
 
   // Return value not currently well specified.
   findOneAndUpdate(className, schema, query, update) {
+    debug('findOneAndUpdate', className, query, update);
     let conditionPatterns = [];
     let updatePatterns = [];
     let values = [className]
@@ -363,7 +396,16 @@ export class PostgresStorageAdapter {
 
     for (let fieldName in update) {
       let fieldValue = update[fieldName];
-      if (fieldValue.__op === 'Increment') {
+      var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      if (authDataMatch) {
+        var provider = authDataMatch[1];
+        let value = update[fieldName];
+        delete update[fieldName];
+        fieldName = 'authData';
+        updatePatterns.push(`$${index}:name = json_object_set_key($${index}:name, $${index+1}::text, $${index+2}::jsonb)`);
+        values.push(fieldName, provider, value);
+        index += 3;
+      } else if (fieldValue.__op === 'Increment') {
         updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
         values.push(fieldName, fieldValue.amount);
         index += 2;
@@ -404,6 +446,7 @@ export class PostgresStorageAdapter {
         values.push(fieldName, fieldValue);
         index += 2;
       } else {
+        debug('Not supported update', fieldName, fieldValue);
         return Promise.reject(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support update ${JSON.stringify(fieldValue)} yet`));
       }
     }
@@ -412,6 +455,7 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
+    debug('update: ', qs, values);
     return this._client.any(qs, values) 
     .then(val => val[0]); // TODO: This is unsafe, verification is needed, or a different query method;
   }
@@ -422,6 +466,7 @@ export class PostgresStorageAdapter {
   }
 
   find(className, schema, query, { skip, limit, sort }) {
+    debug('find', className, query, {skip, limit, sort});
     let values = [className];
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
@@ -433,6 +478,7 @@ export class PostgresStorageAdapter {
     if (limit !== undefined) {
       values.push(limit);
     }
+    debug(qs, values);
     return this._client.any(qs, values)
     .then(results => results.map(object => {
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
@@ -464,7 +510,7 @@ export class PostgresStorageAdapter {
       }
 
       return object;
-    }))
+    }));
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
@@ -498,11 +544,45 @@ export class PostgresStorageAdapter {
     const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     return this._client.one(qs, values, a => +a.count);
   }
+
+  performInitialization({ SchemaController }) {
+    debug('performInitialization');
+    return SchemaController.VolatilesClassesDefinitions.reduce((promise, schema) => {
+      schema = SchemaController.convertSchemaToAdapterSchema(schema);
+      promise = promise.then(() => {
+        return this.createTable(schema.className, schema);
+      });
+      return promise;
+    }, Promise.resolve()).then(() => {
+      return this._client.any(json_object_set_key).catch((err) => {
+        console.error(err);
+      })
+    });
+  }
 }
 
 function notImplemented() {
     return Promise.reject(new Error('Not implemented yet.'));
 }
+
+// Function to set a key on a nested JSON document
+const json_object_set_key = 'CREATE OR REPLACE FUNCTION "json_object_set_key"(\
+  "json"          jsonb,\
+  "key_to_set"    TEXT,\
+  "value_to_set"  anyelement\
+)\
+  RETURNS jsonb \
+  LANGUAGE sql \
+  IMMUTABLE \
+  STRICT \
+AS $function$\
+SELECT concat(\'{\', string_agg(to_json("key") || \':\' || "value", \',\'), \'}\')::jsonb\
+  FROM (SELECT *\
+          FROM jsonb_each("json")\
+         WHERE "key" <> "key_to_set"\
+         UNION ALL\
+        SELECT "key_to_set", to_json("value_to_set")::jsonb) AS "fields"\
+$function$;'
 
 export default PostgresStorageAdapter;
 module.exports = PostgresStorageAdapter; // Required for tests

@@ -907,17 +907,8 @@ DatabaseController.prototype.performInitizalization = function() {
     });
 
   // Create tables for volatile classes 
-  let creations = SchemaController.VolatilesClassesDefinitions.reduce((promise, schema) => {
-    if (this.adapter.createTable) {
-      schema = SchemaController.convertSchemaToAdapterSchema(schema);
-      promise = promise.then(() => {
-        return this.adapter.createTable(schema.className, schema);
-      });
-    }
-    return promise;
-  }, Promise.resolve());
-  // , Promise.all(creations)
-  return Promise.all([usernameUniqueness, emailUniqueness, creations]);
+  let adapterInit = this.adapter.performInitialization({ SchemaController });
+  return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }
 
 function joinTableName(className, key) {
