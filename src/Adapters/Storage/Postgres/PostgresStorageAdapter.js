@@ -18,6 +18,7 @@ const parseTypeToPostgresType = type => {
     case 'String': return 'text';
     case 'Date': return 'timestamp with time zone';
     case 'Object': return 'jsonb';
+    case 'File': return 'jsonb';
     case 'Boolean': return 'boolean';
     case 'Pointer': return 'char(10)';
     case 'Number': return 'double precision';
@@ -332,17 +333,12 @@ export class PostgresStorageAdapter {
           } else {
             valuesArray.push(JSON.stringify(object[fieldName]));
           }
-          break;
+          break;        
         case 'Object':
-          valuesArray.push(object[fieldName]);
-          break;
         case 'String':
-          valuesArray.push(object[fieldName]);
-          break;
         case 'Number':
-          valuesArray.push(object[fieldName]);
-          break;
         case 'Boolean':
+        case 'File':
           valuesArray.push(object[fieldName]);
           break;
         default:
