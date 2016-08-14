@@ -41,7 +41,7 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
 var port = 8378;
 
 let gridStoreAdapter = new GridStoreAdapter(mongoURI);
-let logLevel = 'info';
+let logLevel;
 let silent = true;
 if (process.env.VERBOSE) {
   silent = false;
