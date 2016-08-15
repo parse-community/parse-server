@@ -417,6 +417,8 @@ export class PostgresStorageAdapter {
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
+    let now = new Date().getTime();
+    debug('deleteAllClasses');
     return this._client.any('SELECT * FROM "_SCHEMA"')
     .then(results => {
       let joins = results.reduce((list, schema) => {
@@ -436,7 +438,9 @@ export class PostgresStorageAdapter {
       } else {
         throw error;
       }
-    })
+    }).then(() => {
+      debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
+    });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -827,17 +831,19 @@ export class PostgresStorageAdapter {
   }
 
   performInitialization({ VolatileClassesSchemas }) {
+    let now = new Date().getTime();
     debug('performInitialization');
-    return VolatileClassesSchemas.reduce((promise, schema) => {
-      promise = promise.then(() => {
-        return this.createTable(schema.className, schema);
-      });
-      return promise;
-    }, Promise.resolve()).then(() => {
+    let promises = VolatileClassesSchemas.map((schema) => {
+      return this.createTable(schema.className, schema);
+    });
+
+    return Promise.all(promises).then(() => {
       return this._client.any(json_object_set_key).catch((err) => {
         console.error(err);
       })
-    });
+    }).then(() => {
+      debug(`initialzationDone in ${new Date().getTime() - now}`);
+    })
   }
 }
 
