@@ -907,7 +907,7 @@ DatabaseController.prototype.performInitizalization = function() {
     });
 
   // Create tables for volatile classes 
-  let adapterInit = this.adapter.performInitialization({ SchemaController });
+  let adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
   return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }
 

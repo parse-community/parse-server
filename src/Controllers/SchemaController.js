@@ -258,12 +258,12 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
   classLevelPermissions,
 });
 
-const VolatilesClassesDefinitions = volatileClasses.map((className) => {
-  return injectDefaultSchema({
+const VolatileClassesSchemas = volatileClasses.map((className) => {
+  return convertSchemaToAdapterSchema(injectDefaultSchema({
     className,
     fields: {},
     classLevelPermissions: {}
-  });
+  }));
 });
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
@@ -908,5 +908,5 @@ export {
   systemClasses,
   defaultColumns,
   convertSchemaToAdapterSchema,
-  VolatilesClassesDefinitions
+  VolatileClassesSchemas,
 };

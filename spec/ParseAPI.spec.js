@@ -162,12 +162,7 @@ describe('miscellaneous', function() {
     // Create a new server to try to recreate the unique indexes
     .then(reconfigureServer)
     .catch(error => {
-      on_db('mongo', () => {
-        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-      });
-      on_db('postgres', () => {
-        expect(error.code).toEqual('23505');
-      });
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
       let user = new Parse.User();
       user.setPassword('asdf');
       user.setUsername('zxcv');

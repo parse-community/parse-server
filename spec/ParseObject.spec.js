@@ -268,7 +268,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it("can set null", function(done) {
+  it_exclude_dbs(['postgres'])("can set null", function(done) {
     var errored = false;
     var obj = new Parse.Object("TestObject");
     obj.set("foo", null);
@@ -283,13 +283,7 @@ describe('Parse.Object testing', () => {
         done();
       },
       error: function(obj, error) {
-        errored = true;
-        on_db('mongo', () => {
-          fail('should not fail');
-        });
-        on_db('postgres', () => {
-          expect(errored).toBe(true);
-        });
+        fail('should not fail');
         done();
       }
     });

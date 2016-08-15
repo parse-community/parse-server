@@ -692,6 +692,9 @@ export class PostgresStorageAdapter {
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
         // Index already exists. Ignore error.
+      } else if (error.code === PostgresUniqueIndexViolationError && error.message.includes(constraintName)) {
+        // Cast the error into the proper parse error
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
       } else {
         throw error;
       }
@@ -709,10 +712,9 @@ export class PostgresStorageAdapter {
     return this._client.one(qs, values, a => +a.count);
   }
 
-  performInitialization({ SchemaController }) {
+  performInitialization({ VolatileClassesSchemas }) {
     debug('performInitialization');
-    return SchemaController.VolatilesClassesDefinitions.reduce((promise, schema) => {
-      schema = SchemaController.convertSchemaToAdapterSchema(schema);
+    return VolatileClassesSchemas.reduce((promise, schema) => {
       promise = promise.then(() => {
         return this.createTable(schema.className, schema);
       });
