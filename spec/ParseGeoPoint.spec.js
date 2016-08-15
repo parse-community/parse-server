@@ -4,7 +4,7 @@
 var TestObject = Parse.Object.extend('TestObject');
 
 describe('Parse.GeoPoint testing', () => {
-  it_exclude_dbs(['postgres'])('geo point roundtrip', (done) => {
+  it('geo point roundtrip', (done) => {
     var point = new Parse.GeoPoint(44.0, -11.0);
     var obj = new TestObject();
     obj.set('location', point);
@@ -26,7 +26,7 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('geo point exception two fields', (done) => {
+  it('geo point exception two fields', (done) => {
     var point = new Parse.GeoPoint(20, 20);
     var obj = new TestObject();
     obj.set('locationOne', point);

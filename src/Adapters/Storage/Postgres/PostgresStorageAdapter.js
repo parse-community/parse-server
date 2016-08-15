@@ -22,6 +22,7 @@ const parseTypeToPostgresType = type => {
     case 'Boolean': return 'boolean';
     case 'Pointer': return 'char(10)';
     case 'Number': return 'double precision';
+    case 'GeoPoint': return 'point';
     case 'Array':
       if (type.contents && type.contents.type === 'String') {
         return 'text[]';
@@ -465,6 +466,7 @@ export class PostgresStorageAdapter {
     let newFieldsArray = [];
     let valuesArray = [];
     schema = toPostgresSchema(schema);
+    let geoPoints = {};
     Object.keys(object).forEach(fieldName => {
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
@@ -506,13 +508,30 @@ export class PostgresStorageAdapter {
         case 'File':
           valuesArray.push(object[fieldName]);
           break;
+        case 'GeoPoint':
+          // pop the point and process later
+          geoPoints[fieldName] = object[fieldName];
+          columnsArray.pop();
+          break;
         default:
           throw `Type ${schema.fields[fieldName].type} not supported yet`;
           break;
       }
     });
+
+    columnsArray = columnsArray.concat(Object.keys(geoPoints));
+    let initialValues = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}${(['_rperm','_wperm'].includes(columnsArray[index])) ? '::text[]' : ''}`);
+    
+    let geoPointsInjects = Object.keys(geoPoints).map((key, idx) => {
+      let value = geoPoints[key];
+      valuesArray.push(value.latitude, value.longitude);
+      let l = valuesArray.length + columnsArray.length;
+      return `POINT($${l}, $${l+1})`;
+    });
+
     let columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
-    let valuesPattern = valuesArray.map((val, index) => `$${index + 2 + columnsArray.length}${(['_rperm','_wperm'].includes(columnsArray[index])) ? '::text[]' : ''}`).join(',');
+    let valuesPattern = initialValues.concat(geoPointsInjects).join(',')
+
     let qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     let values = [className, ...columnsArray, ...valuesArray]
     debug(qs, values);
@@ -709,6 +728,12 @@ export class PostgresStorageAdapter {
           object[fieldName] = {
             __type: "Relation",
             className: schema.fields[fieldName].targetClass
+          }
+        }
+        if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
+          object[fieldName] = {
+            latitude: object[fieldName].x,
+            longitude: object[fieldName].y
           }
         }
       });
