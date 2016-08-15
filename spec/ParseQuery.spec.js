@@ -843,7 +843,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it("order by descending number then ascending string", function(done) {
+  it_exclude_dbs('postgres')("order by descending number then ascending string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
@@ -869,7 +869,7 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it("order by descending number and string", function(done) {
+  it_exclude_dbs('postgres')("order by descending number and string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
@@ -895,7 +895,7 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it("order by descending number and string, with space", function(done) {
+  it_exclude_dbs('postgres')("order by descending number and string, with space", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
@@ -921,7 +921,7 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it("order by descending number and string, with array arg", function(done) {
+  it_exclude_dbs('postgres')("order by descending number and string, with array arg", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
@@ -947,7 +947,7 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it("order by descending number and string, with multiple args", function(done) {
+  it_exclude_dbs('postgres')("order by descending number and string, with multiple args", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
