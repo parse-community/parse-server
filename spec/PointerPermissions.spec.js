@@ -465,7 +465,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -512,7 +512,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -557,7 +557,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should let master key find objects', (done) => {
+  it('should let master key find objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -587,7 +587,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should let master key get objects', (done) => {
+  it('should let master key get objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -619,7 +619,7 @@ describe('Pointer Permissions', () => {
   });
 
 
-  it_exclude_dbs(['postgres'])('should let master key update objects', (done) => {
+  it('should let master key update objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');
@@ -647,7 +647,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should let master key delete objects', (done) => {
+  it('should let master key delete objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let object = new Parse.Object('AnObject');

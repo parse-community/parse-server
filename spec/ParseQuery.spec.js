@@ -150,7 +150,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containedIn object array queries", function(done) {
+  it("containedIn object array queries", function(done) {
     var messageList = [];
     for (var i = 0; i < 4; ++i) {
       var message = new TestObject({});
@@ -1160,7 +1160,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("matches string", function(done) {
+  it("matches string", function(done) {
     var thing1 = new TestObject();
     thing1.set("myString", "football");
     var thing2 = new TestObject();
@@ -1576,7 +1576,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it('properly includes array of mixed objects', (done) => {
+  it_exclude_dbs(['postgres'])('properly includes array of mixed objects', (done) => {
     let objects = [];
     let total = 0;
     while(objects.length != 5) {

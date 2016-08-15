@@ -52,7 +52,7 @@ describe('Uniqueness', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
+  it('fails when attempting to ensure uniqueness of fields that are not currently unique', done => {
     let o1 = new Parse.Object('UniqueFail');
     o1.set('key', 'val');
     let o2 = new Parse.Object('UniqueFail');

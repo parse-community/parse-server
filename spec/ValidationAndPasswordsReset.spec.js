@@ -271,7 +271,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', done => {
+  it('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
@@ -359,7 +359,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
+  it('fails if you include an emailAdapter, set a publicServerURL, but have no appName and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
       publicServerURL: 'http://localhost:1337/1',
@@ -391,7 +391,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if you include an emailAdapter, have an appName, but have no publicServerURL and send a password reset email', done => {
+  it('fails if you include an emailAdapter, have an appName, but have no publicServerURL and send a password reset email', done => {
     reconfigureServer({
       appName: undefined,
       emailAdapter: MockEmailAdapterWithOptions({
@@ -422,7 +422,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fails if you set a publicServerURL, have an appName, but no emailAdapter and send a password reset email', done => {
+  it('fails if you set a publicServerURL, have an appName, but no emailAdapter and send a password reset email', done => {
     reconfigureServer({
       appName: 'unused',
       publicServerURL: 'http://localhost:1337/1',
@@ -450,7 +450,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('succeeds sending a password reset email if appName, publicServerURL, and email adapter are prodvided', done => {
+  it('succeeds sending a password reset email if appName, publicServerURL, and email adapter are prodvided', done => {
     reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',

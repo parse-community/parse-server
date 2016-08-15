@@ -7,7 +7,7 @@ var Auth = require("../src/Auth").Auth;
 var Config = require("../src/Config");
 
 describe('Parse Role testing', () => {
-  it_exclude_dbs(['postgres'])('Do a bunch of basic role testing', done => {
+  it('Do a bunch of basic role testing', done => {
     var user;
     var role;
 
@@ -76,7 +76,7 @@ describe('Parse Role testing', () => {
     return role.save({}, { useMasterKey: true });
   };
 
-  it_exclude_dbs(['postgres'])("should not recursively load the same role multiple times", (done) => {
+  it("should not recursively load the same role multiple times", (done) => {
     var rootRole = "RootRole";
     var roleNames = ["FooRole", "BarRole", "BazRole"];
     var allRoles = [rootRole].concat(roleNames);
@@ -142,7 +142,7 @@ describe('Parse Role testing', () => {
 
   });
 
-  it_exclude_dbs(['postgres'])("should recursively load roles", (done) => {
+  it("should recursively load roles", (done) => {
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
     var roleIds = {};
      createTestUser().then( (user) => {
@@ -174,7 +174,7 @@ describe('Parse Role testing', () => {
      });
   });
 
-  it_exclude_dbs(['postgres'])("_Role object should not save without name.", (done) => {
+  it("_Role object should not save without name.", (done) => {
     var role = new Parse.Role();
     role.save(null,{useMasterKey:true})
     .then((r) => {
@@ -245,7 +245,7 @@ describe('Parse Role testing', () => {
 
   });
 
-  it_exclude_dbs(['postgres'])('can create role and query empty users', (done)=> {
+  it('can create role and query empty users', (done)=> {
     var roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
     var role = new Parse.Role('subscribers', roleACL);
@@ -265,7 +265,7 @@ describe('Parse Role testing', () => {
   });
 
   // Based on various scenarios described in issues #827 and #683,
-  it_exclude_dbs(['postgres'])('should properly handle role permissions on objects', (done) => {
+  it('should properly handle role permissions on objects', (done) => {
     var user, user2, user3;
     var role, role2, role3;
     var obj, obj2;

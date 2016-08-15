@@ -113,7 +113,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it('ensure that email is uniquely indexed', done => {
+  it_exclude_dbs(['postgres'])('ensure that email is uniquely indexed', done => {
     let numFailed = 0;
     let numCreated = 0;
     let user1 = new Parse.User();

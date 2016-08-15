@@ -88,7 +88,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should respect ACL without locking user out', (done) => {
+  it('should respect ACL without locking user out', (done) => {
     let user = new Parse.User();
     let ACL = new Parse.ACL();
     ACL.setPublicReadAccess(false);
@@ -491,7 +491,7 @@ describe('Parse.User testing', () => {
     return promise._thenRunCallbacks(optionsOrCallback);
   }
 
-  it_exclude_dbs(['postgres'])("contained in user array queries", (done) => {
+  it("contained in user array queries", (done) => {
     var USERS = 4;
     var MESSAGES = 5;
 
@@ -591,7 +591,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("count users", (done) => {
+  it("count users", (done) => {
     var james = new Parse.User();
     james.set("username", "james");
     james.set("password", "mypass");
@@ -1591,7 +1591,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fail linking with existing', (done) => {
+  it('should fail linking with existing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -2667,7 +2667,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not fail querying non existing relations', done => { 
+  it('should not fail querying non existing relations', done => { 
     let user = new Parse.User();
     user.set({
       username: 'hello',
