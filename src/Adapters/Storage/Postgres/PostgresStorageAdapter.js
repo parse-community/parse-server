@@ -110,6 +110,8 @@ const toPostgresSchema = (schema) => {
 const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
   let values = [];
+  let sorts = [];
+
   schema = toPostgresSchema(schema);
   for (let fieldName in query) {
     let initialPatternsLength = patterns.length;
@@ -222,6 +224,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 1;
     }
 
+    if (fieldValue.$nearSphere) {
+      let point = fieldValue.$nearSphere;
+      let distance = fieldValue.$maxDistance;
+      let distanceInKM = distance*6371*1000;
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) <= $${index+3}`);
+      sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) ASC`)
+      values.push(fieldName, point.latitude, point.longitude, distanceInKM);
+      index += 4;
+    }
+
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
       let operator = '~';
@@ -262,7 +274,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
   }
   values = values.map(transformValue);
-  return { pattern: patterns.join(' AND '), values };
+  return { pattern: patterns.join(' AND '), values, sorts };
 }
 
 export class PostgresStorageAdapter {
@@ -631,6 +643,10 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
+      } else if (fieldValue.__type === 'GeoPoint') {
+        updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
+        values.push(fieldName, fieldValue.latitude, fieldValue.longitude);
+        index += 3;
       } else if (typeof fieldValue === 'number') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
@@ -686,7 +702,7 @@ export class PostgresStorageAdapter {
     let values = [className];
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
-
+    
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {
@@ -707,6 +723,9 @@ export class PostgresStorageAdapter {
         return `"${key}" DESC`;
       }).join(',');
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+    }
+    if (where.sorts && Object.keys(where.sorts).length > 0) {
+      sortPattern = `ORDER BY ${where.sorts.join(',')}`;
     }
 
     const qs = `SELECT * FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
