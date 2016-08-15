@@ -93,9 +93,23 @@ const toParseSchema = (schema) => {
   };
 }
 
+const toPostgresSchema = (schema) => {
+  if (!schema) {
+    return schema;
+  }
+  schema.fields = schema.fields || {};
+  schema.fields._wperm = {type: 'Array', contents: {type: 'String'}}
+  schema.fields._rperm = {type: 'Array', contents: {type: 'String'}}
+  if (schema.className === '_User') {
+    schema.fields._hashed_password = {type: 'String'};
+  }
+  return schema;
+}
+
 const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
   let values = [];
+  schema = toPostgresSchema(schema);
   for (let fieldName in query) {
     let initialPatternsLength = patterns.length;
     let fieldValue = query[fieldName];
@@ -153,7 +167,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
-    if (Array.isArray(fieldValue.$in) && (fieldName == '_rperm' || fieldName == '_wperm' || schema.fields[fieldName].type === 'Array')) {
+    if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
       let inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
@@ -450,6 +464,7 @@ export class PostgresStorageAdapter {
     let columnsArray = [];
     let newFieldsArray = [];
     let valuesArray = [];
+    schema = toPostgresSchema(schema);
     Object.keys(object).forEach(fieldName => {
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
@@ -549,7 +564,7 @@ export class PostgresStorageAdapter {
     let updatePatterns = [];
     let values = [className]
     let index = 2;
-
+    schema = toPostgresSchema(schema);
     for (let fieldName in update) {
       let fieldValue = update[fieldName];
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
