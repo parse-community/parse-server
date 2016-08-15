@@ -801,7 +801,7 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
-    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber), function(list) {
+    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber)).then( function(list) {
       var query = new Parse.Query(BoxedNumber);
       query.descending("number");
       query.find(expectSuccess({
@@ -822,7 +822,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll(
-      [3, 1, 3, 2].map(makeBoxedNumber),
+      [3, 1, 3, 2].map(makeBoxedNumber)).then(
       function(list) {
         var query = new Parse.Query(BoxedNumber);
         query.ascending("number").addDescending("string");
@@ -843,12 +843,12 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_exclude_dbs('postgres')("order by descending number then ascending string", function(done) {
+  it("order by descending number then ascending string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
+    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
                          function(list) {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number").addAscending("string");
@@ -869,12 +869,12 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it_exclude_dbs('postgres')("order by descending number and string", function(done) {
+  it("order by descending number and string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
+    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
                          function(list) {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number,string");
@@ -895,12 +895,12 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it_exclude_dbs('postgres')("order by descending number and string, with space", function(done) {
+  it("order by descending number and string, with space", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
+    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
                          function(list) {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number, string");
@@ -918,15 +918,18 @@ describe('Parse.Query testing', () => {
                                done();
                              }
                            }));
+                         }, (err) => {
+                           jfail(err);
+                           done();
                          });
   });
 
-  it_exclude_dbs('postgres')("order by descending number and string, with array arg", function(done) {
+  it("order by descending number and string, with array arg", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
+    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
                          function(list) {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending(["number", "string"]);
@@ -947,12 +950,12 @@ describe('Parse.Query testing', () => {
                          });
   });
 
-  it_exclude_dbs('postgres')("order by descending number and string, with multiple args", function(done) {
+  it("order by descending number and string, with multiple args", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber),
+    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
                          function(list) {
                            var query = new Parse.Query(BoxedNumber);
                            query.descending("number", "string");
@@ -1363,7 +1366,7 @@ describe('Parse.Query testing', () => {
       }
       objects.push(container);
     };
-    Parse.Object.saveAll(objects, function() {
+    Parse.Object.saveAll(objects).then(function() {
       var query = new Parse.Query(Container);
       query.exists("x");
       query.find({
