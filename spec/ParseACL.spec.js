@@ -359,7 +359,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly readable and public get", (done) => {
+  it("acl making an object publicly readable and public get", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -407,7 +407,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly readable and public find", (done) => {
+  it("acl making an object publicly readable and public find", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -457,7 +457,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly readable and public update", (done) => {
+  it("acl making an object publicly readable and public update", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -504,7 +504,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly readable and public delete", (done) => {
+  it("acl making an object publicly readable and public delete", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -548,7 +548,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly writable and public get", (done) => {
+  it("acl making an object publicly writable and public get", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -595,7 +595,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly writable and public find", (done) => {
+  it("acl making an object publicly writable and public find", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -642,7 +642,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly writable and public update", (done) => {
+  it("acl making an object publicly writable and public update", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -688,7 +688,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("acl making an object publicly writable and public delete", (done) => {
+  it("acl making an object publicly writable and public delete", (done) => {
     // Create an object owned by Alice.
     var user = new Parse.User();
     user.set("username", "alice");
@@ -1202,7 +1202,7 @@ describe('Parse.ACL', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('regression test #701', done => {
+  it('regression test #701', done => {
     var anonUser = {
       authData: {
         anonymous: {

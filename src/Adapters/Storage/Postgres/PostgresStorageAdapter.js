@@ -546,7 +546,12 @@ export class PostgresStorageAdapter {
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type == 'Array') {
-        updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::text[])::jsonb`);
+        let expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
+        if (expectedType === 'text[]') {
+          updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
+        } else {
+          updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::text[])::jsonb`);
+        }
         values.push(fieldName, fieldValue);
         index += 2;
       } else {

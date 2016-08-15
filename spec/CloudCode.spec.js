@@ -810,7 +810,7 @@ it('beforeSave should not affect fetched pointers', done => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not include relation op (regression test for #1606)', done => {
+  it('should not include relation op (regression test for #1606)', done => {
     var TestObject = Parse.Object.extend('TestObject');
     var BeforeSaveObject = Parse.Object.extend('BeforeSaveChanged');
     let testObj;
