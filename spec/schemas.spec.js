@@ -159,7 +159,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates _User schema when server starts', done => {
+  it('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -317,7 +317,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('responds with all fields when you create a class', done => {
+  it('responds with all fields when you create a class', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas',
       headers: masterKeyHeaders,
@@ -346,7 +346,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('responds with all fields when getting incomplete schema', done => {
+  it('responds with all fields when getting incomplete schema', done => {
     config.database.loadSchema()
     .then(schemaController => schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions))
     .then(() => {
@@ -387,7 +387,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('lets you specify class name in both places', done => {
+  it('lets you specify class name in both places', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -600,7 +600,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('lets you add fields', done => {
+  it('lets you add fields', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -650,7 +650,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('lets you add fields to system schema', done => {
+  it('lets you add fields to system schema', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
@@ -963,7 +963,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should set/get schema permissions', done => {
+  it('should set/get schema permissions', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
@@ -1245,7 +1245,7 @@ describe('schemas', () => {
     });
   }
 
-  it_exclude_dbs(['postgres'])('validate CLP 1', done => {
+  it('validate CLP 1', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1294,7 +1294,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('validate CLP 2', done => {
+  it('validate CLP 2', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1417,7 +1417,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('validate CLP 4', done => {
+  it('validate CLP 4', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1485,7 +1485,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('validate CLP 5', done => {
+  it('validate CLP 5', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1567,7 +1567,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can login when addFields is false (issue #1355)', (done) => {
+  it('can login when addFields is false (issue #1355)', (done) => {
     setPermissionsOnClass('_User', {
       'create': {'*': true},
       'addField': {}
@@ -1599,7 +1599,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("regression test for #1991", done => {
+  it("regression test for #1991", done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');

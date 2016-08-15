@@ -55,6 +55,44 @@ const transformValue = value => {
   return value;
 }
 
+// Duplicate from then mongo adapter...
+const emptyCLPS = Object.freeze({
+  find: {},
+  get: {},
+  create: {},
+  update: {},
+  delete: {},
+  addField: {},
+});
+
+const defaultCLPS = Object.freeze({
+  find: {'*': true},
+  get: {'*': true},
+  create: {'*': true},
+  update: {'*': true},
+  delete: {'*': true},
+  addField: {'*': true},
+});
+
+const toParseSchema = (schema) => {
+  if (schema.className === '_User') {
+    delete schema.fields._hashed_password;
+  }
+  if (schema.fields) {
+    delete schema.fields._wperm;
+    delete schema.fields._rperm;
+  }
+  let clps = defaultCLPS;
+  if (schema.classLevelPermissions) {
+    clps = {...emptyCLPS, ...schema.classLevelPermissions};
+  }
+  return {
+    className: schema.className,
+    fields: schema.fields,
+    classLevelPermissions: clps,
+  };
+}
+
 const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
   let values = [];
@@ -115,7 +153,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
-    if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
+    if (Array.isArray(fieldValue.$in) && (fieldName == '_rperm' || fieldName == '_wperm' || schema.fields[fieldName].type === 'Array')) {
       let inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
@@ -241,13 +279,21 @@ export class PostgresStorageAdapter {
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return notImplemented();
+    return this._ensureSchemaCollectionExists().then(() => {
+      const values = [className, 'schema', 'classLevelPermissions', CLPs]
+      return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+    }).catch((err) => {
+      console.error("ERR!!!", err);
+      return Promise.reject(err);
+    })
   }
 
   createClass(className, schema) {
     return this.createTable(className, schema)
     .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
-    .then(() => schema);
+    .then(() => { 
+      return toParseSchema(schema)
+    });
   }
 
   // Just create a table, do not insert in schema
@@ -380,7 +426,8 @@ export class PostgresStorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })));
+    .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })))
+    .then(res => res.map(toParseSchema))
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -394,7 +441,7 @@ export class PostgresStorageAdapter {
       } else {
         throw undefined;
       }
-    });
+    }).then(toParseSchema);
   }
 
   // TODO: remove the mongo format dependency in the return value
