@@ -23,7 +23,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("notEqualTo with Relation is working", function(done) {
+  it("notEqualTo with Relation is working", function(done) {
     var user = new Parse.User();
     user.setPassword("asdf");
     user.setUsername("zxcv");
@@ -348,7 +348,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("equalTo undefined", function(done) {
+  it("equalTo undefined", function(done) {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
@@ -760,7 +760,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("count", function(done) {
+  it("count", function(done) {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
@@ -1297,7 +1297,7 @@ describe('Parse.Query testing', () => {
                           });
   });
 
-  it_exclude_dbs(['postgres'])("exists", function(done) {
+  it("exists", function(done) {
     var objects = [];
     for (var i of [0, 1, 2, 3, 4, 5, 6, 7, 8]) {
       var item = new TestObject();
@@ -1378,7 +1378,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("doesNotExist relation", function(done) {
+  it("doesNotExist relation", function(done) {
     var objects = [];
     for (var i of [0, 1, 2, 3, 4, 5, 6, 7]) {
       var container = new Container();
@@ -1816,7 +1816,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("dontSelect query", function(done) {
+  it("dontSelect query", function(done) {
     var RestaurantObject = Parse.Object.extend("Restaurant");
     var PersonObject = Parse.Object.extend("Person");
     var objects = [
@@ -1842,7 +1842,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("dontSelect query without conditions", function(done) {
+  it("dontSelect query without conditions", function(done) {
     const RestaurantObject = Parse.Object.extend("Restaurant");
     const PersonObject = Parse.Object.extend("Person");
     const objects = [
@@ -1929,7 +1929,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("or queries", function(done) {
+  it("or queries", function(done) {
     var objects = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(function(x) {
       var object = new Parse.Object('BoxedNumber');
       object.set('x', x);

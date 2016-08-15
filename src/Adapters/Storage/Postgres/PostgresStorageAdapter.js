@@ -52,6 +52,7 @@ const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
   let values = [];
   for (let fieldName in query) {
+    let initialPatternsLength = patterns.length;
     let fieldValue = query[fieldName];
     if (fieldName.indexOf('.') >= 0) {
       let components = fieldName.split('.').map((cmpt, index) => {
@@ -71,15 +72,6 @@ const buildWhereClause = ({ schema, query, index }) => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
-    } else if (fieldValue.$ne) {
-      if (fieldValue.$ne === null) {
-        patterns.push(`$${index}:name <> $${index + 1}`);
-      } else {
-        // if not null, we need to manually exclude null
-        patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
-      }
-      values.push(fieldName, fieldValue.$ne);
-      index += 2;
     } else if (fieldName === '$or') {
       let clauses = [];
       let clauseValues = [];
@@ -91,7 +83,26 @@ const buildWhereClause = ({ schema, query, index }) => {
       });
       patterns.push(`(${clauses.join(' OR ')})`);
       values.push(...clauseValues);
-    } else if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
+    }
+
+    if (fieldValue.$ne) {
+      if (fieldValue.$ne === null) {
+        patterns.push(`$${index}:name <> $${index + 1}`);
+      } else {
+        // if not null, we need to manually exclude null
+        patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
+      }
+      values.push(fieldName, fieldValue.$ne);
+      index += 2;
+    }
+
+    if (fieldValue.$eq) {
+      patterns.push(`$${index}:name = $${index + 1}`);
+      values.push(fieldName, fieldValue.$eq);
+      index += 2;
+    }
+  
+    if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
       let inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
@@ -109,35 +120,60 @@ const buildWhereClause = ({ schema, query, index }) => {
         patterns.push(`$${index}:name && ARRAY[${inPatterns.join(',')}]`);
       }
       index = index + 1 + inPatterns.length;
-    } else if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'String') {
-      if (fieldValue.$in.length > 0) {
-        let inPatterns = [];
-        values.push(fieldName);
-        fieldValue.$in.forEach((listElem, listIndex) => {
-          values.push(listElem);
-          inPatterns.push(`$${index + 1 + listIndex}`);
-        });
-        patterns.push(`$${index}:name IN (${inPatterns.join(',')})`);
-        index = index + 1 + inPatterns.length;
+    } else if (Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin) && schema.fields[fieldName].type === 'String') {
+
+      var createConstraint = (baseArray, notIn) => {
+        if (baseArray.length > 0) {
+          let inPatterns = [];
+          values.push(fieldName);
+          baseArray.forEach((listElem, listIndex) => {
+            values.push(listElem);
+            inPatterns.push(`$${index + 1 + listIndex}`);
+          });
+          let not = notIn ? 'NOT' : '';
+          patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
+          index = index + 1 + inPatterns.length;
+        } else if (!notIn) {
+          values.push(fieldName);
+          patterns.push(`$${index}:name IS NULL`);
+          index = index + 1;
+        }
       }
-    } else if (fieldValue.__type === 'Pointer') {
+      if (fieldValue.$in) {
+        createConstraint(fieldValue.$in, false);
+      }
+      if (fieldValue.$nin) {
+        createConstraint(fieldValue.$nin, true);
+      }
+    }
+
+    if (typeof fieldValue.$exists !== 'undefined') {
+      if (fieldValue.$exists) {
+        patterns.push(`$${index}:name IS NOT NULL`);
+      } else {
+        patterns.push(`$${index}:name IS NULL`);
+      }
+      values.push(fieldName);
+      index += 1;
+    }
+
+    if (fieldValue.__type === 'Pointer') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue.objectId);
       index += 2;
-    } else {
-      let handled = false;
-      Object.keys(ParseToPosgresComparator).forEach(cmp => {
-        if (fieldValue[cmp]) {
-          let pgComparator = ParseToPosgresComparator[cmp];
-          patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
-          values.push(fieldName, toPostresValue(fieldValue[cmp]));
-          index += 2;
-          handled = true;
-        }
-      });
-      if (!handled) {
-        throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this query type yet`);
+    }
+
+    Object.keys(ParseToPosgresComparator).forEach(cmp => {
+      if (fieldValue[cmp]) {
+        let pgComparator = ParseToPosgresComparator[cmp];
+        patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
+        values.push(fieldName, toPostresValue(fieldValue[cmp]));
+        index += 2;
       }
+    });
+
+    if (!initialPatternsLength === patterns.length) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this query type yet ${JSON.stringify(fieldValue)}`);
     }
   }
   return { pattern: patterns.join(' AND '), values };
@@ -215,13 +251,15 @@ export class PostgresStorageAdapter {
 
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
-    debug('addFieldIfNotExists', className, fieldName, type);
+    debug('addFieldIfNotExists', {className, fieldName, type});
     return this._client.tx("addFieldIfNotExists", t=> {
-      return t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
-        className,
-        fieldName,
-        postgresType: parseTypeToPostgresType(type)
-      })
+      let promise = Promise.resolve();
+      if (type.type !== 'Relation') {
+        promise = t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
+          className,
+          fieldName,
+          postgresType: parseTypeToPostgresType(type)
+        })
         .catch(error => {
           if (error.code === PostgresRelationDoesNotExistError) {
             return this.createClass(className, {fields: {[fieldName]: type}})
@@ -232,18 +270,22 @@ export class PostgresStorageAdapter {
             throw error;
           }
         })
-        .then(() => t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className}))
-        .then(result => {
-          if (fieldName in result[0].schema) {
-            throw "Attempted to add a field that already exists";
-          } else {
-            result[0].schema.fields[fieldName] = type;
-            return t.none(
-              'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
-              {schema: result[0].schema, className}
-            );
-          }
-        })
+      } else {
+        promise = t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`})
+      }
+      return promise.then(() => {
+        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className});
+      }).then(result => {
+        if (fieldName in result[0].schema) {
+          throw "Attempted to add a field that already exists";
+        } else {
+          result[0].schema.fields[fieldName] = type;
+          return t.none(
+            'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
+            {schema: result[0].schema, className}
+          );
+        }
+      });
     });
   }
 
@@ -491,7 +533,8 @@ export class PostgresStorageAdapter {
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
-    return notImplemented();
+    debug('upsertOneObject', {className, query, update});
+    return this.createObject(className, schema, update);
   }
 
   find(className, schema, query, { skip, limit, sort }) {
@@ -520,6 +563,10 @@ export class PostgresStorageAdapter {
     const qs = `SELECT * FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern}`;
     debug(qs, values);
     return this._client.any(qs, values)
+    .then(results => {
+      debug('findResults', results);
+      return results;
+    })
     .then(results => results.map(object => {
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
         if (object[fieldName]) {
