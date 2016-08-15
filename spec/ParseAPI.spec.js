@@ -13,6 +13,31 @@ const deepcopy = require('deepcopy');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
 
+describe_only_db('mongo')('miscellaneous', () => {
+  it('test rest_create_app', function(done) {
+    var appId;
+    Parse._request('POST', 'rest_create_app').then((res) => {
+      expect(typeof res.application_id).toEqual('string');
+      expect(res.master_key).toEqual('master');
+      appId = res.application_id;
+      Parse.initialize(appId, 'unused');
+      var obj = new Parse.Object('TestObject');
+      obj.set('foo', 'bar');
+      return obj.save();
+    }).then(() => {
+      let config = new Config(appId);
+      return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0]['foo']).toEqual('bar');
+      done();
+    }).fail(error => {
+      fail(JSON.stringify(error));
+      done();
+    })
+  });
+})
+
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
@@ -350,29 +375,6 @@ describe('miscellaneous', function() {
       fail(JSON.stringify(error));
       done();
     });
-  });
-
-  it_exclude_dbs(['postgres'])('test rest_create_app', function(done) {
-    var appId;
-    Parse._request('POST', 'rest_create_app').then((res) => {
-      expect(typeof res.application_id).toEqual('string');
-      expect(res.master_key).toEqual('master');
-      appId = res.application_id;
-      Parse.initialize(appId, 'unused');
-      var obj = new Parse.Object('TestObject');
-      obj.set('foo', 'bar');
-      return obj.save();
-    }).then(() => {
-      let config = new Config(appId);
-      return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0]['foo']).toEqual('bar');
-      done();
-    }).fail(error => {
-      fail(JSON.stringify(error));
-      done();
-    })
   });
 
   it('object is set on create and update', done => {

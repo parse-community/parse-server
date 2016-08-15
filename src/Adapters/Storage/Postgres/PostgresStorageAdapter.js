@@ -589,7 +589,13 @@ export class PostgresStorageAdapter {
   // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
     debug('upsertOneObject', {className, query, update});
-    return this.createObject(className, schema, update);
+    return this.createObject(className, schema, update).catch((err) => {
+      // ignore duplicate value errors as it's upsert
+      if (err.code == Parse.Error.DUPLICATE_VALUE) {
+        return;
+      }
+      throw err;
+    });
   }
 
   find(className, schema, query, { skip, limit, sort }) {

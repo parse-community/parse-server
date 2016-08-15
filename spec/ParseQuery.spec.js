@@ -2496,7 +2496,9 @@ describe('Parse.Query testing', () => {
       q2.doesNotExist('nonExistantKey2');
       let orQuery = Parse.Query.or(q1, q2).find().then(results => {
         expect(results.length).toEqual(1);
-        expect(results[0].objectId).toEqual(q1.objectId);
+        if (results.length == 1) {
+          expect(results[0].objectId).toEqual(q1.objectId);
+        }
         done();
       });
     });
