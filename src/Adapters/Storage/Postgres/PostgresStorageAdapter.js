@@ -417,9 +417,17 @@ export class PostgresStorageAdapter {
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
-    return this._client.any('SELECT "className" FROM "_SCHEMA"')
+    return this._client.any('SELECT * FROM "_SCHEMA"')
     .then(results => {
-      const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className)];
+      let joins = results.reduce((list, schema) => {
+        Object.keys(schema.schema.fields).forEach((field) => {
+          if (schema.schema.fields[field].type === 'Relation') {
+            list.push(`_Join:${field}:${schema.className}`);
+          }
+        })
+        return list;
+      }, []);
+      const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {

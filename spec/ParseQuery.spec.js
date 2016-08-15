@@ -848,25 +848,28 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
-    Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-                         function(list) {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.descending("number").addAscending("string");
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 4);
-                               equal(results[0].get("number"), 3);
-                               equal(results[0].get("string"), "a");
-                               equal(results[1].get("number"), 3);
-                               equal(results[1].get("string"), "c");
-                               equal(results[2].get("number"), 2);
-                               equal(results[2].get("string"), "d");
-                               equal(results[3].get("number"), 1);
-                               equal(results[3].get("string"), "b");
-                               done();
-                             }
-                           }));
-                         });
+
+    let objects = [3, 1, 3, 2].map(makeBoxedNumber);
+    Parse.Object.saveAll(objects)
+    .then((list) => {
+      var query = new Parse.Query(BoxedNumber);
+      query.descending("number").addAscending("string");
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 4);
+      equal(results[0].get("number"), 3);
+      equal(results[0].get("string"), "a");
+      equal(results[1].get("number"), 3);
+      equal(results[1].get("string"), "c");
+      equal(results[2].get("number"), 2);
+      equal(results[2].get("string"), "d");
+      equal(results[3].get("number"), 1);
+      equal(results[3].get("string"), "b");
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
   });
 
   it("order by descending number and string", function(done) {

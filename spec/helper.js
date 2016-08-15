@@ -170,7 +170,9 @@ afterEach(function(done) {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
-    done();
+    on_db('postgres', () => {
+      TestUtils.destroyAllDataPermanently().then(done, done);
+    }, done);
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
