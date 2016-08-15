@@ -3,6 +3,17 @@
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
+global.on_db = (db, callback, elseCallback) => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return callback();
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return callback();
+  }
+  if (elseCallback) {
+    elseCallback();
+  }
+}
+
 var cache = require('../src/cache').default;
 var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
@@ -11,6 +22,7 @@ var path = require('path');
 var TestUtils = require('../src/TestUtils');
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const FSAdapter = require('parse-server-fs-adapter');
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
@@ -40,7 +52,14 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
 
 var port = 8378;
 
-let gridStoreAdapter = new GridStoreAdapter(mongoURI);
+let filesAdapter;
+
+on_db('mongo', () => {
+  filesAdapter = new GridStoreAdapter(mongoURI);
+}, () => {
+  filesAdapter = new FSAdapter();
+});
+
 let logLevel;
 let silent = true;
 if (process.env.VERBOSE) {
@@ -53,7 +72,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
 }
 // Default server configuration for tests.
 var defaultConfiguration = {
-  filesAdapter: gridStoreAdapter,
+  filesAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   databaseAdapter,
   appId: 'test',
@@ -383,16 +402,6 @@ global.describe_only_db = db => {
   }
 }
 
-global.on_db = (db, callback, elseCallback) => {
-  if (process.env.PARSE_SERVER_TEST_DB == db) {
-    return callback();
-  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
-    return callback();
-  }
-  if (elseCallback) {
-    elseCallback();
-  }
-}
 
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {

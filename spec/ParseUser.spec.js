@@ -137,7 +137,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])("user login with files", (done) => {
+  it("user login with files", (done) => {
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
@@ -1118,7 +1118,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('log in with provider with files', done => {
+  it('log in with provider with files', done => {
     let provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");

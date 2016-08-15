@@ -11,8 +11,8 @@ for (var i = 0; i < str.length; i++) {
   data.push(str.charCodeAt(i));
 }
 
-describe_only_db('mongo')('Parse.File testing', () => {
-  describe_only_db('mongo')('creating files', () => {
+describe('Parse.File testing', () => {
+  describe('creating files', () => {
     it('works with Content-Type', done => {
       var headers = {
         'Content-Type': 'application/octet-stream',
@@ -88,7 +88,7 @@ describe_only_db('mongo')('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('supports REST end-to-end file create, read, delete, read', done => {
+  it('supports REST end-to-end file create, read, delete, read', done => {
     var headers = {
       'Content-Type': 'image/jpeg',
       'X-Parse-Application-Id': 'test',
@@ -204,7 +204,7 @@ describe_only_db('mongo')('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("save file", done => {
+  it("save file", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     file.save(expectSuccess({
@@ -273,7 +273,7 @@ describe_only_db('mongo')('Parse.File testing', () => {
     }, done));
   });
 
-  it_exclude_dbs(['postgres'])("autosave file in object", done => {
+  it("autosave file in object", done => {
     var file = new Parse.File("hello.txt", data, "text/plain");
     ok(!file.url());
     var object = new Parse.Object("TestObject");
@@ -506,7 +506,7 @@ describe_only_db('mongo')('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates correct url for old files hosted on files.parsetfss.com', done => {
+  it('creates correct url for old files hosted on files.parsetfss.com', done => {
     var file = {
       __type: 'File',
       url: 'http://irrelevant.elephant/',
@@ -529,7 +529,7 @@ describe_only_db('mongo')('Parse.File testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates correct url for old files hosted on files.parse.com', done => {
+  it('creates correct url for old files hosted on files.parse.com', done => {
     var file = {
       __type: 'File',
       url: 'http://irrelevant.elephant/',

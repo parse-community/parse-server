@@ -18,7 +18,7 @@ const parseTypeToPostgresType = type => {
     case 'String': return 'text';
     case 'Date': return 'timestamp with time zone';
     case 'Object': return 'jsonb';
-    case 'File': return 'jsonb';
+    case 'File': return 'text';
     case 'Boolean': return 'boolean';
     case 'Pointer': return 'char(10)';
     case 'Number': return 'double precision';
@@ -44,6 +44,9 @@ const toPostgresValue = value => {
   if (typeof value === 'object') {
     if (value.__type === 'Date') {
       return value.iso;
+    }
+    if (value.__type === 'File') {
+      return value.name;
     }
   }
   return value;
@@ -422,11 +425,13 @@ export class PostgresStorageAdapter {
     return this._client.any('SELECT * FROM "_SCHEMA"')
     .then(results => {
       let joins = results.reduce((list, schema) => {
-        Object.keys(schema.schema.fields).forEach((field) => {
-          if (schema.schema.fields[field].type === 'Relation') {
-            list.push(`_Join:${field}:${schema.className}`);
-          }
-        })
+        if (schema && schema.schema) {
+          Object.keys(schema.schema.fields).forEach((field) => {
+            if (schema.schema.fields[field].type === 'Relation') {
+              list.push(`_Join:${field}:${schema.className}`);
+            }
+          });
+        }
         return list;
       }, []);
       const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
@@ -529,8 +534,10 @@ export class PostgresStorageAdapter {
         case 'String':
         case 'Number':
         case 'Boolean':
-        case 'File':
           valuesArray.push(object[fieldName]);
+          break;
+        case 'File':
+          valuesArray.push(object[fieldName].name);
           break;
         case 'GeoPoint':
           // pop the point and process later
@@ -655,6 +662,10 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
+      } else if (fieldValue.__type === 'File') {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, toPostgresValue(fieldValue));
+        index += 2;
       } else if (fieldValue.__type === 'GeoPoint') {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
         values.push(fieldName, fieldValue.latitude, fieldValue.longitude);
@@ -765,6 +776,12 @@ export class PostgresStorageAdapter {
           object[fieldName] = {
             latitude: object[fieldName].x,
             longitude: object[fieldName].y
+          }
+        }
+        if (object[fieldName] && schema.fields[fieldName].type === 'File') {
+          object[fieldName] = {
+            __type: 'File',
+            name: object[fieldName]
           }
         }
       });
