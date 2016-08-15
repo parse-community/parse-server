@@ -39,11 +39,18 @@ const ParseToPosgresComparator = {
   '$lte': '<='
 }
 
-const toPostresValue = value => {
+const toPostgresValue = value => {
   if (typeof value === 'object') {
     if (value.__type === 'Date') {
       return value.iso;
     }
+  }
+  return value;
+}
+
+const transformValue = value => {
+  if (value.__type == 'Pointer') {
+    return value.objectId;
   }
   return value;
 }
@@ -72,6 +79,10 @@ const buildWhereClause = ({ schema, query, index }) => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
+    } else if (typeof fieldValue === 'number') {
+      patterns.push(`$${index}:name = $${index + 1}`);
+      values.push(fieldName, fieldValue);
+      index += 2;
     } else if (fieldName === '$or') {
       let clauses = [];
       let clauseValues = [];
@@ -92,6 +103,8 @@ const buildWhereClause = ({ schema, query, index }) => {
         // if not null, we need to manually exclude null
         patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
       }
+
+      // TODO: support arrays
       values.push(fieldName, fieldValue.$ne);
       index += 2;
     }
@@ -101,7 +114,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue.$eq);
       index += 2;
     }
-  
+    const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
       let inPatterns = [];
       let allowNull = false;
@@ -120,8 +133,7 @@ const buildWhereClause = ({ schema, query, index }) => {
         patterns.push(`$${index}:name && ARRAY[${inPatterns.join(',')}]`);
       }
       index = index + 1 + inPatterns.length;
-    } else if (Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin) && schema.fields[fieldName].type === 'String') {
-
+    } else if (isInOrNin) {
       var createConstraint = (baseArray, notIn) => {
         if (baseArray.length > 0) {
           let inPatterns = [];
@@ -157,9 +169,29 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 1;
     }
 
+    if (fieldValue.$regex) {
+      let regex = fieldValue.$regex;
+      let operator = '~';
+      let opts = fieldValue.$options;
+      if (opts) {
+        if (opts.indexOf('i') >= 0) {
+          operator = '~*';
+        }
+      }
+      patterns.push(`$${index}:name ${operator} $${index+1}`);
+      values.push(fieldName, regex);
+      index += 2;
+    }
+
     if (fieldValue.__type === 'Pointer') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue.objectId);
+      index += 2;
+    }
+
+    if (fieldValue.__type === 'Date') {
+      patterns.push(`$${index}:name = $${index + 1}`);
+      values.push(fieldName, fieldValue.iso);
       index += 2;
     }
 
@@ -167,15 +199,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       if (fieldValue[cmp]) {
         let pgComparator = ParseToPosgresComparator[cmp];
         patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
-        values.push(fieldName, toPostresValue(fieldValue[cmp]));
+        values.push(fieldName, toPostgresValue(fieldValue[cmp]));
         index += 2;
       }
     });
 
-    if (!initialPatternsLength === patterns.length) {
+    if (initialPatternsLength === patterns.length) {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `Postgres doesn't support this query type yet ${JSON.stringify(fieldValue)}`);
     }
   }
+  values = values.map(transformValue);
   return { pattern: patterns.join(' AND '), values };
 }
 
@@ -407,7 +440,7 @@ export class PostgresStorageAdapter {
     let qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     let values = [className, ...columnsArray, ...valuesArray]
     debug(qs, values);
-    return this._client.none(qs, values)
+    return this._client.any(qs, values)
     .then(() => ({ ops: [object] }))
     .catch(error => {
       if (error.code === PostgresUniqueIndexViolationError) {
@@ -498,7 +531,7 @@ export class PostgresStorageAdapter {
         index += 2;
       } else if (fieldValue.__type === 'Date') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, toPostresValue(fieldValue));
+        values.push(fieldName, toPostgresValue(fieldValue));
         index += 2;
       } else if (typeof fieldValue === 'number') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
@@ -539,15 +572,22 @@ export class PostgresStorageAdapter {
 
   find(className, schema, query, { skip, limit, sort }) {
     debug('find', className, query, {skip, limit, sort});
+    const hasLimit = limit !== undefined;
+    const hasSkip = skip !== undefined;
     let values = [className];
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const limitPattern = limit !== undefined ? `LIMIT $${values.length + 1}` : '';
-    if (limit !== undefined) {
+    const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
+    if (hasLimit) {
       values.push(limit);
     }
+    const skipPattern = hasSkip ? `OFFSET $${values.length+1}` : '';
+    if (hasSkip) {
+      values.push(skip);
+    }
+
     let sortPattern = '';
     if (sort) {
       let sorting = Object.keys(sort).map((key) => {
@@ -560,12 +600,15 @@ export class PostgresStorageAdapter {
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
 
-    const qs = `SELECT * FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern}`;
+    const qs = `SELECT * FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
     debug(qs, values);
     return this._client.any(qs, values)
-    .then(results => {
-      debug('findResults', results);
-      return results;
+    .catch((err) => {
+      // Query on non existing table, don't crash
+      if (err.code === PostgresRelationDoesNotExistError) {
+        return [];
+      }
+      return Promise.reject(err);
     })
     .then(results => results.map(object => {
       Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
