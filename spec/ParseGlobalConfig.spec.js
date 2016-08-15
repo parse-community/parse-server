@@ -12,7 +12,7 @@ describe('a GlobalConfig', () => {
       { fields: {} },
       { objectId: 1 },
       { params: { companies: ['US', 'DK'] } }
-    ).then(done);
+    ).then(done, done);
   });
 
   it_exclude_dbs(['postgres'])('can be retrieved', (done) => {
@@ -24,8 +24,10 @@ describe('a GlobalConfig', () => {
         'X-Parse-Master-Key'    : 'test'
       }
     }, (error, response, body) => {
-      expect(response.statusCode).toEqual(200);
-      expect(body.params.companies).toEqual(['US', 'DK']);
+      try {
+        expect(response.statusCode).toEqual(200);
+        expect(body.params.companies).toEqual(['US', 'DK']);
+      } catch(e) { jfail(e); }
       done();
     });
   });
@@ -66,10 +68,12 @@ describe('a GlobalConfig', () => {
           'X-Parse-Master-Key'    : 'test'
         }
       }, (error, response, body) => {
-        expect(response.statusCode).toEqual(200);
-        expect(body.params.companies).toBeUndefined();
-        expect(body.params.foo).toBe('bar');
-        expect(Object.keys(body.params).length).toBe(1);
+        try {
+          expect(response.statusCode).toEqual(200);
+          expect(body.params.companies).toBeUndefined();
+          expect(body.params.foo).toBe('bar');
+          expect(Object.keys(body.params).length).toBe(1);
+        } catch(e) { jfail(e); }
         done();
       });
     });
@@ -110,6 +114,9 @@ describe('a GlobalConfig', () => {
         expect(body.params).toEqual({});
         done();
       });
+    }).catch((e) => {
+      jfail(e);
+      done();
     });
   });
 });

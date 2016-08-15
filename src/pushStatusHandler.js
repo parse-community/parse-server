@@ -48,12 +48,13 @@ export default function pushStatusHandler(config) {
       // lockdown!
       ACL: {}
     }
-
-    lastPromise = database.create(PUSH_STATUS_COLLECTION, object).then(() => {
-      pushStatus = {
-        objectId
-      };
-      return Promise.resolve(pushStatus);
+    lastPromise = Promise.resolve().then(() => {
+      return database.create(PUSH_STATUS_COLLECTION, object).then(() => {
+        pushStatus = {
+          objectId
+        };
+        return Promise.resolve(pushStatus);
+      });
     });
     return lastPromise;
   }

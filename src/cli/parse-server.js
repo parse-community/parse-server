@@ -4,7 +4,6 @@ import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import { mergeWithOptions } from './utils/commander';
-import colors from 'colors';
 
 program.loadDefinitions(definitions);
 
@@ -44,7 +43,7 @@ if (!options.serverURL) {
 if (!options.appId || !options.masterKey || !options.serverURL) {
   program.outputHelp();
   console.error("");
-  console.error(colors.red("ERROR: appId and masterKey are required"));
+  console.error('\u001b[31mERROR: appId and masterKey are required\u001b[0m');
   console.error("");
   process.exit(1);
 }

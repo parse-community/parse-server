@@ -134,7 +134,7 @@ describe('rest query', () => {
     }).catch((error) => { console.log(error); });
   });
 
-  it_exclude_dbs(['postgres'])('query non-existent class when disabled client class creation', (done) => {
+  it('query non-existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
@@ -148,7 +148,7 @@ describe('rest query', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('query existent class when disabled client class creation', (done) => {
+  it('query existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
@@ -201,7 +201,7 @@ describe('rest query', () => {
       });
       return Promise.all([p0, p1]);
     }).then(done).catch((err) => {
-      console.error(err);
+      jfail(err);
       fail('should not fail');
       done();
     })
@@ -221,7 +221,7 @@ describe('rest query', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('query with limit = 0 and count = 1', (done) => {
+  it('query with limit = 0 and count = 1', (done) => {
     rest.create(config, nobody, 'TestObject', {foo: 'baz'}
     ).then(() => {
       return rest.create(config, nobody,

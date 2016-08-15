@@ -363,6 +363,10 @@ export class MongoStorageAdapter {
     return this._adaptiveCollection(className)
     .then(collection => collection.count(transformWhere(className, query, schema)));
   }
+
+  performInitialization() {
+    return Promise.resolve();
+  }
 }
 
 export default MongoStorageAdapter;

@@ -20,7 +20,7 @@ describe('Hooks', () => {
        expect(res.constructor).toBe(Array.prototype.constructor);
        done();
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      });
    });
@@ -30,7 +30,7 @@ describe('Hooks', () => {
        expect(res.constructor).toBe(Array.prototype.constructor);
        done();
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      });
    });
@@ -71,7 +71,7 @@ describe('Hooks', () => {
       })
     })
     .catch(error => {
-      fail(error);
+      jfail(error);
       done();
     })
   });
@@ -95,7 +95,7 @@ describe('Hooks', () => {
        // delete
         return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then((res) => {
        expect(res.className).toBe("MyClass");
@@ -104,22 +104,26 @@ describe('Hooks', () => {
 
        return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then((res) => {
        // Find again! but should be deleted
        return Parse.Hooks.getTrigger("MyClass","beforeDelete");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then(function(){
        fail("should not succeed");
        done();
      }, (err) => {
-       expect(err).not.toBe(null);
-       expect(err).not.toBe(undefined);
-       expect(err.code).toBe(143);
-       expect(err.message).toBe("class MyClass does not exist")
+      if (err) {
+        expect(err).not.toBe(null);
+        expect(err).not.toBe(undefined);
+        expect(err.code).toBe(143);
+        expect(err.message).toBe("class MyClass does not exist")
+       } else {
+        fail('should have errored');
+       }
        done();
      });
    });
@@ -148,13 +152,15 @@ describe('Hooks', () => {
       }, (err) => {
         expect(err).not.toBe(undefined);
         expect(err).not.toBe(null);
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('function name: my_new_function already exits')
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('function name: my_new_function already exits')
+        }
         return Parse.Hooks.removeFunction("my_new_function");
       }).then(() => {
         done();
       }, (err) => {
-        fail(err);
+        jfail(err);
         done();
       })
    });
@@ -167,13 +173,17 @@ describe('Hooks', () => {
       }).then( () => {
         fail("should not be able to create the same trigger");
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class MyClass already has trigger beforeSave')
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class MyClass already has trigger beforeSave')
+        }
         return Parse.Hooks.removeTrigger("MyClass", "beforeSave");
       }).then(() => {
         done();
       }, (err) => {
-        fail(err);
+        jfail(err);
         done();
       })
    });
@@ -182,15 +192,23 @@ describe('Hooks', () => {
       Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
         fail("Should not succeed")
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        }
         return Parse.Hooks.getFunction("A_COOL_FUNCTION")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        }
         done();
       });
    });
@@ -199,15 +217,23 @@ describe('Hooks', () => {
       Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
         fail("Should not succeed")
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class AClassName does not exist');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class AClassName does not exist');
+        }
         return Parse.Hooks.getTrigger("AClassName","beforeSave")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class AClassName does not exist');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class AClassName does not exist');
+        }
         done();
       });
    });
@@ -217,8 +243,12 @@ describe('Hooks', () => {
       Parse.Hooks.createFunction("MyFunction").then( (res) => {
         fail(res);
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.error).toBe("invalid hook declaration");
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.error).toBe("invalid hook declaration");
+        }
         done();
       });
    });
@@ -258,7 +288,7 @@ describe('Hooks', () => {
        const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
        return hooksController.load()
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail('Should properly create all hooks');
        done();
      }).then(function() {
@@ -268,7 +298,7 @@ describe('Hooks', () => {
        }
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail('should properly load all hooks');
        done();
      })
@@ -283,14 +313,14 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunction").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        expect(res).toBe("OK!");
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail calling a function");
        done();
      });
@@ -305,17 +335,21 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunctionError").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        fail("Should not succeed calling that function");
        done();
      }, (err) => {
-       expect(err.code).toBe(141);
-       expect(err.message.code).toEqual(1337)
-       expect(err.message.error).toEqual("hacking that one!");
-       done();
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(141);
+        expect(err.message.code).toEqual(1337)
+        expect(err.message.error).toEqual("hacking that one!");
+      }
+      done();
      });
    });
 
@@ -331,14 +365,14 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKey").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        expect(res).toBe("correct key provided");
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail calling a function");
        done();
      });
@@ -358,16 +392,20 @@ describe('Hooks', () => {
        Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKeyAlso").then(function(){
          return Parse.Cloud.run("SOME_TEST_FUNCTION")
        }, (err) => {
-         console.error(err);
+         jfail(err);
          fail("Should not fail creating a function");
          done();
        }).then(function(res){
          fail("Should not succeed calling that function");
          done();
        }, (err) => {
-         expect(err.code).toBe(141);
-         expect(err.message).toEqual("incorrect key provided");
-         done();
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(141);
+          expect(err.message).toEqual("incorrect key provided");
+        }
+        done();
        });
      });
    });
@@ -394,7 +432,7 @@ describe('Hooks', () => {
        expect(res.get("hello")).toEqual("world");
        done();
      }).fail((err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      });
@@ -451,7 +489,7 @@ describe('Hooks', () => {
        expect(res.get("foo")).toEqual("bar");
        done();
      }).fail((err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      });

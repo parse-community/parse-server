@@ -714,10 +714,13 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         restObject._hashed_password = mongoObject[key];
         break;
       case '_acl':
+        break;
       case '_email_verify_token':
       case '_perishable_token':
       case '_tombstone':
       case '_email_verify_token_expires_at':
+        // Those keys will be deleted if needed in the DB Controller
+        restObject[key] = mongoObject[key];
         break;
       case '_session_token':
         restObject['sessionToken'] = mongoObject[key];

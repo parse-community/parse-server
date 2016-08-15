@@ -13,6 +13,31 @@ const deepcopy = require('deepcopy');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
 
+describe_only_db('mongo')('miscellaneous', () => {
+  it('test rest_create_app', function(done) {
+    var appId;
+    Parse._request('POST', 'rest_create_app').then((res) => {
+      expect(typeof res.application_id).toEqual('string');
+      expect(res.master_key).toEqual('master');
+      appId = res.application_id;
+      Parse.initialize(appId, 'unused');
+      var obj = new Parse.Object('TestObject');
+      obj.set('foo', 'bar');
+      return obj.save();
+    }).then(() => {
+      let config = new Config(appId);
+      return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0]['foo']).toEqual('bar');
+      done();
+    }).fail(error => {
+      fail(JSON.stringify(error));
+      done();
+    })
+  });
+})
+
 describe('miscellaneous', function() {
   it('create a GameScore object', function(done) {
     var obj = new Parse.Object('GameScore');
@@ -88,7 +113,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it('ensure that email is uniquely indexed', done => {
+  it_exclude_dbs(['postgres'])('ensure that email is uniquely indexed', done => {
     let numFailed = 0;
     let numCreated = 0;
     let user1 = new Parse.User();
@@ -127,7 +152,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it_exclude_dbs(['postgres'])('ensure that if people already have duplicate users, they can still sign up new users', done => {
+  it('ensure that if people already have duplicate users, they can still sign up new users', done => {
     let config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
@@ -345,29 +370,6 @@ describe('miscellaneous', function() {
       fail(JSON.stringify(error));
       done();
     });
-  });
-
-  it_exclude_dbs(['postgres'])('test rest_create_app', function(done) {
-    var appId;
-    Parse._request('POST', 'rest_create_app').then((res) => {
-      expect(typeof res.application_id).toEqual('string');
-      expect(res.master_key).toEqual('master');
-      appId = res.application_id;
-      Parse.initialize(appId, 'unused');
-      var obj = new Parse.Object('TestObject');
-      obj.set('foo', 'bar');
-      return obj.save();
-    }).then(() => {
-      let config = new Config(appId);
-      return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
-    }).then((results) => {
-      expect(results.length).toEqual(1);
-      expect(results[0]['foo']).toEqual('bar');
-      done();
-    }).fail(error => {
-      fail(JSON.stringify(error));
-      done();
-    })
   });
 
   it('object is set on create and update', done => {
@@ -647,8 +649,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -695,8 +696,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -733,13 +733,12 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('beforeSave receives ACL', done => {
+  it('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function(req, res) {
@@ -773,13 +772,12 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('afterSave receives ACL', done => {
+  it('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
@@ -813,8 +811,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      console.error(error);
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -840,21 +837,25 @@ describe('miscellaneous', function() {
           selfThing: {"__type":"Pointer","className":"GameScore","objectId":obj.id},
         })
       }, (error, response, body) => {
-        body = JSON.parse(body);
-        expect(body.a).toBeUndefined();
-        expect(body.c).toEqual(3); // 2+1
-        expect(body.d.length).toBe(2);
-        expect(body.d.indexOf('1') > -1).toBe(true);
-        expect(body.d.indexOf('2') > -1).toBe(true);
-        expect(body.e.length).toBe(2);
-        expect(body.e.indexOf('1') > -1).toBe(true);
-        expect(body.e.indexOf('2') > -1).toBe(true);
-        expect(body.f.length).toBe(1);
-        expect(body.f.indexOf('1') > -1).toBe(true);
-        // return nothing on other self
-        expect(body.selfThing).toBeUndefined();
-        // updatedAt is always set
-        expect(body.updatedAt).not.toBeUndefined();
+        try {
+          body = JSON.parse(body);
+          expect(body.a).toBeUndefined();
+          expect(body.c).toEqual(3); // 2+1
+          expect(body.d.length).toBe(2);
+          expect(body.d.indexOf('1') > -1).toBe(true);
+          expect(body.d.indexOf('2') > -1).toBe(true);
+          expect(body.e.length).toBe(2);
+          expect(body.e.indexOf('1') > -1).toBe(true);
+          expect(body.e.indexOf('2') > -1).toBe(true);
+          expect(body.f.length).toBe(1);
+          expect(body.f.indexOf('1') > -1).toBe(true);
+          // return nothing on other self
+          expect(body.selfThing).toBeUndefined();
+          // updatedAt is always set
+          expect(body.updatedAt).not.toBeUndefined();
+        }catch(e) {
+          jfail(e);
+        }
         done();
       });
     }).fail((err) => {
@@ -1189,7 +1190,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('gets relation fields', (done) => {
+  it('gets relation fields', (done) => {
     let object = new Parse.Object('AnObject');
     let relatedObject = new Parse.Object('RelatedObject');
     Parse.Object.saveAll([object, relatedObject]).then(() => {
@@ -1215,6 +1216,9 @@ describe('miscellaneous', function() {
         })
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     })
   });
 
@@ -1304,25 +1308,34 @@ describe('miscellaneous', function() {
 
   it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
     })
-    .catch(error => {
+    .then(() => {
+      fail('should not succeed')
+      done();
+    }, error => {
       expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
       done();
-    })
+    });
   });
 
-  it_exclude_dbs(['postgres'])('does not change inner object keys named _auth_data_something', done => {
+  it('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
     .then(object => new Parse.Query('O').get(object.id))
     .then(object => {
@@ -1369,10 +1382,13 @@ describe('miscellaneous', function() {
         geoField: [1,2],
       });
       done();
+    }).catch((e) => {
+      jfail(e);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('purge all objects in class', (done) => {
+  it('purge all objects in class', (done) => {
     let object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     let object2 = new Parse.Object('TestObject');
@@ -1422,7 +1438,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('purge all objects in _Role also purge cache', (done) => {
+  it('purge all objects in _Role also purge cache', (done) => {
     let headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
