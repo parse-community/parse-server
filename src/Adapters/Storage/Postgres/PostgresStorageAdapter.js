@@ -260,14 +260,23 @@ export class PostgresStorageAdapter {
       fields._email_verify_token_expires_at = {type: 'Date'};
       fields._email_verify_token = {type: 'String'};
     }
-    Object.keys(fields).forEach((fieldName, index) => {
-      valuesArray.push(fieldName);
+    let index = 2;
+    let relations = [];
+    Object.keys(fields).forEach((fieldName) => {
       let parseType = fields[fieldName];
+      // Skip when it's a relation
+      // We'll create the tables later
+      if (parseType.type == 'Relation') {
+        relations.push(fieldName)
+        return;
+      }
       if (['_rperm', '_wperm'].includes(fieldName)) {
         parseType.contents = { type: 'String' };
       }
+      valuesArray.push(fieldName);
       valuesArray.push(parseTypeToPostgresType(parseType));
-      patternsArray.push(`$${index * 2 + 2}:name $${index * 2 + 3}:raw`);
+      patternsArray.push(`$${index}:name $${index+1}:raw`);
+      index = index+2;
     });
     const qs = `CREATE TABLE $1:name (${patternsArray.join(',')}, PRIMARY KEY ("objectId"))`;
     const values = [className, ...valuesArray];
@@ -279,6 +288,11 @@ export class PostgresStorageAdapter {
       } else {
         throw error;
       }
+    }).then(() => {
+      // Create the relation tables
+      return Promise.all(relations.map((fieldName) => {
+        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`})
+      }));
     });
   }
 
@@ -460,6 +474,9 @@ export class PostgresStorageAdapter {
     let index = 2;
     let where = buildWhereClause({ schema, index, query })
     values.push(...where.values);
+    if (Object.keys(query).length == 0) {
+      where.pattern = 'TRUE';
+    }
     let qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
     debug(qs, values);
     return this._client.one(qs, values , a => +a.count)
@@ -616,9 +633,15 @@ export class PostgresStorageAdapter {
       return Promise.reject(err);
     })
     .then(results => results.map(object => {
-      Object.keys(schema.fields).filter(field => schema.fields[field].type === 'Pointer').forEach(fieldName => {
-        if (object[fieldName]) {
+      Object.keys(schema.fields).forEach(fieldName => {
+        if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
           object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+        }
+        if (schema.fields[fieldName].type === 'Relation') {
+          object[fieldName] = {
+            __type: "Relation",
+            className: schema.fields[fieldName].targetClass
+          }
         }
       });
       //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.

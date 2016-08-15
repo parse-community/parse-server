@@ -375,7 +375,7 @@ describe('miscellaneous', function() {
     })
   });
 
-  it_exclude_dbs(['postgres'])('object is set on create and update', done => {
+  it('object is set on create and update', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
@@ -741,7 +741,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('beforeSave receives ACL', done => {
+  it('beforeSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function(req, res) {
@@ -780,7 +780,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('afterSave receives ACL', done => {
+  it('afterSave receives ACL', done => {
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
@@ -1193,7 +1193,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('gets relation fields', (done) => {
+  it('gets relation fields', (done) => {
     let object = new Parse.Object('AnObject');
     let relatedObject = new Parse.Object('RelatedObject');
     Parse.Object.saveAll([object, relatedObject]).then(() => {
@@ -1391,7 +1391,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('purge all objects in class', (done) => {
+  it('purge all objects in class', (done) => {
     let object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
     let object2 = new Parse.Object('TestObject');
@@ -1441,7 +1441,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('purge all objects in _Role also purge cache', (done) => {
+  it('purge all objects in _Role also purge cache', (done) => {
     let headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
