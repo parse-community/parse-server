@@ -1468,7 +1468,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers", (done) => {
+  it("link multiple providers", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1504,7 +1504,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+  it("link multiple providers and updates token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
@@ -1545,7 +1545,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and update token", (done) => {
+  it("link multiple providers and update token", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);

@@ -684,17 +684,38 @@ export class PostgresStorageAdapter {
     let values = [className]
     let index = 2;
     schema = toPostgresSchema(schema);
+    // Resolve authData first,
+    // So we don't end up with multiple key updates
     for (let fieldName in update) {
-      let fieldValue = update[fieldName];
-      var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+      let authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
         var provider = authDataMatch[1];
         let value = update[fieldName];
         delete update[fieldName];
-        fieldName = 'authData';
-        updatePatterns.push(`$${index}:name = json_object_set_key($${index}:name, $${index+1}::text, $${index+2}::jsonb)`);
-        values.push(fieldName, provider, value);
-        index += 3;
+        update['authData'] = update['authData'] || {};
+        update['authData'][provider] = value;
+      }
+    }
+
+    for (let fieldName in update) {
+      let fieldValue = update[fieldName];
+      if (fieldName == 'authData') {
+        // This recursively sets the json_object
+        // Only 1 level deep
+        let generate = (jsonb, key, value) => {
+          return `json_object_set_key(${jsonb}, ${key}, ${value})::jsonb`; 
+        }
+        let lastKey = `$${index}:name`;
+        let fieldNameIndex = index;
+        index+=1;
+        values.push(fieldName);
+        let update = Object.keys(fieldValue).reduce((lastKey, key) => {
+          let str = generate(lastKey, `$${index}::text`, `$${index+1}::jsonb`)
+          index+=2;
+          values.push(key, fieldValue[key]);
+          return str;
+        }, lastKey);
+        updatePatterns.push(`$${fieldNameIndex}:name = ${update}`);
       } else if (fieldValue.__op === 'Increment') {
         updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
         values.push(fieldName, fieldValue.amount);
