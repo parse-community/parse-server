@@ -367,6 +367,7 @@ export class PostgresStorageAdapter {
     if (className === '_User') {
       fields._email_verify_token_expires_at = {type: 'Date'};
       fields._email_verify_token = {type: 'String'};
+      fields._perishable_token = {type: 'String'};
     }
     let index = 2;
     let relations = [];
@@ -581,6 +582,9 @@ export class PostgresStorageAdapter {
           valuesArray.push(object[fieldName]);
         }
         if (fieldName == '_email_verify_token_expires_at') {
+          valuesArray.push(object[fieldName].iso);
+        }
+        if (fieldName == '_perishable_token') {
           valuesArray.push(object[fieldName].iso);
         }
         return;
