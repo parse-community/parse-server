@@ -86,6 +86,12 @@ const defaultColumns = Object.freeze({
     "errorMessage": {type:'Object'},
     "sentPerType":  {type:'Object'},
     "failedPerType":{type:'Object'},
+  },
+  _Hooks: {
+    "functionName": {type:'String'},
+    "className":    {type:'String'},
+    "triggerName":  {type:'String'},
+    "url":          {type:'String'}
   }
 });
 
@@ -258,13 +264,13 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
   classLevelPermissions,
 });
 
-const VolatileClassesSchemas = volatileClasses.map((className) => {
-  return convertSchemaToAdapterSchema(injectDefaultSchema({
-    className,
+const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
+const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+    className: "_PushStatus",
     fields: {},
     classLevelPermissions: {}
-  }));
-});
+}));
+const VolatileClassesSchemas = [_HooksSchema, _PushStatusSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;

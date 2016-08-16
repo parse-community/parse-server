@@ -364,9 +364,12 @@ export class PostgresStorageAdapter {
       valuesArray.push(fieldName);
       valuesArray.push(parseTypeToPostgresType(parseType));
       patternsArray.push(`$${index}:name $${index+1}:raw`);
+      if (fieldName === 'objectId') {
+        patternsArray.push(`PRIMARY KEY ($${index}:name)`)
+      }
       index = index+2;
     });
-    const qs = `CREATE TABLE $1:name (${patternsArray.join(',')}, PRIMARY KEY ("objectId"))`;
+    const qs = `CREATE TABLE $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
     return this._ensureSchemaCollectionExists()
     .then(() => this._client.none(qs, values))
@@ -415,7 +418,7 @@ export class PostgresStorageAdapter {
       return promise.then(() => {
         return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className});
       }).then(result => {
-        if (fieldName in result[0].schema) {
+        if (fieldName in result[0].schema.fields) {
           throw "Attempted to add a field that already exists";
         } else {
           result[0].schema.fields[fieldName] = type;
