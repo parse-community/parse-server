@@ -230,6 +230,26 @@ const buildWhereClause = ({ schema, query, index }) => {
       }
     }
 
+    if (Array.isArray(fieldValue.$all) && schema.fields[fieldName].type === 'Array') {
+      let inPatterns = [];
+      let allowNull = false;
+      values.push(fieldName);
+      fieldValue.$all.forEach((listElem, listIndex) => {
+        if (listElem === null ) {
+          allowNull = true;
+        } else {
+          values.push(listElem);
+          inPatterns.push(`$${index + 1 + listIndex - (allowNull ? 1 : 0)}`);
+        }
+      });
+      if (allowNull) {
+        patterns.push(`($${index}:name IS NULL OR $${index}:name @> array_to_json(ARRAY[${inPatterns.join(',')}]))::jsonb`);
+      } else {
+        patterns.push(`$${index}:name @> json_build_array(${inPatterns.join(',')})::jsonb`);
+      }
+      index = index + 1 + inPatterns.length;
+    }
+
     if (typeof fieldValue.$exists !== 'undefined') {
       if (fieldValue.$exists) {
         patterns.push(`$${index}:name IS NOT NULL`);
