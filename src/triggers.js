@@ -214,11 +214,14 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     //so trigger execution is synced with RestWrite.execute() call.
     //If triggers do not return a promise, they can run async code parallel to the RestWrite.execute() call.
     var triggerPromise = trigger(request, response);
-    if((triggerType === Types.afterSave || triggerType === Types.afterDelete) && triggerPromise && typeof triggerPromise.then === "function") {
-        return triggerPromise.then(resolve, resolve);
-    }
-    else {
-        return resolve();
+    if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
+    {
+        if(triggerPromise && typeof triggerPromise.then === "function") {
+            return triggerPromise.then(resolve, resolve);
+        }
+        else {
+            return resolve();
+        }
     }
   });
 };
