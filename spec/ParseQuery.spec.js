@@ -872,7 +872,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("order by descending number and string", function(done) {
+  it_exclude_dbs(['postgres'])("order by descending number and string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });

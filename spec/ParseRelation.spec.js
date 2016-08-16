@@ -296,7 +296,7 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("query on pointer and relation fields with equal", (done) => {
+  it_exclude_dbs(['postgres'])("query on pointer and relation fields with equal", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
