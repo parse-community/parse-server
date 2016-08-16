@@ -454,20 +454,14 @@ export class PostgresStorageAdapter {
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
-    return this.getClass(className).then((schema) => {
-      let joins = joinTablesForSchema(schema);
-      let operations = [className, ...joins].map((table) => {
-        return [`DROP TABLE $1:name`, table];
-      });
-      operations.push([`DELETE FROM "_SCHEMA" WHERE "className"=$1`, className]);
-      return this._client.tx(t=>t.batch(operations.map(statement=>t.none(statement[0], [statement[1]]))));
-    }, (err) => {
-      // the class don't exists, nothing to do
-      if (!err) {
-        return;
-      }
-      throw err;
-    })
+    return Promise.resolve().then(() => {
+      let operations = [[`DROP TABLE IF EXISTS $1:name`, [className]],
+        [`DELETE FROM "_SCHEMA" WHERE "className"=$1`, [className]]];
+      return this._client.tx(t=>t.batch(operations.map(statement=>t.none(statement[0], statement[1]))));
+    }).then(() => {
+      // resolves with false when _Join table
+      return className.indexOf('_Join:') != 0;
+    });
   }
 
   // Delete all data known to this adapter. Used for testing.
@@ -510,32 +504,27 @@ export class PostgresStorageAdapter {
     debug('deleteFields', className, fieldNames);
     return Promise.resolve()
     .then(() => {
-      let relationTableDrops = [];
-      let fieldsToDrop = [];
-      fieldNames.forEach((fieldName) => {
+      fieldNames = fieldNames.reduce((list, fieldName) => {
         let field = schema.fields[fieldName]
-        if (field.type == 'Relation') {
-          relationTableDrops.push(fieldName);
-        } else {
-          fieldsToDrop.push(fieldName);
+        if (field.type !== 'Relation') {
+          list.push(fieldName);
         }
         delete schema.fields[fieldName];
-      });
-      let columns = fieldsToDrop.map((name, idx) => {
+        return list;
+      }, []);
+
+      let values = [className, ...fieldNames];
+      let columns = fieldNames.map((name, idx) => {
         return `$${idx+2}:name`;
       }).join(',');
-      let options = [className, ...fieldsToDrop];
+
       let doBatch = (t) => {
-        let batch = [];
-        if (options.length > 1) {
-          batch.push(t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, options));
+        let batch = [
+          t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className})
+        ];
+        if (values.length > 1) {
+          batch.push(t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values));
         }
-        t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className});
-        relationTableDrops.forEach((key) => {
-          batch.push(
-            t.none('DROP TABLE $1:name', [`_Join:${key}:${className}`])
-          )
-        })
         return batch;
       }
       return this._client.tx((t) => {
