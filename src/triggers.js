@@ -158,7 +158,7 @@ function logTrigger(triggerType, className, input) {
     return;
   }
   logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}`, {
-    className, 
+    className,
     triggerType,
     input
   });
@@ -166,7 +166,7 @@ function logTrigger(triggerType, className, input) {
 
 function logTriggerSuccess(triggerType, className, input, result) {
   logger.info(`${triggerType} triggered for ${className}\nInput: ${JSON.stringify(input)}\nResult: ${JSON.stringify(result)}`, {
-    className, 
+    className,
     triggerType,
     input,
     result
@@ -175,7 +175,7 @@ function logTriggerSuccess(triggerType, className, input, result) {
 
 function logTriggerError(triggerType, className, input, error) {
   logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\Error: ${JSON.stringify(error)}`, {
-    className, 
+    className,
     triggerType,
     input,
     error
@@ -209,7 +209,20 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     Parse.masterKey = config.masterKey;
     // For the afterSuccess / afterDelete
     logTrigger(triggerType, parseObject.className, parseObject.toJSON());
-    trigger(request, response);
+
+    //AfterSave and afterDelete triggers can return a promise, which if they do, needs to be resolved before this promise is resolved,
+    //so trigger execution is synced with RestWrite.execute() call.
+    //If triggers do not return a promise, they can run async code parallel to the RestWrite.execute() call.
+    var triggerPromise = trigger(request, response);
+    if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
+    {
+        if(triggerPromise && typeof triggerPromise.then === "function") {
+            return triggerPromise.then(resolve, resolve);
+        }
+        else {
+            return resolve();
+        }
+    }
   });
 };
 
