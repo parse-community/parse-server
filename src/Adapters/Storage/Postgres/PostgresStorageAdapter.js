@@ -951,7 +951,12 @@ export class PostgresStorageAdapter {
     let now = new Date().getTime();
     debug('performInitialization');
     let promises = VolatileClassesSchemas.map((schema) => {
-      return this.createTable(schema.className, schema);
+      return this.createTable(schema.className, schema).catch((err) =>{
+        if (err.code === PostgresDuplicateRelationError || err.code == Parse.Error.INVALID_CLASS_NAME) {
+          return Promise.resolve();
+        }
+        throw err;
+      });
     });
 
     return Promise.all(promises).then(() => {
