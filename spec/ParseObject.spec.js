@@ -625,15 +625,21 @@ describe('Parse.Object testing', () => {
       var query = new Parse.Query('X');
       return query.get(x1.id);
     }).then((x3) => {
-      expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
+      let stuff = x3.get('stuff');
+      let target = [1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}];
+      expect(stuff.length).toEqual(target.length);
+      let found = 0;
+      for (let thing in target) {
+        for (let st in stuff) {
+          if (st == thing) {
+            found++;
+          }
+        }
+      }
+      expect(found).toBe(target.length);
       done();
     }, (error) => {
-      on_db('mongo', () => {
-        jfail(error);
-      });
-      on_db('postgres', () => {
-        expect(error.message).toEqual("Postgres does not support AddUnique operator.");
-      });
+      jfail(error);
       done();
     });
   });
@@ -654,6 +660,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
+      console.error(error);
       on_db('mongo', () => {
         jfail(error);
       });

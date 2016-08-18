@@ -817,7 +817,7 @@ it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a un
     });
   });
 
-  it_exclude_dbs(['postgres'])('should return the updated fields on PUT', done => {
+  it('should return the updated fields on PUT', done => {
     let obj = new Parse.Object('GameScore');
     obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
       var headers = {
