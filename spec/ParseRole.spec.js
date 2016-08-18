@@ -76,7 +76,7 @@ describe('Parse Role testing', () => {
     return role.save({}, { useMasterKey: true });
   };
 
-  it("should not recursively load the same role multiple times", (done) => {
+  it_exclude_dbs(['postgres'])("should not recursively load the same role multiple times", (done) => {
     var rootRole = "RootRole";
     var roleNames = ["FooRole", "BarRole", "BazRole"];
     var allRoles = [rootRole].concat(roleNames);

@@ -591,14 +591,19 @@ describe('Parse.Object testing', () => {
       var objectId = x1.id;
       var x2 = new Parse.Object('X', {objectId: objectId});
       x2.addUnique('stuff', 2);
-      x2.addUnique('stuff', 3);
-      expect(x2.get('stuff')).toEqual([2, 3]);
+      x2.addUnique('stuff', 4);
+      expect(x2.get('stuff')).toEqual([2, 4]);
       return x2.save();
     }).then(() => {
       var query = new Parse.Query('X');
       return query.get(x1.id);
     }).then((x3) => {
-      expect(x3.get('stuff')).toEqual([1, 2, 3]);
+      let stuff = x3.get('stuff');
+      let expected = [1, 2, 4];
+      expect(stuff.length).toBe(expected.length);
+      for (var i of stuff) {
+        expect(expected.indexOf(i) >= 0).toBe(true);
+      }
       done();
     }, (error) => {
       on_db('mongo', () => {
@@ -625,15 +630,21 @@ describe('Parse.Object testing', () => {
       var query = new Parse.Query('X');
       return query.get(x1.id);
     }).then((x3) => {
-      expect(x3.get('stuff')).toEqual([1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}]);
+      let stuff = x3.get('stuff');
+      let target = [1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}];
+      expect(stuff.length).toEqual(target.length);
+      let found = 0;
+      for (let thing in target) {
+        for (let st in stuff) {
+          if (st == thing) {
+            found++;
+          }
+        }
+      }
+      expect(found).toBe(target.length);
       done();
     }, (error) => {
-      on_db('mongo', () => {
-        jfail(error);
-      });
-      on_db('postgres', () => {
-        expect(error.message).toEqual("Postgres does not support AddUnique operator.");
-      });
+      jfail(error);
       done();
     });
   });
@@ -654,6 +665,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
+      console.error(error);
       on_db('mongo', () => {
         jfail(error);
       });

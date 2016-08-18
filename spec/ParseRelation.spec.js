@@ -331,6 +331,9 @@ describe('Parse.Relation testing', () => {
             done();
           });
         });
+    }).catch(err => {
+      jfail(err);
+      done();
     });
   });
 

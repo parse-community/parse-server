@@ -185,7 +185,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll number array queries", function(done) {
+  it("containsAll number array queries", function(done) {
     var NumberSet = Parse.Object.extend({ className: "NumberSet" });
 
     var objectsList = [];
@@ -211,7 +211,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll string array queries", function(done) {
+  it("containsAll string array queries", function(done) {
     var StringSet = Parse.Object.extend({ className: "StringSet" });
 
     var objectsList = [];
@@ -872,7 +872,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("order by descending number and string", function(done) {
+  it_exclude_dbs(['postgres'])("order by descending number and string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });

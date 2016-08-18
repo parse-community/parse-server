@@ -212,7 +212,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
     config.database.adapter.addFieldIfNotExists('_User', 'randomField', { type: 'String' })
     .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
@@ -233,6 +233,7 @@ describe('miscellaneous', function() {
       return user.signUp()
     })
     .catch(error => {
+      console.error(error);
       expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
       done();
     });
@@ -816,7 +817,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should return the updated fields on PUT', done => {
+  it('should return the updated fields on PUT', done => {
     let obj = new Parse.Object('GameScore');
     obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
       var headers = {

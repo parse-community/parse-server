@@ -187,7 +187,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('does send with a simple adapter', done => {
+  it('does send with a simple adapter', done => {
     var calls = 0;
     var emailAdapter = {
       sendMail: function(options){
@@ -675,7 +675,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should send a password reset link', done => {
+  it('should send a password reset link', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
@@ -740,7 +740,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should programatically reset password', done => {
+  it('should programatically reset password', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

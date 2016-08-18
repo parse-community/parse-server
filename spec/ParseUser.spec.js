@@ -137,7 +137,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])("user login with files", (done) => {
+  it("user login with files", (done) => {
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
@@ -1118,7 +1118,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('log in with provider with files', done => {
+  it('log in with provider with files', done => {
     let provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
@@ -1468,7 +1468,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers", (done) => {
+  it("link multiple providers", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1504,7 +1504,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+  it("link multiple providers and updates token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
@@ -1545,7 +1545,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and update token", (done) => {
+  it("link multiple providers and update token", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1820,7 +1820,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  xit("querying for users doesn't get session tokens", (done) => {
+  it("querying for users doesn't get session tokens", (done) => {
     Parse.Promise.as().then(function() {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
 
