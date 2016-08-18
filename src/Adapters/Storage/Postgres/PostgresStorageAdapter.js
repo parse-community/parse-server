@@ -353,9 +353,15 @@ export class PostgresStorageAdapter {
   createClass(className, schema) {
     return this.createTable(className, schema)
     .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
-    .then(() => { 
+    .then(() => {
       return toParseSchema(schema)
-    });
+    })
+    .catch((err) => {
+      if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
+      }
+      throw err;
+    })
   }
 
   // Just create a table, do not insert in schema
@@ -395,9 +401,7 @@ export class PostgresStorageAdapter {
     return this._ensureSchemaCollectionExists()
     .then(() => this._client.none(qs, values))
     .catch(error => {
-      if (error.code === PostgresUniqueIndexViolationError && error.detail.includes(className)) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
-      } else if (error.code === PostgresDuplicateRelationError) {
+      if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
       } else {
         throw error;
