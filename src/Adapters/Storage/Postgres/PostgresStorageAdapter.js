@@ -405,9 +405,7 @@ export class PostgresStorageAdapter {
     }).then(() => {
       // Create the relation tables
       return Promise.all(relations.map((fieldName) => {
-        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`}).catch(err => {
-          console.error('ERROR CREATING JOIN!')
-        })
+        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }));
     });
   }
