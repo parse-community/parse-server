@@ -733,8 +733,8 @@ export class PostgresStorageAdapter {
         values.push(fieldName, fieldValue.amount);
         index += 2;
       } else if (fieldValue.__op === 'Add') {
-        updatePatterns.push(`$${index}:name = COALESCE($${index}:name, '[]'::jsonb) || array_to_json($${index + 1})::jsonb`);
-        values.push(fieldName, fieldValue.objects);
+        updatePatterns.push(`$${index}:name = array_add(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
+        values.push(fieldName, JSON.stringify(fieldValue.objects));
         index += 2;
       } else if (fieldValue.__op === 'Delete') {
         updatePatterns.push(`$${index}:name = $${index + 1}`)
@@ -975,6 +975,9 @@ export class PostgresStorageAdapter {
         this._client.any(json_object_set_key).catch((err) => {
           console.error(err);
         }),
+        this._client.any(array_add).catch((err) => {
+          console.error(err);
+        }),
         this._client.any(array_add_unique).catch((err) => {
           console.error(err);
         }),
@@ -1011,6 +1014,18 @@ SELECT concat(\'{\', string_agg(to_json("key") || \':\' || "value", \',\'), \'}\
         SELECT "key_to_set", to_json("value_to_set")::jsonb) AS "fields"\
 $function$;'
 
+const array_add = `CREATE OR REPLACE FUNCTION "array_add"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT array_to_json(ARRAY(SELECT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT jsonb_array_elements("values")))))::jsonb;
+$function$;`;
+
 const array_add_unique = `CREATE OR REPLACE FUNCTION "array_add_unique"(
   "array"   jsonb,
   "values"  jsonb
@@ -1020,19 +1035,19 @@ const array_add_unique = `CREATE OR REPLACE FUNCTION "array_add_unique"(
   IMMUTABLE 
   STRICT 
 AS $function$ 
-  SELECT to_jsonb(ARRAY(SELECT DISTINCT jsonb_array_elements("values" || "array")))
+  SELECT array_to_json(ARRAY(SELECT DISTINCT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT DISTINCT jsonb_array_elements("values")))))::jsonb;
 $function$;`;
 
-const array_remove = `CREATE OR REPLACE FUNCTION "array_remove"(\
-  "array"   jsonb,\
-  "values"  jsonb\
-)\
-  RETURNS jsonb \
-  LANGUAGE sql \
-  IMMUTABLE \
-  STRICT \
-AS $function$ \
-  SELECT to_jsonb(ARRAY(SELECT * FROM jsonb_array_elements("array") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements("values")) AS sub))) \
+const array_remove = `CREATE OR REPLACE FUNCTION "array_remove"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS jsonb 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements("array") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements("values")) AS sub)))::jsonb;
 $function$;`;
 
 export default PostgresStorageAdapter;
