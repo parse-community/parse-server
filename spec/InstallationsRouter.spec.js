@@ -75,8 +75,7 @@ describe('InstallationsRouter', () => {
       expect(results.length).toEqual(1);
       done();
     }).catch((err) => {
-      console.error(err);
-      fail(JSON.stringify(err));
+      jfail(err);
       done();
     });
   });
