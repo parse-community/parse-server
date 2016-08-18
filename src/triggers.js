@@ -174,7 +174,7 @@ function logTriggerSuccess(triggerType, className, input, result) {
 }
 
 function logTriggerError(triggerType, className, input, error) {
-  logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\Error: ${JSON.stringify(error)}`, {
+  logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\nError: ${JSON.stringify(error)}`, {
     className,
     triggerType,
     input,

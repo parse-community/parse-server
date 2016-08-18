@@ -86,7 +86,7 @@ export class FunctionsRouter extends PromiseRouter {
           });
           resolve(result);
         }, (error) => {
-          logger.error(`Failed running cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\Error: ${JSON.stringify(error)}`, {
+          logger.error(`Failed running cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nError: ${JSON.stringify(error)}`, {
             functionName: req.params.functionName,
             params,
             error
