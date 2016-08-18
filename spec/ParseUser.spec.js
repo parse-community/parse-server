@@ -1820,7 +1820,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  xit("querying for users doesn't get session tokens", (done) => {
+  it("querying for users doesn't get session tokens", (done) => {
     Parse.Promise.as().then(function() {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
 
