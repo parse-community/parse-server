@@ -174,7 +174,7 @@ function logTriggerSuccess(triggerType, className, input, result) {
 }
 
 function logTriggerError(triggerType, className, input, error) {
-  logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\Error: ${JSON.stringify(error)}`, {
+  logger.error(`${triggerType} failed for ${className}\nInput: ${JSON.stringify(input)}\nError: ${JSON.stringify(error)}`, {
     className,
     triggerType,
     input,
@@ -187,7 +187,7 @@ function logTriggerError(triggerType, className, input, error) {
 // Will resolve successfully if no trigger is configured
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
-// originalParseObject is optional, we only need that for befote/afterSave functions
+// originalParseObject is optional, we only need that for before/afterSave functions
 export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
   if (!parseObject) {
     return Promise.resolve({});
