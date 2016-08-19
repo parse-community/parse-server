@@ -201,7 +201,7 @@ describe('rest create', () => {
         expect(r.get('username')).toEqual('hello');
         done();
       }).catch((err) => {
-        fail('should not fail')
+        jfail(err);
         done();
       })
   });
@@ -257,7 +257,10 @@ describe('rest create', () => {
         var output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
-      });
+      }).catch(err => {
+        jfail(err);
+        done();
+      })
   });
 
   it('stores pointers', done => {
@@ -376,6 +379,9 @@ describe('rest create', () => {
         expect(actual.getHours()).toEqual(expected.getHours());
         expect(actual.getMinutes()).toEqual(expected.getMinutes());
 
+        done();
+      }).catch(err => {
+        jfail(err);
         done();
       });
   });
