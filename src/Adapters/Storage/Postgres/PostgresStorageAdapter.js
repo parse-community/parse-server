@@ -154,16 +154,19 @@ const buildWhereClause = ({ schema, query, index }) => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
-    } else if (fieldName === '$or') {
+    } else if (fieldName === '$or' || fieldName === '$and') {
       let clauses = [];
       let clauseValues = [];
       fieldValue.forEach((subQuery, idx) =>  {
         let clause = buildWhereClause({ schema, query: subQuery, index });
-        clauses.push(clause.pattern);
-        clauseValues.push(...clause.values);
-        index += clause.values.length;
+        if (clause.pattern.length > 0) {
+          clauses.push(clause.pattern);
+          clauseValues.push(...clause.values);
+          index += clause.values.length;
+        }
       });
-      patterns.push(`(${clauses.join(' OR ')})`);
+      let orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
+      patterns.push(`(${clauses.join(orOrAnd)})`);
       values.push(...clauseValues);
     }
 
