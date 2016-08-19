@@ -233,7 +233,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll date array queries", function(done) {
+  it("containsAll date array queries", function(done) {
     var DateSet = Parse.Object.extend({ className: "DateSet" });
 
     function parseDate(iso8601) {
@@ -289,7 +289,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll object array queries", function(done) {
+  it("containsAll object array queries", function(done) {
 
     var MessageSet = Parse.Object.extend({ className: "MessageSet" });
 

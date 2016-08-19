@@ -231,23 +231,9 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (Array.isArray(fieldValue.$all) && schema.fields[fieldName].type === 'Array') {
-      let inPatterns = [];
-      let allowNull = false;
-      values.push(fieldName);
-      fieldValue.$all.forEach((listElem, listIndex) => {
-        if (listElem === null ) {
-          allowNull = true;
-        } else {
-          values.push(listElem);
-          inPatterns.push(`$${index + 1 + listIndex - (allowNull ? 1 : 0)}`);
-        }
-      });
-      if (allowNull) {
-        patterns.push(`($${index}:name IS NULL OR $${index}:name @> array_to_json(ARRAY[${inPatterns.join(',')}]))::jsonb`);
-      } else {
-        patterns.push(`$${index}:name @> json_build_array(${inPatterns.join(',')})::jsonb`);
-      }
-      index = index + 1 + inPatterns.length;
+      patterns.push(`array_contains_all($${index}:name, $${index+1}::jsonb)`);
+      values.push(fieldName, JSON.stringify(fieldValue.$all));
+      index+=2;
     }
 
     if (typeof fieldValue.$exists !== 'undefined') {
@@ -1050,6 +1036,18 @@ const array_remove = `CREATE OR REPLACE FUNCTION "array_remove"(
   STRICT 
 AS $function$ 
   SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements("array") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements("values")) AS sub)))::jsonb;
+$function$;`;
+
+const array_contains_all = `CREATE OR REPLACE FUNCTION "array_contains_all"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS boolean 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT RES.CNT = jsonb_array_length("values") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
 $function$;`;
 
 export default PostgresStorageAdapter;
