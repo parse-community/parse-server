@@ -749,7 +749,7 @@ export class PostgresStorageAdapter {
         // This recursively sets the json_object
         // Only 1 level deep
         let generate = (jsonb, key, value) => {
-          return `json_object_set_key(${jsonb}, ${key}, ${value})::jsonb`; 
+          return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`; 
         }
         let lastKey = `$${index}:name`;
         let fieldNameIndex = index;
@@ -758,7 +758,15 @@ export class PostgresStorageAdapter {
         let update = Object.keys(fieldValue).reduce((lastKey, key) => {
           let str = generate(lastKey, `$${index}::text`, `$${index+1}::jsonb`)
           index+=2;
-          values.push(key, fieldValue[key]);
+          let value = fieldValue[key];
+          if (value) {
+            if (value.__op === 'Delete') {
+              value = null;
+            } else {
+              value = JSON.stringify(value)
+            }
+          }
+          values.push(key, value);
           return str;
         }, lastKey);
         updatePatterns.push(`$${fieldNameIndex}:name = ${update}`);
