@@ -1494,9 +1494,10 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       done();
     });
   });
+});
 
-  // TODO: do we want that on PG as well?
-  it_exclude_dbs(['postgres'])('should have _acl when locking down (regression for #2465)', (done) =>  {
+describe_only_db('mongo')('legacy _acl', () => {
+  it('should have _acl when locking down (regression for #2465)', (done) =>  {
     let headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
