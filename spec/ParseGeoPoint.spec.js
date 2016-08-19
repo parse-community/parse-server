@@ -273,7 +273,7 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('works with geobox queries', (done) => {
+  it('works with geobox queries', (done) => {
     var inSF = new Parse.GeoPoint(37.75, -122.4);
     var southwestOfSF = new Parse.GeoPoint(37.708813, -122.526398);
     var northeastOfSF = new Parse.GeoPoint(37.822802, -122.373962);

@@ -252,8 +252,20 @@ const buildWhereClause = ({ schema, query, index }) => {
       let distanceInKM = distance*6371*1000;
       patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) <= $${index+3}`);
       sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) ASC`)
-      values.push(fieldName, point.latitude, point.longitude, distanceInKM);
+      values.push(fieldName, point.longitude, point.latitude, distanceInKM);
       index += 4;
+    }
+
+    if (fieldValue.$within && fieldValue.$within.$box) {
+      let box = fieldValue.$within.$box;
+      let left = box[0].longitude;
+      let bottom = box[0].latitude;
+      let right = box[1].longitude;
+      let top = box[1].latitude;
+
+      patterns.push(`$${index}:name::point <@ $${index+1}::box`);
+      values.push(fieldName, `((${left}, ${bottom}), (${right}, ${top}))`);
+      index += 2;
     }
 
     if (fieldValue.$regex) {
@@ -624,7 +636,7 @@ export class PostgresStorageAdapter {
     });
     let geoPointsInjects = Object.keys(geoPoints).map((key, idx) => {
       let value = geoPoints[key];
-      valuesArray.push(value.latitude, value.longitude);
+      valuesArray.push(value.longitude, value.latitude);
       let l = valuesArray.length + columnsArray.length;
       return `POINT($${l}, $${l+1})`;
     });
@@ -868,8 +880,8 @@ export class PostgresStorageAdapter {
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
           object[fieldName] = {
-            latitude: object[fieldName].x,
-            longitude: object[fieldName].y
+            latitude: object[fieldName].y,
+            longitude: object[fieldName].x
           }
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'File') {
