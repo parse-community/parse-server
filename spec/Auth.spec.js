@@ -77,7 +77,18 @@ describe('Auth', () => {
       auth.getUserRoles()
         .then((roles) => expect(roles).toEqual([]))
         .then(() => done());
-    })
+    });
+
+    it('should properly handle bcrypt upgrade', (done) => {
+      var bcryptOriginal = require('bcrypt-nodejs');
+      var bcryptNew = require('bcryptjs');
+      bcryptOriginal.hash('my1Long:password', null, null, function(err, res) {
+        bcryptNew.compare('my1Long:password', res, function(err, res) {
+          expect(res).toBeTruthy();
+          done();
+        })
+      });
+    });
 
   });
 });

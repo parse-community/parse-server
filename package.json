@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "babel-polyfill": "6.13.0",
-    "bcrypt-nodejs": "0.0.3",
+    "bcryptjs": "2.3.0",
     "body-parser": "1.15.2",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
@@ -53,6 +53,7 @@
     "babel-preset-es2015": "6.13.2",
     "babel-preset-stage-0": "6.5.0",
     "babel-register": "6.11.6",
+    "bcrypt-nodejs": "0.0.3",
     "cross-env": "2.0.0",
     "deep-diff": "0.3.4",
     "gaze": "1.1.1",
@@ -60,7 +61,7 @@
     "jasmine": "2.4.1",
     "mongodb-runner": "3.3.2",
     "nodemon": "1.10.0",
-    "request-promise": "^4.1.1"
+    "request-promise": "4.1.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
@@ -77,5 +78,8 @@
   },
   "bin": {
     "parse-server": "./bin/parse-server"
+  },
+  "optionalDependencies": {
+    "bcrypt": "0.8.7"
   }
 }
