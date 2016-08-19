@@ -4,7 +4,7 @@ import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
-const logStringTruncateLength = 1000;
+const LOG_STRING_TRUCATE_LENGTH = 1000;
 const truncationMarker = '... (truncated)';
 
 export const LogLevel = {
@@ -62,8 +62,8 @@ export class LoggerController extends AdaptableController {
   }
 
   truncateLogMessage(string) {
-    if (string && string.length > logStringTruncateLength) {
-      const truncated = string.substring(0, logStringTruncateLength) + truncationMarker;
+    if (string && string.length > LOG_STRING_TRUCATE_LENGTH) {
+      const truncated = string.substring(0, LOG_STRING_TRUCATE_LENGTH) + truncationMarker;
       return truncated;
     }
 

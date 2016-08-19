@@ -86,6 +86,7 @@ export class FunctionsRouter extends PromiseRouter {
             logger.info(`Ran cloud function ${req.params.functionName} for user ${userString} `
               + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
               functionName: req.params.functionName,
+              params,
               user: userString,
             });
             resolve(result);
@@ -99,6 +100,7 @@ export class FunctionsRouter extends PromiseRouter {
               + JSON.stringify(error), {
               functionName: req.params.functionName,
               error,
+              params,
               user: userString
             });
             reject(error);

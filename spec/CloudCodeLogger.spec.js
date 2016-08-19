@@ -42,6 +42,7 @@ describe("Cloud Code Logger", () => {
             let errorMessage = lastLogs[1];
             let infoMessage = lastLogs[2];
             expect(cloudFunctionMessage.level).toBe('info');
+            expect(cloudFunctionMessage.params).toEqual({});
             expect(cloudFunctionMessage.message).toMatch(/Ran cloud function loggerTest for user [^ ]* with:\n  Input: {}\n  Result: {}/);
             expect(cloudFunctionMessage.functionName).toEqual('loggerTest');
             expect(errorMessage.level).toBe('error');
