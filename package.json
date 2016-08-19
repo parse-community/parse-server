@@ -34,7 +34,7 @@
     "parse": "1.9.1",
     "parse-server-fs-adapter": "1.0.1",
     "parse-server-push-adapter": "1.0.4",
-    "parse-server-s3-adapter": "1.0.4",
+    "parse-server-s3-adapter": "1.0.5",
     "parse-server-simple-mailgun-adapter": "1.0.0",
     "pg-promise": "5.3.1",
     "redis": "2.6.2",
