@@ -2488,8 +2488,7 @@ describe('Parse.Query testing', () => {
     })
   })
 
-  // TODO: tricky with PG with non existant columns
-  it_exclude_dbs(['postgres'])('query with two OR subqueries (regression test #1259)', done => {
+  it('query with two OR subqueries (regression test #1259)', done => {
     let relatedObject = new Parse.Object('Class2');
     relatedObject.save().then(relatedObject => {
       let anObject = new Parse.Object('Class1');

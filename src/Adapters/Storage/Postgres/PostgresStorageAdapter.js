@@ -135,6 +135,15 @@ const buildWhereClause = ({ schema, query, index }) => {
           && schema.fields[fieldName].type === 'Array';
     let initialPatternsLength = patterns.length;
     let fieldValue = query[fieldName];
+
+    // nothingin the schema, it's gonna blow up
+    if (!schema.fields[fieldName]) {
+      // as it won't exist
+      if (fieldValue.$exists === false) {
+        continue;
+      }
+    } 
+
     if (fieldName.indexOf('.') >= 0) {
       let components = fieldName.split('.').map((cmpt, index) => {
         if (index == 0) {
