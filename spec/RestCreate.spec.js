@@ -11,6 +11,11 @@ var config = new Config('test');
 let database = config.database;
 
 describe('rest create', () => {
+  
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
   it('handles _id', done => {
     rest.create(config, auth.nobody(config), 'Foo', {})
     .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
