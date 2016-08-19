@@ -110,6 +110,31 @@ const toPostgresSchema = (schema) => {
   return schema;
 }
 
+const handleDotFields = (object) => {
+  Object.keys(object).forEach(fieldName => {
+    if (fieldName.indexOf('.') > -1) {
+      let components = fieldName.split('.');
+      let first = components.shift();
+      object[first] = object[first] || {};
+      let currentObj = object[first];
+      let next;
+      let value = object[fieldName];
+      if (value && value.__op === 'Delete') {
+        value = undefined;
+      }
+      while(next = components.shift()) {
+        currentObj[next] = currentObj[next] || {};
+        if (components.length === 0) {
+          currentObj[next] = value;
+        }
+        currentObj = currentObj[next];
+      }
+      delete object[fieldName];
+    }
+  });
+  return object;
+}
+
 // Returns the list of join tables on a schema
 const joinTablesForSchema = (schema) => {
   let list = [];
@@ -601,6 +626,9 @@ export class PostgresStorageAdapter {
     let valuesArray = [];
     schema = toPostgresSchema(schema);
     let geoPoints = {};
+
+    object = handleDotFields(object);
+
     Object.keys(object).forEach(fieldName => {
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
@@ -738,6 +766,8 @@ export class PostgresStorageAdapter {
     let values = [className]
     let index = 2;
     schema = toPostgresSchema(schema);
+
+    update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
     for (let fieldName in update) {
@@ -864,10 +894,11 @@ export class PostgresStorageAdapter {
   // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
     debug('upsertOneObject', {className, query, update});
-    return this.createObject(className, schema, update).catch((err) => {
+    let createValue = Object.assign({}, query, update);
+    return this.createObject(className, schema, createValue).catch((err) => {
       // ignore duplicate value errors as it's upsert
       if (err.code == Parse.Error.DUPLICATE_VALUE) {
-        return;
+        return this.findOneAndUpdate(className, schema, query, update);
       }
       throw err;
     });
@@ -1019,8 +1050,7 @@ export class PostgresStorageAdapter {
         throw err;
       });
     });
-    return Promise.all(promises).then(() => {
-      return Promise.all([
+    promises = promises.concat([
         this._client.any(json_object_set_key).catch((err) => {
           console.error(err);
         }),
@@ -1040,7 +1070,7 @@ export class PostgresStorageAdapter {
           console.error(err);
         })
       ]);
-    }).then(() => {
+    return Promise.all(promises).then(() => {
       debug(`initialzationDone in ${new Date().getTime() - now}`);
     })
   }

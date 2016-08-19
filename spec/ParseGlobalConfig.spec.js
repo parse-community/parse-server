@@ -9,13 +9,16 @@ describe('a GlobalConfig', () => {
     let config = new Config('test');
     config.database.adapter.upsertOneObject(
       '_GlobalConfig',
-      { fields: {} },
+      { fields: { objectId: { type: 'Number' }, params: {type: 'Object'}} },
       { objectId: 1 },
       { params: { companies: ['US', 'DK'] } }
-    ).then(done, done);
+    ).then(done, (err) => {
+      jfail(err);
+      done();
+    });
   });
 
-  it_exclude_dbs(['postgres'])('can be retrieved', (done) => {
+  it('can be retrieved', (done) => {
     request.get({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -32,7 +35,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can be updated when a master key exists', (done) => {
+  it('can be updated when a master key exists', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -48,7 +51,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('properly handles delete op', (done) => {
+  it('properly handles delete op', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -79,7 +82,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fail to update if master key is missing', (done) => {
+  it('fail to update if master key is missing', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
       json   : true,
@@ -95,7 +98,7 @@ describe('a GlobalConfig', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('failed getting config when it is missing', (done) => {
+  it('failed getting config when it is missing', (done) => {
     let config = new Config('test');
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',
