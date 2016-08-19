@@ -724,16 +724,15 @@ export class PostgresStorageAdapter {
       }
     });
   }
+  // Return value not currently well specified.
+  findOneAndUpdate(className, schema, query, update) {
+    debug('findOneAndUpdate', className, query, update);
+    return this.updateObjectsByQuery(className, schema, query, update).then((val) => val[0]);
+  }
 
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
     debug('updateObjectsByQuery', className, query, update);
-    return this.findOneAndUpdate(className, schema, query, update);
-  }
-
-  // Return value not currently well specified.
-  findOneAndUpdate(className, schema, query, update) {
-    debug('findOneAndUpdate', className, query, update);
     let conditionPatterns = [];
     let updatePatterns = [];
     let values = [className]
@@ -859,8 +858,7 @@ export class PostgresStorageAdapter {
 
     let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     debug('update: ', qs, values);
-    return this._client.any(qs, values) 
-    .then(val => val[0]); // TODO: This is unsafe, verification is needed, or a different query method;
+    return this._client.any(qs, values); // TODO: This is unsafe, verification is needed, or a different query method;
   }
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
