@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "babel-polyfill": "6.13.0",
-    "bcryptjs": "^2.3.0",
+    "bcryptjs": "2.3.0",
     "body-parser": "1.15.2",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
@@ -61,7 +61,7 @@
     "jasmine": "2.4.1",
     "mongodb-runner": "3.3.2",
     "nodemon": "1.10.0",
-    "request-promise": "^4.1.1"
+    "request-promise": "4.1.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
