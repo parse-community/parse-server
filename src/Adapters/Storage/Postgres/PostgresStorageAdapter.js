@@ -130,6 +130,9 @@ const buildWhereClause = ({ schema, query, index }) => {
 
   schema = toPostgresSchema(schema);
   for (let fieldName in query) {
+    let isArrayField = schema.fields 
+          && schema.fields[fieldName] 
+          && schema.fields[fieldName].type === 'Array';
     let initialPatternsLength = patterns.length;
     let fieldValue = query[fieldName];
     if (fieldName.indexOf('.') >= 0) {
@@ -171,11 +174,16 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldValue.$ne) {
-      if (fieldValue.$ne === null) {
-        patterns.push(`$${index}:name <> $${index + 1}`);
+      if (isArrayField) {
+        fieldValue.$ne = JSON.stringify([fieldValue.$ne]);
+        patterns.push(`NOT array_contains($${index}:name, $${index + 1})`);
       } else {
-        // if not null, we need to manually exclude null
-        patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
+        if (fieldValue.$ne === null) {
+          patterns.push(`$${index}:name <> $${index + 1}`);
+        } else {
+          // if not null, we need to manually exclude null
+          patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
+        }
       }
 
       // TODO: support arrays
@@ -189,7 +197,10 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
-    if (Array.isArray(fieldValue.$in) && schema.fields[fieldName].type === 'Array') {
+    if (Array.isArray(fieldValue.$in) &&
+        isArrayField &&
+        schema.fields[fieldName].contents && 
+        schema.fields[fieldName].contents.type === 'String') {
       let inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
@@ -210,15 +221,21 @@ const buildWhereClause = ({ schema, query, index }) => {
     } else if (isInOrNin) {
       var createConstraint = (baseArray, notIn) => {
         if (baseArray.length > 0) {
-          let inPatterns = [];
-          values.push(fieldName);
-          baseArray.forEach((listElem, listIndex) => {
-            values.push(listElem);
-            inPatterns.push(`$${index + 1 + listIndex}`);
-          });
-          let not = notIn ? 'NOT' : '';
-          patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
-          index = index + 1 + inPatterns.length;
+          let not = notIn ? ' NOT ' : '';
+          if (isArrayField) {
+            patterns.push(`${not} array_contains($${index}:name, $${index+1})`);
+            values.push(fieldName, JSON.stringify(baseArray));
+            index += 2;
+          } else {
+            let inPatterns = [];
+            values.push(fieldName);
+            baseArray.forEach((listElem, listIndex) => {
+              values.push(listElem);
+              inPatterns.push(`$${index + 1 + listIndex}`);
+            });
+            patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
+            index = index + 1 + inPatterns.length;
+          }
         } else if (!notIn) {
           values.push(fieldName);
           patterns.push(`$${index}:name IS NULL`);
@@ -233,7 +250,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       }
     }
 
-    if (Array.isArray(fieldValue.$all) && schema.fields[fieldName].type === 'Array') {
+    if (Array.isArray(fieldValue.$all) && isArrayField) {
       patterns.push(`array_contains_all($${index}:name, $${index+1}::jsonb)`);
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index+=2;
@@ -286,9 +303,15 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldValue.__type === 'Pointer') {
-      patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue.objectId);
-      index += 2;
+      if (isArrayField) {
+        patterns.push(`array_contains($${index}:name, $${index + 1})`);
+        values.push(fieldName, JSON.stringify([fieldValue]));
+        index += 2;
+      } else {
+        patterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.objectId);
+        index += 2;
+      }
     }
 
     if (fieldValue.__type === 'Date') {
@@ -986,6 +1009,12 @@ export class PostgresStorageAdapter {
         }),
         this._client.any(array_remove).catch((err) => {
           console.error(err);
+        }),
+        this._client.any(array_contains_all).catch((err) => {
+          console.error(err);
+        }),
+        this._client.any(array_contains).catch((err) => {
+          console.error(err);
         })
       ]);
     }).then(() => {
@@ -1063,6 +1092,18 @@ const array_contains_all = `CREATE OR REPLACE FUNCTION "array_contains_all"(
   STRICT 
 AS $function$ 
   SELECT RES.CNT = jsonb_array_length("values") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
+$function$;`;
+
+const array_contains = `CREATE OR REPLACE FUNCTION "array_contains"(
+  "array"   jsonb,
+  "values"  jsonb
+)
+  RETURNS boolean 
+  LANGUAGE sql 
+  IMMUTABLE 
+  STRICT 
+AS $function$ 
+  SELECT RES.CNT >= 1 FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
 $function$;`;
 
 export default PostgresStorageAdapter;
