@@ -4,6 +4,8 @@ import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
+const logStringTruncateLength = 1000;
+const truncationMarker = '... (truncated)';
 
 export const LogLevel = {
   INFO: 'info',
@@ -16,7 +18,7 @@ export const LogOrder = {
 }
 
 export class LoggerController extends AdaptableController {
-  
+
   log(level, args) {
     args = [].concat(level, [...args]);
     this.adapter.log.apply(this.adapter, args);
@@ -25,7 +27,7 @@ export class LoggerController extends AdaptableController {
   info() {
     return this.log('info', arguments);
   }
-  
+
   error() {
     return this.log('error', arguments);
   }
@@ -57,6 +59,15 @@ export class LoggerController extends AdaptableController {
     }
 
     return null;
+  }
+
+  truncateLogMessage(string) {
+    if (string && string.length > logStringTruncateLength) {
+      const truncated = string.substring(0, logStringTruncateLength) + truncationMarker;
+      return truncated;
+    }
+
+    return string;
   }
 
   static parseOptions(options = {}) {

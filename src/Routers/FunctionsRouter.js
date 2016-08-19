@@ -78,20 +78,33 @@ export class FunctionsRouter extends PromiseRouter {
       }
 
       return new Promise(function (resolve, reject) {
-        var response = FunctionsRouter.createResponseObject((result) => {
-          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nResult: ${JSON.stringify(result.response.result)}`, {
-            functionName: req.params.functionName,
-            params,
-            result: result.response.result
-          });
-          resolve(result);
-        }, (error) => {
-          logger.error(`Failed running cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\Error: ${JSON.stringify(error)}`, {
-            functionName: req.params.functionName,
-            params,
-            error
-          });
-          reject(error);
+        const userString = (req.auth && req.auth.user) ? req.auth.user.id : undefined;
+        const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+        var response = FunctionsRouter.createResponseObject((result) => {
+          try {
+            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
+            logger.info(`Ran cloud function ${req.params.functionName} for user ${userString} `
+              + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
+              functionName: req.params.functionName,
+              user: userString,
+            });
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        }, (error) => {
+          try {
+            logger.error(`Failed running cloud function ${req.params.functionName} for `
+              + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
+              + JSON.stringify(error), {
+              functionName: req.params.functionName,
+              error,
+              user: userString
+            });
+            reject(error);
+          } catch (e) {
+            reject(e);
+          }
         });
         // Force the keys before the function calls.
         Parse.applicationId = req.config.applicationId;
