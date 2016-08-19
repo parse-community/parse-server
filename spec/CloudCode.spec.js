@@ -59,6 +59,21 @@ describe('Cloud Code', () => {
     })
   });
 
+  it('returns an error', (done) => {
+    Parse.Cloud.define('cloudCodeWithError', (req, res) => {
+      foo.bar();
+      res.success('I better throw an error.');
+    });
+
+    Parse.Cloud.run('cloudCodeWithError')
+      .then(
+        a => done.fail('should not succeed'),
+        e => {
+          expect(e).toEqual(new Parse.Error(1, undefined));
+          done();
+        });
+  });
+
   it('beforeSave rejection with custom error code', function(done) {
     Parse.Cloud.beforeSave('BeforeSaveFailWithErrorCode', function (req, res) {
       res.error(999, 'Nope');
