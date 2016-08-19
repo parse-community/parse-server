@@ -1359,7 +1359,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('validate CLP 3', done => {
+  it('validate CLP 3', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
