@@ -2066,7 +2066,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('get session only for current user', (done) => {
+  it('get session only for current user', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
@@ -2094,7 +2094,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('delete session by object', (done) => {
+  it('delete session by object', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
