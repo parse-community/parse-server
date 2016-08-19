@@ -7,10 +7,16 @@ let Config = require('../src/Config');
 describe('a GlobalConfig', () => {
   beforeEach(done => {
     let config = new Config('test');
+    let query = on_db('mongo', () => {
+      // Legacy is with an int...
+      return { objectId: 1 };
+    }, () => {
+      return { objectId: "1" }
+    })
     config.database.adapter.upsertOneObject(
       '_GlobalConfig',
       { fields: { objectId: { type: 'Number' }, params: {type: 'Object'}} },
-      { objectId: 1 },
+      query,
       { params: { companies: ['US', 'DK'] } }
     ).then(done, (err) => {
       jfail(err);
@@ -103,7 +109,7 @@ describe('a GlobalConfig', () => {
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',
       { fields: { params: { __type: 'String' } } },
-      { objectId: 1 }
+      { objectId: "1" }
     ).then(() => {
       request.get({
         url    : 'http://localhost:8378/1/config',

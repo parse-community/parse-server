@@ -94,7 +94,7 @@ const defaultColumns = Object.freeze({
     "url":          {type:'String'}
   },
   _GlobalConfig: {
-    "objectId": {type: 'Number'},
+    "objectId": {type: 'String'},
     "params": {type: 'Object'}
   }
 });

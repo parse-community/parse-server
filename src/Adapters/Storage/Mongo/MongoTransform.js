@@ -26,6 +26,12 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   switch(key) {
   case 'objectId':
   case '_id':
+    if (className === '_GlobalConfig') {
+      return {
+        key: key,
+        value: parseInt(restValue)
+      }
+    }
     key = '_id';
     break;
   case 'createdAt':
@@ -143,7 +149,12 @@ function transformQueryKeyValue(className, key, value, schema) {
       return {key: '_email_verify_token_expires_at', value: valueAsDate(value)}
     }
     break;
-  case 'objectId': return {key: '_id', value}
+  case 'objectId': {
+    if (className === '_GlobalConfig') {
+      value = parseInt(value);
+    }
+    return {key: '_id', value}
+  }
   case 'sessionToken': return {key: '_session_token', value}
   case '_rperm':
   case '_wperm':
