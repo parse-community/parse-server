@@ -608,7 +608,11 @@ export class PostgresStorageAdapter {
           valuesArray.push(object[fieldName]);
         }
         if (fieldName == '_email_verify_token_expires_at') {
-          valuesArray.push(object[fieldName].iso);
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
         }
         if (fieldName == '_perishable_token') {
           valuesArray.push(object[fieldName].iso);
@@ -617,7 +621,11 @@ export class PostgresStorageAdapter {
       }
       switch (schema.fields[fieldName].type) {
         case 'Date':
-          valuesArray.push(object[fieldName].iso);
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
           break;
         case 'Pointer':
           valuesArray.push(object[fieldName].objectId);
