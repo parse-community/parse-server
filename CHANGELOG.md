@@ -1,5 +1,19 @@
 ## Parse Server Changelog
 
+### 2.2.18
+
+* Fix: Improve support for objects in push alert, thanks to [Antoine Lenoir](https://github.com/alenoir)
+* Fix; Prevent pointed from getting clobbered when they are changed in a beforeSave, thanks to [sud](https://github.com/sud80)
+* Fix: Improve support for "Bytes" type, thanks to [CongHoang](https://github.com/conghoang)
+* Fix: Better logging compatability with Parse.com, thanks to [Arthur Cinader](https://github.com/acinader)
+* New: Add Janrain Capture and Janrain Engage auth provider, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improved: Include content length header in files response, thanks to [Steven Van Bael](https://github.com/vbsteven)
+* Improved: Support byte range header for files, thanks to [Brage G. Staven](https://github.com/Bragegs)
+* Improved: Validations for LinkedIn access_tokens, thanks to [Felix Dumit](https://github.com/felix-dumit)
+* Improved: Experimental postgres support, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Perf: Use native bcrypt implementation if available, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+
 ### [2.2.17](https://github.com/ParsePlatform/parse-server/tree/2.2.17) (07/23/2016)
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.16...2.2.17)
 
