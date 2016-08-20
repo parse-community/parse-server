@@ -113,7 +113,7 @@ describe('miscellaneous', function() {
     .catch(done);
   });
 
-  it_exclude_dbs(['postgres'])('ensure that email is uniquely indexed', done => {
+  it('ensure that email is uniquely indexed', done => {
     let numFailed = 0;
     let numCreated = 0;
     let user1 = new Parse.User();
@@ -212,7 +212,7 @@ describe('miscellaneous', function() {
     });
   });
 
-it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
     config.database.adapter.addFieldIfNotExists('_User', 'randomField', { type: 'String' })
     .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
@@ -233,7 +233,6 @@ it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a un
       return user.signUp()
     })
     .catch(error => {
-      console.error(error);
       expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
       done();
     });
@@ -1363,7 +1362,7 @@ it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a un
     });
   });
 
-  it_exclude_dbs(['postgres'])('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
+  it('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
     let file = new Parse.File('myfile.txt', { base64: 'eAo=' });
     file.save()
     .then(f => {
@@ -1495,8 +1494,10 @@ it_exclude_dbs(['postgres'])('ensure that if you try to sign up a user with a un
       done();
     });
   });
+});
 
-  it_exclude_dbs(['postgres'])('should have _acl when locking down (regression for #2465)', (done) =>  {
+describe_only_db('mongo')('legacy _acl', () => {
+  it('should have _acl when locking down (regression for #2465)', (done) =>  {
     let headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'

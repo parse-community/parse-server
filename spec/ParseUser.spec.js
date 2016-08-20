@@ -1273,7 +1273,7 @@ describe('Parse.User testing', () => {
 
   // What this means is, only one Parse User can be linked to a
   // particular Facebook account.
-  it_exclude_dbs(['postgres'])("link with provider for already linked user", (done) => {
+  it("link with provider for already linked user", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     var user = new Parse.User();
@@ -1295,7 +1295,10 @@ describe('Parse.User testing', () => {
             user2.signUp(null, {
               success: function(model) {
                 user2._linkWith('facebook', {
-                  success: fail,
+                  success: (err) => {
+                    jfail(err);
+                    done();
+                  },
                   error: function(model, error) {
                     expect(error.code).toEqual(
                       Parse.Error.ACCOUNT_ALREADY_LINKED);
@@ -2066,7 +2069,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('get session only for current user', (done) => {
+  it('get session only for current user', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
@@ -2094,7 +2097,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('delete session by object', (done) => {
+  it('delete session by object', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {

@@ -11,6 +11,11 @@ var config = new Config('test');
 let database = config.database;
 
 describe('rest create', () => {
+  
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
   it('handles _id', done => {
     rest.create(config, auth.nobody(config), 'Foo', {})
     .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
@@ -167,7 +172,7 @@ describe('rest create', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('handles anonymous user signup and upgrade to new user', (done) => {
+  it('handles anonymous user signup and upgrade to new user', (done) => {
     var data1 = {
       authData: {
         anonymous: {
@@ -201,7 +206,7 @@ describe('rest create', () => {
         expect(r.get('username')).toEqual('hello');
         done();
       }).catch((err) => {
-        fail('should not fail')
+        jfail(err);
         done();
       })
   });
@@ -227,7 +232,7 @@ describe('rest create', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('test facebook signup and login', (done) => {
+  it('test facebook signup and login', (done) => {
     var data = {
       authData: {
         facebook: {
@@ -257,16 +262,19 @@ describe('rest create', () => {
         var output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
-      });
+      }).catch(err => {
+        jfail(err);
+        done();
+      })
   });
 
-  it_exclude_dbs(['postgres'])('stores pointers', done => {
+  it('stores pointers', done => {
     let obj = {
       foo: 'bar',
       aPointer: {
         __type: 'Pointer',
         className: 'JustThePointer',
-        objectId: 'qwerty'
+        objectId: 'qwerty1234' // make it 10 chars to match PG storage
       }
     };
     rest.create(config, auth.nobody(config), 'APointerDarkly', obj)
@@ -283,7 +291,7 @@ describe('rest create', () => {
       expect(output.aPointer).toEqual({
         __type: 'Pointer',
         className: 'JustThePointer',
-        objectId: 'qwerty'
+        objectId: 'qwerty1234'
       });
       done();
     });
@@ -344,7 +352,7 @@ describe('rest create', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])("test specified session length", (done) => {
+  it("test specified session length", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
@@ -377,10 +385,13 @@ describe('rest create', () => {
         expect(actual.getMinutes()).toEqual(expected.getMinutes());
 
         done();
+      }).catch(err => {
+        jfail(err);
+        done();
       });
   });
 
-  it_exclude_dbs(['postgres'])("can create a session with no expiration", (done) => {
+  it("can create a session with no expiration", (done) => {
     var user = {
       username: 'asdf',
       password: 'zxcv',
@@ -404,6 +415,10 @@ describe('rest create', () => {
         expect(session.expiresAt).toBeUndefined();
 
         done();
-      });
+      }).catch(err => {
+        console.error(err);
+        fail(err);
+        done();
+      })
   });
 });

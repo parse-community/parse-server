@@ -665,13 +665,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
-      console.error(error);
-      on_db('mongo', () => {
-        jfail(error);
-      });
-      on_db('postgres', () => {
-        expect(error.message).toEqual("Postgres does not support Remove operator.");
-      });
+      jfail(error);
       done();
     });
   });

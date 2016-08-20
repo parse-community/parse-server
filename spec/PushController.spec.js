@@ -357,7 +357,7 @@ describe('PushController', () => {
    })
   });
 
-  it_exclude_dbs(['postgres'])('should support full RESTQuery for increment', (done) => {
+  it('should support full RESTQuery for increment', (done) => {
     var payload = {data: {
      alert: "Hello World!",
      badge: 'Increment',
@@ -392,7 +392,7 @@ describe('PushController', () => {
    pushController.sendPush(payload, where, config, auth).then((result) => {
       done();
     }).catch((err) => {
-      fail('should not fail');
+      jfail(err);
       done();
     });
   });

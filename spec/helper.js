@@ -10,7 +10,7 @@ global.on_db = (db, callback, elseCallback) => {
     return callback();
   }
   if (elseCallback) {
-    elseCallback();
+    return elseCallback();
   }
 }
 

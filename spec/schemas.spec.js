@@ -1286,10 +1286,8 @@ describe('schemas', () => {
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, () => {
-      fail("should not fail!");
-      done();
     }).catch( (err) => {
+      jfail(err);
       done();
     })
   });
@@ -1351,15 +1349,13 @@ describe('schemas', () => {
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
-      done();
     }).catch( (err) => {
+      jfail(err);
       done();
     })
   });
 
-  it_exclude_dbs(['postgres'])('validate CLP 3', done => {
+  it('validate CLP 3', done => {
     let user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
@@ -1411,8 +1407,8 @@ describe('schemas', () => {
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
@@ -1477,10 +1473,8 @@ describe('schemas', () => {
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
-      done();
     }).catch( (err) => {
+      jfail(err);
       done();
     })
   });

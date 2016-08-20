@@ -9,7 +9,7 @@ describe('Pointer Permissions', () => {
     new Config(Parse.applicationId).database.schemaCache.clear();
   });
 
-  it_exclude_dbs(['postgres'])('should work with find', (done) => {
+  it('should work with find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -48,7 +48,7 @@ describe('Pointer Permissions', () => {
   });
 
 
-  it_exclude_dbs(['postgres'])('should work with write', (done) => {
+  it('should work with write', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -113,7 +113,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should let a proper user find', (done) => {
+  it('should let a proper user find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -199,7 +199,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should handle multiple writeUserFields', done => {
+  it('should handle multiple writeUserFields', done => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -281,7 +281,7 @@ describe('Pointer Permissions', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -328,7 +328,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -373,7 +373,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -418,7 +418,7 @@ describe('Pointer Permissions', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
     /*
       tests:
       CLP: find/get open ({})

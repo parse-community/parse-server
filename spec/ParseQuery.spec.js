@@ -233,7 +233,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll date array queries", function(done) {
+  it("containsAll date array queries", function(done) {
     var DateSet = Parse.Object.extend({ className: "DateSet" });
 
     function parseDate(iso8601) {
@@ -289,7 +289,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("containsAll object array queries", function(done) {
+  it("containsAll object array queries", function(done) {
 
     var MessageSet = Parse.Object.extend({ className: "MessageSet" });
 
@@ -872,7 +872,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("order by descending number and string", function(done) {
+  it("order by descending number and string", function(done) {
     var strings = ["a", "b", "c", "d"];
     var makeBoxedNumber = function(num, i) {
       return new BoxedNumber({ number: num, string: strings[i] });
@@ -1579,7 +1579,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('properly includes array of mixed objects', (done) => {
+  it('properly includes array of mixed objects', (done) => {
     let objects = [];
     let total = 0;
     while(objects.length != 5) {
@@ -2270,7 +2270,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('notEqual with array of pointers', (done) => {
+  it('notEqual with array of pointers', (done) => {
     var children = [];
     var parents = [];
     var promises = [];
@@ -2364,7 +2364,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('query match on array with single object', (done) => {
+  it('query match on array with single object', (done) => {
     var target = {__type: 'Pointer', className: 'TestObject', objectId: 'abc123'};
     var obj = new Parse.Object('TestObject');
     obj.set('someObjs', [target]);
@@ -2380,7 +2380,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('query match on array with multiple objects', (done) => {
+  it('query match on array with multiple objects', (done) => {
     var target1 = {__type: 'Pointer', className: 'TestObject', objectId: 'abc'};
     var target2 = {__type: 'Pointer', className: 'TestObject', objectId: '123'};
     var obj= new Parse.Object('TestObject');
@@ -2449,7 +2449,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should find objects with array of pointers', (done) => {
+  it('should find objects with array of pointers', (done) => {
     var objects = [];
     while(objects.length != 5) {
       var object = new Parse.Object('ContainedObject');
@@ -2488,7 +2488,7 @@ describe('Parse.Query testing', () => {
     })
   })
 
-  it_exclude_dbs(['postgres'])('query with two OR subqueries (regression test #1259)', done => {
+  it('query with two OR subqueries (regression test #1259)', done => {
     let relatedObject = new Parse.Object('Class2');
     relatedObject.save().then(relatedObject => {
       let anObject = new Parse.Object('Class1');

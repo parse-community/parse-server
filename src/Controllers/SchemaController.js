@@ -92,6 +92,10 @@ const defaultColumns = Object.freeze({
     "className":    {type:'String'},
     "triggerName":  {type:'String'},
     "url":          {type:'String'}
+  },
+  _GlobalConfig: {
+    "objectId": {type: 'String'},
+    "params": {type: 'Object'}
   }
 });
 
@@ -265,12 +269,13 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
 });
 
 const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
+const _GlobalConfigSchema = { className: "_GlobalConfig", fields: defaultColumns._GlobalConfig }
 const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
     className: "_PushStatus",
     fields: {},
     classLevelPermissions: {}
 }));
-const VolatileClassesSchemas = [_HooksSchema, _PushStatusSchema];
+const VolatileClassesSchemas = [_HooksSchema, _PushStatusSchema, _GlobalConfigSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;
