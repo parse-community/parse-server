@@ -13,6 +13,7 @@ export const Types = {
 const baseStore = function() {
   let Validators = {};
   let Functions = {};
+  let Jobs = {};
   let Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -20,6 +21,7 @@ const baseStore = function() {
 
   return Object.freeze({
     Functions,
+    Jobs,
     Validators,
     Triggers
   });
@@ -34,6 +36,12 @@ export function addFunction(functionName, handler, validationHandler, applicatio
   _triggerStore[applicationId].Validators[functionName] = validationHandler;
 }
 
+export function addJob(jobName, handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].Jobs[jobName] = handler;
+}
+
 export function addTrigger(type, className, handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
@@ -43,6 +51,11 @@ export function addTrigger(type, className, handler, applicationId) {
 export function removeFunction(functionName, applicationId) {
    applicationId = applicationId || Parse.applicationId;
    delete _triggerStore[applicationId].Functions[functionName]
+}
+
+export function removeJob(jobName, applicationId) {
+   applicationId = applicationId || Parse.applicationId;
+   delete _triggerStore[applicationId].Jobs[jobName]
 }
 
 export function removeTrigger(type, className, applicationId) {
@@ -85,6 +98,14 @@ export function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
+  };
+  return undefined;
+}
+
+export function getJob(jobName, applicationId) {
+  var manager = _triggerStore[applicationId];
+  if (manager && manager.Jobs) {
+    return manager.Jobs[jobName];
   };
   return undefined;
 }

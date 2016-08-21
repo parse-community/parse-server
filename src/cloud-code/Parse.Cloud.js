@@ -21,6 +21,10 @@ ParseCloud.define = function(functionName, handler, validationHandler) {
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
 };
 
+ParseCloud.job = function(functionName, handler) {
+  triggers.addJob(functionName, handler, Parse.applicationId);
+};
+
 ParseCloud.beforeSave = function(parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(triggers.Types.beforeSave, className, handler, Parse.applicationId);

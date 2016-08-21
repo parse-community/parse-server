@@ -3,6 +3,7 @@ const Parse = require("parse/node");
 const request = require('request');
 const rp = require('request-promise');
 const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
+const triggers = require('../src/triggers');
 
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
@@ -1004,5 +1005,76 @@ it('beforeSave should not affect fetched pointers', done => {
       jfail(err);
       done();
     })
+  });
+
+  describe('cloud jobs', () => {
+    it('should define a job', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
+          res.success();
+        });
+      }).not.toThrow();
+      
+      rp.post({
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      }).then((result) => {
+        done();
+      }, (err) =>  {
+        fail(err);
+        done();
+      });
+    });
+
+    it('should not run without master key', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
+          res.success();
+        });
+      }).not.toThrow();
+      
+      rp.post({
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }).then((result) => {
+        fail('Expected to be unauthorized');
+        done();
+      }, (err) =>  {
+        expect(err.statusCode).toBe(403);
+        done();
+      });
+    });
+
+    it('should not run without master key', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
+          expect(req.functionName).toBeUndefined();
+          expect(req.jobName).toBe('myJob');
+          expect(typeof res.success).toBe('function');
+          expect(typeof res.error).toBe('function');
+          expect(typeof res.message).toBe('function');
+          res.success();
+        });
+      }).not.toThrow();
+      
+      rp.post({
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      }).then((result) => {
+        done();
+      }, (err) =>  {
+        fail(err);
+        done();
+      });
+    });
   });
 });
