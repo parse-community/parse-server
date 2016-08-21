@@ -65,6 +65,9 @@ export class FunctionsRouter extends PromiseRouter {
     const theFunction = getter(req.params.functionName, applicationId);
     const theValidator = triggers.getValidator(req.params.functionName, applicationId);
     if (theFunction) {
+      if (isJob) {
+        req.connection.setTimeout(15*60*1000); // 15 minutes
+      }
       const optionKey = isJob ? 'jobName' : 'functionName';
       const type = isJob ? 'cloud job' : 'cloud function';
       
