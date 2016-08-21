@@ -14,7 +14,7 @@ export function flatten(array) {
   }, []);
 }
 
-export default function pushStatusHandler(config) {
+export function pushStatusHandler(config) {
 
   let initialPromise;
   let pushStatus;

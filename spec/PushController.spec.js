@@ -1,6 +1,6 @@
 "use strict";
 var PushController = require('../src/Controllers/PushController').PushController;
-var pushStatusHandler = require('../src/pushStatusHandler');
+var StatusHandler = require('../src/StatusHandler');
 var Config = require('../src/Config');
 
 const successfulTransmissions = function(body, installations) {
@@ -439,7 +439,7 @@ describe('PushController', () => {
   });
 
   it('should flatten', () => {
-    var res = pushStatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
+    var res = StatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
     expect(res).toEqual([1,2,3,4,5,6]);
   })
 });
