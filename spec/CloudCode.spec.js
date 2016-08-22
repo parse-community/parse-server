@@ -1080,7 +1080,8 @@ it('beforeSave should not affect fetched pointers', done => {
 
     it('should set the message / success on the job', (done) => {
       Parse.Cloud.job('myJob', (req, res) => {
-        res.message('hello').then(() => {
+        res.message('hello');
+        res.message().then(() => {
           return getJobStatus(req.jobId);
         }).then((jobStatus) => {
           expect(jobStatus.get('message')).toEqual('hello');
@@ -1089,7 +1090,7 @@ it('beforeSave should not affect fetched pointers', done => {
             return getJobStatus(req.jobId);
           });
         }).then((jobStatus) => {
-          expect(typeof jobStatus.get('message')).not.toBe('string');
+          expect(jobStatus.get('message')).toEqual('hello');
           expect(jobStatus.get('status')).toEqual('succeeded');
           done();
         }).catch(err => {

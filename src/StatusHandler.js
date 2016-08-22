@@ -63,6 +63,9 @@ export function jobStatusHandler(config) {
   }
 
   let setMessage = function(message) {
+    if (!message || typeof message !== 'string') {
+      return Promise.resolve();
+    }
     return handler.update({ objectId }, { message });
   }
 
@@ -74,9 +77,13 @@ export function jobStatusHandler(config) {
     return setFinalStatus('failed', message);
   }
 
-  let setFinalStatus = function(status, message = null) {
+  let setFinalStatus = function(status, message = undefined) {
     let finishedAt = new Date();
-    return handler.update({ objectId }, { status, message, finishedAt });
+    let update = { status, finishedAt };
+    if (message && typeof message === 'string') {
+      update.message = message;
+    }
+    return handler.update({ objectId }, update);
   }
 
   return Object.freeze({
