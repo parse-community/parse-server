@@ -2,6 +2,7 @@
 var PushController = require('../src/Controllers/PushController').PushController;
 var pushStatusHandler = require('../src/pushStatusHandler');
 var Config = require('../src/Config');
+var rp = require('request-promise');
 
 const successfulTransmissions = function(body, installations) {
 
@@ -313,6 +314,22 @@ describe('PushController', () => {
      return query.find();
    }).then((results) => {
      expect(results.length).toBe(0);
+     return rp.get(Parse.serverURL+'/schemas', {
+       headers: {
+         'X-Parse-Application-Id': 'test',
+         'X-Parse-Master-Key': 'test'
+       },
+       json: true
+     })
+   }).then((res) => {
+     expect(res.results.length).not.toBe(0);
+     res.results.forEach((result) => {
+       expect(result.className).not.toEqual('_PushStatus');
+     });
+     done();
+   }).catch((err) => {
+     console.error(err);
+     fail('should not fail');
      done();
    });
 
