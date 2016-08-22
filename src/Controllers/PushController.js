@@ -98,8 +98,9 @@ export class PushController extends AdaptableController {
     }).then((results) => {
       return pushStatus.complete(results);
     }).catch((err) => {
-      pushStatus.fail(err);
-      return Promise.reject(err);
+      return pushStatus.fail(err).then(() => {
+        throw err;
+      });
     });
   }
 

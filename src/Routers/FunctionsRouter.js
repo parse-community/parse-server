@@ -6,6 +6,7 @@ var express = require('express'),
 
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess } from '../middlewares';
+import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 
@@ -33,8 +34,44 @@ export class FunctionsRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route('POST', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
-    this.route('POST', '/jobs/:functionName', promiseEnforceMasterKeyAccess, function(req) {
-      return FunctionsRouter.handleCloudFunction(req, true);
+    this.route('POST', '/jobs/:jobName', promiseEnforceMasterKeyAccess, function(req) {
+      return FunctionsRouter.handleCloudJob(req);
+    });
+  }
+
+  static handleCloudJob(req) {
+    const jobName = req.params.jobName;
+    const applicationId = req.config.applicationId;
+    const jobHandler = jobStatusHandler(req.config);
+    const jobFunction = triggers.getJob(jobName, applicationId);
+    if (!jobFunction) {
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
+    }
+    let params = Object.assign({}, req.body, req.query);
+    params = parseParams(params);
+    const request = {
+      params: params,
+      log: req.config.loggerController,
+      headers: req.headers,
+      jobName
+    };
+    const status = {
+      success: jobHandler.setSucceeded.bind(jobHandler),
+      error: jobHandler.setFailed.bind(jobHandler),
+      message: jobHandler.setMessage.bind(jobHandler)
+    }
+    return jobHandler.setRunning(jobName, params).then((jobStatus) => {
+      request.jobId = jobStatus.objectId
+      // run the function async
+      process.nextTick(() => {
+        jobFunction(request, status);
+      });
+      return {
+        headers: {
+          'X-Parse-Job-Status-Id': jobStatus.objectId
+        },
+        response: {}
+      }
     });
   }
 
@@ -58,19 +95,12 @@ export class FunctionsRouter extends PromiseRouter {
     }
   }
 
-  static handleCloudFunction(req, isJob = false) {
-    const applicationId = req.config.applicationId;
+  static handleCloudFunction(req) {
     const functionName = req.params.functionName;
-    const getter = isJob ? triggers.getJob : triggers.getFunction;
-    const theFunction = getter(req.params.functionName, applicationId);
+    const applicationId = req.config.applicationId;
+    const theFunction = triggers.getFunction(functionName, applicationId);
     const theValidator = triggers.getValidator(req.params.functionName, applicationId);
-    if (theFunction) {
-      if (isJob) {
-        req.connection.setTimeout(15*60*1000); // 15 minutes
-      }
-      const optionKey = isJob ? 'jobName' : 'functionName';
-      const type = isJob ? 'cloud job' : 'cloud function';
-      
+    if (theFunction) {      
       let params = Object.assign({}, req.body, req.query);
       params = parseParams(params);
       var request = {
@@ -80,7 +110,7 @@ export class FunctionsRouter extends PromiseRouter {
         installationId: req.info.installationId,
         log: req.config.loggerController,
         headers: req.headers,
-        [optionKey]: functionName
+        functionName
       };
 
       if (theValidator && typeof theValidator === "function") {
@@ -96,9 +126,9 @@ export class FunctionsRouter extends PromiseRouter {
         var response = FunctionsRouter.createResponseObject((result) => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(`Ran ${type} ${functionName} for user ${userString} `
+            logger.info(`Ran cloud function ${functionName} for user ${userString} `
               + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
-              [optionKey]: functionName,
+              functionName,
               params,
               user: userString,
             });
@@ -108,10 +138,10 @@ export class FunctionsRouter extends PromiseRouter {
           }
         }, (error) => {
           try {
-            logger.error(`Failed running ${type} ${functionName} for `
+            logger.error(`Failed running cloud function ${functionName} for `
               + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
               + JSON.stringify(error), {
-              [optionKey]: functionName,
+              functionName,
               error,
               params,
               user: userString
@@ -120,7 +150,7 @@ export class FunctionsRouter extends PromiseRouter {
           } catch (e) {
             reject(e);
           }
-        }, isJob ? logger.info : undefined);
+        });
         // Force the keys before the function calls.
         Parse.applicationId = req.config.applicationId;
         Parse.javascriptKey = req.config.javascriptKey;

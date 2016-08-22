@@ -1051,15 +1051,17 @@ it('beforeSave should not affect fetched pointers', done => {
       });
     });
 
-    it('should not run without master key', (done) => {
+    it('should run with master key', (done) => {
       expect(() => {
         Parse.Cloud.job('myJob', (req, res) => {
           expect(req.functionName).toBeUndefined();
           expect(req.jobName).toBe('myJob');
+          expect(typeof req.jobId).toBe('string');
           expect(typeof res.success).toBe('function');
           expect(typeof res.error).toBe('function');
           expect(typeof res.message).toBe('function');
           res.success();
+          done();
         });
       }).not.toThrow();
       
@@ -1069,12 +1071,77 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then((result) => {
-        done();
+      }).then((response) => {
       }, (err) =>  {
         fail(err);
         done();
       });
     });
+
+    it('should set the message / success on the job', (done) => {
+      Parse.Cloud.job('myJob', (req, res) => {
+        res.message('hello').then(() => {
+          return getJobStatus(req.jobId);
+        }).then((jobStatus) => {
+          expect(jobStatus.get('message')).toEqual('hello');
+          expect(jobStatus.get('status')).toEqual('running');
+          return res.success().then(() => {
+            return getJobStatus(req.jobId);
+          });
+        }).then((jobStatus) => {
+          expect(typeof jobStatus.get('message')).not.toBe('string');
+          expect(jobStatus.get('status')).toEqual('succeeded');
+          done();
+        }).catch(err => {
+          console.error(err);
+          jfail(err);
+          done();
+        });
+      });
+      
+      rp.post({
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      }).then((response) => {
+      }, (err) =>  {
+        fail(err);
+        done();
+      });
+    });
+
+    it('should set the failure on the job', (done) => {
+      Parse.Cloud.job('myJob', (req, res) => {
+        res.error('Something went wrong').then(() => {
+          return getJobStatus(req.jobId);
+        }).then((jobStatus) => {
+          expect(jobStatus.get('message')).toEqual('Something went wrong');
+          expect(jobStatus.get('status')).toEqual('failed');
+          done();
+        }).catch(err => {
+          jfail(err);
+          done();
+        });
+      });
+      
+      rp.post({
+        url: 'http://localhost:8378/1/jobs/myJob',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': Parse.masterKey,
+        },
+      }).then((response) => {
+      }, (err) =>  {
+        fail(err);
+        done();
+      });
+    });
+
+    function getJobStatus(jobId) {
+      let q = new Parse.Query('_JobStatus');
+      return q.get(jobId, {useMasterKey: true});
+    }
   });
 });

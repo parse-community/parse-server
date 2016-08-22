@@ -534,7 +534,7 @@ export class PostgresStorageAdapter {
       let joins = results.reduce((list, schema) => {
         return list.concat(joinTablesForSchema(schema.schema));
       }, []);
-      const classes = ['_SCHEMA','_PushStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
+      const classes = ['_SCHEMA','_PushStatus','_JobStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {
@@ -783,7 +783,11 @@ export class PostgresStorageAdapter {
 
     for (let fieldName in update) {
       let fieldValue = update[fieldName];
-      if (fieldName == 'authData') {
+      if (fieldValue === null) {
+        updatePatterns.push(`$${index}:name = NULL`);
+        values.push(fieldName);
+        index += 1;
+      } else if (fieldName == 'authData') {
         // This recursively sets the json_object
         // Only 1 level deep
         let generate = (jsonb, key, value) => {
@@ -847,6 +851,10 @@ export class PostgresStorageAdapter {
       } else if (fieldValue.__type === 'Date') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue));
+        index += 2;
+      } else if (fieldValue instanceof Date) {
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue);
         index += 2;
       } else if (fieldValue.__type === 'File') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);

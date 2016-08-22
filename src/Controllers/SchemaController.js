@@ -87,6 +87,14 @@ const defaultColumns = Object.freeze({
     "sentPerType":  {type:'Object'},
     "failedPerType":{type:'Object'},
   },
+  _JobStatus: {
+    "jobName":    {type: 'String'},
+    "source":     {type: 'String'},
+    "status":     {type: 'String'},
+    "message":    {type: 'String'},
+    "params":     {type: 'Object'}, // params received when calling the job
+    "finishedAt": {type: 'Date'}
+  },
   _Hooks: {
     "functionName": {type:'String'},
     "className":    {type:'String'},
@@ -104,9 +112,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus']);
 
-const volatileClasses = Object.freeze(['_PushStatus', '_Hooks', '_GlobalConfig']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -275,7 +283,12 @@ const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
     fields: {},
     classLevelPermissions: {}
 }));
-const VolatileClassesSchemas = [_HooksSchema, _PushStatusSchema, _GlobalConfigSchema];
+const _JobStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+    className: "_JobStatus",
+    fields: {},
+    classLevelPermissions: {}
+}));
+const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _PushStatusSchema, _GlobalConfigSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;

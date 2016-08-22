@@ -2,6 +2,7 @@ import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
+const JOB_STATUS_COLLECTION = '_JobStatus';
 
 export function flatten(array) {
   return array.reduce((memo, element) => {
@@ -14,13 +15,84 @@ export function flatten(array) {
   }, []);
 }
 
+function statusHandler(className, database) {
+  let lastPromise = Promise.resolve();
+
+  function create(object) {
+    lastPromise = lastPromise.then(() => {
+      return database.create(className, object).then(() => {
+        return Promise.resolve(object);
+      });
+    });
+    return lastPromise;
+  }
+
+  function update(where, object) {
+    lastPromise = lastPromise.then(() => {
+      return database.update(className, where, object);
+    });
+    return lastPromise;
+  }
+
+  return Object.freeze({
+    create,
+    update
+  })
+}
+
+export function jobStatusHandler(config) {
+  let jobStatus;
+  let objectId = newObjectId();
+  let database = config.database;
+  let lastPromise = Promise.resolve();
+  let handler = statusHandler(JOB_STATUS_COLLECTION, database);
+  let setRunning = function(jobName, params) {
+    let now = new Date();
+    jobStatus = {
+      objectId,
+      jobName,
+      params,
+      status: 'running',
+      source: 'api',
+      createdAt: now,
+      // lockdown!
+      ACL: {}
+    }
+
+    return handler.create(jobStatus);
+  }
+
+  let setMessage = function(message) {
+    return handler.update({ objectId }, { message });
+  }
+
+  let setSucceeded = function(message) {
+    return setFinalStatus('succeeded', message);
+  }
+
+  let setFailed = function(message) {
+    return setFinalStatus('failed', message);
+  }
+
+  let setFinalStatus = function(status, message = null) {
+    let finishedAt = new Date();
+    return handler.update({ objectId }, { status, message, finishedAt });
+  }
+
+  return Object.freeze({
+    setRunning,
+    setSucceeded,
+    setMessage,
+    setFailed
+  });
+}
+
 export function pushStatusHandler(config) {
 
-  let initialPromise;
   let pushStatus;
   let objectId = newObjectId();
   let database = config.database;
-  let lastPromise;
+  let handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
     let now = new Date();
     let data =  body.data || {};
@@ -48,25 +120,19 @@ export function pushStatusHandler(config) {
       // lockdown!
       ACL: {}
     }
-    lastPromise = Promise.resolve().then(() => {
-      return database.create(PUSH_STATUS_COLLECTION, object).then(() => {
-        pushStatus = {
-          objectId
-        };
-        return Promise.resolve(pushStatus);
-      });
+
+    return handler.create(object).then(() => {
+      pushStatus = {
+        objectId
+      };
+      return Promise.resolve(pushStatus);
     });
-    return lastPromise;
   }
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-    lastPromise = lastPromise.then(() => {
-      return database.update(PUSH_STATUS_COLLECTION,
-        {status:"pending", objectId: objectId},
+     return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date() });
-    });
-    return lastPromise;
   }
 
   let complete = function(results) {
@@ -100,10 +166,7 @@ export function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    lastPromise = lastPromise.then(() => {
-      return database.update(PUSH_STATUS_COLLECTION, {status:"running", objectId }, update);
-    });
-    return lastPromise;
+    return handler.update({status:"running", objectId }, update);
   }
 
   let fail = function(err) {
@@ -113,10 +176,7 @@ export function pushStatusHandler(config) {
       updatedAt: new Date()
     }
     logger.info('warning: error while sending push', err);
-    lastPromise = lastPromise.then(() => {
-      return database.update(PUSH_STATUS_COLLECTION, { objectId }, update);
-    });
-    return lastPromise;
+    return handler.update({ objectId }, update);
   }
 
   return Object.freeze({
