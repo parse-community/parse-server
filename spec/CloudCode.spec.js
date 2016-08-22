@@ -1078,6 +1078,29 @@ it('beforeSave should not affect fetched pointers', done => {
       });
     });
 
+    it('should run with master key basic auth', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
+          expect(req.functionName).toBeUndefined();
+          expect(req.jobName).toBe('myJob');
+          expect(typeof req.jobId).toBe('string');
+          expect(typeof res.success).toBe('function');
+          expect(typeof res.error).toBe('function');
+          expect(typeof res.message).toBe('function');
+          res.success();
+          done();
+        });
+      }).not.toThrow();
+      
+      rp.post({
+        url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
+      }).then((response) => {
+      }, (err) =>  {
+        fail(err);
+        done();
+      });
+    });
+
     it('should set the message / success on the job', (done) => {
       Parse.Cloud.job('myJob', (req, res) => {
         res.message('hello');
