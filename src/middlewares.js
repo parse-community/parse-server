@@ -31,9 +31,12 @@ export function handleParseHeaders(req, res, next) {
   var basicAuth = httpAuth(req);
 
   if (basicAuth) {
-    info.appId = basicAuth.appId
-    info.masterKey = basicAuth.masterKey || info.masterKey;
-    info.javascriptKey = basicAuth.javascriptKey || info.javascriptKey;
+    var basicAuthAppId = basicAuth.appId;
+    if (_cache2.default.get(basicAuthAppId)) {
+      info.appId = basicAuthAppId;
+      info.masterKey = basicAuth.masterKey || info.masterKey;
+      info.javascriptKey = basicAuth.javascriptKey || info.javascriptKey;
+    }
   }
 
   if (req.body) {
