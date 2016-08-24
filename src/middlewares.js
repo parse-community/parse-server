@@ -32,7 +32,7 @@ export function handleParseHeaders(req, res, next) {
 
   if (basicAuth) {
     var basicAuthAppId = basicAuth.appId;
-    if (_cache2.default.get(basicAuthAppId)) {
+    if (AppCache.get(basicAuthAppId)) {
       info.appId = basicAuthAppId;
       info.masterKey = basicAuth.masterKey || info.masterKey;
       info.javascriptKey = basicAuth.javascriptKey || info.javascriptKey;
