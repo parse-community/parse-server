@@ -1,62 +1,59 @@
-"use strict";
+let facebook = require('./facebook');
+let instagram = require("./instagram");
+let linkedin = require("./linkedin");
+let meetup = require("./meetup");
+let google = require("./google");
+let github = require("./github");
+let twitter = require("./twitter");
+let spotify = require("./spotify");
+let digits = require("./twitter"); // digits tokens are validated by twitter
+let janrainengage = require("./janrainengage");
+let janraincapture = require("./janraincapture");
 
-var facebook = require('./facebook');
-var instagram = require("./instagram");
-var linkedin = require("./linkedin");
-var meetup = require("./meetup");
-var google = require("./google");
-var github = require("./github");
-var twitter = require("./twitter");
-var spotify = require("./spotify");
-var digits = require("./twitter"); // digits tokens are validated by twitter
-var vkontakte = require("./vkontakte");
-
-var anonymous = {
-  validateAuthData: function validateAuthData() {
+let anonymous = {
+  validateAuthData: () => {
     return Promise.resolve();
   },
-  validateAppId: function validateAppId() {
+  validateAppId: () => {
     return Promise.resolve();
   }
-};
+}
 
-var providers = {
-  facebook: facebook,
-  instagram: instagram,
-  linkedin: linkedin,
-  meetup: meetup,
-  google: google,
-  github: github,
-  twitter: twitter,
-  spotify: spotify,
-  anonymous: anonymous,
-  digits: digits,
-  vkontakte: vkontakte
-};
+let providers = {
+  facebook,
+  instagram,
+  linkedin,
+  meetup,
+  google,
+  github,
+  twitter,
+  spotify,
+  anonymous,
+  digits,
+  janrainengage,
+  janraincapture
+}
 
-module.exports = function () {
-  var oauthOptions = arguments.length <= 0 || arguments[0] === undefined ? {} : arguments[0];
-  var enableAnonymousUsers = arguments.length <= 1 || arguments[1] === undefined ? true : arguments[1];
-
-  var _enableAnonymousUsers = enableAnonymousUsers;
-  var setEnableAnonymousUsers = function setEnableAnonymousUsers(enable) {
+module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
+  let _enableAnonymousUsers = enableAnonymousUsers;
+  let setEnableAnonymousUsers = function(enable) {
     _enableAnonymousUsers = enable;
-  };
+  }
   // To handle the test cases on configuration
-  var getValidatorForProvider = function getValidatorForProvider(provider) {
+  let getValidatorForProvider = function(provider) {
 
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;
     }
 
-    var defaultProvider = providers[provider];
-    var optionalProvider = oauthOptions[provider];
+    let defaultProvider = providers[provider];
+    let optionalProvider = oauthOptions[provider];
 
     if (!defaultProvider && !optionalProvider) {
       return;
     }
 
-    var appIds = void 0;
+    let appIds;
     if (optionalProvider) {
       appIds = optionalProvider.appIds;
     }
@@ -88,18 +85,18 @@ module.exports = function () {
       return;
     }
 
-    return function (authData) {
-      return validateAuthData(authData, optionalProvider).then(function () {
+    return function(authData) {
+      return validateAuthData(authData, optionalProvider).then(() => {
         if (appIds) {
           return validateAppId(appIds, authData, optionalProvider);
         }
         return Promise.resolve();
-      });
-    };
-  };
+      })
+    }
+  }
 
   return Object.freeze({
-    getValidatorForProvider: getValidatorForProvider,
-    setEnableAnonymousUsers: setEnableAnonymousUsers
-  });
-};
+    getValidatorForProvider,
+    setEnableAnonymousUsers,
+  })
+}
