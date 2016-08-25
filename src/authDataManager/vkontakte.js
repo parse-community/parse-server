@@ -1,6 +1,6 @@
 'use strict';
 
-// Helper functions for accessing the instagram API.
+// Helper functions for accessing the vkontakte API.
 var https = require('https');
 var Parse = require('parse/node').Parse;
 
