@@ -110,6 +110,15 @@ export function getJob(jobName, applicationId) {
   return undefined;
 }
 
+export function getJobs(applicationId) {
+  var manager = _triggerStore[applicationId];
+  if (manager && manager.Jobs) {
+    return manager.Jobs;
+  };
+  return undefined;
+}
+
+
 export function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {

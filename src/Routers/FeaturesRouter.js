@@ -18,6 +18,9 @@ export class FeaturesRouter extends PromiseRouter {
           update: false,
           delete: false,
         },
+        cloudCode: {
+          jobs: true,
+        },
         logs: {
           level: true,
           size: true,

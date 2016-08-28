@@ -37,10 +37,13 @@ export class FunctionsRouter extends PromiseRouter {
     this.route('POST', '/jobs/:jobName', promiseEnforceMasterKeyAccess, function(req) {
       return FunctionsRouter.handleCloudJob(req);
     });
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function(req) {
+      return FunctionsRouter.handleCloudJob(req);
+    });
   }
 
   static handleCloudJob(req) {
-    const jobName = req.params.jobName;
+    const jobName = req.params.jobName || req.body.jobName;
     const applicationId = req.config.applicationId;
     const jobHandler = jobStatusHandler(req.config);
     const jobFunction = triggers.getJob(jobName, applicationId);
