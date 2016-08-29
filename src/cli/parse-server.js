@@ -85,7 +85,8 @@ if (options.cluster) {
       cluster.fork();
     }
     cluster.on('exit', (worker, code, signal) => {
-      console.log(`worker ${worker.process.pid} died`);
+      console.log(`worker ${worker.process.pid} died... Restarting`);
+      cluster.fork();
     });
   } else {
     startServer(options, () => {
