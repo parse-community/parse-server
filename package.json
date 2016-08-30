@@ -27,7 +27,7 @@
     "intersect": "1.0.1",
     "lodash": "4.15.0",
     "lru-cache": "4.0.1",
-    "mailgun-js": "0.7.10",
+    "mailgun-js": "0.7.12",
     "mime": "1.3.4",
     "mongodb": "2.2.9",
     "multer": "1.2.0",
