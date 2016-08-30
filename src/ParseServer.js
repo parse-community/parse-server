@@ -45,6 +45,7 @@ import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
 import { PushRouter }           from './Routers/PushRouter';
+import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { randomString }         from './cryptoUtils';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
@@ -285,7 +286,8 @@ class ParseServer {
       new FeaturesRouter(),
       new GlobalConfigRouter(),
       new PurgeRouter(),
-      new HooksRouter()
+      new HooksRouter(),
+      new CloudCodeRouter()
     ];
 
     let routes = routers.reduce((memo, router) => {
