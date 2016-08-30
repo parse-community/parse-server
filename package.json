@@ -54,7 +54,7 @@
     "babel-preset-stage-0": "6.5.0",
     "babel-register": "6.11.6",
     "bcrypt-nodejs": "0.0.3",
-    "cross-env": "2.0.0",
+    "cross-env": "2.0.1",
     "deep-diff": "0.3.4",
     "gaze": "1.1.1",
     "istanbul": "1.0.0-alpha.1",
