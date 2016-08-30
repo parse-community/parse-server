@@ -221,5 +221,9 @@ export default {
     env: "PARSE_SERVER_SCHEMA_CACHE_TTL",
     help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0; disabled.",
     action: numberParser("schemaCacheTTL"),
+  },
+  "cluster": {
+    help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
+    action: numberParser("cluster"),
   }
 };
