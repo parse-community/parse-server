@@ -96,6 +96,15 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('date in object', (done) => {
+    var inputDate = {__type: 'Date', iso: '2016-08-29T04:46:28.903Z'};
+    var out = transform.parseObjectToMongoObjectForCreate(null, {dateObject: {date:inputDate}},{
+      fields: {dateObject: {type: 'Object'}}
+    });
+    expect(out.dateObject).toEqual({date:inputDate});
+    done();
+  });
+
   it('objectId in a list', (done) => {
     var input = {
       objectId: {'$in': ['one', 'two', 'three']},
