@@ -124,6 +124,7 @@ class ParseServer {
     verifyUserEmails = defaults.verifyUserEmails,
     preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
     emailVerifyTokenValidityDuration,
+    accountLockout,
     cacheAdapter,
     emailAdapter,
     publicServerURL,
@@ -211,6 +212,7 @@ class ParseServer {
       verifyUserEmails: verifyUserEmails,
       preventLoginWithUnverifiedEmail: preventLoginWithUnverifiedEmail,
       emailVerifyTokenValidityDuration: emailVerifyTokenValidityDuration,
+      accountLockout: accountLockout,
       allowClientClassCreation: allowClientClassCreation,
       authDataManager: authDataManager(oauth, enableAnonymousUsers),
       appName: appName,
@@ -297,7 +299,7 @@ class ParseServer {
     let appRouter = new PromiseRouter(routes, appId);
     appRouter.use(middlewares.allowCrossDomain);
     appRouter.use(middlewares.handleParseHeaders);
-    
+
     batch.mountOnto(appRouter);
 
     api.use(appRouter.expressRouter());
