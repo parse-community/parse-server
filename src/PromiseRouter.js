@@ -175,7 +175,7 @@ function makeExpressHandler(appId, promiseHandler) {
 
         if (result.text) {
           res.send(result.text);
-          return next();
+          return;
         }
 
         if (result.location) {
@@ -184,7 +184,7 @@ function makeExpressHandler(appId, promiseHandler) {
           // as it double encodes %encoded chars in URL
           if (!result.response) {
             res.send('Found. Redirecting to '+result.location);
-            return next();
+            return;
           }
         }
         if (result.headers) {
@@ -193,7 +193,6 @@ function makeExpressHandler(appId, promiseHandler) {
           })
         }
         res.json(result.response);
-        next();
       }, (e) => {
         log.error(`Error generating response. ${inspect(e)}`, {error: e});
         next(e);
