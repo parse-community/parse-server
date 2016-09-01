@@ -1728,7 +1728,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("matches query", function(done) {
+  it_exclude_dbs(['postgres'])("matches query", function(done) {
     var ParentObject = Parse.Object.extend("ParentObject");
     var ChildObject = Parse.Object.extend("ChildObject");
     var objects = [];
