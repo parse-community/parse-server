@@ -273,7 +273,9 @@ class ParseServer {
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
     api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
+    api.use(middlewares.allowCrossDomain);
     api.use(middlewares.allowMethodOverride);
+    api.use(middlewares.handleParseHeaders);
 
     let appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
@@ -322,8 +324,6 @@ class ParseServer {
     }, []);
 
     let appRouter = new PromiseRouter(routes, appId);
-    appRouter.use(middlewares.allowCrossDomain);
-    appRouter.use(middlewares.handleParseHeaders);
 
     batch.mountOnto(appRouter);
     return appRouter;
