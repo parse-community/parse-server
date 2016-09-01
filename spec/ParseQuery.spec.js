@@ -1618,7 +1618,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it('properly nested array of mixed objects with bad ids', (done) => {
+  it_exclude_dbs(['postgres'])('properly nested array of mixed objects with bad ids', (done) => {
     let objects = [];
     let total = 0;
     while(objects.length != 5) {
