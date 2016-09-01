@@ -106,7 +106,7 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController){
-  if (req.get['Range']) {
+  if (req.get('Range')) {
     if (!(typeof filesController.adapter.getFileStream === 'function')) {
       return false;
     }
@@ -124,7 +124,7 @@ function isFileStreamable(req, filesController){
 function handleFileStream(stream, req, res, contentType) {
   var buffer_size = 1024 * 1024;//1024Kb
   // Range request, partiall stream the file
-  var parts = req.get["Range"].replace(/bytes=/, "").split("-");
+  var parts = req.get('Range').replace(/bytes=/, "").split("-");
   var partialstart = parts[0];
   var partialend = parts[1];
   var start = partialstart ? parseInt(partialstart, 10) : 0;
