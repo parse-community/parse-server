@@ -108,7 +108,7 @@ class ParseLiveQueryServer {
 
     let classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      logger.error('Can not find subscriptions under this class ' + className);
+      logger.debug('Can not find subscriptions under this class ' + className);
       return;
     }
     for (let subscription of classSubscriptions.values()) {
@@ -153,7 +153,7 @@ class ParseLiveQueryServer {
 
     let classSubscriptions = this.subscriptions.get(className);
     if (typeof classSubscriptions === 'undefined') {
-      logger.error('Can not find subscriptions under this class ' + className);
+      logger.debug('Can not find subscriptions under this class ' + className);
       return;
     }
     for (let subscription of classSubscriptions.values()) {
