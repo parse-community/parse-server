@@ -275,6 +275,29 @@ class ParseServer {
     api.use(bodyParser.json({ 'type': '*/*' , limit: maxUploadSize }));
     api.use(middlewares.allowMethodOverride);
 
+    let appRouter = ParseServer.promiseRouter({ appId });
+    api.use(appRouter.expressRouter());
+
+    api.use(middlewares.handleParseErrors);
+
+    //This causes tests to spew some useless warnings, so disable in test
+    if (!process.env.TESTING) {
+      process.on('uncaughtException', (err) => {
+        if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
+          process.exit(0);
+        } else {
+          throw err;
+        }
+      });
+    }
+    if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
+      Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
+    }
+    return api;
+  }
+
+  static promiseRouter({appId}) {
     let routers = [
       new ClassesRouter(),
       new UsersRouter(),
@@ -303,26 +326,7 @@ class ParseServer {
     appRouter.use(middlewares.handleParseHeaders);
 
     batch.mountOnto(appRouter);
-
-    api.use(appRouter.expressRouter());
-
-    api.use(middlewares.handleParseErrors);
-
-    //This causes tests to spew some useless warnings, so disable in test
-    if (!process.env.TESTING) {
-      process.on('uncaughtException', (err) => {
-        if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
-          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
-          process.exit(0);
-        } else {
-          throw err;
-        }
-      });
-    }
-    if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
-      Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
-    }
-    return api;
+    return appRouter;
   }
 
   static createLiveQueryServer(httpServer, config) {
