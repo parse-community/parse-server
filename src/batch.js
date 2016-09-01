@@ -29,8 +29,7 @@ function handleBatch(router, req) {
   var apiPrefixLength = req.originalUrl.length - batchPath.length;
   var apiPrefix = req.originalUrl.slice(0, apiPrefixLength);
 
-  var promises = [];
-  for (var restRequest of req.body.requests) {
+  const promises = req.body.requests.map((restRequest) => {
     // The routablePath is the path minus the api prefix
     if (restRequest.path.slice(0, apiPrefixLength) != apiPrefix) {
       throw new Parse.Error(
@@ -38,30 +37,20 @@ function handleBatch(router, req) {
         'cannot route batch path ' + restRequest.path);
     }
     var routablePath = restRequest.path.slice(apiPrefixLength);
-
-    // Use the router to figure out what handler to use
-    var match = router.match(restRequest.method, routablePath);
-    if (!match) {
-      throw new Parse.Error(
-        Parse.Error.INVALID_JSON,
-        'cannot route ' + restRequest.method + ' ' + routablePath);
-    }
-
     // Construct a request that we can send to a handler
     var request = {
       body: restRequest.body,
-      params: match.params,
       config: req.config,
       auth: req.auth,
       info: req.info
     };
 
-    promises.push(match.handler(request).then((response) => {
+    return router.tryRouteRequest(restRequest.method, routablePath, request).then((response) => {
       return {success: response.response};
     }, (error) => {
       return {error: {code: error.code, error: error.message}};
-    }));
-  }
+    });
+  });
 
   return Promise.all(promises).then((results) => {
     return {response: results};

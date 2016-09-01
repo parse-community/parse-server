@@ -10,6 +10,22 @@ import express   from 'express';
 import url       from 'url';
 import log       from './logger';
 import {inspect} from 'util';
+const Layer = require('express/lib/router/layer');
+
+function validateParameter(key, value) {
+  if (key == 'className') {
+    if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
+      return value;
+    }
+  } else if (key == 'objectId') {
+    if (value.match(/[A-Za-z0-9]+/)) {
+      return value;
+    }
+  } else {
+    return value;
+  }
+}
+
 
 export default class PromiseRouter {
   // Each entry should be an object with:
@@ -70,7 +86,8 @@ export default class PromiseRouter {
     this.routes.push({
       path: path,
       method: method,
-      handler: handler
+      handler: handler,
+      layer: new Layer(path, null, handler)
     });
   };
 
@@ -83,30 +100,15 @@ export default class PromiseRouter {
       if (route.method != method) {
         continue;
       }
-      // NOTE: we can only route the specific wildcards :className and
-      // :objectId, and in that order.
-      // This is pretty hacky but I don't want to rebuild the entire
-      // express route matcher. Maybe there's a way to reuse its logic.
-      var pattern = '^' + route.path + '$';
-
-      pattern = pattern.replace(':className',
-                                '(_?[A-Za-z][A-Za-z_0-9]*)');
-      pattern = pattern.replace(':objectId',
-                                '([A-Za-z0-9]+)');
-      var re = new RegExp(pattern);
-      var m = path.match(re);
-      if (!m) {
-        continue;
+      let layer = route.layer || new Layer(route.path, null, route.handler);
+      let match = layer.match(path);
+      if (match) {
+        let params = layer.params;
+        Object.keys(params).forEach((key) => {
+          params[key] = validateParameter(key, params[key]);
+        });
+        return {params: params, handler: route.handler};
       }
-      var params = {};
-      if (m[1]) {
-        params.className = m[1];
-      }
-      if (m[2]) {
-        params.objectId = m[2];
-      }
-
-      return {params: params, handler: route.handler};
     }
   };
 
@@ -123,6 +125,19 @@ export default class PromiseRouter {
 
   expressRouter() {
     return this.mountOnto(express.Router());
+  }
+
+  tryRouteRequest(method, path, request) {
+    var match = this.match(method, path);
+    if (!match) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'cannot route ' + method + ' ' + path);
+    }
+    request.params = match.params;
+    return new Promise((resolve, reject) => {
+      match.handler(request).then(resolve, reject);
+    });
   }
 }
 
