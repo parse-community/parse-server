@@ -49,7 +49,7 @@ Please include a detailed list of steps that reproduce the issue. Include curl c
 ### Environment Setup
 
 - **Server**
-  - parse-server version: [FILL THIS OUT]
+  - parse-server version (Be specific! Don't say 'latest'.) : [FILL THIS OUT]
   - Operating System:     [FILL THIS OUT]
   - Hardware:             [FILL THIS OUT]
   - Localhost or remote server? (AWS, Heroku, Azure, Digital Ocean, etc): [FILL THIS OUT]

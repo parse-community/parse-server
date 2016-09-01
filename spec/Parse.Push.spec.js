@@ -47,10 +47,12 @@ describe('Parse.Push', () => {
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
-    });
+    }).catch((err) => {
+      console.error(err);
+    })
   }
 
-  it_exclude_dbs(['postgres'])('should properly send push', (done) => {
+  it('should properly send push', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -64,14 +66,13 @@ describe('Parse.Push', () => {
     })
     .then(() => {
       done();
-    }, (err) => {
-      console.error();
-      fail('should not fail sending push')
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should properly send push with lowercaseIncrement', (done) => {
+  it('should properly send push with lowercaseIncrement', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
        where: {
@@ -84,14 +85,13 @@ describe('Parse.Push', () => {
      }, {useMasterKey: true})
     }).then(() => {
       done();
-    }, (err) => {
-      console.error();
-      fail('should not fail sending push')
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not allow clients to query _PushStatus', done => {
+  it('should not allow clients to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -113,10 +113,13 @@ describe('Parse.Push', () => {
         expect(body.error).toEqual('unauthorized');
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should allow master key to query _PushStatus', done => {
+  it('should allow master key to query _PushStatus', done => {
     setup()
     .then(() => Parse.Push.send({
       where: {
@@ -136,15 +139,22 @@ describe('Parse.Push', () => {
           'X-Parse-Master-Key': 'test',
         },
       }, (error, response, body) => {
-        expect(body.results.length).toEqual(1);
-        expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
-        expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
+        try {
+          expect(body.results.length).toEqual(1);
+          expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
+          expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
+        } catch(e) {
+          jfail(e);
+        }
         done();
       });
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should throw error if missing push configuration', done => {
+  it('should throw error if missing push configuration', done => {
     reconfigureServer({push: null})
     .then(() => {
       return Parse.Push.send({
@@ -160,6 +170,9 @@ describe('Parse.Push', () => {
       fail('should not succeed');
     }, (err) => {
       expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
+      done();
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });

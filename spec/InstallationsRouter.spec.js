@@ -3,10 +3,9 @@ var Config = require('../src/Config');
 var rest = require('../src/rest');
 var InstallationsRouter = require('../src/Routers/InstallationsRouter').InstallationsRouter;
 
-var config = new Config('test');
-
 describe('InstallationsRouter', () => {
   it('uses find condition from request.body', (done) => {
+    var config = new Config('test');
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -37,10 +36,14 @@ describe('InstallationsRouter', () => {
       var results = res.response.results;
       expect(results.length).toEqual(1);
       done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
     });
   });
 
   it('uses find condition from request.query', (done) => {
+    var config = new Config('test');
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -71,10 +74,14 @@ describe('InstallationsRouter', () => {
       var results = res.response.results;
       expect(results.length).toEqual(1);
       done();
+    }).catch((err) => {
+      jfail(err);
+      done();
     });
   });
 
   it('query installations with limit = 0', (done) => {
+    var config = new Config('test');
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -93,6 +100,7 @@ describe('InstallationsRouter', () => {
       info: {}
     };
 
+    var config = new Config('test');
     var router = new InstallationsRouter();
     rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
         .then(() => {
@@ -103,10 +111,14 @@ describe('InstallationsRouter', () => {
       var response = res.response;
       expect(response.results.length).toEqual(0);
       done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
     });
   });
 
   it('query installations with count = 1', done => {
+    var config = new Config('test');
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -142,6 +154,7 @@ describe('InstallationsRouter', () => {
   });
 
   it('query installations with limit = 0 and count = 1', (done) => {
+    var config = new Config('test');
     var androidDeviceRequest = {
       'installationId': '12345678-abcd-abcd-abcd-123456789abc',
       'deviceType': 'android'
@@ -171,6 +184,9 @@ describe('InstallationsRouter', () => {
       var response = res.response;
       expect(response.results.length).toEqual(0);
       expect(response.count).toEqual(2);
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
       done();
     });
   });

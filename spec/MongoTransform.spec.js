@@ -156,6 +156,18 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('bytes', (done) => {
+    var input = {binaryData: "aGVsbG8gd29ybGQ="};
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields: { binaryData: { type: 'Bytes' }},
+    });
+    expect(typeof output.binaryData).toEqual('object');
+    expect(output.binaryData).toEqual(
+      {__type: 'Bytes', base64: "aGVsbG8gd29ybGQ="}
+    );
+    done();
+  });
+
   it('nested array', (done) => {
     var input = {arr: [{_testKey: 'testValue' }]};
     var output = transform.mongoObjectToParseObject(null, input, {

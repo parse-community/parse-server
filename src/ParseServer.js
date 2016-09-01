@@ -13,8 +13,8 @@ if (!global._babelPolyfill) {
   require('babel-polyfill');
 }
 
-import { logger,
-      configureLogger }         from './logger';
+import defaults                 from './defaults';
+import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
 import parseServerPackage       from '../package.json';
@@ -45,6 +45,7 @@ import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
 import { PushRouter }           from './Routers/PushRouter';
+import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { randomString }         from './cryptoUtils';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
@@ -94,13 +95,16 @@ class ParseServer {
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
     appName,
-    analyticsAdapter = undefined,
+    analyticsAdapter,
     filesAdapter,
     push,
     loggerAdapter,
-    jsonLogs,
-    logsFolder,
-    databaseURI,
+    jsonLogs = defaults.jsonLogs,
+    logsFolder = defaults.logsFolder,
+    verbose = defaults.verbose,
+    logLevel = defaults.level,
+    silent = defaults.silent,
+    databaseURI = defaults.DefaultMongoURI,
     databaseOptions,
     databaseAdapter,
     cloud,
@@ -110,15 +114,15 @@ class ParseServer {
     dotNetKey,
     restAPIKey,
     webhookKey,
-    fileKey = undefined,
+    fileKey,
     facebookAppIds = [],
-    enableAnonymousUsers = true,
-    allowClientClassCreation = true,
+    enableAnonymousUsers = defaults.enableAnonymousUsers,
+    allowClientClassCreation = defaults.allowClientClassCreation,
     oauth = {},
     serverURL = requiredParameter('You must provide a serverURL!'),
-    maxUploadSize = '20mb',
-    verifyUserEmails = false,
-    preventLoginWithUnverifiedEmail = false,
+    maxUploadSize = defaults.maxUploadSize,
+    verifyUserEmails = defaults.verifyUserEmails,
+    preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
     emailVerifyTokenValidityDuration,
     cacheAdapter,
     emailAdapter,
@@ -130,18 +134,17 @@ class ParseServer {
       passwordResetSuccess: undefined
     },
     liveQuery = {},
-    sessionLength = 31536000, // 1 Year in seconds
-    expireInactiveSessions = true,
-    verbose = false,
-    revokeSessionOnPasswordReset = true,
-    schemaCacheTTL = 5, // cache for 5s
+    sessionLength = defaults.sessionLength, // 1 Year in seconds
+    expireInactiveSessions = defaults.expireInactiveSessions,
+    revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
+    schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || databaseURI || collectionPrefix !== '') && databaseAdapter) {
-      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/connectionPrefix.';
+    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
+      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
     } else if (!databaseAdapter) {
       databaseAdapter = new MongoStorageAdapter({
         uri: databaseURI,
@@ -156,49 +159,34 @@ class ParseServer {
       throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
     }
 
-    if (logsFolder) {
-      configureLogger({logsFolder, jsonLogs});
-    }
-
-    if (cloud) {
-      addParseCloud();
-      if (typeof cloud === 'function') {
-        cloud(Parse)
-      } else if (typeof cloud === 'string') {
-        require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
-      }
-    }
-
-    if (verbose || process.env.VERBOSE || process.env.VERBOSE_PARSE_SERVER) {
-      configureLogger({level: 'silly', jsonLogs});
-    }
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
+    const loggerController = new LoggerController(loggerControllerAdapter, appId);
+    logging.setLogger(loggerController);
 
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {
       return new GridStoreAdapter(databaseURI);
     });
+    const filesController = new FilesController(filesControllerAdapter, appId);
+
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter);
-    const emailControllerAdapter = loadAdapter(emailAdapter);
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
-    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
-
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
-    const filesController = new FilesController(filesControllerAdapter, appId);
     const pushController = new PushController(pushControllerAdapter, appId, push);
-    const loggerController = new LoggerController(loggerControllerAdapter, appId);
+
+    const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
-    const liveQueryController = new LiveQueryController(liveQuery);
+
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
     const cacheController = new CacheController(cacheControllerAdapter, appId);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
-    const hooksController = new HooksController(appId, databaseController, webhookKey);
+
+    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
-    // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
-    // have a Parse app without it having a _User collection.
+    const liveQueryController = new LiveQueryController(liveQuery);
+    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const hooksController = new HooksController(appId, databaseController, webhookKey);
+
     const dbInitPromise = databaseController.performInitizalization();
 
     AppCache.put(appId, {
@@ -251,6 +239,17 @@ class ParseServer {
     if (process.env.TESTING) {
       __indexBuildCompletionCallbackForTests(dbInitPromise);
     }
+
+    if (cloud) {
+      addParseCloud();
+      if (typeof cloud === 'function') {
+        cloud(Parse)
+      } else if (typeof cloud === 'string') {
+        require(path.resolve(process.cwd(), cloud));
+      } else {
+        throw "argument 'cloud' must either be a string or a function";
+      }
+    }
   }
 
   get app() {
@@ -287,7 +286,8 @@ class ParseServer {
       new FeaturesRouter(),
       new GlobalConfigRouter(),
       new PurgeRouter(),
-      new HooksRouter()
+      new HooksRouter(),
+      new CloudCodeRouter()
     ];
 
     let routes = routers.reduce((memo, router) => {

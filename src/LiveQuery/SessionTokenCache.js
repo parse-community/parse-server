@@ -1,6 +1,6 @@
 import Parse from 'parse/node';
 import LRU from 'lru-cache';
-import PLog from './PLog';
+import logger from '../logger';
 
 class SessionTokenCache {
   cache: Object;
@@ -18,16 +18,16 @@ class SessionTokenCache {
     }
     let userId = this.cache.get(sessionToken);
     if (userId) {
-      PLog.verbose('Fetch userId %s of sessionToken %s from Cache', userId, sessionToken);
+      logger.verbose('Fetch userId %s of sessionToken %s from Cache', userId, sessionToken);
       return Parse.Promise.as(userId);
     }
     return Parse.User.become(sessionToken).then((user) => {
-      PLog.verbose('Fetch userId %s of sessionToken %s from Parse', user.id, sessionToken);
+      logger.verbose('Fetch userId %s of sessionToken %s from Parse', user.id, sessionToken);
       let userId = user.id;
       this.cache.set(sessionToken, userId);
       return Parse.Promise.as(userId);
     }, (error) => {
-      PLog.error('Can not fetch userId for sessionToken %j, error %j', sessionToken, error);
+      logger.error('Can not fetch userId for sessionToken %j, error %j', sessionToken, error);
       return Parse.Promise.error(error);
     });
   }

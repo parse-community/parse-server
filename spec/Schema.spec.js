@@ -30,7 +30,7 @@ describe('SchemaController', () => {
     }).then((schema) => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -41,7 +41,7 @@ describe('SchemaController', () => {
     }).then((schema) => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -99,7 +99,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('class-level permissions test user', (done) => {
+  it('class-level permissions test user', (done) => {
     var user;
     createTestUser().then((u) => {
       user = u;
@@ -124,7 +124,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('class-level permissions test get', (done) => {
+  it('class-level permissions test get', (done) => {
     var obj;
     createTestUser()
     .then(user => {
@@ -163,7 +163,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can add classes without needing an object', done => {
+  it('can add classes without needing an object', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       foo: {type: 'String'}
@@ -211,7 +211,7 @@ describe('SchemaController', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('will resolve class creation races appropriately', done => {
+  it('will resolve class creation races appropriately', done => {
     // If two callers race to create the same schema, the response to the
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema()
@@ -388,7 +388,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('will create classes', done => {
+  it('will create classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
       aNumber: {type: 'Number'},
@@ -436,7 +436,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates the default fields for non-custom classes', done => {
+  it('creates the default fields for non-custom classes', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Installation', {
       foo: {type: 'Number'},
@@ -478,7 +478,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates non-custom classes which include relation field', done => {
+  it('creates non-custom classes which include relation field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Role', {}))
     .then(actualSchema => {
@@ -507,7 +507,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates non-custom classes which include pointer field', done => {
+  it('creates non-custom classes which include pointer field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Session', {}))
     .then(actualSchema => {
@@ -552,7 +552,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can check if a class exists', done => {
+  it('can check if a class exists', done => {
     config.database.loadSchema()
     .then(schema => {
       return schema.addClassIfNotExists('NewClass', {})
@@ -573,7 +573,7 @@ describe('SchemaController', () => {
       })
       .catch(error => {
         fail('Couldn\'t create class');
-        fail(error);
+        jfail(error);
       });
     })
     .catch(error => fail('Couldn\'t load schema'));
@@ -617,7 +617,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('refuses to delete fields that dont exist', done => {
+  it('refuses to delete fields that dont exist', done => {
     hasAllPODobject().save()
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('missingField', 'HasAllPOD'))
@@ -628,7 +628,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('drops related collection when deleting relation field', done => {
+  it('drops related collection when deleting relation field', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
       .then(savedObj1 => {
@@ -654,12 +654,12 @@ describe('SchemaController', () => {
         }
         done();
       }, error => {
-        fail(error);
+        jfail(error);
         done();
       });
   });
 
-  it_exclude_dbs(['postgres'])('can delete relation field when related _Join collection not exist', done => {
+  it('can delete relation field when related _Join collection not exist', done => {
     config.database.loadSchema()
     .then(schema => {
       schema.addClassIfNotExists('NewClass', {
@@ -688,7 +688,13 @@ describe('SchemaController', () => {
       })
       .then(() => config.database.collectionExists('_Join:relationField:NewClass'))
       .then(exist => {
-        expect(exist).toEqual(false);
+        on_db('postgres', () => {
+          // We create the table when creating the column
+          expect(exist).toEqual(true);
+        }, () => {
+          expect(exist).toEqual(false);
+        });
+        
       })
       .then(() => schema.deleteField('relationField', 'NewClass', config.database))
       .then(() => schema.reloadData())
@@ -705,7 +711,7 @@ describe('SchemaController', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('can delete string fields and resave as number field', done => {
+  it('can delete string fields and resave as number field', done => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
@@ -728,12 +734,12 @@ describe('SchemaController', () => {
       });
     })
     .catch(error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('can delete pointer fields and resave as string', done => {
+  it('can delete pointer fields and resave as string', done => {
     Parse.Object.disableSingleInstance();
     var obj1 = new Parse.Object('NewClass');
     obj1.save()

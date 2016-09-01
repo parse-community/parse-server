@@ -32,6 +32,13 @@ function booleanParser(opt) {
   return false;
 }
 
+function nullParser(opt) {
+  if (opt == 'null') {
+    return null;
+  }
+  return opt;
+}
+
 export default {
   "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
@@ -193,6 +200,18 @@ export default {
     env: "JSON_LOGS",
     help: "Log as structured JSON objects"
   },
+  "logLevel": {
+    env: "PARSE_SERVER_LOG_LEVEL",
+    help: "Sets the level for logs"
+  },
+  "logsFolder": {
+    env: "PARSE_SERVER_LOGS_FOLDER",
+    help: "Folder for the logs (defaults to './logs'); set to null to disable file based logging",
+    action: nullParser
+  },
+  "silent": {
+    help: "Disables console output",
+  },
   "revokeSessionOnPasswordReset": {
     env: "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     help: "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
@@ -202,5 +221,9 @@ export default {
     env: "PARSE_SERVER_SCHEMA_CACHE_TTL",
     help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0; disabled.",
     action: numberParser("schemaCacheTTL"),
+  },
+  "cluster": {
+    help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
+    action: numberParser("cluster"),
   }
 };

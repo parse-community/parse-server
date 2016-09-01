@@ -1,2 +1,2 @@
 instrumentation:
-  excludes: ["**/spec/**", "**/PostgresStorageAdapter.js"]
+  excludes: ["**/spec/**"]

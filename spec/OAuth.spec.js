@@ -137,7 +137,7 @@ describe('OAuth', function() {
     })
   });
 
-  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter"].map(function(providerName){
+  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of "+providerName, (done) => {
       var provider = require("../src/authDataManager/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -217,7 +217,7 @@ describe('OAuth', function() {
     return request.post(options, callback);
   }
 
-  it_exclude_dbs(['postgres'])("should create user with REST API", done => {
+  it("should create user with REST API", done => {
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
@@ -228,6 +228,11 @@ describe('OAuth', function() {
       var q = new Parse.Query("_Session");
       q.equalTo('sessionToken', sessionToken);
       q.first({useMasterKey: true}).then((res) => {
+        if (!res) {
+           fail('should not fail fetching the session');
+           done();
+           return;
+        }
         expect(res.get("installationId")).toEqual('yolo');
         done();
       }).fail((err) => {
@@ -237,7 +242,7 @@ describe('OAuth', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])("should only create a single user with REST API", (done) => {
+  it("should only create a single user with REST API", (done) => {
     var objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
@@ -257,7 +262,7 @@ describe('OAuth', function() {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink and link with custom provider", (done) => {
+  it("unlink and link with custom provider", (done) => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("myoauth", {

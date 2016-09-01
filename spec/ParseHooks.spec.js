@@ -15,27 +15,27 @@ app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
 
 describe('Hooks', () => {
-   it_exclude_dbs(['postgres'])("should have no hooks registered", (done) => {
+   it("should have no hooks registered", (done) => {
      Parse.Hooks.getFunctions().then((res) => {
        expect(res.constructor).toBe(Array.prototype.constructor);
        done();
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      });
    });
 
-   it_exclude_dbs(['postgres'])("should have no triggers registered", (done) => {
+   it("should have no triggers registered", (done) => {
      Parse.Hooks.getTriggers().then( (res) => {
        expect(res.constructor).toBe(Array.prototype.constructor);
        done();
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      });
    });
 
-  it_exclude_dbs(['postgres'])("should CRUD a function registration", (done) => {
+  it("should CRUD a function registration", (done) => {
     // Create
     Parse.Hooks.createFunction("My-Test-Function", "http://someurl")
     .then(response => {
@@ -71,12 +71,12 @@ describe('Hooks', () => {
       })
     })
     .catch(error => {
-      fail(error);
+      jfail(error);
       done();
     })
   });
 
-  it_exclude_dbs(['postgres'])("should CRUD a trigger registration", (done) => {
+  it("should CRUD a trigger registration", (done) => {
      // Create
      Parse.Hooks.createTrigger("MyClass","beforeDelete", "http://someurl").then((res) => {
        expect(res.className).toBe("MyClass");
@@ -95,7 +95,7 @@ describe('Hooks', () => {
        // delete
         return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then((res) => {
        expect(res.className).toBe("MyClass");
@@ -104,22 +104,26 @@ describe('Hooks', () => {
 
        return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then((res) => {
        // Find again! but should be deleted
        return Parse.Hooks.getTrigger("MyClass","beforeDelete");
      }, (err) => {
-       fail(err);
+       jfail(err);
        done();
      }).then(function(){
        fail("should not succeed");
        done();
      }, (err) => {
-       expect(err).not.toBe(null);
-       expect(err).not.toBe(undefined);
-       expect(err.code).toBe(143);
-       expect(err.message).toBe("class MyClass does not exist")
+      if (err) {
+        expect(err).not.toBe(null);
+        expect(err).not.toBe(undefined);
+        expect(err.code).toBe(143);
+        expect(err.message).toBe("class MyClass does not exist")
+       } else {
+        fail('should have errored');
+       }
        done();
      });
    });
@@ -138,7 +142,7 @@ describe('Hooks', () => {
      })
    });
 
-   it_exclude_dbs(['postgres'])("should fail trying to create two times the same function", (done) => {
+   it("should fail trying to create two times the same function", (done) => {
       Parse.Hooks.createFunction("my_new_function", "http://url.com").then( () => {
         return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
       }, () => {
@@ -148,18 +152,20 @@ describe('Hooks', () => {
       }, (err) => {
         expect(err).not.toBe(undefined);
         expect(err).not.toBe(null);
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('function name: my_new_function already exits')
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('function name: my_new_function already exits')
+        }
         return Parse.Hooks.removeFunction("my_new_function");
       }).then(() => {
         done();
       }, (err) => {
-        fail(err);
+        jfail(err);
         done();
       })
    });
 
-   it_exclude_dbs(['postgres'])("should fail trying to create two times the same trigger", (done) => {
+   it("should fail trying to create two times the same trigger", (done) => {
       Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then( () => {
         return  Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com")
       }, () => {
@@ -167,47 +173,67 @@ describe('Hooks', () => {
       }).then( () => {
         fail("should not be able to create the same trigger");
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class MyClass already has trigger beforeSave')
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class MyClass already has trigger beforeSave')
+        }
         return Parse.Hooks.removeTrigger("MyClass", "beforeSave");
       }).then(() => {
         done();
       }, (err) => {
-        fail(err);
+        jfail(err);
         done();
       })
    });
 
-   it_exclude_dbs(['postgres'])("should fail trying to update a function that don't exist", (done) => {
+   it("should fail trying to update a function that don't exist", (done) => {
       Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
         fail("Should not succeed")
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        }
         return Parse.Hooks.getFunction("A_COOL_FUNCTION")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+        }
         done();
       });
    });
 
-   it_exclude_dbs(['postgres'])("should fail trying to update a trigger that don't exist", (done) => {
+   it("should fail trying to update a trigger that don't exist", (done) => {
       Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
         fail("Should not succeed")
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class AClassName does not exist');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class AClassName does not exist');
+        }
         return Parse.Hooks.getTrigger("AClassName","beforeSave")
       }).then( (res) => {
         fail("the function should not exist");
         done();
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.message).toBe('class AClassName does not exist');
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.message).toBe('class AClassName does not exist');
+        }
         done();
       });
    });
@@ -217,8 +243,12 @@ describe('Hooks', () => {
       Parse.Hooks.createFunction("MyFunction").then( (res) => {
         fail(res);
       }, (err) => {
-        expect(err.code).toBe(143);
-        expect(err.error).toBe("invalid hook declaration");
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(143);
+          expect(err.error).toBe("invalid hook declaration");
+        }
         done();
       });
    });
@@ -239,7 +269,7 @@ describe('Hooks', () => {
    });
 
 
-   it_exclude_dbs(['postgres'])("should create hooks and properly preload them", (done) => {
+   it("should create hooks and properly preload them", (done) => {
 
      var promises = [];
      for (var i = 0; i<5; i++) {
@@ -258,7 +288,7 @@ describe('Hooks', () => {
        const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
        return hooksController.load()
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail('Should properly create all hooks');
        done();
      }).then(function() {
@@ -268,13 +298,13 @@ describe('Hooks', () => {
        }
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail('should properly load all hooks');
        done();
      })
    });
 
-   it_exclude_dbs(['postgres'])("should run the function on the test server", (done) => {
+   it("should run the function on the test server", (done) => {
 
      app.post("/SomeFunction", function(req, res) {
         res.json({success:"OK!"});
@@ -283,20 +313,20 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunction").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        expect(res).toBe("OK!");
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail calling a function");
        done();
      });
    });
 
-   it_exclude_dbs(['postgres'])("should run the function on the test server", (done) => {
+   it("should run the function on the test server", (done) => {
 
      app.post("/SomeFunctionError", function(req, res) {
         res.json({error: {code: 1337, error: "hacking that one!"}});
@@ -305,21 +335,25 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunctionError").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        fail("Should not succeed calling that function");
        done();
      }, (err) => {
-       expect(err.code).toBe(141);
-       expect(err.message.code).toEqual(1337)
-       expect(err.message.error).toEqual("hacking that one!");
-       done();
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(141);
+        expect(err.message.code).toEqual(1337)
+        expect(err.message.error).toEqual("hacking that one!");
+      }
+      done();
      });
    });
 
-   it_exclude_dbs(['postgres'])("should provide X-Parse-Webhook-Key when defined", (done) => {
+   it("should provide X-Parse-Webhook-Key when defined", (done) => {
      app.post("/ExpectingKey", function(req, res) {
        if (req.get('X-Parse-Webhook-Key') === 'hook') {
          res.json({success: "correct key provided"});
@@ -331,20 +365,20 @@ describe('Hooks', () => {
      Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKey").then(function(){
        return Parse.Cloud.run("SOME_TEST_FUNCTION")
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      }).then(function(res){
        expect(res).toBe("correct key provided");
        done();
      }, (err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail calling a function");
        done();
      });
    });
 
-   it_exclude_dbs(['postgres'])("should not pass X-Parse-Webhook-Key if not provided", (done) => {
+   it("should not pass X-Parse-Webhook-Key if not provided", (done) => {
      reconfigureServer({ webhookKey: undefined })
      .then(() => {
        app.post("/ExpectingKeyAlso", function(req, res) {
@@ -358,22 +392,26 @@ describe('Hooks', () => {
        Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKeyAlso").then(function(){
          return Parse.Cloud.run("SOME_TEST_FUNCTION")
        }, (err) => {
-         console.error(err);
+         jfail(err);
          fail("Should not fail creating a function");
          done();
        }).then(function(res){
          fail("Should not succeed calling that function");
          done();
        }, (err) => {
-         expect(err.code).toBe(141);
-         expect(err.message).toEqual("incorrect key provided");
-         done();
+        expect(err).not.toBe(undefined);
+        expect(err).not.toBe(null);
+        if (err) {
+          expect(err.code).toBe(141);
+          expect(err.message).toEqual("incorrect key provided");
+        }
+        done();
        });
      });
    });
 
 
-   it_exclude_dbs(['postgres'])("should run the beforeSave hook on the test server", (done) => {
+   it("should run the beforeSave hook on the test server", (done) => {
      var triggerCount = 0;
      app.post("/BeforeSaveSome", function(req, res) {
        triggerCount++;
@@ -394,13 +432,13 @@ describe('Hooks', () => {
        expect(res.get("hello")).toEqual("world");
        done();
      }).fail((err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      });
    });
 
-   it_exclude_dbs(['postgres'])("beforeSave hooks should correctly handle responses containing entire object", (done) => {
+   it("beforeSave hooks should correctly handle responses containing entire object", (done) => {
      app.post("/BeforeSaveSome2", function(req, res) {
        var object = Parse.Object.fromJSON(req.body.object);
        object.set('hello', "world");
@@ -420,7 +458,7 @@ describe('Hooks', () => {
      });
    });
 
-   it_exclude_dbs(['postgres'])("should run the afterSave hook on the test server", (done) => {
+   it("should run the afterSave hook on the test server", (done) => {
      var triggerCount = 0;
      var newObjectId;
      app.post("/AfterSaveSome", function(req, res) {
@@ -451,7 +489,7 @@ describe('Hooks', () => {
        expect(res.get("foo")).toEqual("bar");
        done();
      }).fail((err) => {
-       console.error(err);
+       jfail(err);
        fail("Should not fail creating a function");
        done();
      });

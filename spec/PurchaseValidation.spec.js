@@ -22,12 +22,11 @@ function createProduct() {
 describe("test validate_receipt endpoint", () => {
   beforeEach( done => {
     createProduct().then(done).fail(function(err){
-      console.error(err);
       done();
-    })
+    });
   })
 
-  it_exclude_dbs(['postgres'])("should bypass appstore validation", (done) => {
+  it("should bypass appstore validation", (done) => {
 
    request.post({
       headers: {
@@ -160,7 +159,7 @@ describe("test validate_receipt endpoint", () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("should not create a _Product", (done) => {
+  it("should not create a _Product", (done) => {
       var product = new Parse.Object("_Product");
       product.save().then(function(){
         fail("Should not be able to save");
@@ -171,9 +170,12 @@ describe("test validate_receipt endpoint", () => {
       })
   });
 
-  it_exclude_dbs(['postgres'])("should be able to update a _Product", (done) => {
+  it("should be able to update a _Product", (done) => {
       var query = new Parse.Query("_Product");
-      query.first().then(function(product){
+      query.first().then(function(product) {
+        if (!product) {
+          return Promise.reject(new Error('Product should be found'));
+        }
         product.set("title", "a new title");
         return product.save();
       }).then(function(productAgain){
@@ -186,9 +188,12 @@ describe("test validate_receipt endpoint", () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])("should not be able to remove a require key in a _Product", (done) => {
+  it("should not be able to remove a require key in a _Product", (done) => {
       var query = new Parse.Query("_Product");
       query.first().then(function(product){
+        if (!product) {
+          return Promise.reject(new Error('Product should be found'));
+        }
         product.unset("title");
         return product.save();
       }).then(function(productAgain){

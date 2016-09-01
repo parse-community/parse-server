@@ -4,7 +4,8 @@ import { ParseServer } from '../index';
 import definitions from './cli-definitions';
 import program from './utils/commander';
 import { mergeWithOptions } from './utils/commander';
-import colors from 'colors';
+import cluster from 'cluster';
+import os from 'os';
 
 program.loadDefinitions(definitions);
 
@@ -44,17 +45,12 @@ if (!options.serverURL) {
 if (!options.appId || !options.masterKey || !options.serverURL) {
   program.outputHelp();
   console.error("");
-  console.error(colors.red("ERROR: appId and masterKey are required"));
+  console.error('\u001b[31mERROR: appId and masterKey are required\u001b[0m');
   console.error("");
   process.exit(1);
 }
 
-const app = express();
-const api = new ParseServer(options);
-app.use(options.mountPath, api);
-
-var server = app.listen(options.port, function() {
-
+function logStartupOptions(options) {
   for (let key in options) {
     let value = options[key];
     if (key == "masterKey") {
@@ -62,15 +58,46 @@ var server = app.listen(options.port, function() {
     }
     console.log(`${key}: ${value}`);
   }
-  console.log('');
-  console.log('parse-server running on '+options.serverURL);
-});
+}
 
-var handleShutdown = function() {
-  console.log('Termination signal received. Shutting down.');
-  server.close(function () {
-    process.exit(0);
+function startServer(options, callback) {
+  const app = express();
+  const api = new ParseServer(options);
+  app.use(options.mountPath, api);
+
+  var server = app.listen(options.port, callback);
+
+  var handleShutdown = function() {
+    console.log('Termination signal received. Shutting down.');
+    server.close(function () {
+      process.exit(0);
+    });
+  };
+  process.on('SIGTERM', handleShutdown);
+  process.on('SIGINT', handleShutdown);
+}
+
+if (options.cluster) {
+  const numCPUs = typeof options.cluster === 'number' ? options.cluster : os.cpus().length;
+  if (cluster.isMaster) {
+    logStartupOptions(options);
+    for(var i = 0; i < numCPUs; i++) {
+      cluster.fork();
+    }
+    cluster.on('exit', (worker, code, signal) => {
+      console.log(`worker ${worker.process.pid} died... Restarting`);
+      cluster.fork();
+    });
+  } else {
+    startServer(options, () => {
+      console.log('['+process.pid+'] parse-server running on '+options.serverURL);
+    });
+  }
+} else {
+  startServer(options, () => {
+    logStartupOptions(options);
+    console.log('');
+    console.log('['+process.pid+'] parse-server running on '+options.serverURL);
   });
-};
-process.on('SIGTERM', handleShutdown);
-process.on('SIGINT', handleShutdown);
+}
+

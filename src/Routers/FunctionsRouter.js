@@ -5,6 +5,8 @@ var express = require('express'),
     triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
+import { promiseEnforceMasterKeyAccess } from '../middlewares';
+import { jobStatusHandler } from '../StatusHandler';
 import _ from 'lodash';
 import { logger } from '../logger';
 
@@ -32,9 +34,51 @@ export class FunctionsRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route('POST', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
+    this.route('POST', '/jobs/:jobName', promiseEnforceMasterKeyAccess, function(req) {
+      return FunctionsRouter.handleCloudJob(req);
+    });
+    this.route('POST', '/jobs', promiseEnforceMasterKeyAccess, function(req) {
+      return FunctionsRouter.handleCloudJob(req);
+    });
   }
 
-  static createResponseObject(resolve, reject) {
+  static handleCloudJob(req) {
+    const jobName = req.params.jobName || req.body.jobName;
+    const applicationId = req.config.applicationId;
+    const jobHandler = jobStatusHandler(req.config);
+    const jobFunction = triggers.getJob(jobName, applicationId);
+    if (!jobFunction) {
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid job.');
+    }
+    let params = Object.assign({}, req.body, req.query);
+    params = parseParams(params);
+    const request = {
+      params: params,
+      log: req.config.loggerController,
+      headers: req.headers,
+      jobName
+    };
+    const status = {
+      success: jobHandler.setSucceeded.bind(jobHandler),
+      error: jobHandler.setFailed.bind(jobHandler),
+      message: jobHandler.setMessage.bind(jobHandler)
+    }
+    return jobHandler.setRunning(jobName, params).then((jobStatus) => {
+      request.jobId = jobStatus.objectId
+      // run the function async
+      process.nextTick(() => {
+        jobFunction(request, status);
+      });
+      return {
+        headers: {
+          'X-Parse-Job-Status-Id': jobStatus.objectId
+        },
+        response: {}
+      }
+    });
+  }
+
+  static createResponseObject(resolve, reject, message) {
     return {
       success: function(result) {
         resolve({
@@ -49,15 +93,17 @@ export class FunctionsRouter extends PromiseRouter {
           code = Parse.Error.SCRIPT_FAILED;
         }
         reject(new Parse.Error(code, message));
-      }
+      },
+      message: message
     }
   }
 
   static handleCloudFunction(req) {
-    var applicationId = req.config.applicationId;
-    var theFunction = triggers.getFunction(req.params.functionName, applicationId);
-    var theValidator = triggers.getValidator(req.params.functionName, applicationId);
-    if (theFunction) {
+    const functionName = req.params.functionName;
+    const applicationId = req.config.applicationId;
+    const theFunction = triggers.getFunction(functionName, applicationId);
+    const theValidator = triggers.getValidator(req.params.functionName, applicationId);
+    if (theFunction) {      
       let params = Object.assign({}, req.body, req.query);
       params = parseParams(params);
       var request = {
@@ -65,8 +111,9 @@ export class FunctionsRouter extends PromiseRouter {
         master: req.auth && req.auth.isMaster,
         user: req.auth && req.auth.user,
         installationId: req.info.installationId,
-        log: req.config.loggerController && req.config.loggerController.adapter,
-        headers: req.headers
+        log: req.config.loggerController,
+        headers: req.headers,
+        functionName
       };
 
       if (theValidator && typeof theValidator === "function") {
@@ -77,20 +124,35 @@ export class FunctionsRouter extends PromiseRouter {
       }
 
       return new Promise(function (resolve, reject) {
-        var response = FunctionsRouter.createResponseObject((result) => {
-          logger.info(`Ran cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\nResult: ${JSON.stringify(result.response.result)}`, {
-            functionName: req.params.functionName,
-            params,
-            result: result.response.result
-          });
-          resolve(result);
-        }, (error) => {
-          logger.error(`Failed running cloud function ${req.params.functionName} with:\nInput: ${JSON.stringify(params)}\Error: ${JSON.stringify(error)}`, {
-            functionName: req.params.functionName,
-            params,
-            error
-          });
-          reject(error);
+        const userString = (req.auth && req.auth.user) ? req.auth.user.id : undefined;
+        const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+        var response = FunctionsRouter.createResponseObject((result) => {
+          try {
+            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
+            logger.info(`Ran cloud function ${functionName} for user ${userString} `
+              + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
+              functionName,
+              params,
+              user: userString,
+            });
+            resolve(result);
+          } catch (e) {
+            reject(e);
+          }
+        }, (error) => {
+          try {
+            logger.error(`Failed running cloud function ${functionName} for `
+              + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
+              + JSON.stringify(error), {
+              functionName,
+              error,
+              params,
+              user: userString
+            });
+            reject(error);
+          } catch (e) {
+            reject(e);
+          }
         });
         // Force the keys before the function calls.
         Parse.applicationId = req.config.applicationId;

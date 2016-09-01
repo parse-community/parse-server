@@ -58,7 +58,7 @@ describe('Parse.User testing', () => {
                          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       },
       error: function(err) {
-        console.error(err);
+        jfail(err);
         fail("Shit should not fail");
         done();
       }
@@ -88,7 +88,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should respect ACL without locking user out', (done) => {
+  it('should respect ACL without locking user out', (done) => {
     let user = new Parse.User();
     let ACL = new Parse.ACL();
     ACL.setPublicReadAccess(false);
@@ -137,7 +137,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])("user login with files", (done) => {
+  it("user login with files", (done) => {
     let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
@@ -148,10 +148,13 @@ describe('Parse.User testing', () => {
       ok(fileAgain.name());
       ok(fileAgain.url());
       done();
+    }).catch(err => {
+      jfail(err);
+      done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('become sends token back', done => {
+  it('become sends token back', done => {
     let user = null;
     var sessionToken = null;
 
@@ -171,7 +174,7 @@ describe('Parse.User testing', () => {
     }).then(() => {
       done();
     }, error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -295,7 +298,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("cannot saveAll with non-authed user", (done) => {
+  it("cannot saveAll with non-authed user", (done) => {
     var user = new Parse.User();
     user.signUp({
       "password": "asdf",
@@ -488,7 +491,7 @@ describe('Parse.User testing', () => {
     return promise._thenRunCallbacks(optionsOrCallback);
   }
 
-  it_exclude_dbs(['postgres'])("contained in user array queries", (done) => {
+  it("contained in user array queries", (done) => {
     var USERS = 4;
     var MESSAGES = 5;
 
@@ -503,6 +506,11 @@ describe('Parse.User testing', () => {
 
     signUpAll(userList, function(users) {
       // Make a list of messages.
+      if (!users || users.length != USERS) {
+        fail('signupAll failed');
+        done();
+        return;
+      }
       var messageList = range(MESSAGES).map(function(i) {
         var message = new TestObject();
         message.set("to", users[(i + 1) % USERS]);
@@ -583,7 +591,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("count users", (done) => {
+  it("count users", (done) => {
     var james = new Parse.User();
     james.set("username", "james");
     james.set("password", "mypass");
@@ -711,7 +719,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("saving user after browser refresh", (done) => {
+  it("saving user after browser refresh", (done) => {
     var _ = Parse._;
     var id;
 
@@ -859,7 +867,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("user on disk gets updated after save", (done) => {
+  it("user on disk gets updated after save", (done) => {
     var SuperUser = Parse.User.extend({
       isSuper: function() {
         return true;
@@ -1007,7 +1015,7 @@ describe('Parse.User testing', () => {
     }
   });
 
-  it_exclude_dbs(['postgres'])("log in with provider", (done) => {
+  it("log in with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1022,14 +1030,14 @@ describe('Parse.User testing', () => {
         done();
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "linking should have worked");
         done();
       }
     });
   });
 
-  it_exclude_dbs(['postgres'])("user authData should be available in cloudcode (#2342)", (done) => {
+  it("user authData should be available in cloudcode (#2342)", (done) => {
 
     Parse.Cloud.define('checkLogin', (req, res) => {
       expect(req.user).not.toBeUndefined();
@@ -1052,14 +1060,14 @@ describe('Parse.User testing', () => {
         Parse.Cloud.run('checkLogin').then(done, done);
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "linking should have worked");
         done();
       }
     });
   });
 
-  it_exclude_dbs(['postgres'])("log in with provider and update token", (done) => {
+  it("log in with provider and update token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
     var errorHandler = function(err) {
@@ -1093,7 +1101,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('returns authData when authed and logged in with provider (regression test for #1498)', done => {
+  it('returns authData when authed and logged in with provider (regression test for #1498)', done => {
     Parse.Object.enableSingleInstance();
     let provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1110,7 +1118,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('log in with provider with files', done => {
+  it('log in with provider with files', done => {
     let provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
@@ -1128,12 +1136,12 @@ describe('Parse.User testing', () => {
     }).then(() => {
       done();
     }, error => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])("log in with provider twice", (done) => {
+  it("log in with provider twice", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1164,14 +1172,14 @@ describe('Parse.User testing', () => {
             done();
           },
           error: function(model, error) {
-            fail(error);
+            jfail(error);
             ok(false, "LogIn should have worked");
             done();
           }
         });
       },
       error: function(model, error) {
-        console.error(model, error);
+        jfail(error);
         ok(false, "LogIn should have worked");
         done();
       }
@@ -1208,7 +1216,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("login with provider should not call beforeSave trigger", (done) => {
+  it("login with provider should not call beforeSave trigger", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1232,7 +1240,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link with provider", (done) => {
+  it("link with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     var user = new Parse.User();
@@ -1265,7 +1273,7 @@ describe('Parse.User testing', () => {
 
   // What this means is, only one Parse User can be linked to a
   // particular Facebook account.
-  it_exclude_dbs(['postgres'])("link with provider for already linked user", (done) => {
+  it("link with provider for already linked user", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     var user = new Parse.User();
@@ -1287,7 +1295,10 @@ describe('Parse.User testing', () => {
             user2.signUp(null, {
               success: function(model) {
                 user2._linkWith('facebook', {
-                  success: fail,
+                  success: (err) => {
+                    jfail(err);
+                    done();
+                  },
                   error: function(model, error) {
                     expect(error.code).toEqual(
                       Parse.Error.ACCOUNT_ALREADY_LINKED);
@@ -1372,7 +1383,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink with provider", (done) => {
+  it("unlink with provider", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1408,7 +1419,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("unlink and link", (done) => {
+  it("unlink and link", (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1460,7 +1471,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers", (done) => {
+  it("link multiple providers", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1483,7 +1494,7 @@ describe('Parse.User testing', () => {
             done();
           },
           error: function(error) {
-            console.error(error);
+            jfail(error);
             fail('SHould not fail');
             done();
           }
@@ -1496,12 +1507,12 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and updates token", (done) => {
+  it("link multiple providers and updates token", (done) => {
     var provider = getMockFacebookProvider();
     var secondProvider = getMockFacebookProviderWithIdToken('8675309', 'jenny_valid_token');
 
     var errorHandler = function(model, error) {
-      console.error(error);
+      jfail(error);
       fail('Should not fail');
       done();
     }
@@ -1537,7 +1548,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link multiple providers and update token", (done) => {
+  it("link multiple providers and update token", (done) => {
     var provider = getMockFacebookProvider();
     var mockProvider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -1570,7 +1581,7 @@ describe('Parse.User testing', () => {
             })
           },
           error: function(error) {
-            console.error(error);
+            jfail(error);
             fail('SHould not fail');
             done();
           }
@@ -1583,7 +1594,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fail linking with existing', (done) => {
+  it('should fail linking with existing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1609,7 +1620,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should fail linking with existing', (done) => {
+  it('should fail linking with existing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1635,7 +1646,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should properly error when password is missing', (done) => {
+  it('should properly error when password is missing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
@@ -1658,7 +1669,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should have authData in beforeSave and afterSave', (done) => {
+  it('should have authData in beforeSave and afterSave', (done) => {
 
     Parse.Cloud.beforeSave('_User', (request, response) => {
       let authData = request.object.get('authData');
@@ -1721,7 +1732,7 @@ describe('Parse.User testing', () => {
     }));
   });
 
-  it_exclude_dbs(['postgres'])("log in with explicit facebook auth data", (done) => {
+  it("log in with explicit facebook auth data", (done) => {
     Parse.FacebookUtils.logIn({
       id: "8675309",
       access_token: "jenny",
@@ -1729,7 +1740,7 @@ describe('Parse.User testing', () => {
     }, expectSuccess({success: done}));
   });
 
-  it_exclude_dbs(['postgres'])("log in async with explicit facebook auth data", (done) => {
+  it("log in async with explicit facebook auth data", (done) => {
     Parse.FacebookUtils.logIn({
       id: "8675309",
       access_token: "jenny",
@@ -1742,7 +1753,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("link with explicit facebook auth data", (done) => {
+  it("link with explicit facebook auth data", (done) => {
     Parse.User.signUp("mask", "open sesame", null, expectSuccess({
       success: function(user) {
         Parse.FacebookUtils.link(user, {
@@ -1750,14 +1761,14 @@ describe('Parse.User testing', () => {
           access_token: "jenny",
           expiration_date: new Date().toJSON()
         }).then(done, (error) => {
-          fail(error);
+          jfail(error);
           done();
         });
       }
     }));
   });
 
-  it_exclude_dbs(['postgres'])("link async with explicit facebook auth data", (done) => {
+  it("link async with explicit facebook auth data", (done) => {
     Parse.User.signUp("mask", "open sesame", null, expectSuccess({
       success: function(user) {
         Parse.FacebookUtils.link(user, {
@@ -1812,7 +1823,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  xit("querying for users doesn't get session tokens", (done) => {
+  it("querying for users doesn't get session tokens", (done) => {
     Parse.Promise.as().then(function() {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
 
@@ -1936,7 +1947,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('unset user email', (done) => {
+  it('unset user email', (done) => {
     var user = new Parse.User();
     user.set('username', 'test');
     user.set('password', 'test');
@@ -2058,7 +2069,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('get session only for current user', (done) => {
+  it('get session only for current user', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
@@ -2073,16 +2084,20 @@ describe('Parse.User testing', () => {
         url: 'http://localhost:8378/1/sessions'
       }, (error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.results.length).toEqual(1);
-        expect(typeof b.results[0].user).toEqual('object');
-        expect(b.results[0].user.objectId).toEqual(user.id);
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          expect(typeof b.results[0].user).toEqual('object');
+          expect(b.results[0].user.objectId).toEqual(user.id);
+        } catch(e) {
+          jfail(e);
+        }
         done();
       });
     });
   });
 
-  it_exclude_dbs(['postgres'])('delete session by object', (done) => {
+  it('delete session by object', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("test1", "test", { foo: "bar" });
     }).then(() => {
@@ -2097,9 +2112,16 @@ describe('Parse.User testing', () => {
         url: 'http://localhost:8378/1/sessions'
       }, (error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.results.length).toEqual(1);
-        var objId = b.results[0].objectId;
+        var objId;
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          objId = b.results[0].objectId;
+        } catch(e) {
+          jfail(e);
+          done();
+          return;
+        }
         request.del({
           headers: {
             'X-Parse-Application-Id': 'test',
@@ -2162,7 +2184,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('test parse user become', (done) => {
+  it('test parse user become', (done) => {
     var sessionToken = null;
     Parse.Promise.as().then(function() {
       return Parse.User.signUp("flessard", "folo",{'foo':1});
@@ -2215,7 +2237,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("session expiresAt correct format", (done) => {
+  it("session expiresAt correct format", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function(user) {
         request.get({
@@ -2308,7 +2330,7 @@ describe('Parse.User testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
+  it('should cleanup null authData keys ParseUser update (regression test for #1198, #2252)', (done) => {
     Parse.Cloud.beforeSave('_User', (req, res) => {
       req.object.set('foo', 'bar');
       res.success();
@@ -2390,7 +2412,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should send email when upgrading from anon', (done) => {
+  it('should send email when upgrading from anon', (done) => {
     
     let emailCalled = false;
     let emailOptions;
@@ -2437,7 +2459,7 @@ describe('Parse.User testing', () => {
       expect(emailOptions.user.get('email')).toEqual('user@email.com');
       done();
     }).catch((err) => {
-      console.error(err);
+      jfail(err);
       fail('no request should fail: ' + JSON.stringify(err));
       done();
     });
@@ -2484,7 +2506,7 @@ describe('Parse.User testing', () => {
 
   });
 
-  it_exclude_dbs(['postgres'])('should fail to become user with expired token', (done) => {
+  it('should fail to become user with expired token', (done) => {
     let token;
     Parse.User.signUp("auser", "somepass", null)
     .then(user => rp({
@@ -2549,7 +2571,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
+  it('should not overwrite username when unlinking facebook user (regression test for #1532)', done => {
     Parse.Object.disableSingleInstance();
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -2577,12 +2599,12 @@ describe('Parse.User testing', () => {
     }))
     .catch(error => {
       fail('Unexpected failure testing in unlink user test');
-      fail(error);
+      jfail(error);
       done();
     });
   });
 
-  it_exclude_dbs(['postgres'])('should revoke sessions when converting anonymous user to "normal" user', done => {
+  it('should revoke sessions when converting anonymous user to "normal" user', done => {
     request.post({
       url: 'http://localhost:8378/1/classes/_User',
       headers: {
@@ -2618,7 +2640,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
+  it('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: false })
     .then(() => {
       request.post({
@@ -2648,7 +2670,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('should not fail querying non existing relations', done => { 
+  it('should not fail querying non existing relations', done => { 
     let user = new Parse.User();
     user.set({
       username: 'hello',

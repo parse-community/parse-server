@@ -3,6 +3,17 @@
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
+global.on_db = (db, callback, elseCallback) => {
+  if (process.env.PARSE_SERVER_TEST_DB == db) {
+    return callback();
+  } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
+    return callback();
+  }
+  if (elseCallback) {
+    return elseCallback();
+  }
+}
+
 var cache = require('../src/cache').default;
 var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
@@ -11,30 +22,57 @@ var path = require('path');
 var TestUtils = require('../src/TestUtils');
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const FSAdapter = require('parse-server-fs-adapter');
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 let databaseAdapter;
+// need to bind for mocking mocha
+
+let startDB = () => {};
+let stopDB = () => {};
+
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-  var postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
   databaseAdapter = new PostgresStorageAdapter({
     uri: postgresURI,
     collectionPrefix: 'test_',
   });
 } else {
+  startDB = require('mongodb-runner/mocha/before').bind({
+    timeout: () => {},
+    slow: () => {}
+  });
+  stopDB = require('mongodb-runner/mocha/after');;
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
-  })
+  });
 }
 
 var port = 8378;
 
-let gridStoreAdapter = new GridStoreAdapter(mongoURI);
+let filesAdapter;
 
+on_db('mongo', () => {
+  filesAdapter = new GridStoreAdapter(mongoURI);
+}, () => {
+  filesAdapter = new FSAdapter();
+});
+
+let logLevel;
+let silent = true;
+if (process.env.VERBOSE) {
+  silent = false;
+  logLevel = 'verbose';
+}
+if (process.env.PARSE_SERVER_LOG_LEVEL) {
+  silent = false;
+  logLevel = process.env.PARSE_SERVER_LOG_LEVEL;
+}
 // Default server configuration for tests.
 var defaultConfiguration = {
-  filesAdapter: gridStoreAdapter,
+  filesAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   databaseAdapter,
   appId: 'test',
@@ -45,6 +83,8 @@ var defaultConfiguration = {
   webhookKey: 'hook',
   masterKey: 'test',
   fileKey: 'test',
+  silent,
+  logLevel,
   push: {
     'ios': {
       cert: 'prodCert.pem',
@@ -64,17 +104,15 @@ var defaultConfiguration = {
 let openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var api = new ParseServer(defaultConfiguration);
 var app = express();
+var api = new ParseServer(defaultConfiguration);
 app.use('/1', api);
-
 var server = app.listen(port);
 server.on('connection', connection => {
   let key = `${connection.remoteAddress}:${connection.remotePort}`;
   openConnections[key] = connection;
   connection.on('close', () => { delete openConnections[key] });
 });
-
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
@@ -110,6 +148,11 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 // TODO: update tests to work in an A+ way
 Parse.Promise.disableAPlusCompliant();
 
+// 10 minutes timeout
+beforeAll(startDB, 10*60*1000);
+
+afterAll(stopDB);
+
 beforeEach(done => {
   try {
     Parse.User.enableUnsafeCurrentUser();
@@ -134,7 +177,9 @@ beforeEach(done => {
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
   }, error => {
-    fail(JSON.stringify(error));
+    Parse.initialize('test', 'test', 'test');
+    Parse.serverURL = 'http://localhost:' + port + '/1';
+    // fail(JSON.stringify(error));
     done();
   })
 });
@@ -144,7 +189,9 @@ afterEach(function(done) {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
-    done();
+    on_db('postgres', () => {
+      TestUtils.destroyAllDataPermanently().then(done, done);
+    }, done);
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
@@ -215,12 +262,12 @@ function strictEqual(a, b, message) {
 function notEqual(a, b, message) {
   expect(a).not.toEqual(b, message);
 }
-function expectSuccess(params) {
+function expectSuccess(params, done) {
   return {
     success: params.success,
     error: function(e) {
-      console.log('got error', e);
       fail('failure happened in expectSuccess');
+      done ? done() : null;
     },
   }
 }
@@ -325,6 +372,9 @@ global.range = range;
 global.reconfigureServer = reconfigureServer;
 global.defaultConfiguration = defaultConfiguration;
 global.mockFacebookAuthenticator = mockFacebookAuthenticator;
+global.jfail = function(err) {
+  fail(JSON.stringify(err));
+}
 
 global.it_exclude_dbs = excluded => {
   if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
@@ -348,12 +398,11 @@ global.describe_only_db = db => {
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return describe;
   } else {
-    return () => {};
+    return () => {};
   }
 }
 
-// LiveQuery test setting
-require('../src/LiveQuery/PLog').logLevel = 'NONE';
+
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
   var original = require(library)[name];

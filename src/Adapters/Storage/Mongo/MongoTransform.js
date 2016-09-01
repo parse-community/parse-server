@@ -26,6 +26,12 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   switch(key) {
   case 'objectId':
   case '_id':
+    if (className === '_GlobalConfig') {
+      return {
+        key: key,
+        value: parseInt(restValue)
+      }
+    }
     key = '_id';
     break;
   case 'createdAt':
@@ -143,7 +149,12 @@ function transformQueryKeyValue(className, key, value, schema) {
       return {key: '_email_verify_token_expires_at', value: valueAsDate(value)}
     }
     break;
-  case 'objectId': return {key: '_id', value}
+  case 'objectId': {
+    if (className === '_GlobalConfig') {
+      value = parseInt(value);
+    }
+    return {key: '_id', value}
+  }
   case 'sessionToken': return {key: '_session_token', value}
   case '_rperm':
   case '_wperm':
@@ -341,6 +352,7 @@ const addLegacyACL = restObject => {
     restObject._wperm.forEach(entry => {
       _acl[entry] = { w: true };
     });
+    restObjectCopy._acl = _acl;
   }
 
   if (restObject._rperm) {
@@ -351,9 +363,6 @@ const addLegacyACL = restObject => {
         _acl[entry].r = true;
       }
     });
-  }
-
-  if (Object.keys(_acl).length > 0) {
     restObjectCopy._acl = _acl;
   }
 
@@ -716,10 +725,13 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         restObject._hashed_password = mongoObject[key];
         break;
       case '_acl':
+        break;
       case '_email_verify_token':
       case '_perishable_token':
       case '_tombstone':
       case '_email_verify_token_expires_at':
+        // Those keys will be deleted if needed in the DB Controller
+        restObject[key] = mongoObject[key];
         break;
       case '_session_token':
         restObject['sessionToken'] = mongoObject[key];
@@ -781,6 +793,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
+          if (schema.fields[key] && schema.fields[key].type === 'Bytes' && BytesCoder.isValidDatabaseObject(value)) {
+            restObject[key] = BytesCoder.databaseToJSON(value);
+            break;
+          }
         }
         restObject[key] = nestedMongoObjectToNestedParseObject(mongoObject[key]);
       }
@@ -815,15 +831,29 @@ var DateCoder = {
 };
 
 var BytesCoder = {
+  base64Pattern: new RegExp("^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$"),
+  isBase64Value(object) {
+    if (typeof object !== 'string') {
+      return false;
+    }
+    return this.base64Pattern.test(object);
+  },
+
   databaseToJSON(object) {
+    let value;
+    if (this.isBase64Value(object)) {
+      value = object;
+    } else {
+      value = object.buffer.toString('base64');
+    }
     return {
       __type: 'Bytes',
-      base64: object.buffer.toString('base64')
+      base64: value
     };
   },
 
-  isValidDatabaseObject(object) {
-    return (object instanceof mongodb.Binary);
+  isValidDatabaseObject(object) {    
+    return (object instanceof mongodb.Binary) || this.isBase64Value(object);
   },
 
   JSONToDatabase(json) {

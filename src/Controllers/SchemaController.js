@@ -76,7 +76,7 @@ const defaultColumns = Object.freeze({
     "pushTime":     {type:'String'},
     "source":       {type:'String'}, // rest or webui
     "query":        {type:'String'}, // the stringified JSON query
-    "payload":      {type:'Object'}, // the JSON payload,
+    "payload":      {type:'String'}, // the stringified JSON payload,
     "title":        {type:'String'},
     "expiry":       {type:'Number'},
     "status":       {type:'String'},
@@ -86,6 +86,24 @@ const defaultColumns = Object.freeze({
     "errorMessage": {type:'Object'},
     "sentPerType":  {type:'Object'},
     "failedPerType":{type:'Object'},
+  },
+  _JobStatus: {
+    "jobName":    {type: 'String'},
+    "source":     {type: 'String'},
+    "status":     {type: 'String'},
+    "message":    {type: 'String'},
+    "params":     {type: 'Object'}, // params received when calling the job
+    "finishedAt": {type: 'Date'}
+  },
+  _Hooks: {
+    "functionName": {type:'String'},
+    "className":    {type:'String'},
+    "triggerName":  {type:'String'},
+    "url":          {type:'String'}
+  },
+  _GlobalConfig: {
+    "objectId": {type: 'String'},
+    "params": {type: 'Object'}
   }
 });
 
@@ -94,9 +112,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus']);
 
-const volatileClasses = Object.freeze(['_PushStatus', '_Hooks', '_GlobalConfig']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -256,7 +274,21 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
     ...fields,
   },
   classLevelPermissions,
-})
+});
+
+const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
+const _GlobalConfigSchema = { className: "_GlobalConfig", fields: defaultColumns._GlobalConfig }
+const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+    className: "_PushStatus",
+    fields: {},
+    classLevelPermissions: {}
+}));
+const _JobStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+    className: "_JobStatus",
+    fields: {},
+    classLevelPermissions: {}
+}));
+const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _PushStatusSchema, _GlobalConfigSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;
@@ -900,4 +932,5 @@ export {
   systemClasses,
   defaultColumns,
   convertSchemaToAdapterSchema,
+  VolatileClassesSchemas,
 };

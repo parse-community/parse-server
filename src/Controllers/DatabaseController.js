@@ -159,12 +159,18 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 
   delete object.sessionToken;
 
-  if (isMaster || (aclGroup.indexOf(object.objectId) > -1)) {
+  if (isMaster) {
     return object;
   }
+  delete object._email_verify_token;
+  delete object._perishable_token;
+  delete object._tombstone;
+  delete object._email_verify_token_expires_at;
 
+  if ((aclGroup.indexOf(object.objectId) > -1)) {
+    return object;
+  }
   delete object.authData;
-
   return object;
 };
 
@@ -204,7 +210,7 @@ DatabaseController.prototype.update = function(className, query, update, {
         query = addWriteACL(query, acl);
       }
       validateQuery(query);
-      return schemaController.getOneSchema(className)
+      return schemaController.getOneSchema(className, true)
       .catch(error => {
         // If the schema doesn't exist, pretend it exists with no fields. This behaviour
         // will likely need revisiting.
@@ -878,6 +884,8 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   }
 }
 
+// TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
+// have a Parse app without it having a _User collection.
 DatabaseController.prototype.performInitizalization = function() {
   const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
 
@@ -897,7 +905,10 @@ DatabaseController.prototype.performInitizalization = function() {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       return Promise.reject(error);
     });
-  return Promise.all([usernameUniqueness, emailUniqueness]);
+
+  // Create tables for volatile classes 
+  let adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
+  return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }
 
 function joinTableName(className, key) {

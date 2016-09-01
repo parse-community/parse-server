@@ -1,10 +1,10 @@
 var Subscription = require('../src/LiveQuery/Subscription').Subscription;
-
+let logger;
 describe('Subscription', function() {
 
   beforeEach(function() {
-    var mockError = jasmine.createSpy('error');
-    jasmine.mockLibrary('../src/LiveQuery/PLog', 'error', mockError);
+    logger = require('../src/logger').logger;
+    spyOn(logger, 'error').and.callThrough();
   });
 
   it('can be initialized', function() {
@@ -62,8 +62,7 @@ describe('Subscription', function() {
     var subscription = new Subscription('className', { key : 'value' }, 'hash');
     subscription.deleteClientSubscription(1, 1);
 
-    var PLog =require('../src/LiveQuery/PLog');
-    expect(PLog.error).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
   });
 
   it('can delete nonexistent request for one client', function() {
@@ -71,8 +70,7 @@ describe('Subscription', function() {
     subscription.addClientSubscription(1, 1);
     subscription.deleteClientSubscription(1, 2);
 
-    var PLog =require('../src/LiveQuery/PLog');
-    expect(PLog.error).toHaveBeenCalled();
+    expect(logger.error).toHaveBeenCalled();
     expect(subscription.clientRequestIds.size).toBe(1);
     expect(subscription.clientRequestIds.get(1)).toEqual([1]);
   });
@@ -83,8 +81,7 @@ describe('Subscription', function() {
     subscription.addClientSubscription(1, 2);
     subscription.deleteClientSubscription(1, 2);
 
-    var PLog =require('../src/LiveQuery/PLog');
-    expect(PLog.error).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
     expect(subscription.clientRequestIds.size).toBe(1);
     expect(subscription.clientRequestIds.get(1)).toEqual([1]);
   });
@@ -96,8 +93,7 @@ describe('Subscription', function() {
     subscription.deleteClientSubscription(1, 1);
     subscription.deleteClientSubscription(1, 2);
 
-    var PLog =require('../src/LiveQuery/PLog');
-    expect(PLog.error).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
     expect(subscription.clientRequestIds.size).toBe(0);
   });
 
@@ -111,13 +107,8 @@ describe('Subscription', function() {
     subscription.deleteClientSubscription(2, 1);
     subscription.deleteClientSubscription(2, 2);
 
-    var PLog =require('../src/LiveQuery/PLog');
-    expect(PLog.error).not.toHaveBeenCalled();
+    expect(logger.error).not.toHaveBeenCalled();
     expect(subscription.clientRequestIds.size).toBe(1);
     expect(subscription.clientRequestIds.get(1)).toEqual([1]);
-  });
-
-  afterEach(function(){
-    jasmine.restoreLibrary('../src/LiveQuery/PLog', 'error');
   });
 });
