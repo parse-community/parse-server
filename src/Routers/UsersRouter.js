@@ -19,9 +19,6 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleGet(req) {
-    if (req.params.objectId === 'me') {
-      return this.handleMe(req);
-    }
     req.params.className = '_User';
     return super.handleGet(req);
   }
@@ -214,6 +211,7 @@ export class UsersRouter extends ClassesRouter {
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
     this.route('POST', '/users', req => { return this.handleCreate(req); });
+    this.route('GET', '/users/me', req => { return this.handleMe(req); });
     this.route('GET', '/users/:objectId', req => { return this.handleGet(req); });
     this.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
