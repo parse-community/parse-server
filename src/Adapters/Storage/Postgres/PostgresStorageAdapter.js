@@ -1080,7 +1080,7 @@ export class PostgresStorageAdapter {
       ]);
     return Promise.all(promises).then(() => {
       debug(`initialzationDone in ${new Date().getTime() - now}`);
-    })
+    }, (err) => {});
   }
 }
 

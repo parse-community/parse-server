@@ -1618,7 +1618,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it('properly nested array of mixed objects with bad ids', (done) => {
+  it_exclude_dbs(['postgres'])('properly nested array of mixed objects with bad ids', (done) => {
     let objects = [];
     let total = 0;
     while(objects.length != 5) {
@@ -1728,7 +1728,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("matches query", function(done) {
+  it_exclude_dbs(['postgres'])("matches query", function(done) {
     var ParentObject = Parse.Object.extend("ParentObject");
     var ChildObject = Parse.Object.extend("ChildObject");
     var objects = [];
