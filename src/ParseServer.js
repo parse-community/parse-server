@@ -58,6 +58,8 @@ import DatabaseController       from './Controllers/DatabaseController';
 import SchemaCache              from './Controllers/SchemaCache';
 import ParsePushAdapter         from 'parse-server-push-adapter';
 import MongoStorageAdapter      from './Adapters/Storage/Mongo/MongoStorageAdapter';
+
+import { ParseServerRESTController } from './ParseServerRESTController';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -316,6 +318,9 @@ class ParseServer {
           throw err;
         }
       });
+    }
+    if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
+      Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
     return api;
   }
