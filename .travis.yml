@@ -1,4 +1,6 @@
 language: node_js
+sudo: required
+dist: trusty
 node_js:
 - '4.3'
 - '6.1'
