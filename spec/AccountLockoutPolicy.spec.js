@@ -34,7 +34,7 @@ var isAccountLockoutError = function(username, password, duration, waitTime) {
 
 describe("Account Lockout Policy: ", () => {
 
-  fit('account should not be locked even after failed login attempts if account lockout policy is not set', done => {
+  it('account should not be locked even after failed login attempts if account lockout policy is not set', done => {
     reconfigureServer({
       appName: 'unlimited',
       publicServerURL: 'http://localhost:1337/1',
@@ -61,7 +61,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if duration is set to an invalid number', done => {
+  it('throw error if duration is set to an invalid number', done => {
     reconfigureServer({
       appName: 'duration',
       accountLockout: {
@@ -85,7 +85,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if threshold is set to an invalid number', done => {
+  it('throw error if threshold is set to an invalid number', done => {
     reconfigureServer({
       appName: 'threshold',
       accountLockout: {
@@ -109,7 +109,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if threshold is < 1', done => {
+  it('throw error if threshold is < 1', done => {
     reconfigureServer({
       appName: 'threshold',
       accountLockout: {
@@ -133,7 +133,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if threshold is > 999', done => {
+  it('throw error if threshold is > 999', done => {
     reconfigureServer({
       appName: 'threshold',
       accountLockout: {
@@ -157,7 +157,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if duration is <= 0', done => {
+  it('throw error if duration is <= 0', done => {
     reconfigureServer({
       appName: 'duration',
       accountLockout: {
@@ -181,7 +181,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('throw error if duration is > 99999', done => {
+  it('throw error if duration is > 99999', done => {
     reconfigureServer({
       appName: 'duration',
       accountLockout: {
@@ -205,7 +205,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('lock account if failed login attempts are above threshold', done => {
+  it('lock account if failed login attempts are above threshold', done => {
     reconfigureServer({
       appName: 'lockout threshold',
       accountLockout: {
@@ -238,7 +238,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('lock account for accountPolicy.duration minutes if failed login attempts are above threshold', done => {
+  it('lock account for accountPolicy.duration minutes if failed login attempts are above threshold', done => {
     reconfigureServer({
       appName: 'lockout threshold',
       accountLockout: {
@@ -275,7 +275,7 @@ describe("Account Lockout Policy: ", () => {
     });
   });
 
-  fit('allow login for locked account after accountPolicy.duration minutes', done => {
+  it('allow login for locked account after accountPolicy.duration minutes', done => {
     reconfigureServer({
       appName: 'lockout threshold',
       accountLockout: {
