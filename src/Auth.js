@@ -78,6 +78,23 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
   });
 };
 
+var getAuthForLegacySessionToken = function({config, sessionToken, installationId } = {}) {
+  var restOptions = {
+      limit: 1
+  };
+  var query = new RestQuery(config, master(config), '_User', { sessionToken: sessionToken}, restOptions);
+  return query.execute().then((response) => {
+    var results = response.results;
+    if (results.length !== 1) {
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
+    }
+    let obj = results[0];
+    obj.className = '_User';
+    let userObject = Parse.Object.fromJSON(obj);
+    return new Auth({config, isMaster: false, installationId, user: userObject});
+  });
+}
+
 // Returns a promise that resolves to an array of role names
 Auth.prototype.getUserRoles = function() {
   if (this.isMaster || !this.user) {
@@ -195,5 +212,6 @@ module.exports = {
   Auth: Auth,
   master: master,
   nobody: nobody,
-  getAuthForSessionToken: getAuthForSessionToken
+  getAuthForSessionToken,
+  getAuthForLegacySessionToken
 };

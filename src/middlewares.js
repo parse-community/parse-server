@@ -147,8 +147,16 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
-  return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
-    .then((auth) => {
+  return Promise.resolve().then(() => {
+    // handle the upgradeToRevocableSession path on it's own
+    if (info.sessionToken && 
+        req.url === '/upgradeToRevocableSession' && 
+        info.sessionToken.indexOf('r:') != 0) {
+        return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+    } else {
+        return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+    }
+  }).then((auth) => {
       if (auth) {
         req.auth = auth;
         next();
