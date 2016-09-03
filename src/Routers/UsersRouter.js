@@ -2,6 +2,7 @@
 
 import deepcopy       from 'deepcopy';
 import Config         from '../Config';
+import AccountLockout from '../AccountLockout';
 import ClassesRouter  from './ClassesRouter';
 import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
@@ -80,6 +81,8 @@ export class UsersRouter extends ClassesRouter {
     }
 
     let user;
+    let isValidPassword = false;
+
     return req.config.database.find('_User', { username: req.body.username })
       .then((results) => {
         if (!results.length) {
@@ -90,11 +93,15 @@ export class UsersRouter extends ClassesRouter {
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
         }
-
         return passwordCrypto.compare(req.body.password, user.password);
-      }).then((correct) => {
-
-        if (!correct) {
+      })
+      .then((correct) => {
+        isValidPassword = correct;
+        let accountLockoutPolicy = new AccountLockout(user, req.config);
+        return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
+      })
+      .then(() => {
+        if (!isValidPassword) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 

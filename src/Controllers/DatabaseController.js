@@ -43,7 +43,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 }
 
-const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at'];
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 const validateQuery = query => {
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
@@ -166,6 +166,8 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   delete object._perishable_token;
   delete object._tombstone;
   delete object._email_verify_token_expires_at;
+  delete object._failed_login_count;
+  delete object._account_lockout_expires_at;
 
   if ((aclGroup.indexOf(object.objectId) > -1)) {
     return object;
@@ -182,7 +184,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at'];
+const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,

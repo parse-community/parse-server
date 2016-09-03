@@ -163,6 +163,11 @@ export default {
     help: "Email verification token validity duration",
     action: numberParser("emailVerifyTokenValidityDuration")
   },
+  "accountLockout": {
+    env: "PARSE_SERVER_ACCOUNT_LOCKOUT",
+    help: "account lockout policy for failed login attempts",
+    action: objectParser
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"

@@ -53,7 +53,7 @@ const toPostgresValue = value => {
 }
 
 const transformValue = value => {
-  if (value.__type == 'Pointer') {
+  if (value.__type === 'Pointer') {
     return value.objectId;
   }
   return value;
@@ -171,7 +171,7 @@ const buildWhereClause = ({ schema, query, index }) => {
 
     if (fieldName.indexOf('.') >= 0) {
       let components = fieldName.split('.').map((cmpt, index) => {
-        if (index == 0) {
+        if (index === 0) {
           return `"${cmpt}"`;
         }
         return `'${cmpt}'`; 
@@ -431,6 +431,8 @@ export class PostgresStorageAdapter {
     if (className === '_User') {
       fields._email_verify_token_expires_at = {type: 'Date'};
       fields._email_verify_token = {type: 'String'};
+      fields._account_lockout_expires_at = {type: 'Date'};
+      fields._failed_login_count = {type: 'Number'};
       fields._perishable_token = {type: 'String'};
     }
     let index = 2;
@@ -439,7 +441,7 @@ export class PostgresStorageAdapter {
       let parseType = fields[fieldName];
       // Skip when it's a relation
       // We'll create the tables later
-      if (parseType.type == 'Relation') {
+      if (parseType.type === 'Relation') {
         relations.push(fieldName)
         return;
       }
@@ -641,18 +643,26 @@ export class PostgresStorageAdapter {
       
       columnsArray.push(fieldName);
       if (!schema.fields[fieldName] && className === '_User') {
-        if (fieldName == '_email_verify_token') {
+        if (fieldName === '_email_verify_token' ||
+            fieldName === '_failed_login_count' ||
+            fieldName === '_perishable_token') {
           valuesArray.push(object[fieldName]);
         }
-        if (fieldName == '_email_verify_token_expires_at') {
+
+        if (fieldName === '_email_verify_token_expires_at') {
           if (object[fieldName]) {
             valuesArray.push(object[fieldName].iso);
           } else {
             valuesArray.push(null);
           }
         }
-        if (fieldName == '_perishable_token') {
-          valuesArray.push(object[fieldName].iso);
+
+        if (fieldName === '_account_lockout_expires_at') {
+          if (object[fieldName]) {
+            valuesArray.push(object[fieldName].iso);
+          } else {
+            valuesArray.push(null);
+          }
         }
         return;
       }
@@ -690,7 +700,6 @@ export class PostgresStorageAdapter {
           break;
         default:
           throw `Type ${schema.fields[fieldName].type} not supported yet`;
-          break;
       }
     });
 
@@ -738,7 +747,7 @@ export class PostgresStorageAdapter {
     let index = 2;
     let where = buildWhereClause({ schema, index, query })
     values.push(...where.values);
-    if (Object.keys(query).length == 0) {
+    if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
     }
     let qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
@@ -870,13 +879,13 @@ export class PostgresStorageAdapter {
         index += 2;
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
-                    && schema.fields[fieldName].type == 'Object') {
+                    && schema.fields[fieldName].type === 'Object') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
-                    && schema.fields[fieldName].type == 'Array') {
+                    && schema.fields[fieldName].type === 'Array') {
         let expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
@@ -905,7 +914,7 @@ export class PostgresStorageAdapter {
     let createValue = Object.assign({}, query, update);
     return this.createObject(className, schema, createValue).catch((err) => {
       // ignore duplicate value errors as it's upsert
-      if (err.code == Parse.Error.DUPLICATE_VALUE) {
+      if (err.code === Parse.Error.DUPLICATE_VALUE) {
         return this.findOneAndUpdate(className, schema, query, update);
       }
       throw err;
@@ -992,6 +1001,9 @@ export class PostgresStorageAdapter {
       if (object._email_verify_token_expires_at) {
         object._email_verify_token_expires_at = { __type: 'Date', iso: object._email_verify_token_expires_at.toISOString() };
       }
+      if (object._account_lockout_expires_at) {
+        object._account_lockout_expires_at = { __type: 'Date', iso: object._account_lockout_expires_at.toISOString() };
+      }
 
       for (let fieldName in object) {
         if (object[fieldName] === null) {
@@ -1052,7 +1064,7 @@ export class PostgresStorageAdapter {
     debug('performInitialization');
     let promises = VolatileClassesSchemas.map((schema) => {
       return this.createTable(schema.className, schema).catch((err) =>{
-        if (err.code === PostgresDuplicateRelationError || err.code == Parse.Error.INVALID_CLASS_NAME) {
+        if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
           return Promise.resolve();
         }
         throw err;
