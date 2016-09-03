@@ -16,11 +16,19 @@ describe('info logs', () => {
         }, (results) => {
           if (results.length == 0) {
             fail('The adapter should return non-empty results');
-            done();
           } else {
             expect(results[0].message).toEqual('testing info logs');
-            done();
           }
+          // Check the error log
+          // Regression #2639
+          winstonLoggerAdapter.query({
+            from: new Date(Date.now() - 500),
+            size: 100,
+            level: 'error'
+          }, (results) => {
+            expect(results.length).toEqual(0);
+            done();
+          });
         });
       });
     });
