@@ -13,17 +13,18 @@ function getSessionToken(options) {
 
 function getAuth(options, config) {
   if (options.useMasterKey) {
-      return Parse.Promise.as(new Auth.Auth({config, isMaster: true }));
+      return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
   }
   return getSessionToken(options).then((sessionToken) => {
     if (sessionToken) {
       options.sessionToken = sessionToken;
       return Auth.getAuthForSessionToken({
         config,
-        sessionToken: sessionToken
+        sessionToken: sessionToken,
+        installationId: 'cloud'
       });
     } else {
-      return Parse.Promise.as(new Auth.Auth({ config }));
+      return Parse.Promise.as(new Auth.Auth({ config, installationId: 'cloud' }));
     }
   })
 }

@@ -92,12 +92,24 @@ describe('ParseServerRESTController', () => {
       userId = user.id;
       let sessionToken = user.getSessionToken();
       return Parse.User.logOut().then(() => {
-        console.log('Sending request');
         return RESTController.request("GET", "/classes/_User", undefined, {useMasterKey: true});
       });
     }).then((res) => {
       expect(res.results.length).toBe(1);
       expect(res.results[0].objectId).toEqual(userId);
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
+
+  it('ensures no session token is created on creating users', (done) => {
+    RESTController.request("POST", "/classes/_User", {username: "hello", password: "world"}).then(() => {
+      let query = new Parse.Query('_Session');
+      return query.find({useMasterKey: true});
+    }).then(sessions => {
+      expect(sessions.length).toBe(0);
       done();
     }, (err) => {
       jfail(err);
