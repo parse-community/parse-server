@@ -18,16 +18,15 @@ function updateTransports(options) {
       delete transports['parse-server-error'];
     } else if (!_.isUndefined(options.dirname)) {
       transports['parse-server'] = new (DailyRotateFile)(
-        Object.assign({
+        Object.assign({}, {
           filename: 'parse-server.info',
           name: 'parse-server',
         }, options));
       transports['parse-server-error'] = new (DailyRotateFile)(
-        Object.assign({
+        Object.assign({}, {
           filename: 'parse-server.err',
           name: 'parse-server-error',
-          level: 'error'
-        }, options));
+        }, options, { level: 'error'}));
     }
 
     transports.console = new (winston.transports.Console)(
