@@ -1657,7 +1657,6 @@ describe('schemas', () => {
       query.include('userProfile');
       return query.get(user.id);
     }).then((user) => {
-      console.log(user.toJSON());
       expect(user.get('userProfile')).not.toBeUndefined();
       done();
     }, (err) => {
