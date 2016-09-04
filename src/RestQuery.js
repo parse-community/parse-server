@@ -150,7 +150,8 @@ RestQuery.prototype.getUserAndRoleACL = function() {
   }
   return this.auth.getUserRoles().then((roles) => {
     // Concat with the roles to prevent duplications on multiple calls
-    this.findOptions.acl =  this.findOptions.acl.concat(roles);
+    const aclSet = new Set([].concat(this.findOptions.acl, roles));
+    this.findOptions.acl = Array.from(aclSet);
     return Promise.resolve();
   });
 };
