@@ -808,4 +808,62 @@ describe('SchemaController', () => {
     });
     done();
   });
+
+  it('yields a proper schema mismatch error (#2661)', done => {
+    let anObject = new Parse.Object('AnObject');
+    let anotherObject = new Parse.Object('AnotherObject');
+    let someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, anotherObject, someObject]).then(() => {
+      anObject.set('pointer', anotherObject);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('pointer', someObject);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<AnotherObject> but got Pointer<SomeObject>')
+      done();
+    });
+  });
+
+  it('yields a proper schema mismatch error bis (#2661)', done => {
+    let anObject = new Parse.Object('AnObject');
+    let someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
+      anObject.set('number', 1);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('number', someObject);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.number; expected Number but got Pointer<SomeObject>')
+      done();
+    });
+  });
+
+  it('yields a proper schema mismatch error ter (#2661)', done => {
+    let anObject = new Parse.Object('AnObject');
+    let someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
+      anObject.set('pointer', someObject);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('pointer', 1);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<SomeObject> but got Number')
+      done();
+    });
+  });
 });
