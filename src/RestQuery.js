@@ -542,7 +542,7 @@ function findPointers(object, path) {
   }
 
   if (path.length == 0) {
-    if (object.__type == 'Pointer') {
+    if (object === null || object.__type == 'Pointer') {
       return [object];
     }
     return [];
@@ -567,7 +567,7 @@ function replacePointers(object, path, replace) {
               .filter((obj) => obj != null && obj != undefined);
   }
 
-  if (typeof object !== 'object') {
+  if (typeof object !== 'object' || object === null) {
     return object;
   }
 

@@ -235,4 +235,36 @@ describe('rest query', () => {
       done();
     });
   });
+
+  it('makes sure null pointers are handed correctly #2189', done => {
+    let object = new Parse.Object('AnObject');
+    let anotherObject = new Parse.Object('AnotherObject');
+    anotherObject.save().then(() => {
+      object.set('values', [null, null, anotherObject]);
+      return object.save();
+    }).then(() => {
+      let query = new Parse.Query('AnObject');
+      query.include('values');
+      return query.first();
+    }).then((result) => {
+      let values = result.get('values');
+      expect(values.length).toBe(3);
+      let anotherObjectFound = false;
+      let nullCounts = 0;
+      for(let value of values) {
+        if (value === null) {
+          nullCounts++;
+        } else if (value instanceof Parse.Object) {
+          anotherObjectFound = true;
+        }
+      }
+      expect(nullCounts).toBe(2);
+      expect(anotherObjectFound).toBeTruthy();
+      done();
+    }, (err) => {
+      console.error(err);
+      fail(err);
+      done();
+    });
+  });
 });
