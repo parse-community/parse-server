@@ -540,7 +540,7 @@ function findPointers(object, path) {
     return answer;
   }
 
-  if (typeof object !== 'object' || object === null) {
+  if (typeof object !== 'object') {
     return [];
   }
 
