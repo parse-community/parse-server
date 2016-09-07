@@ -491,7 +491,7 @@ function transformConstraint(constraint, inArray) {
     case '$eq':
       answer[key] = inArray ? transformInteriorAtom(constraint[key]) : transformTopLevelAtom(constraint[key]);
       if (answer[key] === CannotTransform) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${constraint[key]}`);
       }
       break;
 
@@ -504,7 +504,7 @@ function transformConstraint(constraint, inArray) {
       answer[key] = arr.map(value => {
         let result = inArray ? transformInteriorAtom(value) : transformTopLevelAtom(value);
         if (result === CannotTransform) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${atom}`);
+          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${value}`);
         }
         return result;
       });
