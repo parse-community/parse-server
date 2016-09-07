@@ -248,6 +248,7 @@ describe('server', () => {
     expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
     expect(ParseServer.InMemoryCacheAdapter).toThrow();
+    expect(ParseServer.NullCacheAdapter).toThrow();
     done();
   });
 
