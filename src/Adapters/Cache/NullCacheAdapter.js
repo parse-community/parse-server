@@ -18,6 +18,7 @@ export class NullCacheAdapter {
   }
 
   clear() {
+    return Promise.resolve();
   }
 }
 
