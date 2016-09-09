@@ -436,6 +436,11 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
 }
 
 RestWrite.prototype.createSessionToken = function() {
+  // cloud installationId from Cloud Code,
+  // never create session tokens from there.
+  if (this.auth.installationId && this.auth.installationId === 'cloud') {
+    return;
+  }
   var token = 'r:' + cryptoUtils.newToken();
 
   var expiresAt = this.config.generateSessionExpiresAt();
