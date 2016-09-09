@@ -1,5 +1,23 @@
 ## Parse Server Changelog
 
+### 2.2.19
+
+* New: support for upgrading to revocable sessions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: NullCacheAdapter for disabling caching, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
+* New: Account lockout policy [#2601](https://github.com/ParsePlatform/parse-server/pull/2601), thanks to [Diwakar Cherukumilli](https://github.com/cherukumilli)
+* New: Jobs endpoint for defining and run jobs (no scheduling), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Add --cluster option to the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Support for login with vk.com, thanks to [Nurdaulet Bolatov](https://github.com/nbolatov)
+* New: experimental support for postgres databases, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: parse-server doesn't call next() after successful responses, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Nested objects are properly includeed with Pointer Permissions on, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: null values in include calls are properly handled, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Schema validations now runs after beforeSave hooks, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: usersname and passwords are properly type checked, thanks to [Bam Wang](https://github.com/bamwang)
+* Fix: logging in info log would log also in error log, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: removes extaneous logging from ParseLiveQueryServer, thanks to [Flavio Torres](https://github.com/flavionegrao)
+* Fix: support for Range requests for files, thanks to [Brage G. Staven](https://github.com/Bragegs)
+
 ### 2.2.18
 
 * Fix: Improve support for objects in push alert, thanks to [Antoine Lenoir](https://github.com/alenoir)
