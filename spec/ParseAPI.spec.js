@@ -1494,6 +1494,42 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       done();
     });
   });
+
+  it('should not update schema beforeSave #2672', (done) => {
+    Parse.Cloud.beforeSave('MyObject', (request, response) => {
+      if (request.object.get('secret')) {
+         response.error('cannot set secret here');
+         return;
+      }
+      response.success();
+    });
+
+    let object = new Parse.Object('MyObject');
+    object.set('key', 'value');
+    object.save().then(() => {
+      return object.save({'secret': 'should not update schema'});
+    }).then(() => {
+      fail();
+      done();
+    }, () => {
+      return rp({
+        method: 'GET',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test'
+        },
+        uri: 'http://localhost:8378/1/schemas/MyObject',
+        json: true
+      });
+    }).then((res) => {
+      let fields = res.fields;
+      expect(fields.secret).toBeUndefined();
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 });
 
 describe_only_db('mongo')('legacy _acl', () => {

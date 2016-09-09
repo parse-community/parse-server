@@ -96,7 +96,8 @@ const userSchema = {
     "username": {"type": "String"},
     "password": {"type": "String"},
     "email": {"type": "String"},
-    "emailVerified": {"type": "Boolean"}
+    "emailVerified": {"type": "Boolean"},
+    "authData": {"type": "Object"}
   },
   "classLevelPermissions": defaultClassLevelPermissions,
 }
@@ -676,6 +677,7 @@ describe('schemas', () => {
             password: {type: 'String'},
             email: {type: 'String'},
             emailVerified: {type: 'Boolean'},
+            authData: {type: 'Object'},
             newField: {type: 'String'},
             ACL: {type: 'ACL'}
           },
@@ -696,6 +698,7 @@ describe('schemas', () => {
               password: {type: 'String'},
               email: {type: 'String'},
               emailVerified: {type: 'Boolean'},
+              authData: {type: 'Object'},
               newField: {type: 'String'},
               ACL: {type: 'ACL'}
             },
