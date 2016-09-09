@@ -299,6 +299,13 @@ const dbTypeMatchesObjectType = (dbType, objectType) => {
   return false;
 }
 
+const typeToString = (type) => {
+  if (type.targetClass) {
+    return `${type.type}<${type.targetClass}>`;
+  }
+  return `${type.type || type}`;
+}
+
 // Stores the entire schema of the app in a weird hybrid format somewhere between
 // the mongo format and the Parse format. Soon, this will all be Parse format.
 export default class SchemaController {
@@ -592,7 +599,7 @@ export default class SchemaController {
         if (!dbTypeMatchesObjectType(expectedType, type)) {
           throw new Parse.Error(
             Parse.Error.INCORRECT_TYPE,
-            `schema mismatch for ${className}.${fieldName}; expected ${expectedType.type || expectedType} but got ${type.type}`
+            `schema mismatch for ${className}.${fieldName}; expected ${typeToString(expectedType)} but got ${typeToString(type)}`
           );
         }
         return this;
