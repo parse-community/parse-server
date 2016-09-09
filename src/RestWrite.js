@@ -63,8 +63,6 @@ RestWrite.prototype.execute = function() {
   }).then(() => {
     return this.validateClientClassCreation();
   }).then(() => {
-    return this.validateSchema();
-  }).then(() => {
     return this.handleInstallation();
   }).then(() => {
     return this.handleSession();
@@ -72,6 +70,8 @@ RestWrite.prototype.execute = function() {
     return this.validateAuthData();
   }).then(() => {
     return this.runBeforeTrigger();
+  }).then(() => {
+    return this.validateSchema();
   }).then(() => {
     return this.setRequiredFieldsIfNeeded();
   }).then(() => {
@@ -176,7 +176,6 @@ RestWrite.prototype.runBeforeTrigger = function() {
       if (this.query && this.query.objectId) {
         delete this.data.objectId
       }
-      return this.validateSchema();
     }
   });
 };
