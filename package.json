@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.2.18",
+  "version": "2.2.19",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
