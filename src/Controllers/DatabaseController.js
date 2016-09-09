@@ -859,6 +859,7 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   // the ACL should have exactly 1 user
   if (perms && perms[field] && perms[field].length > 0) {
     // No user set return undefined
+    // If the length is > 1, that means we didn't dedup users correctly
     if (userACL.length != 1) {
       return;
     }

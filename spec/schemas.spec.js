@@ -1631,4 +1631,40 @@ describe('schemas', () => {
       done();
     });
   });
+
+  it('regression test for #2246', done => {
+    let profile = new Parse.Object('UserProfile');
+    let user = new Parse.User();
+    function initialize() {
+      return user.save({
+        username: 'user',
+        password: 'password'
+      }).then(() => {
+        return profile.save({user}).then(() => {
+        return user.save({
+            userProfile: profile
+          }, {useMasterKey: true});
+        });
+      });
+    }
+
+    initialize().then(() => {
+      return setPermissionsOnClass('UserProfile', {
+        'readUserFields': ['user'],
+        'writeUserFields': ['user']
+      }, true);
+    }).then(() => {
+      return Parse.User.logIn('user', 'password')
+    }).then(() => {
+      let query = new Parse.Query('_User');
+      query.include('userProfile');
+      return query.get(user.id);
+    }).then((user) => {
+      expect(user.get('userProfile')).not.toBeUndefined();
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 });

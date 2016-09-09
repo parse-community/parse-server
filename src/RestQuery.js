@@ -149,8 +149,9 @@ RestQuery.prototype.getUserAndRoleACL = function() {
     return Promise.resolve();
   }
   return this.auth.getUserRoles().then((roles) => {
-    roles.push(this.auth.user.id);
-    this.findOptions.acl = roles;
+    // Concat with the roles to prevent duplications on multiple calls
+    const aclSet = new Set([].concat(this.findOptions.acl, roles));
+    this.findOptions.acl = Array.from(aclSet);
     return Promise.resolve();
   });
 };
