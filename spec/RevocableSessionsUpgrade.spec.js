@@ -14,7 +14,7 @@ function createUser() {
   return config.database.create('_User', user);
 }
 
-describe('revocable sessions', () => {
+describe_only_db('mongo')('revocable sessions', () => {
 
   beforeEach((done) => {
     // Create 1 user with the legacy
