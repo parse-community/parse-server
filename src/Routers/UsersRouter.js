@@ -79,6 +79,9 @@ export class UsersRouter extends ClassesRouter {
     if (!req.body.password) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
     }
+    if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    }
 
     let user;
     let isValidPassword = false;
@@ -189,6 +192,9 @@ export class UsersRouter extends ClassesRouter {
     let { email } = req.body;
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+    }
+    if (typeof email !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
     }
     let userController = req.config.userController;
     return userController.sendPasswordResetEmail(email).then(token => {
