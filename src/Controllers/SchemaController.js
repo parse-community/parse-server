@@ -31,6 +31,7 @@ const defaultColumns = Object.freeze({
     "password":      {type:'String'},
     "email":         {type:'String'},
     "emailVerified": {type:'Boolean'},
+    "authData":      {type:'Object'}
   },
   // The additional default columns for the _Installation collection (in addition to DefaultCols)
   _Installation: {
