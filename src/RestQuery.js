@@ -480,6 +480,9 @@ function includePath(config, auth, response, path) {
   let pointersHash = {};
   var objectIds = {};
   for (var pointer of pointers) {
+    if (!pointer) {
+      continue;
+    }
     let className = pointer.className;
     // only include the good pointers
     if (className) {
@@ -542,7 +545,7 @@ function findPointers(object, path) {
   }
 
   if (path.length == 0) {
-    if (object.__type == 'Pointer') {
+    if (object === null || object.__type == 'Pointer') {
       return [object];
     }
     return [];
@@ -564,7 +567,7 @@ function findPointers(object, path) {
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
     return object.map((obj) => replacePointers(obj, path, replace))
-              .filter((obj) => obj != null && obj != undefined);
+             .filter((obj) => typeof obj !== 'undefined');
   }
 
   if (typeof object !== 'object') {
@@ -572,7 +575,7 @@ function replacePointers(object, path, replace) {
   }
 
   if (path.length === 0) {
-    if (object.__type === 'Pointer') {
+    if (object && object.__type === 'Pointer') {
       return replace[object.objectId];
     }
     return object;
