@@ -107,6 +107,9 @@ let openConnections = {};
 var app = express();
 var api = new ParseServer(defaultConfiguration);
 app.use('/1', api);
+app.use('/1', (req, res) => {
+  fail('should not call next');
+});
 var server = app.listen(port);
 server.on('connection', connection => {
   let key = `${connection.remoteAddress}:${connection.remotePort}`;
@@ -126,7 +129,9 @@ const reconfigureServer = changedConfiguration => {
         api = new ParseServer(newConfiguration);
         api.use(require('./testing-routes').router);
         app.use('/1', api);
-
+        app.use('/1', (req, res) => {
+          fail('should not call next');
+        });
         server = app.listen(port);
         server.on('connection', connection => {
           let key = `${connection.remoteAddress}:${connection.remotePort}`;

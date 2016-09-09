@@ -39,7 +39,6 @@ export default class PromiseRouter {
   //     location: optional. a location header
   constructor(routes = [], appId) {
     this.routes = routes;
-    this.middlewares = [];
     this.appId = appId;
     this.mountRoutes();
   }
@@ -54,10 +53,6 @@ export default class PromiseRouter {
       this.routes.push(route);
     }
   };
-
-  use(middleware) {
-    this.middlewares.push(middleware);
-  }
 
   route(method, path, ...handlers) {
     switch(method) {
@@ -117,8 +112,7 @@ export default class PromiseRouter {
     this.routes.forEach((route) => {
       let method = route.method.toLowerCase();
       let handler = makeExpressHandler(this.appId, route.handler);
-      let args = [].concat(route.path, this.middlewares, handler);
-      expressApp[method].apply(expressApp, args);
+      expressApp[method].call(expressApp, route.path, handler);
     });
     return expressApp;
   };
@@ -175,7 +169,7 @@ function makeExpressHandler(appId, promiseHandler) {
 
         if (result.text) {
           res.send(result.text);
-          return next();
+          return;
         }
 
         if (result.location) {
@@ -184,7 +178,7 @@ function makeExpressHandler(appId, promiseHandler) {
           // as it double encodes %encoded chars in URL
           if (!result.response) {
             res.send('Found. Redirecting to '+result.location);
-            return next();
+            return;
           }
         }
         if (result.headers) {
@@ -193,7 +187,6 @@ function makeExpressHandler(appId, promiseHandler) {
           })
         }
         res.json(result.response);
-        next();
       }, (e) => {
         log.error(`Error generating response. ${inspect(e)}`, {error: e});
         next(e);
