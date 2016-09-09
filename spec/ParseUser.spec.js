@@ -74,6 +74,58 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('user login with non-string username with REST API', (done) => {
+    Parse.User.signUp('asdf', 'zxcv', null, {
+      success: () => {
+        return rp.post({
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            _method: 'GET',
+            username: {'$regex':'^asd'},
+            password: 'zxcv',
+          }
+        }).then((res) => {
+          fail(`no request should succeed: ${JSON.stringify(res)}`);
+          done();
+        }).catch((err) => {
+          expect(err.statusCode).toBe(404);
+          expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
+          done();
+        });
+      },
+    });
+  });
+
+  it('user login with non-string username with REST API', (done) => {
+    Parse.User.signUp('asdf', 'zxcv', null, {
+      success: () => {
+        return rp.post({
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            _method: 'GET',
+            username: 'asdf',
+            password: {'$regex':'^zx'},
+          }
+        }).then((res) => {
+          fail(`no request should succeed: ${JSON.stringify(res)}`);
+          done();
+        }).catch((err) => {
+          expect(err.statusCode).toBe(404);
+          expect(err.message).toMatch('{"code":101,"error":"Invalid username/password."}');
+          done();
+        });
+      },
+    });
+  });
+
   it("user login", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function(user) {
@@ -2462,6 +2514,51 @@ describe('Parse.User testing', () => {
       jfail(err);
       fail('no request should fail: ' + JSON.stringify(err));
       done();
+    });
+  });
+
+  it('should not send email when email is not a string', (done) => {
+    let emailCalled = false;
+    let emailOptions;
+    var emailAdapter = {
+      sendVerificationEmail: (options) => {
+        emailOptions = options;
+        emailCalled = true;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: 'http://localhost:8378/1',
+    });
+    var user = new Parse.User();
+    user.set('username', 'asdf@jkl.com');
+    user.set('password', 'zxcv');
+    user.set('email', 'asdf@jkl.com');
+    user.signUp(null, {
+      success: (user) => {
+        return rp.post({
+          url: 'http://localhost:8378/1/requestPasswordReset',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Session-Token': user.sessionToken,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            email: {"$regex":"^asd"},
+          }
+        }).then((res) => {
+          fail('no request should succeed: ' + JSON.stringify(res));
+          done();
+        }).catch((err) => {
+          expect(err.statusCode).toBe(400);
+          expect(err.message).toMatch('{"code":125,"error":"you must provide a valid email string"}');
+          done();
+        });
+      },
     });
   });
 
