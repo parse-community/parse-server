@@ -8,6 +8,15 @@ function numberParser(key) {
   }
 }
 
+function numberOrBoolParser(key) {
+  return function(opt) {
+    if (typeof opt === 'boolean') {
+      return opt;
+    }
+    return numberParser(key)(opt);
+  }
+}
+
 function objectParser(opt) {
   if (typeof opt == 'object') {
     return opt;
@@ -229,6 +238,6 @@ export default {
   },
   "cluster": {
     help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
-    action: numberParser("cluster"),
+    action: numberOrBoolParser("cluster")
   }
 };
