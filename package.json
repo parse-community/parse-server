@@ -18,7 +18,6 @@
   ],
   "license": "BSD-3-Clause",
   "dependencies": {
-    "babel-polyfill": "6.13.0",
     "bcryptjs": "2.3.0",
     "body-parser": "1.15.2",
     "commander": "2.9.0",
