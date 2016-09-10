@@ -18,6 +18,7 @@ env:
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
   - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_CACHE=redis
 matrix:
   fast_finish: true
 branches:
