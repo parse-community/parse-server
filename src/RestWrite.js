@@ -262,7 +262,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
     memo.push(query);
     return memo;
   }, []).filter((q) => {
-    return typeof q !== undefined;
+    return typeof q !== 'undefined';
   });
 
   let findPromise = Promise.resolve([]);
