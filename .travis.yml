@@ -16,6 +16,7 @@ env:
   - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
   matrix:
   - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_CACHE=redis
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6
 matrix:

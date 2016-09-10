@@ -24,6 +24,7 @@ var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAda
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const FSAdapter = require('parse-server-fs-adapter');
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -100,6 +101,10 @@ var defaultConfiguration = {
     }
   }
 };
+
+if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
+  defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
+}
 
 let openConnections = {};
 
