@@ -330,11 +330,18 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   let mongoUpdate = {};
-  let legacyACL = addLegacyACL(restUpdate)._acl;
-  if (legacyACL) {
-    mongoUpdate.$set = {
-      _acl: legacyACL
-    };
+  let acl = addLegacyACL(restUpdate);
+  if (acl) {
+    mongoUpdate.$set = {};
+    if (acl._rperm) {
+      mongoUpdate.$set._rperm = acl._rperm;
+    }
+    if (acl._wperm) {
+      mongoUpdate.$set._wperm = acl._wperm;
+    }
+    if (acl._acl) {
+      mongoUpdate.$set._acl = acl._acl;
+    }
   }
   for (var restKey in restUpdate) {
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
