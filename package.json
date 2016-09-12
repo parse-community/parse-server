@@ -57,7 +57,7 @@
     "deep-diff": "0.3.4",
     "gaze": "1.1.1",
     "istanbul": "1.0.0-alpha.1",
-    "jasmine": "2.4.1",
+    "jasmine": "2.5.1",
     "mongodb-runner": "3.4.0",
     "nodemon": "1.10.0",
     "request-promise": "4.1.1"
