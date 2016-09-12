@@ -142,10 +142,12 @@ class ParseServer {
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     __indexBuildCompletionCallbackForTests = () => {},
+    cloudCodeVariables // any variables you want to be available in cloud code (via Parse.cloudCodeVariables)
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
+    Parse.cloudCodeVariables = cloudCodeVariables;
     if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
       throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
     } else if (!databaseAdapter) {

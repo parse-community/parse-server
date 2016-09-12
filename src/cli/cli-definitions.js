@@ -230,5 +230,9 @@ export default {
   "cluster": {
     help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
     action: numberParser("cluster"),
+  },
+  "cloudCodeVariables": { 
+    help: "variables that can be used in cloud code via Parse.cloudCodeVariables",
+    action: objectParser
   }
 };
