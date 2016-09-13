@@ -5,6 +5,7 @@ import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path  from 'path';
 import mime from 'mime';
+import uuid from 'node-uuid';
 
 const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
 
@@ -26,11 +27,7 @@ export class FilesController extends AdaptableController {
       contentType = mime.lookup(filename);
     }
 
-    // increased the random string length to 36 so that it is the same length as an UUID with dashes.
-    // This makes file name property extraction for display in clients such as Parse Dashboard to work correctly.
-    // We can not use an UUID with dashes here because it is already used for files.parse.com hosted files and
-    // expandFilesInObject method below uses this distinction to construct the correct url for the file.
-    filename = randomHexString(36) + '_' + filename;
+    filename = uuid.v4() + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
     return this.adapter.createFile(filename, data, contentType).then(() => {
