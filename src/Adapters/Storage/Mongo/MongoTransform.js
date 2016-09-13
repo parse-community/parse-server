@@ -331,7 +331,7 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   let mongoUpdate = {};
   let acl = addLegacyACL(restUpdate);
-  if (acl) {
+  if (acl._rperm || acl._wperm || acl._acl) {
     mongoUpdate.$set = {};
     if (acl._rperm) {
       mongoUpdate.$set._rperm = acl._rperm;
