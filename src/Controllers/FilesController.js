@@ -26,7 +26,11 @@ export class FilesController extends AdaptableController {
       contentType = mime.lookup(filename);
     }
 
-    filename = randomHexString(32) + '_' + filename;
+    // increased the random string length to 36 so that it is the same length as an UUID with dashes.
+    // This makes file name property extraction for display in clients such as Parse Dashboard to work correctly.
+    // We can not use an UUID with dashes here because it is already used for files.parse.com hosted files and
+    // expandFilesInObject method below uses this distinction to construct the correct url for the file.
+    filename = randomHexString(36) + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
     return this.adapter.createFile(filename, data, contentType).then(() => {
