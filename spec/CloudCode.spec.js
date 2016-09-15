@@ -1259,4 +1259,25 @@ describe('beforeFind hooks', () => {
       done();
     });
   });
+
+  it('should handle empty where', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      let otherQuery = new Parse.Query('MyObject');
+      otherQuery.equalTo('some', true);
+      return Parse.Query.or(req.query, otherQuery);
+    });
+
+    rp.get({
+      url: 'http://localhost:8378/1/classes/MyObject',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    }).then((result) => {
+      done();
+    }, (err) =>  {
+      fail(err);
+      done();
+    });
+  });
 })

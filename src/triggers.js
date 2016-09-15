@@ -250,7 +250,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
   }
 
   let parseQuery = new Parse.Query(className);
-  parseQuery._where = restWhere;
+  if (restWhere) {
+      parseQuery._where = restWhere;
+  }
   if (restOptions.include && restOptions.include.length > 0) {
     parseQuery._include = restOptions.include.split(',');
   }
@@ -269,7 +271,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       queryResult = result;
     }
     let jsonQuery = queryResult.toJSON();
-    restWhere = jsonQuery.where;
+    if (jsonQuery.where) {
+      restWhere = jsonQuery.where;
+    }
     if (jsonQuery.limit) {
       restOptions.limit = jsonQuery.limit;
     }
