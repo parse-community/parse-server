@@ -253,14 +253,16 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
   if (restWhere) {
       parseQuery._where = restWhere;
   }
-  if (restOptions.include && restOptions.include.length > 0) {
-    parseQuery._include = restOptions.include.split(',');
-  }
-  if (restOptions.skip) {
-      parseQuery._skip = restOptions.skip;
-  }
-  if (restOptions.limit) {
-      parseQuery._limit = restOptions.limit;
+  if (restOptions) {
+    if (restOptions.include && restOptions.include.length > 0) {
+      parseQuery._include = restOptions.include.split(',');
+    }
+    if (restOptions.skip) {
+        parseQuery._skip = restOptions.skip;
+    }
+    if (restOptions.limit) {
+        parseQuery._limit = restOptions.limit;
+    }
   }
   let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
   return Promise.resolve().then(() => {
@@ -275,12 +277,15 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restWhere = jsonQuery.where;
     }
     if (jsonQuery.limit) {
+      restOptions = restOptions || {};
       restOptions.limit = jsonQuery.limit;
     }
     if (jsonQuery.skip) {
+      restOptions = restOptions || {};
       restOptions.skip = jsonQuery.skip;
     }
     if (jsonQuery.include) {
+      restOptions = restOptions || {};
       restOptions.include = jsonQuery.include;
     }
     return {
