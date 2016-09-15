@@ -99,7 +99,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 }
 
 const transformInteriorValue = restValue => {
-  if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+  if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.indexOf('$') >= 0 || key.indexOf('.') >= 0)) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
   // Handle atomic values
@@ -293,7 +293,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   }
 
   // Handle normal objects by recursing
-  if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+  if (Object.keys(restValue).some(key => key.indexOf('$') >= 0 || key.indexOf('.') >= 0)) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
   value = _.mapValues(restValue, transformInteriorValue);
