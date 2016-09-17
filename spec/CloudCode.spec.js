@@ -1174,3 +1174,110 @@ it('beforeSave should not affect fetched pointers', done => {
     }
   });
 });
+
+describe('beforeFind hooks', () => {
+  it('should add beforeFind trigger', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req, res) => {
+      let q = req.query;
+      expect(q instanceof Parse.Query).toBe(true);
+      let jsonQuery = q.toJSON();
+      expect(jsonQuery.where.key).toEqual('value');
+      expect(jsonQuery.where.some).toEqual({'$gt': 10});
+      expect(jsonQuery.include).toEqual('otherKey,otherValue');
+      expect(jsonQuery.limit).toEqual(100);
+      expect(jsonQuery.skip).toBe(undefined);
+    });
+
+    let query = new Parse.Query('MyObject');
+    query.equalTo('key', 'value');
+    query.greaterThan('some', 10);
+    query.include('otherKey');
+    query.include('otherValue');
+    query.find().then(() => {
+      done();
+    });
+  });
+
+  it('should use modify', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      let q = req.query;
+      q.equalTo('forced', true);
+    });
+
+    let obj0 = new Parse.Object('MyObject');
+    obj0.set('forced', false);
+
+    let obj1 = new Parse.Object('MyObject');
+    obj1.set('forced', true);
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      let query = new Parse.Query('MyObject');
+      query.equalTo('forced', false);
+      query.find().then((results) => {
+        expect(results.length).toBe(1);
+        let firstResult = results[0];
+        expect(firstResult.get('forced')).toBe(true);
+        done();
+      });
+    });
+  });
+
+  it('should use the modified the query', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      let q = req.query;
+      let otherQuery = new Parse.Query('MyObject');
+      otherQuery.equalTo('forced', true);
+      return Parse.Query.or(q, otherQuery);
+    });
+
+    let obj0 = new Parse.Object('MyObject');
+    obj0.set('forced', false);
+
+    let obj1 = new Parse.Object('MyObject');
+    obj1.set('forced', true);
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      let query = new Parse.Query('MyObject');
+      query.equalTo('forced', false);
+      query.find().then((results) => {
+        expect(results.length).toBe(2);
+        done();
+      });
+    });
+  });
+
+  it('should reject queries', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      return Promise.reject('Do not run that query');
+    });
+
+    let query = new Parse.Query('MyObject');
+    query.find().then(() => {
+      fail('should not succeed');
+      done();
+    }, (err) => {
+      expect(err.code).toBe(1);
+      expect(err.message).toEqual('Do not run that query');
+      done();
+    });
+  });
+
+  it('should handle empty where', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      let otherQuery = new Parse.Query('MyObject');
+      otherQuery.equalTo('some', true);
+      return Parse.Query.or(req.query, otherQuery);
+    });
+
+    rp.get({
+      url: 'http://localhost:8378/1/classes/MyObject',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+    }).then((result) => {
+      done();
+    }, (err) =>  {
+      fail(err);
+      done();
+    });
+  });
+})
