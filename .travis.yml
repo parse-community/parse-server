@@ -35,6 +35,7 @@ after_failure:
 after_success:
   - (cd resources; python travis_after_all.py)
   - export $(cat resources/.to_export_back)
+  - echo $BUILD_LEADER$BUILD_AGGREGATE_STATUS
 
 deploy:
   - provider: script
