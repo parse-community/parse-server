@@ -34,6 +34,7 @@ after_failure:
   - (cd resources; python travis_after_all.py)
 after_success:
   - (cd resources; python travis_after_all.py)
+  - export $(cat resources/.to_export_back)
 
 deploy:
   - provider: script
