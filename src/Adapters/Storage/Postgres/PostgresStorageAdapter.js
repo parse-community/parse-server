@@ -415,7 +415,7 @@ export class PostgresStorageAdapter {
       return toParseSchema(schema)
     })
     .catch((err) => {
-      if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
+      if (err.code === PostgresUniqueIndexViolationError && err.detail.indexOf(className) >= 0) {
         throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
       }
       throw err;
@@ -445,7 +445,7 @@ export class PostgresStorageAdapter {
         relations.push(fieldName)
         return;
       }
-      if (['_rperm', '_wperm'].includes(fieldName)) {
+      if (['_rperm', '_wperm'].indexOf(fieldName) >=0 ) {
         parseType.contents = { type: 'String' };
       }
       valuesArray.push(fieldName);
@@ -678,7 +678,7 @@ export class PostgresStorageAdapter {
           valuesArray.push(object[fieldName].objectId);
           break;
         case 'Array':
-          if (['_rperm', '_wperm'].includes(fieldName)) {
+          if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
             valuesArray.push(object[fieldName]);
           } else {
             valuesArray.push(JSON.stringify(object[fieldName]));
@@ -707,7 +707,7 @@ export class PostgresStorageAdapter {
     let initialValues = valuesArray.map((val, index) => {
       let termination = '';
       let fieldName = columnsArray[index];
-      if (['_rperm','_wperm'].includes(fieldName)) {
+      if (['_rperm','_wperm'].indexOf(fieldName) >= 0) {
         termination = '::text[]';
       } else if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Array') {
         termination = '::jsonb';
@@ -1031,9 +1031,9 @@ export class PostgresStorageAdapter {
     const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join(',')})`;
     return this._client.none(qs,[className, constraintName, ...fieldNames])
     .catch(error => {
-      if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
+      if (error.code === PostgresDuplicateRelationError && error.message.indexOf(constraintName) >= 0) {
         // Index already exists. Ignore error.
-      } else if (error.code === PostgresUniqueIndexViolationError && error.message.includes(constraintName)) {
+      } else if (error.code === PostgresUniqueIndexViolationError && error.message.indexOf(constraintName) >= 0) {
         // Cast the error into the proper parse error
         throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
       } else {
