@@ -221,7 +221,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('writes the old ACL format in addition to rperm and wperm', (done) => {
+  it('writes the old ACL format in addition to rperm and wperm on create', (done) => {
     var input = {
       _rperm: ['*'],
       _wperm: ['Kevin'],
@@ -229,10 +229,29 @@ describe('parseObjectToMongoObjectForCreate', () => {
 
     var output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
     expect(typeof output._acl).toEqual('object');
-    expect(output._acl["Kevin"].w).toBeTruthy();
-    expect(output._acl["Kevin"].r).toBeUndefined();
+    expect(output._acl['Kevin'].w).toBeTruthy();
+    expect(output._acl['Kevin'].r).toBeUndefined();
+    expect(output._rperm).toEqual(input._rperm);
+    expect(output._wperm).toEqual(input._wperm);
     done();
-  })
+  });
+
+  it('writes the old ACL format in addition to rperm and wperm on update', (done) => {
+    var input = {
+      _rperm: ['*'],
+      _wperm: ['Kevin']
+    };
+
+    var output = transform.transformUpdate(null, input, { fields: {} });
+    var set = output.$set;
+    expect(typeof set).toEqual('object');
+    expect(typeof set._acl).toEqual('object');
+    expect(set._acl['Kevin'].w).toBeTruthy();
+    expect(set._acl['Kevin'].r).toBeUndefined();
+    expect(set._rperm).toEqual(input._rperm);
+    expect(set._wperm).toEqual(input._wperm);
+    done();
+  });
 
   it('untransforms from _rperm and _wperm to ACL', (done) => {
     var input = {
