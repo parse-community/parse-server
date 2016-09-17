@@ -89,4 +89,24 @@ describe_only_db('mongo')('revocable sessions', () => {
       done();
     });
   });
+
+  it('should not crash without session token #2720', done => {
+    rp.post({
+      url: Parse.serverURL+'/upgradeToRevocableSession',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Rest-API-Key': 'rest'
+      },
+      json: true
+    }).then((res) => {
+      fail('should not be able to upgrade a bad token');
+    }, (response) => {
+      expect(response.statusCode).toBe(404);
+      expect(response.error).not.toBeUndefined();
+      expect(response.error.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      expect(response.error.error).toEqual('invalid session');
+    }).then(() => {
+      done();
+    });
+  });
 })
