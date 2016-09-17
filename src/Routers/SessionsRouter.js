@@ -54,6 +54,11 @@ export class SessionsRouter extends ClassesRouter {
     const config = req.config;
     const masterAuth = Auth.master(config)
     const user = req.auth.user;
+    // Issue #2720
+    // Calling without a session token would result in a not found user
+    if (!user) {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
+    }
     const expiresAt = config.generateSessionExpiresAt();
     const sessionData = {
       sessionToken: 'r:' + newToken(),
