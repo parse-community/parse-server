@@ -325,6 +325,18 @@ If you believe you've found an issue with Parse Server, make sure these boxes ar
 
 - [ ] You've searched through [existing issues](https://github.com/ParsePlatform/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
 
+# Want to ride the bleeding edge?
+
+The `latest` branch in this repository is automatically maintained to be the last
+commit to `master` to pass all tests, in the same form found on npm. It is
+recommend to use builds deployed npm for many reasons, but if you want to use
+the latest not-yet-released version of parse-server, you can do so by depending
+directly on this branch:
+
+```
+npm install parseplatform/parse-server.git#latest
+```
+
 # Contributing
 
 We really want Parse to be yours, to see it grow and thrive in the open source community. Please see the [Contributing to Parse Server guide](CONTRIBUTING.md).
