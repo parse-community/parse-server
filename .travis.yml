@@ -40,6 +40,7 @@ deploy:
     skip_cleanup: true
     script: ./resources/npm-git.sh
     on:
+      branch: master
       condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
   - provider: npm
     email:
