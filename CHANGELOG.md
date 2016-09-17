@@ -1,5 +1,18 @@
 ## Parse Server Changelog
 
+### 2.2.20
+
+* New: Adds CloudCode handler for beforeFind, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: RedisCacheAdapter for synchronizing schema and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart) 
+* New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Better support for upgradeToRevocableSession with missing session toekens, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Cluster option now support a boolean value for automatically choosing the right number of processes, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Filenames now appear correctly, thanks to [Lama Chandrasena](https://github.com/lama-buddy)
+* Fix: `_acl` is properly updated, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
+
 ### 2.2.19
 
 * New: support for upgrading to revocable sessions, thanks to [Florent Vilmart](https://github.com/flovilmart)
