@@ -266,7 +266,7 @@ var server = ParseServer({
   // if the account lockout policy is set and there are more than `threshold` number of failed login attempts then the `login` api call returns error code `Parse.Error.OBJECT_NOT_FOUND` with error message `Your account is locked due to multiple failed login attempts. Please try again after <duration> minute(s)`. After `duration` minutes of no login attempts, the application will allow the user to try login again.
   accountLockout: {
     duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
-    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000. 
+    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
   },
 });
 ```
@@ -278,6 +278,7 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-simple-ses-adapter](https://www.npmjs.com/package/parse-server-simple-ses-adapter)
 - [parse-server-mailgun-adapter-template](https://www.npmjs.com/package/parse-server-mailgun-adapter-template)
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
+- [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 
 ### Using environment variables to configure Parse Server
 
