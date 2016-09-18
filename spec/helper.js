@@ -14,6 +14,11 @@ global.on_db = (db, callback, elseCallback) => {
   }
 }
 
+if (global._babelPolyfill) {
+  console.error('We should not use polyfilled tests');
+  process.exit(1);
+}
+
 var cache = require('../src/cache').default;
 var express = require('express');
 var facebook = require('../src/authDataManager/facebook');
