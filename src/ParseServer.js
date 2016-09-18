@@ -9,6 +9,10 @@ var batch = require('./batch'),
     path = require('path'),
     authDataManager = require('./authDataManager');
 
+if (!global._babelPolyfill) {
+  require('babel-polyfill');
+}
+
 import defaults                 from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
