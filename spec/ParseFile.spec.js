@@ -571,4 +571,28 @@ describe('Parse.File testing', () => {
       done();
     });
   });
+
+  it('return with publicServerURL when provided', done => {
+    reconfigureServer({
+      publicServerURL: 'https://mydomain/parse'
+    }).then(() => {
+      var file = {
+        __type: 'File',
+        name: '123.txt'
+      };
+      var obj = new Parse.Object('FileTest');
+      obj.set('file', file);
+      return obj.save()
+    }).then(() => {
+      var query = new Parse.Query('FileTest');
+      return query.first();
+    }).then(result => {
+      let fileAgain = result.get('file');
+      expect(fileAgain.url().indexOf('https://mydomain/parse')).toBe(0);
+      done();
+    }).catch((e) => {
+      jfail(e);
+      done();
+    });
+  });
 });
