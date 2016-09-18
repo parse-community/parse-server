@@ -1,8 +1,8 @@
 
 import PromiseRouter from '../PromiseRouter';
 import rest          from '../rest';
-
 import url           from 'url';
+import _             from 'lodash';
 
 const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 
@@ -115,7 +115,7 @@ export class ClassesRouter extends PromiseRouter {
 
   static JSONFromQuery(query) {
     let json = {};
-    for (let [key, value] of Object.entries(query)) {
+    for (let [key, value] of _.entries(query)) {
       try {
         json[key] = JSON.parse(value);
       } catch (e) {
