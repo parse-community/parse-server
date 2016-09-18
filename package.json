@@ -65,10 +65,10 @@
   "scripts": {
     "dev": "npm run build && node bin/dev",
     "build": "babel src/ -d lib/",
-    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 babel-node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
-    "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
+    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 node $COVERAGE_OPTION ./node_modules/jasmine/bin/jasmine.js",
+    "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 node ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/istanbul cover' npm test",
-    "coverage:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 babel-node ./node_modules/babel-istanbul/lib/cli.js cover ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
+    "coverage:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 node ./node_modules/babel-istanbul/lib/cli.js cover ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },

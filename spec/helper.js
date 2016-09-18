@@ -214,7 +214,7 @@ afterEach(function(done) {
         } else {
           // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
           // break it.
-          return ['_User', '_Installation', '_Role', '_Session', '_Product'].includes(className);
+          return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
         }
       }});
     });
@@ -387,7 +387,7 @@ global.jfail = function(err) {
 }
 
 global.it_exclude_dbs = excluded => {
-  if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
+  if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
   } else {
     return it;
@@ -395,7 +395,7 @@ global.it_exclude_dbs = excluded => {
 }
 
 global.fit_exclude_dbs = excluded => {
-  if (excluded.includes(process.env.PARSE_SERVER_TEST_DB)) {
+  if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
   } else {
     return fit;
