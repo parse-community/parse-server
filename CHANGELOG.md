@@ -1,5 +1,9 @@
 ## Parse Server Changelog
 
+### 2.2.21
+
+* Fix: Reverts removal of babel-polyfill
+
 ### 2.2.20
 
 * New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
