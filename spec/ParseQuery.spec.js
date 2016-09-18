@@ -2567,6 +2567,35 @@ describe('Parse.Query testing', () => {
     })
   });
 
+  it('select nested keys (issue #1567)', function(done) {
+    var BarBaz = new Parse.Object('Barbaz');
+    BarBaz.set('key', 'value');
+    BarBaz.set('otherKey', 'value');
+    var Foobar = new Parse.Object('Foobar');
+    Foobar.set('foo', 'bar');
+    Foobar.set('fizz', 'buzz');
+    Foobar.set('barBaz', BarBaz);
+    Foobar.save({
+      success: function(savedFoobar){
+        var foobarQuery = new Parse.Query('Foobar');
+        foobarQuery.select(['fizz', 'barBaz.key']);
+        foobarQuery.get(savedFoobar.id,{
+          success: function(foobarObj){
+            equal(foobarObj.get('fizz'), 'buzz');
+            equal(foobarObj.get('foo'), undefined);
+            if (foobarObj.has('barBaz')) {
+              equal(foobarObj.get('barBaz').get('key'), 'value');
+              equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+            } else {
+              fail('barBaz should be set');
+            }
+            done();
+          }
+        });
+      }
+    })
+  });
+
   it('properly handles nested ors', function(done) {
     var objects = [];
     while(objects.length != 4) {
