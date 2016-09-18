@@ -17,6 +17,5 @@ module.exports = options => {
 		adapter.sendVerificationEmail = options.sendVerificationEmail;
 	}
 
-
 	return adapter;
 }

@@ -484,12 +484,16 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       fromAddress: 'parse@example.com',
       apiKey: 'k',
       domain: 'd',
-      sendPasswordResetEmail: function(options) {
-        expect(options.user.get('username').toEqual('testValidConfig@parse.com'));
+      sendMail: function(options) {
+        expect(options.to).toEqual('testValidConfig@parse.com');
         return Promise.resolve();
       }
     });
-    spyOn(adapter, 'sendPasswordResetEmail').and.callThrough();
+
+    // delete that handler to force using the default
+    delete adapter.sendPasswordResetEmail;
+
+    spyOn(adapter, 'sendMail').and.callThrough();
     reconfigureServer({
       appName: 'coolapp',
       publicServerURL: 'http://localhost:1337/1',
@@ -502,7 +506,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.signUp(null)
       .then(user => Parse.User.requestPasswordReset("testValidConfig@parse.com"))
       .then(result => {
-        expect(adapter.sendPasswordResetEmail).toHaveBeenCalled();
+        expect(adapter.sendMail).toHaveBeenCalled();
         done();
       }, error => {
         done(error);

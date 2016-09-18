@@ -181,7 +181,7 @@ export class UserController extends AdaptableController {
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
-    let to = user.get("email");
+    let to = user.get("email") || user.get('username');
     let subject =  'Password Reset for ' + appName;
     return { text, to, subject };
   }
