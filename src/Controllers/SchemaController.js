@@ -520,7 +520,6 @@ export default class SchemaController {
       }
     })
     .catch(error => {
-      console.error(error);
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
