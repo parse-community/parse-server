@@ -956,6 +956,10 @@ export class PostgresStorageAdapter {
 
     let columns = '*';
     if (keys) {
+      // Exclude empty keys
+      keys = keys.filter((key) => {
+        return key.length > 0;
+      });
       columns = keys.map((key, index) => {
         return `$${index+values.length+1}:name`;
       }).join(',');
