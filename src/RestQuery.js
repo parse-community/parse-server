@@ -459,37 +459,38 @@ RestQuery.prototype.handleInclude = function() {
 RestQuery.prototype.handleKeys = function() {
   if (this.keys && Array.isArray(this.response.results)) {
     this.response.results = this.response.results.map((object) => {
-      return includeOnlyKeySet(object, this.keys);
+      return includeOnlyKeys(object, Array.from(this.keys));
     });
   }
 }
 
 // Recursive call to include keys when resolving objects
-function includeOnlyKeySet(object, keySet) {
+function includeOnlyKeys(object, keys, currentObject = {}) {
   // No additional filtering, return the full object
-  if (!keySet || keySet.size === 0 || !object) {
+  if (!keys || keys.length === 0 || !object) {
     return object;
   }
   // Make a copy...
-  keySet = new Set(keySet);
+  keys = Array.from(keys);
   // Add the default
-  keySet.add('objectId');
-  keySet.add('createdAt');
-  keySet.add('updatedAt');
+  keys.push('objectId');
+  keys.push('createdAt');
+  keys.push('updatedAt');
   // Preserve the __type if needed
   if (object.__type) {
-    keySet.add('__type');
+    keys.push('__type');
     if (object.__type === 'Object') {
-      keySet.add('className');
+      keys.push('className');
     }
   }
-  let keyArray = Array.from(keySet);
-  return keyArray.reduce((newObject, originalKey) => {
+
+  return keys.reduce((newObject, originalKey) => {
     let subkeys = originalKey.split('.');
     let key = subkeys.shift();
-    newObject[key] = includeOnlyKeySet(object[key], new Set(subkeys));
+    let nextSubkeys = subkeys.length == 0 ? [] : [subkeys.join('.')];
+    newObject[key] = includeOnlyKeys(object[key], nextSubkeys, newObject[key]);
     return newObject;
-  }, {});
+  }, currentObject);
 }
 
 // Adds included values to the response.
