@@ -56,9 +56,6 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     switch(option) {
     case 'keys':
       this.keys = new Set(restOptions.keys.split(','));
-      this.keys.add('objectId');
-      this.keys.add('createdAt');
-      this.keys.add('updatedAt');
       break;
     case 'count':
       this.doCount = true;
@@ -120,6 +117,8 @@ RestQuery.prototype.execute = function() {
     return this.runCount();
   }).then(() => {
     return this.handleInclude();
+  }).then(() => {
+    return this.handleKeys();
   }).then(() => {
     return this.response;
   });
@@ -411,19 +410,6 @@ RestQuery.prototype.runFind = function() {
 
     this.config.filesController.expandFilesInObject(this.config, results);
 
-    if (this.keys) {
-      var keySet = this.keys;
-      results = results.map((object) => {
-        var newObject = {};
-        for (var key in object) {
-          if (keySet.has(key)) {
-            newObject[key] = object[key];
-          }
-        }
-        return newObject;
-      });
-    }
-
     if (this.redirectClassName) {
       for (var r of results) {
         r.className = this.redirectClassName;
@@ -469,6 +455,42 @@ RestQuery.prototype.handleInclude = function() {
 
   return pathResponse;
 };
+
+RestQuery.prototype.handleKeys = function() {
+  if (this.keys && Array.isArray(this.response.results)) {
+    this.response.results = this.response.results.map((object) => {
+      return includeOnlyKeySet(object, this.keys);
+    });
+  }
+}
+
+// Recursive call to include keys when resolving objects
+function includeOnlyKeySet(object, keySet) {
+  // No additional filtering, return the full object
+  if (!keySet || keySet.size === 0 || !object) {
+    return object;
+  }
+  // Make a copy...
+  keySet = new Set(keySet);
+  // Add the default
+  keySet.add('objectId');
+  keySet.add('createdAt');
+  keySet.add('updatedAt');
+  // Preserve the __type if needed
+  if (object.__type) {
+    keySet.add('__type');
+    if (object.__type === 'Object') {
+      keySet.add('className');
+    }
+  }
+  let keyArray = Array.from(keySet);
+  return keyArray.reduce((newObject, originalKey) => {
+    let subkeys = originalKey.split('.');
+    let key = subkeys.shift();
+    newObject[key] = includeOnlyKeySet(object[key], new Set(subkeys));
+    return newObject;
+  }, {});
+}
 
 // Adds included values to the response.
 // Path is a list of field names.
