@@ -489,17 +489,18 @@ function includePath(config, auth, response, path, restOptions = {}) {
   let includeRestOptions = {};
   if (restOptions.keys) {
     let keys = new Set(restOptions.keys.split(','));
-    includeRestOptions.keys = Array.from(keys).reduce((memo, key) => {
+    let keySet = Array.from(keys).reduce((set, key) => {
       let keyPath = key.split('.');
       let i=0;
       for (i; i<path.length; i++) {
         if (path[i] != keyPath[i]) {
-          return memo;
+          return set;
         }
       }
-      memo.push(keyPath[i]);
-      return memo;
-    }, []).join(',');
+      set.add(keyPath[i]);
+      return set;
+    }, new Set());
+    includeRestOptions.keys = Array.from(keySet).join(',');
   }
 
   let queryPromises = Object.keys(pointersHash).map((className) => {
