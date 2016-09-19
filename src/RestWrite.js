@@ -561,15 +561,10 @@ RestWrite.prototype.handleInstallation = function() {
     return;
   }
 
-  if (!this.query && !this.data.deviceToken && !this.data.installationId) {
+  if (!this.query && !this.data.deviceToken && !this.data.installationId && !this.auth.installationId) {
     throw new Parse.Error(135,
                           'at least one ID field (deviceToken, installationId) ' +
                           'must be specified in this operation');
-  }
-
-  if (!this.query && !this.data.deviceType) {
-    throw new Parse.Error(135,
-                          'deviceType must be specified in this operation');
   }
 
   // If the device token is 64 characters long, we assume it is for iOS
@@ -578,12 +573,16 @@ RestWrite.prototype.handleInstallation = function() {
     this.data.deviceToken = this.data.deviceToken.toLowerCase();
   }
 
-  // TODO: We may need installationId from headers, plumb through Auth?
-  //       per installation_handler.go
-
   // We lowercase the installationId if present
   if (this.data.installationId) {
     this.data.installationId = this.data.installationId.toLowerCase();
+  }
+
+  // If data.installationId is not set, we can lookup in the auth
+  let installationId = this.data.installationId || this.auth.installationId;
+
+  if (installationId) {
+    installationId = installationId.toLowerCase();
   }
 
   var promise = Promise.resolve();
@@ -600,9 +599,9 @@ RestWrite.prototype.handleInstallation = function() {
         objectId: this.query.objectId
     });
   }
-  if (this.data.installationId) {
+  if (installationId) {
     orQueries.push({
-      'installationId': this.data.installationId
+      'installationId': installationId
     });
   }
   if (this.data.deviceToken) {
@@ -622,7 +621,7 @@ RestWrite.prototype.handleInstallation = function() {
       if (this.query && this.query.objectId && result.objectId == this.query.objectId) {
         objectIdMatch = result;
       }
-      if (result.installationId == this.data.installationId) {
+      if (result.installationId == installationId) {
         installationIdMatch = result;
       }
       if (result.deviceToken == this.data.deviceToken) {
@@ -636,8 +635,8 @@ RestWrite.prototype.handleInstallation = function() {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                                 'Object not found for update.');
       }
-      if (this.data.installationId && objectIdMatch.installationId &&
-          this.data.installationId !== objectIdMatch.installationId) {
+      if (installationId && objectIdMatch.installationId &&
+          installationId !== objectIdMatch.installationId) {
           throw new Parse.Error(136,
                                 'installationId may not be changed in this ' +
                                 'operation');
@@ -661,8 +660,13 @@ RestWrite.prototype.handleInstallation = function() {
       idMatch = objectIdMatch;
     }
 
-    if (this.data.installationId && installationIdMatch) {
+    if (installationId && installationIdMatch) {
       idMatch = installationIdMatch;
+    }
+    // need to specify deviceType only if it's new
+    if (!this.query && !this.data.deviceType && !idMatch) {
+      throw new Parse.Error(135,
+                            'deviceType must be specified in this operation');
     }
 
   }).then(() => {
@@ -670,7 +674,7 @@ RestWrite.prototype.handleInstallation = function() {
       if (!deviceTokenMatches.length) {
         return;
       } else if (deviceTokenMatches.length == 1 &&
-        (!deviceTokenMatches[0]['installationId'] || !this.data.installationId)
+        (!deviceTokenMatches[0]['installationId'] || !installationId)
       ) {
         // Single match on device token but none on installationId, and either
         // the passed object or the match is missing an installationId, so we
@@ -689,7 +693,7 @@ RestWrite.prototype.handleInstallation = function() {
         var delQuery = {
           'deviceToken': this.data.deviceToken,
           'installationId': {
-            '$ne': this.data.installationId
+            '$ne': installationId
           }
         };
         if (this.data.appIdentifier) {
