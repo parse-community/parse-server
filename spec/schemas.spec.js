@@ -1548,6 +1548,34 @@ describe('schemas', () => {
     });
   });
 
+  it('can query with include and CLP (issue #2005)', (done) => {
+    setPermissionsOnClass('AnotherObject', {
+      get: {"*": true},
+      find: {},
+      create: {'*': true},
+      update: {'*': true},
+      delete: {'*': true},
+      addField:{'*': true}
+    }).then(() => {
+      let obj = new Parse.Object('AnObject');
+      let anotherObject = new Parse.Object('AnotherObject');
+      return obj.save({
+        anotherObject
+      })
+    }).then(() => {
+      let query = new Parse.Query('AnObject');
+      query.include('anotherObject');
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get('anotherObject')).not.toBeUndefined();
+      done();
+    }).catch((err) => {
+      jfail(err);
+      done();
+    })
+  });
+
   it('can add field as master (issue #1257)', (done) => {
     setPermissionsOnClass('AClass', {
       'addField': {}
