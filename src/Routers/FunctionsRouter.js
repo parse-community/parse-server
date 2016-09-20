@@ -103,7 +103,7 @@ export class FunctionsRouter extends PromiseRouter {
     const applicationId = req.config.applicationId;
     const theFunction = triggers.getFunction(functionName, applicationId);
     const theValidator = triggers.getValidator(req.params.functionName, applicationId);
-    if (theFunction) {      
+    if (theFunction) {
       let params = Object.assign({}, req.body, req.query);
       params = parseParams(params);
       var request = {
@@ -125,10 +125,10 @@ export class FunctionsRouter extends PromiseRouter {
 
       return new Promise(function (resolve, reject) {
         const userString = (req.auth && req.auth.user) ? req.auth.user.id : undefined;
-        const cleanInput = logger.truncateLogMessage(JSON.stringify(params));
+        const cleanInput = logger.cleanAndTruncateLogMessage(JSON.stringify(params));
         var response = FunctionsRouter.createResponseObject((result) => {
           try {
-            const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
+            const cleanResult = logger.cleanAndTruncateLogMessage(JSON.stringify(result.response.result));
             logger.info(`Ran cloud function ${functionName} for user ${userString} `
               + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
               functionName,
