@@ -53,15 +53,60 @@ check_npm() {
 
 
 echo ''
-echo 'This will setup parse-server in the current directory'
+echo '                                       
+             `.-://////:-..`            
+         `:/oooooooooooooooo+:.`        
+      `:+oooooooooooooooooooooo+/`      
+     :+ooooooooooooooooooooooooooo/.    
+   .+oooooooooooooo/:.....-:+ooooooo-   
+  .+ooooooooooooo/` .:///:-` -+oooooo:  
+ `+ooooooooooooo: `/ooooooo+- `ooooooo- 
+ :oooooooooooooo  :ooooooooo+` /oooooo+ 
+ +ooooooooooooo/  +ooooooooo+  /ooooooo.
+ oooooooooooooo+  ooooooooo`  .oooooooo.
+ +ooooooooooo+/: `ooooooo`  .:ooooooooo.
+ :ooooooo+.`````````````  /+oooooooooo+ 
+ `+oooooo- `ooo+ /oooooooooooooooooooo- 
+  .+ooooo/  :/:` -ooooooooooooooooooo:  
+   .+ooooo+:-..-/ooooooooooooooooooo-   
+     :+ooooooooooooooooooooooooooo/.    
+      `:+oooooooooooooooooooooo+/`      
+         `:/oooooooooooooooo+:.`        
+             `.-://////:-..`            
+
+              parse-server
+
+'
+
+
+INSTALL_DIR=""
+printf "Enter an installation directory\n"
+printf "(%s): " "${PWD}"
+read -r INSTALL_DIR
+
+if [ "$INSTALL_DIR" = "" ]; then
+  INSTALL_DIR="${PWD}"
+fi
+
+echo ''
+printf "This will setup parse-server in %s\n" "${INSTALL_DIR}"
 confirm 'Y' 'Do you want to continue? (Y/n): '
 
 check_node
 check_npm
 
-echo "Setting up parse-server in $PWD"
+printf "Setting up parse-server in %s" "${INSTALL_DIR}\n"
 
-if [ -f './package.json' ]; then
+if [ -d "${INSTALL_DIR}" ]; then
+  echo "{CHECK} ${INSTALL_DIR} exists"
+else
+  mkdir -p "${INSTALL_DIR}"
+  echo "${CHECK} Created ${INSTALL_DIR}"
+fi
+
+cd "${INSTALL_DIR}"
+
+if [ -f "package.json" ]; then
   echo "\n${RED}package.json exists${NC}"
   confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
 fi
@@ -77,33 +122,33 @@ i=0
 while [ "$APP_NAME" = "" ]
 do
   [[ $i != 0 ]] && printf "${RED}An application name is required!${NC}\n"
-  printf 'Enter your Application Name: '
+  printf "Enter your ${BOLD}Application Name${NC}: "
   read -r APP_NAME
   i=$(($i+1))
 done
 
-printf 'Enter your appId (leave empty to generate): '
+printf "Enter your ${BOLD}Application Id${NC} (leave empty to generate): "
 read -r APP_ID
 
 [[ $APP_ID = '' ]] && APP_ID=$(genstring) && printf "\n$APP_ID\n\n"
 
-printf 'Enter your masterKey (leave empty to generate): '
+printf "Enter your ${BOLD}Master Key${NC} (leave empty to generate): "
 read -r MASTER_KEY
 
 [[ $MASTER_KEY = '' ]] && MASTER_KEY=$(genstring) && printf "\n$MASTER_KEY\n\n"
 
-printf "Enter your mongodbURI (%s): " $DEFAULT_MONGODB_URI
+printf "Enter your ${BOLD}mongodbURI${NC} (%s): " $DEFAULT_MONGODB_URI
 read -r MONGODB_URI
 
 [[ $MONGODB_URI = '' ]] && MONGODB_URI="$DEFAULT_MONGODB_URI"
 
 cat > ./config.json << EOF
 {
-  "appId": "$APP_ID",
-  "masterKey": "$MASTER_KEY",
-  "appName": "$APP_NAME",
+  "applicationId": "${APP_ID}",
+  "masterKey": "${MASTER_KEY}",
+  "appName": "${APP_NAME}",
   "cloud": "./cloud/main",
-  "databaseURI": "$MONGODB_URI"
+  "databaseURI": "${MONGODB_URI}"
 }
 EOF
 echo "${CHECK} Created config.json"
@@ -113,8 +158,9 @@ NPM_APP_NAME=$(echo "$APP_NAME" | tr '[:upper:]' '[:lower:]' | tr ' ' '-')
 cat > ./package.json << EOF
 {
   "name": "$NPM_APP_NAME",
+  "description": "parse-server for $APP_NAME",
   "scripts": {
-    "start": "parse-server ./config.json"
+    "start": "parse-server config.json"
   },
   "dependencies": {
     "parse-server": "^2.0.0"
@@ -149,7 +195,7 @@ fi
 
 echo "\n${CHECK} running npm install\n"
 
-npm install
+npm install -s
 
 CURL_CMD=$(cat << EOF
 curl -X POST -H 'X-Parse-Application-Id: ${APP_ID}' \\
