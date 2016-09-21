@@ -61,6 +61,14 @@ export class LoggerController extends AdaptableController {
     return null;
   }
 
+  cleanAndTruncateLogMessage(string) {
+    return this.truncateLogMessage(this.cleanLogMessage(string));
+  }
+
+  cleanLogMessage(string) {
+    return string.replace(/password":"[^"]*"/g, 'password":"********"');
+  }
+
   truncateLogMessage(string) {
     if (string && string.length > LOG_STRING_TRUNCATE_LENGTH) {
       const truncated = string.substring(0, LOG_STRING_TRUNCATE_LENGTH) + truncationMarker;
