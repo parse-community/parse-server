@@ -62,7 +62,13 @@ class ParseLiveQueryServer {
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
       logger.verbose('Subscribe messsage %j', messageStr);
-      let message = JSON.parse(messageStr);
+      let message;
+      try {
+        message = JSON.parse(messageStr);
+      } catch(e) {
+        logger.error('unable to parse message', messageStr, e);
+        return;
+      }
       this._inflateParseObject(message);
       if (channel === 'afterSave') {
         this._onAfterSave(message);
@@ -229,7 +235,12 @@ class ParseLiveQueryServer {
   _onConnect(parseWebsocket: any): void {
     parseWebsocket.on('message', (request) => {
       if (typeof request === 'string') {
-        request = JSON.parse(request);
+        try {
+          request = JSON.parse(request);
+        } catch(e) {
+          logger.error('unable to parse request', request, e);
+          return;
+        }
       }
       logger.verbose('Request: %j', request);
 
