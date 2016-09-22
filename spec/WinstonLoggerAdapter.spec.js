@@ -97,20 +97,4 @@ describe('verbose logs', () => {
       done();
     })
   });
-
-  it("should not mask information in non _User class", (done) => {
-    let obj = new Parse.Object('users');
-    obj.set('password', 'pw');
-    obj.save().then(() => {
-      let winstonLoggerAdapter = new WinstonLoggerAdapter();
-      return winstonLoggerAdapter.query({
-        from: new Date(Date.now() - 500),
-        size: 100,
-        level: 'verbose'
-      });
-    }).then((results) => {
-      expect(results[1].body.password).toEqual("pw");
-      done();
-    });
-  });
 });

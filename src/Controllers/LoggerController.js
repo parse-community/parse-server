@@ -2,6 +2,7 @@ import { Parse } from 'parse/node';
 import PromiseRouter from '../PromiseRouter';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
+import url from 'url';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 const LOG_STRING_TRUNCATE_LENGTH = 1000;
@@ -19,8 +20,48 @@ export const LogOrder = {
 
 export class LoggerController extends AdaptableController {
 
+  maskSensitiveUrl(urlString) {
+    const password = url.parse(urlString, true).query.password;
+
+    if (password) {
+      urlString = urlString.replace('password=' + password, 'password=********');
+    }
+    return urlString;
+  }
+
+  maskSensitive(argArray) {
+    return argArray.map(e => {
+      if (!e) {
+        return e;
+      }
+
+      if (typeof e === 'string') {
+        return e.replace(/(password".?:.?")[^"]*"/g, '$1********"');
+      }
+      // else it is an object...
+
+      // check the url
+      if (e.url) {
+        e.url = this.maskSensitiveUrl(e.url);
+      }
+
+      if (e.body) {
+        for (let key of Object.keys(e.body)) {
+          if (key === 'password') {
+            e.body[key] = '********';
+            break;
+          }
+        }
+      }
+
+      return e;
+    });
+  }
+
   log(level, args) {
-    args = [].concat(level, [...args]);
+    // make the passed in arguments object an array with the spread operator
+    args = this.maskSensitive([...args]);
+    args = [].concat(level, args);
     this.adapter.log.apply(this.adapter, args);
   }
 
@@ -59,14 +100,6 @@ export class LoggerController extends AdaptableController {
     }
 
     return null;
-  }
-
-  cleanAndTruncateLogMessage(string) {
-    return this.truncateLogMessage(this.cleanLogMessage(string));
-  }
-
-  cleanLogMessage(string) {
-    return string.replace(/password":"[^"]*"/g, 'password":"********"');
   }
 
   truncateLogMessage(string) {
