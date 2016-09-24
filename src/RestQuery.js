@@ -20,6 +20,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.auth = auth;
   this.className = className;
   this.restWhere = restWhere;
+  this.restOptions = restOptions;
   this.clientSDK = clientSDK;
   this.response = null;
   this.findOptions = {};
@@ -56,6 +57,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     switch(option) {
     case 'keys':
       this.keys = new Set(restOptions.keys.split(','));
+        // Add the default
       this.keys.add('objectId');
       this.keys.add('createdAt');
       this.keys.add('updatedAt');
@@ -390,6 +392,11 @@ RestQuery.prototype.runFind = function() {
     this.response = {results: []};
     return Promise.resolve();
   }
+  if (this.keys) {
+    this.findOptions.keys = Array.from(this.keys).map((key) => {
+      return key.split('.')[0];
+    });
+  }
   return this.config.database.find(
     this.className, this.restWhere, this.findOptions).then((results) => {
     if (this.className === '_User') {
@@ -410,19 +417,6 @@ RestQuery.prototype.runFind = function() {
     }
 
     this.config.filesController.expandFilesInObject(this.config, results);
-
-    if (this.keys) {
-      var keySet = this.keys;
-      results = results.map((object) => {
-        var newObject = {};
-        for (var key in object) {
-          if (keySet.has(key)) {
-            newObject[key] = object[key];
-          }
-        }
-        return newObject;
-      });
-    }
 
     if (this.redirectClassName) {
       for (var r of results) {
@@ -455,7 +449,7 @@ RestQuery.prototype.handleInclude = function() {
   }
 
   var pathResponse = includePath(this.config, this.auth,
-                                 this.response, this.include[0]);
+                                 this.response, this.include[0], this.restOptions);
   if (pathResponse.then) {
     return pathResponse.then((newResponse) => {
       this.response = newResponse;
@@ -473,7 +467,7 @@ RestQuery.prototype.handleInclude = function() {
 // Adds included values to the response.
 // Path is a list of field names.
 // Returns a promise for an augmented response.
-function includePath(config, auth, response, path) {
+function includePath(config, auth, response, path, restOptions = {}) {
   var pointers = findPointers(response.results, path);
   if (pointers.length == 0) {
     return response;
@@ -492,9 +486,26 @@ function includePath(config, auth, response, path) {
     }
   }
 
+  let includeRestOptions = {};
+  if (restOptions.keys) {
+    let keys = new Set(restOptions.keys.split(','));
+    let keySet = Array.from(keys).reduce((set, key) => {
+      let keyPath = key.split('.');
+      let i=0;
+      for (i; i<path.length; i++) {
+        if (path[i] != keyPath[i]) {
+          return set;
+        }
+      }
+      set.add(keyPath[i]);
+      return set;
+    }, new Set());
+    includeRestOptions.keys = Array.from(keySet).join(',');
+  }
+
   let queryPromises = Object.keys(pointersHash).map((className) => {
     var where = {'objectId': {'$in': pointersHash[className]}};
-    var query = new RestQuery(config, auth, className, where);
+    var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute().then((results) => {
       results.className = className;
       return Promise.resolve(results);

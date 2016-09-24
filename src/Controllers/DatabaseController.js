@@ -711,6 +711,7 @@ DatabaseController.prototype.find = function(className, query, {
   acl,
   sort = {},
   count,
+  keys
 } = {}) {
   let isMaster = acl === undefined;
   let aclGroup = acl || [];
@@ -779,7 +780,7 @@ DatabaseController.prototype.find = function(className, query, {
           if (!classExists) {
             return [];
           } else {
-            return this.adapter.find(className, schema, query, { skip, limit, sort })
+            return this.adapter.find(className, schema, query, { skip, limit, sort, keys })
             .then(objects => objects.map(object => {
               object = untransformObjectACL(object);
               return filterSensitiveData(isMaster, aclGroup, className, object)
