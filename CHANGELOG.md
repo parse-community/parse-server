@@ -1,5 +1,23 @@
 ## Parse Server Changelog
 
+### 2.2.22
+
+* Minimum nodejs engine is now 4.5
+
+#### New Features
+* New: CLI for parse-live-query-server, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Start parse-live-query-server for parse-server CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+* Fix: Include with pointers are not conflicting with get CLP anymore, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes dependency on babel-polyfill, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Support nested select calls, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Use native column selection instead of runtime, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: installationId header is properly used when updating `_Installation` objects, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: don't crash parse-server on improperly formatted live-query messages, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Passwords are properly stripped out of logs, , thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix: Lookup for email in username if email is not set, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.2.21
 
 * Fix: Reverts removal of babel-polyfill
