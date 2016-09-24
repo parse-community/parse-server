@@ -15,7 +15,7 @@
 * Fix: Use native column selection instead of runtime, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: installationId header is properly used when updating `_Installation` objects, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: don't crash parse-server on improperly formatted live-query messages, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* Fix: Passwords are properly stripped out of logs, , thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix: Passwords are properly stripped out of logs, thanks to [Arthur Cinader](https://github.com/acinader)
 * Fix: Lookup for email in username if email is not set, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
 ### 2.2.21
