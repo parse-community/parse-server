@@ -37,7 +37,7 @@ describe('Installations', () => {
       expect(obj.installationId).toEqual(installId);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an ios installation with ids', (done) => {
@@ -55,7 +55,7 @@ describe('Installations', () => {
       expect(obj.deviceToken).toEqual(t);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an embedded installation with ids', (done) => {
@@ -73,7 +73,7 @@ describe('Installations', () => {
       expect(obj.installationId).toEqual(installId);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an android installation with all fields', (done) => {
@@ -96,7 +96,7 @@ describe('Installations', () => {
       expect(obj.channels[0]).toEqual('foo');
       expect(obj.channels[1]).toEqual('bar');
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an ios installation with all fields', (done) => {
@@ -119,7 +119,7 @@ describe('Installations', () => {
       expect(obj.channels[0]).toEqual('foo');
       expect(obj.channels[1]).toEqual('bar');
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('should properly fail queying installations', (done) => {
@@ -862,6 +862,40 @@ describe('Installations', () => {
         json: true,
       }, (error, response, body) => {
         expect(body.objectId).toEqual(createResult.response.objectId);
+        done();
+      });
+    })
+    .catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
+  it('allows you to update installation from header (#2090)', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key':   'rest',
+        'X-Parse-Installation-Id': installId
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/_Installation',
+        json: true,
+        body: {
+          date: new Date()
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toBe(200);
+        expect(body.updatedAt).not.toBeUndefined();
         done();
       });
     })
