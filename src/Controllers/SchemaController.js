@@ -218,7 +218,7 @@ const validNonRelationOrPointerTypes = [
 ];
 // Returns an error suitable for throwing if the type is invalid
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
-  if (['Pointer', 'Relation'].includes(type)) {
+  if (['Pointer', 'Relation'].indexOf(type) >= 0) {
     if (!targetClass) {
       return new Parse.Error(135, `type ${type} needs a class name`);
     } else if (typeof targetClass !== 'string') {
@@ -232,7 +232,7 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
    if (typeof type !== 'string') {
     return invalidJsonError;
    }
-  if (!validNonRelationOrPointerTypes.includes(type)) {
+  if (validNonRelationOrPointerTypes.indexOf(type) < 0) {
     return new Parse.Error(Parse.Error.INCORRECT_TYPE, `invalid field type: ${type}`);
    }
   return undefined;
@@ -520,7 +520,6 @@ export default class SchemaController {
       }
     })
     .catch(error => {
-      console.error(error);
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
@@ -541,7 +540,7 @@ export default class SchemaController {
 
   validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
     for (let fieldName in fields) {
-      if (!existingFieldNames.includes(fieldName)) {
+      if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName)) {
           return {
             code: Parse.Error.INVALID_KEY_NAME,

@@ -8,6 +8,7 @@ import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
+import _ from 'lodash';
 
 class ParseLiveQueryServer {
   clientId: number;
@@ -122,7 +123,7 @@ class ParseLiveQueryServer {
       if (!isSubscriptionMatched) {
         continue;
       }
-      for (let [clientId, requestIds] of subscription.clientRequestIds.entries()) {
+      for (let [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         let client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -165,7 +166,7 @@ class ParseLiveQueryServer {
     for (let subscription of classSubscriptions.values()) {
       let isOriginalSubscriptionMatched = this._matchesSubscription(originalParseObject, subscription);
       let isCurrentSubscriptionMatched = this._matchesSubscription(currentParseObject, subscription);
-      for (let [clientId, requestIds] of subscription.clientRequestIds.entries()) {
+      for (let [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         let client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -280,7 +281,7 @@ class ParseLiveQueryServer {
       this.clients.delete(clientId);
 
       // Delete client from subscriptions
-      for (let [requestId, subscriptionInfo] of client.subscriptionInfos.entries()) {
+      for (let [requestId, subscriptionInfo] of _.entries(client.subscriptionInfos)) {
         let subscription = subscriptionInfo.subscription;
         subscription.deleteClientSubscription(clientId, requestId);
 

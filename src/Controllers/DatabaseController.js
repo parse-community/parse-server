@@ -44,6 +44,11 @@ const transformObjectACL = ({ ACL, ...result }) => {
 }
 
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
+
+const isSpecialQueryKey = key => {
+  return specialQuerykeys.indexOf(key) >= 0;
+}
+
 const validateQuery = query => {
   if (query.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Cannot query on ACL.');
@@ -73,7 +78,7 @@ const validateQuery = query => {
         }
       }
     }
-    if (!specialQuerykeys.includes(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
+    if (!isSpecialQueryKey(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
   });
@@ -185,6 +190,11 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //         one of the provided strings must provide the caller with
 //         write permissions.
 const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
+
+const isSpecialUpdateKey = key => {
+  return specialKeysForUpdate.indexOf(key) >= 0;
+}
+
 DatabaseController.prototype.update = function(className, query, update, {
   acl,
   many,
@@ -227,7 +237,7 @@ DatabaseController.prototype.update = function(className, query, update, {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
           }
           fieldName = fieldName.split('.')[0];
-          if (!SchemaController.fieldNameIsValid(fieldName) && !specialKeysForUpdate.includes(fieldName)) {
+          if (!SchemaController.fieldNameIsValid(fieldName) && !isSpecialUpdateKey(fieldName)) {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
           }
         });

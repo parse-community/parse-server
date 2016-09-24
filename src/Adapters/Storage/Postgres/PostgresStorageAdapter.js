@@ -445,7 +445,7 @@ export class PostgresStorageAdapter {
         relations.push(fieldName)
         return;
       }
-      if (['_rperm', '_wperm'].includes(fieldName)) {
+      if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
         parseType.contents = { type: 'String' };
       }
       valuesArray.push(fieldName);
@@ -678,7 +678,7 @@ export class PostgresStorageAdapter {
           valuesArray.push(object[fieldName].objectId);
           break;
         case 'Array':
-          if (['_rperm', '_wperm'].includes(fieldName)) {
+          if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
             valuesArray.push(object[fieldName]);
           } else {
             valuesArray.push(JSON.stringify(object[fieldName]));
@@ -707,7 +707,7 @@ export class PostgresStorageAdapter {
     let initialValues = valuesArray.map((val, index) => {
       let termination = '';
       let fieldName = columnsArray[index];
-      if (['_rperm','_wperm'].includes(fieldName)) {
+      if (['_rperm','_wperm'].indexOf(fieldName) >= 0) {
         termination = '::text[]';
       } else if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Array') {
         termination = '::jsonb';
