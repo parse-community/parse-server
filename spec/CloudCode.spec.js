@@ -712,6 +712,32 @@ describe('Cloud Code', () => {
       done();
     });
   });
+  
+  it('beforeSave change propagates through the afterSave #1931', (done) => {
+    Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
+      request.object.unset('file');
+      request.object.unset('date');
+      response.success();
+    });
+
+    Parse.Cloud.afterSave('ChangingObject', function(request, response) {
+      let json = request.object.toJSON();
+      expect(request.object.has("file")).toBe(false);
+      expect(request.object.has("date")).toBe(false);
+      expect(request.object.get('file')).toBeUndefined();
+      return Promise.resolve();
+    });
+    let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
+    file.save().then(() => {
+      let obj = new Parse.Object('ChangingObject');
+      return obj.save({ file, date: new Date() })
+    }).then(() => {
+      done();
+    }, () => {
+      fail();
+      done();
+    })
+  });
 
   it('test cloud function parameter validation success', (done) => {
     // Register a function with validation
