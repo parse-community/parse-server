@@ -711,7 +711,8 @@ DatabaseController.prototype.find = function(className, query, {
   acl,
   sort = {},
   count,
-  keys
+  keys,
+  op
 } = {}) {
   let isMaster = acl === undefined;
   let aclGroup = acl || [];

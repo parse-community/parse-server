@@ -392,13 +392,17 @@ RestQuery.prototype.runFind = function(options = {}) {
     this.response = {results: []};
     return Promise.resolve();
   }
+  let findOptions = Object.assign({}, this.findOptions);
   if (this.keys) {
-    this.findOptions.keys = Array.from(this.keys).map((key) => {
+    findOptions.keys = Array.from(this.keys).map((key) => {
       return key.split('.')[0];
     });
   }
+  if (options.op) {
+      findOptions.op = options.op;
+  }
   return this.config.database.find(
-    this.className, this.restWhere, this.findOptions, options.op).then((results) => {
+    this.className, this.restWhere, findOptions).then((results) => {
     if (this.className === '_User') {
       for (var result of results) {
         delete result.password;
