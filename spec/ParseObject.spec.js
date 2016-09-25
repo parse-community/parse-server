@@ -1922,4 +1922,27 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
+
+  it('should handle includes on null arrays #2752', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 = new Parse.Object("AnotherObject");
+    obj2.set({
+      "key": "value"
+    })
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      obj1.set("objects", [null, null, obj2]);
+      return obj1.save();
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("objects.key");
+      return query.find();
+    }).then((res) => {
+      let obj = res[0];
+      done();
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
+  });
 });
