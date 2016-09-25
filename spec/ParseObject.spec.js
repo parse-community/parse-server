@@ -1926,8 +1926,12 @@ describe('Parse.Object testing', () => {
   it('should handle includes on null arrays #2752', (done) => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 = new Parse.Object("AnotherObject");
+    let obj3 = new Parse.Object("NestedObject");
+    obj3.set({
+      "foo": "bar"
+    })
     obj2.set({
-      "key": "value"
+      "key": obj3
     })
 
     Parse.Object.saveAll([obj1, obj2]).then(() => {
@@ -1939,6 +1943,12 @@ describe('Parse.Object testing', () => {
       return query.find();
     }).then((res) => {
       let obj = res[0];
+      expect(obj.get("objects")).not.toBe(undefined);
+      let array = obj.get("objects");
+      expect(Array.isArray(array)).toBe(true);
+      expect(array[0]).toBe(null);
+      expect(array[1]).toBe(null);
+      expect(array[2].get("key").get("foo")).toEqual("bar");
       done();
     }).catch(err => {
       jfail(err);
