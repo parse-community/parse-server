@@ -555,7 +555,7 @@ function findPointers(object, path) {
     return answer;
   }
 
-  if (typeof object !== 'object') {
+  if (typeof object !== 'object' || !object) {
     return [];
   }
 
@@ -585,7 +585,7 @@ function replacePointers(object, path, replace) {
              .filter((obj) => typeof obj !== 'undefined');
   }
 
-  if (typeof object !== 'object') {
+  if (typeof object !== 'object' || !object) {
     return object;
   }
 

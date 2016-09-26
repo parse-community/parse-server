@@ -1922,4 +1922,37 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
+
+  it('should handle includes on null arrays #2752', (done) => {
+    let obj1 = new Parse.Object("AnObject");
+    let obj2 = new Parse.Object("AnotherObject");
+    let obj3 = new Parse.Object("NestedObject");
+    obj3.set({
+      "foo": "bar"
+    })
+    obj2.set({
+      "key": obj3
+    })
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      obj1.set("objects", [null, null, obj2]);
+      return obj1.save();
+    }).then(() => {
+      let query = new Parse.Query("AnObject");
+      query.include("objects.key");
+      return query.find();
+    }).then((res) => {
+      let obj = res[0];
+      expect(obj.get("objects")).not.toBe(undefined);
+      let array = obj.get("objects");
+      expect(Array.isArray(array)).toBe(true);
+      expect(array[0]).toBe(null);
+      expect(array[1]).toBe(null);
+      expect(array[2].get("key").get("foo")).toEqual("bar");
+      done();
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
+  });
 });
