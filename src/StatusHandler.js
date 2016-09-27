@@ -94,24 +94,27 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config) {
+export function pushStatusHandler(body = {}, config) {
 
   let pushStatus;
   let objectId = newObjectId();
   let database = config.database;
   let handler = statusHandler(PUSH_STATUS_COLLECTION, database);
-  let setInitial = function(body = {}, where, options = {source: 'rest'}) {
+
+  let data =  body.data || {};
+  let pushHash;
+  if (typeof data.alert === 'string') {
+    pushHash = md5Hash(data.alert);
+  } else if (typeof data.alert === 'object') {
+    pushHash = md5Hash(JSON.stringify(data.alert));
+  } else {
+    pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
+  }
+
+  let setInitial = function(where, options = {source: 'rest'}) {
     let now = new Date();
-    let data =  body.data || {};
     let payloadString = JSON.stringify(data);
-    let pushHash;
-    if (typeof data.alert === 'string') {
-      pushHash = md5Hash(data.alert);
-    } else if (typeof data.alert === 'object') {
-      pushHash = md5Hash(JSON.stringify(data.alert));
-    } else {
-      pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
-    }
+
     let object = {
       objectId,
       createdAt: now,
@@ -123,8 +126,8 @@ export function pushStatusHandler(config) {
       expiry: body.expiration_time,
       status: "pending",
       numSent: 0,
+      numOpened: 0,
       pushHash,
-      // lockdown!
       ACL: {}
     }
 
@@ -189,6 +192,7 @@ export function pushStatusHandler(config) {
   return Object.freeze({
     objectId,
     setInitial,
+    pushHash,
     setRunning,
     complete,
     fail
