@@ -1055,7 +1055,71 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
+  it('should not fail without any key', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    delete customConfig.clientKey;
+    delete customConfig.javascriptKey;
+    delete customConfig.dotNetKey;
+    delete customConfig.restAPIKey;
+    setServerConfiguration(customConfig);
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.results.length).toEqual(0);
+      done();
+    });
+  });
+
+  it('fails on missing key when empty keys are defined', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    customConfig.clientKey = '';
+    customConfig.javascriptKey = '';
+    customConfig.dotNetKey = '';
+    customConfig.restAPIKey = '';
+    setServerConfiguration(customConfig);
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
   it('fails on invalid client key', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Client-Key': 'notclient'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
+  it('fails on invalid client key when only some keys are defined', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    delete customConfig.restAPIKey;
+    setServerConfiguration(customConfig);
     var headers = {
       'Content-Type': 'application/octet-stream',
       'X-Parse-Application-Id': 'test',
@@ -1089,6 +1153,26 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
+  it('fails on invalid windows key when only some keys are defined', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    delete customConfig.restAPIKey;
+    setServerConfiguration(customConfig);
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Windows-Key': 'notwindows'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
   it('fails on invalid javascript key', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
@@ -1106,7 +1190,47 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
+  it('fails on invalid javascript key when only some keys are defined', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    delete customConfig.restAPIKey;
+    setServerConfiguration(customConfig);
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Javascript-Key': 'notjavascript'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
   it('fails on invalid rest api key', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'notrest'
+    };
+    request.get({
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/TestObject'
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      expect(b.error).toEqual('unauthorized');
+      done();
+    });
+  });
+
+  it('fails on invalid rest api key when only some keys are defined', done => {
+    let customConfig = Object.assign({}, defaultConfiguration);
+    delete customConfig.clientKey;
+    setServerConfiguration(customConfig);
     var headers = {
       'Content-Type': 'application/octet-stream',
       'X-Parse-Application-Id': 'test',
