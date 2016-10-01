@@ -639,8 +639,8 @@ RestWrite.prototype.handleInstallation = function() {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
                                 'Object not found for update.');
       }
-      if (installationId && objectIdMatch.installationId &&
-          installationId !== objectIdMatch.installationId) {
+      if (this.data.installationId && objectIdMatch.installationId &&
+          this.data.installationId !== objectIdMatch.installationId) {
           throw new Parse.Error(136,
                                 'installationId may not be changed in this ' +
                                 'operation');
