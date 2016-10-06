@@ -59,7 +59,7 @@
     "istanbul": "1.0.0-alpha.1",
     "jasmine": "2.5.2",
     "mongodb-runner": "3.4.0",
-    "nodemon": "1.10.0",
+    "nodemon": "1.11.0",
     "request-promise": "4.1.1"
   },
   "scripts": {
