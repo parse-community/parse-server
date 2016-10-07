@@ -1955,4 +1955,34 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
+
+  it('should handle select and include #2786', (done) => {
+    let score = new Parse.Object("GameScore");
+    let player = new Parse.Object("Player");
+    score.set({
+      "score": 1234
+    });
+
+    score.save().then(() => {
+      player.set("gameScore", score);
+      player.set("other", "value");
+      return player.save();
+    }).then(() => {
+      let query = new Parse.Query("Player");
+      query.include("gameScore");
+      query.select("gameScore");
+      return query.find();
+    }).then((res) => {
+      let obj = res[0];
+      let gameScore = obj.get("gameScore");
+      let other = obj.get("other");
+      expect(other).toBeUndefined();
+      expect(gameScore).not.toBeUndefined();
+      expect(gameScore.get("score")).toBe(1234);
+      done();
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
+  });
 });
