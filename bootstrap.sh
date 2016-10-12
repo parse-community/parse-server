@@ -144,7 +144,7 @@ read -r MONGODB_URI
 
 cat > ./config.json << EOF
 {
-  "applicationId": "${APP_ID}",
+  "appId": "${APP_ID}",
   "masterKey": "${MASTER_KEY}",
   "appName": "${APP_NAME}",
   "cloud": "./cloud/main",
