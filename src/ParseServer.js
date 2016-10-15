@@ -260,7 +260,8 @@ class ParseServer {
       case 'postgres:':
         return new PostgresStorageAdapter({
           uri: databaseURI,
-          collectionPrefix
+          collectionPrefix,
+          databaseOptions
         });
       default:
         return new MongoStorageAdapter({
