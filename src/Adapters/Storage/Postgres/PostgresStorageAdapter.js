@@ -1,4 +1,4 @@
-import { createClient } from './ClientCreator';
+import { createClient } from './PostgresClient';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
