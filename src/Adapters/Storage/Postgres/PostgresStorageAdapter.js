@@ -1,4 +1,4 @@
-const pgp = require('pg-promise')();
+import { createClient } from './ClientCreator';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -379,9 +379,10 @@ export class PostgresStorageAdapter {
   constructor({
     uri,
     collectionPrefix = '',
+    databaseOptions
   }) {
     this._collectionPrefix = collectionPrefix;
-    this._client = pgp(uri);
+    this._client = createClient(uri, databaseOptions);
   }
 
   _ensureSchemaCollectionExists() {
