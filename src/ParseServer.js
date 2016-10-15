@@ -251,8 +251,11 @@ class ParseServer {
   }
 
   getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
-    const parsedURI = url.parse(databaseURI);
-    const protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
+    let protocol;
+    try{
+      const parsedURI = url.parse(databaseURI);
+      protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
+    }catch(e){}
     switch (protocol) {
       case 'postgres:':
         return new PostgresStorageAdapter({
