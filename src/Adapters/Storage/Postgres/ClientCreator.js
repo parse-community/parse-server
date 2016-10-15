@@ -18,8 +18,8 @@ export function createClient(uri, databaseOptions) {
     client = pgp(dbOptions);
 
     if (dbOptions.pgOptions) {
-      for (const key in databaseOptions.pgOptions) {
-        client.pg.defaults[key] = database.pgOptions[key]; 
+      for (const key in dbOptions.pgOptions) {
+        client.pg.defaults[key] = dbOptions.pgOptions[key]; 
       }
     }
 
