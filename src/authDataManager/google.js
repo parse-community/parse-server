@@ -26,7 +26,7 @@ function validateAuthToken(id, token) {
     });
 }
 
-// Returns a promise that fulfills iff this user id is valid.
+// Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
   if (authData.id_token) {
     return validateIdToken(authData.id, authData.id_token); 
@@ -41,7 +41,7 @@ function validateAuthData(authData) {
   }
 }
 
-// Returns a promise that fulfills iff this app id is valid.
+// Returns a promise that fulfills if this app id is valid.
 function validateAppId() {
   return Promise.resolve();
 }
