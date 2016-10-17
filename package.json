@@ -55,7 +55,7 @@
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "3.1.3",
     "deep-diff": "0.3.4",
-    "gaze": "1.1.1",
+    "gaze": "1.1.2",
     "istanbul": "1.0.0-alpha.1",
     "jasmine": "2.5.2",
     "mongodb-runner": "3.4.0",
