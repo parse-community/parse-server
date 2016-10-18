@@ -128,6 +128,22 @@ describe('Parse.Query testing', () => {
         equal(results.length, 0);
       });
     }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.notEqualTo("hater", user2);
+      query.notEqualTo("liker", user2);
+      // user2 doesn't like any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.equalTo("hater", user);
+      query.equalTo("liker", user);
+      // user doesn't hate any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
       done();
     }).catch((err) => {
       jfail(err);
