@@ -1462,4 +1462,295 @@ describe('miscellaneous', function() {
       done();
     });
   });
+
+  it_exclude_dbs(['postgres'])('import objects from rest array', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.post(
+      {
+        headers: headers,
+        url: 'http://localhost:8378/1/import/TestObject',
+        body: JSON.stringify([
+          { column1: 'row1Column1', column2: 'row1Column2' },
+          { column1: 'row2Column1', column2: 'row2Column2' }
+        ])
+      },
+      (err) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query('TestObject');
+        query.ascending('column1');
+        query.find().then((results) => {
+          expect(results.length).toEqual(2);
+          expect(results[0].get('column1')).toEqual('row1Column1');
+          expect(results[0].get('column2')).toEqual('row1Column2');
+          expect(results[1].get('column1')).toEqual('row2Column1');
+          expect(results[1].get('column2')).toEqual('row2Column2');
+          done();
+        });
+      }
+    );
+  });
+
+  it_exclude_dbs(['postgres'])('import objects from json with results field', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.post(
+      {
+        headers: headers,
+        url: 'http://localhost:8378/1/import/TestObject',
+        body: JSON.stringify({
+          results: [
+            { column1: 'row1Column1', column2: 'row1Column2' },
+            { column1: 'row2Column1', column2: 'row2Column2' }
+          ]
+        })
+      },
+      (err) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query('TestObject');
+        query.ascending('column1');
+        query.find().then((results) => {
+          expect(results.length).toEqual(2);
+          expect(results[0].get('column1')).toEqual('row1Column1');
+          expect(results[0].get('column2')).toEqual('row1Column2');
+          expect(results[1].get('column1')).toEqual('row2Column1');
+          expect(results[1].get('column2')).toEqual('row2Column2');
+          done();
+        });
+      }
+    );
+  });
+
+  it_exclude_dbs(['postgres'])('import objects with all data types', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.post(
+      {
+        headers: headers,
+        url: 'http://localhost:8378/1/import/TestObject',
+        body: JSON.stringify({
+          results: [
+            {
+              boolColumnTrue: true,
+              boolColumnFalse: false,
+              stringColumn: 'stringColumnValue',
+              numberColumn: 100.1,
+              dateColumn: {
+                "__type": "Date",
+                "iso": "2016-10-30T12:03:56.848Z"
+              },
+              arrayColumn: [
+                1,
+                2,
+                3
+              ],
+              objectColumn: {
+                'key': 'value'
+              },
+              geoColumn: {
+                "__type": "GeoPoint",
+                "latitude": 10,
+                "longitude": -10
+              },
+              fileColumn: {
+                "__type": "File",
+                "name": "myfile.png",
+                "url": "http://myhost.com/myfile.png"
+              },
+              pointerColumn: {
+                "__type": "Pointer",
+                "className": "_User",
+                "objectId": "AAAAAAAAAA"
+              }
+            }
+          ]
+        })
+      },
+      (err) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query('TestObject');
+        query.ascending('column1');
+        query.find().then((results) => {
+          expect(results.length).toEqual(1);
+          expect(results[0].get('stringColumn')).toEqual('stringColumnValue');
+          done();
+        });
+      }
+    );
+  });
+
+  it_exclude_dbs(['postgres'])('import objects with object id', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.post(
+      {
+        headers: headers,
+        url: 'http://localhost:8378/1/import/TestObject',
+        body: JSON.stringify({
+          results: [
+            {
+              'objectId': 'aaaaaaaaaa',
+              'data': 'somedataa'
+            },
+            {
+              'objectId': 'bbbbbbbbbb',
+              'data': 'somedatab'
+            }
+          ]
+        })
+      },
+      (err) => {
+        expect(err).toBe(null);
+        let query = new Parse.Query('TestObject');
+        query.ascending('data');
+        query.find().then((results) => {
+          expect(results.length).toEqual(2);
+          expect(results[0].id).toEqual('aaaaaaaaaa');
+          expect(results[1].id).toEqual('bbbbbbbbbb');
+          done();
+        });
+      }
+    );
+  });
+
+  it_exclude_dbs(['postgres'])('update objects with existing object id', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.post(
+      {
+        headers: headers,
+        url: 'http://localhost:8378/1/import/TestObject',
+        body: JSON.stringify({
+          results: [
+            {
+              'objectId': 'aaaaaaaaaa',
+              'data': 'somedataa'
+            },
+            {
+              'objectId': 'bbbbbbbbbb',
+              'data': 'somedatab'
+            }
+          ]
+        })
+      },
+      (err) => {
+        expect(err).toBe(null);
+        request.post(
+          {
+            headers: headers,
+            url: 'http://localhost:8378/1/import/TestObject',
+            body: JSON.stringify({
+              results: [
+                {
+                  'objectId': 'aaaaaaaaaa',
+                  'data': 'somedataa2'
+                }
+              ]
+            })
+          },
+          (err) => {
+            expect(err).toBe(null);
+            let query = new Parse.Query('TestObject');
+            query.ascending('data');
+            query.find().then((results) => {
+              expect(results.length).toEqual(2);
+              expect(results[0].id).toEqual('aaaaaaaaaa');
+              expect(results[0].get('data')).toEqual('somedataa2');
+              expect(results[1].id).toEqual('bbbbbbbbbb');
+              expect(results[1].get('data')).toEqual('somedatab');
+              done();
+            });
+          }
+        );
+      }
+    );
+  });
+
+  it_exclude_dbs(['postgres'])('import relations object from json', (done) => {
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-Master-Key': 'test'
+    };
+
+    let promises = [];
+
+    let object = new Parse.Object('TestObjectDad');
+    let relatedObject = new Parse.Object('TestObjectChild');
+    Parse.Object.saveAll([object, relatedObject]).then(() => {
+      object.relation('RelationObject').add(relatedObject);
+      return object.save();
+    });
+
+    promises.push(rp({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/import/TestObjectDad',
+      body: JSON.stringify({
+        results: [
+          {
+            'objectId': 'aaa',
+            'Name': 'namea',
+          }
+        ]
+      })
+    }));
+
+    promises.push(rp({
+      method: 'POST',
+      headers: headers,
+      url: 'http://localhost:8378/1/import/TestObjectChild',
+      body: JSON.stringify({
+        results: [
+          {
+            'objectId': 'bbb',
+            'Name': 'nameb'
+          }
+        ]
+      })
+    }));
+
+    Promise.all(promises).then(() => {
+      rp(
+        {
+          method: 'POST',
+          headers: headers,
+          url: 'http://localhost:8378/1/import/TestObjectDad/RelationObject',
+          body: JSON.stringify({
+            results: [
+              {
+                'owningId': 'aaa',
+                'relatedId': 'bbb'
+              }
+            ]
+          })
+        },
+        (err) => {
+          expect(err).toBe(null);
+          let query = new Parse.Query('TestObjectDad');
+          query._where = {'RelationObject':{'__type':'Pointer', 'className':'TestObjectChild', 'objectId':'bbb'}};
+          query.find().then((results) => {
+            expect(results.length).toEqual(1);
+            expect(results[0].id).toEqual('aaa');
+            done();
+          });
+        }
+      )
+    });
+  });
 });
