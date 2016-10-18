@@ -310,6 +310,10 @@ class ParseLiveQueryServer {
   }
 
   _matchesACL(acl: any, client: any, requestId: number): any {
+
+    // Scope capture this for use in ACL Role check promise
+    let _this = this;
+
     // If ACL is undefined or null, or ACL has public read access, return true directly
     if (!acl || acl.getPublicReadAccess()) {
       return Parse.Promise.as(true);
@@ -327,6 +331,72 @@ class ParseLiveQueryServer {
       if (isSubscriptionSessionTokenMatched) {
         return Parse.Promise.as(true);
       }
+
+      // Check if the user has any roles that match the ACL
+      return new Parse.Promise(function(resolve, reject){
+
+        // resolve false right away if the acl doesn't have any roles
+        var acl_has_roles = false;
+        for(var key in acl.permissionsById) {
+            if(key.startsWith("role:")) {
+                acl_has_roles = true;
+                break;
+            }
+        }
+        if(!acl_has_roles) {
+            return resolve(false);
+        }
+
+        _this.sessionTokenCache.getUserId(subscriptionSessionToken)
+        .then(function(userId){
+
+            // Bail with no user if there is no user id
+            if(!userId) {
+                return Parse.Promise.as(null);
+            }
+
+            // Prepare a user object to query for roles
+            // To eliminate a query for the user, create one locally with the id
+            var user = new Parse.User();
+            user.id = userId;
+            return user;
+
+        })
+        .then(function(user){
+
+            // Bail with no roles if no user
+            if(!user) {
+                return Parse.Promise.as([]);
+            }
+
+            // Then get the user's roles
+            var rolesQuery = new Parse.Query(Parse.Role);
+            rolesQuery.equalTo("users", user);
+            return rolesQuery.find();
+        }).
+        then(function(roles){
+
+            // Finally, see if any of the user's roles allow them read access
+            for(var i = 0; i < roles.length; i++) {
+                var role = roles[i];
+                if (acl.getRoleReadAccess(role)) {
+                    return resolve(true);
+                }
+            }
+
+            resolve(false);
+        })
+        .catch(function(error){
+            reject(error);
+        });
+
+      });
+    }).then((isRoleMatched) => {
+
+      if(isRoleMatched) {
+        return Parse.Promise.as(true);
+      }
+
       // Check client sessionToken matches ACL
       let clientSessionToken = client.sessionToken;
       return this.sessionTokenCache.getUserId(clientSessionToken).then((userId) => {
