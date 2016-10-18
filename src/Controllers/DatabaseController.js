@@ -676,17 +676,12 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
   return query;
 }
 
-DatabaseController.prototype.addNotInObjectIdsIds = function(ids = null, query) {
-  let idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : null;
-  let allIds = [idsFromNin, ids].filter(list => list !== null);
-  let totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
+DatabaseController.prototype.addNotInObjectIdsIds = function(ids = [], query) {
+  let idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : [];
+  let allIds = [...idsFromNin,...ids].filter(list => list !== null);
 
-  let idsIntersection = [];
-  if (totalLength > 125) {
-    idsIntersection = intersect.big(allIds);
-  } else {
-    idsIntersection = intersect(allIds);
-  }
+  // make a set and spread to remove duplicates
+  allIds = [...new Set(allIds)];
 
   // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
   if (!('objectId' in query)) {
@@ -696,8 +691,8 @@ DatabaseController.prototype.addNotInObjectIdsIds = function(ids = null, query) 
       $eq: query.objectId
     };
   }
-  query.objectId['$nin'] = idsIntersection;
 
+  query.objectId['$nin'] = allIds;
   return query;
 }
 
