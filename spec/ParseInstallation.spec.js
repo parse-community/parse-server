@@ -906,6 +906,29 @@ describe('Installations', () => {
     });
   });
 
+  it('allows you to update installation with masterKey', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let installationObj = Parse.Installation.createWithoutData(createResult.response.objectId);
+      installationObj.set('customField', 'custom value');
+      return installationObj.save(null, {useMasterKey: true});
+    }).then(updateResult => {
+      expect(updateResult).not.toBeUndefined();
+      expect(updateResult.get('customField')).toEqual('custom value');
+      done();
+    }).catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments

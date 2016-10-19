@@ -578,8 +578,12 @@ RestWrite.prototype.handleInstallation = function() {
     this.data.installationId = this.data.installationId.toLowerCase();
   }
 
-  // If data.installationId is not set, we can lookup in the auth
-  let installationId = this.data.installationId || this.auth.installationId;
+  let installationId = this.data.installationId;
+
+  // If data.installationId is not set and we're not master, we can lookup in auth
+  if (!installationId && !this.auth.isMaster) {
+    installationId = this.auth.installationId;
+  }
 
   if (installationId) {
     installationId = installationId.toLowerCase();
