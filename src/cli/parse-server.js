@@ -37,8 +37,8 @@ function startServer(options, callback) {
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
     let liveQueryServer = server;
     if (options.liveQueryPort) {
-      liveQueryServer = express().listen(options.liveQueryPort, function() {
-        console.log('ParseLiveQuery listening on '+options.liveQueryPort);
+      liveQueryServer = express().listen(options.liveQueryPort, () => {
+        console.log('ParseLiveQuery listening on ' + options.liveQueryPort);
       });
     }
     ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
