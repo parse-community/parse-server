@@ -5,7 +5,6 @@ import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
 import path  from 'path';
 import mime from 'mime';
-import uuid from 'node-uuid';
 
 const legacyFilesRegex = new RegExp("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}-.*");
 
@@ -27,7 +26,7 @@ export class FilesController extends AdaptableController {
       contentType = mime.lookup(filename);
     }
 
-    filename = uuid.v4() + '_' + filename;
+    filename = randomHexString(32) + '_' + filename;
 
     var location = this.adapter.getFileLocation(config, filename);
     return this.adapter.createFile(filename, data, contentType).then(() => {
