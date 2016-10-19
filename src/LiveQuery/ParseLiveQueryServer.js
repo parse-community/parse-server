@@ -350,7 +350,7 @@ class ParseLiveQueryServer {
         _this.sessionTokenCache.getUserId(subscriptionSessionToken)
         .then(function(userId){
 
-            // Bail with no user if there is no user id
+            // Pass along a null if there is no user id
             if(!userId) {
                 return Parse.Promise.as(null);
             }
@@ -364,7 +364,7 @@ class ParseLiveQueryServer {
         })
         .then(function(user){
 
-            // Bail with no roles if no user
+            // Pass along an empty array (of roles) if no user
             if(!user) {
                 return Parse.Promise.as([]);
             }
@@ -383,7 +383,6 @@ class ParseLiveQueryServer {
                     return resolve(true);
                 }
             }
-
             resolve(false);
         })
         .catch(function(error){
