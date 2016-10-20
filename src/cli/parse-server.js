@@ -35,7 +35,13 @@ function startServer(options, callback) {
 
   var server = app.listen(options.port, callback);
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-    ParseServer.createLiveQueryServer(server, options.liveQueryServerOptions);
+    let liveQueryServer = server;
+    if (options.liveQueryPort) {
+      liveQueryServer = express().listen(options.liveQueryPort, () => {
+        console.log('ParseLiveQuery listening on ' + options.liveQueryPort);
+      });
+    }
+    ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
   }
   var handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');

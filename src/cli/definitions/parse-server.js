@@ -199,7 +199,7 @@ export default {
     help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
     action: numberOrBoolParser("cluster")
   },
-   "liveQuery.classNames": {
+   "liveQuery": {
     help: "parse-server's LiveQuery configuration object",
     action: objectParser
   },
@@ -213,6 +213,10 @@ export default {
   "startLiveQueryServer": {
     help: "Starts the liveQuery server",
     action: booleanParser
+  },
+  "liveQueryPort": {
+    help: 'Specific port to start the live query server',
+    action: numberParser("liveQueryPort")
   },
   "liveQueryServerOptions": {
     help: "Live query server configuration options (will start the liveQuery server)",
