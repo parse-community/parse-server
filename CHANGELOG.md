@@ -1,5 +1,20 @@
 ## Parse Server Changelog
 
+### 2.2.23
+
+* Run liveQuery server from CLI with a different port, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Support for Postgres databaseURI, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Support for Postgres options, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Improved support for google login (id_token and access_token), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improvements with VKontakte login, thanks to [Eugene Antropov](https://github.com/antigp)
+* Improved support for `select` and `include`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+
+* Fix error when updating installation with useMasterKey (#2888), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix bug affecting usage of multiple `notEqualTo`, thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Improved support for null values in arrays, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.2.22
 
 * Minimum nodejs engine is now 4.5
