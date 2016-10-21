@@ -9,6 +9,11 @@ import {
 
 let ParsePubSub = {};
 
+function usePubSubAdapter(config: any): any {
+  let adapter = config.pubSubAdapter;
+  loadAdapter()
+}
+
 function useRedis(config: any): boolean {
   let redisURL = config.redisURL;
   return typeof redisURL !== 'undefined' && redisURL !== '';
@@ -18,7 +23,11 @@ ParsePubSub.createPublisher = function(config: any): any {
   if (useRedis(config)) {
     return RedisPubSub.createPublisher(config);
   } else {
-    return EventEmitterPubSub.createPublisher();
+    let adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
+    if (typeof adapter.createSubscriber !== 'function') {
+      throw 'pubSubAdapter should have createPublisher()';
+    }
+    return adapter.createPublisher(config);
   }
 }
 
@@ -26,7 +35,11 @@ ParsePubSub.createSubscriber = function(config: any): void {
   if (useRedis(config)) {
     return RedisPubSub.createSubscriber(config);
   } else {
-    return EventEmitterPubSub.createSubscriber();
+    let adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
+    if (typeof adapter.createSubscriber !== 'function') {
+      throw 'pubSubAdapter should have createSubscriber()';
+    }
+    return adapter.createSubscriber(config);
   }
 }
 
