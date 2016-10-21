@@ -54,9 +54,7 @@ class ParseLiveQueryServer {
     );
 
     // Initialize subscriber
-    this.subscriber = ParsePubSub.createSubscriber({
-      redisURL: config.redisURL
-    });
+    this.subscriber = ParsePubSub.createSubscriber(config);
     this.subscriber.subscribe('afterSave');
     this.subscriber.subscribe('afterDelete');
     // Register message handler for subscriber. When publisher get messages, it will publish message
