@@ -895,7 +895,14 @@ export class PostgresStorageAdapter {
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
         } else {
-          updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::text[])::jsonb`);
+          let type = 'text';
+          for (let elt of fieldValue) {
+            if (typeof elt == 'object') {
+              type = 'json';
+              break;
+            }
+          }
+          updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`);
         }
         values.push(fieldName, fieldValue);
         index += 2;
