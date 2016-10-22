@@ -310,10 +310,6 @@ class ParseLiveQueryServer {
   }
 
   _matchesACL(acl: any, client: any, requestId: number): any {
-
-    // Scope capture this for use in ACL Role check promise
-    let _this = this;
-
     // If ACL is undefined or null, or ACL has public read access, return true directly
     if (!acl || acl.getPublicReadAccess()) {
       return Parse.Promise.as(true);
@@ -333,25 +329,19 @@ class ParseLiveQueryServer {
       }
 
       // Check if the user has any roles that match the ACL
-      return new Parse.Promise(function(resolve, reject){
+      return new Parse.Promise((resolve, reject) => {
 
-        // resolve false right away if the acl doesn't have any roles
-        var acl_has_roles = false;
-        for(var key in acl.permissionsById) {
-            if(key.startsWith("role:")) {
-                acl_has_roles = true;
-                break;
-            }
-        }
-        if(!acl_has_roles) {
+        // Resolve false right away if the acl doesn't have any roles
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
+        if (!acl_has_roles) {
             return resolve(false);
         }
 
-        _this.sessionTokenCache.getUserId(subscriptionSessionToken)
-        .then(function(userId){
+        this.sessionTokenCache.getUserId(subscriptionSessionToken)
+        .then((userId) => {
 
             // Pass along a null if there is no user id
-            if(!userId) {
+            if (!userId) {
                 return Parse.Promise.as(null);
             }
 
@@ -362,10 +352,10 @@ class ParseLiveQueryServer {
             return user;
 
         })
-        .then(function(user){
+        .then((user) => {
 
             // Pass along an empty array (of roles) if no user
-            if(!user) {
+            if (!user) {
                 return Parse.Promise.as([]);
             }
 
@@ -374,18 +364,17 @@ class ParseLiveQueryServer {
             rolesQuery.equalTo("users", user);
             return rolesQuery.find();
         }).
-        then(function(roles){
+        then((roles) => {
 
             // Finally, see if any of the user's roles allow them read access
-            for(var i = 0; i < roles.length; i++) {
-                var role = roles[i];
+            for (let role of roles) {
                 if (acl.getRoleReadAccess(role)) {
                     return resolve(true);
                 }
             }
             resolve(false);
         })
-        .catch(function(error){
+        .catch((error) => {
             reject(error);
         });
 
