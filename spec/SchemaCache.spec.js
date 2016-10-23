@@ -11,7 +11,7 @@ describe('SchemaCache', () => {
 		schemaCache = new SchemaCache(cacheController);
 	});
 
-	it('can retrieve a single schema after all schemas stored', () => {
+	it('can retrieve a single schema after all schemas stored', (done) => {
 		var allSchemas = [{
 			className: 'Class1'
 		}, {
@@ -20,16 +20,18 @@ describe('SchemaCache', () => {
 		schemaCache.setAllClasses(allSchemas);
 		schemaCache.getOneSchema('Class2').then((schema) => {
 			expect(schema).not.toBeNull();
+			done();
 		});
 	});
 
-	it('does not return all schemas after a single schema is stored', () => {
+	it('does not return all schemas after a single schema is stored', (done) => {
 		var schema = {
 			className: 'Class1'
 		};
 		schemaCache.setOneSchema('Class1', schema);
 		schemaCache.getAllClasses().then((allSchemas) => {
 			expect(allSchemas).toBeNull();
+			done();
 		});
 	});
 });
