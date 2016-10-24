@@ -100,7 +100,9 @@ export class PushController extends AdaptableController {
       pushStatus.setRunning(response.results);
       return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
-      return pushStatus.complete(results);
+      return pushStatus.complete(results).then(() => {
+        return updateTracking(response.results, results, pushStatus);
+      };
     }).catch((err) => {
       return pushStatus.fail(err).then(() => {
         throw err;
