@@ -93,6 +93,10 @@ export class PushController extends AdaptableController {
       if (!response.results) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
+      return response;
+    }).then((response) => {
+      return this.starTracking(response.results, pushStatus);
+    }).then((response) => {
       pushStatus.setRunning(response.results);
       return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
@@ -102,6 +106,16 @@ export class PushController extends AdaptableController {
         throw err;
       });
     });
+  }
+
+  startTracking(installations, pushStatus) {
+    // todo: insert a Push object per installation, with timestamp, and pushStatus.objectId
+    return Promise.resolve();
+  }
+
+  updateTracking(installations, pushStatus, results) {
+    // todo, find and update each of the Push objects with their result
+    return Promise.resolve();
   }
 
   sendToAdapter(body, installations, pushStatus, config) {
