@@ -259,6 +259,9 @@ class ParseLiveQueryServer {
         case 'subscribe':
           this._handleSubscribe(parseWebsocket, request);
           break;
+        case 'update':
+          this._handleUpdateSubscription(parseWebsocket, request);
+          break;
         case 'unsubscribe':
           this._handleUnsubscribe(parseWebsocket, request);
           break;
@@ -471,6 +474,11 @@ class ParseLiveQueryServer {
 
     logger.verbose('Create client %d new subscription: %d', parseWebsocket.clientId, request.requestId);
     logger.verbose('Current client number: %d', this.clients.size);
+  }
+
+  _handleUpdateSubscription(parseWebsocket: any, request: any): any {
+    this._handleUnsubscribe(parseWebsocket, request);
+    this._handleSubscribe(parseWebsocket, request);
   }
 
   _handleUnsubscribe(parseWebsocket: any, request: any): any {
