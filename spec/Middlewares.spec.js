@@ -36,7 +36,7 @@ describe('middlewares', () => {
         });
     });
 
-    it('should give invalid response when any configured key is missing', () => {
+    it('should give invalid response when keys are configured but no key supplied', () => {
         AppCache.put(fakeReq.body._ApplicationId, {
             masterKey: 'masterKey',
             restAPIKey: 'restAPIKey'
@@ -45,7 +45,7 @@ describe('middlewares', () => {
         expect(fakeRes.status).toHaveBeenCalledWith(403);
     });
 
-    it('should give invalid response when any configured key is supplied but incorrect', () => {
+    it('should give invalid response when keys are configured but supplied key is incorrect', () => {
         AppCache.put(fakeReq.body._ApplicationId, {
             masterKey: 'masterKey',
             restAPIKey: 'restAPIKey'
@@ -55,8 +55,20 @@ describe('middlewares', () => {
         expect(fakeRes.status).toHaveBeenCalledWith(403);
     });
 
-    it('should succeed when all configured keys supplied', (done) => {
+    it('should give invalid response when keys are configured but different key is supplied', () => {
         AppCache.put(fakeReq.body._ApplicationId, {
+            masterKey: 'masterKey',
+            restAPIKey: 'restAPIKey'
+        });
+        fakeReq.headers['x-parse-client-key'] = 'clientKey';
+        middlewares.handleParseHeaders(fakeReq, fakeRes);
+        expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+
+    it('should succeed when any one of the configured keys supplied', (done) => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            clientKey: 'clientKey',
             masterKey: 'masterKey',
             restAPIKey: 'restAPIKey'
         });
@@ -71,19 +83,6 @@ describe('middlewares', () => {
         AppCache.put(fakeReq.body._ApplicationId, {
             masterKey: 'masterKey'
         });
-        middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-            expect(fakeRes.status).not.toHaveBeenCalled();
-            done();
-        });
-    });
-
-    it('should succeed when keys are configured and extra keys supplied', (done) => {
-        AppCache.put(fakeReq.body._ApplicationId, {
-            masterKey: 'masterKey',
-            restAPIKey: 'restAPIKey'
-        });
-        fakeReq.headers['x-parse-rest-api-key'] = 'restAPIKey';
-        fakeReq.headers['x-parse-client-key'] = 'clientKey';
         middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
             expect(fakeRes.status).not.toHaveBeenCalled();
             done();

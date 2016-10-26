@@ -121,11 +121,14 @@ export function handleParseHeaders(req, res, next) {
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   let keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
-  var keyMismatch = keys.some(function(key){
-    return req.config[key] && info[key] !== req.config[key];
+  var oneKeyConfigured = keys.some(function(key) {
+    return req.config[key];
+  });
+  var oneKeyMatches = keys.some(function(key){
+    return req.config[key] && info[key] == req.config[key];
   });
 
-  if (keyMismatch) {
+  if (oneKeyConfigured && !oneKeyMatches) {
     return invalidRequest(req, res);
   }
 
