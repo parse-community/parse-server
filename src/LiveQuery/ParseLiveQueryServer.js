@@ -481,7 +481,7 @@ class ParseLiveQueryServer {
     this._handleSubscribe(parseWebsocket, request);
   }
 
-  _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient = true: bool): any {
+  _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient: bool = true): any {
     // If we can not find this client, return error to client
     if (!parseWebsocket.hasOwnProperty('clientId')) {
       Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before unsubscribing');
