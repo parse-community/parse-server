@@ -5,7 +5,7 @@ var Parse = require('parse/node').Parse;
 function validateIdToken(id, token) {
   return request("tokeninfo?id_token="+token)
     .then((response) => {
-      if (response && response.sub == id) {
+      if (response && (response.sub == id || response.user_id == id)) {
         return;
       }
       throw new Parse.Error(
@@ -17,7 +17,7 @@ function validateIdToken(id, token) {
 function validateAuthToken(id, token) {
   return request("tokeninfo?access_token="+token)
     .then((response) => {
-      if (response && response.user_id == id) {
+      if (response &&  (response.sub == id || response.user_id == id)) {
         return;
       }
       throw new Parse.Error(
