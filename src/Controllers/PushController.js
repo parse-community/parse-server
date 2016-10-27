@@ -93,8 +93,6 @@ export class PushController extends AdaptableController {
       if (!response.results) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
-      return response;
-    }).then((response) => {
       pushStatus.setRunning(response.results);
       return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
