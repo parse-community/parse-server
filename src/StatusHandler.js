@@ -58,11 +58,7 @@ function statusHandler(className, database) {
           className: "_Installation",
           objectId: installation.objectId,
         },
-        pushStatus: {
-          __type: 'Pointer',
-          className: className,
-          objectId: pushStatusObjectId,
-        }
+        pushStatus: pushStatusObjectId
       };
       return createPush(push);
     });
