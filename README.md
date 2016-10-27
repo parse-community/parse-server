@@ -110,10 +110,11 @@ We have provided a basic [Node.js application](https://github.com/ParsePlatform/
 
 * [Heroku and mLab](https://devcenter.heroku.com/articles/deploying-a-parse-server-to-heroku)
 * [AWS and Elastic Beanstalk](http://mobile.awsblog.com/post/TxCD57GZLM2JR/How-to-set-up-Parse-Server-on-AWS-using-AWS-Elastic-Beanstalk)
-* [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
-* [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
 * [Google App Engine](https://medium.com/@justinbeckwith/deploying-parse-server-to-google-app-engine-6bc0b7451d50)
 * [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/)
+* [SashiDo](https://blog.sashido.io/tag/migration/)
+* [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
+* [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 * [HyperDev](https://hyperdev.com/blog/use-parse-server-apps-backend-hyperdev/)
@@ -266,7 +267,7 @@ var server = ParseServer({
   // if the account lockout policy is set and there are more than `threshold` number of failed login attempts then the `login` api call returns error code `Parse.Error.OBJECT_NOT_FOUND` with error message `Your account is locked due to multiple failed login attempts. Please try again after <duration> minute(s)`. After `duration` minutes of no login attempts, the application will allow the user to try login again.
   accountLockout: {
     duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
-    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000. 
+    threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
   },
 });
 ```
@@ -278,6 +279,7 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-simple-ses-adapter](https://www.npmjs.com/package/parse-server-simple-ses-adapter)
 - [parse-server-mailgun-adapter-template](https://www.npmjs.com/package/parse-server-mailgun-adapter-template)
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
+- [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
 
 ### Using environment variables to configure Parse Server
 
@@ -324,6 +326,18 @@ If you believe you've found an issue with Parse Server, make sure these boxes ar
 - [ ] You're running the [latest version](https://github.com/ParsePlatform/parse-server/releases) of Parse Server.
 
 - [ ] You've searched through [existing issues](https://github.com/ParsePlatform/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
+
+# Want to ride the bleeding edge?
+
+The `latest` branch in this repository is automatically maintained to be the last
+commit to `master` to pass all tests, in the same form found on npm. It is
+recommend to use builds deployed npm for many reasons, but if you want to use
+the latest not-yet-released version of parse-server, you can do so by depending
+directly on this branch:
+
+```
+npm install parseplatform/parse-server.git#latest
+```
 
 # Contributing
 

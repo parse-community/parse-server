@@ -55,6 +55,24 @@ describe("Cloud Code Logger", () => {
         });
     });
 
+    it('trigger should obfuscate password', done => {
+        const logController = new LoggerController(new WinstonLoggerAdapter());
+
+        Parse.Cloud.beforeSave(Parse.User, (req, res) => {
+            res.success(req.object);
+        });
+
+        Parse.User.signUp('tester123', 'abc')
+            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+            .then((res) => {
+                const entry = res[0];
+                expect(entry.message).not.toMatch(/password":"abc/);
+                expect(entry.message).toMatch(/\*\*\*\*\*\*\*\*/);
+                done();
+            })
+            .then(null, e => done.fail(e));
+    });
+
     it("should expose log to trigger", (done) => {
         var logController = new LoggerController(new WinstonLoggerAdapter());
 

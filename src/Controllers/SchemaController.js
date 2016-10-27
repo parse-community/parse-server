@@ -218,7 +218,7 @@ const validNonRelationOrPointerTypes = [
 ];
 // Returns an error suitable for throwing if the type is invalid
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
-  if (['Pointer', 'Relation'].includes(type)) {
+  if (['Pointer', 'Relation'].indexOf(type) >= 0) {
     if (!targetClass) {
       return new Parse.Error(135, `type ${type} needs a class name`);
     } else if (typeof targetClass !== 'string') {
@@ -232,7 +232,7 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
    if (typeof type !== 'string') {
     return invalidJsonError;
    }
-  if (!validNonRelationOrPointerTypes.includes(type)) {
+  if (validNonRelationOrPointerTypes.indexOf(type) < 0) {
     return new Parse.Error(Parse.Error.INCORRECT_TYPE, `invalid field type: ${type}`);
    }
   return undefined;
@@ -323,15 +323,20 @@ export default class SchemaController {
   }
 
   reloadData(options = {clearCache: false}) {
+    let promise = Promise.resolve();
     if (options.clearCache) {
-      this._cache.clear();
+      promise = promise.then(() => {
+        return this._cache.clear();
+      });
     }
     if (this.reloadDataPromise && !options.clearCache) {
       return this.reloadDataPromise;
     }
     this.data = {};
     this.perms = {};
-    this.reloadDataPromise = this.getAllClasses(options)
+    this.reloadDataPromise = promise.then(() => {
+      return this.getAllClasses(options);
+    })
     .then(allSchemas => {
       allSchemas.forEach(schema => {
         this.data[schema.className] = injectDefaultSchema(schema).fields;
@@ -355,10 +360,13 @@ export default class SchemaController {
   }
 
   getAllClasses(options = {clearCache: false}) {
+    let promise = Promise.resolve();
     if (options.clearCache) {
-      this._cache.clear();
+      promise = this._cache.clear();
     }
-    return this._cache.getAllClasses().then((allClasses) => {
+    return promise.then(() => {
+       return this._cache.getAllClasses()
+    }).then((allClasses) => {
       if (allClasses && allClasses.length && !options.clearCache) {
         return Promise.resolve(allClasses);
       }
@@ -373,22 +381,25 @@ export default class SchemaController {
   }
 
   getOneSchema(className, allowVolatileClasses = false, options = {clearCache: false}) {
+    let promise = Promise.resolve();
     if (options.clearCache) {
-      this._cache.clear();
+      promise = this._cache.clear();
     }
-    if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
-    	return Promise.resolve(this.data[className]);
-    }
-    return this._cache.getOneSchema(className).then((cached) => {
-      if (cached && !options.clearCache) {
-        return Promise.resolve(cached);
+    return promise.then(() => {
+      if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
+        return Promise.resolve(this.data[className]);
       }
-      return this._dbAdapter.getClass(className)
-      .then(injectDefaultSchema)
-      .then((result) => {
-        return this._cache.setOneSchema(className, result).then(() => {
-          return result;
-        })
+      return this._cache.getOneSchema(className).then((cached) => {
+        if (cached && !options.clearCache) {
+          return Promise.resolve(cached);
+        }
+        return this._dbAdapter.getClass(className)
+        .then(injectDefaultSchema)
+        .then((result) => {
+          return this._cache.setOneSchema(className, result).then(() => {
+            return result;
+          })
+        });
       });
     });
   }
@@ -409,8 +420,9 @@ export default class SchemaController {
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
     .then((res) => {
-      this._cache.clear();
-      return res;
+      return this._cache.clear().then(() => {
+         return Promise.resolve(res);
+      });
     })
     .catch(error => {
       if (error && error.code === Parse.Error.DUPLICATE_VALUE) {
@@ -528,7 +540,7 @@ export default class SchemaController {
 
   validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
     for (let fieldName in fields) {
-      if (!existingFieldNames.includes(fieldName)) {
+      if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName)) {
           return {
             code: Parse.Error.INVALID_KEY_NAME,

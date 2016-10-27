@@ -125,7 +125,7 @@ export class UserController extends AdaptableController {
   }
 
   setPasswordResetToken(email) {
-    return this.config.database.update('_User', { email }, { _perishable_token: randomString(25) }, {}, true)
+    return this.config.database.update('_User', { $or: [{email}, {username: email, email: {$exists: false}}] }, { _perishable_token: randomString(25) }, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -181,7 +181,7 @@ export class UserController extends AdaptableController {
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
-    let to = user.get("email");
+    let to = user.get("email") || user.get('username');
     let subject =  'Password Reset for ' + appName;
     return { text, to, subject };
   }

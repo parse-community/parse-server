@@ -1,5 +1,55 @@
 ## Parse Server Changelog
 
+### 2.2.23
+
+* Run liveQuery server from CLI with a different port, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Support for Postgres databaseURI, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Support for Postgres options, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Improved support for google login (id_token and access_token), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improvements with VKontakte login, thanks to [Eugene Antropov](https://github.com/antigp)
+* Improved support for `select` and `include`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+
+* Fix error when updating installation with useMasterKey (#2888), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix bug affecting usage of multiple `notEqualTo`, thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Improved support for null values in arrays, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.22
+
+* Minimum nodejs engine is now 4.5
+
+#### New Features
+* New: CLI for parse-live-query-server, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Start parse-live-query-server for parse-server CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+* Fix: Include with pointers are not conflicting with get CLP anymore, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes dependency on babel-polyfill, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Support nested select calls, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Use native column selection instead of runtime, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: installationId header is properly used when updating `_Installation` objects, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: don't crash parse-server on improperly formatted live-query messages, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Passwords are properly stripped out of logs, thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix: Lookup for email in username if email is not set, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.21
+
+* Fix: Reverts removal of babel-polyfill
+
+### 2.2.20
+
+* New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart) 
+* New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Better support for upgradeToRevocableSession with missing session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Cluster option now support a boolean value for automatically choosing the right number of processes, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Filenames now appear correctly, thanks to [Lama Chandrasena](https://github.com/lama-buddy)
+* Fix: `_acl` is properly updated, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
+
 ### 2.2.19
 
 * New: support for upgrading to revocable sessions, thanks to [Florent Vilmart](https://github.com/flovilmart)

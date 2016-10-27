@@ -11,8 +11,10 @@ const transformKey = (className, fieldName, schema) => {
     case 'updatedAt': return '_updated_at';
     case 'sessionToken': return '_session_token';
   }
-
+  
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
+    fieldName = '_p_' + fieldName;
+  } else if (schema.fields[fieldName] && schema.fields[fieldName].type == 'Pointer') {
     fieldName = '_p_' + fieldName;
   }
 
@@ -99,7 +101,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
 }
 
 const transformInteriorValue = restValue => {
-  if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
+  if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$')|| key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
   // Handle atomic values
@@ -330,8 +332,8 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
   let mongoUpdate = {};
-  let acl = addLegacyACL(restUpdate)._acl;
-  if (acl) {
+  let acl = addLegacyACL(restUpdate);
+  if (acl._rperm || acl._wperm || acl._acl) {
     mongoUpdate.$set = {};
     if (acl._rperm) {
       mongoUpdate.$set._rperm = acl._rperm;

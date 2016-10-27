@@ -144,7 +144,7 @@ function makeExpressHandler(appId, promiseHandler) {
   return function(req, res, next) {
     try {
       let url = maskSensitiveUrl(req);
-      let body = maskSensitiveBody(req);
+      let body = Object.assign({}, req.body);
       let stringifiedBody = JSON.stringify(body, null, 2);
       log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
         method: req.method,
@@ -198,33 +198,13 @@ function makeExpressHandler(appId, promiseHandler) {
   }
 }
 
-function maskSensitiveBody(req) {
-  let maskBody = Object.assign({}, req.body);
-  let shouldMaskBody = (req.method === 'POST' && req.originalUrl.endsWith('/users')
-                       && !req.originalUrl.includes('classes')) ||
-                       (req.method === 'PUT' && /users\/\w+$/.test(req.originalUrl)
-                       && !req.originalUrl.includes('classes')) ||
-                       (req.originalUrl.includes('classes/_User'));
-  if (shouldMaskBody) {
-    for (let key of Object.keys(maskBody)) {
-      if (key == 'password') {
-        maskBody[key] = '********';
-        break;
-      }
-    }
-  }
-  return maskBody;
-}
 
 function maskSensitiveUrl(req) {
   let maskUrl = req.originalUrl.toString();
   let shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
                       && !req.originalUrl.includes('classes');
   if (shouldMaskUrl) {
-    let password = url.parse(req.originalUrl, true).query.password;
-    if (password) {
-      maskUrl = maskUrl.replace('password=' + password, 'password=********')
-    }
+    maskUrl = log.maskSensitiveUrl(maskUrl);
   }
   return maskUrl;
 }

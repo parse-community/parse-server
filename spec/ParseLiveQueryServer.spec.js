@@ -834,6 +834,116 @@ describe('ParseLiveQueryServer', function() {
     });
   });
 
+  it('won\'t match ACL that doesn\'t have public read or any roles', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('won\'t match non-public ACL with role when there is no user', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("livequery", true);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+      })
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('won\'t match ACL with role based read access set to false', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("liveQueryRead", false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    spyOn(Parse, "Query").and.callFake(function(){
+      return {
+        equalTo(relation, value) {
+          // Nothing to do here
+        },
+        find() {
+          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
+          var liveQueryRole = new Parse.Role();
+          liveQueryRole.set('name', 'liveQueryRead');
+          return [
+            liveQueryRole
+          ];
+        }
+      }
+    });
+      
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('will match ACL with role based read access set to true', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("liveQueryRead", true);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    spyOn(Parse, "Query").and.callFake(function(){
+      return {
+        equalTo(relation, value) {
+          // Nothing to do here
+        },
+        find() {
+          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
+          var liveQueryRole = new Parse.Role();
+          liveQueryRole.set('name', 'liveQueryRead');
+          return [
+            liveQueryRole
+          ];
+        }
+      }
+    });
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(true);
+      done();
+    });
+
+  });
+
   it('can validate key when valid key is provided', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer({}, {
       keyPairs: {

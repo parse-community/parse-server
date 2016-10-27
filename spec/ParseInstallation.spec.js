@@ -37,7 +37,7 @@ describe('Installations', () => {
       expect(obj.installationId).toEqual(installId);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an ios installation with ids', (done) => {
@@ -55,7 +55,7 @@ describe('Installations', () => {
       expect(obj.deviceToken).toEqual(t);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an embedded installation with ids', (done) => {
@@ -73,7 +73,7 @@ describe('Installations', () => {
       expect(obj.installationId).toEqual(installId);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an android installation with all fields', (done) => {
@@ -96,7 +96,7 @@ describe('Installations', () => {
       expect(obj.channels[0]).toEqual('foo');
       expect(obj.channels[1]).toEqual('bar');
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('creates an ios installation with all fields', (done) => {
@@ -119,7 +119,7 @@ describe('Installations', () => {
       expect(obj.channels[0]).toEqual('foo');
       expect(obj.channels[1]).toEqual('bar');
       done();
-    }).catch((error) => { console.log(error); });
+    }).catch((error) => { console.log(error); jfail(error); done(); });
   });
 
   it('should properly fail queying installations', (done) => {
@@ -869,6 +869,112 @@ describe('Installations', () => {
       console.log(error);
       fail('failed');
       done();
+    });
+  });
+
+  it('allows you to update installation from header (#2090)', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let headers = {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key':   'rest',
+        'X-Parse-Installation-Id': installId
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/_Installation',
+        json: true,
+        body: {
+          date: new Date()
+        }
+      }, (error, response, body) => {
+        expect(response.statusCode).toBe(200);
+        expect(body.updatedAt).not.toBeUndefined();
+        done();
+      });
+    })
+    .catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
+  it('allows you to update installation with masterKey', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let installationObj = Parse.Installation.createWithoutData(createResult.response.objectId);
+      installationObj.set('customField', 'custom value');
+      return installationObj.save(null, {useMasterKey: true});
+    }).then(updateResult => {
+      expect(updateResult).not.toBeUndefined();
+      expect(updateResult.get('customField')).toEqual('custom value');
+      done();
+    }).catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
+  it('should properly handle installation save #2780', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query.first({useMasterKey: true}).then((installation) => {
+        return installation.save({
+          key: 'value'
+        }, {useMasterKey: true});
+      }).then(() => {
+        done();
+      }, (err) => {
+        jfail(err)
+        done();
+      });
+    });
+  });
+
+  it('should properly reject updating installationId', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query.first({useMasterKey: true}).then((installation) => {
+        return installation.save({
+          key: 'value',
+          installationId: '22222222-abcd-abcd-abcd-123456789abc'
+        }, {useMasterKey: true});
+      }).then(() => {
+        fail('should not succeed');
+        done();
+      }, (err) => {
+        expect(err.code).toBe(136);
+        expect(err.message).toBe('installationId may not be changed in this operation');
+        done();
+      });
     });
   });
 

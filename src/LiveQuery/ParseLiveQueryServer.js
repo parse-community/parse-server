@@ -8,6 +8,7 @@ import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
+import _ from 'lodash';
 
 class ParseLiveQueryServer {
   clientId: number;
@@ -62,7 +63,13 @@ class ParseLiveQueryServer {
     // to the subscribers and the handler will be called.
     this.subscriber.on('message', (channel, messageStr) => {
       logger.verbose('Subscribe messsage %j', messageStr);
-      let message = JSON.parse(messageStr);
+      let message;
+      try {
+        message = JSON.parse(messageStr);
+      } catch(e) {
+        logger.error('unable to parse message', messageStr, e);
+        return;
+      }
       this._inflateParseObject(message);
       if (channel === 'afterSave') {
         this._onAfterSave(message);
@@ -116,7 +123,7 @@ class ParseLiveQueryServer {
       if (!isSubscriptionMatched) {
         continue;
       }
-      for (let [clientId, requestIds] of subscription.clientRequestIds.entries()) {
+      for (let [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         let client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -159,7 +166,7 @@ class ParseLiveQueryServer {
     for (let subscription of classSubscriptions.values()) {
       let isOriginalSubscriptionMatched = this._matchesSubscription(originalParseObject, subscription);
       let isCurrentSubscriptionMatched = this._matchesSubscription(currentParseObject, subscription);
-      for (let [clientId, requestIds] of subscription.clientRequestIds.entries()) {
+      for (let [clientId, requestIds] of _.entries(subscription.clientRequestIds)) {
         let client = this.clients.get(clientId);
         if (typeof client === 'undefined') {
           continue;
@@ -229,7 +236,12 @@ class ParseLiveQueryServer {
   _onConnect(parseWebsocket: any): void {
     parseWebsocket.on('message', (request) => {
       if (typeof request === 'string') {
-        request = JSON.parse(request);
+        try {
+          request = JSON.parse(request);
+        } catch(e) {
+          logger.error('unable to parse request', request, e);
+          return;
+        }
       }
       logger.verbose('Request: %j', request);
 
@@ -269,7 +281,7 @@ class ParseLiveQueryServer {
       this.clients.delete(clientId);
 
       // Delete client from subscriptions
-      for (let [requestId, subscriptionInfo] of client.subscriptionInfos.entries()) {
+      for (let [requestId, subscriptionInfo] of _.entries(client.subscriptionInfos)) {
         let subscription = subscriptionInfo.subscription;
         subscription.deleteClientSubscription(clientId, requestId);
 
@@ -315,6 +327,64 @@ class ParseLiveQueryServer {
       if (isSubscriptionSessionTokenMatched) {
         return Parse.Promise.as(true);
       }
+
+      // Check if the user has any roles that match the ACL
+      return new Parse.Promise((resolve, reject) => {
+
+        // Resolve false right away if the acl doesn't have any roles
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
+        if (!acl_has_roles) {
+            return resolve(false);
+        }
+
+        this.sessionTokenCache.getUserId(subscriptionSessionToken)
+        .then((userId) => {
+
+            // Pass along a null if there is no user id
+            if (!userId) {
+                return Parse.Promise.as(null);
+            }
+
+            // Prepare a user object to query for roles
+            // To eliminate a query for the user, create one locally with the id
+            var user = new Parse.User();
+            user.id = userId;
+            return user;
+
+        })
+        .then((user) => {
+
+            // Pass along an empty array (of roles) if no user
+            if (!user) {
+                return Parse.Promise.as([]);
+            }
+
+            // Then get the user's roles
+            var rolesQuery = new Parse.Query(Parse.Role);
+            rolesQuery.equalTo("users", user);
+            return rolesQuery.find();
+        }).
+        then((roles) => {
+
+            // Finally, see if any of the user's roles allow them read access
+            for (let role of roles) {
+                if (acl.getRoleReadAccess(role)) {
+                    return resolve(true);
+                }
+            }
+            resolve(false);
+        })
+        .catch((error) => {
+            reject(error);
+        });
+
+      });
+    }).then((isRoleMatched) => {
+
+      if(isRoleMatched) {
+        return Parse.Promise.as(true);
+      }
+
       // Check client sessionToken matches ACL
       let clientSessionToken = client.sessionToken;
       return this.sessionTokenCache.getUserId(clientSessionToken).then((userId) => {

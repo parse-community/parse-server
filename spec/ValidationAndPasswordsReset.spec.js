@@ -479,6 +479,45 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
+  it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are prodvided', done => {
+    let adapter = MockEmailAdapterWithOptions({
+      fromAddress: 'parse@example.com',
+      apiKey: 'k',
+      domain: 'd',
+      sendMail: function(options) {
+        expect(options.to).toEqual('testValidConfig@parse.com');
+        return Promise.resolve();
+      }
+    });
+
+    // delete that handler to force using the default
+    delete adapter.sendPasswordResetEmail;
+
+    spyOn(adapter, 'sendMail').and.callThrough();
+    reconfigureServer({
+      appName: 'coolapp',
+      publicServerURL: 'http://localhost:1337/1',
+      emailAdapter: adapter
+    })
+    .then(() => {
+      let user = new Parse.User();
+      user.setPassword("asdf");
+      user.setUsername("testValidConfig@parse.com");
+      user.signUp(null)
+      .then(user => Parse.User.requestPasswordReset("testValidConfig@parse.com"))
+      .then(result => {
+        expect(adapter.sendMail).toHaveBeenCalled();
+        done();
+      }, error => {
+        done(error);
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error));
+      done();
+    });
+  });
+
   it('does not send verification email if email verification is disabled', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

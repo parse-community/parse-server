@@ -7,7 +7,8 @@ export const Types = {
   beforeSave: 'beforeSave',
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
-  afterDelete: 'afterDelete'
+  afterDelete: 'afterDelete',
+  beforeFind: 'beforeFind'
 };
 
 const baseStore = function() {
@@ -154,6 +155,29 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
+export function getRequestQueryObject(triggerType, auth, query, config) {
+  var request = {
+    triggerName: triggerType,
+    query: query,
+    master: false,
+    log: config.loggerController
+  };
+
+  if (!auth) {
+    return request;
+  }
+  if (auth.isMaster) {
+    request['master'] = true;
+  }
+  if (auth.user) {
+    request['user'] = auth.user;
+  }
+  if (auth.installationId) {
+    request['installationId'] = auth.installationId;
+  }
+  return request;
+}
+
 // Creates the response object, and uses the request object to pass data
 // The API will call this with REST API formatted objects, this will
 // transform them to Parse.Object instances expected by Cloud Code.
@@ -216,6 +240,66 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   });
 }
 
+export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth) {
+  let trigger = getTrigger(className, triggerType, config.applicationId);
+  if (!trigger) {
+    return Promise.resolve({
+      restWhere,
+      restOptions
+    });
+  }
+
+  let parseQuery = new Parse.Query(className);
+  if (restWhere) {
+      parseQuery._where = restWhere;
+  }
+  if (restOptions) {
+    if (restOptions.include && restOptions.include.length > 0) {
+      parseQuery._include = restOptions.include.split(',');
+    }
+    if (restOptions.skip) {
+        parseQuery._skip = restOptions.skip;
+    }
+    if (restOptions.limit) {
+        parseQuery._limit = restOptions.limit;
+    }
+  }
+  let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
+  return Promise.resolve().then(() => {
+    return trigger(requestObject);
+  }).then((result) => {
+    let queryResult = parseQuery;
+    if (result && result instanceof Parse.Query) {
+      queryResult = result;
+    }
+    let jsonQuery = queryResult.toJSON();
+    if (jsonQuery.where) {
+      restWhere = jsonQuery.where;
+    }
+    if (jsonQuery.limit) {
+      restOptions = restOptions || {};
+      restOptions.limit = jsonQuery.limit;
+    }
+    if (jsonQuery.skip) {
+      restOptions = restOptions || {};
+      restOptions.skip = jsonQuery.skip;
+    }
+    if (jsonQuery.include) {
+      restOptions = restOptions || {};
+      restOptions.include = jsonQuery.include;
+    }
+    return {
+      restWhere,
+      restOptions
+    };
+  }, (err) => {
+    if (typeof err === 'string') {
+      throw new Parse.Error(1, err);
+    } else {
+      throw err;
+    }
+  });
+}
 
 // To be used as part of the promise chain when saving/deleting an object
 // Will resolve successfully if no trigger is configured

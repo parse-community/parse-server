@@ -128,6 +128,22 @@ describe('Parse.Query testing', () => {
         equal(results.length, 0);
       });
     }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.notEqualTo("hater", user2);
+      query.notEqualTo("liker", user2);
+      // user2 doesn't like any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.equalTo("hater", user);
+      query.equalTo("liker", user);
+      // user doesn't hate any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
       done();
     }).catch((err) => {
       jfail(err);
@@ -2565,6 +2581,76 @@ describe('Parse.Query testing', () => {
         });
       }
     })
+  });
+
+  it('select nested keys (issue #1567)', function(done) {
+    var Foobar = new Parse.Object('Foobar');
+    var BarBaz = new Parse.Object('Barbaz');
+    BarBaz.set('key', 'value');
+    BarBaz.set('otherKey', 'value');
+    BarBaz.save().then(() => {
+      Foobar.set('foo', 'bar');
+      Foobar.set('fizz', 'buzz');
+      Foobar.set('barBaz', BarBaz);
+      return Foobar.save();
+    }).then(function(savedFoobar){
+      var foobarQuery = new Parse.Query('Foobar');
+      foobarQuery.include('barBaz');
+      foobarQuery.select(['fizz', 'barBaz.key']);
+      foobarQuery.get(savedFoobar.id,{
+        success: function(foobarObj){
+          equal(foobarObj.get('fizz'), 'buzz');
+          equal(foobarObj.get('foo'), undefined);
+          if (foobarObj.has('barBaz')) {
+            equal(foobarObj.get('barBaz').get('key'), 'value');
+            equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+          } else {
+            fail('barBaz should be set');
+          }
+          done();
+        }
+      });
+    });
+  });
+
+  it('select nested keys 2 level (issue #1567)', function(done) {
+    var Foobar = new Parse.Object('Foobar');
+    var BarBaz = new Parse.Object('Barbaz');
+    var Bazoo = new Parse.Object('Bazoo');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    Bazoo.save().then(() => {
+      BarBaz.set('key', 'value');
+      BarBaz.set('otherKey', 'value');
+      BarBaz.set('bazoo', Bazoo);
+      return BarBaz.save();
+    }).then(() => {
+      Foobar.set('foo', 'bar');
+      Foobar.set('fizz', 'buzz');
+      Foobar.set('barBaz', BarBaz);
+      return Foobar.save();
+    }).then(function(savedFoobar){
+      var foobarQuery = new Parse.Query('Foobar');
+      foobarQuery.include('barBaz');
+      foobarQuery.include('barBaz.bazoo');
+      foobarQuery.select(['fizz', 'barBaz.key', 'barBaz.bazoo.some']);
+      foobarQuery.get(savedFoobar.id,{
+        success: function(foobarObj){
+          equal(foobarObj.get('fizz'), 'buzz');
+          equal(foobarObj.get('foo'), undefined);
+          if (foobarObj.has('barBaz')) {
+            equal(foobarObj.get('barBaz').get('key'), 'value');
+            equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+            equal(foobarObj.get('barBaz').get('bazoo').get('some'), 'thing');
+            equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
+          } else {
+            fail('barBaz should be set');
+          }
+          done();
+        }
+      });
+    });
   });
 
   it('properly handles nested ors', function(done) {
