@@ -34,6 +34,7 @@ export class FunctionsRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route('POST', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
+    this.route('GET', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
     this.route('POST', '/jobs/:jobName', promiseEnforceMasterKeyAccess, function(req) {
       return FunctionsRouter.handleCloudJob(req);
     });
