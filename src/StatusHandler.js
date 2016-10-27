@@ -1,8 +1,10 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
+import _ from 'lodash';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
+const PUSH_COLLECTION = 'Push';
 
 export function flatten(array) {
   return array.reduce((memo, element) => {
@@ -34,9 +36,49 @@ function statusHandler(className, database) {
     return lastPromise;
   }
 
+  function createPush(object) {
+    lastPromise = lastPromise.then(() => {
+      return database.create(PUSH_COLLECTION, object).then(() => {
+        return Promise.resolve(object);
+      });
+    });
+    return lastPromise;
+  }
+
+  function insertPushes(installations, pushStatusObjectId) {
+    // Insert a Push object for each installation we're pushing to
+    let promises = _.map(installations, installation => {
+      let now = new Date();
+      let pushObjectId = newObjectId();
+      let push = {
+        pushObjectId,
+        createdAt: now,
+        installation: {
+          __type: 'Pointer',
+          className: "_Installation",
+          objectId: installation.id,
+        },
+        pushStatus: {
+          __type: 'Pointer',
+          className: className,
+          objectId: pushStatusObjectId,
+        }
+      };
+      return createPush(push);
+    });
+    return Promise.all(promises);
+  }
+
+  function updatePushes(pushStatusObjectId, results) {
+    return Promise.resolve();
+  }
+
   return Object.freeze({
     create,
-    update
+    update,
+    createPush,
+    insertPushes,
+    updatePushes
   })
 }
 
@@ -138,8 +180,10 @@ export function pushStatusHandler(config) {
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
+    return handler.insertPushes(installations, objectId).then(() => {
+      return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date() });
+    });
   }
 
   let complete = function(results) {
@@ -173,7 +217,11 @@ export function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update);
+    return handler.update({status:"running", objectId }, update).then((result) => {
+      return handler.updatePushes(objectId, results).then(() => {
+        return result;
+      });
+    });
   }
 
   let fail = function(err) {
