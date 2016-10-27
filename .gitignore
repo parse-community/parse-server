@@ -40,7 +40,7 @@ node_modules
 .vscode
 
 # Babel.js
-lib/
+# lib/
 
 # cache folder
 .cache
