@@ -51,12 +51,12 @@ function statusHandler(className, database) {
     let promises = _.map(installations, installation => {
       let pushObjectId = newObjectId();
       let push = {
-        pushObjectId,
+        objectId: pushObjectId,
         createdAt: now,
         installation: {
           __type: 'Pointer',
           className: "_Installation",
-          objectId: installation.id,
+          objectId: installation.objectId,
         },
         pushStatus: {
           __type: 'Pointer',
