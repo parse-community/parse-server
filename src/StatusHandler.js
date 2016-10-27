@@ -47,8 +47,8 @@ function statusHandler(className, database) {
 
   function insertPushes(installations, pushStatusObjectId) {
     // Insert a Push object for each installation we're pushing to
+    let now = new Date();
     let promises = _.map(installations, installation => {
-      let now = new Date();
       let pushObjectId = newObjectId();
       let push = {
         pushObjectId,
