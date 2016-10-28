@@ -45,19 +45,11 @@ describe('SchemaCache', () => {
       className: 'Class2'
     }];
     schemaCache.setAllClasses(allSchemas).then(() => {
-      const oneSchema = {
-        className: 'Class3'
-      };
-      return schemaCache.setOneSchema(oneSchema.className, oneSchema);
-    }).then(() => {
       return schemaCache.clear()
     }).then(() => {
       return schemaCache.getAllClasses();
     }).then((cachedSchemas) => {
       expect(cachedSchemas).toBeNull();
-      return schemaCache.getOneSchema('Class3');
-    }).then((cachedSchema) => {
-      expect(cachedSchema).toBeNull();
       done();
     });
   });
@@ -71,19 +63,27 @@ describe('SchemaCache', () => {
     }];
 
     schemaCache.setAllClasses(allSchemas).then(() => {
-      const oneSchema = {
-        className: 'Class3'
-      };
-      return schemaCache.setOneSchema(oneSchema.className, oneSchema);
-    }).then(() => {
       return schemaCache.clear();
     }).then(() => {
       return schemaCache.getAllClasses();
     }).then((allSchemas) => {
       expect(allSchemas).not.toBeNull();
-      return schemaCache.getOneSchema('Class3');
-    }).then((oneSchema) => {
-      expect(oneSchema).not.toBeNull();
+      done();
+    });
+  });
+
+  it('does not override TTL setting', (done) => {
+    schemaCache = new SchemaCache(cacheController, 0, true);
+    const allSchemas = [{
+      className: 'Class1'
+    }, {
+      className: 'Class2'
+    }];
+
+    schemaCache.setAllClasses(allSchemas).then(() => {
+      return schemaCache.getAllClasses();
+    }).then((allSchemas) => {
+      expect(allSchemas).toBeNull();
       done();
     });
   });
