@@ -410,14 +410,18 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this.createTable(className, schema)
-    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    return this._client.tx(t => {
+      const q1 = this.createTable(className, schema);
+      const q2 = this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+
+      return t.batch([q1, q2]);
+    })
     .then(() => {
       return toParseSchema(schema)
     })
     .catch((err) => {
       if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`)
       }
       throw err;
     })
