@@ -182,7 +182,8 @@ class ParseServer {
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, schemaCacheFrozen));
+    const schemaCache = new SchemaCache(cacheController, schemaCacheTTL, schemaCacheFrozen);
+    const databaseController = new DatabaseController(databaseAdapter, schemaCache);
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();
@@ -222,8 +223,7 @@ class ParseServer {
       jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
-      schemaCacheTTL,
-      schemaCacheFrozen
+      schemaCache
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
