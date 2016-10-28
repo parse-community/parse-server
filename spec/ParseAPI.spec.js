@@ -314,19 +314,28 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('query without limit get default 100 records', function(done) {
-    var objects = [];
-    for (var i = 0; i < 150; i++) {
-      objects.push(new TestObject({name: 'name' + i}));
-    }
-    Parse.Object.saveAll(objects).then(() => {
-      return new Parse.Query(TestObject).find();
-    }).then((results) => {
-      expect(results.length).toEqual(100);
-      done();
-    }, error => {
-      fail(JSON.stringify(error));
-      done();
-    });
+    var i = 0;
+    const batchSize = 5;
+    const addObjects = (num) => {
+      const objects = [];
+      for (var j = 0; j < num; j++, i++) {
+        objects.push(new TestObject({name: 'name' + i}));
+      }
+      if (i < 149) {
+        return Parse.Object.saveAll(objects).then(() => addObjects(batchSize));
+      }
+    };
+
+    addObjects(batchSize)    
+      .then(() => {
+        return new Parse.Query(TestObject).find();
+      }).then((results) => {
+        expect(results.length).toEqual(100);
+        done();
+      }, error => {
+        fail(JSON.stringify(error));
+        done();
+      });
   });
 
   it('basic saveAll', function(done) {
