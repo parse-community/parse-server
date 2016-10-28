@@ -8,8 +8,9 @@ import defaults from '../defaults';
 export default class SchemaCache {
   cache: Object;
 
-  constructor(cacheController, ttl = defaults.schemaCacheTTL) {
+  constructor(cacheController, ttl = defaults.schemaCacheTTL, frozen = false) {
     this.ttl = ttl;
+    this.frozen = frozen;
     if (typeof ttl == 'string') {
       this.ttl = parseInt(ttl);
     }
@@ -69,7 +70,9 @@ export default class SchemaCache {
 
   clear() {
     // That clears all caches...
-    let promise = Promise.resolve();
+    if (this.frozen) {
+      return Promise.resolve();
+    }
     return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
       if (!allKeys) {
         return;
