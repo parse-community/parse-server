@@ -410,8 +410,12 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this.createTable(className, schema)
-    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    return this._client.tx(t => {
+      const q1 = this.createTable(className, schema);
+      const q2 = this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+
+      return t.batch([q1, q2]);
+    })
     .then(() => {
       return toParseSchema(schema)
     })
