@@ -9,11 +9,6 @@ import {
 
 let ParsePubSub = {};
 
-function usePubSubAdapter(config: any): any {
-  let adapter = config.pubSubAdapter;
-  loadAdapter()
-}
-
 function useRedis(config: any): boolean {
   let redisURL = config.redisURL;
   return typeof redisURL !== 'undefined' && redisURL !== '';
@@ -24,7 +19,7 @@ ParsePubSub.createPublisher = function(config: any): any {
     return RedisPubSub.createPublisher(config);
   } else {
     let adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
-    if (typeof adapter.createSubscriber !== 'function') {
+    if (typeof adapter.createPublisher !== 'function') {
       throw 'pubSubAdapter should have createPublisher()';
     }
     return adapter.createPublisher(config);
