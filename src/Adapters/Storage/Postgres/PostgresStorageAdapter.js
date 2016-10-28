@@ -411,8 +411,8 @@ export class PostgresStorageAdapter {
 
   createClass(className, schema) {
     return this._client.tx(t => {
-      const q1 = this.createTable(className, schema);
-      const q2 = this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+      const q1 = this.createTable(className, schema, t);
+      const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
 
       return t.batch([q1, q2]);
     })
@@ -428,7 +428,8 @@ export class PostgresStorageAdapter {
   }
 
   // Just create a table, do not insert in schema
-  createTable(className, schema) {
+  createTable(className, schema, client) {
+    client = client || this._client;
     debug('createTable', className, schema);
     let valuesArray = [];
     let patternsArray = [];
@@ -464,7 +465,7 @@ export class PostgresStorageAdapter {
     const qs = `CREATE TABLE $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
     return this._ensureSchemaCollectionExists()
-    .then(() => this._client.none(qs, values))
+    .then(() => client.none(qs, values))
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -474,7 +475,7 @@ export class PostgresStorageAdapter {
     }).then(() => {
       // Create the relation tables
       return Promise.all(relations.map((fieldName) => {
-        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        return client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }));
     });
   }
