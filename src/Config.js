@@ -35,7 +35,9 @@ export class Config {
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
 
-    if (!cacheInfo.freezeSchema) {
+    if (cacheInfo.freezeSchema) {
+      this.database = cacheInfo.databaseController;
+    } else {
       // Create a new DatabaseController per request
       if (cacheInfo.databaseController) {
         const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL, cacheInfo.freezeSchema);
