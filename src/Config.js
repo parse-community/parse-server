@@ -35,14 +35,15 @@ export class Config {
     this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
 
-    // Create a new DatabaseController per request
-    if (cacheInfo.databaseController) {
-      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL, cacheInfo.schemaCacheFrozen);
-      this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+    if (!cacheInfo.freezeSchema) {
+      // Create a new DatabaseController per request
+      if (cacheInfo.databaseController) {
+        const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL, cacheInfo.freezeSchema);
+        this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+      }
     }
 
-    this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
-    this.schemaCacheFrozen = cacheInfo.schemaCacheFrozen;
+    this.freezeSchema = cacheInfo.freezeSchema;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);

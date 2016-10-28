@@ -28,5 +28,5 @@ export default {
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
   schemaCacheTTL: 5000, // in ms
-  schemaCacheFrozen: false
+  freezeSchema: false
 }
