@@ -223,6 +223,7 @@ class ParseServer {
       jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
+      schemaCacheTTL,
       freezeSchema
     });
 

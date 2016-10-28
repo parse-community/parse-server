@@ -41,7 +41,8 @@ export class Config {
       this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
     }
 
-    this.schemaCache = cacheInfo.schemaCache;
+    this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
+    this.freezeSchema = cacheInfo.freezeSchema;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
