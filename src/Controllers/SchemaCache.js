@@ -71,9 +71,8 @@ export default class SchemaCache {
   clear() {
     // That clears all caches...
     if (this.frozen) {
-      return;
+      return Promise.resolve();
     }
-    let promise = Promise.resolve();
     return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
       if (!allKeys) {
         return;
