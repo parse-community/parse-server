@@ -41,7 +41,7 @@ let stopDB = () => {};
 
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseAdapter = new PostgresStorageAdapter({
-    uri: postgresURI,
+    uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
     collectionPrefix: 'test_',
   });
 } else {
