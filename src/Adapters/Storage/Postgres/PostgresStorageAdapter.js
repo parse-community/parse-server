@@ -417,7 +417,7 @@ export class PostgresStorageAdapter {
     })
     .catch((err) => {
       if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`)
       }
       throw err;
     })
