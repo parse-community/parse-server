@@ -8,13 +8,13 @@ describe('ParsePubSub', function() {
       createPublisher: jasmine.createSpy('createPublisherRedis'),
       createSubscriber: jasmine.createSpy('createSubscriberRedis')
     };
-    jasmine.mockLibrary('../src/LiveQuery/RedisPubSub', 'RedisPubSub', mockRedisPubSub);
+    jasmine.mockLibrary('../src/Adapters/PubSub/RedisPubSub', 'RedisPubSub', mockRedisPubSub);
     // Mock EventEmitterPubSub
     var mockEventEmitterPubSub = {
       createPublisher: jasmine.createSpy('createPublisherEventEmitter'),
       createSubscriber: jasmine.createSpy('createSubscriberEventEmitter')
     };
-    jasmine.mockLibrary('../src/LiveQuery/EventEmitterPubSub', 'EventEmitterPubSub', mockEventEmitterPubSub);
+    jasmine.mockLibrary('../src/Adapters/PubSub/EventEmitterPubSub', 'EventEmitterPubSub', mockEventEmitterPubSub);
     done();
   });
 
@@ -23,17 +23,17 @@ describe('ParsePubSub', function() {
       redisURL: 'redisURL'
     });
 
-    var RedisPubSub = require('../src/LiveQuery/RedisPubSub').RedisPubSub;
-    var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
-    expect(RedisPubSub.createPublisher).toHaveBeenCalledWith('redisURL');
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+    expect(RedisPubSub.createPublisher).toHaveBeenCalledWith({redisURL: 'redisURL'});
     expect(EventEmitterPubSub.createPublisher).not.toHaveBeenCalled();
   });
 
   it('can create event emitter publisher', function() {
     var publisher = ParsePubSub.createPublisher({});
 
-    var RedisPubSub = require('../src/LiveQuery/RedisPubSub').RedisPubSub;
-    var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createPublisher).not.toHaveBeenCalled();
     expect(EventEmitterPubSub.createPublisher).toHaveBeenCalled();
   });
@@ -43,23 +43,73 @@ describe('ParsePubSub', function() {
       redisURL: 'redisURL'
     });
 
-    var RedisPubSub = require('../src/LiveQuery/RedisPubSub').RedisPubSub;
-    var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
-    expect(RedisPubSub.createSubscriber).toHaveBeenCalledWith('redisURL');
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+    expect(RedisPubSub.createSubscriber).toHaveBeenCalledWith({redisURL: 'redisURL'});
     expect(EventEmitterPubSub.createSubscriber).not.toHaveBeenCalled();
   });
 
   it('can create event emitter subscriber', function() {
     var subscriptionInfos = ParsePubSub.createSubscriber({});
 
-    var RedisPubSub = require('../src/LiveQuery/RedisPubSub').RedisPubSub;
-    var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
     expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
     expect(EventEmitterPubSub.createSubscriber).toHaveBeenCalled();
   });
 
+  it('can create publisher/sub with custom adapter', function() {
+    let adapter =  {
+      createPublisher: jasmine.createSpy('createPublisher'),
+      createSubscriber: jasmine.createSpy('createSubscriber')
+    }
+    ParsePubSub.createPublisher({
+      pubSubAdapter: adapter
+    });
+    expect(adapter.createPublisher).toHaveBeenCalled();
+
+    ParsePubSub.createSubscriber({
+      pubSubAdapter: adapter
+    });
+    expect(adapter.createSubscriber).toHaveBeenCalled();
+
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+    expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
+    expect(EventEmitterPubSub.createSubscriber).not.toHaveBeenCalled();
+    expect(RedisPubSub.createPublisher).not.toHaveBeenCalled();
+    expect(EventEmitterPubSub.createPublisher).not.toHaveBeenCalled();
+  });
+
+  it('can create publisher/sub with custom function adapter', function() {
+    let adapter =  {
+      createPublisher: jasmine.createSpy('createPublisher'),
+      createSubscriber: jasmine.createSpy('createSubscriber')
+    }
+    ParsePubSub.createPublisher({
+      pubSubAdapter: function() {
+        return adapter;
+      }
+    });
+    expect(adapter.createPublisher).toHaveBeenCalled();
+
+    ParsePubSub.createSubscriber({
+      pubSubAdapter: function() {
+        return adapter;
+      }
+    });
+    expect(adapter.createSubscriber).toHaveBeenCalled();
+
+    var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+    var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
+    expect(RedisPubSub.createSubscriber).not.toHaveBeenCalled();
+    expect(EventEmitterPubSub.createSubscriber).not.toHaveBeenCalled();
+    expect(RedisPubSub.createPublisher).not.toHaveBeenCalled();
+    expect(EventEmitterPubSub.createPublisher).not.toHaveBeenCalled();
+  });
+
   afterEach(function(){
-    jasmine.restoreLibrary('../src/LiveQuery/RedisPubSub', 'RedisPubSub');
-    jasmine.restoreLibrary('../src/LiveQuery/EventEmitterPubSub', 'EventEmitterPubSub');
+    jasmine.restoreLibrary('../src/Adapters/PubSub/RedisPubSub', 'RedisPubSub');
+    jasmine.restoreLibrary('../src/Adapters/PubSub/EventEmitterPubSub', 'EventEmitterPubSub');
   });
 });
