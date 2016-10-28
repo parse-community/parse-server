@@ -39,9 +39,6 @@ node_modules
 # visual studio code
 .vscode
 
-# Babel.js
-lib/
-
 # cache folder
 .cache
 
