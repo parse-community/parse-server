@@ -161,7 +161,7 @@ export class FunctionsRouter extends PromiseRouter {
         theFunction(request, response);
       });
     } else {
-      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, 'Invalid function.');
+      throw new Parse.Error(Parse.Error.SCRIPT_FAILED, `Invalid function: "${functionName}"`);
     }
   }
 }
