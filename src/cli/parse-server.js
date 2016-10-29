@@ -121,7 +121,7 @@ runner({
         });
       }
     } else {
-      startServer(options, (p) => {
+      startServer(options, () => {
         logOptions();
         console.log('');
         console.log('['+process.pid+'] parse-server running on '+options.serverURL);
