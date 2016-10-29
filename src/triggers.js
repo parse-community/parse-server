@@ -8,7 +8,8 @@ export const Types = {
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
   afterDelete: 'afterDelete',
-  beforeFind: 'beforeFind'
+  beforeFind: 'beforeFind',
+  afterFind: 'afterFind'
 };
 
 const baseStore = function() {
@@ -237,6 +238,52 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
     triggerType,
     error,
     user: userIdForLog(auth)
+  });
+}
+
+export function maybeRunAfterFindTrigger(triggerType, auth, className, results, config) {
+  return new Promise(function (resolve, reject) {
+    var trigger = getTrigger(className, triggerType, config.applicationId);
+    if (!trigger) {
+      return resolve();
+    }
+    var request = getRequestObject(triggerType, auth, null, null, config);
+    var response = {
+      error: function(code, message) {
+        if (!message) {
+          message = code;
+          code = Parse.Error.SCRIPT_FAILED;
+        }
+        var scriptError = new Parse.Error(code, message);
+        return reject(scriptError);
+      }
+    };
+    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(results), auth);
+    var resultsAsParseObjects = results.map(result => {
+      //setting the class name to transform into parse object
+      result.className=className;
+      return Parse.Object.fromJSON(result);
+    });
+    response.results = resultsAsParseObjects;
+    var triggerPromise = trigger(request, response);
+    logTriggerAfterHook(triggerType, className, JSON.stringify(modifiedJSONResults), auth);
+    if (triggerPromise && typeof triggerPromise.then === "function") {
+      return triggerPromise.then(function(promiseResults){
+        if(promiseResults) {
+          var modifiedJSONResults = promiseResults.map(result => {
+                return result.toJSON();
+          });
+          resolve(modifiedJSONResults);
+        }else{
+          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
+        }
+      });
+    } else {
+      var modifiedJSONResults = response.results.map(result => {
+            return result.toJSON();
+      });
+      return resolve(modifiedJSONResults);
+    }
   });
 }
 
