@@ -4,6 +4,7 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresUniqueIndexViolationError = '23505';
+const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
 
 const debug = function(){
@@ -385,8 +386,9 @@ export class PostgresStorageAdapter {
     this._client = createClient(uri, databaseOptions);
   }
 
-  _ensureSchemaCollectionExists() {
-    return this._client.none('CREATE TABLE "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
+  _ensureSchemaCollectionExists(conn) {
+    conn = conn || this._client;
+    return conn.none('CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError || error.code === PostgresUniqueIndexViolationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -410,13 +412,20 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this.createTable(className, schema).then(() => {
-      return this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+    return this._client.tx(t => {
+       const q1 = this.createTable(className, schema, t);
+       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+ 
+       return t.batch([q1, q2]);
     })
     .then(() => {
       return toParseSchema(schema)
     })
     .catch((err) => {
+      if (Array.isArray(err.data) && err.data.length > 1 && err.data[0].result.code === PostgresTransactionAbortedError) {
+        err = err.data[1].result;
+      }
+
       if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
         throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`)
       }
@@ -425,7 +434,8 @@ export class PostgresStorageAdapter {
   }
 
   // Just create a table, do not insert in schema
-  createTable(className, schema) {
+  createTable(className, schema, conn) {
+    conn = conn || this._client;
     debug('createTable', className, schema);
     let valuesArray = [];
     let patternsArray = [];
@@ -458,10 +468,10 @@ export class PostgresStorageAdapter {
       }
       index = index+2;
     });
-    const qs = `CREATE TABLE $1:name (${patternsArray.join(',')})`;
+    const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return this._ensureSchemaCollectionExists()
-    .then(() => this._client.none(qs, values))
+    return this._ensureSchemaCollectionExists(conn)
+    .then(() => conn.none(qs, values))
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -471,7 +481,7 @@ export class PostgresStorageAdapter {
     }).then(() => {
       // Create the relation tables
       return Promise.all(relations.map((fieldName) => {
-        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        return conn.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }));
     });
   }
