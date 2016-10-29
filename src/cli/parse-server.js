@@ -31,9 +31,12 @@ const help = function(){
 function startServer(options, callback) {
   const app = express();
   const api = new ParseServer(options);
+  const sockets = {} 
+  let nextId = 0;
   app.use(options.mountPath, api);
 
   var server = app.listen(options.port, callback);
+  //server.on('connection', initializeConnections);
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
     let liveQueryServer = server;
     if (options.liveQueryPort) {
@@ -43,8 +46,28 @@ function startServer(options, callback) {
     }
     ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
   }
+
+  function initializeConnections(socket) {
+    const socketId = nextId++;
+    socket.id = socket.id || socketId;
+    sockets[socketId] = socket;
+
+    socket.on('close', (s) => {
+      delete sockets[s.id];
+    })
+  }
+
+  function shutConnections() {
+    for (const socketId in sockets) {
+      try {
+        sockets[socketId].destroy()
+      } catch (e) { }
+    }
+  }
+
   var handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
+    shutConnections();
     server.close(function () {
       process.exit(0);
     });
@@ -98,7 +121,7 @@ runner({
         });
       }
     } else {
-      startServer(options, () => {
+      startServer(options, (p) => {
         logOptions();
         console.log('');
         console.log('['+process.pid+'] parse-server running on '+options.serverURL);
