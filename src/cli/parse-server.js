@@ -36,7 +36,7 @@ function startServer(options, callback) {
   app.use(options.mountPath, api);
 
   var server = app.listen(options.port, callback);
-  //server.on('connection', initializeConnections);
+  server.on('connection', initializeConnections);
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
     let liveQueryServer = server;
     if (options.liveQueryPort) {
