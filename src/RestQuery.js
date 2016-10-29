@@ -478,8 +478,8 @@ RestQuery.prototype.runAfterFindTrigger = function() {
     return;
   }
   // Avoid doing any setup for triggers if there is no 'afterFind' trigger for this class.
-  let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterFind, this.config.applicationId);
-  if (!hasAfterSaveHook) {
+  let hasAfterFindHook = triggers.triggerExists(this.className, triggers.Types.afterFind, this.config.applicationId);
+  if (!hasAfterFindHook) {
     return Promise.resolve();
   }
   // Run afterFind trigger and set the new results

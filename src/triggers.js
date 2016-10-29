@@ -259,23 +259,29 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, results, 
       }
     };
     logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(results), auth);
-    var resultsAsParseObjects = [];
-    for (var i=0;i<results.length;i++){
-      var result = results[i];
+    var resultsAsParseObjects = results.map(result => {
       //setting the class name to transform into parse object
       result.className=className;
-      resultsAsParseObjects.push(Parse.Object.fromJSON(result));
-    }
+      return Parse.Object.fromJSON(result);
+    });
     response.results = resultsAsParseObjects;
     var triggerPromise = trigger(request, response);
-    var modifiedJSONResults = [];
-    for(var i = 0;i<response.results.length;i++){
-      modifiedJSONResults.push(response.results[i].toJSON());
-    }
-    logTriggerAfterHook(triggerType,className, JSON.stringify(modifiedJSONResults), auth);
+    logTriggerAfterHook(triggerType, className, JSON.stringify(modifiedJSONResults), auth);
     if (triggerPromise && typeof triggerPromise.then === "function") {
-      return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "Promise not supported by AfterFind"));
+      return triggerPromise.then(function(promiseResults){
+        if(promiseResults) {
+          var modifiedJSONResults = promiseResults.map(result => {
+                return result.toJSON();
+          });
+          resolve(modifiedJSONResults);
+        }else{
+          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
+        }
+      });
     } else {
+      var modifiedJSONResults = response.results.map(result => {
+            return result.toJSON();
+      });
       return resolve(modifiedJSONResults);
     }
   });
