@@ -31,9 +31,13 @@ const help = function(){
 function startServer(options, callback) {
   const app = express();
   const api = new ParseServer(options);
+  const sockets = {}
+
   app.use(options.mountPath, api);
 
   var server = app.listen(options.port, callback);
+  server.on('connection', initializeConnections);
+
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
     let liveQueryServer = server;
     if (options.liveQueryPort) {
@@ -43,8 +47,27 @@ function startServer(options, callback) {
     }
     ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
   }
+
+  function initializeConnections(socket) {
+    const socketId = socket.remoteAddress + ':' + socket.remotePort
+    sockets[socketId] = socket;
+
+    socket.on('close', () => {
+      delete sockets[socketId];
+    });
+  }
+
+  function destroyAliveConnections() {
+    for (const socketId in sockets) {
+      try {
+        sockets[socketId].destroy()
+      } catch (e) { }
+    }
+  }
+
   var handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
+    destroyAliveConnections();
     server.close(function () {
       process.exit(0);
     });
