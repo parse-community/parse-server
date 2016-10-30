@@ -1309,7 +1309,7 @@ describe('Parse.Query testing', () => {
                           new TestObject({myString: someAscii + "end"}),
                           new TestObject({myString: someAscii})], function() {
                             var query = new Parse.Query(TestObject);
-                            query.startsWith("myString", someAscii);
+                            query.endsWith("myString", someAscii);
                             query.find({
                               success: function(results, foo) {
                                 equal(results.length, 2);
