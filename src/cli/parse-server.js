@@ -31,7 +31,7 @@ const help = function(){
 function startServer(options, callback) {
   const app = express();
   const api = new ParseServer(options);
-  const sockets = {}
+  const sockets = {};
 
   app.use(options.mountPath, api);
 
@@ -49,7 +49,11 @@ function startServer(options, callback) {
   }
 
   function initializeConnections(socket) {
-    const socketId = socket.remoteAddress + ':' + socket.remotePort
+    /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+
+      This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
+
+    const socketId = socket.remoteAddress + ':' + socket.remotePort;
     sockets[socketId] = socket;
 
     socket.on('close', () => {
@@ -60,7 +64,7 @@ function startServer(options, callback) {
   function destroyAliveConnections() {
     for (const socketId in sockets) {
       try {
-        sockets[socketId].destroy()
+        sockets[socketId].destroy();
       } catch (e) { }
     }
   }
