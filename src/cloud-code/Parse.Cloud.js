@@ -50,6 +50,11 @@ ParseCloud.beforeFind = function(parseClass, handler) {
   triggers.addTrigger(triggers.Types.beforeFind, className, handler, Parse.applicationId);
 };
 
+ParseCloud.afterFind = function(parseClass, handler) {
+  const className = getClassName(parseClass);
+  triggers.addTrigger(triggers.Types.afterFind, className, handler, Parse.applicationId);
+};
+
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
 }

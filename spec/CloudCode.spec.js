@@ -1306,4 +1306,134 @@ describe('beforeFind hooks', () => {
       done();
     });
   });
-})
+});
+
+describe('afterFind hooks', () => {
+  it('should add afterFind trigger using get',(done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      for(let i = 0 ; i < req.objects.length ; i++){
+        req.objects[i].set("secretField","###");
+      }
+      res.success(req.objects);
+    });
+    let obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
+    obj.save().then(function() {
+      let query = new Parse.Query('MyObject');
+      query.get(obj.id).then(function(result) {
+        expect(result.get('secretField')).toEqual('###');
+        done();
+      }, function(error) {
+        fail(error);
+        done();
+      });
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
+  it('should add afterFind trigger using find',(done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      for(let i = 0 ; i < req.objects.length ; i++){
+        req.objects[i].set("secretField","###");
+      }
+      res.success(req.objects);
+    });
+    let obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
+    obj.save().then(function() {
+      let query = new Parse.Query('MyObject');
+      query.equalTo('objectId',obj.id);
+      query.find().then(function(results) {
+        expect(results[0].get('secretField')).toEqual('###');
+        done();
+      }, function(error) {
+        fail(error);
+        done();
+      });
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
+  it('should filter out results',(done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      let filteredResults = [];
+      for(let i = 0 ; i < req.objects.length ; i++){
+        if(req.objects[i].get("secretField")==="SSID1") {
+          filteredResults.push(req.objects[i]);
+        }
+      }
+      res.success(filteredResults);
+    });
+    let obj0 = new Parse.Object('MyObject');
+    obj0.set('secretField', 'SSID1');
+    let obj1 = new Parse.Object('MyObject');
+    obj1.set('secretField', 'SSID2');
+    Parse.Object.saveAll([obj0, obj1]).then(function() {
+      let query = new Parse.Query('MyObject');
+      query.find().then(function(results) {
+        expect(results[0].get('secretField')).toEqual('SSID1');
+        expect(results.length).toEqual(1);
+        done();
+      }, function(error) {
+        fail(error);
+        done();
+      });
+    }, function(error) {
+      fail(error);
+      done();
+    });
+  });
+
+  it('should handle failures',(done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      res.error(Parse.Error.SCRIPT_FAILED, "It should fail");
+    });
+    let obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
+    obj.save().then(function() {
+      let query = new Parse.Query('MyObject');
+      query.equalTo('objectId',obj.id);
+      query.find().then(function(results) {
+        fail("AfterFind should handle response failure correctly");
+        done();
+      }, function(error) {
+        done();
+      });
+    }, function(error) {
+      done();
+    });
+  });
+
+  it('should also work with promise',(done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      let promise = new Parse.Promise();
+      setTimeout(function(){
+        for(let i = 0 ; i < req.objects.length ; i++){
+          req.objects[i].set("secretField","###");
+        }
+        promise.resolve(req.objects);
+      }, 1000);
+      return promise;
+    });
+    let obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
+    obj.save().then(function() {
+      let query = new Parse.Query('MyObject');
+      query.equalTo('objectId',obj.id);
+      query.find().then(function(results) {
+        expect(results[0].get('secretField')).toEqual('###');
+        done();
+      }, function(error) {
+        fail(error);
+      });
+    }, function(error) {
+      fail(error);
+    });
+  });
+
+});
+

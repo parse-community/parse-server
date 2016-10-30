@@ -8,7 +8,8 @@ export const Types = {
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
   afterDelete: 'afterDelete',
-  beforeFind: 'beforeFind'
+  beforeFind: 'beforeFind',
+  afterFind: 'afterFind'
 };
 
 const baseStore = function() {
@@ -185,6 +186,15 @@ export function getRequestQueryObject(triggerType, auth, query, config) {
 export function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
+      if (request.triggerName === Types.afterFind) {
+        if(!response){
+          response = request.objects;  
+        }
+        response = response.map(object => {
+          return object.toJSON();
+        });
+        return resolve(response);
+      }
       // Use the JSON response
       if (response && !request.object.equals(response)
           && request.triggerName === Types.beforeSave) {
@@ -237,6 +247,42 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
     triggerType,
     error,
     user: userIdForLog(auth)
+  });
+}
+
+export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config) {
+  return new Promise((resolve, reject) => {
+    const trigger = getTrigger(className, triggerType, config.applicationId);
+    if (!trigger) {
+      return resolve();
+    }
+    const request = getRequestObject(triggerType, auth, null, null, config);    
+    const response = getResponseObject(request,
+      object => {
+        resolve(object);
+      }, 
+      error => {
+        reject(error);
+    });
+    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
+    request.objects = objects.map(object => {
+      //setting the class name to transform into parse object
+      object.className=className;
+      return Parse.Object.fromJSON(object);
+    });
+    const triggerPromise = trigger(request, response);
+    if (triggerPromise && typeof triggerPromise.then === "function") {
+      return triggerPromise.then(promiseResults => {
+        if(promiseResults) {
+          resolve(promiseResults);
+        }else{
+          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
+        }
+      });
+    }
+  }).then((results) => {
+    logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
+    return results;
   });
 }
 
