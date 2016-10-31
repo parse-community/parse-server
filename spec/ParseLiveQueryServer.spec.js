@@ -335,6 +335,35 @@ describe('ParseLiveQueryServer', function() {
     expect(JSON.stringify(args[1])).toBe(unsubscribeRequest);
   });
 
+  it('can set update command message handler for a parseWebSocket', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    // Register mock connect/subscribe/unsubscribe handler for the server
+    spyOn(parseLiveQueryServer, '_handleUpdateSubscription').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleUnsubscribe').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleSubscribe').and.callThrough();
+
+    // Make mock parseWebsocket
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Check updateRequest request
+    var updateRequest = '{"op":"update"}';
+    // Trigger message event
+    parseWebSocket.emit('message', updateRequest);
+    // Make sure _handleUnsubscribe is called
+    var args = parseLiveQueryServer._handleUpdateSubscription.calls.mostRecent().args;
+    expect(args[0]).toBe(parseWebSocket);
+    expect(JSON.stringify(args[1])).toBe(updateRequest);
+    expect(parseLiveQueryServer._handleUnsubscribe).toHaveBeenCalled();
+    let unsubArgs = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
+    expect(unsubArgs.length).toBe(3);
+    expect(unsubArgs[2]).toBe(false);
+    expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
+  });
+
   it('can set unknown command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Make mock parseWebsocket

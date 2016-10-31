@@ -257,6 +257,9 @@ class ParseLiveQueryServer {
         case 'subscribe':
           this._handleSubscribe(parseWebsocket, request);
           break;
+        case 'update':
+          this._handleUpdateSubscription(parseWebsocket, request);
+          break;
         case 'unsubscribe':
           this._handleUnsubscribe(parseWebsocket, request);
           break;
@@ -471,7 +474,12 @@ class ParseLiveQueryServer {
     logger.verbose('Current client number: %d', this.clients.size);
   }
 
-  _handleUnsubscribe(parseWebsocket: any, request: any): any {
+  _handleUpdateSubscription(parseWebsocket: any, request: any): any {
+    this._handleUnsubscribe(parseWebsocket, request, false);
+    this._handleSubscribe(parseWebsocket, request);
+  }
+
+  _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient: bool = true): any {
     // If we can not find this client, return error to client
     if (!parseWebsocket.hasOwnProperty('clientId')) {
       Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before unsubscribing');
@@ -509,6 +517,10 @@ class ParseLiveQueryServer {
     // If there is no subscriptions under this class, remove it from subscriptions
     if (classSubscriptions.size === 0) {
       this.subscriptions.delete(className);
+    }
+    
+    if (!notifyClient) {
+      return;
     }
 
     client.pushUnsubscribe(request.requestId);
