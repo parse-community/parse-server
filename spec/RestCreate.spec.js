@@ -52,7 +52,7 @@ describe('rest create', () => {
     });
   });
 
-  fit('handles object and subdocument', done => {
+  it('handles object and subdocument', done => {
     let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     rest.create(config, auth.nobody(config), 'MyClass', obj)
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
