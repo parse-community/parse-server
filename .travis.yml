@@ -1,26 +1,19 @@
-sudo: required
 language: node_js
 node_js:
 - '4.5'
 - '6.1'
+sudo: required
+dist: trusty
 services:
   - postgresql
   - redis-server
 addons:
-  apt:
-    sources:
-    - precise-pgdg-9.5
-    packages:
-    - postgresql-9.5
-    - postgresql-contrib-9.5
   postgresql: '9.5'
 before_script:
   - ls -al "$HOME/.mongodb/versions"
-  - sudo cp /etc/postgresql/9.4/main/pg_hba.conf /etc/postgresql/9.5/main/pg_hba.conf
-  - sudo /etc/init.d/postgresql restart
-  - sudo psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
-  - sudo psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-  - sudo psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
+  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
+  - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
+  - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
