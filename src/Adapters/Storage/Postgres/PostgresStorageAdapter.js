@@ -914,9 +914,7 @@ export class PostgresStorageAdapter {
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
-                      
-        updatePatterns.push(`$${index}:name = COALESCE($${index}:name, '{}'::jsonb) || $${index + 1}::jsonb`);
-
+        updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
         index += 2;
       } else if (Array.isArray(fieldValue)
