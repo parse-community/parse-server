@@ -3,6 +3,7 @@
 
 var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
+var triggers = require('./triggers');
 
 import { default as FilesController } from './Controllers/FilesController';
 
@@ -122,6 +123,8 @@ RestQuery.prototype.execute = function(executeOptions) {
     return this.runCount();
   }).then(() => {
     return this.handleInclude();
+  }).then(() => {
+    return this.runAfterFindTrigger();
   }).then(() => {
     return this.response;
   });
@@ -468,6 +471,23 @@ RestQuery.prototype.handleInclude = function() {
   return pathResponse;
 };
 
+
+//Returns a promise of a processed set of results
+RestQuery.prototype.runAfterFindTrigger = function() {
+  if (!this.response) {
+    return;
+  }
+  // Avoid doing any setup for triggers if there is no 'afterFind' trigger for this class.
+  let hasAfterFindHook = triggers.triggerExists(this.className, triggers.Types.afterFind, this.config.applicationId);
+  if (!hasAfterFindHook) {
+    return Promise.resolve();
+  }
+  // Run afterFind trigger and set the new results
+  return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className,this.response.results, this.config).then((results) => {
+    this.response.results = results;
+  });
+};
+
 // Adds included values to the response.
 // Path is a list of field names.
 // Returns a promise for an augmented response.
@@ -639,5 +659,8 @@ function findObjectWithKey(root, key) {
     }
   }
 }
+
+
+
 
 module.exports = RestQuery;
