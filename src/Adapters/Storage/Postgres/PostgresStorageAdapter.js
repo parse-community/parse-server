@@ -331,8 +331,14 @@ const buildWhereClause = ({ schema, query, index }) => {
         if (opts.indexOf('i') >= 0) {
           operator = '~*';
         }
+        if (opts.indexOf('x') >= 0) {
+          regex = removeWhiteSpace(regex);
+        }
       }
-      patterns.push(`$${index}:name ${operator} $${index+1}`);
+
+      regex = processRegexPattern(regex);
+
+      patterns.push(`$${index}:name ${operator} '$${index+1}:raw'`);
       values.push(fieldName, regex);
       index += 2;
     }
@@ -1129,6 +1135,79 @@ export class PostgresStorageAdapter {
 
 function notImplemented() {
     return Promise.reject(new Error('Not implemented yet.'));
+}
+
+function removeWhiteSpace(regex) {
+  if (!regex.endsWith('\n')){
+    regex += '\n';
+  }
+
+  // remove non escaped comments
+  return regex.replace(/([^\\])#.*\n/gmi, '$1')
+    // remove lines starting with a comment
+    .replace(/^#.*\n/gmi, '')
+    // remove non escaped whitespace
+    .replace(/([^\\])\s+/gmi, '$1')
+    // remove whitespace at the beginning of a line
+    .replace(/^\s+/, '')
+    .trim();
+}
+
+function processRegexPattern(s) {
+  if (s && s.startsWith('^')){
+    // regex for startsWith
+    return '^' + literalizeRegexPart(s.slice(1));
+
+  } else if (s && s.endsWith('$')) {
+    // regex for endsWith
+    return literalizeRegexPart(s.slice(0, s.length - 1)) + '$';
+  }
+
+  // regex for contains
+  return literalizeRegexPart(s);
+}
+
+function createLiteralRegex(remaining) {
+  return remaining.split('').map(c => {
+    if (c.match(/[0-9a-zA-Z]/) !== null) {
+      // don't escape alphanumeric characters
+      return c;
+    }
+    // escape everything else (single quotes with single quotes, everything else with a backslash)
+    return c === `'` ? `''` : `\\${c}`;
+  }).join('');
+}
+
+function literalizeRegexPart(s) {
+  const matcher1 = /\\Q((?!\\E).*)\\E$/
+  const result1 = s.match(matcher1);
+  if(result1 && result1.length > 1 && result1.index > -1){
+    // process regex that has a beginning and an end specified for the literal text
+    const prefix = s.substr(0, result1.index);
+    const remaining = result1[1];
+
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  // process regex that has a beginning specified for the literal text
+  const matcher2 = /\\Q((?!\\E).*)$/
+  const result2 = s.match(matcher2);
+  if(result2 && result2.length > 1 && result2.index > -1){
+    const prefix = s.substr(0, result2.index);
+    const remaining = result2[1];
+
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  // remove all instances of \Q and \E from the remaining text & escape single quotes
+  return (
+    s.replace(/([^\\])(\\E)/, '$1')
+      .replace(/([^\\])(\\Q)/, '$1')
+      .replace(/^\\E/, '')
+      .replace(/^\\Q/, '')
+      .replace(/([^'])'/, `$1''`)
+      .replace(/^'([^'])/, `''$1`)
+  );
 }
 
 // Function to set a key on a nested JSON document
