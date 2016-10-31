@@ -136,6 +136,20 @@ const handleDotFields = (object) => {
   return object;
 }
 
+const validateKeys = (object) => {
+  if (typeof object == 'object') {
+    for (const key in object) {
+      if (typeof object[key] == 'object') {
+        validateKeys(object[key]);
+      }
+
+      if(key.includes('$') || key.includes('.')){
+        throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+      }       
+    }
+  }
+}
+
 // Returns the list of join tables on a schema
 const joinTablesForSchema = (schema) => {
   let list = [];
@@ -642,6 +656,8 @@ export class PostgresStorageAdapter {
     let geoPoints = {};
 
     object = handleDotFields(object);
+
+    validateKeys(object);
 
     Object.keys(object).forEach(fieldName => {
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
