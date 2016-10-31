@@ -914,9 +914,16 @@ export class PostgresStorageAdapter {
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
-        updatePatterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue);
-        index += 2;
+                      
+        for (const k in fieldValue) {
+          updatePatterns.push(`$${index}:name = COALESCE($${index}:name, '{}'::jsonb) || $${index+1}::jsonb`);
+          if (typeof fieldValue[k] == 'string') {
+            values.push(fieldName, `{"${k}": "${fieldValue[k]}"}`);
+          } else {
+            values.push(fieldName, `{"${k}": ${fieldValue[k]}}`);
+          }
+          index += 2;
+        }
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Array') {
