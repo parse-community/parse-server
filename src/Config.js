@@ -37,11 +37,16 @@ export class Config {
 
     // Create a new DatabaseController per request
     if (cacheInfo.databaseController) {
-      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL);
-      this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+      if (cacheInfo.reuseDatabaseController) {
+        this.database = cacheInfo.databaseController;
+      } else {
+        const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL);
+        this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+      }
     }
 
     this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
+    this.reuseDatabaseController = cacheInfo.reuseDatabaseController;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);

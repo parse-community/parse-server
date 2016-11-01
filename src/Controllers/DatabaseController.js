@@ -515,7 +515,9 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
 // Returns a promise.
 DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
-  return this.adapter.deleteAllClasses();
+  return Promise.all([
+    this.adapter.deleteAllClasses(),
+    this.schemaCache.clear()]);
 };
 
 // Finds the keys in a query. Returns a Set. REST format only
