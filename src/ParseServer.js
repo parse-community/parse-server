@@ -139,7 +139,7 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
-    reuseDatabaseController = false,
+    persistSchemaCache = false,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
@@ -223,7 +223,7 @@ class ParseServer {
       revokeSessionOnPasswordReset,
       databaseController,
       schemaCacheTTL,
-      reuseDatabaseController
+      persistSchemaCache
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

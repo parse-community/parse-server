@@ -37,7 +37,7 @@ export class Config {
 
     // Create a new DatabaseController per request
     if (cacheInfo.databaseController) {
-      if (cacheInfo.reuseDatabaseController) {
+      if (cacheInfo.persistSchemaCache) {
         this.database = cacheInfo.databaseController;
       } else {
         const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL);
@@ -46,7 +46,7 @@ export class Config {
     }
 
     this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
-    this.reuseDatabaseController = cacheInfo.reuseDatabaseController;
+    this.persistSchemaCache = cacheInfo.persistSchemaCache;
 
     this.serverURL = cacheInfo.serverURL;
     this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);

@@ -2,10 +2,10 @@ const auth = require('../src/Auth');
 const Config = require('../src/Config');
 const rest = require('../src/rest');
 
-describe('Reuse database controller', () => {
+describe('Persist schema cache', () => {
 	beforeEach((done) => {
 		reconfigureServer({
-			reuseDatabaseController: true,
+			persistSchemaCache: true,
 			schemaCacheTTL: 30000
 		}).then(() => {
 			done();
