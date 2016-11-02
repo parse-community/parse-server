@@ -35,13 +35,20 @@ describe("public API", () => {
       done();
     });
   });
+
+  it('should get 200 on health', (done) => {
+    request('http://localhost:8378/1/health', (err, httpResponse, body) => {
+      expect(httpResponse.statusCode).toBe(200);
+      done();
+    });
+  });
 });
 
 describe("public API without publicServerURL", () => {
   beforeEach(done => {
     reconfigureServer({ appName: 'unused' })
     .then(done, fail);
-  })
+  });
   it("should get 404 on verify_email", (done) => {
     request('http://localhost:8378/1/apps/test/verify_email', (err, httpResponse, body) => {
       expect(httpResponse.statusCode).toBe(404);
@@ -59,6 +66,13 @@ describe("public API without publicServerURL", () => {
   it("should get 404 on request_password_reset", (done) => {
     request('http://localhost:8378/1/apps/test/request_password_reset', (err, httpResponse, body) => {
       expect(httpResponse.statusCode).toBe(404);
+      done();
+    });
+  });
+
+  it('should get 200 on health', (done) => {
+    request('http://localhost:8378/1/health', (err, httpResponse, body) => {
+      expect(httpResponse.statusCode).toBe(200);
       done();
     });
   });
