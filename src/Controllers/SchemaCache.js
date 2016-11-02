@@ -8,13 +8,16 @@ import defaults from '../defaults';
 export default class SchemaCache {
   cache: Object;
 
-  constructor(cacheController, ttl = defaults.schemaCacheTTL) {
+  constructor(cacheController, ttl = defaults.schemaCacheTTL, randomizePrefix = false) {
     this.ttl = ttl;
     if (typeof ttl == 'string') {
       this.ttl = parseInt(ttl);
     }
     this.cache = cacheController;
-    this.prefix = SCHEMA_CACHE_PREFIX+randomString(20);
+    this.prefix = SCHEMA_CACHE_PREFIX;
+    if (!randomizePrefix) {
+      this.prefix += randomString(20);
+    }
   }
 
   put(key, value) {
