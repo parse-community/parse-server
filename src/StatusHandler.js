@@ -45,7 +45,16 @@ function statusHandler(className, database) {
     return lastPromise;
   }
 
-  function insertPushes(installations, pushStatusObjectId) {
+  function updatePush(query, updateFields) {
+    lastPromise = lastPromise.then(() => {
+      return database.update(PUSH_COLLECTION, query, updateFields);
+    });
+    return lastPromise;
+  }
+
+  function insertPushes(pushStatusObjectId, installations) {
+    console.log('insertPushes'); // For debugging, remove
+
     // Insert a Push object for each installation we're pushing to
     let now = new Date();
     let promises = _.map(installations, installation => {
@@ -53,6 +62,8 @@ function statusHandler(className, database) {
       let push = {
         objectId: pushObjectId,
         createdAt: now,
+        updatedAt: now,
+        deviceToken: installation.deviceToken,
         installation: {
           __type: 'Pointer',
           className: "_Installation",
@@ -65,14 +76,53 @@ function statusHandler(className, database) {
     return Promise.all(promises);
   }
 
-  function updatePushes(pushStatusObjectId, results) {
-    return Promise.resolve();
+  function updatePushes(pushStatusObjectId, installations, results) {
+    console.log('updatePushes'); // For debugging, remove
+    let now = new Date();
+
+    // For debugging, remove
+    _.forEach(results, result => {
+      console.log('result', result);
+    });
+
+    let resultsByDeviceToken = _.keyBy(results, r => r.device.deviceToken);
+
+    // Update the push record for each installation
+    let promises = _.map(installations, installation => {
+      let deviceToken = installation.deviceToken;
+      let result = null;
+
+      // Handle different failure scenarios
+      if (!deviceToken) {
+        result = { transmitted: false, error: 'No deviceToken found on installation' }
+      } else if (deviceToken in resultsByDeviceToken) {
+        result = resultsByDeviceToken[deviceToken];
+      } else {
+        result = { transmitted: false, error: 'No result from adapter' }
+      }
+
+      // Find the record to update
+      let query = {
+        pushStatus: pushStatusObjectId,
+        installation: {
+          __type: 'Pointer',
+          className: "_Installation",
+          objectId: installation.objectId,
+        }
+      };
+      let updateFields = { result: result, updatedAt: now };
+
+      return updatePush(query, updateFields);
+    });
+
+    return Promise.all(promises);
   }
 
   return Object.freeze({
     create,
     update,
     createPush,
+    updatePush,
     insertPushes,
     updatePushes
   })
@@ -176,13 +226,15 @@ export function pushStatusHandler(config) {
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-    return handler.insertPushes(installations, objectId).then(() => {
+    return handler.insertPushes(objectId, installations).then(() => {
       return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date() });
     });
   }
 
-  let complete = function(results) {
+  let complete = function(data) {
+    let results = data.results;
+    let installations = data.installations;
     let update = {
       status: 'succeeded',
       updatedAt: new Date(),
@@ -213,10 +265,8 @@ export function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update).then((result) => {
-      return handler.updatePushes(objectId, results).then(() => {
-        return result;
-      });
+    return handler.updatePushes(objectId, installations, results).then(() => {
+      return handler.update({status:"running", objectId }, update);
     });
   }
 
