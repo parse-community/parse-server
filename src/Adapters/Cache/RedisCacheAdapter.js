@@ -1,6 +1,8 @@
 import redis from 'redis';
 import logger from '../../logger';
 
+const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds
+
 function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
@@ -33,9 +35,15 @@ export class RedisCacheAdapter {
     debug('put', key, value, ttl);
     this.p = this.p.then(() => {
       return new Promise((resolve, _) => {
-        this.client.set(key, value, function(err, res) {
-          resolve();
-        });
+        if (ttl) {
+          this.client.psetex(key, ttl, value, function(err, res) {
+            resolve();
+          });
+        } else {
+          this.client.set(key, value, function(err, res) {
+            resolve();
+          });
+        }
       });
     });
     return this.p;
