@@ -918,11 +918,10 @@ export class PostgresStorageAdapter {
         const keysToDelete = Object.keys(originalUpdate).filter(k => {
           // choose top level fields that have a delete operation set 
           return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2
-        }).map(k => k.split('.')[1])
-          .map(k => k.replace(/'/g, `''`));
+        }).map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p, c, i) => {
-          return p + ` - '$${index + 1 + i}:raw'`;
+          return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
          updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
