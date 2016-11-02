@@ -33,6 +33,10 @@ function startServer(options, callback) {
   const api = new ParseServer(options);
   const sockets = {};
 
+  app.get('/', function(req, res) {
+    res.sendStatus(200);
+  });
+
   app.use(options.mountPath, api);
 
   var server = app.listen(options.port, callback);
