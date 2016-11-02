@@ -3,15 +3,15 @@ var InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter')
 var SchemaCache = require('../src/Controllers/SchemaCache').default;
 
 describe('SchemaCache', () => {
-  let schemaCache;
+  let cacheController;
 
   beforeEach(() => {
     const cacheAdapter = new InMemoryCacheAdapter({});
-    const cacheController = new CacheController(cacheAdapter, 'appId');
-    schemaCache = new SchemaCache(cacheController);
+    cacheController = new CacheController(cacheAdapter, 'appId');
   });
 
   it('can retrieve a single schema after all schemas stored', (done) => {
+    const schemaCache = new SchemaCache(cacheController);
     const allSchemas = [{
       className: 'Class1'
     }, {
@@ -26,6 +26,7 @@ describe('SchemaCache', () => {
   });
 
   it('does not return all schemas after a single schema is stored', (done) => {
+    const schemaCache = new SchemaCache(cacheController);
     const schema = {
       className: 'Class1'
     };
@@ -34,6 +35,34 @@ describe('SchemaCache', () => {
     }).then((allSchemas) => {
       expect(allSchemas).toBeNull();
       done();
+    });
+  });
+
+  it('doesn\'t persist cached data by default', (done) => {
+    const schemaCache = new SchemaCache(cacheController);
+    const schema = {
+      className: 'Class1'
+    };
+    schemaCache.setOneSchema(schema.className, schema).then(() => {
+      const anotherSchemaCache = new SchemaCache(cacheController);
+      return anotherSchemaCache.getOneSchema(schema.className).then((schema) => {
+        expect(schema).toBeNull();
+        done();
+      });
+    });
+  });
+
+  it('can persist cached data', (done) => {
+    const schemaCache = new SchemaCache(cacheController, 5000, true);
+    const schema = {
+      className: 'Class1'
+    };
+    schemaCache.setOneSchema(schema.className, schema).then(() => {
+      const anotherSchemaCache = new SchemaCache(cacheController, 5000, true);
+      return anotherSchemaCache.getOneSchema(schema.className).then((schema) => {
+        expect(schema).not.toBeNull();
+        done();
+      });
     });
   });
 });
