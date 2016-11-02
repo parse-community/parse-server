@@ -53,8 +53,6 @@ function statusHandler(className, database) {
   }
 
   function insertPushes(pushStatusObjectId, installations) {
-    console.log('insertPushes'); // For debugging, remove
-
     // Insert a Push object for each installation we're pushing to
     let now = new Date();
     let promises = _.map(installations, installation => {
@@ -77,13 +75,7 @@ function statusHandler(className, database) {
   }
 
   function updatePushes(pushStatusObjectId, installations, results) {
-    console.log('updatePushes'); // For debugging, remove
     let now = new Date();
-
-    // For debugging, remove
-    _.forEach(results, result => {
-      console.log('result', result);
-    });
 
     let resultsByDeviceToken = _.keyBy(results, r => r.device.deviceToken);
 
