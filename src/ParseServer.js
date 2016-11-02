@@ -182,7 +182,7 @@ class ParseServer {
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, persistSchemaCache));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();
