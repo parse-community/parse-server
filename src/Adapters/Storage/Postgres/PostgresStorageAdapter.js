@@ -810,6 +810,7 @@ export class PostgresStorageAdapter {
     let index = 2;
     schema = toPostgresSchema(schema);
 
+    const originalUpdate = {...update};
     update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
@@ -914,9 +915,19 @@ export class PostgresStorageAdapter {
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
-        updatePatterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue);
-        index += 2;
+        const keysToDelete = Object.keys(originalUpdate).filter(k => {
+          // choose top level fields that have a delete operation set 
+          return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2
+        }).map(k => k.split('.')[1]);
+
+        const deletePatterns = keysToDelete.reduce((p, c, i) => {
+          return p + ` - '$${index + 1 + i}:value'`;
+        }, '');
+
+         updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+
+         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
+         index += 2 + keysToDelete.length;
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Array') {
