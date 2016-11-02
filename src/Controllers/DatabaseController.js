@@ -517,7 +517,8 @@ DatabaseController.prototype.deleteEverything = function() {
   this.schemaPromise = null;
   return Promise.all([
     this.adapter.deleteAllClasses(),
-    this.schemaCache.clear()]);
+    this.schemaCache.clear()
+  ]);
 };
 
 // Finds the keys in a query. Returns a Set. REST format only

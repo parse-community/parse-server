@@ -2,10 +2,10 @@ const auth = require('../src/Auth');
 const Config = require('../src/Config');
 const rest = require('../src/rest');
 
-describe('Disable per request schema cache', () => {
+describe('Enable single schema cache', () => {
   beforeEach((done) => {
     reconfigureServer({
-      disablePerRequestSchemaCache: true,
+      enableSingleSchemaCache: true,
       schemaCacheTTL: 30000
     }).then(() => {
       done();
