@@ -8,14 +8,14 @@ import defaults from '../defaults';
 export default class SchemaCache {
   cache: Object;
 
-  constructor(cacheController, ttl = defaults.schemaCacheTTL, persist = false) {
+  constructor(cacheController, ttl = defaults.schemaCacheTTL, randomizePrefix = false) {
     this.ttl = ttl;
     if (typeof ttl == 'string') {
       this.ttl = parseInt(ttl);
     }
     this.cache = cacheController;
     this.prefix = SCHEMA_CACHE_PREFIX;
-    if (!persist) {
+    if (!randomizePrefix) {
       this.prefix += randomString(20);
     }
   }
