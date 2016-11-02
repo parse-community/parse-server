@@ -196,7 +196,7 @@ export default {
     action: numberParser("schemaCacheTTL"),
   },
   "disablePerRequestSchemaCache": {
-    end: "PARSE_SERVER_DISABLE_PER_REQUEST_SCHEMA_CACHE",
+    env: "PARSE_SERVER_DISABLE_PER_REQUEST_SCHEMA_CACHE",
     help: "Disable creating a schema cache per request. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request.",
     action: booleanParser
   },
