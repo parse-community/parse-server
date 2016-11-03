@@ -4,7 +4,7 @@ import _ from 'lodash';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
-const PUSH_COLLECTION = 'Push';
+const PUSH_COLLECTION = '_Push';
 
 export function flatten(array) {
   return array.reduce((memo, element) => {
@@ -37,19 +37,13 @@ function statusHandler(className, database) {
   }
 
   function createPush(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(PUSH_COLLECTION, object).then(() => {
-        return Promise.resolve(object);
-      });
+    return database.create(PUSH_COLLECTION, object).then(() => {
+      return Promise.resolve(object);
     });
-    return lastPromise;
   }
 
   function updatePush(query, updateFields) {
-    lastPromise = lastPromise.then(() => {
-      return database.update(PUSH_COLLECTION, query, updateFields);
-    });
-    return lastPromise;
+    return database.update(PUSH_COLLECTION, query, updateFields);
   }
 
   function insertPushes(pushStatusObjectId, installations) {
@@ -102,7 +96,10 @@ function statusHandler(className, database) {
           objectId: installation.objectId,
         }
       };
-      let updateFields = { result: result, updatedAt: now };
+      let updateFields = {
+        result: result,
+        updatedAt: now
+      };
 
       return updatePush(query, updateFields);
     });
@@ -218,9 +215,11 @@ export function pushStatusHandler(config) {
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-    return handler.insertPushes(objectId, installations).then(() => {
-      return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date() });
+    return handler.update({status:"pending", objectId: objectId},
+      {status: "running", updatedAt: new Date() }).then((result) => {
+        return handler.insertPushes(objectId, installations).then(() => {
+          return result;
+        });
     });
   }
 
@@ -257,8 +256,10 @@ export function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.updatePushes(objectId, installations, results).then(() => {
-      return handler.update({status:"running", objectId }, update);
+    return handler.update({status:"running", objectId }, update).then((result) => {
+      return handler.updatePushes(objectId, installations, results).then(() => {
+        return result;
+      });
     });
   }
 
