@@ -154,7 +154,7 @@ class ParseServer {
     }
 
     if (!filesAdapter && !databaseURI) {
-      throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
+      throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
     }
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
@@ -287,6 +287,8 @@ class ParseServer {
     api.use('/', middlewares.allowCrossDomain, new FilesRouter().expressRouter({
       maxUploadSize: maxUploadSize
     }));
+
+    api.use('/health', (req, res) => res.sendStatus(200));
 
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
