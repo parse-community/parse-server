@@ -1,5 +1,17 @@
 ## Parse Server Changelog
 
+### 2.2.25-beta.1
+
+Postgres support requires v9.5
+
+#### New Features
+* Health check on /health, thanks to [Kirill Kravinsky](https://github.com/woyorus)
+* Reuse SchemaCache across requests option, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements
+* Better support for Redis cache adapter, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Better coverage of Postgres, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
 ### 2.2.24
 
 #### New Features
