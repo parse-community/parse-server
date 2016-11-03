@@ -15,7 +15,6 @@ RUN npm install && \
     npm run build
 
 ENV PORT=1337
-ENV PARSE_SERVER_CLOUD_CODE_MAIN=/parse-server/cloud/main.js
 
 EXPOSE $PORT
 
