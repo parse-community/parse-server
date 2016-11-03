@@ -16,15 +16,16 @@ April 2016 - We created a series of video screencasts, please check them out her
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
-## Running Parse Server locally
+## Running Parse Server
 
+### Locally
 ```
 $ npm install -g parse-server mongodb-runner
 $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
 
-You can run a Docker container instead
+### Inside a Docker container
 ```
 $ docker build --tag my-parse-server .
 $ docker run --name my-mongo -d mongo
