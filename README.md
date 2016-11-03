@@ -27,7 +27,7 @@ $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongo
 
 ### Inside a Docker container
 ```
-$ docker build --tag my-parse-server .
+$ docker build --tag parse-server .
 $ docker run --name my-mongo -d mongo
 $ docker run --name my-parse-server --link my-mongo:mongo parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://mongo/test
 ```  
