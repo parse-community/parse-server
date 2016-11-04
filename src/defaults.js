@@ -1,9 +1,13 @@
+import {nullParser} from './cli/utils/parsers';
+
 let logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
     folder = './test_logs/'
   }
-  folder = process.env.PARSE_SERVER_LOGS_FOLDER || folder;
+  if (process.env.PARSE_SERVER_LOGS_FOLDER) {
+    folder = nullParser(process.env.PARSE_SERVER_LOGS_FOLDER);
+  }
   return folder;
 })();
 
