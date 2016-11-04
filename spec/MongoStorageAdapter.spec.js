@@ -60,6 +60,43 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     });
   });
 
+  it('find succeeds when query is within maxTimeMS', (done) => {
+    const maxTimeMS = 250;
+    let adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { maxTimeMS },
+    });
+    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
+    .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS / 2})` }))
+    .then(
+      () => done(),
+      (err) => {
+        done.fail(`maxTimeMS should not affect fast queries ${err}`);
+      }
+    );
+  })
+
+  it('find fails when query exceeds maxTimeMS', (done) => {
+    const maxTimeMS = 250;
+    let adapter = new MongoStorageAdapter({
+      uri: databaseURI,
+      mongoOptions: { maxTimeMS },
+    });
+    adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
+    .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS * 2})` }))
+    .then(
+      () => {
+        done.fail('Find succeeded despite taking too long!');
+      },
+      (err) => {
+        expect(err.name).toEqual('MongoError');
+        expect(err.code).toEqual(50);
+        expect(err.message).toEqual('operation exceeded time limit');
+        done();
+      }
+    );
+  });
+
   it('stores pointers with a _p_ prefix', (done) => {
     let obj = {
       objectId: 'bar',

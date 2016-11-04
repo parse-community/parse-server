@@ -92,6 +92,9 @@ export class MongoStorageAdapter {
     this._uri = uri;
     this._collectionPrefix = collectionPrefix;
     this._mongoOptions = mongoOptions;
+
+    // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
+    this._maxTimeMS = mongoOptions.maxTimeMS;
   }
 
   connect() {
@@ -329,7 +332,13 @@ export class MongoStorageAdapter {
       return memo;
     }, {});
     return this._adaptiveCollection(className)
-    .then(collection => collection.find(mongoWhere, { skip, limit, sort: mongoSort, keys: mongoKeys }))
+    .then(collection => collection.find(mongoWhere, {
+      skip,
+      limit,
+      sort: mongoSort,
+      keys: mongoKeys,
+      maxTimeMS: this._maxTimeMS,
+    }))
     .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
 
@@ -358,14 +367,18 @@ export class MongoStorageAdapter {
 
   // Used in tests
   _rawFind(className, query) {
-    return this._adaptiveCollection(className).then(collection => collection.find(query));
+    return this._adaptiveCollection(className).then(collection => collection.find(query, {
+      maxTimeMS: this._maxTimeMS,
+    }));
   }
 
-  // Executs a count.
+  // Executes a count.
   count(className, schema, query) {
     schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
-    .then(collection => collection.count(transformWhere(className, query, schema)));
+    .then(collection => collection.count(transformWhere(className, query, schema), {
+      maxTimeMS: this._maxTimeMS,
+    }));
   }
 
   performInitialization() {
