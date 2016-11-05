@@ -268,18 +268,15 @@ describe('Parse.Object testing', () => {
     });
   });
 
+  // This test isn't applicable to Postgres
+  // More info: https://github.com/ParsePlatform/parse-server/pull/2999 
   it_exclude_dbs(['postgres'])("can set null", function(done) {
     var errored = false;
     var obj = new Parse.Object("TestObject");
     obj.set("foo", null);
     obj.save(null, {
       success: function(obj) {
-        on_db('mongo', () => {
-          equal(obj.get("foo"), null);
-        });
-        on_db('postgres', () => {
-          fail('should not succeed');
-        });
+        equal(obj.get("foo"), null);
         done();
       },
       error: function(obj, error) {
@@ -1331,6 +1328,8 @@ describe('Parse.Object testing', () => {
     });
   });
 
+  // This test is not applicable to Postgres
+  // More info: https://github.com/ParsePlatform/parse-server/pull/2999 
   it_exclude_dbs(['postgres'])("bytes work", function(done) {
     Parse.Promise.as().then(function() {
       var obj = new TestObject();
