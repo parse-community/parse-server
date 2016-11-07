@@ -466,6 +466,7 @@ export class PostgresStorageAdapter {
       fields._account_lockout_expires_at = {type: 'Date'};
       fields._failed_login_count = {type: 'Number'};
       fields._perishable_token = {type: 'String'};
+      fields._perishable_token_expires_at = {type: 'Date'};
     }
     let index = 2;
     let relations = [];
@@ -691,7 +692,8 @@ export class PostgresStorageAdapter {
           }
         }
 
-        if (fieldName === '_account_lockout_expires_at') {
+        if (fieldName === '_account_lockout_expires_at'||
+            fieldName === '_perishable_token_expires_at') {
           if (object[fieldName]) {
             valuesArray.push(object[fieldName].iso);
           } else {
@@ -1068,6 +1070,10 @@ export class PostgresStorageAdapter {
       if (object._account_lockout_expires_at) {
         object._account_lockout_expires_at = { __type: 'Date', iso: object._account_lockout_expires_at.toISOString() };
       }
+      if (object._perishable_token_expires_at) {
+        object._perishable_token_expires_at = { __type: 'Date', iso: object._perishable_token_expires_at.toISOString() };
+      }
+
 
       for (let fieldName in object) {
         if (object[fieldName] === null) {

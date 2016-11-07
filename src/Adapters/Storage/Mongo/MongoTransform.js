@@ -66,6 +66,10 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   case '_failed_login_count':
     key = '_failed_login_count';
     break;
+  case '_perishable_token_expires_at':
+    key = '_perishable_token_expires_at';
+    timeField = true;
+    break;
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
@@ -171,6 +175,11 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_failed_login_count':
     return {key, value};
   case 'sessionToken': return {key: '_session_token', value}
+  case '_perishable_token_expires_at':
+    if (valueAsDate(value)) {
+      return { key: '_perishable_token_expires_at', value: valueAsDate(value) }
+    }
+    break;
   case '_rperm':
   case '_wperm':
   case '_perishable_token':
@@ -250,6 +259,10 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return {key: '_account_lockout_expires_at', value: coercedToDate};
+  case '_perishable_token_expires_at':
+    transformedValue = transformTopLevelAtom(restValue);
+    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
+    return { key: '_perishable_token_expires_at', value: coercedToDate };
   case '_failed_login_count':
   case '_rperm':
   case '_wperm':
@@ -748,6 +761,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         break;
       case '_email_verify_token':
       case '_perishable_token':
+      case '_perishable_token_expires_at':
       case '_tombstone':
       case '_email_verify_token_expires_at':
       case '_account_lockout_expires_at':

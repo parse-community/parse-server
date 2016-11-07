@@ -77,6 +77,12 @@ export class UserController extends AdaptableController {
       if (results.length != 1) {
         throw undefined;
       }
+
+      if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+        if (results[0]._perishable_token_expires_at < new Date())
+          throw 'The password reset link has expired';
+      }
+
       return results[0];
     });
   }
@@ -125,7 +131,13 @@ export class UserController extends AdaptableController {
   }
 
   setPasswordResetToken(email) {
-    return this.config.database.update('_User', { $or: [{email}, {username: email, email: {$exists: false}}] }, { _perishable_token: randomString(25) }, {}, true)
+    const token = { _perishable_token: randomString(25) };
+
+    if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+      token._perishable_token_expires_at = Parse._encode(this.config.generatePasswordResetTokenExpiresAt());
+    }
+
+    return this.config.database.update('_User', { $or: [{email}, {username: email, email: {$exists: false}}] }, token, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -162,7 +174,8 @@ export class UserController extends AdaptableController {
     .then(user => updateUserPassword(user.objectId, password, this.config))
     // clear reset password token
     .then(() => this.config.database.update('_User', { username }, {
-      _perishable_token: {__op: 'Delete'}
+      _perishable_token: {__op: 'Delete'},
+      _perishable_token_expires_at: {__op: 'Delete'}
     }));
   }
 
