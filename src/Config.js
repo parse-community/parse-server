@@ -50,6 +50,7 @@ export class Config {
     this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
     this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
     this.accountLockout = cacheInfo.accountLockout;
+    this.passwordPolicy = cacheInfo.passwordPolicy;
     this.appName = cacheInfo.appName;
 
     this.analyticsController = cacheInfo.analyticsController;
@@ -79,7 +80,8 @@ export class Config {
     expireInactiveSessions,
     sessionLength,
     emailVerifyTokenValidityDuration,
-    accountLockout
+    accountLockout,
+    passwordPolicy
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -87,6 +89,8 @@ export class Config {
     }
 
     this.validateAccountLockoutPolicy(accountLockout);
+
+    this.validatePasswordPolicy(passwordPolicy);
 
     if (typeof revokeSessionOnPasswordReset !== 'boolean') {
       throw 'revokeSessionOnPasswordReset must be a boolean value';
@@ -109,6 +113,14 @@ export class Config {
 
       if (!Number.isInteger(accountLockout.threshold) || accountLockout.threshold < 1 || accountLockout.threshold > 999) {
         throw 'Account lockout threshold should be an integer greater than 0 and less than 1000';
+      }
+    }
+  }
+
+  static validatePasswordPolicy(passwordPolicy) {
+    if (passwordPolicy) {
+      if (passwordPolicy.resetTokenValidityDuration !== undefined && (typeof passwordPolicy.resetTokenValidityDuration !== 'number' || passwordPolicy.resetTokenValidityDuration <= 0)) {
+        throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
       }
     }
   }
@@ -161,6 +173,14 @@ export class Config {
     }
     var now = new Date();
     return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration*1000));
+  }
+
+  generatePasswordResetTokenExpiresAt() {
+    if (!this.passwordPolicy || !this.passwordPolicy.resetTokenValidityDuration) {
+      return undefined;
+    }
+    const now = new Date();
+    return new Date(now.getTime() + (this.passwordPolicy.resetTokenValidityDuration * 1000));
   }
 
   generateSessionExpiresAt() {

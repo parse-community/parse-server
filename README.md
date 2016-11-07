@@ -216,6 +216,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
+* `passwordPolicy` - Optional password policy rules to enforce.
 
 ##### Logging
 
@@ -277,6 +278,9 @@ var server = ParseServer({
     duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
     threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
   },
+  passwordPolicy: {
+    resetTokenValidityDuration: 24*60*60, // password reset link will expire after the set duration (in seconds)
+  }
 });
 ```
 
