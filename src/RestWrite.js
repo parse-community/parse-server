@@ -368,6 +368,12 @@ RestWrite.prototype.transformUser = function() {
     if (!this.data.password) {
       return;
     }
+
+    // check if the password confirms to the defined password policy if configured
+    if (this.config.passwordPolicy && this.config.passwordPolicy.validator && !this.config.passwordPolicy.validator(this.data.password)) {
+      return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Password does not confirm to the Password Policy.'))
+    }
+
     if (this.query && !this.auth.isMaster ) {
       this.storage['clearSessions'] = true;
       this.storage['generateNewSession'] = true;
