@@ -122,6 +122,28 @@ export class Config {
       if (passwordPolicy.resetTokenValidityDuration !== undefined && (typeof passwordPolicy.resetTokenValidityDuration !== 'number' || passwordPolicy.resetTokenValidityDuration <= 0)) {
         throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
       }
+
+      if(passwordPolicy.validator && typeof passwordPolicy.validator !== 'string' && !(passwordPolicy.validator instanceof RegExp) && typeof passwordPolicy.validator !== 'function' ) {
+        throw 'passwordPolicy.validator must be a RegExp, string or function.';
+      }
+    }
+  }
+
+  // if the passwordPolicy.validator is configured as a string or regex then convert it to a function to process the pattern
+  static setupPasswordValidator(passwordPolicy) {
+    if (passwordPolicy && passwordPolicy.validator) {
+      if (typeof passwordPolicy.validator === 'string') {
+        const pattern = new RegExp(passwordPolicy.validator);
+        passwordPolicy.validator = (value) => {
+          return pattern.test(value)
+        }
+      }
+      else if (passwordPolicy.validator instanceof RegExp) {
+        const pattern = passwordPolicy.validator;
+        passwordPolicy.validator = (value) => {
+          return pattern.test(value)
+        }
+      }
     }
   }
 

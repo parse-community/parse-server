@@ -235,6 +235,7 @@ class ParseServer {
 
     Config.validate(AppCache.get(appId));
     this.config = AppCache.get(appId);
+    Config.setupPasswordValidator(this.config.passwordPolicy);
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
