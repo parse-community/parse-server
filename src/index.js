@@ -7,6 +7,7 @@ import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
 import TestUtils            from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
+import { EventAnalyticsAdapter }        from './Adapters/Analytics/EventAnalyticsAdapter';
 
 // Factory function
 let _ParseServer = function(options) {
@@ -23,4 +24,4 @@ Object.defineProperty(module.exports, 'logger', {
 });
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, NullCacheAdapter, RedisCacheAdapter, TestUtils, _ParseServer as ParseServer };
+export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, NullCacheAdapter, RedisCacheAdapter, TestUtils, _ParseServer as ParseServer, EventAnalyticsAdapter};

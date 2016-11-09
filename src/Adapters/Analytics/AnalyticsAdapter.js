@@ -1,5 +1,3 @@
-import rest          from './../../rest';
-
 export class AnalyticsAdapter {
   
   /*
@@ -16,8 +14,7 @@ export class AnalyticsAdapter {
   @param req: the original http request
    */
   trackEvent(eventName, parameters, req) {
-    req.body.eventId = eventName;
-    return rest.create(req.config, req.auth, 'Events', req.body, req.info.clientSDK);
+    return Promise.resolve({});
   }
 }
 
