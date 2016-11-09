@@ -1,6 +1,8 @@
 import redis from 'redis';
 import logger from '../../logger';
 
+const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
+
 function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
@@ -28,14 +30,26 @@ export class RedisCacheAdapter {
     return this.p;
   }
 
-  put(key, value, ttl) {
+  put(key, value, ttl = DEFAULT_REDIS_TTL) {
     value = JSON.stringify(value);
     debug('put', key, value, ttl);
+    if (ttl === 0) {
+      return this.p; // ttl of zero is a logical no-op, but redis cannot set expire time of zero
+    }
+    if (ttl < 0 || isNaN(ttl)) {
+      ttl = DEFAULT_REDIS_TTL;
+    }
     this.p = this.p.then(() => {
       return new Promise((resolve, _) => {
-        this.client.set(key, value, function(err, res) {
-          resolve();
-        });
+        if (ttl === Infinity) {
+          this.client.set(key, value, function(err, res) {
+            resolve();
+          });
+        } else {
+          this.client.psetex(key, ttl, value, function(err, res) {
+            resolve();
+          });
+        }
       });
     });
     return this.p;

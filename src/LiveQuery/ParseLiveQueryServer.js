@@ -54,9 +54,7 @@ class ParseLiveQueryServer {
     );
 
     // Initialize subscriber
-    this.subscriber = ParsePubSub.createSubscriber({
-      redisURL: config.redisURL
-    });
+    this.subscriber = ParsePubSub.createSubscriber(config);
     this.subscriber.subscribe('afterSave');
     this.subscriber.subscribe('afterDelete');
     // Register message handler for subscriber. When publisher get messages, it will publish message
@@ -259,6 +257,9 @@ class ParseLiveQueryServer {
         case 'subscribe':
           this._handleSubscribe(parseWebsocket, request);
           break;
+        case 'update':
+          this._handleUpdateSubscription(parseWebsocket, request);
+          break;
         case 'unsubscribe':
           this._handleUnsubscribe(parseWebsocket, request);
           break;
@@ -327,6 +328,64 @@ class ParseLiveQueryServer {
       if (isSubscriptionSessionTokenMatched) {
         return Parse.Promise.as(true);
       }
+
+      // Check if the user has any roles that match the ACL
+      return new Parse.Promise((resolve, reject) => {
+
+        // Resolve false right away if the acl doesn't have any roles
+        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
+        if (!acl_has_roles) {
+            return resolve(false);
+        }
+
+        this.sessionTokenCache.getUserId(subscriptionSessionToken)
+        .then((userId) => {
+
+            // Pass along a null if there is no user id
+            if (!userId) {
+                return Parse.Promise.as(null);
+            }
+
+            // Prepare a user object to query for roles
+            // To eliminate a query for the user, create one locally with the id
+            var user = new Parse.User();
+            user.id = userId;
+            return user;
+
+        })
+        .then((user) => {
+
+            // Pass along an empty array (of roles) if no user
+            if (!user) {
+                return Parse.Promise.as([]);
+            }
+
+            // Then get the user's roles
+            var rolesQuery = new Parse.Query(Parse.Role);
+            rolesQuery.equalTo("users", user);
+            return rolesQuery.find();
+        }).
+        then((roles) => {
+
+            // Finally, see if any of the user's roles allow them read access
+            for (let role of roles) {
+                if (acl.getRoleReadAccess(role)) {
+                    return resolve(true);
+                }
+            }
+            resolve(false);
+        })
+        .catch((error) => {
+            reject(error);
+        });
+
+      });
+    }).then((isRoleMatched) => {
+
+      if(isRoleMatched) {
+        return Parse.Promise.as(true);
+      }
+
       // Check client sessionToken matches ACL
       let clientSessionToken = client.sessionToken;
       return this.sessionTokenCache.getUserId(clientSessionToken).then((userId) => {
@@ -415,7 +474,12 @@ class ParseLiveQueryServer {
     logger.verbose('Current client number: %d', this.clients.size);
   }
 
-  _handleUnsubscribe(parseWebsocket: any, request: any): any {
+  _handleUpdateSubscription(parseWebsocket: any, request: any): any {
+    this._handleUnsubscribe(parseWebsocket, request, false);
+    this._handleSubscribe(parseWebsocket, request);
+  }
+
+  _handleUnsubscribe(parseWebsocket: any, request: any, notifyClient: bool = true): any {
     // If we can not find this client, return error to client
     if (!parseWebsocket.hasOwnProperty('clientId')) {
       Client.pushError(parseWebsocket, 2, 'Can not find this client, make sure you connect to server before unsubscribing');
@@ -453,6 +517,10 @@ class ParseLiveQueryServer {
     // If there is no subscriptions under this class, remove it from subscriptions
     if (classSubscriptions.size === 0) {
       this.subscriptions.delete(className);
+    }
+    
+    if (!notifyClient) {
+      return;
     }
 
     client.pushUnsubscribe(request.requestId);

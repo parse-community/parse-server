@@ -1,14 +1,14 @@
 import redis from 'redis';
 
-function createPublisher(redisURL: string): any {
+function createPublisher({redisURL}): any {
   return redis.createClient(redisURL, { no_ready_check: true });
 }
 
-function createSubscriber(redisURL: string): any {
+function createSubscriber({redisURL}): any {
   return redis.createClient(redisURL, { no_ready_check: true });
 }
 
-let RedisPubSub = {
+const RedisPubSub = {
   createPublisher,
   createSubscriber
 }
