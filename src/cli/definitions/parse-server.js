@@ -138,7 +138,7 @@ export default {
   },
   "passwordPolicy": {
     env: "PARSE_SERVER_PASSWORD_POLICY",
-    help: "Password policy for reset link expiry",
+    help: "Password policy for enforcing password related rules",
     action: objectParser
   },
   "appName": {
