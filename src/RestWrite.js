@@ -369,18 +369,47 @@ RestWrite.prototype.transformUser = function() {
       return;
     }
 
+    let defer = Promise.resolve();
+
     // check if the password confirms to the defined password policy if configured
-    if (this.config.passwordPolicy && this.config.passwordPolicy.validator && !this.config.passwordPolicy.validator(this.data.password)) {
-      return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Password does not confirm to the Password Policy.'))
+    if (this.config.passwordPolicy) {
+      const policyError = 'Password does not confirm to the Password Policy.';
+
+      // check whether the password confirms to the policy
+      if (this.config.passwordPolicy.validator && !this.config.passwordPolicy.validator(this.data.password)) {
+        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError))
+      }
+
+      // check whether password contain username
+      if (this.config.passwordPolicy.doNotAllowUsername === true) {
+        if (this.data.username) { // username is not passed during password reset
+          if (this.data.password.indexOf(this.data.username) >= 0)
+            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+
+        } else { // retrieve the User object using objectId during password reset
+          defer = this.config.database.find('_User', {objectId: this.objectId()})
+            .then(results => {
+              if (results.length != 1) {
+                throw undefined;
+              }
+              if (this.data.password.indexOf(results[0].username) >= 0)
+                return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+              return Promise.resolve();
+            });
+        }
+      }
     }
 
-    if (this.query && !this.auth.isMaster ) {
+    if (this.query && !this.auth.isMaster) {
       this.storage['clearSessions'] = true;
       this.storage['generateNewSession'] = true;
     }
-    return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
-      this.data._hashed_password = hashedPassword;
-      delete this.data.password;
+
+    return defer.then(() => {
+      return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
+        this.data._hashed_password = hashedPassword;
+        delete this.data.password;
+      });
     });
 
   }).then(() => {

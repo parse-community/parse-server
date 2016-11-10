@@ -283,6 +283,7 @@ var server = ParseServer({
     // optional setting to enforce strong passwords
     // can be a RegExp/String representing pattern to enforce or a function that return a bool
     validator: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
+    doNotAllowUsername: true, // optional setting to disallow username in passwords
     //optional setting to set a validity duration for password reset links (in seconds)
     resetTokenValidityDuration: 24*60*60, // expire after 24 hours
   }
