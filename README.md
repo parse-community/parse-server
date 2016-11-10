@@ -278,8 +278,13 @@ var server = ParseServer({
     duration: 5, // duration policy setting determines the number of minutes that a locked-out account remains locked out before automatically becoming unlocked. Set it to a value greater than 0 and less than 100000.
     threshold: 3, // threshold policy setting determines the number of failed sign-in attempts that will cause a user account to be locked. Set it to an integer value greater than 0 and less than 1000.
   },
+  // optional settings to enforce password policies
   passwordPolicy: {
-    resetTokenValidityDuration: 24*60*60, // password reset link will expire after the set duration (in seconds)
+    // optional setting to enforce strong passwords
+    // can be a RegExp/String representing pattern to enforce or a function that return a bool
+    validator: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
+    //optional setting to set a validity duration for password reset links (in seconds)
+    resetTokenValidityDuration: 24*60*60, // expire after 24 hours
   }
 });
 ```

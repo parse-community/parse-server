@@ -3,7 +3,7 @@
 const request = require('request');
 const Config = require('../src/Config');
 
-describe("Password Token Expiry: ", () => {
+describe("Password Policy: ", () => {
 
   it('should show the invalid link page if the user clicks on the password reset link after the token expires', done => {
     const user = new Parse.User();
