@@ -176,7 +176,13 @@ export class UserController extends AdaptableController {
     .then(() => this.config.database.update('_User', { username }, {
       _perishable_token: {__op: 'Delete'},
       _perishable_token_expires_at: {__op: 'Delete'}
-    }));
+    }),(error) => {
+      if (error.message) {  // in case of Parse.Error, fail with the error message only
+        return Promise.reject(error.message);
+      } else {
+        return Promise.reject(error);
+      }
+    });
   }
 
   defaultVerificationEmail({link, user, appName, }) {
@@ -202,11 +208,6 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(userId, password, config) {
-  // check if the password confirms to the defined password policy if configured
-  if (config.passwordPolicy && config.passwordPolicy.validator && !config.passwordPolicy.validator(password)) {
-    return Promise.reject('Password does not confirm to the Password Policy.')
-  }
-
   return rest.update(config, Auth.master(config), '_User', userId, {
     password: password
   });
