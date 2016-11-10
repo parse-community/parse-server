@@ -126,6 +126,10 @@ export class Config {
       if(passwordPolicy.validator && typeof passwordPolicy.validator !== 'string' && !(passwordPolicy.validator instanceof RegExp) && typeof passwordPolicy.validator !== 'function' ) {
         throw 'passwordPolicy.validator must be a RegExp, a string or a function.';
       }
+
+      if(passwordPolicy.doNotAllowUsername && typeof passwordPolicy.doNotAllowUsername !== 'boolean') {
+        throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
+      }
     }
   }
 
