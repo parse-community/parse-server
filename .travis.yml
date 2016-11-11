@@ -7,6 +7,7 @@ node_js:
 services:
   - postgresql
   - redis-server
+  - docker
 addons:
   postgresql: '9.5'
 before_script:
@@ -48,6 +49,13 @@ deploy:
     script: ./resources/npm-git.sh
     on:
       branch: master
+      condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
+  - provider: script
+    skip_cleanup: true
+    script: ./resources/docker-hub.sh
+    on:
+      tags: true
+      all_branches: true
       condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
   - provider: npm
     email:
