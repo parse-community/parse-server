@@ -123,8 +123,12 @@ export class Config {
         throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
       }
 
-      if(passwordPolicy.validator && typeof passwordPolicy.validator !== 'string' && !(passwordPolicy.validator instanceof RegExp) && typeof passwordPolicy.validator !== 'function' ) {
-        throw 'passwordPolicy.validator must be a RegExp, a string or a function.';
+      if(passwordPolicy.validatorPattern && !(passwordPolicy.validatorPattern instanceof RegExp)) {
+        throw 'passwordPolicy.validatorPattern must be a RegExp.';
+      }
+
+      if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function' ) {
+        throw 'passwordPolicy.validatorCallback must be a function.';
       }
 
       if(passwordPolicy.doNotAllowUsername && typeof passwordPolicy.doNotAllowUsername !== 'boolean') {
@@ -133,20 +137,11 @@ export class Config {
     }
   }
 
-  // if the passwordPolicy.validator is configured as a string or regex then convert it to a function to process the pattern
+  // if the passwordPolicy.validatorPattern is configured then setup a callback to process the pattern
   static setupPasswordValidator(passwordPolicy) {
-    if (passwordPolicy && passwordPolicy.validator) {
-      if (typeof passwordPolicy.validator === 'string') {
-        const pattern = new RegExp(passwordPolicy.validator);
-        passwordPolicy.validator = (value) => {
-          return pattern.test(value)
-        }
-      }
-      else if (passwordPolicy.validator instanceof RegExp) {
-        const pattern = passwordPolicy.validator;
-        passwordPolicy.validator = (value) => {
-          return pattern.test(value)
-        }
+    if (passwordPolicy && passwordPolicy.validatorPattern) {
+      passwordPolicy.patternValidator = (value) => {
+        return passwordPolicy.validatorPattern.test(value)
       }
     }
   }
