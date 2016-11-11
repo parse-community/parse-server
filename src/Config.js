@@ -141,7 +141,7 @@ export class Config {
   static setupPasswordValidator(passwordPolicy) {
     if (passwordPolicy && passwordPolicy.validatorPattern) {
       passwordPolicy.patternValidator = (value) => {
-        return passwordPolicy.validatorPattern.test(value)
+        return passwordPolicy.validatorPattern.test(value);
       }
     }
   }

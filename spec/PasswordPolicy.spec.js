@@ -168,7 +168,7 @@ describe("Password Policy: ", () => {
     });
   });
 
-  it('signup should fail if password does not confirm to the policy enforced using validatorPattern', (done) => {
+  it('signup should fail if password does not conform to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -181,7 +181,7 @@ describe("Password Policy: ", () => {
       user.setPassword("nodigit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        fail('Should have failed as password does not confirm to the policy.');
+        fail('Should have failed as password does not conform to the policy.');
         done();
       }).catch((error) => {
         expect(error.code).toEqual(142);
@@ -218,7 +218,7 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should fail if password does not confirm to the policy enforced using validatorCallback', (done) => {
+  it('signup should fail if password does not conform to the policy enforced using validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -231,7 +231,7 @@ describe("Password Policy: ", () => {
       user.setPassword("any");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        fail('Should have failed as password does not confirm to the policy.');
+        fail('Should have failed as password does not conform to the policy.');
         done();
       }).catch((error) => {
         expect(error.code).toEqual(142);
@@ -268,7 +268,7 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should fail if password does not confirm to validatorPattern but succeeds validatorCallback', (done) => {
+  it('signup should fail if password does not match validatorPattern but succeeds validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -282,7 +282,7 @@ describe("Password Policy: ", () => {
       user.setPassword("all lower");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        fail('Should have failed as password does not confirm to the policy.');
+        fail('Should have failed as password does not conform to the policy.');
         done();
       }).catch((error) => {
         expect(error.code).toEqual(142);
@@ -305,7 +305,7 @@ describe("Password Policy: ", () => {
       user.setPassword("oneUpper");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        fail('Should have failed as password does not confirm to the policy.');
+        fail('Should have failed as password does not conform to the policy.');
         done();
       }).catch((error) => {
         expect(error.code).toEqual(142);
@@ -426,7 +426,7 @@ describe("Password Policy: ", () => {
     });
   });
 
-  it('should fail to reset password if the new password does not confirm to password policy', done => {
+  it('should fail to reset password if the new password does not conform to password policy', done => {
     var user = new Parse.User();
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),

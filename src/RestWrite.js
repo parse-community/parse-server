@@ -378,7 +378,7 @@ RestWrite.prototype.transformUser = function() {
       // check whether the password confirms to the policy
       if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
           this.config.passwordPolicy.validatorCallback && !this.config.passwordPolicy.validatorCallback(this.data.password)) {
-        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError))
+        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
       }
 
       // check whether password contain username
