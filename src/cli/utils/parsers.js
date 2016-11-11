@@ -1,10 +1,10 @@
 export function numberParser(key) {
   return function(opt) {
-    opt = parseInt(opt);
-    if (!Number.isInteger(opt)) {
-      throw new Error(`The ${key} is invalid`);
+    const intOpt = parseInt(opt);
+    if (!Number.isInteger(intOpt)) {
+      throw new Error(`Key ${key} has invalid value ${opt}`);
     }
-    return opt;
+    return intOpt;
   }
 }
 
@@ -12,6 +12,12 @@ export function numberOrBoolParser(key) {
   return function(opt) {
     if (typeof opt === 'boolean') {
       return opt;
+    }
+    if (opt === 'true') {
+      return true;
+    }
+    if (opt === 'false') {
+      return false;
     }
     return numberParser(key)(opt);
   }
@@ -45,7 +51,7 @@ export function moduleOrObjectParser(opt) {
 }
 
 export function booleanParser(opt) {
-  if (opt == true || opt == "true" || opt == "1") {
+  if (opt == true || opt == 'true' || opt == '1') {
     return true;
   }
   return false;
