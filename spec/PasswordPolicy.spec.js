@@ -3,7 +3,7 @@
 const requestp = require('request-promise');
 const Config = require('../src/Config');
 
-fdescribe("Password Policy: ", () => {
+describe("Password Policy: ", () => {
 
   it('should show the invalid link page if the user clicks on the password reset link after the token expires', done => {
     const user = new Parse.User();
@@ -136,28 +136,44 @@ fdescribe("Password Policy: ", () => {
     });
   });
 
-  it('should fail if passwordPolicy.validator setting is invalid type', done => {
+  it('should fail if passwordPolicy.validatorPattern setting is invalid type', done => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: 1 // number is not a valid setting for validator
+        validatorPattern: "abc" // string is not a valid setting
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
-      fail('passwordPolicy.validator type test failed');
+      fail('passwordPolicy.validatorPattern type test failed');
       done();
     }).catch(err => {
-      expect(err).toEqual('passwordPolicy.validator must be a RegExp, a string or a function.');
+      expect(err).toEqual('passwordPolicy.validatorPattern must be a RegExp.');
       done();
     });
   });
 
-  it('signup should fail if password does not confirm to the policy enforced using RegExp', (done) => {
+  it('should fail if passwordPolicy.validatorCallback setting is invalid type', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorCallback: "abc" // string is not a valid setting
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.validatorCallback type test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.validatorCallback must be a function.');
+      done();
+    });
+  });
+
+  it('signup should fail if password does not confirm to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: /[0-9]+/  // password should contain at least one digit
+        validatorPattern: /[0-9]+/  // password should contain at least one digit
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -174,12 +190,12 @@ fdescribe("Password Policy: ", () => {
     })
   });
 
-  it('signup should succeed if password confirms to the policy enforced using RegExp', (done) => {
+  it('signup should succeed if password confirms to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: /[0-9]+/  // password should contain at least one digit
+        validatorPattern: /[0-9]+/  // password should contain at least one digit
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -187,7 +203,14 @@ fdescribe("Password Policy: ", () => {
       user.setPassword("1digit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        done();
+        Parse.User.logOut();
+        Parse.User.logIn("user1", "1digit").then(function (user) {
+          done();
+        }).catch((err) => {
+          jfail(err);
+          fail("Should be able to login");
+          done();
+        });
       }).catch((error) => {
         fail('Should have succeeded as password confirms to the policy.');
         done();
@@ -195,55 +218,12 @@ fdescribe("Password Policy: ", () => {
     })
   });
 
-  it('signup should fail if password does not confirm to the policy enforced using regex string', (done) => {
+  it('signup should fail if password does not confirm to the policy enforced using validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: "[A-Z]+"  // password should contain at least one UPPER case letter
-      },
-      publicServerURL: "http://localhost:8378/1"
-    }).then(() => {
-      user.setUsername("user1");
-      user.setPassword("all lower");
-      user.set('email', 'user1@parse.com');
-      user.signUp().then(() => {
-        fail('Should have failed as password does not confirm to the policy.');
-        done();
-      }).catch((error) => {
-        expect(error.code).toEqual(142);
-        done();
-      });
-    })
-  });
-
-  it('signup should succeed if password confirms to the policy enforced using regex string', (done) => {
-    const user = new Parse.User();
-    reconfigureServer({
-      appName: 'passwordPolicy',
-      passwordPolicy: {
-        validator: /[A-Z]+/  // password should contain at least one digit
-      },
-      publicServerURL: "http://localhost:8378/1"
-    }).then(() => {
-      user.setUsername("user1");
-      user.setPassword("oneUpper");
-      user.set('email', 'user1@parse.com');
-      user.signUp().then(() => {
-        done();
-      }).catch((error) => {
-        fail('Should have succeeded as password confirms to the policy.');
-        done();
-      });
-    })
-  });
-
-  it('signup should fail if password does not confirm to the policy enforced using a callback function', (done) => {
-    const user = new Parse.User();
-    reconfigureServer({
-      appName: 'passwordPolicy',
-      passwordPolicy: {
-        validator: password => false  // just fail
+        validatorCallback: password => false  // just fail
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -260,12 +240,12 @@ fdescribe("Password Policy: ", () => {
     })
   });
 
-  it('signup should succeed if password confirms to the policy enforced using a callback function', (done) => {
+  it('signup should succeed if password confirms to the policy enforced using validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: password => true   // never fail
+        validatorCallback: password => true   // never fail
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -273,7 +253,89 @@ fdescribe("Password Policy: ", () => {
       user.setPassword("oneUpper");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
+        Parse.User.logOut();
+        Parse.User.logIn("user1", "oneUpper").then(function (user) {
+          done();
+        }).catch((err) => {
+          jfail(err);
+          fail("Should be able to login");
+          done();
+        });
+      }).catch((error) => {
+        fail('Should have succeeded as password confirms to the policy.');
         done();
+      });
+    })
+  });
+
+  it('signup should fail if password does not confirm to validatorPattern but succeeds validatorCallback', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: /[A-Z]+/,  // password should contain at least one UPPER case letter
+        validatorCallback: value => true
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("all lower");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        fail('Should have failed as password does not confirm to the policy.');
+        done();
+      }).catch((error) => {
+        expect(error.code).toEqual(142);
+        done();
+      });
+    })
+  });
+
+  it('signup should fail if password does confirms to validatorPattern but fails validatorCallback', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: /[A-Z]+/,  // password should contain at least one UPPER case letter
+        validatorCallback: value => false
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("oneUpper");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        fail('Should have failed as password does not confirm to the policy.');
+        done();
+      }).catch((error) => {
+        expect(error.code).toEqual(142);
+        done();
+      });
+    })
+  });
+
+  it('signup should succeed if password confirms to both validatorPattern and validatorCallback', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: /[A-Z]+/,  // password should contain at least one digit
+        validatorCallback: value => true
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("oneUpper");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        Parse.User.logOut();
+        Parse.User.logIn("user1", "oneUpper").then(function (user) {
+          done();
+        }).catch((err) => {
+          jfail(err);
+          fail("Should be able to login");
+          done();
+        });
       }).catch((error) => {
         fail('Should have succeeded as password confirms to the policy.');
         done();
@@ -341,7 +403,7 @@ fdescribe("Password Policy: ", () => {
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        validator: /[0-9]+/  // password should contain at least one digit
+        validatorPattern: /[0-9]+/  // password should contain at least one digit
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -424,7 +486,7 @@ fdescribe("Password Policy: ", () => {
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        validator: /[0-9]+/  // password should contain at least one digit
+        validatorPattern: /[0-9]+/  // password should contain at least one digit
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -468,7 +530,7 @@ fdescribe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: /[0-9]+/,
+        validatorPattern: /[0-9]+/,
         doNotAllowUsername: true
       },
       publicServerURL: "http://localhost:8378/1"
@@ -512,7 +574,7 @@ fdescribe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validator: /[0-9]+/
+        validatorPattern: /[0-9]+/
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -671,7 +733,7 @@ fdescribe("Password Policy: ", () => {
       verifyUserEmails: false,
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        validator: /[0-9]+/,
+        validatorPattern: /[0-9]+/,
         doNotAllowUsername: false
       },
       publicServerURL: "http://localhost:8378/1"

@@ -376,7 +376,8 @@ RestWrite.prototype.transformUser = function() {
       const policyError = 'Password does not confirm to the Password Policy.';
 
       // check whether the password confirms to the policy
-      if (this.config.passwordPolicy.validator && !this.config.passwordPolicy.validator(this.data.password)) {
+      if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
+          this.config.passwordPolicy.validatorCallback && !this.config.passwordPolicy.validatorCallback(this.data.password)) {
         return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError))
       }
 
