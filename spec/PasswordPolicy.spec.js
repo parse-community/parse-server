@@ -375,7 +375,7 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then((response) => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
 
             Parse.User.logIn("user1", "has2init").then(function (user) {
               done();
@@ -706,7 +706,7 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then(response => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
 
             Parse.User.logIn("user1", "uuser11").then(function (user) {
               done();
