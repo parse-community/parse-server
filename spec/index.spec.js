@@ -164,6 +164,15 @@ describe('server', () => {
     })
   });
 
+  it('can respond 200 on path health', done => {
+    request.get({
+      url: 'http://localhost:8378/1/health',
+    }, (error, response, body) => {
+      expect(response.statusCode).toBe(200);
+      done();
+    });
+  });
+
   it('can create a parse-server v1', done => {
     var parseServer = new ParseServer.default(Object.assign({},
       defaultConfiguration, {

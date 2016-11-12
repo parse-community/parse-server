@@ -816,7 +816,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
               return;
             }
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html');
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv');
 
             Parse.User.logIn("zxcv", "hello").then(function(user){
               let config = new Config('test');

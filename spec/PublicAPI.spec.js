@@ -41,7 +41,7 @@ describe("public API without publicServerURL", () => {
   beforeEach(done => {
     reconfigureServer({ appName: 'unused' })
     .then(done, fail);
-  })
+  });
   it("should get 404 on verify_email", (done) => {
     request('http://localhost:8378/1/apps/test/verify_email', (err, httpResponse, body) => {
       expect(httpResponse.statusCode).toBe(404);

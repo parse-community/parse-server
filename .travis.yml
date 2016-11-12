@@ -1,12 +1,15 @@
 language: node_js
+dist: trusty
+sudo: required
 node_js:
 - '4.5'
 - '6.1'
 services:
   - postgresql
   - redis-server
+  - docker
 addons:
-  postgresql: '9.4'
+  postgresql: '9.5'
 before_script:
   - ls -al "$HOME/.mongodb/versions"
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
@@ -46,6 +49,13 @@ deploy:
     script: ./resources/npm-git.sh
     on:
       branch: master
+      condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
+  - provider: script
+    skip_cleanup: true
+    script: ./resources/docker-hub.sh
+    on:
+      tags: true
+      all_branches: true
       condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
   - provider: npm
     email:

@@ -1,5 +1,34 @@
 ## Parse Server Changelog
 
+### 2.2.25-beta.1
+
+Postgres support requires v9.5
+
+#### New Features
+* Health check on /health, thanks to [Kirill Kravinsky](https://github.com/woyorus)
+* Reuse SchemaCache across requests option, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements
+* Better support for Redis cache adapter, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Better coverage of Postgres, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
+### 2.2.24
+
+#### New Features
+* LiveQuery: Bring your own adapter (#2902), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* LiveQuery: Adds "update" operator to update a query subscription (#2935), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements
+* Better Postgres support, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Logs the function name when failing (#2963), thanks to [Michael Helvey](https://github.com/michaelhelvey)
+* CLI: forces closing the connections with SIGINT/SIGTERM (#2964), thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Reduce the number of calls to the _SCHEMA table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* LiveQuery: Support for Role ACL's, thanks to [Aaron Blondeau](https://github.com/aaron-blondeau-dose)
+
+#### Bug Fixes
+* Better support for checking application and client keys, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Google OAuth, better support for android and web logins, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.2.23
 
 * Run liveQuery server from CLI with a different port, thanks to [Florent Vilmart](https://github.com/flovilmart)

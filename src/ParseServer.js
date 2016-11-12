@@ -139,6 +139,7 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    enableSingleSchemaCache = false,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
@@ -153,7 +154,7 @@ class ParseServer {
     }
 
     if (!filesAdapter && !databaseURI) {
-      throw 'When using an explicit database adapter, you must also use and explicit filesAdapter.';
+      throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
     }
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
@@ -181,7 +182,7 @@ class ParseServer {
     const analyticsController = new AnalyticsController(analyticsControllerAdapter);
 
     const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL));
+    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitizalization();
@@ -221,7 +222,8 @@ class ParseServer {
       jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
-      schemaCacheTTL
+      schemaCacheTTL,
+      enableSingleSchemaCache
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
@@ -252,10 +254,10 @@ class ParseServer {
 
   getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
     let protocol;
-    try{
+    try {
       const parsedURI = url.parse(databaseURI);
       protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
-    }catch(e){}
+    } catch(e) {}
     switch (protocol) {
       case 'postgres:':
         return new PostgresStorageAdapter({
@@ -285,6 +287,8 @@ class ParseServer {
     api.use('/', middlewares.allowCrossDomain, new FilesRouter().expressRouter({
       maxUploadSize: maxUploadSize
     }));
+
+    api.use('/health', (req, res) => res.sendStatus(200));
 
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 

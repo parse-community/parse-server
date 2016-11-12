@@ -4,6 +4,7 @@ const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
 const PostgresUniqueIndexViolationError = '23505';
+const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
 
 const debug = function(){
@@ -133,6 +134,20 @@ const handleDotFields = (object) => {
     }
   });
   return object;
+}
+
+const validateKeys = (object) => {
+  if (typeof object == 'object') {
+    for (const key in object) {
+      if (typeof object[key] == 'object') {
+        validateKeys(object[key]);
+      }
+
+      if(key.includes('$') || key.includes('.')){
+        throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
+      }       
+    }
+  }
 }
 
 // Returns the list of join tables on a schema
@@ -330,8 +345,14 @@ const buildWhereClause = ({ schema, query, index }) => {
         if (opts.indexOf('i') >= 0) {
           operator = '~*';
         }
+        if (opts.indexOf('x') >= 0) {
+          regex = removeWhiteSpace(regex);
+        }
       }
-      patterns.push(`$${index}:name ${operator} $${index+1}`);
+
+      regex = processRegexPattern(regex);
+
+      patterns.push(`$${index}:name ${operator} '$${index+1}:raw'`);
       values.push(fieldName, regex);
       index += 2;
     }
@@ -385,8 +406,9 @@ export class PostgresStorageAdapter {
     this._client = createClient(uri, databaseOptions);
   }
 
-  _ensureSchemaCollectionExists() {
-    return this._client.none('CREATE TABLE "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
+  _ensureSchemaCollectionExists(conn) {
+    conn = conn || this._client;
+    return conn.none('CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError || error.code === PostgresUniqueIndexViolationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -410,21 +432,30 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this.createTable(className, schema)
-    .then(() => this._client.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema }))
+    return this._client.tx(t => {
+       const q1 = this.createTable(className, schema, t);
+       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+ 
+       return t.batch([q1, q2]);
+    })
     .then(() => {
       return toParseSchema(schema)
     })
     .catch((err) => {
+      if (Array.isArray(err.data) && err.data.length > 1 && err.data[0].result.code === PostgresTransactionAbortedError) {
+        err = err.data[1].result;
+      }
+
       if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
-        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} already exists.`)
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`)
       }
       throw err;
     })
   }
 
   // Just create a table, do not insert in schema
-  createTable(className, schema) {
+  createTable(className, schema, conn) {
+    conn = conn || this._client;
     debug('createTable', className, schema);
     let valuesArray = [];
     let patternsArray = [];
@@ -457,10 +488,10 @@ export class PostgresStorageAdapter {
       }
       index = index+2;
     });
-    const qs = `CREATE TABLE $1:name (${patternsArray.join(',')})`;
+    const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return this._ensureSchemaCollectionExists()
-    .then(() => this._client.none(qs, values))
+    return this._ensureSchemaCollectionExists(conn)
+    .then(() => conn.none(qs, values))
     .catch(error => {
       if (error.code === PostgresDuplicateRelationError) {
         // Table already exists, must have been created by a different request. Ignore error.
@@ -470,7 +501,7 @@ export class PostgresStorageAdapter {
     }).then(() => {
       // Create the relation tables
       return Promise.all(relations.map((fieldName) => {
-        return this._client.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        return conn.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }));
     });
   }
@@ -632,6 +663,8 @@ export class PostgresStorageAdapter {
 
     object = handleDotFields(object);
 
+    validateKeys(object);
+
     Object.keys(object).forEach(fieldName => {
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
@@ -777,6 +810,7 @@ export class PostgresStorageAdapter {
     let index = 2;
     schema = toPostgresSchema(schema);
 
+    const originalUpdate = {...update};
     update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
@@ -881,9 +915,19 @@ export class PostgresStorageAdapter {
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
-        updatePatterns.push(`$${index}:name = $${index + 1}`);
-        values.push(fieldName, fieldValue);
-        index += 2;
+        const keysToDelete = Object.keys(originalUpdate).filter(k => {
+          // choose top level fields that have a delete operation set 
+          return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2
+        }).map(k => k.split('.')[1]);
+
+        const deletePatterns = keysToDelete.reduce((p, c, i) => {
+          return p + ` - '$${index + 1 + i}:value'`;
+        }, '');
+
+         updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+
+         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
+         index += 2 + keysToDelete.length;
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Array') {
@@ -891,7 +935,14 @@ export class PostgresStorageAdapter {
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
         } else {
-          updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::text[])::jsonb`);
+          let type = 'text';
+          for (let elt of fieldValue) {
+            if (typeof elt == 'object') {
+              type = 'json';
+              break;
+            }
+          }
+          updatePatterns.push(`$${index}:name = array_to_json($${index + 1}::${type}[])::jsonb`);
         }
         values.push(fieldName, fieldValue);
         index += 2;
@@ -1111,6 +1162,79 @@ export class PostgresStorageAdapter {
 
 function notImplemented() {
     return Promise.reject(new Error('Not implemented yet.'));
+}
+
+function removeWhiteSpace(regex) {
+  if (!regex.endsWith('\n')){
+    regex += '\n';
+  }
+
+  // remove non escaped comments
+  return regex.replace(/([^\\])#.*\n/gmi, '$1')
+    // remove lines starting with a comment
+    .replace(/^#.*\n/gmi, '')
+    // remove non escaped whitespace
+    .replace(/([^\\])\s+/gmi, '$1')
+    // remove whitespace at the beginning of a line
+    .replace(/^\s+/, '')
+    .trim();
+}
+
+function processRegexPattern(s) {
+  if (s && s.startsWith('^')){
+    // regex for startsWith
+    return '^' + literalizeRegexPart(s.slice(1));
+
+  } else if (s && s.endsWith('$')) {
+    // regex for endsWith
+    return literalizeRegexPart(s.slice(0, s.length - 1)) + '$';
+  }
+
+  // regex for contains
+  return literalizeRegexPart(s);
+}
+
+function createLiteralRegex(remaining) {
+  return remaining.split('').map(c => {
+    if (c.match(/[0-9a-zA-Z]/) !== null) {
+      // don't escape alphanumeric characters
+      return c;
+    }
+    // escape everything else (single quotes with single quotes, everything else with a backslash)
+    return c === `'` ? `''` : `\\${c}`;
+  }).join('');
+}
+
+function literalizeRegexPart(s) {
+  const matcher1 = /\\Q((?!\\E).*)\\E$/
+  const result1 = s.match(matcher1);
+  if(result1 && result1.length > 1 && result1.index > -1){
+    // process regex that has a beginning and an end specified for the literal text
+    const prefix = s.substr(0, result1.index);
+    const remaining = result1[1];
+
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  // process regex that has a beginning specified for the literal text
+  const matcher2 = /\\Q((?!\\E).*)$/
+  const result2 = s.match(matcher2);
+  if(result2 && result2.length > 1 && result2.index > -1){
+    const prefix = s.substr(0, result2.index);
+    const remaining = result2[1];
+
+    return literalizeRegexPart(prefix) + createLiteralRegex(remaining);
+  }
+
+  // remove all instances of \Q and \E from the remaining text & escape single quotes
+  return (
+    s.replace(/([^\\])(\\E)/, '$1')
+      .replace(/([^\\])(\\Q)/, '$1')
+      .replace(/^\\E/, '')
+      .replace(/^\\Q/, '')
+      .replace(/([^'])'/, `$1''`)
+      .replace(/^'([^'])/, `''$1`)
+  );
 }
 
 // Function to set a key on a nested JSON document
