@@ -79,8 +79,12 @@ export class UserController extends AdaptableController {
       }
 
       if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
-        if (results[0]._perishable_token_expires_at < new Date())
-          throw 'The password reset link has expired';
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
+          if (expiresDate < new Date())
+            throw 'The password reset link has expired';
+        }
       }
 
       return results[0];
