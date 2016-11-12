@@ -82,9 +82,9 @@ export class UserController extends AdaptableController {
         let expiresDate = results[0]._perishable_token_expires_at;
         if (expiresDate && expiresDate.__type == 'Date') {
           expiresDate = new Date(expiresDate.iso);
-          if (expiresDate < new Date())
-            throw 'The password reset link has expired';
         }
+        if (expiresDate < new Date())
+          throw 'The password reset link has expired';
       }
 
       return results[0];
