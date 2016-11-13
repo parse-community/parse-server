@@ -104,6 +104,12 @@ const defaultColumns = Object.freeze({
   _GlobalConfig: {
     "objectId": {type: 'String'},
     "params": {type: 'Object'}
+  },
+  _ExportProgress: {
+    "objectId":      {type:'String'},
+    "id":            {type:'String'},
+    "masterKey":     {type:'String'},
+    "applicationId": {type:'String'}
   }
 });
 
@@ -112,9 +118,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus', '_ExportProgress' ]);
 
-const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_ExportProgress']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
