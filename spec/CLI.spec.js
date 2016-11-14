@@ -1,6 +1,7 @@
 'use strict';
 import commander from '../src/cli/utils/commander';
 import definitions from '../src/cli/definitions/parse-server';
+import liveQueryDefinitions from '../src/cli/definitions/parse-live-query-server';
 
 var testDefinitions = {
   'arg0': 'PROGRAM_ARG_0',
@@ -143,7 +144,26 @@ describe('definitions', () => {
     for (let key in definitions) {
       let definition = definitions[key];
       expect(typeof definition).toBe('object');
+      if (typeof definition.env !== 'undefined') {
+        expect(typeof definition.env).toBe('string');
+      }
+      expect(typeof definition.help).toBe('string');
       if (typeof definition.required !== 'undefined') {
+        expect(typeof definition.required).toBe('boolean');
+      }
+      if (typeof definition.action !== 'undefined') {
+        expect(typeof definition.action).toBe('function');
+      }
+    }
+  });
+});
+
+describe('LiveQuery definitions', () => {
+  it('should have valid types', () => {
+    for (let key in liveQueryDefinitions) {
+      let definition = liveQueryDefinitions[key];
+      expect(typeof definition).toBe('object');
+      if (typeof definition.env !== 'undefined') {
         expect(typeof definition.env).toBe('string');
       }
       expect(typeof definition.help).toBe('string');
