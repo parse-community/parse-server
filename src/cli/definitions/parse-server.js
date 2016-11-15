@@ -35,6 +35,11 @@ export default {
     help: "Options to pass to the mongodb client",
     action: objectParser
   },
+  "geoQueryOnSecondary": {
+    env: "PARSE_SERVER_GEO_QUERY_ON_SECONDARY",
+    help: "Run geo queries on secondary",
+    action: booleanParser
+  },
   "collectionPrefix": {
     env: "PARSE_SERVER_COLLECTION_PREFIX",
     help: 'A collection prefix for the classes'

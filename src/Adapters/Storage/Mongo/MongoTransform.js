@@ -141,7 +141,7 @@ const valueAsDate = value => {
   return false;
 }
 
-function transformQueryKeyValue(className, key, value, schema) {
+function transformQueryKeyValue(className, key, value, schema, extraOut) {
   switch(key) {
   case 'createdAt':
     if (valueAsDate(value)) {
@@ -194,9 +194,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
   case '$or':
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema, extraOut))};
   case '$and':
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema, extraOut))};
   default: {
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -223,8 +223,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 
   // Handle query constraints
-  if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
-    return {key, value: transformConstraint(value, expectedTypeIsArray)};
+  let transformConstraintValue = transformConstraint(value, expectedTypeIsArray, extraOut);
+  if (transformConstraintValue !== CannotTransform) {
+    return {key, value: transformConstraintValue};
   }
 
   if (expectedTypeIsArray && !(value instanceof Array)) {
@@ -242,10 +243,10 @@ function transformQueryKeyValue(className, key, value, schema) {
 // Main exposed method to help run queries.
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
-function transformWhere(className, restWhere, schema) {
+function transformWhere(className, restWhere, schema, extraOut) {
   let mongoWhere = {};
   for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
+    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema, extraOut);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
@@ -504,7 +505,7 @@ function transformTopLevelAtom(atom) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, inArray) {
+function transformConstraint(constraint, inArray, extraOut) {
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
@@ -569,22 +570,37 @@ function transformConstraint(constraint, inArray) {
     case '$nearSphere':
       var point = constraint[key];
       answer[key] = [point.longitude, point.latitude];
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
 
     case '$maxDistance':
       answer[key] = constraint[key];
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
 
     // The SDKs don't seem to use these but they are documented in the
     // REST API docs.
     case '$maxDistanceInRadians':
       answer['$maxDistance'] = constraint[key];
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
     case '$maxDistanceInMiles':
       answer['$maxDistance'] = constraint[key] / 3959;
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
     case '$maxDistanceInKilometers':
       answer['$maxDistance'] = constraint[key] / 6371;
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
 
     case '$select':
@@ -606,6 +622,9 @@ function transformConstraint(constraint, inArray) {
           [box[1].longitude, box[1].latitude]
         ]
       };
+      if (extraOut) {
+        extraOut.hasGeoQuery = true;
+      }
       break;
 
     default:
