@@ -136,6 +136,11 @@ export default {
     help: "account lockout policy for failed login attempts",
     action: objectParser
   },
+  "passwordPolicy": {
+    env: "PARSE_SERVER_PASSWORD_POLICY",
+    help: "Password policy for enforcing password related rules",
+    action: objectParser
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"

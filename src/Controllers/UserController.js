@@ -77,6 +77,16 @@ export class UserController extends AdaptableController {
       if (results.length != 1) {
         throw undefined;
       }
+
+      if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+        let expiresDate = results[0]._perishable_token_expires_at;
+        if (expiresDate && expiresDate.__type == 'Date') {
+          expiresDate = new Date(expiresDate.iso);
+        }
+        if (expiresDate < new Date())
+          throw 'The password reset link has expired';
+      }
+
       return results[0];
     });
   }
@@ -125,7 +135,13 @@ export class UserController extends AdaptableController {
   }
 
   setPasswordResetToken(email) {
-    return this.config.database.update('_User', { $or: [{email}, {username: email, email: {$exists: false}}] }, { _perishable_token: randomString(25) }, {}, true)
+    const token = { _perishable_token: randomString(25) };
+
+    if (this.config.passwordPolicy && this.config.passwordPolicy.resetTokenValidityDuration) {
+      token._perishable_token_expires_at = Parse._encode(this.config.generatePasswordResetTokenExpiresAt());
+    }
+
+    return this.config.database.update('_User', { $or: [{email}, {username: email, email: {$exists: false}}] }, token, {}, true)
   }
 
   sendPasswordResetEmail(email) {
@@ -159,11 +175,18 @@ export class UserController extends AdaptableController {
 
   updatePassword(username, token, password, config) {
     return this.checkResetTokenValidity(username, token)
-    .then(user => updateUserPassword(user.objectId, password, this.config))
-    // clear reset password token
-    .then(() => this.config.database.update('_User', { username }, {
-      _perishable_token: {__op: 'Delete'}
-    }));
+      .then(user => updateUserPassword(user.objectId, password, this.config))
+      // clear reset password token
+      .then(() => this.config.database.update('_User', {username}, {
+        _perishable_token: {__op: 'Delete'},
+        _perishable_token_expires_at: {__op: 'Delete'}
+      })).catch((error) => {
+        if (error.message) {  // in case of Parse.Error, fail with the error message only
+          return Promise.reject(error.message);
+        } else {
+          return Promise.reject(error);
+        }
+      });
   }
 
   defaultVerificationEmail({link, user, appName, }) {
@@ -189,9 +212,9 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(userId, password, config) {
-    return rest.update(config, Auth.master(config), '_User', userId, {
-      password: password
-    });
+  return rest.update(config, Auth.master(config), '_User', userId, {
+    password: password
+  });
  }
 
 export default UserController;

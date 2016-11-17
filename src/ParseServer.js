@@ -125,6 +125,7 @@ class ParseServer {
     preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
     emailVerifyTokenValidityDuration,
     accountLockout,
+    passwordPolicy,
     cacheAdapter,
     emailAdapter,
     publicServerURL,
@@ -210,6 +211,7 @@ class ParseServer {
       preventLoginWithUnverifiedEmail: preventLoginWithUnverifiedEmail,
       emailVerifyTokenValidityDuration: emailVerifyTokenValidityDuration,
       accountLockout: accountLockout,
+      passwordPolicy: passwordPolicy,
       allowClientClassCreation: allowClientClassCreation,
       authDataManager: authDataManager(oauth, enableAnonymousUsers),
       appName: appName,
@@ -233,6 +235,7 @@ class ParseServer {
 
     Config.validate(AppCache.get(appId));
     this.config = AppCache.get(appId);
+    Config.setupPasswordValidator(this.config.passwordPolicy);
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
