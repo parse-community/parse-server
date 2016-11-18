@@ -373,7 +373,7 @@ RestWrite.prototype.transformUser = function() {
 
     // check if the password conforms to the defined password policy if configured
     if (this.config.passwordPolicy) {
-      const policyError = 'Password does not confirm to the Password Policy.';
+      const policyError = 'Password does not conform to the Password Policy.';
 
       // check whether the password conforms to the policy
       if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||

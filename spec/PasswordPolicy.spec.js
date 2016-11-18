@@ -292,7 +292,7 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should fail if password does conforms to validatorPattern but fails validatorCallback', (done) => {
+  it('signup should fail if password matches validatorPattern but fails validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -460,7 +460,7 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then((response) => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20confirm%20to%20the%20Password%20Policy.&app=passwordPolicy`);
+            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20conform%20to%20the%20Password%20Policy.&app=passwordPolicy`);
 
             Parse.User.logIn("user1", "has 1 digit").then(function (user) {
               done();
@@ -624,7 +624,7 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then((response) => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20confirm%20to%20the%20Password%20Policy.&app=passwordPolicy`);
+            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20conform%20to%20the%20Password%20Policy.&app=passwordPolicy`);
 
             Parse.User.logIn("user1", "r@nd0m").then(function (user) {
               done();
