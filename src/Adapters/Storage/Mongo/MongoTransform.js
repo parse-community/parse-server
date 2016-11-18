@@ -70,6 +70,10 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
     key = '_perishable_token_expires_at';
     timeField = true;
     break;
+  case '_password_changed_at':
+    key = '_password_changed_at';
+    timeField = true;
+    break;
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
@@ -180,6 +184,11 @@ function transformQueryKeyValue(className, key, value, schema) {
       return { key: '_perishable_token_expires_at', value: valueAsDate(value) }
     }
     break;
+  case '_password_changed_at':
+    if (valueAsDate(value)) {
+      return { key: '_password_changed_at', value: valueAsDate(value) }
+    }
+    break;
   case '_rperm':
   case '_wperm':
   case '_perishable_token':
@@ -263,6 +272,10 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
     transformedValue = transformTopLevelAtom(restValue);
     coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
     return { key: '_perishable_token_expires_at', value: coercedToDate };
+  case '_password_changed_at':
+    transformedValue = transformTopLevelAtom(restValue);
+    coercedToDate = typeof transformedValue === 'string' ? new Date(transformedValue) : transformedValue
+    return { key: '_password_changed_at', value: coercedToDate };
   case '_failed_login_count':
   case '_rperm':
   case '_wperm':
@@ -762,6 +775,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       case '_email_verify_token':
       case '_perishable_token':
       case '_perishable_token_expires_at':
+      case '_password_changed_at':
       case '_tombstone':
       case '_email_verify_token_expires_at':
       case '_account_lockout_expires_at':

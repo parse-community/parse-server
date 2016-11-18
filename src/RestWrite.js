@@ -371,11 +371,11 @@ RestWrite.prototype.transformUser = function() {
 
     let defer = Promise.resolve();
 
-    // check if the password confirms to the defined password policy if configured
+    // check if the password conforms to the defined password policy if configured
     if (this.config.passwordPolicy) {
       const policyError = 'Password does not confirm to the Password Policy.';
 
-      // check whether the password confirms to the policy
+      // check whether the password conforms to the policy
       if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
           this.config.passwordPolicy.validatorCallback && !this.config.passwordPolicy.validatorCallback(this.data.password)) {
         return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
@@ -839,6 +839,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
     if (this.className === '_User' && this.data.ACL) {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
+    // update password timestamp if user password is being changed
+    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.daysBeforeExpiry) {
+      this.data._password_changed_at = Parse._encode(new Date());
+    }
     // Run an update
     return this.config.database.update(this.className, this.query, this.data, this.runOptions)
     .then(response => {
@@ -847,7 +851,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.response = { response };
     });
   } else {
-    // Set the default ACL for the new _User
+    // Set the default ACL and password timestamp for the new _User
     if (this.className === '_User') {
       var ACL = this.data.ACL;
       // default public r/w ACL
@@ -858,6 +862,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
       // make sure the user is not locked down
       ACL[this.data.objectId] = { read: true, write: true };
       this.data.ACL = ACL;
+      // password timestamp to be used when password expiry policy is enforced
+      if (this.config.passwordPolicy && this.config.passwordPolicy.daysBeforeExpiry) {
+        this.data._password_changed_at = Parse._encode(new Date());
+      }
     }
 
     // Run a create
