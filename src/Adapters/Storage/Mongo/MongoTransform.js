@@ -319,6 +319,9 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   restCreate = addLegacyACL(restCreate);
   let mongoCreate = {}
   for (let restKey in restCreate) {
+    if (restCreate[restKey] && restCreate[restKey].__type === 'Relation') {
+      continue;
+    }
     let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
       restKey,
       restCreate[restKey],
@@ -359,6 +362,9 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
     }
   }
   for (var restKey in restUpdate) {
+    if (restUpdate[restKey] && restUpdate[restKey].__type === 'Relation') {
+      continue;
+    }
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
