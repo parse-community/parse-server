@@ -4,6 +4,15 @@ import { logger }               from './logger';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
+const incrementOp = function(object = {}, key, amount = 1) {
+  if (!object[key]) {
+    object[key] = {__op: 'Increment', amount: amount}
+  } else {
+    object[key].amount += amount;
+  }
+  return object[key];
+}
+
 export function flatten(array) {
   return array.reduce((memo, element) => {
     if (Array.isArray(element)) {
@@ -145,9 +154,7 @@ export function pushStatusHandler(config) {
   let complete = function(results) {
     let update = {
       status: 'succeeded',
-      updatedAt: new Date(),
-      numSent: 0,
-      numFailed: 0,
+      updatedAt: new Date()
     };
     if (Array.isArray(results)) {
       results = flatten(results);
@@ -157,17 +164,12 @@ export function pushStatusHandler(config) {
           return memo;
         }
         let deviceType = result.device.deviceType;
-        if (result.transmitted)
-        {
-          memo.numSent++;
-          memo.sentPerType = memo.sentPerType || {};
-          memo.sentPerType[deviceType] = memo.sentPerType[deviceType] || 0;
-          memo.sentPerType[deviceType]++;
+        let key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
+        memo[key] = incrementOp(memo, key);
+        if (result.transmitted) {
+          incrementOp(memo, 'numSent');
         } else {
-          memo.numFailed++;
-          memo.failedPerType = memo.failedPerType || {};
-          memo.failedPerType[deviceType] = memo.failedPerType[deviceType] || 0;
-          memo.failedPerType[deviceType]++;
+          incrementOp(memo, 'numFailed');
         }
         return memo;
       }, update);
