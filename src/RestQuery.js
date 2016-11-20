@@ -32,11 +32,11 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       }
       this.restWhere = {
         '$and': [this.restWhere, {
-           'user': {
-              __type: 'Pointer',
-              className: '_User',
-              objectId: this.auth.user.id
-           }
+          'user': {
+            __type: 'Pointer',
+            className: '_User',
+            objectId: this.auth.user.id
+          }
         }]
       };
     }
@@ -186,7 +186,7 @@ RestQuery.prototype.validateClientClassCreation = function() {
                                 'This user is not allowed to access ' +
                                 'non-existent class: ' + this.className);
         }
-    });
+      });
   } else {
     return Promise.resolve();
   }
@@ -400,36 +400,36 @@ RestQuery.prototype.runFind = function(options = {}) {
     });
   }
   if (options.op) {
-      findOptions.op = options.op;
+    findOptions.op = options.op;
   }
   return this.config.database.find(
     this.className, this.restWhere, findOptions).then((results) => {
-    if (this.className === '_User') {
-      for (var result of results) {
-        delete result.password;
+      if (this.className === '_User') {
+        for (var result of results) {
+          delete result.password;
 
-        if (result.authData) {
-          Object.keys(result.authData).forEach((provider) => {
-            if (result.authData[provider] === null) {
-              delete result.authData[provider];
+          if (result.authData) {
+            Object.keys(result.authData).forEach((provider) => {
+              if (result.authData[provider] === null) {
+                delete result.authData[provider];
+              }
+            });
+            if (Object.keys(result.authData).length == 0) {
+              delete result.authData;
             }
-          });
-          if (Object.keys(result.authData).length == 0) {
-            delete result.authData;
           }
         }
       }
-    }
 
-    this.config.filesController.expandFilesInObject(this.config, results);
+      this.config.filesController.expandFilesInObject(this.config, results);
 
-    if (this.redirectClassName) {
-      for (var r of results) {
-        r.className = this.redirectClassName;
+      if (this.redirectClassName) {
+        for (var r of results) {
+          r.className = this.redirectClassName;
+        }
       }
-    }
-    this.response = {results: results};
-  });
+      this.response = {results: results};
+    });
 };
 
 // Returns a promise for whether it was successful.

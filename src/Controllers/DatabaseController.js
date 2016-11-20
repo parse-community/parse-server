@@ -413,35 +413,35 @@ const flattenUpdateOperatorsForCreate = object => {
   for (let key in object) {
     if (object[key] && object[key].__op) {
       switch (object[key].__op) {
-        case 'Increment':
-          if (typeof object[key].amount !== 'number') {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].amount;
-          break;
-        case 'Add':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'AddUnique':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'Remove':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = []
-          break;
-        case 'Delete':
-          delete object[key];
-          break;
-        default:
-          throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
+      case 'Increment':
+        if (typeof object[key].amount !== 'number') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].amount;
+        break;
+      case 'Add':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'AddUnique':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'Remove':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = []
+        break;
+      case 'Delete':
+        delete object[key];
+        break;
+      default:
+        throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
       }
     }
   }
@@ -849,7 +849,7 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   let perms = schema.perms[className];
   let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
   let userACL = aclGroup.filter((acl) => {
-     return acl.indexOf('role:') != 0 && acl != '*';
+    return acl.indexOf('role:') != 0 && acl != '*';
   });
   // the ACL should have exactly 1 user
   if (perms && perms[field] && perms[field].length > 0) {
@@ -860,10 +860,10 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
     }
     let userId = userACL[0];
     let userPointer =  {
-          "__type": "Pointer",
-          "className": "_User",
-          "objectId": userId
-        };
+      "__type": "Pointer",
+      "className": "_User",
+      "objectId": userId
+    };
 
     let permFields = perms[field];
     let ors = permFields.map((key) => {

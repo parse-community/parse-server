@@ -13,7 +13,7 @@ function getSessionToken(options) {
 
 function getAuth(options, config) {
   if (options.useMasterKey) {
-      return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
+    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
   }
   return getSessionToken(options).then((sessionToken) => {
     if (sessionToken) {
@@ -75,7 +75,7 @@ function ParseServerRESTController(applicationId, router) {
         return Promise.resolve().then(() => {
           return router.tryRouteRequest(method, path, request);
         }).then((response) => {
-            resolve(response.response, response.status, response);
+          resolve(response.response, response.status, response);
         }, (err) => {
           if (err instanceof Parse.Error &&
               err.code == Parse.Error.INVALID_JSON &&

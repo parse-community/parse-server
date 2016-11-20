@@ -26,7 +26,7 @@ export default class HTTPResponse {
     let getData = () => {
       if (!_data) {
         try {
-            _data = JSON.parse(getText());
+          _data = JSON.parse(getText());
         } catch (e) {}
       }
       return _data;

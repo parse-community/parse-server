@@ -123,7 +123,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
                                 'This user is not allowed to access ' +
                                 'non-existent class: ' + this.className);
         }
-    });
+      });
   } else {
     return Promise.resolve();
   }
@@ -266,7 +266,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
 
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
-     findPromise = this.config.database.find(
+    findPromise = this.config.database.find(
         this.className,
         {'$or': query}, {})
   }
@@ -278,7 +278,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.handleAuthDataValidation(authData).then(() => {
-     return this.findUsersWithAuthData(authData);
+    return this.findUsersWithAuthData(authData);
   }).then((r) => {
     results = r;
     if (results.length > 1) {
@@ -506,10 +506,10 @@ RestWrite.prototype.handleFollowup = function() {
   if (this.storage && this.storage['clearSessions'] && this.config.revokeSessionOnPasswordReset) {
     var sessionQuery = {
       user: {
-          __type: 'Pointer',
-          className: '_User',
-          objectId: this.objectId()
-        }
+        __type: 'Pointer',
+        className: '_User',
+        objectId: this.objectId()
+      }
     };
     delete this.storage['clearSessions'];
     return this.config.database.destroy('_Session', sessionQuery)
@@ -635,7 +635,7 @@ RestWrite.prototype.handleInstallation = function() {
   let orQueries = [];
   if (this.query && this.query.objectId) {
     orQueries.push({
-        objectId: this.query.objectId
+      objectId: this.query.objectId
     });
   }
   if (installationId) {
@@ -653,7 +653,7 @@ RestWrite.prototype.handleInstallation = function() {
 
   promise = promise.then(() => {
     return this.config.database.find('_Installation', {
-        '$or': orQueries
+      '$or': orQueries
     }, {});
   }).then((results) => {
     results.forEach((result) => {
@@ -676,23 +676,23 @@ RestWrite.prototype.handleInstallation = function() {
       }
       if (this.data.installationId && objectIdMatch.installationId &&
           this.data.installationId !== objectIdMatch.installationId) {
-          throw new Parse.Error(136,
+        throw new Parse.Error(136,
                                 'installationId may not be changed in this ' +
                                 'operation');
-        }
-        if (this.data.deviceToken && objectIdMatch.deviceToken &&
+      }
+      if (this.data.deviceToken && objectIdMatch.deviceToken &&
           this.data.deviceToken !== objectIdMatch.deviceToken &&
           !this.data.installationId && !objectIdMatch.installationId) {
-          throw new Parse.Error(136,
+        throw new Parse.Error(136,
                                 'deviceToken may not be changed in this ' +
                                 'operation');
-        }
-        if (this.data.deviceType && this.data.deviceType &&
+      }
+      if (this.data.deviceType && this.data.deviceType &&
           this.data.deviceType !== objectIdMatch.deviceType) {
-          throw new Parse.Error(136,
+        throw new Parse.Error(136,
                                 'deviceType may not be changed in this ' +
                                 'operation');
-        }
+      }
     }
 
     if (this.query && this.query.objectId && objectIdMatch) {

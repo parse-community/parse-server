@@ -14,7 +14,7 @@
         "sourceType": "module"
     },
     "rules": {
-        "indent": "off",
+        "indent": ["error", 2],
         "no-extra-boolean-cast": [0],
         "no-console": [0],
         "linebreak-style": ["error", "unix"],

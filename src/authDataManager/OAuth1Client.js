@@ -63,11 +63,11 @@ OAuth.prototype.buildRequest = function(method, path, params, body) {
 }
 
 OAuth.prototype.get = function(path, params) {
-	return this.send("GET", path, params);
+  return this.send("GET", path, params);
 }
 
 OAuth.prototype.post = function(path, params, body) {
-	return this.send("POST", path, params, body);
+  return this.send("POST", path, params, body);
 }
 
 /*
@@ -115,27 +115,27 @@ OAuth.version = "1.0";
 	Generate a nonce
 */
 OAuth.nonce = function(){
-    var text = "";
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+  var text = "";
+  var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-    for( var i=0; i < 30; i++ )
-        text += possible.charAt(Math.floor(Math.random() * possible.length));
+  for( var i=0; i < 30; i++ )
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
 
-    return text;
+  return text;
 }
 
 OAuth.buildParameterString = function(obj){
 	// Sort keys and encode values
-	if (obj) {
-		var keys = Object.keys(obj).sort();
+  if (obj) {
+    var keys = Object.keys(obj).sort();
 
 		// Map key=value, join them by &
-		return keys.map(function(key){
-			return key + "=" + OAuth.encode(obj[key]);
-		}).join("&");
-	}
+    return keys.map(function(key){
+      return key + "=" + OAuth.encode(obj[key]);
+    }).join("&");
+  }
 
-	return "";
+  return "";
 }
 
 /*
@@ -143,81 +143,81 @@ OAuth.buildParameterString = function(obj){
 */
 
 OAuth.buildSignatureString = function(method, url, parameters){
-	return [method.toUpperCase(), OAuth.encode(url), OAuth.encode(parameters)].join("&");
+  return [method.toUpperCase(), OAuth.encode(url), OAuth.encode(parameters)].join("&");
 }
 
 /*
 	Retuns encoded HMAC-SHA1 from key and text
 */
 OAuth.signature = function(text, key){
-	crypto = require("crypto");
-	return OAuth.encode(crypto.createHmac('sha1', key).update(text).digest('base64'));
+  crypto = require("crypto");
+  return OAuth.encode(crypto.createHmac('sha1', key).update(text).digest('base64'));
 }
 
 OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_token_secret){
-	oauth_parameters = oauth_parameters || {};
+  oauth_parameters = oauth_parameters || {};
 
 	// Set default values
-	if (!oauth_parameters.oauth_nonce) {
-		oauth_parameters.oauth_nonce = OAuth.nonce();
-	}
-	if (!oauth_parameters.oauth_timestamp) {
-		oauth_parameters.oauth_timestamp = Math.floor(new Date().getTime()/1000);
-	}
-	if (!oauth_parameters.oauth_signature_method) {
-		oauth_parameters.oauth_signature_method = OAuth.signatureMethod;
-	}
-	if (!oauth_parameters.oauth_version) {
-		oauth_parameters.oauth_version = OAuth.version;
-	}
+  if (!oauth_parameters.oauth_nonce) {
+    oauth_parameters.oauth_nonce = OAuth.nonce();
+  }
+  if (!oauth_parameters.oauth_timestamp) {
+    oauth_parameters.oauth_timestamp = Math.floor(new Date().getTime()/1000);
+  }
+  if (!oauth_parameters.oauth_signature_method) {
+    oauth_parameters.oauth_signature_method = OAuth.signatureMethod;
+  }
+  if (!oauth_parameters.oauth_version) {
+    oauth_parameters.oauth_version = OAuth.version;
+  }
 
-	if(!auth_token_secret){
-		auth_token_secret="";
-	}
+  if(!auth_token_secret){
+    auth_token_secret="";
+  }
 	// Force GET method if unset
-	if (!request.method) {
-		request.method = "GET"
-	}
+  if (!request.method) {
+    request.method = "GET"
+  }
 
 	// Collect  all the parameters in one signatureParameters object
-	var signatureParams = {};
-	var parametersToMerge = [request.params, request.body, oauth_parameters];
-	for(var i in parametersToMerge) {
-		var parameters = parametersToMerge[i];
-		for(var k in parameters) {
-			signatureParams[k] = parameters[k];
-		}
-	}
+  var signatureParams = {};
+  var parametersToMerge = [request.params, request.body, oauth_parameters];
+  for(var i in parametersToMerge) {
+    var parameters = parametersToMerge[i];
+    for(var k in parameters) {
+      signatureParams[k] = parameters[k];
+    }
+  }
 
 	// Create a string based on the parameters
-	var parameterString = OAuth.buildParameterString(signatureParams);
+  var parameterString = OAuth.buildParameterString(signatureParams);
 
 	// Build the signature string
-	var url = "https://"+request.host+""+request.path;
+  var url = "https://"+request.host+""+request.path;
 
-	var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
+  var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
 	// Hash the signature string
-	var signatureKey = [OAuth.encode(consumer_secret), OAuth.encode(auth_token_secret)].join("&");
+  var signatureKey = [OAuth.encode(consumer_secret), OAuth.encode(auth_token_secret)].join("&");
 
-	var signature = OAuth.signature(signatureString, signatureKey);
+  var signature = OAuth.signature(signatureString, signatureKey);
 
 	// Set the signature in the params
-	oauth_parameters.oauth_signature = signature;
-	if(!request.headers){
-		request.headers = {};
-	}
+  oauth_parameters.oauth_signature = signature;
+  if(!request.headers){
+    request.headers = {};
+  }
 
 	// Set the authorization header
-	var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
-		var value = oauth_parameters[key];
-		return key+'="'+value+'"';
-	}).join(", ")
+  var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
+    var value = oauth_parameters[key];
+    return key+'="'+value+'"';
+  }).join(", ")
 
-	request.headers.Authorization = 'OAuth ' + authHeader;
+  request.headers.Authorization = 'OAuth ' + authHeader;
 
 	// Set the content type header
-	request.headers["Content-Type"] = "application/x-www-form-urlencoded";
-	return request;
+  request.headers["Content-Type"] = "application/x-www-form-urlencoded";
+  return request;
 
 }
 

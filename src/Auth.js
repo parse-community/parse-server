@@ -79,13 +79,13 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
 
 var getAuthForLegacySessionToken = function({config, sessionToken, installationId } = {}) {
   var restOptions = {
-      limit: 1
+    limit: 1
   };
   var query = new RestQuery(config, master(config), '_User', { sessionToken: sessionToken}, restOptions);
   return query.execute().then((response) => {
     var results = response.results;
     if (results.length !== 1) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     let obj = results[0];
     obj.className = '_User';

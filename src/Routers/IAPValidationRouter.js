@@ -59,7 +59,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
 
 export class IAPValidationRouter extends PromiseRouter {
  
- handleRequest(req) {
+  handleRequest(req) {
     let receipt = req.body.receipt;
     const productIdentifier = req.body.productIdentifier;
     
@@ -81,11 +81,11 @@ export class IAPValidationRouter extends PromiseRouter {
     }
 
     function successCallback() {
-        return getFileForProductIdentifier(productIdentifier, req);
+      return getFileForProductIdentifier(productIdentifier, req);
     }
 
     function errorCallback(error) {
-        return Promise.resolve({response: appStoreError(error.status) });
+      return Promise.resolve({response: appStoreError(error.status) });
     }
     
     return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
@@ -95,10 +95,10 @@ export class IAPValidationRouter extends PromiseRouter {
     }, (error) => {
       if (error.status == 21007) {
         return validateWithAppStore(IAP_SANDBOX_URL, receipt).then( () => {
-            return successCallback();
-          }, (error) => {
-            return errorCallback(error);
-          }
+          return successCallback();
+        }, (error) => {
+          return errorCallback(error);
+        }
         );
       } 
 

@@ -147,16 +147,16 @@ export function handleParseHeaders(req, res, next) {
     if (info.sessionToken && 
         req.url === '/upgradeToRevocableSession' && 
         info.sessionToken.indexOf('r:') != 0) {
-        return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+      return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
     } else {
-        return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
+      return auth.getAuthForSessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
     }
   }).then((auth) => {
-      if (auth) {
-        req.auth = auth;
-        next();
-      }
-    })
+    if (auth) {
+      req.auth = auth;
+      next();
+    }
+  })
     .catch((error) => {
       if(error instanceof Parse.Error) {
         next(error);
@@ -258,7 +258,7 @@ export function handleParseErrors(err, req, res, next) {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
     res.json({code: Parse.Error.INTERNAL_SERVER_ERROR,
-              message: 'Internal server error.'});
+      message: 'Internal server error.'});
   }
   next(err);
 }

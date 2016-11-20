@@ -1,13 +1,13 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-    bodyParser = require('body-parser'),
-    express = require('express'),
-    middlewares = require('./middlewares'),
-    Parse = require('parse/node').Parse,
-    path = require('path'),
-    url = require('url'),
-    authDataManager = require('./authDataManager');
+  bodyParser = require('body-parser'),
+  express = require('express'),
+  middlewares = require('./middlewares'),
+  Parse = require('parse/node').Parse,
+  path = require('path'),
+  url = require('url'),
+  authDataManager = require('./authDataManager');
 
 import defaults                 from './defaults';
 import * as logging             from './logger';
@@ -259,18 +259,18 @@ class ParseServer {
       protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
     } catch(e) {}
     switch (protocol) {
-      case 'postgres:':
-        return new PostgresStorageAdapter({
-          uri: databaseURI,
-          collectionPrefix,
-          databaseOptions
-        });
-      default:
-        return new MongoStorageAdapter({
-          uri: databaseURI,
-          collectionPrefix,
-          mongoOptions: databaseOptions,
-        });
+    case 'postgres:':
+      return new PostgresStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        databaseOptions
+      });
+    default:
+      return new MongoStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        mongoOptions: databaseOptions,
+      });
     }
   }
 

@@ -61,7 +61,7 @@ let subscribe = {
         'fields': {
           "type": "array",
           "items": {
-              "type": "string"
+            "type": "string"
           },
           "minItems": 1,
           "uniqueItems": true
@@ -99,7 +99,7 @@ let update = {
         'fields': {
           "type": "array",
           "items": {
-              "type": "string"
+            "type": "string"
           },
           "minItems": 1,
           "uniqueItems": true

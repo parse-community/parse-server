@@ -118,8 +118,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
   invalidLink(req) {
     return Promise.resolve({
-        status: 302,
-        location: req.config.invalidLinkURL
+      status: 302,
+      location: req.config.invalidLinkURL
     });
   }
 

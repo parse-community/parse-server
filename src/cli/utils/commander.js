@@ -27,18 +27,18 @@ Command.prototype.loadDefinitions = function(definitions) {
   }, {});
 
   _reverseDefinitions = Object.keys(definitions).reduce((object, key) => {
-      let value = definitions[key];
-      if (typeof value == "object") {
-        value = value.env;
-      }
-      if (value) {
-        object[value] = key;
-      }
-      return object;
-   }, {});
+    let value = definitions[key];
+    if (typeof value == "object") {
+      value = value.env;
+    }
+    if (value) {
+      object[value] = key;
+    }
+    return object;
+  }, {});
 
    /* istanbul ignore next */
-   this.on('--help', function(){
+  this.on('--help', function(){
     console.log('  Configure From Environment:');
     console.log('');
     Object.keys(_reverseDefinitions).forEach((key) => {
@@ -93,9 +93,9 @@ function parseConfigFile(program) {
 
 Command.prototype.setValuesIfNeeded = function(options) {
   Object.keys(options).forEach((key) => {
-   if (!this[key]) {
-     this[key] = options[key];
-   }
+    if (!this[key]) {
+      this[key] = options[key];
+    }
   });
 }
 

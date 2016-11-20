@@ -50,18 +50,18 @@ export function addTrigger(type, className, handler, applicationId) {
 }
 
 export function removeFunction(functionName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Functions[functionName]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Functions[functionName]
 }
 
 export function removeJob(jobName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Jobs[jobName]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Jobs[jobName]
 }
 
 export function removeTrigger(type, className, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Triggers[type][className]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Triggers[type][className]
 }
 
 export function _unregister(appId,category,className,type) {
@@ -262,7 +262,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
       }, 
       error => {
         reject(error);
-    });
+      });
     logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
@@ -296,17 +296,17 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 
   let parseQuery = new Parse.Query(className);
   if (restWhere) {
-      parseQuery._where = restWhere;
+    parseQuery._where = restWhere;
   }
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
     }
     if (restOptions.skip) {
-        parseQuery._skip = restOptions.skip;
+      parseQuery._skip = restOptions.skip;
     }
     if (restOptions.limit) {
-        parseQuery._limit = restOptions.limit;
+      parseQuery._limit = restOptions.limit;
     }
   }
   let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
@@ -381,13 +381,13 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var triggerPromise = trigger(request, response);
     if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
     {
-        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-        if(triggerPromise && typeof triggerPromise.then === "function") {
-            return triggerPromise.then(resolve, resolve);
-        }
-        else {
-            return resolve();
-        }
+      logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+      if(triggerPromise && typeof triggerPromise.then === "function") {
+        return triggerPromise.then(resolve, resolve);
+      }
+      else {
+        return resolve();
+      }
     }
   });
 }

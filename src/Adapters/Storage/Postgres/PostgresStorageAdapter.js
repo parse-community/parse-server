@@ -17,21 +17,21 @@ const debug = function(){
 
 const parseTypeToPostgresType = type => {
   switch (type.type) {
-    case 'String': return 'text';
-    case 'Date': return 'timestamp with time zone';
-    case 'Object': return 'jsonb';
-    case 'File': return 'text';
-    case 'Boolean': return 'boolean';
-    case 'Pointer': return 'char(10)';
-    case 'Number': return 'double precision';
-    case 'GeoPoint': return 'point';
-    case 'Array':
-      if (type.contents && type.contents.type === 'String') {
-        return 'text[]';
-      } else {
-        return 'jsonb';
-      }
-    default: throw `no type for ${JSON.stringify(type)} yet`;
+  case 'String': return 'text';
+  case 'Date': return 'timestamp with time zone';
+  case 'Object': return 'jsonb';
+  case 'File': return 'text';
+  case 'Boolean': return 'boolean';
+  case 'Pointer': return 'char(10)';
+  case 'Number': return 'double precision';
+  case 'GeoPoint': return 'point';
+  case 'Array':
+    if (type.contents && type.contents.type === 'String') {
+      return 'text[]';
+    } else {
+      return 'jsonb';
+    }
+  default: throw `no type for ${JSON.stringify(type)} yet`;
   }
 };
 
@@ -436,10 +436,10 @@ export class PostgresStorageAdapter {
 
   createClass(className, schema) {
     return this._client.tx(t => {
-       const q1 = this.createTable(className, schema, t);
-       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+      const q1 = this.createTable(className, schema, t);
+      const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
  
-       return t.batch([q1, q2]);
+      return t.batch([q1, q2]);
     })
     .then(() => {
       return toParseSchema(schema)
@@ -707,39 +707,39 @@ export class PostgresStorageAdapter {
         return;
       }
       switch (schema.fields[fieldName].type) {
-        case 'Date':
-          if (object[fieldName]) {
-            valuesArray.push(object[fieldName].iso);
-          } else {
-            valuesArray.push(null);
-          }
-          break;
-        case 'Pointer':
-          valuesArray.push(object[fieldName].objectId);
-          break;
-        case 'Array':
-          if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
-            valuesArray.push(object[fieldName]);
-          } else {
-            valuesArray.push(JSON.stringify(object[fieldName]));
-          }
-          break;        
-        case 'Object':
-        case 'String':
-        case 'Number':
-        case 'Boolean':
+      case 'Date':
+        if (object[fieldName]) {
+          valuesArray.push(object[fieldName].iso);
+        } else {
+          valuesArray.push(null);
+        }
+        break;
+      case 'Pointer':
+        valuesArray.push(object[fieldName].objectId);
+        break;
+      case 'Array':
+        if (['_rperm', '_wperm'].indexOf(fieldName) >= 0) {
           valuesArray.push(object[fieldName]);
-          break;
-        case 'File':
-          valuesArray.push(object[fieldName].name);
-          break;
-        case 'GeoPoint':
+        } else {
+          valuesArray.push(JSON.stringify(object[fieldName]));
+        }
+        break;        
+      case 'Object':
+      case 'String':
+      case 'Number':
+      case 'Boolean':
+        valuesArray.push(object[fieldName]);
+        break;
+      case 'File':
+        valuesArray.push(object[fieldName].name);
+        break;
+      case 'GeoPoint':
           // pop the point and process later
-          geoPoints[fieldName] = object[fieldName];
-          columnsArray.pop();
-          break;
-        default:
-          throw `Type ${schema.fields[fieldName].type} not supported yet`;
+        geoPoints[fieldName] = object[fieldName];
+        columnsArray.pop();
+        break;
+      default:
+        throw `Type ${schema.fields[fieldName].type} not supported yet`;
       }
     });
 
@@ -931,10 +931,10 @@ export class PostgresStorageAdapter {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
-         updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
 
-         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
-         index += 2 + keysToDelete.length;
+        values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
+        index += 2 + keysToDelete.length;
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Array') {
@@ -1148,25 +1148,25 @@ export class PostgresStorageAdapter {
       });
     });
     promises = promises.concat([
-        this._client.any(json_object_set_key).catch((err) => {
-          console.error(err);
-        }),
-        this._client.any(array_add).catch((err) => {
-          console.error(err);
-        }),
-        this._client.any(array_add_unique).catch((err) => {
-          console.error(err);
-        }),
-        this._client.any(array_remove).catch((err) => {
-          console.error(err);
-        }),
-        this._client.any(array_contains_all).catch((err) => {
-          console.error(err);
-        }),
-        this._client.any(array_contains).catch((err) => {
-          console.error(err);
-        })
-      ]);
+      this._client.any(json_object_set_key).catch((err) => {
+        console.error(err);
+      }),
+      this._client.any(array_add).catch((err) => {
+        console.error(err);
+      }),
+      this._client.any(array_add_unique).catch((err) => {
+        console.error(err);
+      }),
+      this._client.any(array_remove).catch((err) => {
+        console.error(err);
+      }),
+      this._client.any(array_contains_all).catch((err) => {
+        console.error(err);
+      }),
+      this._client.any(array_contains).catch((err) => {
+        console.error(err);
+      })
+    ]);
     return Promise.all(promises).then(() => {
       debug(`initialzationDone in ${new Date().getTime() - now}`);
     }, () => {});

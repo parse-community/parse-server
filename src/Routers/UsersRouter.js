@@ -216,9 +216,9 @@ export class UsersRouter extends ClassesRouter {
     }
     let userController = req.config.userController;
     return userController.sendPasswordResetEmail(email).then(() => {
-       return Promise.resolve({
-         response: {}
-       });
+      return Promise.resolve({
+        response: {}
+      });
     }, err => {
       if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);

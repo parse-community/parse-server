@@ -137,7 +137,7 @@ export function pushStatusHandler(config) {
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
+    return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date() });
   }
 

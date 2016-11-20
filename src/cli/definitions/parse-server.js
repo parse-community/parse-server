@@ -21,10 +21,10 @@ export default {
     required: true
   },
   "port": {
-     env: "PORT",
-     help: "The port to run the ParseServer. defaults to 1337.",
-     default: 1337,
-     action: numberParser("port")
+    env: "PORT",
+    help: "The port to run the ParseServer. defaults to 1337.",
+    default: 1337,
+    action: numberParser("port")
   },
   "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",

@@ -84,7 +84,7 @@ export class FilesController extends AdaptableController {
 
   getFileStream(config, filename) {
     return this.adapter.getFileStream(filename);
-   }
+  }
 }
 
 export default FilesController;

@@ -15,16 +15,16 @@ function mongoFieldToParseSchemaField(type) {
     };
   }
   switch (type) {
-    case 'number':   return {type: 'Number'};
-    case 'string':   return {type: 'String'};
-    case 'boolean':  return {type: 'Boolean'};
-    case 'date':     return {type: 'Date'};
-    case 'map':
-    case 'object':   return {type: 'Object'};
-    case 'array':    return {type: 'Array'};
-    case 'geopoint': return {type: 'GeoPoint'};
-    case 'file':     return {type: 'File'};
-    case 'bytes':    return {type: 'Bytes'};
+  case 'number':   return {type: 'Number'};
+  case 'string':   return {type: 'String'};
+  case 'boolean':  return {type: 'Boolean'};
+  case 'date':     return {type: 'Date'};
+  case 'map':
+  case 'object':   return {type: 'Object'};
+  case 'array':    return {type: 'Array'};
+  case 'geopoint': return {type: 'GeoPoint'};
+  case 'file':     return {type: 'File'};
+  case 'bytes':    return {type: 'Bytes'};
   }
 }
 
@@ -88,16 +88,16 @@ function _mongoSchemaQueryFromNameQuery(name: string, query) {
 // Does no validation. That is expected to be done in Parse Server.
 function parseFieldTypeToMongoFieldType({ type, targetClass }) {
   switch (type) {
-    case 'Pointer':  return `*${targetClass}`;
-    case 'Relation': return `relation<${targetClass}>`;
-    case 'Number':   return 'number';
-    case 'String':   return 'string';
-    case 'Boolean':  return 'boolean';
-    case 'Date':     return 'date';
-    case 'Object':   return 'object';
-    case 'Array':    return 'array';
-    case 'GeoPoint': return 'geopoint';
-    case 'File':     return 'file';
+  case 'Pointer':  return `*${targetClass}`;
+  case 'Relation': return `relation<${targetClass}>`;
+  case 'Number':   return 'number';
+  case 'String':   return 'string';
+  case 'Boolean':  return 'boolean';
+  case 'Date':     return 'date';
+  case 'Object':   return 'object';
+  case 'Array':    return 'array';
+  case 'GeoPoint': return 'geopoint';
+  case 'File':     return 'file';
   }
 }
 

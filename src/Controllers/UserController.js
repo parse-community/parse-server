@@ -213,6 +213,6 @@ function updateUserPassword(userId, password, config) {
   return rest.update(config, Auth.master(config), '_User', userId, {
     password: password
   });
- }
+}
 
 export default UserController;

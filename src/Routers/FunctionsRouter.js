@@ -1,7 +1,7 @@
 // FunctionsRouter.js
 
 var Parse = require('parse/node').Parse,
-    triggers = require('../triggers');
+  triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
 import { promiseEnforceMasterKeyAccess } from '../middlewares';
@@ -11,9 +11,9 @@ import { logger } from '../logger';
 
 function parseObject(obj) {
   if (Array.isArray(obj)) {
-      return obj.map((item) => {
-        return parseObject(item);
-      });
+    return obj.map((item) => {
+      return parseObject(item);
+    });
   } else if (obj && obj.__type == 'Date') {
     return Object.assign(new Date(obj.iso), obj);
   } else if (obj && obj.__type == 'File') {
@@ -130,10 +130,10 @@ export class FunctionsRouter extends PromiseRouter {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
             logger.info(`Ran cloud function ${functionName} for user ${userString} `
               + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
-              functionName,
-              params,
-              user: userString,
-            });
+                functionName,
+                params,
+                user: userString,
+              });
             resolve(result);
           } catch (e) {
             reject(e);
@@ -143,11 +143,11 @@ export class FunctionsRouter extends PromiseRouter {
             logger.error(`Failed running cloud function ${functionName} for `
               + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
               + JSON.stringify(error), {
-              functionName,
-              error,
-              params,
-              user: userString
-            });
+                functionName,
+                error,
+                params,
+                user: userString
+              });
             reject(error);
           } catch (e) {
             reject(e);
