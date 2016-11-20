@@ -18,7 +18,6 @@
         "no-extra-boolean-cast": [0],
         "no-console": [0],
         "linebreak-style": ["error", "unix"],
-        "no-empty":0,
-        "no-restricted-imports": [0]
+        "no-empty": 0
     }
 }
