@@ -145,14 +145,16 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   }
 
   let setRunning = function(count) {
-    logger.verbose('sending push to %d installations', count);
+    logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date(), count });
   }
 
   let trackSent = function(results) {
     let update = {
-      updatedAt: new Date()
+      updatedAt: new Date(),
+      numSent: 0,
+      numFailed: 0
     };
     if (Array.isArray(results)) {
       results = flatten(results);
@@ -165,15 +167,28 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
         let key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
         memo[key] = incrementOp(memo, key);
         if (result.transmitted) {
-          incrementOp(memo, 'numSent');
+          memo.numSent++;
         } else {
-          incrementOp(memo, 'numFailed');
+          memo.numFailed++;
         }
         return memo;
       }, update);
       incrementOp(update, 'count', -results.length);
     }
-    logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
+    
+    logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
+    
+    ['numSent', 'numFailed'].forEach((key) => {
+      if (update[key] > 0) {
+        update[key] = {
+          __op: 'Increment',
+          amount: update[key]
+        };
+      } else {
+        delete update[key];
+      }
+    });
+
     return handler.update({ objectId }, update).then((res) => {
       if (res && res.count === 0) {
         return this.complete();
@@ -195,7 +210,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
       status: 'failed',
       updatedAt: new Date()
     }
-    logger.info('warning: error while sending push', err);
+    logger.warn(`_PushStatus ${objectId}: error while sending push`, err);
     return handler.update({ objectId }, update);
   }
 

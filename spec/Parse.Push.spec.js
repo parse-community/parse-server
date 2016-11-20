@@ -2,6 +2,12 @@
 
 let request = require('request');
 
+let delayPromise = (delay) => {
+  return new Promise((resolve, reject) => {
+    setTimeout(resolve, delay);
+  });
+}
+
 describe('Parse.Push', () => {
   var setup = function() {
     var pushAdapter = {
@@ -63,6 +69,8 @@ describe('Parse.Push', () => {
          alert: 'Hello world!'
        }
      }, {useMasterKey: true})
+    }).then(() => {
+      return delayPromise(500);
     })
     .then(() => {
       done();
@@ -83,6 +91,8 @@ describe('Parse.Push', () => {
          alert: 'Hello world!'
        }
      }, {useMasterKey: true})
+    }).then(() => {
+      return delayPromise(500);
     }).then(() => {
       done();
     }).catch((err) => {
