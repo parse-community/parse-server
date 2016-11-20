@@ -119,7 +119,7 @@ var masterKeyHeaders = {
 describe('schemas', () => {
 
   beforeEach(() => {
-     config.database.schemaCache.clear();
+    config.database.schemaCache.clear();
   });
 
   it('requires the master key to get all schemas', (done) => {
@@ -452,7 +452,7 @@ describe('schemas', () => {
       json: true,
       body: {
         fields: {
-            newField: {type: 'String'}
+          newField: {type: 'String'}
         }
       }
     }, (error, response, body) => {
@@ -1109,7 +1109,7 @@ describe('schemas', () => {
         }
       }
     }, (error, response, body) => {
-     expect(body.error).toEqual("'1234567890A' is not a valid key for class level permissions");
+      expect(body.error).toEqual("'1234567890A' is not a valid key for class level permissions");
       done();
     })
   });
@@ -1217,7 +1217,7 @@ describe('schemas', () => {
         }
       }
     }, (error, response, body) => {
-       expect(body.error).toEqual("'' is not a valid value for class level permissions find:*:");
+      expect(body.error).toEqual("'' is not a valid value for class level permissions find:*:");
       done();
     })
   });
@@ -1229,22 +1229,22 @@ describe('schemas', () => {
       op = request.put;
     }
     return new Promise((resolve, reject) => {
-     op({
-      url: 'http://localhost:8378/1/schemas/'+className,
-      headers: masterKeyHeaders,
-      json: true,
-      body: {
-        classLevelPermissions: permissions
-      }
-    }, (error, response, body) => {
-      if (error) {
-        return reject(error);
-      }
-      if (body.error) {
-        return reject(body);
-      }
-      return resolve(body);
-    })
+      op({
+        url: 'http://localhost:8378/1/schemas/'+className,
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          classLevelPermissions: permissions
+        }
+      }, (error, response, body) => {
+        if (error) {
+          return reject(error);
+        }
+        if (body.error) {
+          return reject(body);
+        }
+        return resolve(body);
+      })
     });
   }
 
@@ -1269,7 +1269,7 @@ describe('schemas', () => {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
     }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
@@ -1316,7 +1316,7 @@ describe('schemas', () => {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
     }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
@@ -1379,7 +1379,7 @@ describe('schemas', () => {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
     }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
@@ -1437,7 +1437,7 @@ describe('schemas', () => {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
     }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
@@ -1509,7 +1509,7 @@ describe('schemas', () => {
         return setPermissionsOnClass('AClass', perm);
       })
     }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save();
       })
@@ -1518,7 +1518,7 @@ describe('schemas', () => {
       return query.find().then((res) => {
         expect(res.length).toEqual(1);
       }, () => {
-         fail('User should be able to find!')
+        fail('User should be able to find!')
         return Promise.resolve();
       })
     }).then(() => {
@@ -1669,7 +1669,7 @@ describe('schemas', () => {
         password: 'password'
       }).then(() => {
         return profile.save({user}).then(() => {
-        return user.save({
+          return user.save({
             userProfile: profile
           }, {useMasterKey: true});
         });

@@ -274,7 +274,7 @@ describe('ParseLiveQueryServer', function() {
     expect(subscriptions.size).toBe(0);
   });
 
- it('can set connect command message handler for a parseWebSocket', function() {
+  it('can set connect command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Register mock connect/subscribe/unsubscribe handler for the server
     parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleSubscribe');

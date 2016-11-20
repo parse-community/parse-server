@@ -9,7 +9,7 @@ var express = require('express');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 describe('server', () => {
-   it('requires a master key and app id', done => {
+  it('requires a master key and app id', done => {
     reconfigureServer({ appId: undefined })
     .catch(error => {
       expect(error).toEqual('You must provide an appId!');
@@ -176,11 +176,11 @@ describe('server', () => {
   it('can create a parse-server v1', done => {
     var parseServer = new ParseServer.default(Object.assign({},
       defaultConfiguration, {
-      appId: "aTestApp",
-      masterKey: "aTestMasterKey",
-      serverURL: "http://localhost:12666/parse",
-      __indexBuildCompletionCallbackForTests: promise => {
-        promise
+        appId: "aTestApp",
+        masterKey: "aTestMasterKey",
+        serverURL: "http://localhost:12666/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
         .then(() => {
           expect(Parse.applicationId).toEqual("aTestApp");
           var app = express();
@@ -200,7 +200,7 @@ describe('server', () => {
             server.close(done);
           })
         });
-      }})
+        }})
     );
   });
 
@@ -209,11 +209,11 @@ describe('server', () => {
     let server
     let parseServer = ParseServer.ParseServer(Object.assign({},
       defaultConfiguration, {
-      appId: "anOtherTestApp",
-      masterKey: "anOtherTestMasterKey",
-      serverURL: "http://localhost:12667/parse",
-      __indexBuildCompletionCallbackForTests: promise => {
-        promise
+        appId: "anOtherTestApp",
+        masterKey: "anOtherTestMasterKey",
+        serverURL: "http://localhost:12667/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
         .then(() => {
           expect(Parse.applicationId).toEqual("anOtherTestApp");
           let app = express();
@@ -240,7 +240,7 @@ describe('server', () => {
             done();
           }
         });
-      }}
+        }}
     ));
   });
 

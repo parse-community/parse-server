@@ -28,7 +28,7 @@ describe("test validate_receipt endpoint", () => {
 
   it("should bypass appstore validation", (done) => {
 
-   request.post({
+    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'},
@@ -45,7 +45,7 @@ describe("test validate_receipt endpoint", () => {
     }, function(err, res, body){
       if (typeof body != "object") {
         fail("Body is not an object");
-         done();
+        done();
       } else {
         expect(body.__type).toEqual("File");
         const url = body.url;
@@ -60,7 +60,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should fail for missing receipt", (done) => {
-   request.post({
+    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'},
@@ -73,7 +73,7 @@ describe("test validate_receipt endpoint", () => {
     }, function(err, res, body){
       if (typeof body != "object") {
         fail("Body is not an object");
-         done();
+        done();
       } else {
         expect(body.code).toEqual(Parse.Error.INVALID_JSON);
         done();
@@ -82,7 +82,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should fail for missing product identifier", (done) => {
-   request.post({
+    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'},
@@ -98,7 +98,7 @@ describe("test validate_receipt endpoint", () => {
     }, function(err, res, body){
       if (typeof body != "object") {
         fail("Body is not an object");
-         done();
+        done();
       } else {
         expect(body.code).toEqual(Parse.Error.INVALID_JSON);
         done();
@@ -108,7 +108,7 @@ describe("test validate_receipt endpoint", () => {
 
   it("should bypass appstore validation and not find product", (done) => {
 
-   request.post({
+    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'},
@@ -135,7 +135,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should fail at appstore validation", done => {
-   request.post({
+    request.post({
       headers: {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'},
@@ -160,49 +160,49 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should not create a _Product", (done) => {
-      var product = new Parse.Object("_Product");
-      product.save().then(function(){
-        fail("Should not be able to save");
-        done();
-      }, function(err){
-        expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
-        done();
-      })
+    var product = new Parse.Object("_Product");
+    product.save().then(function(){
+      fail("Should not be able to save");
+      done();
+    }, function(err){
+      expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      done();
+    })
   });
 
   it("should be able to update a _Product", (done) => {
-      var query = new Parse.Query("_Product");
-      query.first().then(function(product) {
-        if (!product) {
-          return Promise.reject(new Error('Product should be found'));
-        }
-        product.set("title", "a new title");
-        return product.save();
-      }).then(function(productAgain){
-        expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
-        expect(productAgain.get("title")).toEqual("a new title");
-        done();
-      }).fail(function(err){
-        fail(JSON.stringify(err));
-        done();
-      });
+    var query = new Parse.Query("_Product");
+    query.first().then(function(product) {
+      if (!product) {
+        return Promise.reject(new Error('Product should be found'));
+      }
+      product.set("title", "a new title");
+      return product.save();
+    }).then(function(productAgain){
+      expect(productAgain.get('downloadName')).toEqual(productAgain.get('download').name());
+      expect(productAgain.get("title")).toEqual("a new title");
+      done();
+    }).fail(function(err){
+      fail(JSON.stringify(err));
+      done();
+    });
   });
 
   it("should not be able to remove a require key in a _Product", (done) => {
-      var query = new Parse.Query("_Product");
-      query.first().then(function(product){
-        if (!product) {
-          return Promise.reject(new Error('Product should be found'));
-        }
-        product.unset("title");
-        return product.save();
-      }).then(function(){
-        fail("Should not succeed");
-        done();
-      }).fail(function(err){
-        expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
-        expect(err.message).toEqual("title is required.");
-        done();
-      });
+    var query = new Parse.Query("_Product");
+    query.first().then(function(product){
+      if (!product) {
+        return Promise.reject(new Error('Product should be found'));
+      }
+      product.unset("title");
+      return product.save();
+    }).then(function(){
+      fail("Should not succeed");
+      done();
+    }).fail(function(err){
+      expect(err.code).toEqual(Parse.Error.INCORRECT_TYPE);
+      expect(err.message).toEqual("title is required.");
+      done();
+    });
   });
 });

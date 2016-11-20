@@ -57,7 +57,7 @@ describe_only_db('mongo')('revocable sessions', () => {
     user._upgradeToRevocableSession().then((res) => {
       expect(res.getSessionToken().indexOf('r:')).toBe(0);
       return Parse.User.logOut().then(() => {
-         return Parse.User.become(res.getSessionToken())
+        return Parse.User.become(res.getSessionToken())
       }).then((user) => {
         expect(user.id).toEqual('1234567890');
       });

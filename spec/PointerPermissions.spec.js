@@ -31,7 +31,7 @@ describe('Pointer Permissions', () => {
         return schema.updateClass('AnObject', {}, {readUserFields: ['owner']})
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
+      return Parse.User.logIn('user1', 'password');
     }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
@@ -72,7 +72,7 @@ describe('Pointer Permissions', () => {
         return schema.updateClass('AnObject', {}, {writeUserFields: ['owner'], readUserFields: ['reader', 'owner']});
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
+      return Parse.User.logIn('user1', 'password');
     }).then(() => {
       obj2.set('hello', 'world');
       return obj2.save();
@@ -184,13 +184,13 @@ describe('Pointer Permissions', () => {
         return schema.addClassIfNotExists('AnObject', {owner: {type:'Pointer', targetClass: '_User'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
+      return Parse.User.logIn('user1', 'password');
     }).then(() => {
       obj.set('owner', user);
       return obj.save();
     }).then(() => {
-       fail('should not succeed');
-       done();
+      fail('should not succeed');
+      done();
     }, (err) => {
       expect(err.code).toBe(119);
       done();
@@ -672,21 +672,21 @@ describe('Pointer Permissions', () => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
-     }).catch((err) => {
+      return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
+    }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);
       done();
-     });
+    });
   });
 
   it('should fail with invalid pointer perms', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
-     }).catch((err) => {
+      return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
+    }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);
       done();
-     });
+    });
   })
 });

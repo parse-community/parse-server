@@ -204,7 +204,7 @@ describe('Installations', () => {
       'channels': ['foo', 'bar'],
       'custom': 'allowed'
     };
-  rest.create(config, auth.nobody(config), '_Installation', input)
+    rest.create(config, auth.nobody(config), '_Installation', input)
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);

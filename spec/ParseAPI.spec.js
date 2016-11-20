@@ -210,7 +210,7 @@ describe('miscellaneous', function() {
     });
   });
 
-it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
     let config = new Config('test');
     config.database.adapter.addFieldIfNotExists('_User', 'randomField', { type: 'String' })
     .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
@@ -538,13 +538,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       if (obj.get('point')) {
         return res.success();
       }
-       var TestObject1 = Parse.Object.extend('TestObject1');
-       var newObj = new TestObject1({'key1': 1});
+      var TestObject1 = Parse.Object.extend('TestObject1');
+      var newObj = new TestObject1({'key1': 1});
 
-       return newObj.save().then((newObj) => {
-         obj.set('point' , newObj);
-         res.success();
-       });
+      return newObj.save().then((newObj) => {
+        obj.set('point' , newObj);
+        res.success();
+      });
     });
     var pointId;
     var obj = new Parse.Object('GameScore');
@@ -1221,48 +1221,48 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('properly returns incremented values (#1554)', (done) => {
-      let headers = {
-        'Content-Type': 'application/json',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest'
-      };
-      let requestOptions = {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/AnObject',
-        json: true
-      };
-     let object = new Parse.Object('AnObject');
+    let headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    let requestOptions = {
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/AnObject',
+      json: true
+    };
+    let object = new Parse.Object('AnObject');
 
-     function runIncrement(amount) {
-       let options = Object.assign({}, requestOptions, {
-         body: {
-           "key": {
+    function runIncrement(amount) {
+      let options = Object.assign({}, requestOptions, {
+        body: {
+          "key": {
             __op: 'Increment',
             amount: amount
-           }
-          },
-         url: 'http://localhost:8378/1/classes/AnObject/'+object.id
-       })
-       return new Promise((resolve, reject) => {
-         request.put(options, (err, res, body)  => {
-           if (err) {
-             reject(err);
-           } else {
-             resolve(body);
-           }
-         });
-       })
-     }
+          }
+        },
+        url: 'http://localhost:8378/1/classes/AnObject/'+object.id
+      })
+      return new Promise((resolve, reject) => {
+        request.put(options, (err, res, body)  => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        });
+      })
+    }
 
-     object.save().then(() => {
-       return runIncrement(1);
-     }).then((res) => {
-       expect(res.key).toBe(1);
-       return runIncrement(-1);
-     }).then((res) => {
-       expect(res.key).toBe(0);
-       done();
-     })
+    object.save().then(() => {
+      return runIncrement(1);
+    }).then((res) => {
+      expect(res.key).toBe(1);
+      return runIncrement(-1);
+    }).then((res) => {
+      expect(res.key).toBe(0);
+      done();
+    })
   })
 
   it('ignores _RevocableSession "header" send by JS SDK', (done) => {
@@ -1496,8 +1496,8 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   it('should not update schema beforeSave #2672', (done) => {
     Parse.Cloud.beforeSave('MyObject', (request, response) => {
       if (request.object.get('secret')) {
-         response.error('cannot set secret here');
-         return;
+        response.error('cannot set secret here');
+        return;
       }
       response.success();
     });
@@ -1537,30 +1537,30 @@ describe_only_db('mongo')('legacy _acl', () => {
       'X-Parse-REST-API-Key': 'rest'
     }
     rp({
-        method: 'POST',
-        headers: headers,
-        uri: 'http://localhost:8378/1/classes/Report',
-        body: {
-          ACL: {},
-          name: 'My Report'
-        },
-        json: true
-      }).then(() => {
-        let config = new Config('test');
-        let adapter = config.database.adapter;
-        return adapter._adaptiveCollection("Report")
+      method: 'POST',
+      headers: headers,
+      uri: 'http://localhost:8378/1/classes/Report',
+      body: {
+        ACL: {},
+        name: 'My Report'
+      },
+      json: true
+    }).then(() => {
+      let config = new Config('test');
+      let adapter = config.database.adapter;
+      return adapter._adaptiveCollection("Report")
           .then(collection => collection.find({}))
-      }).then((results) => {
-        expect(results.length).toBe(1);
-        let result = results[0];
-        expect(result.name).toEqual('My Report');
-        expect(result._wperm).toEqual([]);
-        expect(result._rperm).toEqual([]);
-        expect(result._acl).toEqual({});
-        done();
-      }).catch((err) => {
-        fail(JSON.stringify(err));
-        done();
-      });
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      let result = results[0];
+      expect(result.name).toEqual('My Report');
+      expect(result._wperm).toEqual([]);
+      expect(result._rperm).toEqual([]);
+      expect(result._acl).toEqual({});
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
   });
 });

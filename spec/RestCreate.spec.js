@@ -92,7 +92,7 @@ describe('rest create', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
-    });
+      });
   });
 
   it('handles create on existent class when disabled client class creation', (done) => {
@@ -210,9 +210,9 @@ describe('rest create', () => {
   });
 
   it('handles no anonymous users config', (done) => {
-     var NoAnnonConfig = Object.assign({}, config);
-     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
-     var data1 = {
+    var NoAnnonConfig = Object.assign({}, config);
+    NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
+    var data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -357,7 +357,7 @@ describe('rest create', () => {
       foo: 'bar',
     };
     var sessionLength = 3600, // 1 Hour ahead
-        now = new Date(); // For reference later
+      now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
     rest.create(config, auth.nobody(config), '_User', user)

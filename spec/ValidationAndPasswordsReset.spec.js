@@ -296,7 +296,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     }).then(() => {
       expect(sendEmailOptions).not.toBeUndefined();
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
+        followRedirect: false,
       }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
@@ -611,7 +611,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     }).then(() => {
       expect(sendEmailOptions).not.toBeUndefined();
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
+        followRedirect: false,
       }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
@@ -806,7 +806,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             url: "http://localhost:8378/1/apps/test/request_password_reset" ,
             body: `new_password=hello&token=${token}&username=zxcv`,
             headers: {
-               'Content-Type': 'application/x-www-form-urlencoded'
+              'Content-Type': 'application/x-www-form-urlencoded'
             },
             followRedirect: false,
           }, (error, response) => {

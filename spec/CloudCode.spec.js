@@ -96,7 +96,7 @@ describe('Cloud Code', () => {
     Parse.Cloud.beforeSave('BeforeSaveFailWithPromise', function (req, res) {
       var query = new Parse.Query('Yolo');
       query.find().then(() => {
-       res.error('Nope');
+        res.error('Nope');
       }, () => {
         res.success();
       });
@@ -180,34 +180,34 @@ describe('Cloud Code', () => {
 
   it('test afterSave ran on created object and returned a promise', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest2', function(req) {
-        let obj = req.object;
-        if(!obj.existed())
+      let obj = req.object;
+      if(!obj.existed())
         {
-            let promise = new Parse.Promise();
-            setTimeout(function(){
-                obj.set('proof', obj.id);
-                obj.save().then(function(){
-                    promise.resolve();
-                });
-            }, 1000);
+        let promise = new Parse.Promise();
+        setTimeout(function(){
+          obj.set('proof', obj.id);
+          obj.save().then(function(){
+            promise.resolve();
+          });
+        }, 1000);
 
-            return promise;
-        }
+        return promise;
+      }
     });
 
     let obj = new Parse.Object('AfterSaveTest2');
     obj.save().then(function(){
-        let query = new Parse.Query('AfterSaveTest2');
-        query.equalTo('proof', obj.id);
-        query.find().then(function(results) {
-            expect(results.length).toEqual(1);
-            let savedObject = results[0];
-            expect(savedObject.get('proof')).toEqual(obj.id);
-            done();
-        },
+      let query = new Parse.Query('AfterSaveTest2');
+      query.equalTo('proof', obj.id);
+      query.find().then(function(results) {
+        expect(results.length).toEqual(1);
+        let savedObject = results[0];
+        expect(savedObject.get('proof')).toEqual(obj.id);
+        done();
+      },
         function(error) {
-            fail(error);
-            done();
+          fail(error);
+          done();
         });
     });
   });
@@ -215,124 +215,124 @@ describe('Cloud Code', () => {
   // TODO: Fails on CI randomly as racing
   xit('test afterSave ignoring promise, object not found', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest2', function(req) {
-        let obj = req.object;
-        if(!obj.existed())
+      let obj = req.object;
+      if(!obj.existed())
         {
-            let promise = new Parse.Promise();
-            setTimeout(function(){
-                obj.set('proof', obj.id);
-                obj.save().then(function(){
-                    promise.resolve();
-                });
-            }, 1000);
+        let promise = new Parse.Promise();
+        setTimeout(function(){
+          obj.set('proof', obj.id);
+          obj.save().then(function(){
+            promise.resolve();
+          });
+        }, 1000);
 
-            return promise;
-        }
+        return promise;
+      }
     });
 
     let obj = new Parse.Object('AfterSaveTest2');
     obj.save().then(function(){
-        done();
+      done();
     })
 
     let query = new Parse.Query('AfterSaveTest2');
     query.equalTo('proof', obj.id);
     query.find().then(function(results) {
-        expect(results.length).toEqual(0);
+      expect(results.length).toEqual(0);
     },
     function(error) {
-        fail(error);
+      fail(error);
     });
   });
 
   it('test afterSave rejecting promise', function(done) {
-      Parse.Cloud.afterSave('AfterSaveTest2', function() {
-          let promise = new Parse.Promise();
-          setTimeout(function(){
-              promise.reject("THIS SHOULD BE IGNORED");
-          }, 1000);
+    Parse.Cloud.afterSave('AfterSaveTest2', function() {
+      let promise = new Parse.Promise();
+      setTimeout(function(){
+        promise.reject("THIS SHOULD BE IGNORED");
+      }, 1000);
 
-          return promise;
-      });
+      return promise;
+    });
 
-      let obj = new Parse.Object('AfterSaveTest2');
-      obj.save().then(function(){
-          done();
-      }, function(error){
-          fail(error);
-          done();
-      })
+    let obj = new Parse.Object('AfterSaveTest2');
+    obj.save().then(function(){
+      done();
+    }, function(error){
+      fail(error);
+      done();
+    })
   });
 
   it('test afterDelete returning promise, object is deleted when destroy resolves', function(done) {
-      Parse.Cloud.afterDelete('AfterDeleteTest2', function(req) {
-        let promise = new Parse.Promise();
+    Parse.Cloud.afterDelete('AfterDeleteTest2', function(req) {
+      let promise = new Parse.Promise();
 
-        setTimeout(function(){
-            let obj = new Parse.Object('AfterDeleteTestProof');
-            obj.set('proof', req.object.id);
-            obj.save().then(function(){
-                promise.resolve();
-            });
+      setTimeout(function(){
+        let obj = new Parse.Object('AfterDeleteTestProof');
+        obj.set('proof', req.object.id);
+        obj.save().then(function(){
+          promise.resolve();
+        });
 
-        }, 1000);
+      }, 1000);
 
-        return promise;
-      });
+      return promise;
+    });
 
-      let errorHandler = function(error) {
-          fail(error);
+    let errorHandler = function(error) {
+      fail(error);
+      done();
+    }
+
+    let obj = new Parse.Object('AfterDeleteTest2');
+    obj.save().then(function(){
+      obj.destroy().then(function(){
+        let query = new Parse.Query('AfterDeleteTestProof');
+        query.equalTo('proof', obj.id);
+        query.find().then(function(results) {
+          expect(results.length).toEqual(1);
+          let deletedObject = results[0];
+          expect(deletedObject.get('proof')).toEqual(obj.id);
           done();
-      }
-
-      let obj = new Parse.Object('AfterDeleteTest2');
-      obj.save().then(function(){
-          obj.destroy().then(function(){
-              let query = new Parse.Query('AfterDeleteTestProof');
-              query.equalTo('proof', obj.id);
-              query.find().then(function(results) {
-                  expect(results.length).toEqual(1);
-                  let deletedObject = results[0];
-                  expect(deletedObject.get('proof')).toEqual(obj.id);
-                  done();
-              }, errorHandler);
-          }, errorHandler)
-      }, errorHandler);
+        }, errorHandler);
+      }, errorHandler)
+    }, errorHandler);
   });
 
   it('test afterDelete ignoring promise, object is not yet deleted', function(done) {
-      Parse.Cloud.afterDelete('AfterDeleteTest2', function(req) {
-        let promise = new Parse.Promise();
+    Parse.Cloud.afterDelete('AfterDeleteTest2', function(req) {
+      let promise = new Parse.Promise();
 
-        setTimeout(function(){
-            let obj = new Parse.Object('AfterDeleteTestProof');
-            obj.set('proof', req.object.id);
-            obj.save().then(function(){
-                promise.resolve();
-            });
+      setTimeout(function(){
+        let obj = new Parse.Object('AfterDeleteTestProof');
+        obj.set('proof', req.object.id);
+        obj.save().then(function(){
+          promise.resolve();
+        });
 
-        }, 1000);
+      }, 1000);
 
-        return promise;
-      });
+      return promise;
+    });
 
-      let errorHandler = function(error) {
-          fail(error);
-          done();
-      }
+    let errorHandler = function(error) {
+      fail(error);
+      done();
+    }
 
-      let obj = new Parse.Object('AfterDeleteTest2');
-      obj.save().then(function(){
-          obj.destroy().then(function(){
-              done();
-          })
+    let obj = new Parse.Object('AfterDeleteTest2');
+    obj.save().then(function(){
+      obj.destroy().then(function(){
+        done();
+      })
 
-          let query = new Parse.Query('AfterDeleteTestProof');
-          query.equalTo('proof', obj.id);
-          query.find().then(function(results) {
-              expect(results.length).toEqual(0);
-          }, errorHandler);
+      let query = new Parse.Query('AfterDeleteTestProof');
+      query.equalTo('proof', obj.id);
+      query.find().then(function(results) {
+        expect(results.length).toEqual(0);
       }, errorHandler);
+    }, errorHandler);
   });
 
   it('test beforeSave happens on update', function(done) {
@@ -882,7 +882,7 @@ describe('Cloud Code', () => {
     });
   });
 
-it('beforeSave should not affect fetched pointers', done => {
+  it('beforeSave should not affect fetched pointers', done => {
     Parse.Cloud.beforeSave('BeforeSaveUnchanged', (req, res) => {
       res.success();
     });
@@ -997,15 +997,15 @@ it('beforeSave should not affect fetched pointers', done => {
     let object;
     let testObject = new TestObject({key: 'value'});
     testObject.save().then(() => {
-       object = new BeforeSaveObject();
-       return object.save().then(() => {
-          object.set({remove:testObject})
-          return object.save();
-       });
+      object = new BeforeSaveObject();
+      return object.save().then(() => {
+        object.set({remove:testObject})
+        return object.save();
+      });
     }).then((objectAgain) => {
-       expect(objectAgain.get('remove')).toBeUndefined();
-       expect(object.get('remove')).toBeUndefined();
-       done();
+      expect(objectAgain.get('remove')).toBeUndefined();
+      expect(object.get('remove')).toBeUndefined();
+      done();
     }).fail((err) => {
       jfail(err);
       done();

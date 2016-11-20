@@ -1678,12 +1678,12 @@ describe('Parse.User testing', () => {
         let userId = model.id;
         Parse.User.logOut().then(() => {
           request.post({
-             url:Parse.serverURL+'/classes/_User',
-             headers: {
-               'X-Parse-Application-Id': Parse.applicationId,
-               'X-Parse-REST-API-Key': 'rest'
-             },
-             json: {authData: {facebook: provider.authData}}
+            url:Parse.serverURL+'/classes/_User',
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-REST-API-Key': 'rest'
+            },
+            json: {authData: {facebook: provider.authData}}
           }, (err,res, body) => {
             // make sure the location header is properly set
             expect(userId).not.toBeUndefined();
@@ -1930,13 +1930,13 @@ describe('Parse.User testing', () => {
     user.setUsername("zxcv");
     var currentSessionToken = "";
     Parse.Promise.as().then(function() {
-        return user.signUp();
+      return user.signUp();
     }).then(function(){
-        currentSessionToken = user.getSessionToken();
-        return user.fetch();
+      currentSessionToken = user.getSessionToken();
+      return user.fetch();
     }).then(function(u){
-        expect(currentSessionToken).toEqual(u.getSessionToken());
-        done();
+      expect(currentSessionToken).toEqual(u.getSessionToken());
+      done();
     }, function(error) {
       ok(false, error);
       done();
@@ -2482,12 +2482,12 @@ describe('Parse.User testing', () => {
     })
     // Simulate anonymous user save
     return rp.post({
-        url: 'http://localhost:8378/1/classes/_User',
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
     }).then((user) => {
       return rp.put({
         url: 'http://localhost:8378/1/classes/_User/' + user.objectId,

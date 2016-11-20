@@ -230,7 +230,7 @@ describe("Account Lockout Policy: ", () => {
       return isAccountLockoutError('username2', 'wrong password', 1, 1);
     })
     .then(() => {
-        done();
+      done();
     })
     .catch(err => {
       fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));

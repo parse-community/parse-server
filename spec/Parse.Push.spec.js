@@ -55,14 +55,14 @@ describe('Parse.Push', () => {
   it('should properly send push', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
-       where: {
-         deviceType: 'ios'
-       },
-       data: {
-         badge: 'Increment',
-         alert: 'Hello world!'
-       }
-     }, {useMasterKey: true})
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'Increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
     })
     .then(() => {
       done();
@@ -75,14 +75,14 @@ describe('Parse.Push', () => {
   it('should properly send push with lowercaseIncrement', (done) => {
     return setup().then(() => {
       return Parse.Push.send({
-       where: {
-         deviceType: 'ios'
-       },
-       data: {
-         badge: 'increment',
-         alert: 'Hello world!'
-       }
-     }, {useMasterKey: true})
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
     }).then(() => {
       done();
     }).catch((err) => {

@@ -143,7 +143,7 @@ describe('rest query', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
-    });
+      });
   });
 
   it('query existent class when disabled client class creation', (done) => {
@@ -177,8 +177,8 @@ describe('rest query', () => {
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                             where: '{"foo":{"$ne": "baz"}}',
-                             limit: 1
+                           where: '{"foo":{"$ne": "baz"}}',
+                           limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
         let error = response.error;
@@ -190,7 +190,7 @@ describe('rest query', () => {
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                             limit: 1
+                           limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
         let error = response.error;

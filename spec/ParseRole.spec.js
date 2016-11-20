@@ -145,33 +145,33 @@ describe('Parse Role testing', () => {
   it("should recursively load roles", (done) => {
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
     var roleIds = {};
-     createTestUser().then( (user) => {
+    createTestUser().then( (user) => {
        // Put the user on the 1st role
-       return createRole(rolesNames[0], null, user).then( (aRole) => {
-         roleIds[aRole.get("name")] = aRole.id;
+      return createRole(rolesNames[0], null, user).then( (aRole) => {
+        roleIds[aRole.get("name")] = aRole.id;
          // set the 1st role as a sibling of the second
          // user will should have 2 role now
-          return createRole(rolesNames[1], aRole, null);
-       }).then( (anotherRole) => {
-         roleIds[anotherRole.get("name")] = anotherRole.id;
+        return createRole(rolesNames[1], aRole, null);
+      }).then( (anotherRole) => {
+        roleIds[anotherRole.get("name")] = anotherRole.id;
          // set this role as a sibling of the last
          // the user should now have 3 roles
-         return createRole(rolesNames[2], anotherRole, null);
-       }).then( (lastRole) => {
-         roleIds[lastRole.get("name")] = lastRole.id;
-         var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
-         return auth._loadRoles();
-       })
-     }).then( (roles) => {
-       expect(roles.length).toEqual(3);
-       rolesNames.forEach( (name) => {
+        return createRole(rolesNames[2], anotherRole, null);
+      }).then( (lastRole) => {
+        roleIds[lastRole.get("name")] = lastRole.id;
+        var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+        return auth._loadRoles();
+      })
+    }).then( (roles) => {
+      expect(roles.length).toEqual(3);
+      rolesNames.forEach( (name) => {
         expect(roles.indexOf('role:'+name)).not.toBe(-1);
-       });
-       done();
-     }, function(){
-       fail("should succeed")
-       done();
-     });
+      });
+      done();
+    }, function(){
+      fail("should succeed")
+      done();
+    });
   });
 
   it("_Role object should not save without name.", (done) => {

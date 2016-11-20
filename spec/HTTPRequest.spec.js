@@ -1,9 +1,9 @@
 'use strict';
 
 var httpRequest = require("../src/cloud-code/httpRequest"),
-    HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
-    bodyParser = require('body-parser'),
-    express = require("express");
+  HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
+  bodyParser = require('body-parser'),
+  express = require("express");
 
 var port = 13371;
 var httpRequestServer = "http://localhost:"+port;
@@ -143,7 +143,7 @@ describe("httpRequest", () => {
       method: "POST",
       url: httpRequestServer+"/echo",
       body: {
-         foo: "bar"
+        foo: "bar"
       },
       headers: {
         'Content-Type': 'application/json'
@@ -182,7 +182,7 @@ describe("httpRequest", () => {
     done();
 
   })
-   it("should encode a www-form body", (done) => {
+  it("should encode a www-form body", (done) => {
     let options = {
       body: {"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'application/x-www-form-urlencoded'}
@@ -220,7 +220,7 @@ describe("httpRequest", () => {
     httpRequest({
       url: httpRequestServer+"/qs",
       params: {
-         foo: "bar"
+        foo: "bar"
       }
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(200);

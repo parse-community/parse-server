@@ -15,25 +15,25 @@ app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
 
 describe('Hooks', () => {
-   it("should have no hooks registered", (done) => {
-     Parse.Hooks.getFunctions().then((res) => {
-       expect(res.constructor).toBe(Array.prototype.constructor);
-       done();
-     }, (err) => {
-       jfail(err);
-       done();
-     });
-   });
+  it("should have no hooks registered", (done) => {
+    Parse.Hooks.getFunctions().then((res) => {
+      expect(res.constructor).toBe(Array.prototype.constructor);
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 
-   it("should have no triggers registered", (done) => {
-     Parse.Hooks.getTriggers().then( (res) => {
-       expect(res.constructor).toBe(Array.prototype.constructor);
-       done();
-     }, (err) => {
-       jfail(err);
-       done();
-     });
-   });
+  it("should have no triggers registered", (done) => {
+    Parse.Hooks.getTriggers().then( (res) => {
+      expect(res.constructor).toBe(Array.prototype.constructor);
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 
   it("should CRUD a function registration", (done) => {
     // Create
@@ -78,270 +78,270 @@ describe('Hooks', () => {
 
   it("should CRUD a trigger registration", (done) => {
      // Create
-     Parse.Hooks.createTrigger("MyClass","beforeDelete", "http://someurl").then((res) => {
-       expect(res.className).toBe("MyClass");
-       expect(res.triggerName).toBe("beforeDelete");
-       expect(res.url).toBe("http://someurl")
+    Parse.Hooks.createTrigger("MyClass","beforeDelete", "http://someurl").then((res) => {
+      expect(res.className).toBe("MyClass");
+      expect(res.triggerName).toBe("beforeDelete");
+      expect(res.url).toBe("http://someurl")
        // Find
-       return Parse.Hooks.getTrigger("MyClass","beforeDelete");
-     }, (err) => {
-       fail(err);
-       done();
-     }).then((res) => {
-       expect(res).not.toBe(null);
-       expect(res).not.toBe(undefined);
-       expect(res.objectId).toBeUndefined();
-       expect(res.url).toBe("http://someurl");
+      return Parse.Hooks.getTrigger("MyClass","beforeDelete");
+    }, (err) => {
+      fail(err);
+      done();
+    }).then((res) => {
+      expect(res).not.toBe(null);
+      expect(res).not.toBe(undefined);
+      expect(res.objectId).toBeUndefined();
+      expect(res.url).toBe("http://someurl");
        // delete
-        return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
-     }, (err) => {
-       jfail(err);
-       done();
-     }).then((res) => {
-       expect(res.className).toBe("MyClass");
-       expect(res.url).toBe("http://anotherurl")
-       expect(res.objectId).toBeUndefined();
+      return Parse.Hooks.updateTrigger("MyClass","beforeDelete", "http://anotherurl");
+    }, (err) => {
+      jfail(err);
+      done();
+    }).then((res) => {
+      expect(res.className).toBe("MyClass");
+      expect(res.url).toBe("http://anotherurl")
+      expect(res.objectId).toBeUndefined();
 
-       return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
-     }, (err) => {
-       jfail(err);
-       done();
-     }).then(() => {
+      return Parse.Hooks.removeTrigger("MyClass","beforeDelete");
+    }, (err) => {
+      jfail(err);
+      done();
+    }).then(() => {
        // Find again! but should be deleted
-       return Parse.Hooks.getTrigger("MyClass","beforeDelete");
-     }, (err) => {
-       jfail(err);
-       done();
-     }).then(function(){
-       fail("should not succeed");
-       done();
-     }, (err) => {
+      return Parse.Hooks.getTrigger("MyClass","beforeDelete");
+    }, (err) => {
+      jfail(err);
+      done();
+    }).then(function(){
+      fail("should not succeed");
+      done();
+    }, (err) => {
       if (err) {
         expect(err).not.toBe(null);
         expect(err).not.toBe(undefined);
         expect(err.code).toBe(143);
         expect(err.message).toBe("class MyClass does not exist")
-       } else {
+      } else {
         fail('should have errored');
-       }
-       done();
-     });
-   });
+      }
+      done();
+    });
+  });
 
-   it("should fail to register hooks without Master Key", (done) => {
-     request.post(Parse.serverURL+"/hooks/functions", {
-       headers: {
-         "X-Parse-Application-Id": Parse.applicationId,
-         "X-Parse-REST-API-Key": Parse.restKey,
-       },
-       body: JSON.stringify({ url: "http://hello.word", functionName: "SomeFunction"})
-     }, (err, res, body) => {
-       body = JSON.parse(body);
-       expect(body.error).toBe("unauthorized");
-       done();
-     })
-   });
+  it("should fail to register hooks without Master Key", (done) => {
+    request.post(Parse.serverURL+"/hooks/functions", {
+      headers: {
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-REST-API-Key": Parse.restKey,
+      },
+      body: JSON.stringify({ url: "http://hello.word", functionName: "SomeFunction"})
+    }, (err, res, body) => {
+      body = JSON.parse(body);
+      expect(body.error).toBe("unauthorized");
+      done();
+    })
+  });
 
-   it("should fail trying to create two times the same function", (done) => {
-      Parse.Hooks.createFunction("my_new_function", "http://url.com").then( () => {
-        return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
-      }, () => {
-        fail("should create a new function");
-      }).then( () => {
-        fail("should not be able to create the same function");
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('function name: my_new_function already exits')
-        }
-        return Parse.Hooks.removeFunction("my_new_function");
-      }).then(() => {
-        done();
-      }, (err) => {
-        jfail(err);
-        done();
-      })
-   });
+  it("should fail trying to create two times the same function", (done) => {
+    Parse.Hooks.createFunction("my_new_function", "http://url.com").then( () => {
+      return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
+    }, () => {
+      fail("should create a new function");
+    }).then( () => {
+      fail("should not be able to create the same function");
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('function name: my_new_function already exits')
+      }
+      return Parse.Hooks.removeFunction("my_new_function");
+    }).then(() => {
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    })
+  });
 
-   it("should fail trying to create two times the same trigger", (done) => {
-      Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then( () => {
-        return  Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com")
-      }, () => {
-        fail("should create a new trigger");
-      }).then( () => {
-        fail("should not be able to create the same trigger");
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('class MyClass already has trigger beforeSave')
-        }
-        return Parse.Hooks.removeTrigger("MyClass", "beforeSave");
-      }).then(() => {
-        done();
-      }, (err) => {
-        jfail(err);
-        done();
-      })
-   });
+  it("should fail trying to create two times the same trigger", (done) => {
+    Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then( () => {
+      return  Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com")
+    }, () => {
+      fail("should create a new trigger");
+    }).then( () => {
+      fail("should not be able to create the same trigger");
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('class MyClass already has trigger beforeSave')
+      }
+      return Parse.Hooks.removeTrigger("MyClass", "beforeSave");
+    }).then(() => {
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    })
+  });
 
-   it("should fail trying to update a function that don't exist", (done) => {
-      Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
-        fail("Should not succeed")
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
-        }
-        return Parse.Hooks.getFunction("A_COOL_FUNCTION")
-      }).then(() => {
-        fail("the function should not exist");
-        done();
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
-        }
-        done();
-      });
-   });
+  it("should fail trying to update a function that don't exist", (done) => {
+    Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
+      fail("Should not succeed")
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+      }
+      return Parse.Hooks.getFunction("A_COOL_FUNCTION")
+    }).then(() => {
+      fail("the function should not exist");
+      done();
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
+      }
+      done();
+    });
+  });
 
-   it("should fail trying to update a trigger that don't exist", (done) => {
-      Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
-        fail("Should not succeed")
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('class AClassName does not exist');
-        }
-        return Parse.Hooks.getTrigger("AClassName","beforeSave")
-      }).then(() => {
-        fail("the function should not exist");
-        done();
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.message).toBe('class AClassName does not exist');
-        }
-        done();
-      });
-   });
-
-
-   it("should fail trying to create a malformed function", (done) => {
-      Parse.Hooks.createFunction("MyFunction").then( (res) => {
-        fail(res);
-      }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(143);
-          expect(err.error).toBe("invalid hook declaration");
-        }
-        done();
-      });
-   });
-
-   it("should fail trying to create a malformed function (REST)", (done) => {
-     request.post(Parse.serverURL+"/hooks/functions", {
-       headers: {
-         "X-Parse-Application-Id": Parse.applicationId,
-         "X-Parse-Master-Key": Parse.masterKey,
-       },
-       body: JSON.stringify({ functionName: "SomeFunction"})
-     }, (err, res, body) => {
-       body = JSON.parse(body);
-       expect(body.error).toBe("invalid hook declaration");
-       expect(body.code).toBe(143);
-       done();
-     })
-   });
+  it("should fail trying to update a trigger that don't exist", (done) => {
+    Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
+      fail("Should not succeed")
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('class AClassName does not exist');
+      }
+      return Parse.Hooks.getTrigger("AClassName","beforeSave")
+    }).then(() => {
+      fail("the function should not exist");
+      done();
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.message).toBe('class AClassName does not exist');
+      }
+      done();
+    });
+  });
 
 
-   it("should create hooks and properly preload them", (done) => {
+  it("should fail trying to create a malformed function", (done) => {
+    Parse.Hooks.createFunction("MyFunction").then( (res) => {
+      fail(res);
+    }, (err) => {
+      expect(err).not.toBe(undefined);
+      expect(err).not.toBe(null);
+      if (err) {
+        expect(err.code).toBe(143);
+        expect(err.error).toBe("invalid hook declaration");
+      }
+      done();
+    });
+  });
 
-     var promises = [];
-     for (var i = 0; i<5; i++) {
-       promises.push(Parse.Hooks.createTrigger("MyClass"+i, "beforeSave", "http://url.com/beforeSave/"+i));
-       promises.push(Parse.Hooks.createFunction("AFunction"+i, "http://url.com/function"+i));
-     }
+  it("should fail trying to create a malformed function (REST)", (done) => {
+    request.post(Parse.serverURL+"/hooks/functions", {
+      headers: {
+        "X-Parse-Application-Id": Parse.applicationId,
+        "X-Parse-Master-Key": Parse.masterKey,
+      },
+      body: JSON.stringify({ functionName: "SomeFunction"})
+    }, (err, res, body) => {
+      body = JSON.parse(body);
+      expect(body.error).toBe("invalid hook declaration");
+      expect(body.code).toBe(143);
+      done();
+    })
+  });
 
-     Parse.Promise.when(promises).then(function(){
-       for (var i=0; i<5; i++) {
+
+  it("should create hooks and properly preload them", (done) => {
+
+    var promises = [];
+    for (var i = 0; i<5; i++) {
+      promises.push(Parse.Hooks.createTrigger("MyClass"+i, "beforeSave", "http://url.com/beforeSave/"+i));
+      promises.push(Parse.Hooks.createFunction("AFunction"+i, "http://url.com/function"+i));
+    }
+
+    Parse.Promise.when(promises).then(function(){
+      for (var i=0; i<5; i++) {
          // Delete everything from memory, as the server just started
-         triggers.removeTrigger("beforeSave", "MyClass"+i, Parse.applicationId);
-         triggers.removeFunction("AFunction"+i, Parse.applicationId);
-         expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).toBeUndefined();
-         expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).toBeUndefined();
-       }
-       const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
-       return hooksController.load()
-     }, (err) => {
-       jfail(err);
-       fail('Should properly create all hooks');
-       done();
-     }).then(function() {
-       for (var i=0; i<5; i++) {
-         expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).not.toBeUndefined();
-         expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).not.toBeUndefined();
-       }
-       done();
-     }, (err) => {
-       jfail(err);
-       fail('should properly load all hooks');
-       done();
-     })
-   });
+        triggers.removeTrigger("beforeSave", "MyClass"+i, Parse.applicationId);
+        triggers.removeFunction("AFunction"+i, Parse.applicationId);
+        expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).toBeUndefined();
+        expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).toBeUndefined();
+      }
+      const hooksController = new HooksController(Parse.applicationId, AppCache.get('test').databaseController);
+      return hooksController.load()
+    }, (err) => {
+      jfail(err);
+      fail('Should properly create all hooks');
+      done();
+    }).then(function() {
+      for (var i=0; i<5; i++) {
+        expect(triggers.getTrigger("MyClass"+i, "beforeSave", Parse.applicationId)).not.toBeUndefined();
+        expect(triggers.getFunction("AFunction"+i, Parse.applicationId)).not.toBeUndefined();
+      }
+      done();
+    }, (err) => {
+      jfail(err);
+      fail('should properly load all hooks');
+      done();
+    })
+  });
 
-   it("should run the function on the test server", (done) => {
+  it("should run the function on the test server", (done) => {
 
-     app.post("/SomeFunction", function(req, res) {
-        res.json({success:"OK!"});
-     });
+    app.post("/SomeFunction", function(req, res) {
+      res.json({success:"OK!"});
+    });
 
-     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunction").then(function(){
-       return Parse.Cloud.run("SOME_TEST_FUNCTION")
-     }, (err) => {
-       jfail(err);
-       fail("Should not fail creating a function");
-       done();
-     }).then(function(res){
-       expect(res).toBe("OK!");
-       done();
-     }, (err) => {
-       jfail(err);
-       fail("Should not fail calling a function");
-       done();
-     });
-   });
+    Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunction").then(function(){
+      return Parse.Cloud.run("SOME_TEST_FUNCTION")
+    }, (err) => {
+      jfail(err);
+      fail("Should not fail creating a function");
+      done();
+    }).then(function(res){
+      expect(res).toBe("OK!");
+      done();
+    }, (err) => {
+      jfail(err);
+      fail("Should not fail calling a function");
+      done();
+    });
+  });
 
-   it("should run the function on the test server", (done) => {
+  it("should run the function on the test server", (done) => {
 
-     app.post("/SomeFunctionError", function(req, res) {
-        res.json({error: {code: 1337, error: "hacking that one!"}});
-     });
+    app.post("/SomeFunctionError", function(req, res) {
+      res.json({error: {code: 1337, error: "hacking that one!"}});
+    });
      // The function is deleted as the DB is dropped between calls
-     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunctionError").then(function(){
-       return Parse.Cloud.run("SOME_TEST_FUNCTION")
-     }, (err) => {
-       jfail(err);
-       fail("Should not fail creating a function");
-       done();
-     }).then(function() {
-       fail("Should not succeed calling that function");
-       done();
-     }, (err) => {
+    Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/SomeFunctionError").then(function(){
+      return Parse.Cloud.run("SOME_TEST_FUNCTION")
+    }, (err) => {
+      jfail(err);
+      fail("Should not fail creating a function");
+      done();
+    }).then(function() {
+      fail("Should not succeed calling that function");
+      done();
+    }, (err) => {
       expect(err).not.toBe(undefined);
       expect(err).not.toBe(null);
       if (err) {
@@ -350,36 +350,36 @@ describe('Hooks', () => {
         expect(err.message.error).toEqual("hacking that one!");
       }
       done();
-     });
-   });
+    });
+  });
 
-   it("should provide X-Parse-Webhook-Key when defined", (done) => {
-     app.post("/ExpectingKey", function(req, res) {
-       if (req.get('X-Parse-Webhook-Key') === 'hook') {
-         res.json({success: "correct key provided"});
-       } else {
-         res.json({error: "incorrect key provided"});
-       }
-     });
+  it("should provide X-Parse-Webhook-Key when defined", (done) => {
+    app.post("/ExpectingKey", function(req, res) {
+      if (req.get('X-Parse-Webhook-Key') === 'hook') {
+        res.json({success: "correct key provided"});
+      } else {
+        res.json({error: "incorrect key provided"});
+      }
+    });
 
-     Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKey").then(function(){
-       return Parse.Cloud.run("SOME_TEST_FUNCTION")
-     }, (err) => {
-       jfail(err);
-       fail("Should not fail creating a function");
-       done();
-     }).then(function(res){
-       expect(res).toBe("correct key provided");
-       done();
-     }, (err) => {
-       jfail(err);
-       fail("Should not fail calling a function");
-       done();
-     });
-   });
+    Parse.Hooks.createFunction("SOME_TEST_FUNCTION", hookServerURL+"/ExpectingKey").then(function(){
+      return Parse.Cloud.run("SOME_TEST_FUNCTION")
+    }, (err) => {
+      jfail(err);
+      fail("Should not fail creating a function");
+      done();
+    }).then(function(res){
+      expect(res).toBe("correct key provided");
+      done();
+    }, (err) => {
+      jfail(err);
+      fail("Should not fail calling a function");
+      done();
+    });
+  });
 
-   it("should not pass X-Parse-Webhook-Key if not provided", (done) => {
-     reconfigureServer({ webhookKey: undefined })
+  it("should not pass X-Parse-Webhook-Key if not provided", (done) => {
+    reconfigureServer({ webhookKey: undefined })
      .then(() => {
        app.post("/ExpectingKeyAlso", function(req, res) {
          if (req.get('X-Parse-Webhook-Key') === 'hook') {
@@ -399,99 +399,99 @@ describe('Hooks', () => {
          fail("Should not succeed calling that function");
          done();
        }, (err) => {
-        expect(err).not.toBe(undefined);
-        expect(err).not.toBe(null);
-        if (err) {
-          expect(err.code).toBe(141);
-          expect(err.message).toEqual("incorrect key provided");
-        }
-        done();
+         expect(err).not.toBe(undefined);
+         expect(err).not.toBe(null);
+         if (err) {
+           expect(err.code).toBe(141);
+           expect(err.message).toEqual("incorrect key provided");
+         }
+         done();
        });
      });
-   });
+  });
 
 
-   it("should run the beforeSave hook on the test server", (done) => {
-     var triggerCount = 0;
-     app.post("/BeforeSaveSome", function(req, res) {
-       triggerCount++;
-       var object = req.body.object;
-       object.hello = "world";
+  it("should run the beforeSave hook on the test server", (done) => {
+    var triggerCount = 0;
+    app.post("/BeforeSaveSome", function(req, res) {
+      triggerCount++;
+      var object = req.body.object;
+      object.hello = "world";
        // Would need parse cloud express to set much more
        // But this should override the key upon return
-       res.json({success: object});
-     });
+      res.json({success: object});
+    });
      // The function is delete as the DB is dropped between calls
-     Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave" ,hookServerURL+"/BeforeSaveSome").then(function(){
-       const obj = new Parse.Object("SomeRandomObject");
-       return obj.save();
-     }).then(function(res) {
-       expect(triggerCount).toBe(1);
-       return res.fetch();
-     }).then(function(res) {
-       expect(res.get("hello")).toEqual("world");
-       done();
-     }).fail((err) => {
-       jfail(err);
-       fail("Should not fail creating a function");
-       done();
-     });
-   });
+    Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave" ,hookServerURL+"/BeforeSaveSome").then(function(){
+      const obj = new Parse.Object("SomeRandomObject");
+      return obj.save();
+    }).then(function(res) {
+      expect(triggerCount).toBe(1);
+      return res.fetch();
+    }).then(function(res) {
+      expect(res.get("hello")).toEqual("world");
+      done();
+    }).fail((err) => {
+      jfail(err);
+      fail("Should not fail creating a function");
+      done();
+    });
+  });
 
-   it("beforeSave hooks should correctly handle responses containing entire object", (done) => {
-     app.post("/BeforeSaveSome2", function(req, res) {
-       var object = Parse.Object.fromJSON(req.body.object);
-       object.set('hello', "world");
-       res.json({success: object});
-     });
-     Parse.Hooks.createTrigger("SomeRandomObject2", "beforeSave" ,hookServerURL+"/BeforeSaveSome2").then(function(){
-       const obj = new Parse.Object("SomeRandomObject2");
-       return obj.save();
-     }).then(function(res) {
-       return res.save();
-     }).then(function(res) {
-       expect(res.get("hello")).toEqual("world");
-       done();
-     }).fail((err) => {
-       fail(`Should not fail: ${JSON.stringify(err)}`);
-       done();
-     });
-   });
+  it("beforeSave hooks should correctly handle responses containing entire object", (done) => {
+    app.post("/BeforeSaveSome2", function(req, res) {
+      var object = Parse.Object.fromJSON(req.body.object);
+      object.set('hello', "world");
+      res.json({success: object});
+    });
+    Parse.Hooks.createTrigger("SomeRandomObject2", "beforeSave" ,hookServerURL+"/BeforeSaveSome2").then(function(){
+      const obj = new Parse.Object("SomeRandomObject2");
+      return obj.save();
+    }).then(function(res) {
+      return res.save();
+    }).then(function(res) {
+      expect(res.get("hello")).toEqual("world");
+      done();
+    }).fail((err) => {
+      fail(`Should not fail: ${JSON.stringify(err)}`);
+      done();
+    });
+  });
 
-   it("should run the afterSave hook on the test server", (done) => {
-     var triggerCount = 0;
-     var newObjectId;
-     app.post("/AfterSaveSome", function(req, res) {
-       triggerCount++;
-       var obj = new Parse.Object("AnotherObject");
-       obj.set("foo", "bar");
-       obj.save().then(function(obj){
-         newObjectId = obj.id;
-         res.json({success: {}});
-       })
-     });
+  it("should run the afterSave hook on the test server", (done) => {
+    var triggerCount = 0;
+    var newObjectId;
+    app.post("/AfterSaveSome", function(req, res) {
+      triggerCount++;
+      var obj = new Parse.Object("AnotherObject");
+      obj.set("foo", "bar");
+      obj.save().then(function(obj){
+        newObjectId = obj.id;
+        res.json({success: {}});
+      })
+    });
      // The function is delete as the DB is dropped between calls
-     Parse.Hooks.createTrigger("SomeRandomObject", "afterSave" ,hookServerURL+"/AfterSaveSome").then(function(){
-       const obj = new Parse.Object("SomeRandomObject");
-       return obj.save();
-     }).then(function() {
-       var promise = new Parse.Promise();
+    Parse.Hooks.createTrigger("SomeRandomObject", "afterSave" ,hookServerURL+"/AfterSaveSome").then(function(){
+      const obj = new Parse.Object("SomeRandomObject");
+      return obj.save();
+    }).then(function() {
+      var promise = new Parse.Promise();
        // Wait a bit here as it's an after save
-       setTimeout(function(){
+      setTimeout(function(){
         expect(triggerCount).toBe(1);
         var q = new Parse.Query("AnotherObject");
         q.get(newObjectId).then(function(r){
-           promise.resolve(r);
+          promise.resolve(r);
         });
-       }, 300)
-       return promise;
-     }).then(function(res){
-       expect(res.get("foo")).toEqual("bar");
-       done();
-     }).fail((err) => {
-       jfail(err);
-       fail("Should not fail creating a function");
-       done();
-     });
-   });
+      }, 300)
+      return promise;
+    }).then(function(res){
+      expect(res.get("foo")).toEqual("bar");
+      done();
+    }).fail((err) => {
+      jfail(err);
+      fail("Should not fail creating a function");
+      done();
+    });
+  });
 });

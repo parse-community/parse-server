@@ -206,13 +206,13 @@ describe('OAuth', function() {
     };
 
     var options = {
-        headers: {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Installation-Id': 'yolo',
-          'Content-Type': 'application/json' },
-        url: 'http://localhost:8378/1/users',
-        body: JSON.stringify(jsonBody)
-      };
+      headers: {'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo',
+        'Content-Type': 'application/json' },
+      url: 'http://localhost:8378/1/users',
+      body: JSON.stringify(jsonBody)
+    };
 
     return request.post(options, callback);
   }
@@ -229,9 +229,9 @@ describe('OAuth', function() {
       q.equalTo('sessionToken', sessionToken);
       q.first({useMasterKey: true}).then((res) => {
         if (!res) {
-           fail('should not fail fetching the session');
-           done();
-           return;
+          fail('should not fail fetching the session');
+          done();
+          return;
         }
         expect(res.get("installationId")).toEqual('yolo');
         done();

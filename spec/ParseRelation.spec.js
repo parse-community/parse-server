@@ -304,33 +304,33 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("toChilds");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.set("toChild", childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      parent2.set("toChild", childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-       return Parse.Object.saveAll(parents).then(() => {
-          var query = new Parse.Query(ParentObject);
-          query.equalTo("objectId", parent.id);
-          query.equalTo("toChilds", childObjects[2]);
+      return Parse.Object.saveAll(parents).then(() => {
+        var query = new Parse.Query(ParentObject);
+        query.equalTo("objectId", parent.id);
+        query.equalTo("toChilds", childObjects[2]);
 
-          return query.find().then((list) => {
-            equal(list.length, 1, "There should be 1 result");
-            done();
-          });
+        return query.find().then((list) => {
+          equal(list.length, 1, "There should be 1 result");
+          done();
         });
+      });
     }).catch(err => {
       jfail(err);
       done();
@@ -345,35 +345,35 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("toChilds");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.relation("toChilds").add(childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      parent2.relation("toChilds").add(childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-       return Parse.Object.saveAll(parents).then(() => {
-          var query = new Parse.Query(ParentObject);
-          query.equalTo("objectId", parent2.id);
+      return Parse.Object.saveAll(parents).then(() => {
+        var query = new Parse.Query(ParentObject);
+        query.equalTo("objectId", parent2.id);
           // childObjects[2] is in 2 relations
           // before the fix, that woul yield 2 results
-          query.equalTo("toChilds", childObjects[2]);
+        query.equalTo("toChilds", childObjects[2]);
 
-          return query.find().then((list) => {
-            equal(list.length, 1, "There should be 1 result");
-            done();
-          });
+        return query.find().then((list) => {
+          equal(list.length, 1, "There should be 1 result");
+          done();
         });
+      });
     });
   });
 
@@ -385,39 +385,39 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("toChilds");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.set("toChild", childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      parent2.set("toChild", childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-       return Parse.Object.saveAll(parents).then(() => {
-          var query1 = new Parse.Query(ParentObject);
-          query1.containedIn("toChilds", [childObjects[2]]);
-          var query2 = new Parse.Query(ParentObject);
-          query2.equalTo("toChild", childObjects[2]);
-          var query = Parse.Query.or(query1, query2);
-          return query.find().then((list) => {
-            var objectIds = list.map(function(item){
-              return item.id;
-            });
-            expect(objectIds.indexOf(parent.id)).not.toBe(-1);
-            expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
-            equal(list.length, 2, "There should be 2 results");
-            done();
+      return Parse.Object.saveAll(parents).then(() => {
+        var query1 = new Parse.Query(ParentObject);
+        query1.containedIn("toChilds", [childObjects[2]]);
+        var query2 = new Parse.Query(ParentObject);
+        query2.equalTo("toChild", childObjects[2]);
+        var query = Parse.Query.or(query1, query2);
+        return query.find().then((list) => {
+          var objectIds = list.map(function(item){
+            return item.id;
           });
+          expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+          expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+          equal(list.length, 2, "There should be 2 results");
+          done();
         });
+      });
     });
   });
 
