@@ -287,7 +287,7 @@ var server = ParseServer({
     // 2. a callback function to be invoked to validate the password  
     validatorCallback: (password) => { return validatePassword(password) }, 
     doNotAllowUsername: true, // optional setting to disallow username in passwords
-    daysBeforeExpiry: 90, // threshold (days) for password expiry. Login fails if user does not reset the password within this period after signup/last reset. 
+    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset. 
     //optional setting to set a validity duration for password reset links (in seconds)
     resetTokenValidityDuration: 24*60*60, // expire after 24 hours
   }

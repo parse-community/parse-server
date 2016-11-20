@@ -119,8 +119,8 @@ export class Config {
 
   static validatePasswordPolicy(passwordPolicy) {
     if (passwordPolicy) {
-      if (passwordPolicy.daysBeforeExpiry !== undefined && (typeof passwordPolicy.daysBeforeExpiry !== 'number' || passwordPolicy.daysBeforeExpiry < 0)) {
-        throw 'passwordPolicy.daysBeforeExpiry must be a positive number';
+      if (passwordPolicy.maxPasswordAge !== undefined && (typeof passwordPolicy.maxPasswordAge !== 'number' || passwordPolicy.maxPasswordAge < 0)) {
+        throw 'passwordPolicy.maxPasswordAge must be a positive number';
       }
 
       if (passwordPolicy.resetTokenValidityDuration !== undefined && (typeof passwordPolicy.resetTokenValidityDuration !== 'number' || passwordPolicy.resetTokenValidityDuration <= 0)) {

@@ -106,7 +106,7 @@ export class UsersRouter extends ClassesRouter {
         }
 
         // handle password expiry policy
-        if (req.config.passwordPolicy && req.config.passwordPolicy.daysBeforeExpiry) {
+        if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
           let changedAt = user._password_changed_at;
 
           if (!changedAt) {
@@ -121,7 +121,7 @@ export class UsersRouter extends ClassesRouter {
               changedAt = new Date(changedAt.iso);
             }
             // Calculate the expiry time.
-            const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.daysBeforeExpiry);
+            const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge);
             if (expiresAt < new Date()) // fail of current time is past password expiry time
               throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
           }

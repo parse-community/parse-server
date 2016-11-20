@@ -840,7 +840,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // update password timestamp if user password is being changed
-    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.daysBeforeExpiry) {
+    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordAge) {
       this.data._password_changed_at = Parse._encode(new Date());
     }
     // Run an update
@@ -863,7 +863,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
       ACL[this.data.objectId] = { read: true, write: true };
       this.data.ACL = ACL;
       // password timestamp to be used when password expiry policy is enforced
-      if (this.config.passwordPolicy && this.config.passwordPolicy.daysBeforeExpiry) {
+      if (this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordAge) {
         this.data._password_changed_at = Parse._encode(new Date());
       }
     }

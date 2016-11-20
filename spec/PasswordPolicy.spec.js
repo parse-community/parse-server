@@ -775,34 +775,34 @@ describe("Password Policy: ", () => {
     });
   });
 
-  it('should fail if passwordPolicy.daysBeforeExpiry is not a number', done => {
+  it('should fail if passwordPolicy.maxPasswordAge is not a number', done => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        daysBeforeExpiry: "not a number"
+        maxPasswordAge: "not a number"
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
-      fail('passwordPolicy.daysBeforeExpiry "not a number" test failed');
+      fail('passwordPolicy.maxPasswordAge "not a number" test failed');
       done();
     }).catch(err => {
-      expect(err).toEqual('passwordPolicy.daysBeforeExpiry must be a positive number');
+      expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
       done();
     });
   });
 
-  it('should fail if passwordPolicy.daysBeforeExpiry is a negative number', done => {
+  it('should fail if passwordPolicy.maxPasswordAge is a negative number', done => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        daysBeforeExpiry: -100
+        maxPasswordAge: -100
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
-      fail('passwordPolicy.daysBeforeExpiry negative number test failed');
+      fail('passwordPolicy.maxPasswordAge negative number test failed');
       done();
     }).catch(err => {
-      expect(err).toEqual('passwordPolicy.daysBeforeExpiry must be a positive number');
+      expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
       done();
     });
   });
@@ -812,7 +812,7 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        daysBeforeExpiry: 1 // 1 day
+        maxPasswordAge: 1 // 1 day
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -840,7 +840,7 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        daysBeforeExpiry: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -881,7 +881,7 @@ describe("Password Policy: ", () => {
           reconfigureServer({
             appName: 'passwordPolicy',
             passwordPolicy: {
-              daysBeforeExpiry: 0.5/(24*60*60) // 0.5 sec
+              maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
             },
             publicServerURL: "http://localhost:8378/1"
           }).then(() => {
@@ -980,7 +980,7 @@ describe("Password Policy: ", () => {
       appName: 'passwordPolicy',
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        daysBeforeExpiry: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
