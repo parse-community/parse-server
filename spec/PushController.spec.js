@@ -2,6 +2,7 @@
 var PushController = require('../src/Controllers/PushController').PushController;
 var StatusHandler = require('../src/StatusHandler');
 var Config = require('../src/Config');
+var validatePushType = require('../src/Push/utils').validatePushType;
 
 const successfulTransmissions = function(body, installations) {
 
@@ -35,7 +36,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -48,7 +49,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -63,7 +64,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -76,7 +77,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -89,7 +90,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -179,7 +180,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then((installations) => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+    return Parse.Object.saveAll(installations)
+   }).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -227,7 +232,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then((installations) => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+    return Parse.Object.saveAll(installations)
+   }).then((installations) => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
      done();
@@ -276,11 +285,16 @@ describe('PushController', () => {
    var auth = {
     isMaster: true
    }
-
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then(() => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+     return Parse.Object.saveAll(installations)
+   })
+   .then(() => {
      return pushController.sendPush(payload, {}, config, auth);
    }).then((result) => {
+     // it is enqueued so it can take time
      return new Promise((resolve, reject) => {
        setTimeout(() => {
          resolve();
@@ -343,7 +357,11 @@ describe('PushController', () => {
     isMaster: true
    }
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then(() => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+    return pushController.sendPush(payload, where, config, auth)
+   }).then(() => {
      fail('should not succeed');
      done();
    }).catch(() => {
@@ -389,7 +407,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then((result) => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+    return pushController.sendPush(payload, where, config, auth);
+   }).then((result) => {
       done();
     }).catch((err) => {
       jfail(err);
@@ -430,7 +452,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then((result) => {
+   reconfigureServer({
+     push: { adapter: pushAdapter }
+   }).then(() => {
+    pushController.sendPush(payload, where, config, auth)
+   }).then((result) => {
       done();
     }).catch((err) => {
       fail('should not fail');

@@ -103,10 +103,9 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config) {
+export function pushStatusHandler(config, objectId = newObjectId()) {
 
   let pushStatus;
-  let objectId = newObjectId();
   let database = config.database;
   let handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   let setInitial = function(body = {}, where, options = {source: 'rest'}) {
@@ -145,15 +144,14 @@ export function pushStatusHandler(config) {
     });
   }
 
-  let setRunning = function(installations) {
-    logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date() });
+  let setRunning = function(count) {
+    logger.verbose('sending push to %d installations', count);
+    return handler.update({status:"pending", objectId: objectId},
+        {status: "running", updatedAt: new Date(), count });
   }
 
-  let complete = function(results) {
+  let trackSent = function(results) {
     let update = {
-      status: 'succeeded',
       updatedAt: new Date()
     };
     if (Array.isArray(results)) {
@@ -173,9 +171,22 @@ export function pushStatusHandler(config) {
         }
         return memo;
       }, update);
+      incrementOp(update, 'count', -results.length);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update);
+    return handler.update({ objectId }, update).then((res) => {
+      if (res && res.count === 0) {
+        return this.complete();
+      }
+    })
+  }
+
+  let complete = function() {
+    return handler.update({ objectId }, {
+      status: 'succeeded',
+      count: {__op: 'Delete'},
+      updatedAt: new Date()
+    });
   }
 
   let fail = function(err) {
@@ -192,6 +203,7 @@ export function pushStatusHandler(config) {
     objectId,
     setInitial,
     setRunning,
+    trackSent,
     complete,
     fail
   })

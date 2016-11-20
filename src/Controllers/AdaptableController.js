@@ -38,11 +38,15 @@ export class AdaptableController {
   }
 
   validateAdapter(adapter) {
+    AdaptableController.validateAdapter(adapter, this);
+  }
+
+  static validateAdapter(adapter, self, ExpectedType) {
     if (!adapter) {
-      throw new Error(this.constructor.name+" requires an adapter");
+      throw new Error(self.constructor.name+" requires an adapter");
     }
 
-    let Type = this.expectedAdapterType();
+    let Type = ExpectedType || self.expectedAdapterType();
     // Allow skipping for testing
     if (!Type) {
       return;

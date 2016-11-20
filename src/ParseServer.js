@@ -41,6 +41,8 @@ import { LogsRouter }           from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
+import { PushQueue }            from './Push/PushQueue';
+import { PushWorker }           from './Push/PushWorker';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { randomString }         from './cryptoUtils';
@@ -173,6 +175,26 @@ class ParseServer {
     // Note that passing an instance would work too
     const pushController = new PushController(pushControllerAdapter, appId, push);
 
+    const {
+      batchSize,
+      channel,
+      messageQueueAdapter,
+      disablePushWorker
+    } = (push || {});
+    
+    const pushOptions = {
+      batchSize,
+      channel,
+      messageQueueAdapter,
+      disablePushWorker
+    };
+
+    const pushControllerQueue = new PushQueue(pushOptions);    
+    let pushWorker;
+    if (!disablePushWorker) {
+      pushWorker = new PushWorker(pushControllerAdapter, pushOptions);
+    }
+
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
@@ -225,7 +247,9 @@ class ParseServer {
       revokeSessionOnPasswordReset,
       databaseController,
       schemaCacheTTL,
-      enableSingleSchemaCache
+      enableSingleSchemaCache,
+      pushWorker,
+      pushControllerQueue
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
