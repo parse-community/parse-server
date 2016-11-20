@@ -179,7 +179,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {
@@ -231,7 +231,7 @@ describe('PushController', () => {
     isMaster: true
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {
@@ -285,7 +285,7 @@ describe('PushController', () => {
    var auth = {
     isMaster: true
    }
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {
@@ -356,7 +356,7 @@ describe('PushController', () => {
    var auth = {
     isMaster: true
    }
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {
@@ -406,7 +406,7 @@ describe('PushController', () => {
      }
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {
@@ -451,7 +451,7 @@ describe('PushController', () => {
      }
    }
 
-   var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+   var pushController = new PushController();
    reconfigureServer({
      push: { adapter: pushAdapter }
    }).then(() => {

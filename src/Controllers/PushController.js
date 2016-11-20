@@ -11,22 +11,10 @@ import { pushStatusHandler }  from '../StatusHandler';
 import { isPushIncrementing,
          validatePushType } from '../Push/utils';
 
-export class PushController extends AdaptableController {
-  constructor(adapter, appId, options) {
-    super(adapter, appId, options);
-  }
-
-  get pushIsAvailable() {
-    return !!this.adapter;
-  }
+export class PushController {
 
   sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
-    var pushAdapter = this.adapter;
-    if (!this.pushIsAvailable) {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Push adapter is not available');
-    }
-    if (!this.options) {
+    if (!config.hasPushSupport) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             'Missing push configuration');
     }
@@ -101,10 +89,6 @@ export class PushController extends AdaptableController {
                             body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
-  }
-
-  expectedAdapterType() {
-    return PushAdapter;
   }
 }
 

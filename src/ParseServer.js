@@ -171,15 +171,17 @@ class ParseServer {
 
     const pushQueueOptions = (push || {}).queueOptions || {};
     
-    if (push.queueOptions) {
+    if ((push || {}).queueOptions) {
       delete push.queueOptions;
     }
     // Pass the push options too as it works with the default
-    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
+    const pushAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
-    const pushController = new PushController(pushControllerAdapter, appId, push);
+    const pushController = new PushController();
     
+    const hasPushSupport = pushAdapter && push;
+
     const {
       batchSize,
       channel,
@@ -190,7 +192,7 @@ class ParseServer {
     const pushControllerQueue = new PushQueue(pushQueueOptions);    
     let pushWorker;
     if (!disablePushWorker) {
-      pushWorker = new PushWorker(pushControllerAdapter, pushQueueOptions);
+      pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
     }
 
     const emailControllerAdapter = loadAdapter(emailAdapter);
@@ -247,7 +249,8 @@ class ParseServer {
       schemaCacheTTL,
       enableSingleSchemaCache,
       pushWorker,
-      pushControllerQueue
+      pushControllerQueue,
+      hasPushSupport
     });
 
     // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability

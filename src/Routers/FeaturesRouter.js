@@ -29,9 +29,9 @@ export class FeaturesRouter extends PromiseRouter {
           from: true,
         },
         push: {
-          immediatePush: req.config.pushController.pushIsAvailable,
+          immediatePush: req.config.hasPushSupport,
           scheduledPush: false,
-          storedPushData: req.config.pushController.pushIsAvailable,
+          storedPushData: req.config.hasPushSupport,
           pushAudiences: false,
         },
         schemas: {
