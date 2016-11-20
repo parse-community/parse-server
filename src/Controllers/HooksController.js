@@ -9,6 +9,8 @@ const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
   _applicationId:string;
+  _webhookKey:string;
+  database: any;
 
   constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
@@ -170,7 +172,7 @@ function wrapToHTTPRequest(hook, key) {
       jsonBody.original = req.original.toJSON();
       jsonBody.original.className = req.original.className;
     }
-    let jsonRequest = {
+    let jsonRequest: any = {
       headers: {
         'Content-Type': 'application/json'
       },

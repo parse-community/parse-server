@@ -1,3 +1,4 @@
+// @flow
 import deepcopy               from 'deepcopy';
 import AdaptableController    from '../Controllers/AdaptableController';
 import { master }             from '../Auth';
@@ -24,25 +25,33 @@ function groupByBadge(installations) {
 }
 
 export class PushWorker {
-  
-  constructor(pushAdapter, subscriberConfig = {}) {
+  subscriber: ?any;
+  adapter: any;
+  channel: string;
+
+  constructor(pushAdapter: PushAdapter, subscriberConfig: any = {}) {
     AdaptableController.validateAdapter(pushAdapter, this, PushAdapter);
     this.adapter = pushAdapter;
     
     this.channel = subscriberConfig.channel || PushQueue.defaultPushChannel();
     this.subscriber = ParseMessageQueue.createSubscriber(subscriberConfig);
-    this.subscriber.subscribe(this.channel);
-    this.subscriber.on('message', (channel, messageStr) => {
-      let workItem = JSON.parse(messageStr);
-      this.run(workItem);
-    });
+    if (this.subscriber) {
+      const subscriber = this.subscriber;
+      subscriber.subscribe(this.channel);
+      subscriber.on('message', (channel, messageStr) => {
+        let workItem = JSON.parse(messageStr);
+        this.run(workItem);
+      });
+    }
   }
 
-  unsubscribe() {
-    this.subscriber.unsubscribe(this.channel);
+  unsubscribe(): void {
+    if (this.subscriber) {
+      this.subscriber.unsubscribe(this.channel);
+    }
   }
 
-  run({ body, query, pushStatus, applicationId }) {
+  run({ body, query, pushStatus, applicationId }: any): Promise<*> {
     let config = new Config(applicationId);
     let auth = master(config);
     let where  = query.where;
@@ -52,12 +61,12 @@ export class PushWorker {
         return;
       }
       return this.sendToAdapter(body, results, pushStatus, config);
-    }, err => {
+    }, err => {
       throw err;
     });
   }
 
-  sendToAdapter(body, installations, pushStatus, config) {
+  sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config): Promise<*> {
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
     if (!isPushIncrementing(body)) {
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
