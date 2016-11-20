@@ -41,7 +41,7 @@ export class PushQueue {
       }
       pushStatus.setRunning(count);
       let skip = 0;
-      while (skip <= count) {
+      while (skip < count) {
         const query = { where, 
                         limit, 
                         skip,

@@ -169,30 +169,28 @@ class ParseServer {
     });
     const filesController = new FilesController(filesControllerAdapter, appId);
 
+    const pushQueueOptions = (push || {}).queueOptions || {};
+    
+    if (push.queueOptions) {
+      delete push.queueOptions;
+    }
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController(pushControllerAdapter, appId, push);
-
+    
     const {
       batchSize,
       channel,
       messageQueueAdapter,
       disablePushWorker
-    } = (push || {});
-    
-    const pushOptions = {
-      batchSize,
-      channel,
-      messageQueueAdapter,
-      disablePushWorker
-    };
+    } = pushQueueOptions;
 
-    const pushControllerQueue = new PushQueue(pushOptions);    
+    const pushControllerQueue = new PushQueue(pushQueueOptions);    
     let pushWorker;
     if (!disablePushWorker) {
-      pushWorker = new PushWorker(pushControllerAdapter, pushOptions);
+      pushWorker = new PushWorker(pushControllerAdapter, pushQueueOptions);
     }
 
     const emailControllerAdapter = loadAdapter(emailAdapter);

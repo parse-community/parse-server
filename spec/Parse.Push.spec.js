@@ -16,8 +16,8 @@ describe('Parse.Push', () => {
           }
           return Promise.resolve({
             err: null,
-            deviceType: installation.deviceType,
-            result: true
+            device: installation,
+            transmitted: true
           })
         });
         return Promise.all(promises);

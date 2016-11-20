@@ -48,6 +48,9 @@ export class PushWorker {
     let where  = query.where;
     delete query.where;
     return rest.find(config, auth, '_Installation', where, query).then(({results}) => {
+      if (results.length == 0) {
+        return;
+      }
       return this.sendToAdapter(body, results, pushStatus, config);
     }, err => {
       throw err;
@@ -73,7 +76,7 @@ export class PushWorker {
       } else {
         payload.data.badge = parseInt(badge);
       }
-      let installations = badgeInstallationsMap[badge];
+      const installations = badgeInstallationsMap[badge];
       return this.sendToAdapter(payload, installations, pushStatus, config);
     });
     return Promise.all(promises);
