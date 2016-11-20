@@ -1,11 +1,5 @@
 import {
-  numberParser,
-  numberOrBoolParser,
-  objectParser,
-  arrayParser,
-  moduleOrObjectParser,
-  booleanParser,
-  nullParser
+  numberParser
 } from '../utils/parsers';
 
 

@@ -1,7 +1,5 @@
 
 import ClassesRouter from './ClassesRouter';
-import PromiseRouter from '../PromiseRouter';
-import rest from '../rest';
 
 export class RolesRouter extends ClassesRouter {
   handleFind(req) {

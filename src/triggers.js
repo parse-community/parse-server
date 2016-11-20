@@ -1,6 +1,5 @@
 // triggers.js
 import Parse    from 'parse/node';
-import AppCache from './cache';
 import { logger } from './logger';
 
 export const Types = {
@@ -90,7 +89,7 @@ export function getTrigger(className, triggerType, applicationId) {
     return manager.Triggers[triggerType][className];
   }
   return undefined;
-};
+}
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return (getTrigger(className, type, applicationId) != undefined);
@@ -100,7 +99,7 @@ export function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -108,7 +107,7 @@ export function getJob(jobName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs[jobName];
-  };
+  }
   return undefined;
 }
 
@@ -116,7 +115,7 @@ export function getJobs(applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
-  };
+  }
   return undefined;
 }
 
@@ -125,7 +124,7 @@ export function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {
     return manager.Validators[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -215,7 +214,7 @@ export function getResponseObject(request, resolve, reject) {
       return reject(scriptError);
     }
   }
-};
+}
 
 function userIdForLog(auth) {
   return (auth && auth.user) ? auth.user.id : undefined;
@@ -258,10 +257,10 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
     }
     const request = getRequestObject(triggerType, auth, null, null, config);    
     const response = getResponseObject(request,
-      object => {
+      object => {
         resolve(object);
       }, 
-      error => {
+      error => {
         reject(error);
     });
     logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
@@ -311,9 +310,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     }
   }
   let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
-  return Promise.resolve().then(() => {
+  return Promise.resolve().then(() => {
     return trigger(requestObject);
-  }).then((result) => {
+  }).then((result) => {
     let queryResult = parseQuery;
     if (result && result instanceof Parse.Query) {
       queryResult = result;
@@ -338,7 +337,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restWhere,
       restOptions
     };
-  }, (err) => {
+  }, (err) => {
     if (typeof err === 'string') {
       throw new Parse.Error(1, err);
     } else {
@@ -360,11 +359,11 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, (object) => {
+    var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
           triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
-    }, (error) => {
+    }, (error) => {
       logTriggerErrorBeforeHook(
           triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
@@ -391,7 +390,7 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
         }
     }
   });
-};
+}
 
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object

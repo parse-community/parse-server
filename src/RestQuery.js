@@ -5,8 +5,6 @@ var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
 
-import { default as FilesController } from './Controllers/FilesController';
-
 // restOptions can include:
 //   skip
 //   limit
@@ -397,7 +395,7 @@ RestQuery.prototype.runFind = function(options = {}) {
   }
   let findOptions = Object.assign({}, this.findOptions);
   if (this.keys) {
-    findOptions.keys = Array.from(this.keys).map((key) => {
+    findOptions.keys = Array.from(this.keys).map((key) => {
       return key.split('.')[0];
     });
   }
@@ -510,7 +508,7 @@ function includePath(config, auth, response, path, restOptions = {}) {
   let includeRestOptions = {};
   if (restOptions.keys) {
     let keys = new Set(restOptions.keys.split(','));
-    let keySet = Array.from(keys).reduce((set, key) => {
+    let keySet = Array.from(keys).reduce((set, key) => {
       let keyPath = key.split('.');
       let i=0;
       for (i; i<path.length; i++) {
@@ -528,10 +526,10 @@ function includePath(config, auth, response, path, restOptions = {}) {
     }
   }
 
-  let queryPromises = Object.keys(pointersHash).map((className) => {
+  let queryPromises = Object.keys(pointersHash).map((className) => {
     let where = {'objectId': {'$in': Array.from(pointersHash[className])}};
     var query = new RestQuery(config, auth, className, where, includeRestOptions);
-    return query.execute({op: 'get'}).then((results) => {
+    return query.execute({op: 'get'}).then((results) => {
       results.className = className;
       return Promise.resolve(results);
     })
@@ -604,7 +602,7 @@ function findPointers(object, path) {
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
     return object.map((obj) => replacePointers(obj, path, replace))
-             .filter((obj) => typeof obj !== 'undefined');
+             .filter((obj) => typeof obj !== 'undefined');
   }
 
   if (typeof object !== 'object' || !object) {
@@ -642,7 +640,7 @@ function findObjectWithKey(root, key) {
   }
   if (root instanceof Array) {
     for (var item of root) {
-      var answer = findObjectWithKey(item, key);
+      let answer = findObjectWithKey(item, key);
       if (answer) {
         return answer;
       }
@@ -652,7 +650,7 @@ function findObjectWithKey(root, key) {
     return root;
   }
   for (var subkey in root) {
-    var answer = findObjectWithKey(root[subkey], key);
+    let answer = findObjectWithKey(root[subkey], key);
     if (answer) {
       return answer;
     }

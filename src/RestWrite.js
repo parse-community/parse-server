@@ -6,7 +6,6 @@ var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
 
 var Auth = require('./Auth');
-var Config = require('./Config');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
@@ -236,7 +235,7 @@ RestWrite.prototype.validateAuthData = function() {
 };
 
 RestWrite.prototype.handleAuthDataValidation = function(authData) {
-  let validations = Object.keys(authData).map((provider) => {
+  let validations = Object.keys(authData).map((provider) => {
     if (authData[provider] === null) {
       return Promise.resolve();
     }
@@ -244,7 +243,7 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
     if (!validateAuthData) {
       throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
                             'This authentication method is unsupported.');
-    };
+    }
     return validateAuthData(authData[provider]);
   });
   return Promise.all(validations);
@@ -252,7 +251,7 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
 
 RestWrite.prototype.findUsersWithAuthData = function(authData) {
   let providers = Object.keys(authData);
-  let query = providers.reduce((memo, provider) => {
+  let query = providers.reduce((memo, provider) => {
     if (!authData[provider]) {
       return memo;
     }
@@ -261,7 +260,7 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
     query[queryKey] = authData[provider].id;
     memo.push(query);
     return memo;
-  }, []).filter((q) => {
+  }, []).filter((q) => {
     return typeof q !== 'undefined';
   });
 
@@ -280,7 +279,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.handleAuthDataValidation(authData).then(() => {
      return this.findUsersWithAuthData(authData);
-  }).then((r) => {
+  }).then((r) => {
     results = r;
     if (results.length > 1) {
       // More than 1 user with the passed id's
@@ -317,9 +316,9 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // We have authData that is updated on login
         // that can happen when token are refreshed,
         // We should update the token and let the user in
-        if (Object.keys(mutatedAuthData).length > 0) {
+        if (Object.keys(mutatedAuthData).length > 0) {
           // Assign the new authData in the response
-          Object.keys(mutatedAuthData).forEach((provider) => {
+          Object.keys(mutatedAuthData).forEach((provider) => {
             this.response.response.authData[provider] = mutatedAuthData[provider];
           });
           // Run the DB update directly, as 'master'
@@ -652,12 +651,12 @@ RestWrite.prototype.handleInstallation = function() {
     return;
   }
 
-  promise = promise.then(() => {
+  promise = promise.then(() => {
     return this.config.database.find('_Installation', {
         '$or': orQueries
     }, {});
-  }).then((results) => {
-    results.forEach((result) => {
+  }).then((results) => {
+    results.forEach((result) => {
       if (this.query && this.query.objectId && result.objectId == this.query.objectId) {
         objectIdMatch = result;
       }
@@ -748,7 +747,7 @@ RestWrite.prototype.handleInstallation = function() {
         // Exactly one device token match and it doesn't have an installation
         // ID. This is the one case where we want to merge with the existing
         // object.
-        var delQuery = {objectId: idMatch.objectId};
+        let delQuery = {objectId: idMatch.objectId};
         return this.config.database.destroy('_Installation', delQuery)
           .then(() => {
             return deviceTokenMatches[0]['objectId'];
@@ -759,7 +758,7 @@ RestWrite.prototype.handleInstallation = function() {
           // We're setting the device token on an existing installation, so
           // we should try cleaning out old installations that match this
           // device token.
-          var delQuery = {
+          let delQuery = {
             'deviceToken': this.data.deviceToken,
           };
           // We have a unique install Id, use that to preserve
@@ -969,7 +968,7 @@ RestWrite.prototype.objectId = function() {
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
 RestWrite.prototype.sanitizedData = function() {
-  let data = Object.keys(this.data).reduce((data, key) => {
+  let data = Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
       delete data[key];

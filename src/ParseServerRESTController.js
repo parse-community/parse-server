@@ -87,13 +87,13 @@ function ParseServerRESTController(applicationId, router) {
         });
       }, reject);
     });
-  };
+  }
 
   return  {
     request: handleRequest,
     ajax: RESTController.ajax
   };
-};
+}
 
 export default ParseServerRESTController;
 export { ParseServerRESTController };

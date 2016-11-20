@@ -24,11 +24,11 @@ OAuth.prototype.send = function(method, path, params, body){
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
+    }).on('error', function() {
       reject('Failed to make an OAuth request');
     });
     if (request.body) {
-    	httpRequest.write(request.body);
+      httpRequest.write(request.body);
     }
     httpRequest.end();
   });
@@ -125,8 +125,6 @@ OAuth.nonce = function(){
 }
 
 OAuth.buildParameterString = function(obj){
-	var result = {};
-
 	// Sort keys and encode values
 	if (obj) {
 		var keys = Object.keys(obj).sort();
@@ -210,12 +208,12 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 	}
 
 	// Set the authorization header
-	var signature = Object.keys(oauth_parameters).sort().map(function(key){
+	var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
 		var value = oauth_parameters[key];
 		return key+'="'+value+'"';
 	}).join(", ")
 
-	request.headers.Authorization = 'OAuth ' + signature;
+	request.headers.Authorization = 'OAuth ' + authHeader;
 
 	// Set the content type header
 	request.headers["Content-Type"] = "application/x-www-form-urlencoded";

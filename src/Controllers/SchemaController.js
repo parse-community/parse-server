@@ -15,7 +15,6 @@
 // TODO: hide all schema logic inside the database adapter.
 
 const Parse = require('parse/node').Parse;
-import _ from 'lodash';
 
 const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -325,7 +324,7 @@ export default class SchemaController {
   reloadData(options = {clearCache: false}) {
     let promise = Promise.resolve();
     if (options.clearCache) {
-      promise = promise.then(() => {
+      promise = promise.then(() => {
         return this._cache.clear();
       });
     }
@@ -334,7 +333,7 @@ export default class SchemaController {
     }
     this.data = {};
     this.perms = {};
-    this.reloadDataPromise = promise.then(() => {
+    this.reloadDataPromise = promise.then(() => {
       return this.getAllClasses(options);
     })
     .then(allSchemas => {
@@ -352,7 +351,7 @@ export default class SchemaController {
         });
       });
       delete this.reloadDataPromise;
-    }, (err) => {
+    }, (err) => {
       delete this.reloadDataPromise;
       throw err;
     });
@@ -364,16 +363,16 @@ export default class SchemaController {
     if (options.clearCache) {
       promise = this._cache.clear();
     }
-    return promise.then(() => {
+    return promise.then(() => {
        return this._cache.getAllClasses()
-    }).then((allClasses) => {
+    }).then((allClasses) => {
       if (allClasses && allClasses.length && !options.clearCache) {
         return Promise.resolve(allClasses);
       }
       return this._dbAdapter.getAllClasses()
         .then(allSchemas => allSchemas.map(injectDefaultSchema))
         .then(allSchemas => {
-          return this._cache.setAllClasses(allSchemas).then(() => {
+          return this._cache.setAllClasses(allSchemas).then(() => {
             return allSchemas;
           });
         })
@@ -385,18 +384,18 @@ export default class SchemaController {
     if (options.clearCache) {
       promise = this._cache.clear();
     }
-    return promise.then(() => {
+    return promise.then(() => {
       if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
         return Promise.resolve(this.data[className]);
       }
-      return this._cache.getOneSchema(className).then((cached) => {
+      return this._cache.getOneSchema(className).then((cached) => {
         if (cached && !options.clearCache) {
           return Promise.resolve(cached);
         }
         return this._dbAdapter.getClass(className)
         .then(injectDefaultSchema)
-        .then((result) => {
-          return this._cache.setOneSchema(className, result).then(() => {
+        .then((result) => {
+          return this._cache.setOneSchema(className, result).then(() => {
             return result;
           })
         });
@@ -419,8 +418,8 @@ export default class SchemaController {
 
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
-    .then((res) => {
-      return this._cache.clear().then(() => {
+    .then((res) => {
+      return this._cache.clear().then(() => {
          return Promise.resolve(res);
       });
     })
@@ -504,7 +503,7 @@ export default class SchemaController {
     return this.addClassIfNotExists(className)
     // The schema update succeeded. Reload the schema
     .then(() => this.reloadData({ clearCache: true }))
-    .catch(error => {
+    .catch(() => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
@@ -519,7 +518,7 @@ export default class SchemaController {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
       }
     })
-    .catch(error => {
+    .catch(() => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
@@ -586,7 +585,7 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(className, fieldName, type, freeze) {
+  enforceFieldExists(className, fieldName, type) {
     if (fieldName.indexOf(".") > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split(".")[ 0 ];
@@ -620,14 +619,14 @@ export default class SchemaController {
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData({ clearCache: true });
-      }, error => {
+      }, () => {
         //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
 
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
         return this.reloadData({ clearCache: true });
-      }).then(error => {
+      }).then(() => {
         // Ensure that the schema now validates
         if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
@@ -676,7 +675,7 @@ export default class SchemaController {
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
       return database.adapter.deleteFields(className, schema, [fieldName]);
-    }).then(() => {
+    }).then(() => {
       this._cache.clear();
     });
   }
@@ -772,7 +771,6 @@ export default class SchemaController {
       return true;
     }
     let classPerms = this.perms[className];
-    let perms = classPerms[operation];
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
@@ -789,7 +787,7 @@ export default class SchemaController {
     }
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`);
-  };
+  }
 
   // Returns the expected type for a className+key combination
   // or undefined if the schema is not set
@@ -799,7 +797,7 @@ export default class SchemaController {
       return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
-  };
+  }
 
   // Checks if a given class is in the schema.
   hasClass(className) {
@@ -902,22 +900,27 @@ function getObjectType(obj) {
             targetClass: obj.className
           }
         }
+        break;
       case 'File' :
         if(obj.name) {
           return 'File';
         }
+        break;
       case 'Date' :
         if(obj.iso) {
           return 'Date';
         }
+        break;
       case 'GeoPoint' :
         if(obj.latitude != null && obj.longitude != null) {
           return 'GeoPoint';
         }
+        break;
       case 'Bytes' :
         if(obj.base64) {
           return;
         }
+        break;
       default:
         throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
     }

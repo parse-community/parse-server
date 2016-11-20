@@ -393,7 +393,7 @@ class ParseLiveQueryServer {
       });
     }).then((isMatched) => {
       return Parse.Promise.as(isMatched);
-    }, (error) => {
+    }, () => {
       return Parse.Promise.as(false);
     });
   }

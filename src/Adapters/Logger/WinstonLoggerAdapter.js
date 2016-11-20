@@ -3,11 +3,6 @@ import { logger, addTransport, configureLogger } from './WinstonLogger';
 
 const MILLISECONDS_IN_A_DAY = 24 * 60 * 60 * 1000;
 
-// returns Date object rounded to nearest day
-let _getNearestDay = (date) => {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
-}
-
 export class WinstonLoggerAdapter extends LoggerAdapter {
   constructor(options) {
     super();
@@ -38,18 +33,16 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
     let limit = options.size || 10;
     let order = options.order || 'desc';
     let level = options.level || 'info';
-    let roundedUntil = _getNearestDay(until);
-    let roundedFrom = _getNearestDay(from);
 
-    var options = {
+    const queryOptions = {
       from,
       until,
       limit,
       order
     };
 
-    return new Promise((resolve, reject) => {
-      logger.query(options, (err, res) => {
+    return new Promise((resolve, reject) => {
+      logger.query(queryOptions, (err, res) => {
         if (err) {
           callback(err);
           return reject(err);

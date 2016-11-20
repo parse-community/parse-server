@@ -1,16 +1,15 @@
 // These methods handle the User-related routes.
 
 import deepcopy       from 'deepcopy';
+import Parse          from 'parse/node';
 import Config         from '../Config';
 import AccountLockout from '../AccountLockout';
 import ClassesRouter  from './ClassesRouter';
-import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 let cryptoUtils = require('../cryptoUtils');
-let triggers = require('../triggers');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -216,7 +215,7 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
     }
     let userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then(token => {
+    return userController.sendPasswordResetEmail(email).then(() => {
        return Promise.resolve({
          response: {}
        });

@@ -1,6 +1,5 @@
 
 import program from './commander';
-import { mergeWithOptions } from './commander';
 
 function logStartupOptions(options) {
   for (let key in options) {

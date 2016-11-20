@@ -5,7 +5,6 @@ export class LiveQueryController {
   liveQueryPublisher: any;
 
   constructor(config: any) {
-    let classNames;
     // If config is empty, we just assume no classs needs to be registered as LiveQuery
     if (!config || !config.classNames) {
       this.classNames = new Set();

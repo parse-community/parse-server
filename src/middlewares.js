@@ -142,7 +142,7 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
-  return Promise.resolve().then(() => {
+  return Promise.resolve().then(() => {
     // handle the upgradeToRevocableSession path on it's own
     if (info.sessionToken && 
         req.url === '/upgradeToRevocableSession' && 
@@ -221,7 +221,7 @@ export function allowCrossDomain(req, res, next) {
   else {
     next();
   }
-};
+}
 
 export function allowMethodOverride(req, res, next) {
   if (req.method === 'POST' && req.body._method) {
@@ -230,7 +230,7 @@ export function allowMethodOverride(req, res, next) {
     delete req.body._method;
   }
   next();
-};
+}
 
 export function handleParseErrors(err, req, res, next) {
   // TODO: Add logging as those errors won't make it to the PromiseRouter
@@ -261,7 +261,7 @@ export function handleParseErrors(err, req, res, next) {
               message: 'Internal server error.'});
   }
   next(err);
-};
+}
 
 export function enforceMasterKeyAccess(req, res, next) {
   if (!req.auth.isMaster) {

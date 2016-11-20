@@ -209,7 +209,7 @@ function matchesKeyConstraints(object, key, constraints) {
           }
         }
         break;
-      case '$exists':
+      case '$exists': {
         let propertyExists = typeof object[key] !== 'undefined';
         let existenceIsRequired = constraints['$exists'];
         if (typeof constraints['$exists'] !== 'boolean') {
@@ -221,6 +221,7 @@ function matchesKeyConstraints(object, key, constraints) {
           return false;
         }
         break;
+      }
       case '$regex':
         if (typeof compareTo === 'object') {
           return compareTo.test(object[key]);

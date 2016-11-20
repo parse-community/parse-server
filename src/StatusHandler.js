@@ -5,7 +5,7 @@ const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
 export function flatten(array) {
-  return array.reduce((memo, element) => {
+  return array.reduce((memo, element) => {
     if (Array.isArray(element)) {
       memo = memo.concat(flatten(element));
     } else {
@@ -19,8 +19,8 @@ function statusHandler(className, database) {
   let lastPromise = Promise.resolve();
 
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
+    lastPromise = lastPromise.then(() => {
+      return database.create(className, object).then(() => {
         return Promise.resolve(object);
       });
     });
@@ -28,7 +28,7 @@ function statusHandler(className, database) {
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
+    lastPromise = lastPromise.then(() => {
       return database.update(className, where, object);
     });
     return lastPromise;
@@ -44,7 +44,6 @@ export function jobStatusHandler(config) {
   let jobStatus;
   let objectId = newObjectId();
   let database = config.database;
-  let lastPromise = Promise.resolve();
   let handler = statusHandler(JOB_STATUS_COLLECTION, database);
   let setRunning = function(jobName, params) {
     let now = new Date();
@@ -151,7 +150,7 @@ export function pushStatusHandler(config) {
     };
     if (Array.isArray(results)) {
       results = flatten(results);
-      results.reduce((memo, result) => {
+      results.reduce((memo, result) => {
         // Cannot handle that
         if (!result || !result.device || !result.device.deviceType) {
           return memo;

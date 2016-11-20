@@ -1,0 +1,24 @@
+{
+    "root": true,
+    "extends": "eslint:recommended",
+    "env": {
+        "node": true,
+        "es6": true
+    },
+    "parser": "babel-eslint",
+    "plugins": [
+        "flowtype"
+    ],
+    "parserOptions": {
+        "ecmaVersion": 6,
+        "sourceType": "module"
+    },
+    "rules": {
+        "indent": "off",
+        "no-extra-boolean-cast": [0],
+        "no-console": [0],
+        "linebreak-style": ["error", "unix"],
+        "no-empty":0,
+        "no-restricted-imports": [0]
+    }
+}

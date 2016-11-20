@@ -1,6 +1,5 @@
 // This class handles the Account Lockout Policy settings.
-
-import Config         from './Config';
+import Parse from 'parse/node';
 
 export class AccountLockout {
   constructor(user, config) {
@@ -13,7 +12,7 @@ export class AccountLockout {
    */
   _setFailedLoginCount(value) {
     let query = {
-      username: this._user.username,
+      username: this._user.username
     };
 
     const updateFields = {
@@ -76,7 +75,7 @@ export class AccountLockout {
    */
   _incrementFailedLoginCount() {
     const query = {
-      username: this._user.username,
+      username: this._user.username
     };
 
     const updateFields = {_failed_login_count: {__op: 'Increment', amount: 1}};
@@ -93,7 +92,7 @@ export class AccountLockout {
     return new Promise((resolve, reject) => {
       const query = {
         username: this._user.username,
-        _failed_login_count: { $gte: this._config.accountLockout.threshold },
+        _failed_login_count: { $gte: this._config.accountLockout.threshold }
       };
 
       const now = new Date();

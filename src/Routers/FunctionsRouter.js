@@ -1,7 +1,6 @@
 // FunctionsRouter.js
 
-var express = require('express'),
-    Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
     triggers = require('../triggers');
 
 import PromiseRouter from '../PromiseRouter';
@@ -63,10 +62,10 @@ export class FunctionsRouter extends PromiseRouter {
       error: jobHandler.setFailed.bind(jobHandler),
       message: jobHandler.setMessage.bind(jobHandler)
     }
-    return jobHandler.setRunning(jobName, params).then((jobStatus) => {
+    return jobHandler.setRunning(jobName, params).then((jobStatus) => {
       request.jobId = jobStatus.objectId
       // run the function async
-      process.nextTick(() => {
+      process.nextTick(() => {
         jobFunction(request, status);
       });
       return {

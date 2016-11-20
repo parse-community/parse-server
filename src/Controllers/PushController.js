@@ -1,5 +1,4 @@
 import { Parse }              from 'parse/node';
-import PromiseRouter          from '../PromiseRouter';
 import rest                   from '../rest';
 import AdaptableController    from './AdaptableController';
 import { PushAdapter }        from '../Adapters/Push/PushAdapter';
@@ -9,7 +8,6 @@ import RestWrite              from '../RestWrite';
 import { master }             from '../Auth';
 import { pushStatusHandler }  from '../StatusHandler';
 
-const FEATURE_NAME = 'push';
 const UNSUPPORTED_BADGE_KEY = "unsupported";
 
 export class PushController extends AdaptableController {
@@ -24,7 +22,7 @@ export class PushController extends AdaptableController {
     var deviceTypes = [];
     if (typeof deviceTypeField === 'string') {
       deviceTypes.push(deviceTypeField);
-    } else if (typeof deviceTypeField['$in'] === 'array') {
+    } else if (Array.isArray(deviceTypeField['$in'])) {
       deviceTypes.concat(deviceTypeField['$in']);
     }
     for (var i = 0; i < deviceTypes.length; i++) {
@@ -98,13 +96,13 @@ export class PushController extends AdaptableController {
     }).then((results) => {
       return pushStatus.complete(results);
     }).catch((err) => {
-      return pushStatus.fail(err).then(() => {
+      return pushStatus.fail(err).then(() => {
         throw err;
       });
     });
   }
 
-  sendToAdapter(body, installations, pushStatus, config) {
+  sendToAdapter(body, installations, pushStatus) {
     if (body.data && body.data.badge && typeof body.data.badge == 'string' && body.data.badge.toLowerCase() == "increment") {
       // Collect the badges to reduce the # of calls
       let badgeInstallationsMap = installations.reduce((map, installation) => {

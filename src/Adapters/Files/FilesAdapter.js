@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: "off"*/
 // Files Adapter
 //
 // Allows you to change the file storage mechanism.

@@ -11,7 +11,9 @@ import {
   transformWhere,
   transformUpdate,
 } from './MongoTransform';
+import Parse                 from 'parse/node';
 import _                     from 'lodash';
+import defaults              from '../../../defaults';
 
 let mongodb = require('mongodb');
 let MongoClient = mongodb.MongoClient;
@@ -63,7 +65,7 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
   }
 
   if (typeof classLevelPermissions !== 'undefined') {
-    mongoObject._metadata = mongoObject._metadata || {};
+    mongoObject._metadata = mongoObject._metadata || {};
     if (!classLevelPermissions) {
       delete mongoObject._metadata.class_permissions;
     } else {
@@ -111,14 +113,14 @@ export class MongoStorageAdapter {
         delete this.connectionPromise;
         return;
       }
-      database.on('error', (error) => {
+      database.on('error', () => {
         delete this.connectionPromise;
       });
-      database.on('close', (error) => {
+      database.on('close', () => {
         delete this.connectionPromise;
       });
       this.database = database;
-    }).catch((err) => {
+    }).catch((err) => {
       delete this.connectionPromise;
       return Promise.reject(err);
     });
@@ -288,7 +290,7 @@ export class MongoStorageAdapter {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
       }
       return Promise.resolve();
-    }, error => {
+    }, () => {
       throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error');
     });
   }
@@ -327,7 +329,7 @@ export class MongoStorageAdapter {
     schema = convertParseSchemaToMongoSchema(schema);
     let mongoWhere = transformWhere(className, query, schema);
     let mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
-    let mongoKeys = _.reduce(keys, (memo, key) => {
+    let mongoKeys = _.reduce(keys, (memo, key) => {
       memo[transformKey(className, key, schema)] = 1;
       return memo;
     }, {});

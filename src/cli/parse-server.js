@@ -1,4 +1,3 @@
-import path from 'path';
 import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './definitions/parse-server';
@@ -115,12 +114,12 @@ runner({
         for(var i = 0; i < numCPUs; i++) {
           cluster.fork();
         }
-        cluster.on('exit', (worker, code, signal) => {
-          console.log(`worker ${worker.process.pid} died... Restarting`);
+        cluster.on('exit', (worker, code) => {
+          console.log(`worker ${worker.process.pid} died (${code})... Restarting`);
           cluster.fork();
         });
       } else {
-        startServer(options, () => {
+        startServer(options, () => {
           console.log('['+process.pid+'] parse-server running on '+options.serverURL);
         });
       }

@@ -38,7 +38,7 @@ export class ParseWebSocket {
     this.ws.on(wsType, callback);
   }
 
-  send(message: any, channel: string): void {
+  send(message: any): void {
     this.ws.send(message);
   }
 }

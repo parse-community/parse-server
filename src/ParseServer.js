@@ -4,7 +4,6 @@ var batch = require('./batch'),
     bodyParser = require('body-parser'),
     express = require('express'),
     middlewares = require('./middlewares'),
-    multer = require('multer'),
     Parse = require('parse/node').Parse,
     path = require('path'),
     url = require('url'),
@@ -14,7 +13,6 @@ import defaults                 from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
-import parseServerPackage       from '../package.json';
 import PromiseRouter            from './PromiseRouter';
 import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
@@ -43,7 +41,6 @@ import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
-import { randomString }         from './cryptoUtils';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';

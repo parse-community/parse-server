@@ -37,7 +37,7 @@ function updateTransports(options) {
       }, options));
   }
   // Mount the additional transports
-  additionalTransports.forEach((transport) => {
+  additionalTransports.forEach((transport) => {
     transports[transport.name] = transport;
   });
   logger.configure({
@@ -90,7 +90,7 @@ export function removeTransport(transport) {
   logger.configure({
     transports: _.values(transports)
   });
-  _.remove(additionalTransports, (transport) => {
+  _.remove(additionalTransports, (transport) => {
     return transport.name === transportName;
   });
 }

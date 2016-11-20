@@ -1,7 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 var request = require("request");
 var rest = require("../rest");
-var Auth = require("../Auth");
+import Parse from 'parse/node';
 
 // TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -82,7 +82,7 @@ export class IAPValidationRouter extends PromiseRouter {
 
     function successCallback() {
         return getFileForProductIdentifier(productIdentifier, req);
-    };
+    }
 
     function errorCallback(error) {
         return Promise.resolve({response: appStoreError(error.status) });
