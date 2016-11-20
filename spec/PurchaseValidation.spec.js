@@ -21,7 +21,7 @@ function createProduct() {
 
 describe("test validate_receipt endpoint", () => {
   beforeEach( done => {
-    createProduct().then(done).fail(function(err){
+    createProduct().then(done).fail(function(){
       done();
     });
   })
@@ -196,7 +196,7 @@ describe("test validate_receipt endpoint", () => {
         }
         product.unset("title");
         return product.save();
-      }).then(function(productAgain){
+      }).then(function(){
         fail("Should not succeed");
         done();
       }).fail(function(err){

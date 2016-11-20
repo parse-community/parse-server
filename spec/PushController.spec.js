@@ -5,7 +5,7 @@ var Config = require('../src/Config');
 
 const successfulTransmissions = function(body, installations) {
 
-  let promises = installations.map((device) => {
+  let promises = installations.map((device) => {
     return Promise.resolve({
       transmitted: true,
       device: device,
@@ -17,7 +17,7 @@ const successfulTransmissions = function(body, installations) {
 
 const successfulIOS = function(body, installations) {
 
-  let promises = installations.map((device) => {
+  let promises = installations.map((device) => {
     return Promise.resolve({
       transmitted: device.deviceType == "ios",
       device: device,
@@ -138,7 +138,7 @@ describe('PushController', () => {
    }}
    var installations = [];
    while(installations.length != 10) {
-     var installation = new Parse.Object("_Installation");
+     let installation = new Parse.Object("_Installation");
      installation.set("installationId", "installation_"+installations.length);
      installation.set("deviceToken","device_token_"+installations.length)
      installation.set("badge", installations.length);
@@ -148,7 +148,7 @@ describe('PushController', () => {
    }
 
    while(installations.length != 15) {
-     var installation = new Parse.Object("_Installation");
+     let installation = new Parse.Object("_Installation");
      installation.set("installationId", "installation_"+installations.length);
      installation.set("deviceToken","device_token_"+installations.length)
      installation.set("deviceType", "android");
@@ -179,11 +179,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then((installations) => {
+   Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
-   }).then((result) => {
+   }).then(() => {
      done();
-   }, (err) => {
+   }, (err) => {
      jfail(err);
      done();
    });
@@ -227,11 +227,11 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then((installations) => {
+   Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
-   }).then((result) => {
+   }).then(() => {
      done();
-   }, (err) => {
+   }, () => {
      fail("should not fail");
      done();
    });
@@ -242,7 +242,7 @@ describe('PushController', () => {
 
     var installations = [];
     while(installations.length != 10) {
-      var installation = new Parse.Object("_Installation");
+      let installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("badge", installations.length);
@@ -252,7 +252,7 @@ describe('PushController', () => {
     }
 
     while(installations.length != 15) {
-      var installation = new Parse.Object("_Installation");
+      let installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("deviceType", "android");
@@ -278,15 +278,15 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   Parse.Object.saveAll(installations).then(() => {
+   Parse.Object.saveAll(installations).then(() => {
      return pushController.sendPush(payload, {}, config, auth);
-   }).then((result) => {
-     return new Promise((resolve, reject) => {
+   }).then(() => {
+     return new Promise((resolve) => {
        setTimeout(() => {
          resolve();
        }, 1000);
      });
-   }).then(() => {
+   }).then(() => {
      let query = new Parse.Query('_PushStatus');
      return query.find({useMasterKey: true});
    }).then((results) => {
@@ -318,10 +318,10 @@ describe('PushController', () => {
 
   });
 
-  it('should properly report failures in _PushStatus', (done) => {
+  it('should properly report failures in _PushStatus', (done) => {
     var pushAdapter = {
      send: function(body, installations) {
-       return installations.map((installation) => {
+       return installations.map((installation) => {
          return Promise.resolve({
            deviceType: installation.deviceType
          })
@@ -343,10 +343,10 @@ describe('PushController', () => {
     isMaster: true
    }
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then(() => {
+   pushController.sendPush(payload, where, config, auth).then(() => {
      fail('should not succeed');
      done();
-   }).catch(() => {
+   }).catch(() => {
      let query = new Parse.Query('_PushStatus');
      query.find({useMasterKey: true}).then((results) => {
        expect(results.length).toBe(1);
@@ -357,7 +357,7 @@ describe('PushController', () => {
    })
   });
 
-  it('should support full RESTQuery for increment', (done) => {
+  it('should support full RESTQuery for increment', (done) => {
     var payload = {data: {
      alert: "Hello World!",
      badge: 'Increment',
@@ -389,15 +389,15 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then((result) => {
+   pushController.sendPush(payload, where, config, auth).then(() => {
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
   });
 
-  it('should support object type for alert', (done) => {
+  it('should support object type for alert', (done) => {
     var payload = {data: {
      alert: {
       'loc-key': 'hello_world',
@@ -430,9 +430,9 @@ describe('PushController', () => {
    }
 
    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-   pushController.sendPush(payload, where, config, auth).then((result) => {
+   pushController.sendPush(payload, where, config, auth).then(() => {
       done();
-    }).catch((err) => {
+    }).catch(() => {
       fail('should not fail');
       done();
     });

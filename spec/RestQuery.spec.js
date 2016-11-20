@@ -1,12 +1,10 @@
 'use strict'
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var rest = require('../src/rest');
 
 var querystring = require('querystring');
-var request = require('request');
 var rp = require('request-promise');
 
 var config;
@@ -15,7 +13,7 @@ var nobody = auth.nobody(config);
 
 describe('rest query', () => {
 
-  beforeEach(() => {
+  beforeEach(() => {
     config = new Config('test');
     database = config.database;
   });
@@ -159,7 +157,7 @@ describe('rest query', () => {
     .then((result) => {
       expect(result.results.length).toEqual(0);
       done();
-    }, err => {
+    }, () => {
       fail('Should not throw error')
     });
   });
@@ -200,7 +198,7 @@ describe('rest query', () => {
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
       });
       return Promise.all([p0, p1]);
-    }).then(done).catch((err) => {
+    }).then(done).catch((err) => {
       jfail(err);
       fail('should not fail');
       done();
@@ -239,14 +237,14 @@ describe('rest query', () => {
   it('makes sure null pointers are handed correctly #2189', done => {
     let object = new Parse.Object('AnObject');
     let anotherObject = new Parse.Object('AnotherObject');
-    anotherObject.save().then(() => {
+    anotherObject.save().then(() => {
       object.set('values', [null, null, anotherObject]);
       return object.save();
-    }).then(() => {
+    }).then(() => {
       let query = new Parse.Query('AnObject');
       query.include('values');
       return query.first();
-    }).then((result) => {
+    }).then((result) => {
       let values = result.get('values');
       expect(values.length).toBe(3);
       let anotherObjectFound = false;
@@ -261,7 +259,7 @@ describe('rest query', () => {
       expect(nullCounts).toBe(2);
       expect(anotherObjectFound).toBeTruthy();
       done();
-    }, (err) => {
+    }, (err) => {
       console.error(err);
       fail(err);
       done();

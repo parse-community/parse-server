@@ -55,7 +55,7 @@ describe('Hooks', () => {
       // delete
       return Parse.Hooks.removeFunction("My-Test-Function")
     })
-    .then((res) => {
+    .then(() => {
       // Find again! but should be deleted
       return Parse.Hooks.getFunction("My-Test-Function")
       .then(res => {
@@ -106,7 +106,7 @@ describe('Hooks', () => {
      }, (err) => {
        jfail(err);
        done();
-     }).then((res) => {
+     }).then(() => {
        // Find again! but should be deleted
        return Parse.Hooks.getTrigger("MyClass","beforeDelete");
      }, (err) => {
@@ -199,7 +199,7 @@ describe('Hooks', () => {
           expect(err.message).toBe('no function named: A_COOL_FUNCTION is defined');
         }
         return Parse.Hooks.getFunction("A_COOL_FUNCTION")
-      }).then( (res) => {
+      }).then(() => {
         fail("the function should not exist");
         done();
       }, (err) => {
@@ -224,7 +224,7 @@ describe('Hooks', () => {
           expect(err.message).toBe('class AClassName does not exist');
         }
         return Parse.Hooks.getTrigger("AClassName","beforeSave")
-      }).then( (res) => {
+      }).then(() => {
         fail("the function should not exist");
         done();
       }, (err) => {
@@ -277,7 +277,7 @@ describe('Hooks', () => {
        promises.push(Parse.Hooks.createFunction("AFunction"+i, "http://url.com/function"+i));
      }
 
-     Parse.Promise.when(promises).then(function(results){
+     Parse.Promise.when(promises).then(function(){
        for (var i=0; i<5; i++) {
          // Delete everything from memory, as the server just started
          triggers.removeTrigger("beforeSave", "MyClass"+i, Parse.applicationId);
@@ -338,7 +338,7 @@ describe('Hooks', () => {
        jfail(err);
        fail("Should not fail creating a function");
        done();
-     }).then(function(res){
+     }).then(function() {
        fail("Should not succeed calling that function");
        done();
      }, (err) => {
@@ -395,7 +395,7 @@ describe('Hooks', () => {
          jfail(err);
          fail("Should not fail creating a function");
          done();
-       }).then(function(res){
+       }).then(function(){
          fail("Should not succeed calling that function");
          done();
        }, (err) => {
@@ -474,7 +474,7 @@ describe('Hooks', () => {
      Parse.Hooks.createTrigger("SomeRandomObject", "afterSave" ,hookServerURL+"/AfterSaveSome").then(function(){
        const obj = new Parse.Object("SomeRandomObject");
        return obj.save();
-     }).then(function(res){
+     }).then(function() {
        var promise = new Parse.Promise();
        // Wait a bit here as it's an after save
        setTimeout(function(){

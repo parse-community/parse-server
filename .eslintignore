@@ -1,1 +1,2 @@
-spec/*
+lib/*
+coverage/*

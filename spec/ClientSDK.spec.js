@@ -1,7 +1,7 @@
 var ClientSDK = require('../src/ClientSDK');
 
-describe('ClientSDK', () => {
-  it('should properly parse the SDK versions', () => {
+describe('ClientSDK', () => {
+  it('should properly parse the SDK versions', () => {
       let clientSDKFromVersion = ClientSDK.fromString;
       expect(clientSDKFromVersion('i1.1.1')).toEqual({
           sdk: 'i',
@@ -21,7 +21,7 @@ describe('ClientSDK', () => {
       });
   });
   
-  it('should properly sastisfy', () => {
+  it('should properly sastisfy', () => {
     expect(ClientSDK.compatible({
       js: '>=1.9.0'
     })("js1.9.0")).toBe(true);

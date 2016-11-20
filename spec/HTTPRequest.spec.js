@@ -125,7 +125,7 @@ describe("httpRequest", () => {
   it("should fail on 404", (done) => {
     httpRequest({
       url: httpRequestServer+"/404",
-    }).then(function(httpResponse){
+    }).then(function(){
       fail("should not succeed");
       done();
     }, function(httpResponse){
@@ -155,7 +155,7 @@ describe("httpRequest", () => {
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.data).toEqual({foo: "bar"});
       done();
-    }, function(httpResponse){
+    }, function(){
       fail("should not fail");
       done();
     })
@@ -269,7 +269,7 @@ describe("httpRequest", () => {
 
   it('serialized httpResponse correctly with body object', () => {
     let httpResponse = new HTTPResponse({}, {foo: "bar"});
-    let encodedResponse = Parse._encode(httpResponse);
+    Parse._encode(httpResponse);
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
     

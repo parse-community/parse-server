@@ -46,10 +46,10 @@ describe('Parse.Relation testing', () => {
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
       childObjects.push(new ChildObject({x:i}));
-    };
+    }
 
     Parse.Object.saveAll(childObjects, expectSuccess({
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -84,7 +84,7 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects, {
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -106,7 +106,7 @@ describe('Parse.Relation testing', () => {
                        "The relation should not be dirty");
                     done();
                   },
-                  error: function(list) {
+                  error: function() {
                     ok(false, "This shouldn't have failed");
                     done();
                   }
@@ -131,7 +131,7 @@ describe('Parse.Relation testing', () => {
     var parent;
     var relation;
 
-    Parse.Object.saveAll(childObjects).then(function(list) {
+    Parse.Object.saveAll(childObjects).then(function() {
       var ParentObject = Parse.Object.extend('ParentObject');
       parent = new ParentObject();
       parent.set('x', 4);
@@ -326,12 +326,12 @@ describe('Parse.Relation testing', () => {
           query.equalTo("objectId", parent.id);
           query.equalTo("toChilds", childObjects[2]);
 
-          return query.find().then((list) => {
+          return query.find().then((list) => {
             equal(list.length, 1, "There should be 1 result");
             done();
           });
         });
-    }).catch(err => {
+    }).catch(err => {
       jfail(err);
       done();
     });
@@ -369,7 +369,7 @@ describe('Parse.Relation testing', () => {
           // before the fix, that woul yield 2 results
           query.equalTo("toChilds", childObjects[2]);
 
-          return query.find().then((list) => {
+          return query.find().then((list) => {
             equal(list.length, 1, "There should be 1 result");
             done();
           });
@@ -408,7 +408,7 @@ describe('Parse.Relation testing', () => {
           var query2 = new Parse.Query(ParentObject);
           query2.equalTo("toChild", childObjects[2]);
           var query = Parse.Query.or(query1, query2);
-          return query.find().then((list) => {
+          return query.find().then((list) => {
             var objectIds = list.map(function(item){
               return item.id;
             });
@@ -552,11 +552,11 @@ describe('Parse.Relation testing', () => {
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(5);
-      results.forEach((result) => {
+      results.forEach((result) => {
         expect(result.get('key').get('even')).toBe(true);
       });
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       // Query on the relation of another owner
       let object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
@@ -571,7 +571,7 @@ describe('Parse.Relation testing', () => {
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(5);
-      results.forEach((result) => {
+      results.forEach((result) => {
         expect(result.get('key').get('even')).toBe(false);
       });
       done();
@@ -592,11 +592,9 @@ describe('Parse.Relation testing', () => {
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
     let owner = new OwnerObject({name: 'Joe'});
-    let ownerId;
     let allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
-      ownerId = owner.id;
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
@@ -632,11 +630,9 @@ describe('Parse.Relation testing', () => {
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
     let owner = new OwnerObject({name: 'Joe'});
-    let ownerId;
     let allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
-      ownerId = owner.id;
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
@@ -705,7 +701,7 @@ describe('Parse.Relation testing', () => {
             fail('Should have found admin user, found nothing instead');
             done();
           }
-        }, error => {
+        }, () => {
           fail('User not admin');
           done();
         })

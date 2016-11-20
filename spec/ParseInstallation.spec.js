@@ -3,7 +3,6 @@
 // Ported from installation_collection_test.go
 
 let auth = require('../src/Auth');
-let cache = require('../src/cache');
 let Config = require('../src/Config');
 let Parse = require('parse/node').Parse;
 let rest = require('../src/rest');
@@ -17,7 +16,7 @@ const installationSchema = { fields: Object.assign({}, defaultColumns._Default, 
 
 describe('Installations', () => {
 
-  beforeEach(() => {
+  beforeEach(() => {
     config = new Config('test');
     database = config.database;
   });
@@ -133,7 +132,7 @@ describe('Installations', () => {
     .then(() => {
       let query = new Parse.Query(Parse.Installation);
       return query.find()
-    }).then((results) => {
+    }).then(() => {
       fail('Should not succeed!');
       done();
     }).catch((error) => {
@@ -160,7 +159,7 @@ describe('Installations', () => {
       expect(obj.installationId).toEqual(installId);
       expect(obj.deviceType).toEqual(device);
       done();
-    }).catch((error) => {
+    }).catch(() => {
       fail('Should not fail');
       done();
     });
@@ -220,7 +219,6 @@ describe('Installations', () => {
   it('merging when installationId already exists', (done) => {
     var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
     var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var installId2 = '12345678-abcd-abcd-abcd-123456789abd';
     var input = {
       'deviceToken': t,
       'deviceType': 'ios',
@@ -426,7 +424,7 @@ describe('Installations', () => {
       expect(results.length).toEqual(1);
       expect(results[0].deviceToken).toEqual(u);
       done();
-    }).catch(err => {
+    }).catch(err => {
       jfail(err);
       done();
     })
@@ -880,7 +878,7 @@ describe('Installations', () => {
       'deviceType': device
     };
     rest.create(config, auth.nobody(config), '_Installation', input)
-    .then(createResult => {
+    .then(() => {
       let headers = {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key':   'rest',
@@ -936,14 +934,14 @@ describe('Installations', () => {
       'installationId': installId,
       'deviceType': device
     };
-    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
       let query = new Parse.Query(Parse.Installation);
       query.equalTo('installationId', installId);
       query.first({useMasterKey: true}).then((installation) => {
         return installation.save({
           key: 'value'
         }, {useMasterKey: true});
-      }).then(() => {
+      }).then(() => {
         done();
       }, (err) => {
         jfail(err)
@@ -959,7 +957,7 @@ describe('Installations', () => {
       'installationId': installId,
       'deviceType': device
     };
-    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
       let query = new Parse.Query(Parse.Installation);
       query.equalTo('installationId', installId);
       query.first({useMasterKey: true}).then((installation) => {
@@ -967,7 +965,7 @@ describe('Installations', () => {
           key: 'value',
           installationId: '22222222-abcd-abcd-abcd-123456789abc'
         }, {useMasterKey: true});
-      }).then(() => {
+      }).then(() => {
         fail('should not succeed');
         done();
       }, (err) => {

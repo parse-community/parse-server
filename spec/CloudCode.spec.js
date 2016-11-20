@@ -1,9 +1,7 @@
 "use strict"
 const Parse = require("parse/node");
-const request = require('request');
 const rp = require('request-promise');
 const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
-const triggers = require('../src/triggers');
 
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
@@ -62,13 +60,15 @@ describe('Cloud Code', () => {
 
   it('returns an error', (done) => {
     Parse.Cloud.define('cloudCodeWithError', (req, res) => {
+      /* eslint-disable no-undef */
       foo.bar();
+      /* eslint-enable no-undef */
       res.success('I better throw an error.');
     });
 
     Parse.Cloud.run('cloudCodeWithError')
       .then(
-        a => done.fail('should not succeed'),
+        () => done.fail('should not succeed'),
         e => {
           expect(e).toEqual(new Parse.Error(1, undefined));
           done();
@@ -145,10 +145,10 @@ describe('Cloud Code', () => {
 
     var obj = new Parse.Object('BeforeSaveChanged');
     obj.set('foo', 'bing');
-    obj.save().then(() => {
+    obj.save().then(() => {
       expect(obj.get('foo')).toEqual('baz');
       obj.set('foo', 'bar');
-      return obj.save().then(() => {
+      return obj.save().then(() => {
         expect(obj.get('foo')).toEqual('baz');
         done();
       })
@@ -246,7 +246,7 @@ describe('Cloud Code', () => {
   });
 
   it('test afterSave rejecting promise', function(done) {
-      Parse.Cloud.afterSave('AfterSaveTest2', function(req) {
+      Parse.Cloud.afterSave('AfterSaveTest2', function() {
           let promise = new Parse.Promise();
           setTimeout(function(){
               promise.reject("THIS SHOULD BE IGNORED");
@@ -553,7 +553,7 @@ describe('Cloud Code', () => {
       'array': ['a', 'b', 'c'],
       'arrayOfArray': [['a', 'b', 'c'], ['d', 'e', 'f']]
     };
-    Parse.Cloud.run('params', params).then((result) => {
+    Parse.Cloud.run('params', params).then(() => {
       done();
     });
   });
@@ -583,7 +583,7 @@ describe('Cloud Code', () => {
 
     Parse.Cloud.define('createBeforeSaveChangedObject', function(req, res){
       var obj = new Parse.Object('BeforeSaveChanged');
-      obj.save().then(() => {
+      obj.save().then(() => {
         res.success(obj);
       })
     })
@@ -707,7 +707,7 @@ describe('Cloud Code', () => {
     obj.save({ foo: 'bar' }).then((objAgain) => {
       expect(objAgain.get('foo')).toEqual('baz');
       done();
-    }, (e) => {
+    }, () => {
       fail('Should not have failed to save.');
       done();
     });
@@ -720,8 +720,7 @@ describe('Cloud Code', () => {
       response.success();
     });
 
-    Parse.Cloud.afterSave('ChangingObject', function(request, response) {
-      let json = request.object.toJSON();
+    Parse.Cloud.afterSave('ChangingObject', function(request) {
       expect(request.object.has("file")).toBe(false);
       expect(request.object.has("date")).toBe(false);
       expect(request.object.get('file')).toBeUndefined();
@@ -747,9 +746,9 @@ describe('Cloud Code', () => {
       return request.params.success === 100;
     });
 
-    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then((s) => {
+    Parse.Cloud.run('functionWithParameterValidation', {"success":100}).then(() => {
       done();
-    }, (e) => {
+    }, () => {
       fail('Validation should not have failed.');
       done();
     });
@@ -974,7 +973,7 @@ it('beforeSave should not affect fetched pointers', done => {
       expect(aBeforeSaveObj.get('before')).toEqual('save');
       expect(aBeforeSaveObj.get('remove')).toEqual(undefined);
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
@@ -999,7 +998,7 @@ it('beforeSave should not affect fetched pointers', done => {
     let testObject = new TestObject({key: 'value'});
     testObject.save().then(() => {
        object = new BeforeSaveObject();
-       return object.save().then(() => {
+       return object.save().then(() => {
           object.set({remove:testObject})
           return object.save();
        });
@@ -1021,7 +1020,7 @@ it('beforeSave should not affect fetched pointers', done => {
       var object = req.object;
       object.set('before', 'save');
       testObj = new TestObject();
-      testObj.save().then(() => {
+      testObj.save().then(() => {
         object.relation('testsRelation').add(testObj);
         res.success();
       }, res.error);
@@ -1038,10 +1037,10 @@ it('beforeSave should not affect fetched pointers', done => {
     })
   });
 
-  describe('cloud jobs', () => {
-    it('should define a job', (done) => {
-      expect(() => {
-        Parse.Cloud.job('myJob', (req, res) => {
+  describe('cloud jobs', () => {
+    it('should define a job', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
           res.success();
         });
       }).not.toThrow();
@@ -1052,17 +1051,17 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then((result) => {
+      }).then(() => {
         done();
-      }, (err) =>  {
+      }, (err) =>  {
         fail(err);
         done();
       });
     });
 
-    it('should not run without master key', (done) => {
-      expect(() => {
-        Parse.Cloud.job('myJob', (req, res) => {
+    it('should not run without master key', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
           res.success();
         });
       }).not.toThrow();
@@ -1073,18 +1072,18 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-REST-API-Key': 'rest',
         },
-      }).then((result) => {
+      }).then(() => {
         fail('Expected to be unauthorized');
         done();
-      }, (err) =>  {
+      }, (err) =>  {
         expect(err.statusCode).toBe(403);
         done();
       });
     });
 
-    it('should run with master key', (done) => {
-      expect(() => {
-        Parse.Cloud.job('myJob', (req, res) => {
+    it('should run with master key', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
           expect(req.functionName).toBeUndefined();
           expect(req.jobName).toBe('myJob');
           expect(typeof req.jobId).toBe('string');
@@ -1102,16 +1101,16 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then((response) => {
-      }, (err) =>  {
+      }).then(() => {
+      }, (err) =>  {
         fail(err);
         done();
       });
     });
 
-    it('should run with master key basic auth', (done) => {
-      expect(() => {
-        Parse.Cloud.job('myJob', (req, res) => {
+    it('should run with master key basic auth', (done) => {
+      expect(() => {
+        Parse.Cloud.job('myJob', (req, res) => {
           expect(req.functionName).toBeUndefined();
           expect(req.jobName).toBe('myJob');
           expect(typeof req.jobId).toBe('string');
@@ -1125,25 +1124,25 @@ it('beforeSave should not affect fetched pointers', done => {
       
       rp.post({
         url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
-      }).then((response) => {
-      }, (err) =>  {
+      }).then(() => {
+      }, (err) =>  {
         fail(err);
         done();
       });
     });
 
-    it('should set the message / success on the job', (done) => {
-      Parse.Cloud.job('myJob', (req, res) => {
+    it('should set the message / success on the job', (done) => {
+      Parse.Cloud.job('myJob', (req, res) => {
         res.message('hello');
-        res.message().then(() => {
+        res.message().then(() => {
           return getJobStatus(req.jobId);
-        }).then((jobStatus) => {
+        }).then((jobStatus) => {
           expect(jobStatus.get('message')).toEqual('hello');
           expect(jobStatus.get('status')).toEqual('running');
-          return res.success().then(() => {
+          return res.success().then(() => {
             return getJobStatus(req.jobId);
           });
-        }).then((jobStatus) => {
+        }).then((jobStatus) => {
           expect(jobStatus.get('message')).toEqual('hello');
           expect(jobStatus.get('status')).toEqual('succeeded');
           done();
@@ -1160,18 +1159,18 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then((response) => {
-      }, (err) =>  {
+      }).then(() => {
+      }, (err) =>  {
         fail(err);
         done();
       });
     });
 
-    it('should set the failure on the job', (done) => {
-      Parse.Cloud.job('myJob', (req, res) => {
-        res.error('Something went wrong').then(() => {
+    it('should set the failure on the job', (done) => {
+      Parse.Cloud.job('myJob', (req, res) => {
+        res.error('Something went wrong').then(() => {
           return getJobStatus(req.jobId);
-        }).then((jobStatus) => {
+        }).then((jobStatus) => {
           expect(jobStatus.get('message')).toEqual('Something went wrong');
           expect(jobStatus.get('status')).toEqual('failed');
           done();
@@ -1187,8 +1186,8 @@ it('beforeSave should not affect fetched pointers', done => {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Master-Key': Parse.masterKey,
         },
-      }).then((response) => {
-      }, (err) =>  {
+      }).then(() => {
+      }, (err) =>  {
         fail(err);
         done();
       });
@@ -1202,8 +1201,8 @@ it('beforeSave should not affect fetched pointers', done => {
 });
 
 describe('beforeFind hooks', () => {
-  it('should add beforeFind trigger', (done) => {
-    Parse.Cloud.beforeFind('MyObject', (req, res) => {
+  it('should add beforeFind trigger', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
       let q = req.query;
       expect(q instanceof Parse.Query).toBe(true);
       let jsonQuery = q.toJSON();
@@ -1219,13 +1218,13 @@ describe('beforeFind hooks', () => {
     query.greaterThan('some', 10);
     query.include('otherKey');
     query.include('otherValue');
-    query.find().then(() => {
+    query.find().then(() => {
       done();
     });
   });
 
-  it('should use modify', (done) => {
-    Parse.Cloud.beforeFind('MyObject', (req) => {
+  it('should use modify', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
       let q = req.query;
       q.equalTo('forced', true);
     });
@@ -1235,10 +1234,10 @@ describe('beforeFind hooks', () => {
 
     let obj1 = new Parse.Object('MyObject');
     obj1.set('forced', true);
-    Parse.Object.saveAll([obj0, obj1]).then(() => {
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
       let query = new Parse.Query('MyObject');
       query.equalTo('forced', false);
-      query.find().then((results) => {
+      query.find().then((results) => {
         expect(results.length).toBe(1);
         let firstResult = results[0];
         expect(firstResult.get('forced')).toBe(true);
@@ -1247,8 +1246,8 @@ describe('beforeFind hooks', () => {
     });
   });
 
-  it('should use the modified the query', (done) => {
-    Parse.Cloud.beforeFind('MyObject', (req) => {
+  it('should use the modified the query', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
       let q = req.query;
       let otherQuery = new Parse.Query('MyObject');
       otherQuery.equalTo('forced', true);
@@ -1260,34 +1259,34 @@ describe('beforeFind hooks', () => {
 
     let obj1 = new Parse.Object('MyObject');
     obj1.set('forced', true);
-    Parse.Object.saveAll([obj0, obj1]).then(() => {
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
       let query = new Parse.Query('MyObject');
       query.equalTo('forced', false);
-      query.find().then((results) => {
+      query.find().then((results) => {
         expect(results.length).toBe(2);
         done();
       });
     });
   });
 
-  it('should reject queries', (done) => {
-    Parse.Cloud.beforeFind('MyObject', (req) => {
+  it('should reject queries', (done) => {
+    Parse.Cloud.beforeFind('MyObject', () => {
       return Promise.reject('Do not run that query');
     });
 
     let query = new Parse.Query('MyObject');
-    query.find().then(() => {
+    query.find().then(() => {
       fail('should not succeed');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(1);
       expect(err.message).toEqual('Do not run that query');
       done();
     });
   });
 
-  it('should handle empty where', (done) => {
-    Parse.Cloud.beforeFind('MyObject', (req) => {
+  it('should handle empty where', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
       let otherQuery = new Parse.Query('MyObject');
       otherQuery.equalTo('some', true);
       return Parse.Query.or(req.query, otherQuery);
@@ -1299,9 +1298,9 @@ describe('beforeFind hooks', () => {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-REST-API-Key': 'rest',
       },
-    }).then((result) => {
+    }).then(() => {
       done();
-    }, (err) =>  {
+    }, (err) =>  {
       fail(err);
       done();
     });
@@ -1397,19 +1396,19 @@ describe('afterFind hooks', () => {
     obj.save().then(function() {
       let query = new Parse.Query('MyObject');
       query.equalTo('objectId',obj.id);
-      query.find().then(function(results) {
+      query.find().then(function() {
         fail("AfterFind should handle response failure correctly");
         done();
-      }, function(error) {
+      }, function() {
         done();
       });
-    }, function(error) {
+    }, function() {
       done();
     });
   });
 
   it('should also work with promise',(done) => {
-    Parse.Cloud.afterFind('MyObject', (req, res) => {
+    Parse.Cloud.afterFind('MyObject', (req) => {
       let promise = new Parse.Promise();
       setTimeout(function(){
         for(let i = 0 ; i < req.objects.length ; i++){

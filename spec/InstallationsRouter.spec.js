@@ -100,7 +100,7 @@ describe('InstallationsRouter', () => {
       info: {}
     };
 
-    var config = new Config('test');
+    new Config('test');
     var router = new InstallationsRouter();
     rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
         .then(() => {

@@ -128,7 +128,7 @@ describe('OAuth', function() {
     var path = "/";
 
     var oauthClient = new OAuth(options);
-    oauthClient.post(path, null, body).then(function(data){
+    oauthClient.post(path, null, body).then(function(){
       jequal(false, true);
       done();
     }).catch(function(){
@@ -192,7 +192,7 @@ describe('OAuth', function() {
     };
   };
 
-  var ExtendedUser = Parse.User.extend({
+  Parse.User.extend({
     extended: function() {
       return true;
     }
@@ -227,7 +227,7 @@ describe('OAuth', function() {
       var sessionToken = b.sessionToken;
       var q = new Parse.Query("_Session");
       q.equalTo('sessionToken', sessionToken);
-      q.first({useMasterKey: true}).then((res) => {
+      q.first({useMasterKey: true}).then((res) => {
         if (!res) {
            fail('should not fail fetching the session');
            done();
@@ -235,7 +235,7 @@ describe('OAuth', function() {
         }
         expect(res.get("installationId")).toEqual('yolo');
         done();
-      }).fail((err) => {
+      }).fail(() => {
         fail('should not fail fetching the session');
         done();
       })
@@ -305,20 +305,20 @@ describe('OAuth', function() {
                      "User should be linked to myoauth");
                   done();
                 },
-                error: function(model, error) {
+                error: function() {
                   ok(false, "linking again should succeed");
                   done();
                 }
               });
             });
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "unlinking should succeed");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "linking should have worked");
         done();
       }

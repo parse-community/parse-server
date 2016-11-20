@@ -5,7 +5,7 @@ describe('InMemoryCacheAdapter', function() {
   var VALUE = 'world';
 
   function wait(sleep) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       setTimeout(resolve, sleep);
     })
   }
@@ -14,8 +14,6 @@ describe('InMemoryCacheAdapter', function() {
     var cache = new InMemoryCacheAdapter({
       ttl: NaN
     });
-
-    var noop = () => {};
 
     // Verify all methods return promises.
     Promise.all([

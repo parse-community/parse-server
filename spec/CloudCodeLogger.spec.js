@@ -43,7 +43,7 @@ describe("Cloud Code Logger", () => {
             let infoMessage = lastLogs[2];
             expect(cloudFunctionMessage.level).toBe('info');
             expect(cloudFunctionMessage.params).toEqual({});
-            expect(cloudFunctionMessage.message).toMatch(/Ran cloud function loggerTest for user [^ ]* with:\n  Input: {}\n  Result: {}/);
+            expect(cloudFunctionMessage.message).toMatch(/Ran cloud function loggerTest for user [^ ]* with:\n {2}Input: {}\n {2}Result: {}/);
             expect(cloudFunctionMessage.functionName).toEqual('loggerTest');
             expect(errorMessage.level).toBe('error');
             expect(errorMessage.error).toBe('there was an error');
@@ -93,7 +93,7 @@ describe("Cloud Code Logger", () => {
             let infoMessage = lastLogs[2];
             expect(cloudTriggerMessage.level).toBe('info');
             expect(cloudTriggerMessage.triggerType).toEqual('beforeSave');
-            expect(cloudTriggerMessage.message).toMatch(/beforeSave triggered for MyObject for user [^ ]*\n  Input: {}\n  Result: {}/);
+            expect(cloudTriggerMessage.message).toMatch(/beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {}/);
             expect(cloudTriggerMessage.user).toBe(user.id);
             expect(errorMessage.level).toBe('error');
             expect(errorMessage.error).toBe('there was an error');
@@ -125,7 +125,7 @@ describe("Cloud Code Logger", () => {
                const log = logs[0];
                expect(log.level).toEqual('info');
                expect(log.message).toMatch(
-                   /Ran cloud function aFunction for user [^ ]* with:\n  Input: {.*?\(truncated\)$/m);
+                   /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m);
                 done();
             })
             .then(null, e => done.fail(e));
@@ -133,7 +133,7 @@ describe("Cloud Code Logger", () => {
 
     it('should log an afterSave', done => {
         const logController = new LoggerController(new WinstonLoggerAdapter());
-        Parse.Cloud.afterSave("MyObject", (req) => { });
+        Parse.Cloud.afterSave("MyObject", () => { });
         new Parse.Object('MyObject')
             .save()
             .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
@@ -156,7 +156,7 @@ describe("Cloud Code Logger", () => {
             .save()
             .then(
                 () => done.fail('this is not supposed to succeed'),
-                e => logController.getLogs({ from: Date.now() - 500, size: 1000 })
+                () => logController.getLogs({ from: Date.now() - 500, size: 1000 })
             )
             .then(logs => {
                 const log = logs[1]; // 0 is the 'uh oh!' from rejection...
@@ -179,7 +179,7 @@ describe("Cloud Code Logger", () => {
                 const log = logs[0];
                 expect(log.level).toEqual('info');
                 expect(log.message).toMatch(
-                    /Ran cloud function aFunction for user [^ ]* with:\n  Input: {"foo":"bar"}\n  Result: "it worked!/);
+                    /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Result: "it worked!/);
                 done();
             });
     });
@@ -197,7 +197,7 @@ describe("Cloud Code Logger", () => {
                 const log = logs[1];
                 expect(log.level).toEqual('error');
                 expect(log.message).toMatch(
-                    /Failed running cloud function aFunction for user [^ ]* with:\n  Input: {"foo":"bar"}\n  Error: {"code":141,"message":"it failed!"}/);
+                    /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error: {"code":141,"message":"it failed!"}/);
                 done();
             });
     });
@@ -214,7 +214,7 @@ describe("Cloud Code Logger", () => {
         new Parse.Object('MyObject')
             .save()
             .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(logs => {
+            .then(() => {
                 // expect the log to indicate that it has changed
                 /*
                     Here's what it looks like on parse.com...

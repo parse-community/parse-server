@@ -118,7 +118,7 @@ var masterKeyHeaders = {
 
 describe('schemas', () => {
 
-  beforeEach(() => {
+  beforeEach(() => {
      config.database.schemaCache.clear();
   });
 
@@ -298,7 +298,7 @@ describe('schemas', () => {
       body: {
         className: 'A',
       },
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       request.post({
         url: 'http://localhost:8378/1/schemas',
@@ -350,7 +350,7 @@ describe('schemas', () => {
   it('responds with all fields when getting incomplete schema', done => {
     config.database.loadSchema()
     .then(schemaController => schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions))
-    .then(() => {
+    .then(() => {
       request.get({
         url: 'http://localhost:8378/1/schemas/_Installation',
         headers: masterKeyHeaders,
@@ -417,7 +417,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: noAuthHeaders,
@@ -607,7 +607,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
@@ -656,7 +656,7 @@ describe('schemas', () => {
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
       json: true
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/_User',
         headers: masterKeyHeaders,
@@ -781,7 +781,7 @@ describe('schemas', () => {
           url: 'http://localhost:8378/1/schemas/HasAllPOD',
           headers: masterKeyHeaders,
           json: true,
-        }, (error, response, body) => {
+        }, (error, response) => {
           expect(response.body).toEqual(plainOldDataSchema);
           done();
         });
@@ -860,7 +860,7 @@ describe('schemas', () => {
         url: 'http://localhost:8378/1/schemas/MyOtherClass',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         config.database.collectionExists('_Join:aRelation:MyOtherClass').then(exists => {
@@ -903,14 +903,14 @@ describe('schemas', () => {
       body: {
         className: 'NewClassForDelete'
       }
-    }, (error, response, body) => {
+    }, (error, response) => {
       expect(error).toEqual(null);
       expect(response.body.className).toEqual('NewClassForDelete');
       request.del({
         url: 'http://localhost:8378/1/schemas/NewClassForDelete',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         config.database.loadSchema().then(schema => {
@@ -931,27 +931,27 @@ describe('schemas', () => {
       body: {
         className: 'NewClassForDelete'
       }
-    }, (error, response, body) => {
+    }, (error, response) => {
       expect(error).toEqual(null);
       expect(response.body.className).toEqual('NewClassForDelete');
       request.post({
         url: 'http://localhost:8378/1/classes/NewClassForDelete',
         headers: restKeyHeaders,
         json: true
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(error).toEqual(null);
         expect(typeof response.body.objectId).toEqual('string');
         request.del({
           url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.body.objectId,
           headers: restKeyHeaders,
           json: true,
-        }, (error, response, body) => {
+        }, (error) => {
           expect(error).toEqual(null);
           request.del({
             url: 'http://localhost:8378/1/schemas/NewClassForDelete',
             headers: masterKeyHeaders,
             json: true,
-          }, (error, response, body) => {
+          }, (error, response) => {
             expect(response.statusCode).toEqual(200);
             expect(response.body).toEqual({});
             config.database.loadSchema().then(schema => {
@@ -981,13 +981,13 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       request.get({
         url: 'http://localhost:8378/1/schemas/AClass',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body.classLevelPermissions).toEqual({
           find: {
@@ -1054,11 +1054,11 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       let object = new Parse.Object('AClass');
       object.set('hello', 'world');
-      return object.save().then(() => {
+      return object.save().then(() => {
         fail('should not be able to add a field');
         done();
       }, (err) => {
@@ -1083,13 +1083,13 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       let object = new Parse.Object('AClass');
       object.set('hello', 'world');
-      return object.save().then(() => {
+      return object.save().then(() => {
         done();
-      }, (err) => {
+      }, () => {
         fail('should be able to add a field');
         done();
       })
@@ -1263,33 +1263,33 @@ describe('schemas', () => {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
+    }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      return query.find().then(() => {
         fail('Use should hot be able to find!')
-      }, (err) => {
+      }, (err) => {
         expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch( (err) => {
       jfail(err);
       done();
     })
@@ -1310,21 +1310,21 @@ describe('schemas', () => {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
+    }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
+      }, (err) => {
         expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
@@ -1340,19 +1340,19 @@ describe('schemas', () => {
       let query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
-      }, (err) => {
+      }, () => {
         fail('User should be able to find!')
         done();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch( (err) => {
       jfail(err);
       done();
     })
@@ -1373,21 +1373,21 @@ describe('schemas', () => {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
+    }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
+      }, (err) => {
         expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
@@ -1398,13 +1398,13 @@ describe('schemas', () => {
       let query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
-      }, (err) => {
+      }, () => {
         fail('User should be able to find!')
         done();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
@@ -1431,21 +1431,21 @@ describe('schemas', () => {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
+    }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
+      }, (err) => {
         expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
@@ -1455,28 +1455,28 @@ describe('schemas', () => {
         'found': {
           'role:admin': true
         }
-      }, true).then(() => {
+      }, true).then(() => {
         fail("Should not be able to save a borked CLP");
-      }, () => {
+      }, () => {
         return Promise.resolve();
       })
     }).then(() => {
       let query = new Parse.Query('AClass');
-      return query.find().then((result) => {
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
+      }, (err) => {
         expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch( (err) => {
       jfail(err);
       done();
     })
@@ -1496,11 +1496,11 @@ describe('schemas', () => {
 
     let role = new Parse.Role('admin', new Parse.ACL());
 
-    Promise.resolve().then(() => {
+    Promise.resolve().then(() => {
       return Parse.Object.saveAll([user, user2, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
-      return role.save(null, {useMasterKey: true}).then(() => {
+      return role.save(null, {useMasterKey: true}).then(() => {
         let perm = {
           find: {}
         };
@@ -1508,7 +1508,7 @@ describe('schemas', () => {
         perm['find'][user.id] = true;
         return setPermissionsOnClass('AClass', perm);
       })
-    }).then(() => {
+    }).then(() => {
      return Parse.User.logIn('user', 'user').then(() => {
         let obj = new Parse.Object('AClass');
         return obj.save();
@@ -1517,38 +1517,38 @@ describe('schemas', () => {
       let query = new Parse.Query('AClass');
       return query.find().then((res) => {
         expect(res.length).toEqual(1);
-      }, (err) => {
+      }, () => {
          fail('User should be able to find!')
         return Promise.resolve();
       })
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
       expect(err.message).toEqual('Permission denied for action create on class AClass.');
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'user2');
-    }).then( () => {
+    }).then( () => {
       let query = new Parse.Query('AClass');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
       expect(err.message).toEqual('Permission denied for action find on class AClass.');
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       done();
     });
   });
 
-  it('can query with include and CLP (issue #2005)', (done) => {
+  it('can query with include and CLP (issue #2005)', (done) => {
     setPermissionsOnClass('AnotherObject', {
       get: {"*": true},
       find: {},
@@ -1556,43 +1556,43 @@ describe('schemas', () => {
       update: {'*': true},
       delete: {'*': true},
       addField:{'*': true}
-    }).then(() => {
+    }).then(() => {
       let obj = new Parse.Object('AnObject');
       let anotherObject = new Parse.Object('AnotherObject');
       return obj.save({
         anotherObject
       })
-    }).then(() => {
+    }).then(() => {
       let query = new Parse.Query('AnObject');
       query.include('anotherObject');
       return query.find();
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(1);
       expect(res[0].get('anotherObject')).not.toBeUndefined();
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     })
   });
 
-  it('can add field as master (issue #1257)', (done) => {
+  it('can add field as master (issue #1257)', (done) => {
     setPermissionsOnClass('AClass', {
       'addField': {}
-    }).then(() => {
+    }).then(() => {
       var obj = new Parse.Object('AClass');
       obj.set('key', 'value');
       return obj.save(null, {useMasterKey: true})
-    }).then((obj) => {
+    }).then((obj) => {
       expect(obj.get('key')).toEqual('value');
       done();
-    }, (err) => {
+    }, () => {
       fail('should not fail');
       done();
     });
   });
 
-  it('can login when addFields is false (issue #1355)', (done) => {
+  it('can login when addFields is false (issue #1355)', (done) => {
     setPermissionsOnClass('_User', {
       'create': {'*': true},
       'addField': {}
@@ -1616,7 +1616,7 @@ describe('schemas', () => {
         url: 'http://localhost:8378/1/schemas/MyClass',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         done();
@@ -1641,34 +1641,34 @@ describe('schemas', () => {
         'update': {'role:admin': true},
         'delete': {'role:admin': true}
       })
-    }).then(() => {
+    }).then(() => {
       return obj.save();
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user', 'user')
     }).then(() => {
       return obj.destroy();
-    }).then((result) => {
+    }).then(() => {
       let query = new Parse.Query('AnObject');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(0);
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       fail('should not fail');
       jfail(err);
       done();
     });
   });
 
-  it('regression test for #2246', done => {
+  it('regression test for #2246', done => {
     let profile = new Parse.Object('UserProfile');
     let user = new Parse.User();
     function initialize() {
       return user.save({
         username: 'user',
         password: 'password'
-      }).then(() => {
-        return profile.save({user}).then(() => {
+      }).then(() => {
+        return profile.save({user}).then(() => {
         return user.save({
             userProfile: profile
           }, {useMasterKey: true});
@@ -1676,21 +1676,21 @@ describe('schemas', () => {
       });
     }
 
-    initialize().then(() => {
+    initialize().then(() => {
       return setPermissionsOnClass('UserProfile', {
         'readUserFields': ['user'],
         'writeUserFields': ['user']
       }, true);
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user', 'password')
-    }).then(() => {
+    }).then(() => {
       let query = new Parse.Query('_User');
       query.include('userProfile');
       return query.get(user.id);
-    }).then((user) => {
+    }).then((user) => {
       expect(user.get('userProfile')).not.toBeUndefined();
       done();
-    }, (err) => {
+    }, (err) => {
       jfail(err);
       done();
     });
