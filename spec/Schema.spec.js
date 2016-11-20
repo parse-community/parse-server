@@ -56,6 +56,21 @@ describe('SchemaController', () => {
     });
   });
 
+  it('can validate Relation object', (done) => {
+    config.database.loadSchema().then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Relation',className:'Stuff'}});
+    }).then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Pointer',className:'Stuff'}})
+      .then((schema) => {
+        fail('expected invalidity');
+        done();
+      }, done);
+    }, (err) => {
+      fail(err);
+      done();
+    });
+  });
+
   it('rejects inconsistent types', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('Stuff', {bacon: 7});

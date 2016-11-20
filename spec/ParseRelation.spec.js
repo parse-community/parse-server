@@ -741,4 +741,32 @@ describe('Parse.Relation testing', () => {
       done();
     });
   });
+
+  it('can be saved without error', done => {
+    let obj1 = new Parse.Object('PPAP');
+    obj1.save()
+    .then(() => {
+      let newRelation = obj1.relation('aRelation');
+      newRelation.add(obj1);
+      obj1.save().then(() => {
+        let relation = obj1.get('aRelation');
+        obj1.set('aRelation', relation);
+        obj1.save().then(() => {
+          done();
+        }, error => {
+          fail('failed to save ParseRelation object');
+          fail(error);
+          done();
+        });
+      }, error => {
+        fail('failed to create relation field');
+        fail(error);
+        done();
+      });
+    }, error => {
+      fail('failed to save obj');
+      fail(error);
+      done();
+    });
+  });
 });

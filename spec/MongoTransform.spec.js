@@ -236,6 +236,19 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('removes Relation types', (done) => {
+    var input = {
+      aRelation: { __type: 'Relation', className: 'Stuff' },
+    };
+    var output = transform.parseObjectToMongoObjectForCreate(null, input, {
+      fields: {
+        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+      },
+    });
+    expect(output).toEqual({});
+    done();
+  });
+
   it('writes the old ACL format in addition to rperm and wperm on update', (done) => {
     var input = {
       _rperm: ['*'],
@@ -280,5 +293,19 @@ describe('parseObjectToMongoObjectForCreate', () => {
     expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
+});
 
+describe('transformUpdate', () => {
+  it('removes Relation types', (done) => {
+    var input = {
+      aRelation: { __type: 'Relation', className: 'Stuff' },
+    };
+    var output = transform.transformUpdate(null, input, {
+      fields: {
+        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+      },
+    });
+    expect(output).toEqual({});
+    done();
+  });
 });

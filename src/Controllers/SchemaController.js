@@ -895,6 +895,13 @@ function getObjectType(obj) {
             targetClass: obj.className
           }
         }
+      case 'Relation' :
+        if(obj.className) {
+          return {
+            type: 'Relation',
+            targetClass: obj.className
+          }
+        }
       case 'File' :
         if(obj.name) {
           return 'File';
