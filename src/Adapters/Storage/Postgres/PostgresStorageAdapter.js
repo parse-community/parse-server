@@ -910,6 +910,8 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
         values.push(fieldName, fieldValue.latitude, fieldValue.longitude);
         index += 3;
+      } else if (fieldValue.__type === 'Relation') {
+        // noop
       } else if (typeof fieldValue === 'number') {
         updatePatterns.push(`$${index}:name = $${index + 1}`);
         values.push(fieldName, fieldValue);
