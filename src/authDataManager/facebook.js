@@ -2,7 +2,7 @@
 var https = require('https');
 var Parse = require('parse/node').Parse;
 
-// Returns a promise that fulfills iff this user id is valid.
+// Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
   return graphRequest('me?fields=id&access_token=' + authData.access_token)
     .then((data) => {
