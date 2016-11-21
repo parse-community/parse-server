@@ -1,7 +1,7 @@
 import AppCache from './cache';
 
 //Used by tests
-function destroyAllDataPermanently() {
+export function destroyAllDataPermanently() {
   if (!process.env.TESTING) {
     throw 'Only supported in test environment';
   }
@@ -13,8 +13,4 @@ function destroyAllDataPermanently() {
         return Promise.resolve();
       }
     }));
-}
-
-export {
-  destroyAllDataPermanently
 }
