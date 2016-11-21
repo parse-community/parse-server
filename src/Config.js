@@ -138,6 +138,10 @@ export class Config {
       if(passwordPolicy.doNotAllowUsername && typeof passwordPolicy.doNotAllowUsername !== 'boolean') {
         throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
       }
+
+      if (passwordPolicy.passwordHistory && (!Number.isInteger(passwordPolicy.passwordHistory) || passwordPolicy.passwordHistory <= 0 || passwordPolicy.passwordHistory > 20)) {
+        throw 'passwordPolicy.passwordHistory must be an integer ranging 0 - 20';
+      }
     }
   }
 

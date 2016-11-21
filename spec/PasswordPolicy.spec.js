@@ -1010,4 +1010,304 @@ describe("Password Policy: ", () => {
     });
   });
 
+  it('should fail if passwordPolicy.passwordHistory is not a number', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        passwordHistory: "not a number"
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.passwordHistory "not a number" test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.passwordHistory must be an integer ranging 0 - 20');
+      done();
+    });
+  });
+
+  it('should fail if passwordPolicy.passwordHistory is a negative number', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        passwordHistory: -10
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.passwordHistory negative number test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.passwordHistory must be an integer ranging 0 - 20');
+      done();
+    });
+  });
+
+  it('should fail if passwordPolicy.passwordHistory is greater than 20', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        passwordHistory: 21
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.passwordHistory negative number test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.passwordHistory must be an integer ranging 0 - 20');
+      done();
+    });
+  });
+
+  it('should fail if the new password is same as the last password', done => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        requestp.get({
+          uri: options.link,
+          followRedirect: false,
+          simple: false,
+          resolveWithFullResponse: true
+        }).then(response => {
+          expect(response.statusCode).toEqual(302);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
+          if (!match) {
+            fail("should have a token");
+            return Promise.reject("Invalid password link");
+          }
+          return Promise.resolve(match[1]); // token
+        }).then(token => {
+          return new Promise((resolve, reject) => {
+            requestp.post({
+              uri: "http://localhost:8378/1/apps/test/request_password_reset",
+              body: `new_password=user1&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              followRedirect: false,
+              simple: false,
+              resolveWithFullResponse: true
+            }).then(response => {
+              resolve([response, token]);
+            }).catch(error => {
+              reject(error);
+            });
+          });
+        }).then(data => {
+          const response = data[0];
+          const token = data[1];
+          expect(response.statusCode).toEqual(302);
+          expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%201%20passwords.&app=passwordPolicy`);
+          done();
+          return Promise.resolve();
+        }).catch(error => {
+          jfail(error);
+          fail("Repeat password test failed");
+          done();
+        });
+      },
+      sendMail: () => {
+      }
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      verifyUserEmails: false,
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        passwordHistory: 1
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        return Parse.User.logOut();
+      }).then(() => {
+        return Parse.User.requestPasswordReset('user1@parse.com');
+      }).catch(error => {
+        jfail(error);
+        fail("SignUp or reset request failed");
+        done();
+      });
+    });
+  });
+
+  it('should fail if the new password is same as 5th oldest password in history when policy does not allow last 5 passwords', done => {
+    const user = new Parse.User();
+    let pwCount = 1;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        pwCount++; // counter for password generation like user2, user3, .... (user1 is used during signup)
+
+        requestp.get({
+          uri: options.link,
+          followRedirect: false,
+          simple: false,
+          resolveWithFullResponse: true
+        }).then(response => {
+          expect(response.statusCode).toEqual(302);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
+          if (!match) {
+            fail("should have a token");
+            return Promise.reject("Invalid password link");
+          }
+          return Promise.resolve(match[1]); // token
+        }).then(token => {
+          let newpw = `user${pwCount}`;
+          if(pwCount === 6) // try to reuse the first password which is in history
+            newpw = 'user1';
+          return new Promise((resolve, reject) => {
+            requestp.post({
+              uri: "http://localhost:8378/1/apps/test/request_password_reset",
+              body: `new_password=${newpw}&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              followRedirect: false,
+              simple: false,
+              resolveWithFullResponse: true
+            }).then(response => {
+              resolve([response, token]);
+            }).catch(error => {
+              reject(error);
+            });
+          });
+        }).then(data => {
+          const response = data[0];
+          const token = data[1];
+          if(pwCount === 6){ // repeating password 'user1' - must fail
+            expect(response.statusCode).toEqual(302);
+            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=New%20password%20should%20not%20be%20the%20same%20as%20last%205%20passwords.&app=passwordPolicy`);
+            done();
+          } else { // continue with resets
+            expect(response.statusCode).toEqual(302);
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
+            Parse.User.requestPasswordReset('user1@parse.com');
+          }
+          return Promise.resolve();
+        }).catch(error => {
+          jfail(error);
+          fail("Repeat password test failed");
+          done();
+        });
+      },
+      sendMail: () => {
+      }
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      verifyUserEmails: false,
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        passwordHistory: 5
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        return Parse.User.logOut();
+      }).then(() => {
+        // initiate a sequence of password resets
+        return Parse.User.requestPasswordReset('user1@parse.com');
+      }).catch(error => {
+        jfail(error);
+        fail("SignUp or reset request failed");
+        done();
+      });
+    });
+  });
+
+  it('should succeed if the a password beyond the history limit is reused', done => {
+    const user = new Parse.User();
+    let pwCount = 1;
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        pwCount++; // counter for password sequence (user2, user3, ...)
+
+        requestp.get({
+          uri: options.link,
+          followRedirect: false,
+          simple: false,
+          resolveWithFullResponse: true
+        }).then(response => {
+          expect(response.statusCode).toEqual(302);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
+          if (!match) {
+            fail("should have a token");
+            return Promise.reject("Invalid password link");
+          }
+          return Promise.resolve(match[1]); // token
+        }).then(token => {
+          let newpw = `user${pwCount}`;
+          if(pwCount === 7) //  reuse the first password now
+            newpw = 'user1';
+          return new Promise((resolve, reject) => {
+            requestp.post({
+              uri: "http://localhost:8378/1/apps/test/request_password_reset",
+              body: `new_password=${newpw}&token=${token}&username=user1`,
+              headers: {
+                'Content-Type': 'application/x-www-form-urlencoded'
+              },
+              followRedirect: false,
+              simple: false,
+              resolveWithFullResponse: true
+            }).then(response => {
+              resolve([response, token]);
+            }).catch(error => {
+              reject(error);
+            });
+          });
+        }).then(data => {
+          const response = data[0];
+          const token = data[1];
+          expect(response.statusCode).toEqual(302);
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
+          if(pwCount === 7){ // end it now
+            done();
+          } else { //continue with more resets
+            Parse.User.requestPasswordReset('user1@parse.com');
+          }
+          return Promise.resolve();
+        }).catch(error => {
+          jfail(error);
+          fail("Repeat password test failed");
+          done();
+        });
+      },
+      sendMail: () => {
+      }
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      verifyUserEmails: false,
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        passwordHistory: 5
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        return Parse.User.logOut();
+      }).then(() => {
+        // initiate sequence of password resets
+        return Parse.User.requestPasswordReset('user1@parse.com');
+      }).catch(error => {
+        jfail(error);
+        fail("SignUp or reset request failed");
+        done();
+      });
+    });
+  });
+
 })

@@ -352,14 +352,16 @@ RestWrite.prototype.transformUser = function() {
   if (this.query) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
-    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', { user: {
-      __type: "Pointer",
-      className: "_User",
-      objectId: this.objectId(),
-    }}).execute()
-    .then(results => {
-      results.results.forEach(session => this.config.cacheController.user.del(session.sessionToken));
-    });
+    promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
+      user: {
+        __type: "Pointer",
+        className: "_User",
+        objectId: this.objectId(),
+      }
+    }).execute()
+      .then(results => {
+        results.results.forEach(session => this.config.cacheController.user.del(session.sessionToken));
+      });
   }
 
   return promise.then(() => {
@@ -368,44 +370,12 @@ RestWrite.prototype.transformUser = function() {
       return;
     }
 
-    let defer = Promise.resolve();
-
-    // check if the password conforms to the defined password policy if configured
-    if (this.config.passwordPolicy) {
-      const policyError = 'Password does not meet the Password Policy requirements.';
-
-      // check whether the password conforms to the policy
-      if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
-          this.config.passwordPolicy.validatorCallback && !this.config.passwordPolicy.validatorCallback(this.data.password)) {
-        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
-      }
-
-      // check whether password contain username
-      if (this.config.passwordPolicy.doNotAllowUsername === true) {
-        if (this.data.username) { // username is not passed during password reset
-          if (this.data.password.indexOf(this.data.username) >= 0)
-            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
-
-        } else { // retrieve the User object using objectId during password reset
-          defer = this.config.database.find('_User', {objectId: this.objectId()})
-            .then(results => {
-              if (results.length != 1) {
-                throw undefined;
-              }
-              if (this.data.password.indexOf(results[0].username) >= 0)
-                return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
-              return Promise.resolve();
-            });
-        }
-      }
-    }
-
     if (this.query && !this.auth.isMaster) {
       this.storage['clearSessions'] = true;
       this.storage['generateNewSession'] = true;
     }
 
-    return defer.then(() => {
+    return this._validatePasswordPolicy().then(() => {
       return passwordCrypto.hash(this.data.password).then((hashedPassword) => {
         this.data._hashed_password = hashedPassword;
         delete this.data.password;
@@ -413,51 +383,130 @@ RestWrite.prototype.transformUser = function() {
     });
 
   }).then(() => {
-    // Check for username uniqueness
-    if (!this.data.username) {
-      if (!this.query) {
-        this.data.username = cryptoUtils.randomString(25);
-        this.responseShouldHaveUsername = true;
-      }
-      return;
+    return this._validateUserName();
+  }).then(() => {
+    return this._validateEmail();
+  });
+};
+
+RestWrite.prototype._validateUserName = function () {
+  // Check for username uniqueness
+  if (!this.data.username) {
+    if (!this.query) {
+      this.data.username = cryptoUtils.randomString(25);
+      this.responseShouldHaveUsername = true;
     }
-    // We need to a find to check for duplicate username in case they are missing the unique index on usernames
-    // TODO: Check if there is a unique index, and if so, skip this query.
-    return this.config.database.find(
-      this.className,
-      { username: this.data.username, objectId: {'$ne': this.objectId()} },
-      { limit: 1 }
-    )
-    .then(results => {
-      if (results.length > 0) {
-        throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
-      }
-      return;
-    });
-  })
-  .then(() => {
-    if (!this.data.email || this.data.email.__op === 'Delete') {
-      return;
+    return Promise.resolve();
+  }
+  // We need to a find to check for duplicate username in case they are missing the unique index on usernames
+  // TODO: Check if there is a unique index, and if so, skip this query.
+  return this.config.database.find(
+    this.className,
+    {username: this.data.username, objectId: {'$ne': this.objectId()}},
+    {limit: 1}
+  ).then(results => {
+    if (results.length > 0) {
+      throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
     }
-    // Validate basic email address format
-    if (!this.data.email.match(/^.+@.+$/)) {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.');
+    return;
+  });
+};
+
+RestWrite.prototype._validateEmail = function() {
+  if (!this.data.email || this.data.email.__op === 'Delete') {
+    return Promise.resolve();
+  }
+  // Validate basic email address format
+  if (!this.data.email.match(/^.+@.+$/)) {
+    return Promise.reject(new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.'));
+  }
+  // Same problem for email as above for username
+  return this.config.database.find(
+    this.className,
+    {email: this.data.email, objectId: {'$ne': this.objectId()}},
+    {limit: 1}
+  ).then(results => {
+    if (results.length > 0) {
+      throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
     }
-    // Same problem for email as above for username
-    return this.config.database.find(
-      this.className,
-      { email: this.data.email, objectId: {'$ne': this.objectId()} },
-      { limit: 1 }
-    )
-    .then(results => {
-      if (results.length > 0) {
-        throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
-      }
-      // We updated the email, send a new validation
-      this.storage['sendVerificationEmail'] = true;
-      this.config.userController.setEmailVerifyToken(this.data);
-    });
-  })
+    // We updated the email, send a new validation
+    this.storage['sendVerificationEmail'] = true;
+    this.config.userController.setEmailVerifyToken(this.data);
+  });
+};
+
+RestWrite.prototype._validatePasswordPolicy = function() {
+  if (!this.config.passwordPolicy)
+    return Promise.resolve();
+  return this._validatePasswordRequirements().then(() => {
+    return this._validatePasswordHistory();
+  });
+};
+
+
+RestWrite.prototype._validatePasswordRequirements = function() {
+  // check if the password conforms to the defined password policy if configured
+  const policyError = 'Password does not meet the Password Policy requirements.';
+
+  // check whether the password meets the password strength requirements
+  if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
+    this.config.passwordPolicy.validatorCallback && !this.config.passwordPolicy.validatorCallback(this.data.password)) {
+    return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+  }
+
+  // check whether password contain username
+  if (this.config.passwordPolicy.doNotAllowUsername === true) {
+    if (this.data.username) { // username is not passed during password reset
+      if (this.data.password.indexOf(this.data.username) >= 0)
+        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+    } else { // retrieve the User object using objectId during password reset
+      return this.config.database.find('_User', {objectId: this.objectId()})
+        .then(results => {
+          if (results.length != 1) {
+            throw undefined;
+          }
+          if (this.data.password.indexOf(results[0].username) >= 0)
+            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+          return Promise.resolve();
+        });
+    }
+  }
+  return Promise.resolve();
+};
+
+RestWrite.prototype._validatePasswordHistory = function() {
+  // check whether password is repeating from specified history
+  if (this.query && this.config.passwordPolicy.passwordHistory) {
+    return this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_old_passwords", "_hashed_password"]})
+      .then(results => {
+        if (results.length != 1) {
+          throw undefined;
+        }
+        const user = results[0];
+        let oldPasswords = [];
+        if (user._old_passwords)
+          oldPasswords = _.take(user._old_passwords, this.config.passwordPolicy.passwordHistory - 1);
+        oldPasswords.push(user.password);
+        const newPassword = this.data.password;
+        // compare the new password hash with all old password hashes
+        let promises = oldPasswords.map(function (hash) {
+          return passwordCrypto.compare(newPassword, hash).then((result) => {
+            if (result) // reject if there is a match
+              return Promise.reject("REPEAT_PASSWORD");
+            return Promise.resolve();
+          })
+        });
+        // wait for all comparisons to complete
+        return Promise.all(promises).then(() => {
+          return Promise.resolve();
+        }).catch(err => {
+          if (err === "REPEAT_PASSWORD") // a match was found
+            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, `New password should not be the same as last ${this.config.passwordPolicy.passwordHistory} passwords.`));
+          throw err;
+        });
+      });
+  }
+  return Promise.resolve();
 };
 
 RestWrite.prototype.createSessionTokenIfNeeded = function() {
@@ -851,12 +900,37 @@ RestWrite.prototype.runDatabaseOperation = function() {
     // Ignore createdAt when update
     delete this.data.createdAt;
 
-    // Run an update
-    return this.config.database.update(this.className, this.query, this.data, this.runOptions)
-    .then(response => {
-      response.updatedAt = this.updatedAt;
-      this._updateResponseWithData(response, this.data);
-      this.response = { response };
+    let defer = Promise.resolve();
+    // if password history is enabled then save the current password to history
+    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.passwordHistory) {
+      defer = this.config.database.find('_User', {objectId: this.objectId()},
+        {keys: ["_old_passwords", "_hashed_password"]}).then(results => {
+
+        if (results.length != 1) {
+          throw undefined;
+        }
+        const user = results[0];
+        let oldPasswords = [];
+        if (user._old_passwords) {
+          oldPasswords = _.take(user._old_passwords, this.config.passwordPolicy.passwordHistory);
+        }
+        //n-1 passwords go into history including last password
+        while (oldPasswords.length > this.config.passwordPolicy.passwordHistory - 2) {
+          oldPasswords.shift();
+        }
+        oldPasswords.push(user.password);
+        this.data._old_passwords = oldPasswords;
+      });
+    }
+
+    return defer.then(() => {
+      // Run an update
+      return this.config.database.update(this.className, this.query, this.data, this.runOptions)
+      .then(response => {
+        response.updatedAt = this.updatedAt;
+        this._updateResponseWithData(response, this.data);
+        this.response = { response };
+      });
     });
   } else {
     // Set the default ACL and password timestamp for the new _User
