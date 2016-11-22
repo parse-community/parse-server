@@ -37,9 +37,9 @@ let providers = {
   janrainengage,
   janraincapture,
   vkontakte,
-  qq:qq,
-  wechat:wechat,
-  weibo:weibo
+  qq,
+  wechat,
+  weibo
 }
 
 module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
