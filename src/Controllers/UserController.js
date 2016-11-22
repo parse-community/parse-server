@@ -220,7 +220,7 @@ function buildVerificationLink(destination, username, token) {
 
   if (this.config.parseFrameURL) {
     let destinationWithoutHost = destination.replace(this.config.publicServerURL, '');
-   return `${this.config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
+    return `${this.config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
   } else {
     return `${destination}?${usernameAndToken}`;
   }
