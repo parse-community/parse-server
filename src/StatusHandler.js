@@ -1,8 +1,10 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
+import _ from 'lodash';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
+const PUSH_COLLECTION = '_Push';
 
 export function flatten(array) {
   return array.reduce((memo, element) => {
@@ -34,9 +36,84 @@ function statusHandler(className, database) {
     return lastPromise;
   }
 
+  function createPush(object) {
+    return database.create(PUSH_COLLECTION, object).then(() => {
+      return Promise.resolve(object);
+    });
+  }
+
+  function updatePush(query, updateFields) {
+    return database.update(PUSH_COLLECTION, query, updateFields);
+  }
+
+  function insertPushes(pushStatusObjectId, installations) {
+    // Insert a Push object for each installation we're pushing to
+    let now = new Date();
+    let promises = _.map(installations, installation => {
+      let pushObjectId = newObjectId();
+      let push = {
+        objectId: pushObjectId,
+        createdAt: now,
+        updatedAt: now,
+        deviceToken: installation.deviceToken,
+        installation: {
+          __type: 'Pointer',
+          className: "_Installation",
+          objectId: installation.objectId,
+        },
+        pushStatus: pushStatusObjectId
+      };
+      return createPush(push);
+    });
+    return Promise.all(promises);
+  }
+
+  function updatePushes(pushStatusObjectId, installations, results) {
+    let now = new Date();
+
+    let resultsByDeviceToken = _.keyBy(results, r => r.device.deviceToken);
+
+    // Update the push record for each installation
+    let promises = _.map(installations, installation => {
+      let deviceToken = installation.deviceToken;
+      let result = null;
+
+      // Handle different failure scenarios
+      if (!deviceToken) {
+        result = { transmitted: false, error: 'No deviceToken found on installation' }
+      } else if (deviceToken in resultsByDeviceToken) {
+        result = resultsByDeviceToken[deviceToken];
+      } else {
+        result = { transmitted: false, error: 'No result from adapter' }
+      }
+
+      // Find the record to update
+      let query = {
+        pushStatus: pushStatusObjectId,
+        installation: {
+          __type: 'Pointer',
+          className: "_Installation",
+          objectId: installation.objectId,
+        }
+      };
+      let updateFields = {
+        result: result,
+        updatedAt: now
+      };
+
+      return updatePush(query, updateFields);
+    });
+
+    return Promise.all(promises);
+  }
+
   return Object.freeze({
     create,
-    update
+    update,
+    createPush,
+    updatePush,
+    insertPushes,
+    updatePushes
   })
 }
 
@@ -138,11 +215,17 @@ export function pushStatusHandler(config) {
 
   let setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date() });
+    return handler.update({status:"pending", objectId: objectId},
+      {status: "running", updatedAt: new Date() }).then((result) => {
+        return handler.insertPushes(objectId, installations).then(() => {
+          return result;
+        });
+    });
   }
 
-  let complete = function(results) {
+  let complete = function(data) {
+    let results = data.results;
+    let installations = data.installations;
     let update = {
       status: 'succeeded',
       updatedAt: new Date(),
@@ -173,7 +256,11 @@ export function pushStatusHandler(config) {
       }, update);
     }
     logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update);
+    return handler.update({status:"running", objectId }, update).then((result) => {
+      return handler.updatePushes(objectId, installations, results).then(() => {
+        return result;
+      });
+    });
   }
 
   let fail = function(err) {

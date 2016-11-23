@@ -73,6 +73,12 @@ const defaultColumns = Object.freeze({
     "title":              {type:'String'},
     "subtitle":           {type:'String'},
   },
+  _Push: {
+    "result":         {type:'Object'},
+    "pushStatus":     {type:'String'},
+    "installation":   {type:'Pointer', targetClass:'_Installation'},
+    "deviceToken":    {type:'String'},
+  },
   _PushStatus: {
     "pushTime":     {type:'String'},
     "source":       {type:'String'}, // rest or webui
@@ -113,9 +119,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_Push', '_PushStatus', '_JobStatus']);
 
-const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Push', '_Hooks', '_GlobalConfig']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;

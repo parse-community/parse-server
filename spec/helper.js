@@ -219,7 +219,7 @@ afterEach(function(done) {
         } else {
           // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
           // break it.
-          return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
+          return ['_User', '_Installation', '_Role', '_Session', '_Product', '_Push'].indexOf(className) >= 0;
         }
       }});
     });
