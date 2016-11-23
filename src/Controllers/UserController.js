@@ -120,7 +120,7 @@ export class UserController extends AdaptableController {
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
-      let link = buildVerificationLink(this.config.verifyEmailURL, username, token);
+      let link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
       let options = {
         appName: this.config.appName,
         link: link,
@@ -156,7 +156,7 @@ export class UserController extends AdaptableController {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
 
-      let link = buildVerificationLink(this.config.requestResetPasswordURL, username, token);
+      let link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
       let options = {
         appName: this.config.appName,
         link: link,
@@ -217,12 +217,12 @@ function updateUserPassword(userId, password, config) {
   });
  }
 
-function buildVerificationLink(destination, username, token) {
+function buildEmailLink(destination, username, token, config) {
   let usernameAndToken = `token=${token}&username=${username}`
 
-  if (this.config.parseFrameURL) {
-    let destinationWithoutHost = destination.replace(this.config.publicServerURL, '');
-    return `${this.config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
+  if (config.parseFrameURL) {
+    let destinationWithoutHost = destination.replace(config.publicServerURL, '');
+    return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
   } else {
     return `${destination}?${usernameAndToken}`;
   }
