@@ -217,6 +217,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
 * `passwordPolicy` - Optional password policy rules to enforce.
+* `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
 
 ##### Logging
 
