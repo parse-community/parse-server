@@ -81,9 +81,9 @@ export class PushController extends AdaptableController {
         });
       }
     }
-    let pushStatus = pushStatusHandler(config);
+    let pushStatus = pushStatusHandler(body, config);
     return Promise.resolve().then(() => {
-      return pushStatus.setInitial(body, where);
+      return pushStatus.setInitial(where);
     }).then(() => {
       onPushStatusSaved(pushStatus.objectId);
       return badgeUpdate();
@@ -105,6 +105,7 @@ export class PushController extends AdaptableController {
   }
 
   sendToAdapter(body, installations, pushStatus, config) {
+    body.data["push_hash"] = pushStatus.pushHash;
     if (body.data && body.data.badge && typeof body.data.badge == 'string' && body.data.badge.toLowerCase() == "increment") {
       // Collect the badges to reduce the # of calls
       let badgeInstallationsMap = installations.reduce((map, installation) => {
