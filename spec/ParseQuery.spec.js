@@ -128,6 +128,22 @@ describe('Parse.Query testing', () => {
         equal(results.length, 0);
       });
     }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.notEqualTo("hater", user2);
+      query.notEqualTo("liker", user2);
+      // user2 doesn't like any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.equalTo("hater", user);
+      query.equalTo("liker", user);
+      // user doesn't hate any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
       done();
     }).catch((err) => {
       jfail(err);
@@ -1217,7 +1233,7 @@ describe('Parse.Query testing', () => {
     query.find(expectError(Parse.Error.INVALID_QUERY, done));
   });
 
-  it_exclude_dbs(['postgres'])("Use a regex that requires all modifiers", function(done) {
+  it("Use a regex that requires all modifiers", function(done) {
     var thing = new TestObject();
     thing.set("myString", "PArSe\nCom");
     Parse.Object.saveAll([thing], function() {
@@ -1231,6 +1247,10 @@ describe('Parse.Query testing', () => {
       query.find({
         success: function(results) {
           equal(results.length, 1);
+          done();
+        },
+        error: function(err) {
+          jfail(err);
           done();
         }
       });
@@ -1255,7 +1275,7 @@ describe('Parse.Query testing', () => {
   var someAscii = "\\E' !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTU" +
     "VWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~'";
 
-  it_exclude_dbs(['postgres'])("contains", function(done) {
+  it("contains", function(done) {
     Parse.Object.saveAll([new TestObject({myString: "zax" + someAscii + "qub"}),
                           new TestObject({myString: "start" + someAscii}),
                           new TestObject({myString: someAscii + "end"}),
@@ -1271,7 +1291,7 @@ describe('Parse.Query testing', () => {
                           });
   });
 
-  it_exclude_dbs(['postgres'])("startsWith", function(done) {
+  it("startsWith", function(done) {
     Parse.Object.saveAll([new TestObject({myString: "zax" + someAscii + "qub"}),
                           new TestObject({myString: "start" + someAscii}),
                           new TestObject({myString: someAscii + "end"}),
@@ -1287,13 +1307,13 @@ describe('Parse.Query testing', () => {
                           });
   });
 
-  it_exclude_dbs(['postgres'])("endsWith", function(done) {
+  it("endsWith", function(done) {
     Parse.Object.saveAll([new TestObject({myString: "zax" + someAscii + "qub"}),
                           new TestObject({myString: "start" + someAscii}),
                           new TestObject({myString: someAscii + "end"}),
                           new TestObject({myString: someAscii})], function() {
                             var query = new Parse.Query(TestObject);
-                            query.startsWith("myString", someAscii);
+                            query.endsWith("myString", someAscii);
                             query.find({
                               success: function(results, foo) {
                                 equal(results.length, 2);
@@ -1618,7 +1638,7 @@ describe('Parse.Query testing', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('properly nested array of mixed objects with bad ids', (done) => {
+  it('properly nested array of mixed objects with bad ids', (done) => {
     let objects = [];
     let total = 0;
     while(objects.length != 5) {
@@ -1728,7 +1748,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("matches query", function(done) {
+  it("matches query", function(done) {
     var ParentObject = Parse.Object.extend("ParentObject");
     var ChildObject = Parse.Object.extend("ChildObject");
     var objects = [];

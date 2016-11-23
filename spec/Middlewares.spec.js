@@ -17,6 +17,7 @@ describe('middlewares', () => {
                 return fakeReq.headers[key.toLowerCase()]
             }
         };
+        fakeRes = jasmine.createSpyObj('fakeRes', ['end', 'status']);
         AppCache.put(fakeReq.body._ApplicationId, {});
     });
 
@@ -32,6 +33,59 @@ describe('middlewares', () => {
             expect(fakeReq.headers['content-type']).toEqual(contentType);
             expect(fakeReq.body._ContentType).toEqual(undefined);
             done()
+        });
+    });
+
+    it('should give invalid response when keys are configured but no key supplied', () => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            masterKey: 'masterKey',
+            restAPIKey: 'restAPIKey'
+        });
+        middlewares.handleParseHeaders(fakeReq, fakeRes);
+        expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should give invalid response when keys are configured but supplied key is incorrect', () => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            masterKey: 'masterKey',
+            restAPIKey: 'restAPIKey'
+        });
+        fakeReq.headers['x-parse-rest-api-key'] = 'wrongKey';
+        middlewares.handleParseHeaders(fakeReq, fakeRes);
+        expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+    it('should give invalid response when keys are configured but different key is supplied', () => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            masterKey: 'masterKey',
+            restAPIKey: 'restAPIKey'
+        });
+        fakeReq.headers['x-parse-client-key'] = 'clientKey';
+        middlewares.handleParseHeaders(fakeReq, fakeRes);
+        expect(fakeRes.status).toHaveBeenCalledWith(403);
+    });
+
+
+    it('should succeed when any one of the configured keys supplied', (done) => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            clientKey: 'clientKey',
+            masterKey: 'masterKey',
+            restAPIKey: 'restAPIKey'
+        });
+        fakeReq.headers['x-parse-rest-api-key'] = 'restAPIKey';
+        middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+            expect(fakeRes.status).not.toHaveBeenCalled();
+            done();
+        });
+    });
+
+    it('should succeed when no keys are configured and none supplied', (done) => {
+        AppCache.put(fakeReq.body._ApplicationId, {
+            masterKey: 'masterKey'
+        });
+        middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+            expect(fakeRes.status).not.toHaveBeenCalled();
+            done();
         });
     });
 

@@ -8,13 +8,16 @@ import defaults from '../defaults';
 export default class SchemaCache {
   cache: Object;
 
-  constructor(cacheController, ttl = defaults.schemaCacheTTL) {
+  constructor(cacheController, ttl = defaults.schemaCacheTTL, singleCache = false) {
     this.ttl = ttl;
     if (typeof ttl == 'string') {
       this.ttl = parseInt(ttl);
     }
     this.cache = cacheController;
-    this.prefix = SCHEMA_CACHE_PREFIX+randomString(20);
+    this.prefix = SCHEMA_CACHE_PREFIX;
+    if (!singleCache) {
+      this.prefix += randomString(20);
+    }
   }
 
   put(key, value) {
@@ -50,7 +53,21 @@ export default class SchemaCache {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.get(this.prefix+className);
+    return this.cache.get(this.prefix+className).then((schema) => {
+      if (schema) {
+        return Promise.resolve(schema);
+      }
+      return this.cache.get(this.prefix+MAIN_SCHEMA).then((cachedSchemas) => {
+        cachedSchemas = cachedSchemas || [];
+        schema = cachedSchemas.find((cachedSchema) => {
+          return cachedSchema.className === className;
+        });
+        if (schema) {
+          return Promise.resolve(schema);
+        }
+        return Promise.resolve(null);
+      });
+    });
   }
 
   clear() {

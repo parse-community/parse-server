@@ -906,6 +906,78 @@ describe('Installations', () => {
     });
   });
 
+  it('allows you to update installation with masterKey', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input)
+    .then(createResult => {
+      let installationObj = Parse.Installation.createWithoutData(createResult.response.objectId);
+      installationObj.set('customField', 'custom value');
+      return installationObj.save(null, {useMasterKey: true});
+    }).then(updateResult => {
+      expect(updateResult).not.toBeUndefined();
+      expect(updateResult.get('customField')).toEqual('custom value');
+      done();
+    }).catch(error => {
+      console.log(error);
+      fail('failed');
+      done();
+    });
+  });
+
+  it('should properly handle installation save #2780', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query.first({useMasterKey: true}).then((installation) => {
+        return installation.save({
+          key: 'value'
+        }, {useMasterKey: true});
+      }).then(() => {
+        done();
+      }, (err) => {
+        jfail(err)
+        done();
+      });
+    });
+  });
+
+  it('should properly reject updating installationId', done => {
+    let installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let device = 'android';
+    let input = {
+      'installationId': installId,
+      'deviceType': device
+    };
+    rest.create(config, auth.nobody(config), '_Installation', input).then(() => {
+      let query = new Parse.Query(Parse.Installation);
+      query.equalTo('installationId', installId);
+      query.first({useMasterKey: true}).then((installation) => {
+        return installation.save({
+          key: 'value',
+          installationId: '22222222-abcd-abcd-abcd-123456789abc'
+        }, {useMasterKey: true});
+      }).then(() => {
+        fail('should not succeed');
+        done();
+      }, (err) => {
+        expect(err.code).toBe(136);
+        expect(err.message).toBe('installationId may not be changed in this operation');
+        done();
+      });
+    });
+  });
+
   // TODO: Look at additional tests from installation_collection_test.go:882
   // TODO: Do we need to support _tombstone disabling of installations?
   // TODO: Test deletion, badge increments

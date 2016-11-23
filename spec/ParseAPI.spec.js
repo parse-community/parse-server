@@ -1129,7 +1129,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       done();
     }, (e) => {
       expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toEqual('Invalid function.');
+      expect(e.message).toEqual('Invalid function: "somethingThatDoesDefinitelyNotExist"');
       done();
     });
   });
@@ -1306,7 +1306,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
-  it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
+  it('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
     .then(() => {
       fail('should not succeed')

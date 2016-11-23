@@ -4,7 +4,7 @@ let general = {
   'properties': {
     'op': {
       'type': 'string',
-      'enum': ['connect', 'subscribe', 'unsubscribe']
+      'enum': ['connect', 'subscribe', 'unsubscribe', 'update']
     },
   },
 };
@@ -78,6 +78,44 @@ let subscribe = {
   'additionalProperties': false
 };
 
+let update = {
+  'title': 'Update operation schema',
+  'type': 'object',
+  'properties': {
+    'op': 'update',
+    'requestId': {
+      'type': 'number'
+    },
+    'query': {
+      'title': 'Query field schema',
+      'type': 'object',
+      'properties': {
+        'className': {
+          'type': 'string'
+        },
+        'where': {
+          'type': 'object'
+        },
+        'fields': {
+          "type": "array",
+          "items": {
+              "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      'required': ['where', 'className'],
+      'additionalProperties': false
+    },
+    'sessionToken': {
+      'type': 'string'
+    }
+  },
+  'required': ['op', 'requestId', 'query'],
+  'additionalProperties': false
+};
+
 let unsubscribe = {
   'title': 'Unsubscribe operation schema',
   'type': 'object',
@@ -95,6 +133,7 @@ let RequestSchema = {
   'general': general,
   'connect': connect,
   'subscribe': subscribe,
+  'update': update,
   'unsubscribe': unsubscribe
 }
 

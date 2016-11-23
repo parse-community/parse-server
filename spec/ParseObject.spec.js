@@ -1066,7 +1066,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("saving children in an array", function(done) {
+  it("saving children in an array", function(done) {
     var Parent = Parse.Object.extend("Parent");
     var Child = Parse.Object.extend("Child");
 
@@ -1949,6 +1949,36 @@ describe('Parse.Object testing', () => {
       expect(array[0]).toBe(null);
       expect(array[1]).toBe(null);
       expect(array[2].get("key").get("foo")).toEqual("bar");
+      done();
+    }).catch(err => {
+      jfail(err);
+      done();
+    })
+  });
+
+  it('should handle select and include #2786', (done) => {
+    let score = new Parse.Object("GameScore");
+    let player = new Parse.Object("Player");
+    score.set({
+      "score": 1234
+    });
+
+    score.save().then(() => {
+      player.set("gameScore", score);
+      player.set("other", "value");
+      return player.save();
+    }).then(() => {
+      let query = new Parse.Query("Player");
+      query.include("gameScore");
+      query.select("gameScore");
+      return query.find();
+    }).then((res) => {
+      let obj = res[0];
+      let gameScore = obj.get("gameScore");
+      let other = obj.get("other");
+      expect(other).toBeUndefined();
+      expect(gameScore).not.toBeUndefined();
+      expect(gameScore.get("score")).toBe(1234);
       done();
     }).catch(err => {
       jfail(err);

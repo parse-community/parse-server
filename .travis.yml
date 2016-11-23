@@ -1,4 +1,6 @@
 language: node_js
+dist: trusty
+sudo: required
 node_js:
 - '4.5'
 - '6.1'
@@ -6,7 +8,7 @@ services:
   - postgresql
   - redis-server
 addons:
-  postgresql: '9.4'
+  postgresql: '9.5'
 before_script:
   - ls -al "$HOME/.mongodb/versions"
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres

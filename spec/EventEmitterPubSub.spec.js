@@ -1,4 +1,4 @@
-var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
+var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
 
 describe('EventEmitterPubSub', function() {
   it('can publish and subscribe', function() {
