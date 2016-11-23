@@ -252,7 +252,7 @@ class ParseServer {
         }
       }
       else {
-        throw "argument 'cloud' must either be a string or a function";
+        throw "argument 'cloud' must either be string, Array or a function";
       }
     }
   }
