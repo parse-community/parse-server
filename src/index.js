@@ -7,7 +7,6 @@ import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
 import TestUtils            from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
-import { EventAnalyticsAdapter }        from './Adapters/Analytics/EventAnalyticsAdapter';
 
 // Factory function
 let _ParseServer = function(options) {
