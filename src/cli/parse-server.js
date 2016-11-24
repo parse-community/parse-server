@@ -65,7 +65,7 @@ function startServer(options, callback) {
     for (const socketId in sockets) {
       try {
         sockets[socketId].destroy();
-      } catch (e) { }
+      } catch (e) { /* */ }
     }
   }
 

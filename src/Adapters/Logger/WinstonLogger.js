@@ -65,7 +65,7 @@ export function configureLogger({
     }
     try {
       fs.mkdirSync(logsFolder);
-    } catch (exception) {}
+    } catch (e) { /* */ }
   }
   options.dirname = logsFolder;
   options.level = logLevel;

@@ -27,7 +27,7 @@ export default class HTTPResponse {
       if (!_data) {
         try {
           _data = JSON.parse(getText());
-        } catch (e) {}
+        } catch (e) { /* */ }
       }
       return _data;
     }
