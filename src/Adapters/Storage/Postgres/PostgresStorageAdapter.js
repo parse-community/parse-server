@@ -1147,6 +1147,7 @@ export class PostgresStorageAdapter {
         throw err;
       });
     });
+    /* eslint-disable no-console */
     promises = promises.concat([
       this._client.any(json_object_set_key).catch((err) => {
         console.error(err);
@@ -1167,6 +1168,7 @@ export class PostgresStorageAdapter {
         console.error(err);
       })
     ]);
+    /* eslint-enable no-console */
     return Promise.all(promises).then(() => {
       debug(`initialzationDone in ${new Date().getTime() - now}`);
     }, () => {});

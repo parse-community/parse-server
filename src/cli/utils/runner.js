@@ -10,7 +10,9 @@ function logStartupOptions(options) {
     if (typeof value === 'object') {
       value = JSON.stringify(value);
     }
+    /* eslint-disable no-console */
     console.log(`${key}: ${value}`);
+    /* eslint-enable no-console */
   }
 }
 

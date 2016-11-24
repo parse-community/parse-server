@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './definitions/parse-server';
@@ -133,5 +134,4 @@ runner({
   }
 })
 
-
-
+/* eslint-enable no-console */

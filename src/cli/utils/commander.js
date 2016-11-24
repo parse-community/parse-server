@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { Command } from 'commander';
 import path from 'path';
 let _definitions;
@@ -124,3 +125,4 @@ Command.prototype.getOptions = function() {
 }
 
 export default new Command();
+/* eslint-enable no-console */

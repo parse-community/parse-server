@@ -15,9 +15,7 @@
     },
     "rules": {
         "indent": ["error", 2],
-        "no-extra-boolean-cast": [0],
-        "no-console": [0],
         "linebreak-style": ["error", "unix"],
-        "no-empty": 0
+        "no-empty": ["error", { "allowEmptyCatch": true }]
     }
 }
