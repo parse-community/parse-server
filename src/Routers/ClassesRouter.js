@@ -2,7 +2,7 @@
 import PromiseRouter from '../PromiseRouter';
 import rest          from '../rest';
 import _             from 'lodash';
-import url           from 'url';
+import Parse         from 'parse/node';
 
 const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 

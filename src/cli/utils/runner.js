@@ -1,6 +1,5 @@
 
 import program from './commander';
-import { mergeWithOptions } from './commander';
 
 function logStartupOptions(options) {
   for (let key in options) {
@@ -11,7 +10,9 @@ function logStartupOptions(options) {
     if (typeof value === 'object') {
       value = JSON.stringify(value);
     }
+    /* eslint-disable no-console */
     console.log(`${key}: ${value}`);
+    /* eslint-enable no-console */
   }
 }
 

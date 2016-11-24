@@ -13,7 +13,7 @@ function mountOnto(router) {
 // Returns a promise for a {response} object.
 // TODO: pass along auth correctly
 function handleBatch(router, req) {
-  if (!req.body.requests instanceof Array) {
+  if (!Array.isArray(req.body.requests)) {
     throw new Parse.Error(Parse.Error.INVALID_JSON,
                           'requests must be an array');
   }

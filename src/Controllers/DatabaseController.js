@@ -3,7 +3,6 @@
 
 import { Parse }              from 'parse/node';
 import _                      from 'lodash';
-import mongdb                 from 'mongodb';
 import intersect              from 'intersect';
 import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
@@ -45,7 +44,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
 
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
-const isSpecialQueryKey = key => {
+const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
 }
 
@@ -148,7 +147,7 @@ DatabaseController.prototype.validateObject = function(className, object, query,
       return Promise.resolve();
     }
     return this.canAddField(schema, className, object, aclGroup);
-  }).then(() => {
+  }).then(() => {
     return schema.validateObject(className, object, query);
   });
 };
@@ -193,7 +192,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //         write permissions.
 const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count', '_perishable_token_expires_at', '_password_changed_at'];
 
-const isSpecialUpdateKey = key => {
+const isSpecialUpdateKey = key => {
   return specialKeysForUpdate.indexOf(key) >= 0;
 }
 
@@ -208,7 +207,6 @@ DatabaseController.prototype.update = function(className, query, update, {
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
-  var mongoUpdate;
   return this.loadSchema()
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
@@ -280,7 +278,7 @@ function sanitizeDatabaseResult(originalObject, result) {
     let keyUpdate = originalObject[key];
     // determine if that was an op
     if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
-      && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
+      && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
       // only valid ops that produce an actionable result
       response[key] = result[key];
     }
@@ -302,7 +300,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
       return;
     }
     if (op.__op == 'AddRelation') {
-      for (var object of op.objects) {
+      for (let object of op.objects) {
         pending.push(this.addRelation(key, className,
                                       objectId,
                                       object.objectId));
@@ -311,7 +309,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
 
     if (op.__op == 'RemoveRelation') {
-      for (var object of op.objects) {
+      for (let object of op.objects) {
         pending.push(this.removeRelation(key, className,
                                          objectId,
                                          object.objectId));
@@ -326,10 +324,10 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
   };
 
-  for (var key in update) {
+  for (let key in update) {
     process(update[key], key);
   }
-  for (var key of deleteMe) {
+  for (let key of deleteMe) {
     delete update[key];
   }
   return Promise.all(pending);
@@ -415,35 +413,35 @@ const flattenUpdateOperatorsForCreate = object => {
   for (let key in object) {
     if (object[key] && object[key].__op) {
       switch (object[key].__op) {
-        case 'Increment':
-          if (typeof object[key].amount !== 'number') {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].amount;
-          break;
-        case 'Add':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'AddUnique':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'Remove':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = []
-          break;
-        case 'Delete':
-          delete object[key];
-          break;
-        default:
-          throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
+      case 'Increment':
+        if (typeof object[key].amount !== 'number') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].amount;
+        break;
+      case 'Add':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'AddUnique':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'Remove':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = []
+        break;
+      case 'Delete':
+        delete object[key];
+        break;
+      default:
+        throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
       }
     }
   }
@@ -451,7 +449,7 @@ const flattenUpdateOperatorsForCreate = object => {
 
 const transformAuthData = (className, object, schema) => {
   if (object.authData && className === '_User') {
-    Object.keys(object.authData).forEach(provider => {
+    Object.keys(object.authData).forEach(provider => {
       const providerData = object.authData[provider];
       const fieldName = `_auth_data_${provider}`;
       if (providerData == null) {
@@ -504,7 +502,7 @@ DatabaseController.prototype.canAddField = function(schema, className, object, a
   }
   let fields = Object.keys(object);
   let schemaFields = Object.keys(classSchema);
-  let newKeys = fields.filter((field) => {
+  let newKeys = fields.filter((field) => {
     return schemaFields.indexOf(field) < 0;
   })
   if (newKeys.length > 0) {
@@ -522,20 +520,6 @@ DatabaseController.prototype.deleteEverything = function() {
     this.schemaCache.clear()
   ]);
 };
-
-// Finds the keys in a query. Returns a Set. REST format only
-function keysForQuery(query) {
-  var sublist = query['$and'] || query['$or'];
-  if (sublist) {
-    let answer = sublist.reduce((memo, subquery) => {
-      return memo.concat(keysForQuery(subquery));
-    }, []);
-
-    return new Set(answer);
-  }
-
-  return new Set(Object.keys(query));
-}
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
@@ -561,10 +545,10 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   if (query['$or']) {
     let ors = query['$or'];
     return Promise.all(ors.map((aQuery, index) => {
-      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
+      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
         query['$or'][index] = aQuery;
       });
-    })).then(() => {
+    })).then(() => {
       return Promise.resolve(query);
     });
   }
@@ -575,7 +559,6 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
-      let relatedClassName = t.targetClass;
       // Build the list of queries
       let queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
@@ -625,7 +608,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
     return Promise.resolve();
   })
 
-  return Promise.all(promises).then(() => {
+  return Promise.all(promises).then(() => {
     return Promise.resolve(query);
   })
 };
@@ -839,7 +822,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
   })
   .then(schema => {
     return this.collectionExists(className)
-    .then(exist => this.adapter.count(className, { fields: {} }))
+    .then(() => this.adapter.count(className, { fields: {} }))
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
@@ -866,10 +849,10 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   let perms = schema.perms[className];
   let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
   let userACL = aclGroup.filter((acl) => {
-     return acl.indexOf('role:') != 0 && acl != '*';
+    return acl.indexOf('role:') != 0 && acl != '*';
   });
   // the ACL should have exactly 1 user
-  if (perms && perms[field] && perms[field].length > 0) {
+  if (perms && perms[field] && perms[field].length > 0) {
     // No user set return undefined
     // If the length is > 1, that means we didn't dedup users correctly
     if (userACL.length != 1) {
@@ -877,20 +860,19 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
     }
     let userId = userACL[0];
     let userPointer =  {
-          "__type": "Pointer",
-          "className": "_User",
-          "objectId": userId
-        };
+      "__type": "Pointer",
+      "className": "_User",
+      "objectId": userId
+    };
 
-    let constraints = {};
     let permFields = perms[field];
-    let ors = permFields.map((key) => {
+    let ors = permFields.map((key) => {
       let q = {
         [key]: userPointer
       };
       return {'$and': [q, query]};
     });
-    if (ors.length > 1) {
+    if (ors.length > 1) {
       return {'$or': ors};
     }
     return ors[0];

@@ -55,7 +55,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             done();
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -89,7 +89,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             done();
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -132,7 +132,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             }, 200);
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -179,7 +179,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             }, 200);
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -220,8 +220,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           user.fetch()
           .then((user) => {
             return user.save();
-          }).then((user) => {
-            return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch((err) => {
+          }).then(() => {
+            return Parse.User.requestPasswordReset("testSendSimpleAdapter@parse.com").catch(() => {
               fail('Should not fail requesting a password');
               done();
             })
@@ -230,7 +230,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             done();
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -256,8 +256,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.logIn("zxcv", "asdf"))
-      .then(result => {
+      .then(() => Parse.User.logIn("zxcv", "asdf"))
+      .then(() => {
         fail('login should have failed');
         done();
       }, error => {
@@ -296,8 +296,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     }).then(() => {
       expect(sendEmailOptions).not.toBeUndefined();
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
         user.fetch()
@@ -309,7 +309,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             expect(typeof user).toBe('object');
             expect(user.get('emailVerified')).toBe(true);
             done();
-          }, error => {
+          }, () => {
             fail('login should have succeeded');
             done();
           });
@@ -343,12 +343,12 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.logIn("zxcv", "asdf"))
+      .then(() => Parse.User.logIn("zxcv", "asdf"))
       .then(user => {
         expect(typeof user).toBe('object');
         expect(user.get('emailVerified')).toBe(false);
         done();
-      }, error => {
+      }, () => {
         fail('login should have succeeded');
         done();
       });
@@ -375,7 +375,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(() => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
       .then(result => {
         console.log(result);
         fail('sending password reset email should not have succeeded');
@@ -406,7 +406,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(() => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
       .then(result => {
         console.log(result);
         fail('sending password reset email should not have succeeded');
@@ -434,7 +434,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(() => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
       .then(result => {
         console.log(result);
         fail('sending password reset email should not have succeeded');
@@ -466,8 +466,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
-      .then(result => {
+      .then(() => Parse.User.requestPasswordReset("testInvalidConfig@parse.com"))
+      .then(() => {
         done();
       }, error => {
         done(error);
@@ -504,8 +504,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.setPassword("asdf");
       user.setUsername("testValidConfig@parse.com");
       user.signUp(null)
-      .then(user => Parse.User.requestPasswordReset("testValidConfig@parse.com"))
-      .then(result => {
+      .then(() => Parse.User.requestPasswordReset("testValidConfig@parse.com"))
+      .then(() => {
         expect(adapter.sendMail).toHaveBeenCalled();
         done();
       }, error => {
@@ -544,7 +544,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             done();
           });
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -579,7 +579,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           expect(emailSent).toBe(true);
           done();
         },
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -611,8 +611,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     }).then(() => {
       expect(sendEmailOptions).not.toBeUndefined();
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=user');
         user.fetch()
@@ -645,7 +645,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     .then(() => {
       request.get('http://localhost:8378/1/apps/test/verify_email', {
         followRedirect: false,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
         done()
@@ -667,7 +667,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     .then(() => {
       request.get('http://localhost:8378/1/apps/test/verify_email?token=asdfasdf&username=sadfasga', {
         followRedirect: false,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
         done();
@@ -678,10 +678,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   it('does not update email verified if you use an invalid token', done => {
     var user = new Parse.User();
     var emailAdapter = {
-      sendVerificationEmail: options => {
+      sendVerificationEmail: () => {
         request.get('http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv', {
           followRedirect: false,
-        }, (error, response, body) => {
+        }, (error, response) => {
           expect(response.statusCode).toEqual(302);
           expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
           user.fetch()
@@ -706,7 +706,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       user.set('email', 'user@parse.com');
       user.signUp(null, {
         success: () => {},
-        error: function(userAgain, error) {
+        error: function() {
           fail('Failed to save user');
           done();
         }
@@ -721,9 +721,9 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       sendPasswordResetEmail: options => {
         request.get(options.link, {
           followRedirect: false,
-        }, (error, response, body) => {
+        }, (error, response) => {
           if (error) {
-            jfail(err);
+            jfail(error);
             fail("Failed to get the reset link");
             return;
           }
@@ -771,7 +771,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     .then(() => {
       request.get('http://localhost:8378/1/apps/test/request_password_reset?token=asdfasdf&username=sadfasga', {
         followRedirect: false,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
         done();
@@ -786,7 +786,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       sendPasswordResetEmail: options => {
         request.get(options.link, {
           followRedirect: false,
-        }, (error, response, body) => {
+        }, (error, response) => {
           if (error) {
             jfail(error);
             fail("Failed to get the reset link");
@@ -806,10 +806,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             url: "http://localhost:8378/1/apps/test/request_password_reset" ,
             body: `new_password=hello&token=${token}&username=zxcv`,
             headers: {
-               'Content-Type': 'application/x-www-form-urlencoded'
+              'Content-Type': 'application/x-www-form-urlencoded'
             },
             followRedirect: false,
-          }, (error, response, body) => {
+          }, (error, response) => {
             if (error) {
               jfail(error);
               fail("Failed to POST request password reset");
@@ -818,7 +818,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             expect(response.statusCode).toEqual(302);
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv');
 
-            Parse.User.logIn("zxcv", "hello").then(function(user){
+            Parse.User.logIn("zxcv", "hello").then(function(){
               let config = new Config('test');
               config.database.adapter.find('_User', { fields: {} }, { 'username': 'zxcv' }, { limit: 1 })
               .then(results => {

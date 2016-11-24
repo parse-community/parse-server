@@ -14,7 +14,7 @@ export default class HTTPResponse {
       _data = body;
     }
 
-    let getText = () => {
+    let getText = () => {
       if (!_text && this.buffer) {
         _text = this.buffer.toString('utf-8');
       } else if (!_text && _data) {
@@ -26,8 +26,8 @@ export default class HTTPResponse {
     let getData = () => {
       if (!_data) {
         try {
-            _data = JSON.parse(getText());
-        } catch (e) {}
+          _data = JSON.parse(getText());
+        } catch (e) { /* */ }
       }
       return _data;
     }

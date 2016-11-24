@@ -13,7 +13,7 @@ function validateAuthData(authData) {
 }
 
 // Returns a promise that fulfills if this app id is valid.
-function validateAppId(appIds, authData) {
+function validateAppId() {
   return Promise.resolve();
 }
 
@@ -35,7 +35,7 @@ function graphRequest(path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function (e) {
+    }).on('error', function () {
       reject('Failed to validate this access token with qq.');
     });
   });

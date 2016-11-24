@@ -50,7 +50,7 @@ function request(host, path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function (e) {
+    }).on('error', function () {
       reject('Failed to validate this access token with Vk.');
     });
   });

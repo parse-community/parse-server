@@ -1,21 +1,21 @@
 module.exports = options => {
-	if (!options) {
-		throw "Options were not provided"
-	}
-	let adapter = {
-		sendVerificationEmail: () => Promise.resolve(),
+  if (!options) {
+    throw "Options were not provided"
+  }
+  let adapter = {
+    sendVerificationEmail: () => Promise.resolve(),
     sendPasswordResetEmail: () => Promise.resolve(),
     sendMail: () => Promise.resolve()
-	};
-	if (options.sendMail) {
-		adapter.sendMail = options.sendMail
-	}
-	if (options.sendPasswordResetEmail) {
-		adapter.sendPasswordResetEmail = options.sendPasswordResetEmail
-	}
-	if (options.sendVerificationEmail) {
-		adapter.sendVerificationEmail = options.sendVerificationEmail;
-	}
+  };
+  if (options.sendMail) {
+    adapter.sendMail = options.sendMail
+  }
+  if (options.sendPasswordResetEmail) {
+    adapter.sendPasswordResetEmail = options.sendPasswordResetEmail
+  }
+  if (options.sendVerificationEmail) {
+    adapter.sendVerificationEmail = options.sendVerificationEmail;
+  }
 
-	return adapter;
+  return adapter;
 }

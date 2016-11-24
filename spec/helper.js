@@ -25,7 +25,6 @@ if (global._babelPolyfill) {
 
 var cache = require('../src/cache').default;
 var express = require('express');
-var facebook = require('../src/authDataManager/facebook');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/TestUtils');
@@ -40,8 +39,8 @@ const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_tes
 let databaseAdapter;
 // need to bind for mocking mocha
 
-let startDB = () => {};
-let stopDB = () => {};
+let startDB = () => {};
+let stopDB = () => {};
 
 if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   databaseAdapter = new PostgresStorageAdapter({
@@ -53,7 +52,7 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
     timeout: () => {},
     slow: () => {}
   });
-  stopDB = require('mongodb-runner/mocha/after');;
+  stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
@@ -64,9 +63,9 @@ var port = 8378;
 
 let filesAdapter;
 
-on_db('mongo', () => {
+on_db('mongo', () => {
   filesAdapter = new GridStoreAdapter(mongoURI);
-}, () => {
+}, () => {
   filesAdapter = new FSAdapter();
 });
 
@@ -121,7 +120,7 @@ let openConnections = {};
 var app = express();
 var api = new ParseServer(defaultConfiguration);
 app.use('/1', api);
-app.use('/1', (req, res) => {
+app.use('/1', () => {
   fail('should not call next');
 });
 var server = app.listen(port);
@@ -143,7 +142,7 @@ const reconfigureServer = changedConfiguration => {
         api = new ParseServer(newConfiguration);
         api.use(require('./testing-routes').router);
         app.use('/1', api);
-        app.use('/1', (req, res) => {
+        app.use('/1', () => {
           fail('should not call next');
         });
         server = app.listen(port);
@@ -195,7 +194,7 @@ beforeEach(done => {
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
     done();
-  }, error => {
+  }, () => {
     Parse.initialize('test', 'test', 'test');
     Parse.serverURL = 'http://localhost:' + port + '/1';
     // fail(JSON.stringify(error));
@@ -284,7 +283,7 @@ function notEqual(a, b, message) {
 function expectSuccess(params, done) {
   return {
     success: params.success,
-    error: function(e) {
+    error: function() {
       fail('failure happened in expectSuccess');
       done ? done() : null;
     },
@@ -417,7 +416,7 @@ global.describe_only_db = db => {
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return describe;
   } else {
-    return () => {};
+    return () => {};
   }
 }
 

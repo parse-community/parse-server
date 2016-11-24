@@ -1,4 +1,3 @@
-import {matchesQuery, queryHash}  from './QueryTools';
 import logger from '../logger';
 
 export type FlattenedObjectData = { [attr: string]: any };

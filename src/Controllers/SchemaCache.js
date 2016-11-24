@@ -21,7 +21,7 @@ export default class SchemaCache {
   }
 
   put(key, value) {
-    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
+    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
       allKeys = allKeys || {};
       allKeys[key] = true;
       return Promise.all([this.cache.put(this.prefix+ALL_KEYS, allKeys, this.ttl), this.cache.put(key, value, this.ttl)]);
@@ -72,8 +72,7 @@ export default class SchemaCache {
 
   clear() {
     // That clears all caches...
-    let promise = Promise.resolve();
-    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
+    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
       if (!allKeys) {
         return;
       }

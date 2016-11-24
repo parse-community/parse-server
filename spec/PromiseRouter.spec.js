@@ -1,14 +1,14 @@
 var PromiseRouter = require("../src/PromiseRouter").default;
 
-describe("PromiseRouter", () => {
-  it("should properly handle rejects", (done) => {
+describe("PromiseRouter", () => {
+  it("should properly handle rejects", (done) => {
     var router = new PromiseRouter();
-    router.route("GET", "/dummy", (req)=> {
+    router.route("GET", "/dummy", ()=> {
       return Promise.reject({
         error: "an error",
         code: -1
       })
-    }, (req) => {
+    }, () => {
       fail("this should not be called");
     });
 

@@ -7,7 +7,7 @@ export class InMemoryCacheAdapter {
   }
 
   get(key) {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       let record = this.cache.get(key);
       if (record == null) {
         return resolve(null);

@@ -63,7 +63,7 @@ describe('Parse.ACL', () => {
               // Get
               var query = new Parse.Query(TestObject);
               query.get(object.id, {
-                success: function(model) {
+                success: function() {
                   fail('Should not have retrieved the object.');
                   done();
                 },
@@ -1139,7 +1139,7 @@ describe('Parse.ACL', () => {
       ACL: new Parse.ACL(),
       foo: "bar"
     }, {
-      success: function(user) {
+      success: function() {
         Parse.User.logOut()
         .then(() => {
           Parse.User.logIn("tdurden", "mayhem", {
@@ -1211,13 +1211,13 @@ describe('Parse.ACL', () => {
       }
     };
 
-    Parse.Cloud.afterSave(Parse.User, req => {
+    Parse.Cloud.afterSave(Parse.User, req => {
       if (!req.object.existed()) {
         var user = req.object;
         var acl = new Parse.ACL(user);
         user.setACL(acl);
         user.save(null, {useMasterKey: true}).then(user => {
-          new Parse.Query('_User').get(user.objectId).then(user => {
+          new Parse.Query('_User').get(user.objectId).then(() => {
             fail('should not have fetched user without public read enabled');
             done();
           }, error => {
