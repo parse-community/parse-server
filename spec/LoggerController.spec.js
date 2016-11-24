@@ -12,7 +12,7 @@ describe('LoggerController', () => {
       loggerController.getLogs(query).then(function(res) {
         expect(res.length).not.toBe(0);
         done();
-      }).catch((err) => {
+      }).catch((err) => {
         jfail(err);
         done();
       })
@@ -74,7 +74,7 @@ describe('LoggerController', () => {
       loggerController.getLogs(query).then(function(res) {
         expect(res.length).toBe(0);
         done();
-      }).catch((err) => {
+      }).catch((err) => {
         jfail(err);
         fail("should not fail");
         done();
@@ -84,7 +84,7 @@ describe('LoggerController', () => {
 
   it('should throw without an adapter', (done) => {
     expect(() => {
-      var loggerController = new LoggerController();
+      new LoggerController();
     }).toThrow();
     done();
   });

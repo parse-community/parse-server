@@ -1,9 +1,9 @@
 'use strict';
 
 var httpRequest = require("../src/cloud-code/httpRequest"),
-    HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
-    bodyParser = require('body-parser'),
-    express = require("express");
+  HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
+  bodyParser = require('body-parser'),
+  express = require("express");
 
 var port = 13371;
 var httpRequestServer = "http://localhost:"+port;
@@ -125,7 +125,7 @@ describe("httpRequest", () => {
   it("should fail on 404", (done) => {
     httpRequest({
       url: httpRequestServer+"/404",
-    }).then(function(httpResponse){
+    }).then(function(){
       fail("should not succeed");
       done();
     }, function(httpResponse){
@@ -143,7 +143,7 @@ describe("httpRequest", () => {
       method: "POST",
       url: httpRequestServer+"/echo",
       body: {
-         foo: "bar"
+        foo: "bar"
       },
       headers: {
         'Content-Type': 'application/json'
@@ -155,7 +155,7 @@ describe("httpRequest", () => {
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.data).toEqual({foo: "bar"});
       done();
-    }, function(httpResponse){
+    }, function(){
       fail("should not fail");
       done();
     })
@@ -182,7 +182,7 @@ describe("httpRequest", () => {
     done();
 
   })
-   it("should encode a www-form body", (done) => {
+  it("should encode a www-form body", (done) => {
     let options = {
       body: {"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'application/x-www-form-urlencoded'}
@@ -220,7 +220,7 @@ describe("httpRequest", () => {
     httpRequest({
       url: httpRequestServer+"/qs",
       params: {
-         foo: "bar"
+        foo: "bar"
       }
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(200);
@@ -269,7 +269,7 @@ describe("httpRequest", () => {
 
   it('serialized httpResponse correctly with body object', () => {
     let httpResponse = new HTTPResponse({}, {foo: "bar"});
-    let encodedResponse = Parse._encode(httpResponse);
+    Parse._encode(httpResponse);
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
     

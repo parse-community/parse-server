@@ -69,15 +69,15 @@ describe('InstallationsRouter', () => {
         .then(() => {
           return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
         }).then(() => {
-      return router.handleFind(request);
-    }).then((res) => {
-      var results = res.response.results;
-      expect(results.length).toEqual(1);
-      done();
-    }).catch((err) => {
-      jfail(err);
-      done();
-    });
+          return router.handleFind(request);
+        }).then((res) => {
+          var results = res.response.results;
+          expect(results.length).toEqual(1);
+          done();
+        }).catch((err) => {
+          jfail(err);
+          done();
+        });
   });
 
   it('query installations with limit = 0', (done) => {
@@ -100,21 +100,21 @@ describe('InstallationsRouter', () => {
       info: {}
     };
 
-    var config = new Config('test');
+    new Config('test');
     var router = new InstallationsRouter();
     rest.create(config, auth.nobody(config), '_Installation', androidDeviceRequest)
         .then(() => {
           return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
         }).then(() => {
-      return router.handleFind(request);
-    }).then((res) => {
-      var response = res.response;
-      expect(response.results.length).toEqual(0);
-      done();
-    }).catch((err) => {
-      fail(JSON.stringify(err));
-      done();
-    });
+          return router.handleFind(request);
+        }).then((res) => {
+          var response = res.response;
+          expect(response.results.length).toEqual(0);
+          done();
+        }).catch((err) => {
+          fail(JSON.stringify(err));
+          done();
+        });
   });
 
   it('query installations with count = 1', done => {
@@ -179,15 +179,15 @@ describe('InstallationsRouter', () => {
         .then(() => {
           return rest.create(config, auth.nobody(config), '_Installation', iosDeviceRequest);
         }).then(() => {
-      return router.handleFind(request);
-    }).then((res) => {
-      var response = res.response;
-      expect(response.results.length).toEqual(0);
-      expect(response.count).toEqual(2);
-      done();
-    }).catch((err) => {
-      fail(JSON.stringify(err));
-      done();
-    });
+          return router.handleFind(request);
+        }).then((res) => {
+          var response = res.response;
+          expect(response.results.length).toEqual(0);
+          expect(response.count).toEqual(2);
+          done();
+        }).catch((err) => {
+          fail(JSON.stringify(err));
+          done();
+        });
   });
 });

@@ -1,7 +1,6 @@
 "use strict";
 // These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
@@ -12,7 +11,7 @@ let database = config.database;
 
 describe('rest create', () => {
   
-  beforeEach(() => {
+  beforeEach(() => {
     config = new Config('test');
   });
 
@@ -93,7 +92,7 @@ describe('rest create', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
-    });
+      });
   });
 
   it('handles create on existent class when disabled client class creation', (done) => {
@@ -106,7 +105,7 @@ describe('rest create', () => {
     })
     .then(() => {
       done();
-    }, err => {
+    }, () => {
       fail('Should not throw error')
     });
   });
@@ -186,7 +185,6 @@ describe('rest create', () => {
       username: 'hello',
       password: 'world'
     }
-    var username1;
     var objectId;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
@@ -197,24 +195,24 @@ describe('rest create', () => {
         return auth.getAuthForSessionToken({config, sessionToken: r.response.sessionToken })
       }).then((sessionAuth) => {
         return rest.update(config, sessionAuth, '_User', objectId, updatedData);
-      }).then((r) => {
-        return Parse.User.logOut().then(() => {
+      }).then(() => {
+        return Parse.User.logOut().then(() => {
           return Parse.User.logIn('hello', 'world');
         })
       }).then((r) => {
         expect(r.id).toEqual(objectId);
         expect(r.get('username')).toEqual('hello');
         done();
-      }).catch((err) => {
+      }).catch((err) => {
         jfail(err);
         done();
       })
   });
 
   it('handles no anonymous users config', (done) => {
-     var NoAnnonConfig = Object.assign({}, config);
-     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
-     var data1 = {
+    var NoAnnonConfig = Object.assign({}, config);
+    NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
+    var data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -262,7 +260,7 @@ describe('rest create', () => {
         var output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
-      }).catch(err => {
+      }).catch(err => {
         jfail(err);
         done();
       })
@@ -359,7 +357,7 @@ describe('rest create', () => {
       foo: 'bar',
     };
     var sessionLength = 3600, // 1 Hour ahead
-        now = new Date(); // For reference later
+      now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
     rest.create(config, auth.nobody(config), '_User', user)
@@ -385,7 +383,7 @@ describe('rest create', () => {
         expect(actual.getMinutes()).toEqual(expected.getMinutes());
 
         done();
-      }).catch(err => {
+      }).catch(err => {
         jfail(err);
         done();
       });
@@ -415,7 +413,7 @@ describe('rest create', () => {
         expect(session.expiresAt).toBeUndefined();
 
         done();
-      }).catch(err => {
+      }).catch(err => {
         console.error(err);
         fail(err);
         done();

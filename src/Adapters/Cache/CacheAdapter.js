@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: "off"*/
 export class CacheAdapter {
   /**
    * Get a value in the cache

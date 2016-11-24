@@ -14,7 +14,7 @@ function validateAuthData(authData) {
 }
 
 // Returns a promise that fulfills if this app id is valid.
-function validateAppId(appIds, authData) {
+function validateAppId() {
   return Promise.resolve();
 }
 
@@ -42,11 +42,11 @@ function graphRequest(access_token) {
         data = JSON.parse(data);
         resolve(data);
       });
-      res.on('error', function (err) {
+      res.on('error', function () {
         reject('Failed to validate this access token with weibo.');
       });
     });
-    req.on('error', function (e){
+    req.on('error', function () {
       reject('Failed to validate this access token with weibo.');
     });
     req.write(postData);

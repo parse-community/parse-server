@@ -15,7 +15,7 @@ describe('InMemoryCache', function() {
 
 
   function wait(sleep) {
-    return new Promise(function(resolve, reject) {
+    return new Promise(function(resolve) {
       setTimeout(resolve, sleep);
     })
   }

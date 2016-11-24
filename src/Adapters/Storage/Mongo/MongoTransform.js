@@ -6,10 +6,10 @@ var Parse = require('parse/node').Parse;
 const transformKey = (className, fieldName, schema) => {
   // Check if the schema is known since it's a built-in field.
   switch(fieldName) {
-    case 'objectId': return '_id';
-    case 'createdAt': return '_created_at';
-    case 'updatedAt': return '_updated_at';
-    case 'sessionToken': return '_session_token';
+  case 'objectId': return '_id';
+  case 'createdAt': return '_created_at';
+  case 'updatedAt': return '_updated_at';
+  case 'sessionToken': return '_session_token';
   }
   
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
@@ -197,7 +197,7 @@ function transformQueryKeyValue(className, key, value, schema) {
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
-  default:
+  default: {
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
     if (authDataMatch) {
@@ -205,6 +205,7 @@ function transformQueryKeyValue(className, key, value, schema) {
       // Special-case auth data.
       return {key: `_auth_data_${provider}.id`, value};
     }
+  }
   }
 
   const expectedTypeIsArray =
@@ -530,8 +531,8 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$in':
-    case '$nin':
-      var arr = constraint[key];
+    case '$nin': {
+      let arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
       }
@@ -543,16 +544,16 @@ function transformConstraint(constraint, inArray) {
         return result;
       });
       break;
-
-    case '$all':
-      var arr = constraint[key];
+    }
+    case '$all': {
+      let arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
       break;
-
+    }
     case '$regex':
       var s = constraint[key];
       if (typeof s !== 'string') {
@@ -736,7 +737,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
   case 'symbol':
   case 'function':
     throw 'bad value in mongoObjectToParseObject';
-  case 'object':
+  case 'object': {
     if (mongoObject === null) {
       return null;
     }
@@ -868,6 +869,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
     });
 
     return { ...restObject, ...relationFields };
+  }
   default:
     throw 'unknown js type';
   }

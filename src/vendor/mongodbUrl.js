@@ -120,18 +120,18 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
     // Only convert backslashes while we haven't seen a split character
     if (!split) {
       switch (code) {
-        case 35: // '#'
-          hasHash = true;
+      case 35: // '#'
+        hasHash = true;
         // Fall through
-        case 63: // '?'
-          split = true;
-          break;
-        case 92: // '\\'
-          if (i - lastPos > 0)
-            rest += url.slice(lastPos, i);
-          rest += '/';
-          lastPos = i + 1;
-          break;
+      case 63: // '?'
+        split = true;
+        break;
+      case 92: // '\\'
+        if (i - lastPos > 0)
+          rest += url.slice(lastPos, i);
+        rest += '/';
+        lastPos = i + 1;
+        break;
       }
     } else if (!hasHash && code === 35/*#*/) {
       hasHash = true;
@@ -226,40 +226,40 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
     var nonHost = -1;
     for (i = 0; i < rest.length; ++i) {
       switch (rest.charCodeAt(i)) {
-        case 9:   // '\t'
-        case 10:  // '\n'
-        case 13:  // '\r'
-        case 32:  // ' '
-        case 34:  // '"'
-        case 37:  // '%'
-        case 39:  // '\''
-        case 59:  // ';'
-        case 60:  // '<'
-        case 62:  // '>'
-        case 92:  // '\\'
-        case 94:  // '^'
-        case 96:  // '`'
-        case 123: // '{'
-        case 124: // '|'
-        case 125: // '}'
+      case 9:   // '\t'
+      case 10:  // '\n'
+      case 13:  // '\r'
+      case 32:  // ' '
+      case 34:  // '"'
+      case 37:  // '%'
+      case 39:  // '\''
+      case 59:  // ';'
+      case 60:  // '<'
+      case 62:  // '>'
+      case 92:  // '\\'
+      case 94:  // '^'
+      case 96:  // '`'
+      case 123: // '{'
+      case 124: // '|'
+      case 125: // '}'
           // Characters that are never ever allowed in a hostname from RFC 2396
-          if (nonHost === -1)
-            nonHost = i;
-          break;
-        case 35: // '#'
-        case 47: // '/'
-        case 63: // '?'
+        if (nonHost === -1)
+          nonHost = i;
+        break;
+      case 35: // '#'
+      case 47: // '/'
+      case 63: // '?'
           // Find the first instance of any host-ending characters
-          if (nonHost === -1)
-            nonHost = i;
-          hostEnd = i;
-          break;
-        case 64: // '@'
+        if (nonHost === -1)
+          nonHost = i;
+        hostEnd = i;
+        break;
+      case 64: // '@'
           // At this point, either we have an explicit point where the
           // auth portion cannot go past, or the last @ char is the decider.
-          atSign = i;
-          nonHost = -1;
-          break;
+        atSign = i;
+        nonHost = -1;
+        break;
       }
       if (hostEnd !== -1)
         break;
@@ -440,90 +440,90 @@ function autoEscapeStr(rest) {
     // Automatically escape all delimiters and unwise characters from RFC 2396
     // Also escape single quotes in case of an XSS attack
     switch (rest.charCodeAt(i)) {
-      case 9:   // '\t'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%09';
-        lastPos = i + 1;
-        break;
-      case 10:  // '\n'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%0A';
-        lastPos = i + 1;
-        break;
-      case 13:  // '\r'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%0D';
-        lastPos = i + 1;
-        break;
-      case 32:  // ' '
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%20';
-        lastPos = i + 1;
-        break;
-      case 34:  // '"'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%22';
-        lastPos = i + 1;
-        break;
-      case 39:  // '\''
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%27';
-        lastPos = i + 1;
-        break;
-      case 60:  // '<'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%3C';
-        lastPos = i + 1;
-        break;
-      case 62:  // '>'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%3E';
-        lastPos = i + 1;
-        break;
-      case 92:  // '\\'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%5C';
-        lastPos = i + 1;
-        break;
-      case 94:  // '^'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%5E';
-        lastPos = i + 1;
-        break;
-      case 96:  // '`'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%60';
-        lastPos = i + 1;
-        break;
-      case 123: // '{'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%7B';
-        lastPos = i + 1;
-        break;
-      case 124: // '|'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%7C';
-        lastPos = i + 1;
-        break;
-      case 125: // '}'
-        if (i - lastPos > 0)
-          newRest += rest.slice(lastPos, i);
-        newRest += '%7D';
-        lastPos = i + 1;
-        break;
+    case 9:   // '\t'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%09';
+      lastPos = i + 1;
+      break;
+    case 10:  // '\n'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%0A';
+      lastPos = i + 1;
+      break;
+    case 13:  // '\r'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%0D';
+      lastPos = i + 1;
+      break;
+    case 32:  // ' '
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%20';
+      lastPos = i + 1;
+      break;
+    case 34:  // '"'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%22';
+      lastPos = i + 1;
+      break;
+    case 39:  // '\''
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%27';
+      lastPos = i + 1;
+      break;
+    case 60:  // '<'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%3C';
+      lastPos = i + 1;
+      break;
+    case 62:  // '>'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%3E';
+      lastPos = i + 1;
+      break;
+    case 92:  // '\\'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%5C';
+      lastPos = i + 1;
+      break;
+    case 94:  // '^'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%5E';
+      lastPos = i + 1;
+      break;
+    case 96:  // '`'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%60';
+      lastPos = i + 1;
+      break;
+    case 123: // '{'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%7B';
+      lastPos = i + 1;
+      break;
+    case 124: // '|'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%7C';
+      lastPos = i + 1;
+      break;
+    case 125: // '}'
+      if (i - lastPos > 0)
+        newRest += rest.slice(lastPos, i);
+      newRest += '%7D';
+      lastPos = i + 1;
+      break;
     }
   }
   if (lastPos === 0)
@@ -589,18 +589,18 @@ Url.prototype.format = function() {
   var lastPos = 0;
   for (var i = 0; i < pathname.length; ++i) {
     switch (pathname.charCodeAt(i)) {
-      case 35: // '#'
-        if (i - lastPos > 0)
-          newPathname += pathname.slice(lastPos, i);
-        newPathname += '%23';
-        lastPos = i + 1;
-        break;
-      case 63: // '?'
-        if (i - lastPos > 0)
-          newPathname += pathname.slice(lastPos, i);
-        newPathname += '%3F';
-        lastPos = i + 1;
-        break;
+    case 35: // '#'
+      if (i - lastPos > 0)
+        newPathname += pathname.slice(lastPos, i);
+      newPathname += '%23';
+      lastPos = i + 1;
+      break;
+    case 63: // '?'
+      if (i - lastPos > 0)
+        newPathname += pathname.slice(lastPos, i);
+      newPathname += '%3F';
+      lastPos = i + 1;
+      break;
     }
   }
   if (lastPos > 0) {

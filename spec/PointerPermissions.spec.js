@@ -1,15 +1,13 @@
 'use strict';
-var Schema = require('../src/Controllers/SchemaController');
-
 var Config = require('../src/Config');
 
-describe('Pointer Permissions', () => {
+describe('Pointer Permissions', () => {
 
   beforeEach(() => {
     new Config(Parse.applicationId).database.schemaCache.clear();
   });
 
-  it('should work with find', (done) => {
+  it('should work with find', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -28,27 +26,27 @@ describe('Pointer Permissions', () => {
       obj.set('owner', user);
       obj2.set('owner', user2);
       return Parse.Object.saveAll([obj, obj2]);
-    }).then(() => {
+    }).then(() => {
       return config.database.loadSchema().then((schema) => {
         return schema.updateClass('AnObject', {}, {readUserFields: ['owner']})
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
-    }).then(() => {
+      return Parse.User.logIn('user1', 'password');
+    }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(1);
       expect(res[0].id).toBe(obj.id);
       done();
-    }).catch(error => {
+    }).catch(error => {
       fail(JSON.stringify(error));
       done();
     });
   });
 
 
-  it('should work with write', (done) => {
+  it('should work with write', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -69,16 +67,16 @@ describe('Pointer Permissions', () => {
       obj2.set('owner', user2);
       obj2.set('reader', user);
       return Parse.Object.saveAll([obj, obj2]);
-    }).then(() => {
+    }).then(() => {
       return config.database.loadSchema().then((schema) => {
         return schema.updateClass('AnObject', {}, {writeUserFields: ['owner'], readUserFields: ['reader', 'owner']});
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
-    }).then(() => {
+      return Parse.User.logIn('user1', 'password');
+    }).then(() => {
       obj2.set('hello', 'world');
       return obj2.save();
-    }).then((res) => {
+    }).then(() => {
       fail('User should not be able to update obj2');
     }, (err) => {
       // User 1 should not be able to update obj2
@@ -87,19 +85,19 @@ describe('Pointer Permissions', () => {
     }).then(()=> {
       obj.set('hello', 'world');
       return obj.save();
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'password');
-    }, (err) => {
+    }, () => {
       fail('User should be able to update');
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
-    }, (err) => {
+    }, () => {
       fail('should login with user 2');
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(2);
-      res.forEach((result) => {
+      res.forEach((result) => {
         if (result.id == obj.id) {
           expect(result.get('hello')).toBe('world');
         } else {
@@ -107,7 +105,7 @@ describe('Pointer Permissions', () => {
         }
       })
       done();
-    }, (err) =>  {
+    }, () =>  {
       fail("failed");
       done();
     })
@@ -129,32 +127,32 @@ describe('Pointer Permissions', () => {
     let obj2 = new Parse.Object('AnObject');
     user.signUp().then(() => {
       return user2.signUp()
-    }).then(() => {
+    }).then(() => {
       Parse.User.logOut();
     }).then(() => {
       obj.set('owner', user);
       return Parse.Object.saveAll([obj, obj2]);
-    }).then(() => {
+    }).then(() => {
       return config.database.loadSchema().then((schema) => {
         return schema.updateClass('AnObject', {}, {find: {}, get:{}, readUserFields: ['owner']})
       });
-    }).then(() => {
+    }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(0);
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
     }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(0);
       let q = new Parse.Query('AnObject');
       return q.get(obj.id);
     }).then(() => {
       fail('User 2 should not get the obj1 object');
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(101);
       expect(err.message).toBe('Object not found.');
       return Promise.resolve();
@@ -163,17 +161,17 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find();
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(1);
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       fail('should not fail');
       done();
     })
   });
 
-  it('should not allow creating objects', (done) => {
+  it('should not allow creating objects', (done) => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     user.set({
@@ -181,25 +179,25 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    user.save().then(() => {
+    user.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         return schema.addClassIfNotExists('AnObject', {owner: {type:'Pointer', targetClass: '_User'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
       });
     }).then(() => {
-       return Parse.User.logIn('user1', 'password');
+      return Parse.User.logIn('user1', 'password');
     }).then(() => {
       obj.set('owner', user);
       return obj.save();
     }).then(() => {
-       fail('should not succeed');
-       done();
+      fail('should not succeed');
+      done();
     }, (err) => {
       expect(err.code).toBe(119);
       done();
     })
   });
 
-  it('should handle multiple writeUserFields', done => {
+  it('should handle multiple writeUserFields', done => {
     let config = new Config(Parse.applicationId);
     let user = new Parse.User();
     let user2 = new Parse.User();
@@ -218,10 +216,10 @@ describe('Pointer Permissions', () => {
       obj.set('otherOwner', user2);
       return obj.save();
     })
-    .then(() => config.database.loadSchema())
+    .then(() => config.database.loadSchema())
     .then(schema => schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']}))
-    .then(() => Parse.User.logIn('user1', 'password'))
-    .then(() => obj.save({hello: 'fromUser1'}))
+    .then(() => Parse.User.logIn('user1', 'password'))
+    .then(() => obj.save({hello: 'fromUser1'}))
     .then(() => Parse.User.logIn('user2', 'password'))
     .then(() => obj.save({hello: 'fromUser2'}))
     .then(() => Parse.User.logOut())
@@ -229,59 +227,59 @@ describe('Pointer Permissions', () => {
       let q = new Parse.Query('AnObject');
       return q.first();
     })
-    .then(result => {
+    .then(result => {
       expect(result.get('hello')).toBe('fromUser2');
       done();
-    }).catch(err => {
+    }).catch(() => {
       fail('should not fail');
       done();
     })
   });
 
-  it('should prevent creating pointer permission on missing field', (done) => {
+  it('should prevent creating pointer permission on missing field', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
       return schema.addClassIfNotExists('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
-    }).then(() => {
+    }).then(() => {
       fail('should not succeed');
-    }).catch((err) => {
+    }).catch((err) => {
       expect(err.code).toBe(107);
       expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
       done();
     })
   });
 
-  it('should prevent creating pointer permission on bad field', (done) => {
+  it('should prevent creating pointer permission on bad field', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'String'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
-    }).then(() => {
+    }).then(() => {
       fail('should not succeed');
-    }).catch((err) => {
+    }).catch((err) => {
       expect(err.code).toBe(107);
       expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
       done();
     })
   });
 
-  it('should prevent creating pointer permission on bad field', (done) => {
+  it('should prevent creating pointer permission on bad field', (done) => {
     let config = new Config(Parse.applicationId);
     let object = new Parse.Object('AnObject');
     object.set('owner', 'value');
-    object.save().then(() => {
+    object.save().then(() => {
       return config.database.loadSchema();
     }).then((schema) => {
       return schema.updateClass('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
-    }).then(() => {
+    }).then(() => {
       fail('should not succeed');
-    }).catch((err) => {
+    }).catch((err) => {
       expect(err.code).toBe(107);
       expect(err.message).toBe("'owner' is not a valid column for class level pointer permissions writeUserFields");
       done();
     })
   });
 
-  it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (PP Locked)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -314,21 +312,21 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user1', 'password');
-    }).then(() => {
+    }).then(() => {
       // user1 has ACL read/write but should be blocked by PP
       return obj.save({key: 'value'});
-    }).then(() => {
+    }).then(() => {
       fail('Should not succeed saving');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(101);
       done();
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (ACL Locked)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -347,7 +345,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -359,21 +357,21 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'password');
-    }).then(() => {
+    }).then(() => {
       // user1 has ACL read/write but should be blocked by ACL
       return obj.save({key: 'value'});
-    }).then(() => {
+    }).then(() => {
       fail('Should not succeed saving');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(101);
       done();
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
+  it('tests CLP / Pointer Perms / ACL write (ACL/PP OK)', (done) => {
     /*
       tests:
       CLP: update closed ({})
@@ -392,7 +390,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setWriteAccess(user, true);
       ACL.setWriteAccess(user2, true);
@@ -404,21 +402,21 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {update: {}, writeUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'password');
-    }).then(() => {
+    }).then(() => {
       // user1 has ACL read/write but should be blocked by ACL
       return obj.save({key: 'value'});
-    }).then((objAgain) => {
+    }).then((objAgain) => {
       expect(objAgain.get('key')).toBe('value');
       done();
-    }, (err) => {
+    }, () => {
       fail('Should not fail saving');
       done();
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (PP locked)', (done) => {
     /*
       tests:
       CLP: find/get open ({})
@@ -439,7 +437,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -451,21 +449,21 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {find: {}, get: {}, readUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user1', 'password');
-    }).then(() => {
+    }).then(() => {
       // user1 has ACL read/write but should be block
       return obj.fetch();
-    }).then(() => {
+    }).then(() => {
       fail('Should not succeed saving');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(101);
       done();
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (PP/ACL OK)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -484,7 +482,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -498,21 +496,21 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'password');
-    }).then(() => {
+    }).then(() => {
       // user1 has ACL read/write but should be block
       return obj.fetch();
-    }).then((objAgain) => {
+    }).then((objAgain) => {
       expect(objAgain.id).toBe(obj.id);
       done();
-    }, (err) => {
+    }, () => {
       fail('Should not fail fetching');
       done();
     });
   });
 
-  it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
+  it('tests CLP / Pointer Perms / ACL read (ACL locked)', (done) => {
     /*
       tests:
       CLP: find/get open ({"*": true})
@@ -531,7 +529,7 @@ describe('Pointer Permissions', () => {
       password: 'password'
     });
     let obj = new Parse.Object('AnObject');
-    Parse.Object.saveAll([user, user2]).then(() => {
+    Parse.Object.saveAll([user, user2]).then(() => {
       let ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
@@ -543,15 +541,15 @@ describe('Pointer Permissions', () => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {}, {find: {"*": true}, get: {"*": true}, readUserFields: ['owner']});
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'password');
-    }).then(() => {
+    }).then(() => {
       // user2 has ACL read/write but should be block by ACL
       return obj.fetch();
-    }).then(() => {
+    }).then(() => {
       fail('Should not succeed saving');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err.code).toBe(101);
       done();
     });
@@ -559,10 +557,9 @@ describe('Pointer Permissions', () => {
 
   it('should let master key find objects', (done) => {
     let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
     let object = new Parse.Object('AnObject');
     object.set('hello', 'world');
-    return object.save().then(() => {
+    return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
@@ -575,13 +572,13 @@ describe('Pointer Permissions', () => {
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       let q = new Parse.Query('AnObject');
       return q.find({useMasterKey: true});
     }).then((objects) => {
       expect(objects.length).toBe(1);
       done();
-    }, (err) => {
+    }, () => {
       fail('master key should find the object');
       done();
     })
@@ -589,10 +586,9 @@ describe('Pointer Permissions', () => {
 
   it('should let master key get objects', (done) => {
     let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
     let object = new Parse.Object('AnObject');
     object.set('hello', 'world');
-    return object.save().then(() => {
+    return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
@@ -612,7 +608,7 @@ describe('Pointer Permissions', () => {
       expect(objectAgain).not.toBeUndefined();
       expect(objectAgain.id).toBe(object.id);
       done();
-    }, (err) => {
+    }, () => {
       fail('master key should find the object');
       done();
     })
@@ -621,10 +617,9 @@ describe('Pointer Permissions', () => {
 
   it('should let master key update objects', (done) => {
     let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
     let object = new Parse.Object('AnObject');
     object.set('hello', 'world');
-    return object.save().then(() => {
+    return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {update: {}, writeUserFields: ['owner']});
@@ -636,12 +631,12 @@ describe('Pointer Permissions', () => {
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       return object.save({'hello': 'baz'}, {useMasterKey: true});
     }).then((objectAgain) => {
       expect(objectAgain.get('hello')).toBe('baz');
       done();
-    }, (err) => {
+    }, () => {
       fail('master key should save the object');
       done();
     })
@@ -649,10 +644,9 @@ describe('Pointer Permissions', () => {
 
   it('should let master key delete objects', (done) => {
     let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
     let object = new Parse.Object('AnObject');
     object.set('hello', 'world');
-    return object.save().then(() => {
+    return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner']});
@@ -664,35 +658,35 @@ describe('Pointer Permissions', () => {
     }, (err) => {
       expect(err.code).toBe(101);
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       return object.destroy({useMasterKey: true});
-    }).then((objectAgain) => {
+    }).then(() => {
       done();
-    }, (err) => {
+    }, () => {
       fail('master key should destroy the object');
       done();
     })
   });
 
-  it('should fail with invalid pointer perms', () => {
+  it('should fail with invalid pointer perms', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
-     }).catch((err) => {
+      return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
+    }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);
       done();
-     });
+    });
   });
 
-  it('should fail with invalid pointer perms', () => {
+  it('should fail with invalid pointer perms', (done) => {
     let config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
-        return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
-     }).catch((err) => {
+      return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
+    }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);
       done();
-     });
+    });
   })
 });

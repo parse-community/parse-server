@@ -46,6 +46,7 @@
   "devDependencies": {
     "babel-cli": "6.18.0",
     "babel-core": "6.18.2",
+    "babel-eslint": "^7.1.1",
     "babel-plugin-syntax-flow": "6.13.0",
     "babel-plugin-transform-flow-strip-types": "6.18.0",
     "babel-preset-es2015": "6.14.0",
@@ -54,6 +55,8 @@
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "3.1.3",
     "deep-diff": "0.3.4",
+    "eslint": "^3.10.2",
+    "eslint-plugin-flowtype": "^2.25.0",
     "gaze": "1.1.1",
     "istanbul": "1.0.0-alpha.1",
     "jasmine": "2.5.2",
@@ -64,8 +67,9 @@
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
+    "lint": "eslint ./",
     "build": "babel src/ -d lib/",
-    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 node $COVERAGE_OPTION ./spec/support/runner.js",
+    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 $COVERAGE_OPTION jasmine",
     "test:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 node ./node_modules/jasmine/bin/jasmine.js && npm run posttest",
     "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/istanbul cover' npm test",
     "coverage:win": "npm run pretest && cross-env NODE_ENV=test TESTING=1 node ./node_modules/babel-istanbul/lib/cli.js cover ./node_modules/jasmine/bin/jasmine.js && npm run posttest",

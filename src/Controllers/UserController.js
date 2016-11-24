@@ -3,10 +3,9 @@ import { inflate }         from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter         from '../Adapters/Email/MailAdapter';
 import rest                from '../rest';
+import Parse               from 'parse/node';
 
-var RestWrite = require('../RestWrite');
 var RestQuery = require('../RestQuery');
-var hash = require('../password').hash;
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
@@ -118,7 +117,7 @@ export class UserController extends AdaptableController {
     }
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then((user) => {
+    this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
       let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
       let options = {
@@ -148,7 +147,6 @@ export class UserController extends AdaptableController {
     if (!this.adapter) {
       throw "Trying to send a reset password but no adapter is set";
       //  TODO: No adapter?
-      return;
     }
 
     return this.setPasswordResetToken(email)
@@ -173,7 +171,7 @@ export class UserController extends AdaptableController {
     });
   }
 
-  updatePassword(username, token, password, config) {
+  updatePassword(username, token, password) {
     return this.checkResetTokenValidity(username, token)
       .then(user => updateUserPassword(user.objectId, password, this.config))
       // clear reset password token
@@ -191,9 +189,9 @@ export class UserController extends AdaptableController {
 
   defaultVerificationEmail({link, user, appName, }) {
     let text = "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
-	      "" +
-	      "Click here to confirm it:\n" + link;
+        "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
+        "" +
+        "Click here to confirm it:\n" + link;
     let to = user.get("email");
     let subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
@@ -215,6 +213,6 @@ function updateUserPassword(userId, password, config) {
   return rest.update(config, Auth.master(config), '_User', userId, {
     password: password
   });
- }
+}
 
 export default UserController;

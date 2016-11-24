@@ -1,7 +1,7 @@
 import express             from 'express';
 import BodyParser          from 'body-parser';
 import * as Middlewares    from '../middlewares';
-import { randomHexString } from '../cryptoUtils';
+import Parse               from 'parse/node';
 import Config              from '../Config';
 import mime                from 'mime';
 
@@ -40,7 +40,7 @@ export class FilesRouter {
     if (isFileStreamable(req, filesController)) {
       filesController.getFileStream(config, filename).then((stream) => {
         handleFileStream(stream, req, res, contentType);
-      }).catch((err) => {
+      }).catch(() => {
         res.status(404);
         res.set('Content-Type', 'text/plain');
         res.end('File not found.');
@@ -51,7 +51,7 @@ export class FilesRouter {
         res.set('Content-Type', contentType);
         res.set('Content-Length', data.length);
         res.end(data);
-      }).catch((err) => {
+      }).catch(() => {
         res.status(404);
         res.set('Content-Type', 'text/plain');
         res.end('File not found.');
@@ -87,7 +87,7 @@ export class FilesRouter {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);
-    }).catch((err) => {
+    }).catch(() => {
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.'));
     });
   }
@@ -98,7 +98,7 @@ export class FilesRouter {
       res.status(200);
       // TODO: return useful JSON here?
       res.end();
-    }).catch((error) => {
+    }).catch(() => {
       next(new Parse.Error(Parse.Error.FILE_DELETE_ERROR,
         'Could not delete file.'));
     });
@@ -138,7 +138,7 @@ function handleFileStream(stream, req, res, contentType) {
 
   if (!partialend) {
     if (((stream.length-1) - start) < (buffer_size)) {
-        end = stream.length - 1;
+      end = stream.length - 1;
     }else{
       end = start + (buffer_size);
     }
@@ -159,8 +159,6 @@ function handleFileStream(stream, req, res, contentType) {
   stream.seek(start, function () {
     // get gridFile stream
     var gridFileStream = stream.stream(true);
-    var ended = false;
-    var bufferIdx = 0;
     var bufferAvail = 0;
     var range = (end - start) + 1;
     var totalbyteswanted = (end - start) + 1;
@@ -176,7 +174,6 @@ function handleFileStream(stream, req, res, contentType) {
           res.write(buff);
           totalbyteswritten += buff.length;
           range -= buff.length;
-          bufferIdx += buff.length;
           bufferAvail -= buff.length;
         }
       } else {
@@ -185,7 +182,6 @@ function handleFileStream(stream, req, res, contentType) {
           const buffer = buff.slice(0,range);
           res.write(buffer);
           totalbyteswritten += buffer.length;
-          bufferIdx += range;
           bufferAvail -= range;
         }
       }
