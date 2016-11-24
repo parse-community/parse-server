@@ -68,12 +68,9 @@ export default class PromiseRouter {
     let handler = handlers[0];
 
     if (handlers.length > 1) {
-      const length = handlers.length;
       handler = function(req) {
         return handlers.reduce((promise, handler) => {
-          return promise.then((result) => {
-            return handler(req);
-          });
+          return promise.then(() => handler(req))
         }, Promise.resolve());
       }
     }
