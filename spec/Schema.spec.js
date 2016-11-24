@@ -427,7 +427,6 @@ describe('SchemaController', () => {
           ACL: { type: 'ACL' },
           aString: { type: 'String' },
           aNumber: { type: 'Number' },
-          aString: { type: 'String' },
           aBool: { type: 'Boolean' },
           aDate: { type: 'Date' },
           aObject: { type: 'Object' },
