@@ -18,40 +18,39 @@ function parseURL(URL) {
   return undefined;
 }
 
-function mBatchRoutingPath(originalUrl, serverURL, publicServerURL) {
-    serverURL = serverURL ? parseURL(serverURL) : undefined;
-    publicServerURL = publicServerURL ? parseURL(publicServerURL): undefined;
+function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
+  serverURL = serverURL ? parseURL(serverURL) : undefined;
+  publicServerURL = publicServerURL ? parseURL(publicServerURL): undefined;
 
-    let apiPrefixLength = originalUrl.length - batchPath.length;
-    let apiPrefix = originalUrl.slice(0, apiPrefixLength);
+  let apiPrefixLength = originalUrl.length - batchPath.length;
+  let apiPrefix = originalUrl.slice(0, apiPrefixLength);
 
-    let makeRoutablePath = function(requestPath) {
+  let makeRoutablePath = function(requestPath) {
       // The routablePath is the path minus the api prefix
-      if (requestPath.slice(0, apiPrefixLength) != apiPrefix) {
-        throw new Parse.Error(
+    if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
+      throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'cannot route batch path ' + path);
-      }
-      return path.join('/', requestPath.slice(apiPrefixLength));
+          'cannot route batch path ' + requestPath);
     }
+    return path.join('/', requestPath.slice(apiPrefix.length));
+  }
 
-    if (serverURL && publicServerURL 
+  if (serverURL && publicServerURL 
         && (serverURL.path != publicServerURL.path)) {
-      let localPath = serverURL.path;
-      let publicPath = publicServerURL.path;
+    let localPath = serverURL.path;
+    let publicPath = publicServerURL.path;
       // Override the api prefix
-      apiPrefix = localPath;
-      apiPrefixLength = localPath.length;
-      return function(requestPath) {
+    apiPrefix = localPath;
+    return function(requestPath) {
         // Build the new path by removing the public path
         // and joining with the local path
-        let newPath = path.join('/', localPath, '/' , requestPath.slice(publicPath.length));
+      let newPath = path.join('/', localPath, '/' , requestPath.slice(publicPath.length));
         // Use the method for local routing
-        return makeRoutablePath(newPath);
-      }
+      return makeRoutablePath(newPath);
     }
+  }
 
-    return makeRoutablePath;
+  return makeRoutablePath;
 }
 
 // Returns a promise for a {response} object.
@@ -71,7 +70,7 @@ function handleBatch(router, req) {
     throw 'internal routing problem - expected url to end with batch';
   }
 
-  const makeRoutablePath = mBatchRoutingPath(req.originalUrl, req.config.serverURL, req.config.publicServerURL);
+  const makeRoutablePath = makeBatchRoutingPathFunction(req.originalUrl, req.config.serverURL, req.config.publicServerURL);
 
   const promises = req.body.requests.map((restRequest) => {
     const routablePath = makeRoutablePath(restRequest.path);
@@ -97,5 +96,5 @@ function handleBatch(router, req) {
 
 module.exports = {
   mountOnto,
-  mBatchRoutingPath
+  makeBatchRoutingPathFunction
 };
