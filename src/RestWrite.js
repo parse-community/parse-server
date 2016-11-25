@@ -842,6 +842,9 @@ RestWrite.prototype.runDatabaseOperation = function() {
     if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordAge) {
       this.data._password_changed_at = Parse._encode(new Date());
     }
+    // Ignore createdAt when update
+    delete this.data.createdAt;
+
     // Run an update
     return this.config.database.update(this.className, this.query, this.data, this.runOptions)
     .then(response => {

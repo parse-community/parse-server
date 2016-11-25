@@ -420,3 +420,34 @@ describe('rest create', () => {
       })
   });
 });
+
+describe('rest update', () => {
+
+  it('ignores createdAt', done => {
+    const nobody = auth.nobody(config);
+    const className = 'Foo';
+    const newCreatedAt = new Date('1970-01-01T00:00:00.000Z');
+
+    rest.create(config, nobody, className, {}).then(res => {
+      const objectId = res.response.objectId;
+      const restObject = {
+        createdAt: {__type: "Date", iso: newCreatedAt}, // should be ignored
+      };
+
+      return rest.update(config, nobody, className, objectId, restObject).then(() => {
+        const restWhere = {
+          objectId: objectId,
+        };
+        return rest.find(config, nobody, className, restWhere, {});
+      });
+    }).then(res2 => {
+      const updatedObject = res2.results[0];
+      expect(new Date(updatedObject.createdAt)).not.toEqual(newCreatedAt);
+      done();
+    }).then(done).catch(err => {
+      fail(err);
+      done();
+    });
+  });
+
+});
