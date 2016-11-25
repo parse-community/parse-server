@@ -7,7 +7,7 @@ describe('Parse.Push', () => {
     var pushAdapter = {
       send: function(body, installations) {
         var badge = body.data.badge;
-        let promises = installations.map((installation) => {
+        let promises = installations.map((installation) => {
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
             expect(installation.originalBadge+1).toEqual(installation.badge);
@@ -47,45 +47,45 @@ describe('Parse.Push', () => {
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
-    }).catch((err) => {
+    }).catch((err) => {
       console.error(err);
     })
   }
 
   it('should properly send push', (done) => {
-    return setup().then(() => {
+    return setup().then(() => {
       return Parse.Push.send({
-       where: {
-         deviceType: 'ios'
-       },
-       data: {
-         badge: 'Increment',
-         alert: 'Hello world!'
-       }
-     }, {useMasterKey: true})
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'Increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
     })
-    .then(() => {
+    .then(() => {
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
   });
 
   it('should properly send push with lowercaseIncrement', (done) => {
-    return setup().then(() => {
+    return setup().then(() => {
       return Parse.Push.send({
-       where: {
-         deviceType: 'ios'
-       },
-       data: {
-         badge: 'increment',
-         alert: 'Hello world!'
-       }
-     }, {useMasterKey: true})
-    }).then(() => {
+        where: {
+          deviceType: 'ios'
+        },
+        data: {
+          badge: 'increment',
+          alert: 'Hello world!'
+        }
+      }, {useMasterKey: true})
+    }).then(() => {
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
@@ -113,7 +113,7 @@ describe('Parse.Push', () => {
         expect(body.error).toEqual('unauthorized');
         done();
       });
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
@@ -148,7 +148,7 @@ describe('Parse.Push', () => {
         }
         done();
       });
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });
@@ -166,12 +166,12 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true})
-    }).then((response) => {
+    }).then(() => {
       fail('should not succeed');
     }, (err) => {
       expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
       done();
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     });

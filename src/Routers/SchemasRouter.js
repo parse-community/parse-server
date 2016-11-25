@@ -1,7 +1,6 @@
 // schemas.js
 
-var express = require('express'),
-  Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';

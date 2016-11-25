@@ -1,6 +1,5 @@
 // triggers.js
 import Parse    from 'parse/node';
-import AppCache from './cache';
 import { logger } from './logger';
 
 export const Types = {
@@ -51,18 +50,18 @@ export function addTrigger(type, className, handler, applicationId) {
 }
 
 export function removeFunction(functionName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Functions[functionName]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Functions[functionName]
 }
 
 export function removeJob(jobName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Jobs[jobName]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Jobs[jobName]
 }
 
 export function removeTrigger(type, className, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Triggers[type][className]
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Triggers[type][className]
 }
 
 export function _unregister(appId,category,className,type) {
@@ -90,7 +89,7 @@ export function getTrigger(className, triggerType, applicationId) {
     return manager.Triggers[triggerType][className];
   }
   return undefined;
-};
+}
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return (getTrigger(className, type, applicationId) != undefined);
@@ -100,7 +99,7 @@ export function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -108,7 +107,7 @@ export function getJob(jobName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs[jobName];
-  };
+  }
   return undefined;
 }
 
@@ -116,7 +115,7 @@ export function getJobs(applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
-  };
+  }
   return undefined;
 }
 
@@ -125,7 +124,7 @@ export function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {
     return manager.Validators[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -215,7 +214,7 @@ export function getResponseObject(request, resolve, reject) {
       return reject(scriptError);
     }
   }
-};
+}
 
 function userIdForLog(auth) {
   return (auth && auth.user) ? auth.user.id : undefined;
@@ -258,12 +257,12 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
     }
     const request = getRequestObject(triggerType, auth, null, null, config);    
     const response = getResponseObject(request,
-      object => {
+      object => {
         resolve(object);
       }, 
-      error => {
+      error => {
         reject(error);
-    });
+      });
     logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
@@ -297,23 +296,23 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 
   let parseQuery = new Parse.Query(className);
   if (restWhere) {
-      parseQuery._where = restWhere;
+    parseQuery._where = restWhere;
   }
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
     }
     if (restOptions.skip) {
-        parseQuery._skip = restOptions.skip;
+      parseQuery._skip = restOptions.skip;
     }
     if (restOptions.limit) {
-        parseQuery._limit = restOptions.limit;
+      parseQuery._limit = restOptions.limit;
     }
   }
   let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
-  return Promise.resolve().then(() => {
+  return Promise.resolve().then(() => {
     return trigger(requestObject);
-  }).then((result) => {
+  }).then((result) => {
     let queryResult = parseQuery;
     if (result && result instanceof Parse.Query) {
       queryResult = result;
@@ -338,7 +337,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restWhere,
       restOptions
     };
-  }, (err) => {
+  }, (err) => {
     if (typeof err === 'string') {
       throw new Parse.Error(1, err);
     } else {
@@ -360,11 +359,11 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, (object) => {
+    var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
           triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
-    }, (error) => {
+    }, (error) => {
       logTriggerErrorBeforeHook(
           triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
@@ -382,16 +381,16 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var triggerPromise = trigger(request, response);
     if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
     {
-        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-        if(triggerPromise && typeof triggerPromise.then === "function") {
-            return triggerPromise.then(resolve, resolve);
-        }
-        else {
-            return resolve();
-        }
+      logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+      if(triggerPromise && typeof triggerPromise.then === "function") {
+        return triggerPromise.then(resolve, resolve);
+      }
+      else {
+        return resolve();
+      }
     }
   });
-};
+}
 
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object

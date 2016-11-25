@@ -5,7 +5,7 @@ const Config = require("../src/Config");
 var loginWithWrongCredentialsShouldFail = function(username, password) {
   return new Promise((resolve, reject) => {
     Parse.User.logIn(username, password)
-    .then(user => reject('login should have failed'))
+    .then(() => reject('login should have failed'))
     .catch(err => {
       if (err.message === 'Invalid username/password.') {
         resolve();
@@ -20,7 +20,7 @@ var isAccountLockoutError = function(username, password, duration, waitTime) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       Parse.User.logIn(username, password)
-      .then(user => reject('login should have failed'))
+      .then(() => reject('login should have failed'))
       .catch(err => {
         if (err.message === 'Your account is locked due to multiple failed login attempts. Please try again after ' + duration + ' minute(s)') {
           resolve();
@@ -45,7 +45,7 @@ describe("Account Lockout Policy: ", () => {
       user.setPassword('password');
       return user.signUp(null);
     })
-    .then(user => {
+    .then(() => {
       return loginWithWrongCredentialsShouldFail('username1', 'incorrect password 1');
     })
     .then(() => {
@@ -71,7 +71,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('set duration to an invalid number test failed');
       done();
     })
@@ -95,7 +95,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('set threshold to an invalid number test failed');
       done();
     })
@@ -119,7 +119,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('threshold value < 1 is invalid test failed');
       done();
     })
@@ -143,7 +143,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('threshold value > 999 is invalid test failed');
       done();
     })
@@ -167,7 +167,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('duration value < 1 is invalid test failed');
       done();
     })
@@ -191,7 +191,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
     .then(() => {
-      var config = new Config('test');
+      new Config('test');
       fail('duration value > 99999 is invalid test failed');
       done();
     })
@@ -230,7 +230,7 @@ describe("Account Lockout Policy: ", () => {
       return isAccountLockoutError('username2', 'wrong password', 1, 1);
     })
     .then(() => {
-        done();
+      done();
     })
     .catch(err => {
       fail('lock account after failed login attempts test failed: ' + JSON.stringify(err));
@@ -301,7 +301,7 @@ describe("Account Lockout Policy: ", () => {
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           Parse.User.logIn('username4', 'correct password')
-          .then(user => resolve())
+          .then(() => resolve())
           .catch(err => reject(err));
         }, 3001);
       });

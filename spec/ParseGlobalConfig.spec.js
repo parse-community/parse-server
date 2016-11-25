@@ -1,7 +1,6 @@
 'use strict';
 
 var request = require('request');
-var Parse = require('parse/node').Parse;
 let Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
@@ -18,7 +17,7 @@ describe('a GlobalConfig', () => {
       { fields: { objectId: { type: 'Number' }, params: {type: 'Object'}} },
       query,
       { params: { companies: ['US', 'DK'] } }
-    ).then(done, (err) => {
+    ).then(done, (err) => {
       jfail(err);
       done();
     });
@@ -123,7 +122,7 @@ describe('a GlobalConfig', () => {
         expect(body.params).toEqual({});
         done();
       });
-    }).catch((e) => {
+    }).catch((e) => {
       jfail(e);
       done();
     });

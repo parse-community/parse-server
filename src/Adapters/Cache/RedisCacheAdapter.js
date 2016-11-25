@@ -3,7 +3,7 @@ import logger from '../../logger';
 
 const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 
-function debug() {
+function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
@@ -16,8 +16,8 @@ export class RedisCacheAdapter {
 
   get(key) {
     debug('get', key);
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
         this.client.get(key, function(err, res) {
           debug('-> get', key, res);
           if(!res) {
@@ -39,14 +39,14 @@ export class RedisCacheAdapter {
     if (ttl < 0 || isNaN(ttl)) {
       ttl = DEFAULT_REDIS_TTL;
     }
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
         if (ttl === Infinity) {
-          this.client.set(key, value, function(err, res) {
+          this.client.set(key, value, function() {
             resolve();
           });
         } else {
-          this.client.psetex(key, ttl, value, function(err, res) {
+          this.client.psetex(key, ttl, value, function() {
             resolve();
           });
         }
@@ -57,9 +57,9 @@ export class RedisCacheAdapter {
 
   del(key) {
     debug('del', key);
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
-        this.client.del(key, function(err, res) {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
+        this.client.del(key, function() {
           resolve();
         });
       });
@@ -69,9 +69,9 @@ export class RedisCacheAdapter {
 
   clear() {
     debug('clear');
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
-        this.client.flushall(function(err, res) {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
+        this.client.flushall(function() {
           resolve();
         });
       });

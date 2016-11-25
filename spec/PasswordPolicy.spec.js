@@ -1,7 +1,6 @@
 "use strict";
 
 const requestp = require('request-promise');
-const Config = require('../src/Config');
 
 describe("Password Policy: ", () => {
 
@@ -15,7 +14,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       emailAdapter: emailAdapter,
@@ -28,8 +27,12 @@ describe("Password Policy: ", () => {
       user.setPassword("original");
       user.set('email', 'user@parse.com');
       return user.signUp();
-    }).then(user => {
-      Parse.User.requestPasswordReset("user@parse.com");
+    }).then(() => {
+      Parse.User.requestPasswordReset("user@parse.com").catch((err) => {
+        jfail(err);
+        fail("Reset password request should not fail");
+        done();
+      });
     }).then(() => {
       // wait for a bit more than the validity duration set
       setTimeout(() => {
@@ -64,7 +67,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       emailAdapter: emailAdapter,
@@ -77,8 +80,12 @@ describe("Password Policy: ", () => {
       user.setPassword("original");
       user.set('email', 'user@parse.com');
       return user.signUp();
-    }).then(user => {
-      Parse.User.requestPasswordReset("user@parse.com");
+    }).then(() => {
+      Parse.User.requestPasswordReset('user@parse.com').catch((err) => {
+        jfail(err);
+        fail("Reset password request should not fail");
+        done();
+      });
     }).then(() => {
       // wait for a bit but less than the validity duration
       setTimeout(() => {
@@ -190,7 +197,7 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should succeed if password confirms to the policy enforced using validatorPattern', (done) => {
+  it('signup should succeed if password conforms to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
@@ -203,16 +210,22 @@ describe("Password Policy: ", () => {
       user.setPassword("1digit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.logOut();
-        Parse.User.logIn("user1", "1digit").then(function (user) {
-          done();
-        }).catch((err) => {
-          jfail(err);
-          fail("Should be able to login");
+        Parse.User.logOut().then(() => {
+          Parse.User.logIn("user1", "1digit").then(function () {
+            done();
+          }).catch((err) => {
+            jfail(err);
+            fail("Should be able to login");
+            done();
+          });
+        }).catch((error) => {
+          jfail(error);
+          fail('logout should have succeeded');
           done();
         });
       }).catch((error) => {
-        fail('Should have succeeded as password confirms to the policy.');
+        jfail(error);
+        fail('Signup should have succeeded as password conforms to the policy.');
         done();
       });
     })
@@ -223,7 +236,7 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validatorCallback: password => false  // just fail
+        validatorCallback: () => false  // just fail
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -240,12 +253,12 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should succeed if password confirms to the policy enforced using validatorCallback', (done) => {
+  it('signup should succeed if password conforms to the policy enforced using validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validatorCallback: password => true   // never fail
+        validatorCallback: () => true   // never fail
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -253,16 +266,22 @@ describe("Password Policy: ", () => {
       user.setPassword("oneUpper");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.logOut();
-        Parse.User.logIn("user1", "oneUpper").then(function (user) {
-          done();
-        }).catch((err) => {
-          jfail(err);
-          fail("Should be able to login");
+        Parse.User.logOut().then(() => {
+          Parse.User.logIn("user1", "oneUpper").then(function () {
+            done();
+          }).catch((err) => {
+            jfail(err);
+            fail("Should be able to login");
+            done();
+          });
+        }).catch(error => {
+          jfail(error);
+          fail("Logout should have succeeded");
           done();
         });
       }).catch((error) => {
-        fail('Should have succeeded as password confirms to the policy.');
+        jfail(error);
+        fail('Should have succeeded as password conforms to the policy.');
         done();
       });
     })
@@ -274,7 +293,7 @@ describe("Password Policy: ", () => {
       appName: 'passwordPolicy',
       passwordPolicy: {
         validatorPattern: /[A-Z]+/,  // password should contain at least one UPPER case letter
-        validatorCallback: value => true
+        validatorCallback: () => true
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -291,13 +310,13 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should fail if password does confirms to validatorPattern but fails validatorCallback', (done) => {
+  it('signup should fail if password matches validatorPattern but fails validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
         validatorPattern: /[A-Z]+/,  // password should contain at least one UPPER case letter
-        validatorCallback: value => false
+        validatorCallback: () => false
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -314,13 +333,13 @@ describe("Password Policy: ", () => {
     })
   });
 
-  it('signup should succeed if password confirms to both validatorPattern and validatorCallback', (done) => {
+  it('signup should succeed if password conforms to both validatorPattern and validatorCallback', (done) => {
     const user = new Parse.User();
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
         validatorPattern: /[A-Z]+/,  // password should contain at least one digit
-        validatorCallback: value => true
+        validatorCallback: () => true
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -328,24 +347,30 @@ describe("Password Policy: ", () => {
       user.setPassword("oneUpper");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.logOut();
-        Parse.User.logIn("user1", "oneUpper").then(function (user) {
-          done();
-        }).catch((err) => {
-          jfail(err);
-          fail("Should be able to login");
+        Parse.User.logOut().then(() => {
+          Parse.User.logIn("user1", "oneUpper").then(function () {
+            done();
+          }).catch((err) => {
+            jfail(err);
+            fail("Should be able to login");
+            done();
+          });
+        }).catch(error => {
+          jfail(error);
+          fail("logout should have succeeded");
           done();
         });
       }).catch((error) => {
-        fail('Should have succeeded as password confirms to the policy.');
+        jfail(error);
+        fail('Should have succeeded as password conforms to the policy.');
         done();
       });
     })
   });
 
-  it('should reset password if new password confirms to password policy', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+  it('should reset password if new password conforms to password policy', done => {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         requestp.get({
@@ -355,14 +380,14 @@ describe("Password Policy: ", () => {
           resolveWithFullResponse: true
         }).then((response) => {
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-          var match = response.body.match(re);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
           if (!match) {
             fail("should have a token");
             done();
             return;
           }
-          var token = match[1];
+          const token = match[1];
 
           requestp.post({
             uri: "http://localhost:8378/1/apps/test/request_password_reset",
@@ -377,7 +402,7 @@ describe("Password Policy: ", () => {
             expect(response.statusCode).toEqual(302);
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
 
-            Parse.User.logIn("user1", "has2init").then(function (user) {
+            Parse.User.logIn("user1", "has2init").then(function () {
               done();
             }).catch((err) => {
               jfail(err);
@@ -397,7 +422,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       verifyUserEmails: false,
@@ -411,12 +436,10 @@ describe("Password Policy: ", () => {
       user.setPassword("has 1 digit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.requestPasswordReset('user1@parse.com', {
-          error: (err) => {
-            jfail(err);
-            fail("Reset password request should not fail");
-            done();
-          }
+        Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
+          jfail(err);
+          fail("Reset password request should not fail");
+          done();
         });
       }).catch(error => {
         jfail(error);
@@ -427,8 +450,8 @@ describe("Password Policy: ", () => {
   });
 
   it('should fail to reset password if the new password does not conform to password policy', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         requestp.get({
@@ -438,14 +461,14 @@ describe("Password Policy: ", () => {
           resolveWithFullResponse: true
         }).then((response) => {
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-          var match = response.body.match(re);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
           if (!match) {
             fail("should have a token");
             done();
             return;
           }
-          var token = match[1];
+          const token = match[1];
 
           requestp.post({
             uri: "http://localhost:8378/1/apps/test/request_password_reset",
@@ -458,9 +481,9 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then((response) => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20confirm%20to%20the%20Password%20Policy.&app=passwordPolicy`);
+            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`);
 
-            Parse.User.logIn("user1", "has 1 digit").then(function (user) {
+            Parse.User.logIn("user1", "has 1 digit").then(function () {
               done();
             }).catch((err) => {
               jfail(err);
@@ -480,7 +503,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       verifyUserEmails: false,
@@ -494,12 +517,10 @@ describe("Password Policy: ", () => {
       user.setPassword("has 1 digit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.requestPasswordReset('user1@parse.com', {
-          error: (err) => {
-            jfail(err);
-            fail("Reset password request should not fail");
-            done();
-          }
+        Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
+          jfail(err);
+          fail("Reset password request should not fail");
+          done();
         });
       }).catch(error => {
         jfail(error);
@@ -562,7 +583,7 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         done();
-      }).catch((error) => {
+      }).catch(() => {
         fail('Should have succeeded as password does not contain username.');
         done();
       });
@@ -583,7 +604,7 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         done();
-      }).catch((error) => {
+      }).catch(() => {
         fail('Should have succeeded as policy allows username in password.');
         done();
       });
@@ -591,8 +612,8 @@ describe("Password Policy: ", () => {
   });
 
   it('should fail to reset password if the new password contains username and not allowed by password policy', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         requestp.get({
@@ -602,14 +623,14 @@ describe("Password Policy: ", () => {
           resolveWithFullResponse: true
         }).then((response) => {
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-          var match = response.body.match(re);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
           if (!match) {
             fail("should have a token");
             done();
             return;
           }
-          var token = match[1];
+          const token = match[1];
 
           requestp.post({
             uri: "http://localhost:8378/1/apps/test/request_password_reset",
@@ -622,9 +643,9 @@ describe("Password Policy: ", () => {
             resolveWithFullResponse: true
           }).then((response) => {
             expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20confirm%20to%20the%20Password%20Policy.&app=passwordPolicy`);
+            expect(response.body).toEqual(`Found. Redirecting to http://localhost:8378/1/apps/choose_password?username=user1&token=${token}&id=test&error=Password%20does%20not%20meet%20the%20Password%20Policy%20requirements.&app=passwordPolicy`);
 
-            Parse.User.logIn("user1", "r@nd0m").then(function (user) {
+            Parse.User.logIn("user1", "r@nd0m").then(function () {
               done();
             }).catch((err) => {
               jfail(err);
@@ -645,7 +666,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       verifyUserEmails: false,
@@ -659,12 +680,10 @@ describe("Password Policy: ", () => {
       user.setPassword("r@nd0m");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.requestPasswordReset('user1@parse.com', {
-          error: (err) => {
-            jfail(err);
-            fail("Reset password request should not fail");
-            done();
-          }
+        Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
+          jfail(err);
+          fail("Reset password request should not fail");
+          done();
         });
       }).catch(error => {
         jfail(error);
@@ -675,8 +694,8 @@ describe("Password Policy: ", () => {
   });
 
   it('should reset password even if the new password contains user name while the policy allows', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         requestp.get({
@@ -686,14 +705,14 @@ describe("Password Policy: ", () => {
           resolveWithFullResponse: true
         }).then(response => {
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
-          var match = response.body.match(re);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
           if (!match) {
             fail("should have a token");
             done();
             return;
           }
-          var token = match[1];
+          const token = match[1];
 
           requestp.post({
             uri: "http://localhost:8378/1/apps/test/request_password_reset",
@@ -708,7 +727,7 @@ describe("Password Policy: ", () => {
             expect(response.statusCode).toEqual(302);
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
 
-            Parse.User.logIn("user1", "uuser11").then(function (user) {
+            Parse.User.logIn("user1", "uuser11").then(function () {
               done();
             }).catch(err => {
               jfail(err);
@@ -727,7 +746,7 @@ describe("Password Policy: ", () => {
       },
       sendMail: () => {
       }
-    }
+    };
     reconfigureServer({
       appName: 'passwordPolicy',
       verifyUserEmails: false,
@@ -742,16 +761,250 @@ describe("Password Policy: ", () => {
       user.setPassword("has 1 digit");
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
-        Parse.User.requestPasswordReset('user1@parse.com', {
-          error: (err) => {
-            jfail(err);
-            fail("Reset password request should not fail");
-            done();
-          }
+        Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
+          jfail(err);
+          fail("Reset password request should not fail");
+          done();
         });
-      }).catch(error => {
+      });
+    }).catch(error => {
+      jfail(error);
+      fail("signUp should not fail");
+      done();
+    });
+  });
+
+  it('should fail if passwordPolicy.maxPasswordAge is not a number', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        maxPasswordAge: "not a number"
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.maxPasswordAge "not a number" test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
+      done();
+    });
+  });
+
+  it('should fail if passwordPolicy.maxPasswordAge is a negative number', done => {
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        maxPasswordAge: -100
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      fail('passwordPolicy.maxPasswordAge negative number test failed');
+      done();
+    }).catch(err => {
+      expect(err).toEqual('passwordPolicy.maxPasswordAge must be a positive number');
+      done();
+    });
+  });
+
+  it('should succeed if logged in before password expires', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        maxPasswordAge: 1 // 1 day
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        Parse.User.logIn("user1", "user1").then(() => {
+          done();
+        }).catch((error) => {
+          jfail(error);
+          fail('Login should have succeeded before password expiry.');
+          done();
+        });
+      }).catch((error) => {
         jfail(error);
-        fail("signUp should not fail");
+        fail('Signup failed.');
+        done();
+      });
+    })
+  });
+
+  it('should fail if logged in after password expires', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        // wait for a bit more than the validity duration set
+        setTimeout(() => {
+          Parse.User.logIn("user1", "user1").then(() => {
+            fail("logIn should have failed");
+            done();
+          }).catch((error) => {
+            expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+            expect(error.message).toEqual('Your password has expired. Please reset your password.');
+            done();
+          });
+        }, 1000);
+      }).catch((error) => {
+        jfail(error);
+        fail('Signup failed.');
+        done();
+      });
+    });
+  });
+
+  it('should apply password expiry policy to existing user upon first login after policy is enabled', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        Parse.User.logOut().then(() => {
+          reconfigureServer({
+            appName: 'passwordPolicy',
+            passwordPolicy: {
+              maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+            },
+            publicServerURL: "http://localhost:8378/1"
+          }).then(() => {
+            Parse.User.logIn("user1", "user1").then(() => {
+              Parse.User.logOut().then(() => {
+                // wait for a bit more than the validity duration set
+                setTimeout(() => {
+                  Parse.User.logIn("user1", "user1").then(() => {
+                    fail("logIn should have failed");
+                    done();
+                  }).catch((error) => {
+                    expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                    expect(error.message).toEqual('Your password has expired. Please reset your password.');
+                    done();
+                  });
+                }, 2000);
+              }).catch(error => {
+                jfail(error);
+                fail("logout should have succeeded");
+                done();
+              });
+            }).catch((error) => {
+              jfail(error);
+              fail('Login failed.');
+              done();
+            });
+          });
+        }).catch(error => {
+          jfail(error);
+          fail("logout should have succeeded");
+          done();
+        });
+      }).catch((error) => {
+        jfail(error);
+        fail('Signup failed.');
+        done();
+      });
+    });
+
+  });
+
+  it('should reset password timestamp when password is reset', done => {
+    const user = new Parse.User();
+    const emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: options => {
+        requestp.get({
+          uri: options.link,
+          followRedirect: false,
+          simple: false,
+          resolveWithFullResponse: true
+        }).then(response => {
+          expect(response.statusCode).toEqual(302);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=user1/;
+          const match = response.body.match(re);
+          if (!match) {
+            fail("should have a token");
+            done();
+            return;
+          }
+          const token = match[1];
+
+          requestp.post({
+            uri: "http://localhost:8378/1/apps/test/request_password_reset",
+            body: `new_password=uuser11&token=${token}&username=user1`,
+            headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            followRedirect: false,
+            simple: false,
+            resolveWithFullResponse: true
+          }).then(response => {
+            expect(response.statusCode).toEqual(302);
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
+
+            Parse.User.logIn("user1", "uuser11").then(function () {
+              done();
+            }).catch(err => {
+              jfail(err);
+              fail("should login with new password");
+              done();
+            });
+          }).catch(error => {
+            jfail(error);
+            fail("Failed to POST request password reset");
+          });
+        }).catch(error => {
+          jfail(error);
+          fail("Failed to get the reset link");
+        });
+      },
+      sendMail: () => {
+      }
+    };
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      emailAdapter: emailAdapter,
+      passwordPolicy: {
+        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("user1");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        // wait for a bit more than the validity duration set
+        setTimeout(() => {
+          Parse.User.logIn("user1", "user1").then(() => {
+            fail("logIn should have failed");
+            done();
+          }).catch((error) => {
+            expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+            expect(error.message).toEqual('Your password has expired. Please reset your password.');
+            Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
+              jfail(err);
+              fail("Reset password request should not fail");
+              done();
+            });
+          });
+        }, 1000);
+      }).catch((error) => {
+        jfail(error);
+        fail('Signup failed.');
         done();
       });
     });

@@ -10,6 +10,9 @@ let digits = require("./twitter"); // digits tokens are validated by twitter
 let janrainengage = require("./janrainengage");
 let janraincapture = require("./janraincapture");
 let vkontakte = require("./vkontakte");
+let qq = require("./qq");
+let wechat = require("./wechat");
+let weibo = require("./weibo");
 
 let anonymous = {
   validateAuthData: () => {
@@ -33,7 +36,10 @@ let providers = {
   digits,
   janrainengage,
   janraincapture,
-  vkontakte
+  vkontakte,
+  qq,
+  wechat,
+  weibo
 }
 
 module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
@@ -73,7 +79,7 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
       if (optionalProvider.module) {
         validateAuthData = require(optionalProvider.module).validateAuthData;
         validateAppId = require(optionalProvider.module).validateAppId;
-      };
+      }
 
       if (optionalProvider.validateAuthData) {
         validateAuthData = optionalProvider.validateAuthData;
@@ -88,7 +94,7 @@ module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
     }
 
     return function(authData) {
-      return validateAuthData(authData, optionalProvider).then(() => {
+      return validateAuthData(authData, optionalProvider).then(() => {
         if (appIds) {
           return validateAppId(appIds, authData, optionalProvider);
         }

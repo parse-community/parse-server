@@ -20,7 +20,7 @@ describe('ParseCloudCodePublisher', function() {
 
   it('can initialize', function() {
     var config = {}
-    var publisher = new ParseCloudCodePublisher(config);
+    new ParseCloudCodePublisher(config);
 
     var ParsePubSub = require('../src/LiveQuery/ParsePubSub').ParsePubSub;
     expect(ParsePubSub.createPublisher).toHaveBeenCalledWith(config);

@@ -10,14 +10,14 @@ describe('RedisPubSub', function() {
   });
 
   it('can create publisher', function() {
-    var publisher = RedisPubSub.createPublisher({redisURL: 'redisAddress'});
+    RedisPubSub.createPublisher({redisURL: 'redisAddress'});
 
     var redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', { no_ready_check: true });
   });
 
   it('can create subscriber', function() {
-    var subscriber = RedisPubSub.createSubscriber({redisURL: 'redisAddress'});
+    RedisPubSub.createSubscriber({redisURL: 'redisAddress'});
 
     var redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', { no_ready_check: true });

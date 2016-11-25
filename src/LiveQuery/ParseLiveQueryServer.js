@@ -251,21 +251,21 @@ class ParseLiveQueryServer {
       }
 
       switch(request.op) {
-        case 'connect':
-          this._handleConnect(parseWebsocket, request);
-          break;
-        case 'subscribe':
-          this._handleSubscribe(parseWebsocket, request);
-          break;
-        case 'update':
-          this._handleUpdateSubscription(parseWebsocket, request);
-          break;
-        case 'unsubscribe':
-          this._handleUnsubscribe(parseWebsocket, request);
-          break;
-        default:
-          Client.pushError(parseWebsocket, 3, 'Get unknown operation');
-          logger.error('Get unknown operation', request.op);
+      case 'connect':
+        this._handleConnect(parseWebsocket, request);
+        break;
+      case 'subscribe':
+        this._handleSubscribe(parseWebsocket, request);
+        break;
+      case 'update':
+        this._handleUpdateSubscription(parseWebsocket, request);
+        break;
+      case 'unsubscribe':
+        this._handleUnsubscribe(parseWebsocket, request);
+        break;
+      default:
+        Client.pushError(parseWebsocket, 3, 'Get unknown operation');
+        logger.error('Get unknown operation', request.op);
       }
     });
 
@@ -335,48 +335,48 @@ class ParseLiveQueryServer {
         // Resolve false right away if the acl doesn't have any roles
         const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
         if (!acl_has_roles) {
-            return resolve(false);
+          return resolve(false);
         }
 
         this.sessionTokenCache.getUserId(subscriptionSessionToken)
         .then((userId) => {
 
             // Pass along a null if there is no user id
-            if (!userId) {
-                return Parse.Promise.as(null);
-            }
+          if (!userId) {
+            return Parse.Promise.as(null);
+          }
 
             // Prepare a user object to query for roles
             // To eliminate a query for the user, create one locally with the id
-            var user = new Parse.User();
-            user.id = userId;
-            return user;
+          var user = new Parse.User();
+          user.id = userId;
+          return user;
 
         })
         .then((user) => {
 
             // Pass along an empty array (of roles) if no user
-            if (!user) {
-                return Parse.Promise.as([]);
-            }
+          if (!user) {
+            return Parse.Promise.as([]);
+          }
 
             // Then get the user's roles
-            var rolesQuery = new Parse.Query(Parse.Role);
-            rolesQuery.equalTo("users", user);
-            return rolesQuery.find();
+          var rolesQuery = new Parse.Query(Parse.Role);
+          rolesQuery.equalTo("users", user);
+          return rolesQuery.find();
         }).
         then((roles) => {
 
             // Finally, see if any of the user's roles allow them read access
-            for (let role of roles) {
-                if (acl.getRoleReadAccess(role)) {
-                    return resolve(true);
-                }
+          for (let role of roles) {
+            if (acl.getRoleReadAccess(role)) {
+              return resolve(true);
             }
-            resolve(false);
+          }
+          resolve(false);
         })
         .catch((error) => {
-            reject(error);
+          reject(error);
         });
 
       });
@@ -393,7 +393,7 @@ class ParseLiveQueryServer {
       });
     }).then((isMatched) => {
       return Parse.Promise.as(isMatched);
-    }, (error) => {
+    }, () => {
       return Parse.Promise.as(false);
     });
   }

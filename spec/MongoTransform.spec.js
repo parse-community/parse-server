@@ -278,7 +278,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('untransforms mongodb number types', (done) => {
+  it('untransforms mongodb number types', (done) => {
     var input = {
       long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
       double: new mongodb.Double(Number.MAX_VALUE)

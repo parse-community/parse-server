@@ -22,7 +22,7 @@ describe('Logger', () => {
   });
 
   it('should have files transports', (done) => {
-    reconfigureServer().then(() => {
+    reconfigureServer().then(() => {
       let transports = logging.logger.transports;
       let transportKeys = Object.keys(transports);
       expect(transportKeys.length).toBe(3);
@@ -33,7 +33,7 @@ describe('Logger', () => {
   it('should disable files logs', (done) => {
     reconfigureServer({
       logsFolder: null
-    }).then(() => {
+    }).then(() => {
       let transports = logging.logger.transports;
       let transportKeys = Object.keys(transports);
       expect(transportKeys.length).toBe(1);
@@ -47,8 +47,8 @@ describe('Logger', () => {
       logsFolder: null,
       jsonLogs: true,
       silent: false
-    }).then(() => {
-      let spy = spyOn(process.stdout, 'write');
+    }).then(() => {
+      spyOn(process.stdout, 'write');
       logging.logger.info('hi', {key: 'value'});
       expect(process.stdout.write).toHaveBeenCalled();
       var firstLog = process.stdout.write.calls.first().args[0];
@@ -56,7 +56,7 @@ describe('Logger', () => {
       return reconfigureServer({
         jsonLogs: false
       });
-    }).then(() => {
+    }).then(() => {
       done();
     });
   });

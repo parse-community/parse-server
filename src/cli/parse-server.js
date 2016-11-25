@@ -1,4 +1,4 @@
-import path from 'path';
+/* eslint-disable no-console */
 import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './definitions/parse-server';
@@ -65,7 +65,7 @@ function startServer(options, callback) {
     for (const socketId in sockets) {
       try {
         sockets[socketId].destroy();
-      } catch (e) { }
+      } catch (e) { /* */ }
     }
   }
 
@@ -115,12 +115,12 @@ runner({
         for(var i = 0; i < numCPUs; i++) {
           cluster.fork();
         }
-        cluster.on('exit', (worker, code, signal) => {
-          console.log(`worker ${worker.process.pid} died... Restarting`);
+        cluster.on('exit', (worker, code) => {
+          console.log(`worker ${worker.process.pid} died (${code})... Restarting`);
           cluster.fork();
         });
       } else {
-        startServer(options, () => {
+        startServer(options, () => {
           console.log('['+process.pid+'] parse-server running on '+options.serverURL);
         });
       }
@@ -134,5 +134,4 @@ runner({
   }
 })
 
-
-
+/* eslint-enable no-console */

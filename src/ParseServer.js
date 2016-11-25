@@ -1,20 +1,18 @@
 // ParseServer - open-source compatible API Server for Parse apps
 
 var batch = require('./batch'),
-    bodyParser = require('body-parser'),
-    express = require('express'),
-    middlewares = require('./middlewares'),
-    multer = require('multer'),
-    Parse = require('parse/node').Parse,
-    path = require('path'),
-    url = require('url'),
-    authDataManager = require('./authDataManager');
+  bodyParser = require('body-parser'),
+  express = require('express'),
+  middlewares = require('./middlewares'),
+  Parse = require('parse/node').Parse,
+  path = require('path'),
+  url = require('url'),
+  authDataManager = require('./authDataManager');
 
 import defaults                 from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
-import parseServerPackage       from '../package.json';
 import PromiseRouter            from './PromiseRouter';
 import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
@@ -43,7 +41,6 @@ import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
-import { randomString }         from './cryptoUtils';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
@@ -260,20 +257,20 @@ class ParseServer {
     try {
       const parsedURI = url.parse(databaseURI);
       protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
-    } catch(e) {}
+    } catch(e) { /* */ }
     switch (protocol) {
-      case 'postgres:':
-        return new PostgresStorageAdapter({
-          uri: databaseURI,
-          collectionPrefix,
-          databaseOptions
-        });
-      default:
-        return new MongoStorageAdapter({
-          uri: databaseURI,
-          collectionPrefix,
-          mongoOptions: databaseOptions,
-        });
+    case 'postgres:':
+      return new PostgresStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        databaseOptions
+      });
+    default:
+      return new MongoStorageAdapter({
+        uri: databaseURI,
+        collectionPrefix,
+        mongoOptions: databaseOptions,
+      });
     }
   }
 
@@ -309,7 +306,9 @@ class ParseServer {
     if (!process.env.TESTING) {
       process.on('uncaughtException', (err) => {
         if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+          /* eslint-disable no-console */
           console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
+          /* eslint-enable no-console */
           process.exit(0);
         } else {
           throw err;

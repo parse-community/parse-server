@@ -1,6 +1,5 @@
 'use strict';
 
-var request = require('request');
 const Parse = require("parse/node");
 let Config = require('../src/Config');
 

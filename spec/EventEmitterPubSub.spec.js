@@ -25,7 +25,7 @@ describe('EventEmitterPubSub', function() {
     subscriber.unsubscribe('testChannel');
     // Register mock checked for subscriber
     var isCalled = false;
-    subscriber.on('message', function(channel, message) {
+    subscriber.on('message', function() {
       isCalled = true;
     });
 

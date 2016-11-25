@@ -1,6 +1,5 @@
 "use strict";
 
-const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const request = require('request');
 const Config = require('../src/Config');
 
@@ -34,8 +33,8 @@ describe("Email Verification Token Expiration: ", () => {
         expect(sendEmailOptions).not.toBeUndefined();
 
         request.get(sendEmailOptions.link, {
-            followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false,
+        }, (error, response) => {
           expect(response.statusCode).toEqual(302);
           expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
           done();
@@ -75,21 +74,21 @@ describe("Email Verification Token Expiration: ", () => {
         expect(sendEmailOptions).not.toBeUndefined();
 
         request.get(sendEmailOptions.link, {
-            followRedirect: false,
-        }, (error, response, body) => {
+          followRedirect: false,
+        }, (error, response) => {
           expect(response.statusCode).toEqual(302);
           user.fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(false);
             done();
           })
-          .catch((err) => {
+          .catch(() => {
             jfail(error);
             done();
           });
         });
       }, 1000);
-    }).catch((err) => {
+    }).catch((error) => {
       jfail(error);
       done();
     });
@@ -119,13 +118,13 @@ describe("Email Verification Token Expiration: ", () => {
       return user.signUp();
     }).then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity');
         done();
       });
-    }).catch((err) => {
+    }).catch((error) => {
       jfail(error);
       done();
     });
@@ -155,20 +154,20 @@ describe("Email Verification Token Expiration: ", () => {
       return user.signUp();
     }).then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         user.fetch()
         .then(() => {
           expect(user.get('emailVerified')).toEqual(true);
           done();
         })
-        .catch((err) => {
+        .catch((error) => {
           jfail(error);
           done();
         });
       });
-    }).catch((err) => {
+    }).catch((error) => {
       jfail(error);
       done();
     });
@@ -198,8 +197,8 @@ describe("Email Verification Token Expiration: ", () => {
       return user.signUp();
     }).then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         Parse.User.logIn("testEmailVerifyTokenValidity", "expiringToken")
         .then(user => {
@@ -212,7 +211,7 @@ describe("Email Verification Token Expiration: ", () => {
           done();
         });
       });
-    }).catch((err) => {
+    }).catch((error) => {
       jfail(error);
       done();
     });
@@ -252,6 +251,7 @@ describe("Email Verification Token Expiration: ", () => {
       expect(user.emailVerified).toEqual(false);
       expect(typeof user._email_verify_token).toBe('string');
       expect(typeof user._email_verify_token_expires_at).toBe('object');
+      expect(sendEmailOptions).toBeDefined();
       done();
     })
     .catch(error => {
@@ -285,11 +285,11 @@ describe("Email Verification Token Expiration: ", () => {
     })
     .then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         let config = new Config('test');
-        return config.database.find('_User', {username: 'unsets_email_verify_token_expires_at'}).then((results) => {
+        return config.database.find('_User', {username: 'unsets_email_verify_token_expires_at'}).then((results) => {
           expect(results.length).toBe(1);
           return results[0];
         })
@@ -355,14 +355,14 @@ describe("Email Verification Token Expiration: ", () => {
     })
     .then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
         done();
       });
     })
-    .catch((err) => {
+    .catch((error) => {
       jfail(error);
       done();
     });
@@ -405,22 +405,20 @@ describe("Email Verification Token Expiration: ", () => {
     })
     .then(() => {
       request.get(sendEmailOptions.link, {
-          followRedirect: false,
-      }, (error, response, body) => {
+        followRedirect: false,
+      }, (error, response) => {
         expect(response.statusCode).toEqual(302);
         expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
         done();
       });
     })
-    .catch((err) => {
+    .catch((error) => {
       jfail(error);
       done();
     });
   });
 
   it('setting the email on the user should set a new email verification token and new expiration date for the token when expire email verify token flag is set', done => {
-
-    let db;
 
     let user = new Parse.User();
     let userBeforeEmailReset;
@@ -450,7 +448,7 @@ describe("Email Verification Token Expiration: ", () => {
     })
     .then(() => {
       let config = new Config('test');
-      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
+      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
         return results[0];
       });
     })
@@ -460,14 +458,14 @@ describe("Email Verification Token Expiration: ", () => {
 
       // trigger another token generation by setting the email
       user.set('email', 'user@parse.com');
-      return new Promise((resolve, reject) => {
+      return new Promise((resolve) => {
         // wait for half a sec to get a new expiration time
         setTimeout( () => resolve(user.save()), 500 );
       });
     })
     .then(() => {
       let config = new Config('test');
-      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
+      return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
         return results[0];
       });
     })
@@ -475,9 +473,10 @@ describe("Email Verification Token Expiration: ", () => {
       expect(typeof userAfterEmailReset).toBe('object');
       expect(userBeforeEmailReset._email_verify_token).not.toEqual(userAfterEmailReset._email_verify_token);
       expect(userBeforeEmailReset._email_verify_token_expires_at).not.toEqual(userAfterEmailReset.__email_verify_token_expires_at);
+      expect(sendEmailOptions).toBeDefined();
       done();
     })
-    .catch((err) => {
+    .catch((error) => {
       jfail(error);
       done();
     });
@@ -512,6 +511,7 @@ describe("Email Verification Token Expiration: ", () => {
       .then(() => {
         expect(user.get('emailVerified')).toEqual(false);
         expect(typeof user.get('_email_verify_token_expires_at')).toBe('undefined');
+        expect(sendEmailOptions).toBeDefined();
         done();
       })
       .catch(error => {
@@ -519,7 +519,7 @@ describe("Email Verification Token Expiration: ", () => {
         done();
       });
 
-    }).catch((err) => {
+    }).catch((error) => {
       jfail(error);
       done();
     });

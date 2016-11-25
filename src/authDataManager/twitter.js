@@ -33,7 +33,7 @@ function handleMultipleConfigurations(authData, options) {
       logger.error('Twitter Auth', 'Multiple twitter configurations are available, by no consumer_key was sent by the client.');
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');
     }
-    options = options.filter((option) => {
+    options = options.filter((option) => {
       return option.consumer_key == consumer_key;
     });
 
