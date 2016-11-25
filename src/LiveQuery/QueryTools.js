@@ -112,6 +112,19 @@ function matchesQuery(object: any, query: any): boolean {
   return true;
 }
 
+function equalObjectsGeneric(obj, compareTo, eqlFn) {
+  if (Array.isArray(obj)) {
+    for (var i = 0; i < obj.length; i++) {
+      if (eqlFn(obj[i], compareTo)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return eqlFn(obj, compareTo);
+}
+
 
 /**
  * Determines whether an object matches a single key's constraints
@@ -143,22 +156,16 @@ function matchesKeyConstraints(object, key, constraints) {
   var compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
-      return (
-        typeof object[key] !== 'undefined' &&
-        constraints.className === object[key].className &&
-        constraints.objectId === object[key].objectId
-      );
+      return equalObjectsGeneric(object[key], constraints, function(obj, ptr) {
+        return (
+          typeof obj !== 'undefined' &&
+          ptr.className === obj.className &&
+          ptr.objectId === obj.objectId
+        );
+      });
     }
-    compareTo = Parse._decode(key, constraints);
-    if (Array.isArray(object[key])) {
-      for (i = 0; i < object[key].length; i++) {
-        if (equalObjects(object[key][i], compareTo)) {
-          return true;
-        }
-      }
-      return false;
-    }
-    return equalObjects(object[key], compareTo);
+
+    return equalObjectsGeneric(object[key], Parse._decode(key, constraints), equalObjects);
   }
   // More complex cases
   for (var condition in constraints) {

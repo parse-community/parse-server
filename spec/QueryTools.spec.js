@@ -226,6 +226,23 @@ describe('matchesQuery', function() {
 
     img.owner.objectId = 'U3';
     expect(matchesQuery(img, q)).toBe(false);
+
+    // pointers in arrays
+    q = new Parse.Query('Image');
+    q.equalTo('owners', u);
+
+    img = {
+      className: 'Image',
+      objectId: 'I1',
+      owners: [{
+        className: '_User',
+        objectId: 'U2'
+      }]
+    };
+    expect(matchesQuery(img, q)).toBe(true);
+
+    img.owners[0].objectId = 'U3';
+    expect(matchesQuery(img, q)).toBe(false);
   });
 
   it('matches on inequalities', function() {
