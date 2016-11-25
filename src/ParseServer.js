@@ -168,10 +168,10 @@ class ParseServer {
     const filesController = new FilesController(filesControllerAdapter, appId);
 
     // Pass the push options too as it works with the default
-    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
+    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push.pushConfig || {});
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
-    const pushController = new PushController(pushControllerAdapter, appId, push);
+    const pushController = new PushController(pushControllerAdapter, appId, push.pushConfig);
 
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
