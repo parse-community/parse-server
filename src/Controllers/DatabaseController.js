@@ -30,13 +30,20 @@ const transformObjectACL = ({ ACL, ...result }) => {
 
   result._wperm = [];
   result._rperm = [];
+  result._acl = {};
 
   for (let entry in ACL) {
+    let aclObj = {};
     if (ACL[entry].read) {
       result._rperm.push(entry);
+      aclObj.r = true;
     }
     if (ACL[entry].write) {
       result._wperm.push(entry);
+      aclObj.w = true;
+    }
+    if (aclObj.r || aclObj.w) {
+      result._acl[entry] = aclObj;
     }
   }
   return result;
