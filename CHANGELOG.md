@@ -1,16 +1,30 @@
 ## Parse Server Changelog
 
-### 2.2.25-beta.1
+### 2.2.25
 
 Postgres support requires v9.5
 
 #### New Features
+* Dockerizing Parse Server, thanks to [Kirill Kravinsky](https://github.com/woyorus)
+* Login with qq, wechat, weibo, thanks to [haifeizhang]()
+* Password policy, validation and expiration, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
 * Health check on /health, thanks to [Kirill Kravinsky](https://github.com/woyorus)
 * Reuse SchemaCache across requests option, thanks to [Steven Shipton](https://github.com/steven-supersolid)
 
 #### Improvements
+* Better support for CLI options, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Specity a database timeout with maxTimeMS, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Adds the username to reset password success pages, thanks to [Halim Qarroum](https://github.com/HQarroum)
 * Better support for Redis cache adapter, thanks to [Tyler Brock](https://github.com/TylerBrock)
 * Better coverage of Postgres, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
+#### Bug Fixes
+* Fixes issue when sending push to multiple installations, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issues with twitter authentication, thanks to [jonas-db](https://github.com/jonas-db)
+* Ignore createdAt fields update, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
+* Improve support for array equality with LiveQuery, thanks to [David Poetzsch-Heffter](https://github.com/dpoetzsch)
+* Improve support for batch endpoint when serverURL and publicServerURL have different paths, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Support saving relation objects, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
 
 ### 2.2.24
 
