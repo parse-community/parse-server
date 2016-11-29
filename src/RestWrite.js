@@ -343,11 +343,11 @@ RestWrite.prototype.handleAuthData = function(authData) {
 
 // The non-third-party parts of User transformation
 RestWrite.prototype.transformUser = function() {
-  if (this.className !== '_User') {
-    return;
-  }
-
   var promise = Promise.resolve();
+
+  if (this.className !== '_User') {
+    return promise;
+  }
 
   if (this.query) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
@@ -367,7 +367,7 @@ RestWrite.prototype.transformUser = function() {
   return promise.then(() => {
     // Transform the password
     if (!this.data.password) {
-      return;
+      return Promise.resolve();
     }
 
     if (this.query && !this.auth.isMaster) {
@@ -476,16 +476,16 @@ RestWrite.prototype._validatePasswordRequirements = function() {
 
 RestWrite.prototype._validatePasswordHistory = function() {
   // check whether password is repeating from specified history
-  if (this.query && this.config.passwordPolicy.passwordHistory) {
-    return this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_old_passwords", "_hashed_password"]})
+  if (this.query && this.config.passwordPolicy.maxPasswordHistory) {
+    return this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_password_history", "_hashed_password"]})
       .then(results => {
         if (results.length != 1) {
           throw undefined;
         }
         const user = results[0];
         let oldPasswords = [];
-        if (user._old_passwords)
-          oldPasswords = _.take(user._old_passwords, this.config.passwordPolicy.passwordHistory - 1);
+        if (user._password_history)
+          oldPasswords = _.take(user._password_history, this.config.passwordPolicy.maxPasswordHistory - 1);
         oldPasswords.push(user.password);
         const newPassword = this.data.password;
         // compare the new password hash with all old password hashes
@@ -501,7 +501,7 @@ RestWrite.prototype._validatePasswordHistory = function() {
           return Promise.resolve();
         }).catch(err => {
           if (err === "REPEAT_PASSWORD") // a match was found
-            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, `New password should not be the same as last ${this.config.passwordPolicy.passwordHistory} passwords.`));
+            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`));
           throw err;
         });
       });
@@ -902,22 +902,22 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     let defer = Promise.resolve();
     // if password history is enabled then save the current password to history
-    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.passwordHistory) {
-      defer = this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_old_passwords", "_hashed_password"]}).then(results => {
+    if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordHistory) {
+      defer = this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_password_history", "_hashed_password"]}).then(results => {
         if (results.length != 1) {
           throw undefined;
         }
         const user = results[0];
         let oldPasswords = [];
-        if (user._old_passwords) {
-          oldPasswords = _.take(user._old_passwords, this.config.passwordPolicy.passwordHistory);
+        if (user._password_history) {
+          oldPasswords = _.take(user._password_history, this.config.passwordPolicy.maxPasswordHistory);
         }
         //n-1 passwords go into history including last password
-        while (oldPasswords.length > this.config.passwordPolicy.passwordHistory - 2) {
+        while (oldPasswords.length > this.config.passwordPolicy.maxPasswordHistory - 2) {
           oldPasswords.shift();
         }
         oldPasswords.push(user.password);
-        this.data._old_passwords = oldPasswords;
+        this.data._password_history = oldPasswords;
       });
     }
 

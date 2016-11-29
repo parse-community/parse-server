@@ -108,7 +108,7 @@ const toPostgresSchema = (schema) => {
   schema.fields._rperm = {type: 'Array', contents: {type: 'String'}}
   if (schema.className === '_User') {
     schema.fields._hashed_password = {type: 'String'};
-    schema.fields._old_passwords = {type: 'Array'};
+    schema.fields._password_history = {type: 'Array'};
   }
   return schema;
 }
@@ -472,7 +472,7 @@ export class PostgresStorageAdapter {
       fields._perishable_token = {type: 'String'};
       fields._perishable_token_expires_at = {type: 'Date'};
       fields._password_changed_at = {type: 'Date'};
-      fields._old_passwords = { type: 'Array'};
+      fields._password_history = { type: 'Array'};
     }
     let index = 2;
     let relations = [];
@@ -686,7 +686,7 @@ export class PostgresStorageAdapter {
         if (fieldName === '_email_verify_token' ||
             fieldName === '_failed_login_count' ||
             fieldName === '_perishable_token' ||
-            fieldName === '_old_passwords'){
+            fieldName === '_password_history'){
           valuesArray.push(object[fieldName]);
         }
 
