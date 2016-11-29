@@ -32,7 +32,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
           Parse.Error.INVALID_JSON,
           'cannot route batch path ' + requestPath);
     }
-    return path.join('/', requestPath.slice(apiPrefix.length));
+    return path.posix.join('/', requestPath.slice(apiPrefix.length));
   }
 
   if (serverURL && publicServerURL 
@@ -44,7 +44,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     return function(requestPath) {
         // Build the new path by removing the public path
         // and joining with the local path
-      let newPath = path.join('/', localPath, '/' , requestPath.slice(publicPath.length));
+      let newPath = path.posix.join('/', localPath, '/' , requestPath.slice(publicPath.length));
         // Use the method for local routing
       return makeRoutablePath(newPath);
     }
