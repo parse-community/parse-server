@@ -903,9 +903,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     let defer = Promise.resolve();
     // if password history is enabled then save the current password to history
     if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.passwordHistory) {
-      defer = this.config.database.find('_User', {objectId: this.objectId()},
-        {keys: ["_old_passwords", "_hashed_password"]}).then(results => {
-
+      defer = this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_old_passwords", "_hashed_password"]}).then(results => {
         if (results.length != 1) {
           throw undefined;
         }

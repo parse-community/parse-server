@@ -1267,7 +1267,6 @@ describe("Password Policy: ", () => {
           });
         }).then(data => {
           const response = data[0];
-          const token = data[1];
           expect(response.statusCode).toEqual(302);
           expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=user1');
           if(pwCount === 7){ // end it now
