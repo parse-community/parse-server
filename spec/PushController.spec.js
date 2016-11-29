@@ -238,6 +238,68 @@ describe('PushController', () => {
 
   });
 
+  it('properly set badges to 1 with complex query #2903 #3022', (done) => {
+
+    var payload = {
+      data: {
+        alert: "Hello World!",
+        badge: 1,
+      }
+    }
+    var installations = [];
+    while(installations.length != 10) {
+      var installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_"+installations.length);
+      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+    let matchedInstallationsCount = 0;
+    var pushAdapter = {
+      send: function(body, installations) {
+        matchedInstallationsCount += installations.length;
+        var badge = body.data.badge;
+        installations.forEach((installation) => {
+          expect(installation.badge).toEqual(badge);
+          expect(1).toEqual(installation.badge);
+        })
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
+    Parse.Object.saveAll(installations).then((installations) => {
+      let objectIds = installations.map(installation => {
+        return installation.id;
+      })
+      let where = {
+        objectId: {'$in': objectIds.slice(0, 5)}
+      }
+      return pushController.sendPush(payload, where, config, auth);
+    }).then(() => {
+      expect(matchedInstallationsCount).toBe(5);
+      let query = new Parse.Query(Parse.Installation);
+      query.equalTo('badge', 1);
+      return query.find({useMasterKey: true});
+    }).then((installations) => {
+      expect(installations.length).toBe(5);
+      done();
+    }).catch(() => {
+      fail("should not fail");
+      done();
+    });
+  });
+
   it('properly creates _PushStatus', (done) => {
 
     var installations = [];

@@ -624,6 +624,12 @@ RestWrite.prototype.handleInstallation = function() {
     installationId = installationId.toLowerCase();
   }
 
+  // Updating _Installation but not updating anything critical
+  if (this.query && !this.data.deviceToken 
+                  && !installationId && !this.data.deviceType) {
+    return;
+  }
+
   var promise = Promise.resolve();
 
   var idMatch; // Will be a match on either objectId or installationId
