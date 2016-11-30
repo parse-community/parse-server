@@ -47,7 +47,7 @@ Command.prototype.loadDefinitions = function(definitions) {
     });
     console.log('');
   });
-}
+};
 
 function parseEnvironment(env = {}) {
   return Object.keys(_reverseDefinitions).reduce((options, key) => {
@@ -86,7 +86,7 @@ function parseConfigFile(program) {
       if (action) {
         options[key] = action(value);
       }
-    })
+    });
     console.log(`Configuration loaded from ${jsonPath}`)
   }
   return options;
@@ -94,11 +94,11 @@ function parseConfigFile(program) {
 
 Command.prototype.setValuesIfNeeded = function(options) {
   Object.keys(options).forEach((key) => {
-    if (!this[key]) {
+    if (!this.hasOwnProperty(key)) {
       this[key] = options[key];
     }
   });
-}
+};
 
 Command.prototype._parse = Command.prototype.parse;
 
@@ -113,7 +113,7 @@ Command.prototype.parse = function(args, env) {
   this.setValuesIfNeeded(fromFile);
   // Last set the defaults
   this.setValuesIfNeeded(_defaults);
-}
+};
 
 Command.prototype.getOptions = function() {
   return Object.keys(_definitions).reduce((options, key) => {
@@ -122,7 +122,7 @@ Command.prototype.getOptions = function() {
     }
     return options;
   }, {});
-}
+};
 
 export default new Command();
 /* eslint-enable no-console */
