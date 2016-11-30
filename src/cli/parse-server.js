@@ -9,7 +9,7 @@ import runner from './utils/runner';
 const help = function(){
   console.log('  Get Started guide:');
   console.log('');
-  console.log('    Please have a look at the get started guide!')
+  console.log('    Please have a look at the get started guide!');
   console.log('    https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide');
   console.log('');
   console.log('');
@@ -35,7 +35,7 @@ function startServer(options, callback) {
 
   app.use(options.mountPath, api);
 
-  var server = app.listen(options.port, callback);
+  let server = app.listen(options.port, callback);
   server.on('connection', initializeConnections);
 
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -69,7 +69,7 @@ function startServer(options, callback) {
     }
   }
 
-  var handleShutdown = function() {
+  let handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
     server.close(function () {
@@ -112,7 +112,8 @@ runner({
     if (options.cluster) {
       const numCPUs = typeof options.cluster === 'number' ? options.cluster : os.cpus().length;
       if (cluster.isMaster) {
-        for(var i = 0; i < numCPUs; i++) {
+        logOptions();
+        for(let i = 0; i < numCPUs; i++) {
           cluster.fork();
         }
         cluster.on('exit', (worker, code) => {
@@ -132,6 +133,6 @@ runner({
       });
     }
   }
-})
+});
 
 /* eslint-enable no-console */

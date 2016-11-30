@@ -63,15 +63,16 @@ describe('commander additions', () => {
 
   it('should load properly use args over env', (done) => {
     commander.loadDefinitions(testDefinitions);
-    commander.parse(['node','./CLI.spec.js','--arg0', 'arg0Value', '--arg4', 'anotherArg4'], {
+    commander.parse(['node','./CLI.spec.js','--arg0', 'arg0Value', '--arg4', ''], {
       'PROGRAM_ARG_0': 'arg0ENVValue',
       'PROGRAM_ARG_1': 'arg1ENVValue',
       'PROGRAM_ARG_2': '4',
+      'PROGRAM_ARG_4': 'arg4ENVValue'
     });
     expect(commander.arg0).toEqual('arg0Value');
     expect(commander.arg1).toEqual('arg1ENVValue');
     expect(commander.arg2).toEqual(4);
-    expect(commander.arg4).toEqual('anotherArg4');
+    expect(commander.arg4).toEqual('');
     done();
   });
 
