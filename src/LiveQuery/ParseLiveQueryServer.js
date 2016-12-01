@@ -518,7 +518,7 @@ class ParseLiveQueryServer {
     if (classSubscriptions.size === 0) {
       this.subscriptions.delete(className);
     }
-    
+
     if (!notifyClient) {
       return;
     }

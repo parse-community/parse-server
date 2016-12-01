@@ -84,8 +84,8 @@ export class AccountLockout {
   }
 
   /**
-   * if the failed login count is greater than the threshold 
-   * then sets lockout expiration to 'currenttime + accountPolicy.duration', i.e., account is locked out for the next 'accountPolicy.duration' minutes 
+   * if the failed login count is greater than the threshold
+   * then sets lockout expiration to 'currenttime + accountPolicy.duration', i.e., account is locked out for the next 'accountPolicy.duration' minutes
    * else do nothing
    */
   _setLockoutExpiration() {
@@ -147,8 +147,8 @@ export class AccountLockout {
    * set and/or increment _failed_login_count
    * if _failed_login_count > threshold
    *   set the _account_lockout_expires_at to current_time + accountPolicy.duration
-   * else 
-   *   do nothing   
+   * else
+   *   do nothing
    */
   _handleFailedLoginAttempt() {
     return new Promise((resolve, reject) => {
@@ -175,7 +175,7 @@ export class AccountLockout {
     if (!this._config.accountLockout) {
       return Promise.resolve();
     }
-    
+
     return new Promise((resolve, reject) => {
       this._notLocked()
       .then(() => {

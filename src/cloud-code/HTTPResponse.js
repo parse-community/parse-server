@@ -20,7 +20,7 @@ export default class HTTPResponse {
       } else if (!_text && _data) {
         _text = JSON.stringify(_data);
       }
-      return _text; 
+      return _text;
     }
 
     let getData = () => {

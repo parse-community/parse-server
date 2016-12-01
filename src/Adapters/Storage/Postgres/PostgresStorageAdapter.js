@@ -126,7 +126,7 @@ const handleDotFields = (object) => {
         value = undefined;
       }
       /* eslint-disable no-cond-assign */
-      while(next = components.shift()) { 
+      while(next = components.shift()) {
       /* eslint-enable no-cond-assign */
         currentObj[next] = currentObj[next] || {};
         if (components.length === 0) {
@@ -149,7 +149,7 @@ const validateKeys = (object) => {
 
       if(key.includes('$') || key.includes('.')){
         throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
-      }       
+      }
     }
   }
 }
@@ -165,7 +165,7 @@ const joinTablesForSchema = (schema) => {
     });
   }
   return list;
-} 
+}
 
 const buildWhereClause = ({ schema, query, index }) => {
   let patterns = [];
@@ -174,8 +174,8 @@ const buildWhereClause = ({ schema, query, index }) => {
 
   schema = toPostgresSchema(schema);
   for (let fieldName in query) {
-    let isArrayField = schema.fields 
-          && schema.fields[fieldName] 
+    let isArrayField = schema.fields
+          && schema.fields[fieldName]
           && schema.fields[fieldName].type === 'Array';
     let initialPatternsLength = patterns.length;
     let fieldValue = query[fieldName];
@@ -186,14 +186,14 @@ const buildWhereClause = ({ schema, query, index }) => {
       if (fieldValue.$exists === false) {
         continue;
       }
-    } 
+    }
 
     if (fieldName.indexOf('.') >= 0) {
       let components = fieldName.split('.').map((cmpt, index) => {
         if (index === 0) {
           return `"${cmpt}"`;
         }
-        return `'${cmpt}'`; 
+        return `'${cmpt}'`;
       });
       let name = components.slice(0, components.length-1).join('->');
       name+='->>'+components[components.length-1];
@@ -252,7 +252,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (Array.isArray(fieldValue.$in) &&
         isArrayField &&
-        schema.fields[fieldName].contents && 
+        schema.fields[fieldName].contents &&
         schema.fields[fieldName].contents.type === 'String') {
       let inPatterns = [];
       let allowNull = false;
@@ -439,7 +439,7 @@ export class PostgresStorageAdapter {
     return this._client.tx(t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
- 
+
       return t.batch([q1, q2]);
     })
     .then(() => {
@@ -680,7 +680,7 @@ export class PostgresStorageAdapter {
         delete object[fieldName];
         fieldName = 'authData';
       }
-      
+
       columnsArray.push(fieldName);
       if (!schema.fields[fieldName] && className === '_User') {
         if (fieldName === '_email_verify_token' ||
@@ -726,7 +726,7 @@ export class PostgresStorageAdapter {
         } else {
           valuesArray.push(JSON.stringify(object[fieldName]));
         }
-        break;        
+        break;
       case 'Object':
       case 'String':
       case 'Number':
@@ -843,7 +843,7 @@ export class PostgresStorageAdapter {
         // This recursively sets the json_object
         // Only 1 level deep
         let generate = (jsonb, key, value) => {
-          return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`; 
+          return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`;
         }
         let lastKey = `$${index}:name`;
         let fieldNameIndex = index;
@@ -926,7 +926,7 @@ export class PostgresStorageAdapter {
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
         const keysToDelete = Object.keys(originalUpdate).filter(k => {
-          // choose top level fields that have a delete operation set 
+          // choose top level fields that have a delete operation set
           return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2
         }).map(k => k.split('.')[1]);
 
@@ -990,7 +990,7 @@ export class PostgresStorageAdapter {
     let values = [className];
     let where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
-    
+
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const limitPattern = hasLimit ? `LIMIT $${values.length + 1}` : '';
     if (hasLimit) {

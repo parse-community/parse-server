@@ -187,7 +187,7 @@ export function getResponseObject(request, resolve, reject) {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
         if(!response){
-          response = request.objects;  
+          response = request.objects;
         }
         response = response.map(object => {
           return object.toJSON();
@@ -255,11 +255,11 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
     if (!trigger) {
       return resolve();
     }
-    const request = getRequestObject(triggerType, auth, null, null, config);    
+    const request = getRequestObject(triggerType, auth, null, null, config);
     const response = getResponseObject(request,
       object => {
         resolve(object);
-      }, 
+      },
       error => {
         reject(error);
       });

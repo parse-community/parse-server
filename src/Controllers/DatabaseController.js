@@ -903,7 +903,7 @@ DatabaseController.prototype.performInitizalization = function() {
       return Promise.reject(error);
     });
 
-  // Create tables for volatile classes 
+  // Create tables for volatile classes
   let adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
   return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }

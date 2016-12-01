@@ -144,8 +144,8 @@ export function handleParseHeaders(req, res, next) {
 
   return Promise.resolve().then(() => {
     // handle the upgradeToRevocableSession path on it's own
-    if (info.sessionToken && 
-        req.url === '/upgradeToRevocableSession' && 
+    if (info.sessionToken &&
+        req.url === '/upgradeToRevocableSession' &&
         info.sessionToken.indexOf('r:') != 0) {
       return auth.getAuthForLegacySessionToken({ config: req.config, installationId: info.installationId, sessionToken: info.sessionToken })
     } else {

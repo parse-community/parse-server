@@ -90,7 +90,7 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);    
+    return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
   });
 }
 
