@@ -311,15 +311,15 @@ describe('miscellaneous', function() {
     });
   });
 
-  it('query without limit get default 100 records', function(done) {
+  it('query without limit get default 1000 records', function(done) {
     var objects = [];
-    for (var i = 0; i < 150; i++) {
+    for (var i = 0; i < 1500; i++) {
       objects.push(new TestObject({name: 'name' + i}));
     }
     Parse.Object.saveAll(objects).then(() => {
       return new Parse.Query(TestObject).find();
     }).then((results) => {
-      expect(results.length).toEqual(100);
+      expect(results.length).toEqual(1000);
       done();
     }, error => {
       fail(JSON.stringify(error));
