@@ -107,7 +107,7 @@ export class PublicAPIRouter extends PromiseRouter {
         location: `${config.passwordResetSuccessURL}?${params}`
       });
     }, (err) => {
-      let params = qs.stringify({username: username, token: token, id: config.applicationId, error:err, app:config.appName})
+      let params = qs.stringify({username: username, token: token, id: config.applicationId, error: JSON.stringify(err), app:config.appName})
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?${params}`
