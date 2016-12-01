@@ -35,7 +35,7 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
     return path.posix.join('/', requestPath.slice(apiPrefix.length));
   }
 
-  if (serverURL && publicServerURL 
+  if (serverURL && publicServerURL
         && (serverURL.path != publicServerURL.path)) {
     let localPath = serverURL.path;
     let publicPath = publicServerURL.path;

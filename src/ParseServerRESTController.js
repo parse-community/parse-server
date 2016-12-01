@@ -33,7 +33,7 @@ function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}) {
     // Store the arguments, for later use if internal fails
     let args = arguments;
-    
+
     let config = new Config(applicationId);
     let serverURL = URL.parse(config.serverURL);
     if (path.indexOf(serverURL.path) === 0) {

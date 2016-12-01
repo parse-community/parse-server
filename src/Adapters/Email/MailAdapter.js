@@ -12,7 +12,7 @@ export class MailAdapter {
    * - subject: the subject of the email
    */
   sendMail(options) {}
-  
+
   /* You can implement those methods if you want
    * to provide HTML templates etc...
    */

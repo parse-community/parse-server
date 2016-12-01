@@ -10,7 +10,7 @@ function validateAuthData(authData, options) {
   client.host = "api.twitter.com";
   client.auth_token = authData.auth_token;
   client.auth_token_secret = authData.auth_token_secret;
-  
+
   return client.get("/1.1/account/verify_credentials.json").then((data) => {
     if (data && data.id_str == ''+authData.id) {
       return;

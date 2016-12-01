@@ -674,7 +674,7 @@ RestWrite.prototype.handleInstallation = function() {
   }
 
   // Updating _Installation but not updating anything critical
-  if (this.query && !this.data.deviceToken 
+  if (this.query && !this.data.deviceToken
                   && !installationId && !this.data.deviceType) {
     return;
   }
