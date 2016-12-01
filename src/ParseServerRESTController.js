@@ -11,9 +11,10 @@ function getSessionToken(options) {
   return Parse.Promise.as(null);
 }
 
-function getAuth(options, config) {
+function getAuth(options = {}, config) {
+  const installationId = options.installationId || 'cloud';
   if (options.useMasterKey) {
-    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
+    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId }));
   }
   return getSessionToken(options).then((sessionToken) => {
     if (sessionToken) {
@@ -21,10 +22,10 @@ function getAuth(options, config) {
       return Auth.getAuthForSessionToken({
         config,
         sessionToken: sessionToken,
-        installationId: 'cloud'
+        installationId
       });
     } else {
-      return Parse.Promise.as(new Auth.Auth({ config, installationId: 'cloud' }));
+      return Parse.Promise.as(new Auth.Auth({ config, installationId }));
     }
   })
 }
