@@ -712,7 +712,7 @@ describe('Cloud Code', () => {
       done();
     });
   });
-  
+
   it('beforeSave change propagates through the afterSave #1931', (done) => {
     Parse.Cloud.beforeSave('ChangingObject', function(request, response) {
       request.object.unset('file');
@@ -1044,7 +1044,7 @@ describe('Cloud Code', () => {
           res.success();
         });
       }).not.toThrow();
-      
+
       rp.post({
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
@@ -1065,7 +1065,7 @@ describe('Cloud Code', () => {
           res.success();
         });
       }).not.toThrow();
-      
+
       rp.post({
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
@@ -1094,7 +1094,7 @@ describe('Cloud Code', () => {
           done();
         });
       }).not.toThrow();
-      
+
       rp.post({
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
@@ -1121,7 +1121,7 @@ describe('Cloud Code', () => {
           done();
         });
       }).not.toThrow();
-      
+
       rp.post({
         url: `http://${Parse.applicationId}:${Parse.masterKey}@localhost:8378/1/jobs/myJob`,
       }).then(() => {
@@ -1152,7 +1152,7 @@ describe('Cloud Code', () => {
           done();
         });
       });
-      
+
       rp.post({
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
@@ -1179,7 +1179,7 @@ describe('Cloud Code', () => {
           done();
         });
       });
-      
+
       rp.post({
         url: 'http://localhost:8378/1/jobs/myJob',
         headers: {
@@ -1434,5 +1434,40 @@ describe('afterFind hooks', () => {
     });
   });
 
-});
+  it('should alter select', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      req.query.select('white');
+      return req.query;
+    });
 
+    const obj0 = new Parse.Object('MyObject')
+      .set('white', true)
+      .set('black', true);
+    obj0.save()
+      .then(() => {
+        new Parse.Query('MyObject')
+          .first()
+          .then(result => {
+            expect(result.get('white')).toBe(true);
+            expect(result.get('black')).toBe(undefined);
+            done();
+          });
+      });
+  });
+
+  it('should not alter select', (done) => {
+    const obj0 = new Parse.Object('MyObject')
+      .set('white', true)
+      .set('black', true);
+    obj0.save()
+      .then(() => {
+        new Parse.Query('MyObject')
+          .first()
+          .then(result => {
+            expect(result.get('white')).toBe(true);
+            expect(result.get('black')).toBe(true);
+            done();
+          });
+      });
+  });
+});

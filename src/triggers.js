@@ -333,6 +333,10 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restOptions = restOptions || {};
       restOptions.include = jsonQuery.include;
     }
+    if (jsonQuery.keys) {
+      restOptions = restOptions || {};
+      restOptions.keys = jsonQuery.keys;
+    }
     return {
       restWhere,
       restOptions
