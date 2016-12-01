@@ -884,108 +884,113 @@ describe('SchemaController', () => {
 
 describe('Class Level Permissions for requiredAuth', () => {
   
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
   function createUser() {
-     let user =  new Parse.User();
-     user.set("username", "hello");
-     user.set("password", "world");
-     return user.signUp(null);
-  }  
-  it_exclude_dbs(['postgres'])('required auth test find', (done) => {
+    let user =  new Parse.User();
+    user.set("username", "hello");
+    user.set("password", "world");
+    return user.signUp(null);
+  }
+
+  it('required auth test find', (done) => {
     config.database.loadSchema().then((schema) => {
-        // Just to create a valid class
-        return schema.validateObject('Stuff', {foo: 'bar'});
-      }).then((schema) => {
-        return schema.setPermissions('Stuff', {
-          'find': {
-            'requiresAuthentication': true
-          }
-        });
-      }).then((schema) => {
-        var query = new Parse.Query('Stuff');
-        return query.find();
-      }).then((results) => {
-        fail('Class permissions should have rejected this query.');
-        done();
-      }, (e) => {
-        expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
-        done();
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true
+        }
       });
+    }).then(() => {
+      var query = new Parse.Query('Stuff');
+      return query.find();
+    }).then(() => {
+      fail('Class permissions should have rejected this query.');
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test find authenticated', (done) => {
+  it('required auth test find authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
-        // Just to create a valid class
-        return schema.validateObject('Stuff', {foo: 'bar'});
-      }).then((schema) => {
-        return schema.setPermissions('Stuff', {
-          'find': {
-            'requiresAuthentication': true
-          }
-        });
-      }).then((schema) => {
-        return createUser();
-      }).then((user) => {
-        var query = new Parse.Query('Stuff');
-        return query.find();
-      }).then((results) => {
-        expect(results.length).toEqual(0);
-        done();
-      }, (e) => {
-        console.error(e);
-        fail("Should not have failed");
-        done();
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true
+        }
       });
+    }).then(() => {
+      return createUser();
+    }).then(() => {
+      var query = new Parse.Query('Stuff');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toEqual(0);
+      done();
+    }, (e) => {
+      console.error(e);
+      fail("Should not have failed");
+      done();
+    });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test create authenticated', (done) => {
+  it('required auth should allow create authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
-        // Just to create a valid class
-        return schema.validateObject('Stuff', {foo: 'bar'});
-      }).then((schema) => {
-        return schema.setPermissions('Stuff', {
-          'create': {
-            'requiresAuthentication': true
-          }
-        });
-      }).then((schema) => {
-        return createUser();
-      }).then((user) => {
-        let stuff = new Parse.Object('Stuff');
-        stuff.set('foo', 'bar');
-        return stuff.save();
-      }).then((savedObject) => {
-        done();
-      }, (e) => {
-        console.error(e);
-        fail("Should not have failed");
-        done();
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'create': {
+          'requiresAuthentication': true
+        }
       });
+    }).then(() => {
+      return createUser();
+    }).then(() => {
+      let stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save();
+    }).then(() => {
+      done();
+    }, (e) => {
+      console.error(e);
+      fail("Should not have failed");
+      done();
+    });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test create authenticated', (done) => {
+  it('required auth should reject create when not authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
-        // Just to create a valid class
-        return schema.validateObject('Stuff', {foo: 'bar'});
-      }).then((schema) => {
-        return schema.setPermissions('Stuff', {
-          'create': {
-            'requiresAuthentication': true
-          }
-        });
-      }).then((user) => {
-        let stuff = new Parse.Object('Stuff');
-        stuff.set('foo', 'bar');
-        return stuff.save();
-      }).then((results) => {
-        fail('Class permissions should have rejected this query.');
-        done();
-      }, (e) => {
-        expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
-        done();
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'create': {
+          'requiresAuthentication': true
+        }
       });
+    }).then(() => {
+      let stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save();
+    }).then(() => {
+      fail('Class permissions should have rejected this query.');
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test create/get/update/delete authenticated', (done) => {
+  it('required auth test create/get/update/delete authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
       return schema.validateObject('Stuff', {foo: 'bar'});
@@ -1004,9 +1009,9 @@ describe('Class Level Permissions for requiredAuth', () => {
           'requiresAuthentication': true
         }
       });
-    }).then((schema) => {
+    }).then(() => {
       return createUser();
-    }).then((user) => {
+    }).then(() => {
       let stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
@@ -1015,7 +1020,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       });
     }).then((gotStuff) => {
       return gotStuff.save({'foo': 'baz'}).then(() => {
-          return gotStuff.destroy();
+        return gotStuff.destroy();
       })
     }).then(() => {
       done();
@@ -1026,7 +1031,7 @@ describe('Class Level Permissions for requiredAuth', () => {
     });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test create/get/update/delete not authenitcated', (done) => {
+  it('required auth test create/get/update/delete not authenitcated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
       return schema.validateObject('Stuff', {foo: 'bar'});
@@ -1045,14 +1050,14 @@ describe('Class Level Permissions for requiredAuth', () => {
           '*': true
         }
       });
-    }).then((user) => {
+    }).then(() => {
       let stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
         let query = new Parse.Query('Stuff');
         return query.get(stuff.id);
       });
-    }).then((res) => {
+    }).then(() => {
       fail("Should not succeed!");
       done();
     }, (e) => {
@@ -1061,7 +1066,7 @@ describe('Class Level Permissions for requiredAuth', () => {
     });
   });
   
-  it_exclude_dbs(['postgres'])('required auth test create/get/update/delete not authenitcated', (done) => {
+  it('required auth test create/get/update/delete not authenitcated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
       return schema.validateObject('Stuff', {foo: 'bar'});
@@ -1083,7 +1088,7 @@ describe('Class Level Permissions for requiredAuth', () => {
           '*': true
         }
       });
-    }).then((user) => {
+    }).then(() => {
       let stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
@@ -1094,7 +1099,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       expect(result.get('foo')).toEqual('bar');
       let query = new Parse.Query('Stuff');
       return query.find();  
-   }).then((res) => {
+    }).then(() => {
       fail("Should not succeed!");
       done();
     }, (e) => {
