@@ -1,11 +1,11 @@
 const analyticsAdapter = {
-  appOpened: function() {}, 
+  appOpened: function() {},
   trackEvent: function() {}
 }
 
 describe('AnalyticsController', () => {
   it('should track a simple event', (done) => {
-    
+
     spyOn(analyticsAdapter, 'trackEvent').and.callThrough();
     reconfigureServer({
       analyticsAdapter
@@ -31,9 +31,9 @@ describe('AnalyticsController', () => {
       done();
     })
   });
-  
+
   it('should track a app opened event', (done) => {
-    
+
     spyOn(analyticsAdapter, 'appOpened').and.callThrough();
     reconfigureServer({
       analyticsAdapter

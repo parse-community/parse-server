@@ -30,6 +30,8 @@
     },
     "rules": {
       "no-console": [0],
-      "indent": ["error", 2]
+      "indent": ["error", 2],
+      "no-trailing-spaces": 2,
+      "eol-last": 2
     }
 }
