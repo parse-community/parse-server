@@ -2385,7 +2385,7 @@ describe('Parse.User testing', () => {
       req.object.set('foo', 'bar');
       res.success();
     });
-    
+
     let originalSessionToken;
     let originalUserId;
     // Simulate anonymous user save
@@ -2463,7 +2463,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should send email when upgrading from anon', (done) => {
-    
+
     let emailCalled = false;
     let emailOptions;
     var emailAdapter = {
@@ -2768,7 +2768,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not fail querying non existing relations', done => { 
+  it('should not fail querying non existing relations', done => {
     let user = new Parse.User();
     user.set({
       username: 'hello',

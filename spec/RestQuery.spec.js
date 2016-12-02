@@ -172,7 +172,7 @@ describe('rest query', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
       };
-      
+
       let p0 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
