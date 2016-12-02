@@ -1,8 +1,8 @@
 var PushWorker = require('../src').PushWorker;
 var Config = require('../src/Config');
 
-describe('PushWorker', () => {
-  it('should run with small batch', (done) => {
+describe('PushWorker', () => {
+  it('should run with small batch', (done) => {
     const batchSize = 3;
     var sendCount = 0;
     reconfigureServer({
@@ -12,9 +12,9 @@ describe('PushWorker', () => {
           batchSize
         }
       }
-    }).then(() => {
+    }).then(() => {
       expect(new Config('test').pushWorker).toBeUndefined();
-      let worker = new PushWorker({
+      new PushWorker({
         send: (body, installations) => {
           expect(installations.length <= batchSize).toBe(true);
           sendCount+=installations.length;
@@ -34,7 +34,7 @@ describe('PushWorker', () => {
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
-    }).then(() => {
+    }).then(() => {
       return Parse.Push.send({
         where: {
           deviceType: 'ios'
@@ -43,14 +43,14 @@ describe('PushWorker', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true})
-    }).then(() => {
-      return new Promise((resolve, reject) => {
+    }).then(() => {
+      return new Promise((resolve) => {
         setTimeout(resolve, 500);
       });
-    }).then(() => {
+    }).then(() => {
       expect(sendCount).toBe(10);
       done();
-    }).catch(err => {
+    }).catch(err => {
       jfail(err);
     })
   });

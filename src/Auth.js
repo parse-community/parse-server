@@ -1,4 +1,3 @@
-var deepcopy = require('deepcopy');
 var Parse = require('parse/node').Parse;
 var RestQuery = require('./RestQuery');
 
@@ -80,13 +79,13 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
 
 var getAuthForLegacySessionToken = function({config, sessionToken, installationId } = {}) {
   var restOptions = {
-      limit: 1
+    limit: 1
   };
   var query = new RestQuery(config, master(config), '_User', { sessionToken: sessionToken}, restOptions);
-  return query.execute().then((response) => {
+  return query.execute().then((response) => {
     var results = response.results;
     if (results.length !== 1) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
+      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid legacy session token');
     }
     let obj = results[0];
     obj.className = '_User';
@@ -163,7 +162,7 @@ Auth.prototype._loadRoles = function() {
 
 // Given a list of roleIds, find all the parent roles, returns a promise with all names
 Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queriedRoles = {}) {
-  let ins = roleIDs.filter((roleID) => {
+  let ins = roleIDs.filter((roleID) => {
     return queriedRoles[roleID] !== true;
   }).map((roleID) => {
     // mark as queried
@@ -194,7 +193,7 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queri
       return Promise.resolve(names);
     }
     // Map the results with all Ids and names
-    let resultMap = results.reduce((memo, role) => {
+    let resultMap = results.reduce((memo, role) => {
       memo.names.push(role.name);
       memo.ids.push(role.objectId);
       return memo;

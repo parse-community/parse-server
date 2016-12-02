@@ -27,7 +27,7 @@ describe('Enable single schema cache', () => {
       config = fakeRequestForConfig();
       nobody = auth.nobody(config);
       return rest.find(config, nobody, 'Bar', {type: 1});
-    }).then((response) => {
+    }).then(() => {
       fail('Should throw error');
       done();
     }, (error) => {

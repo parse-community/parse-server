@@ -1,4 +1,5 @@
 // @flow
+/*eslint no-unused-vars: "off"*/
 // Push Adapter
 //
 // Allows you to change the push notification mechanism.

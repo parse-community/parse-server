@@ -15,7 +15,6 @@
 // TODO: hide all schema logic inside the database adapter.
 
 const Parse = require('parse/node').Parse;
-import _ from 'lodash';
 
 const defaultColumns = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -153,7 +152,7 @@ function validateCLP(perms, fields) {
       } else {
         perms[operation].forEach((key) => {
           if (!fields[key] || fields[key].type != 'Pointer' || fields[key].targetClass != '_User') {
-             throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
+            throw new Parse.Error(Parse.Error.INVALID_JSON, `'${key}' is not a valid column for class level pointer permissions ${operation}`);
           }
         });
       }
@@ -223,19 +222,19 @@ const fieldTypeIsInvalid = ({ type, targetClass }) => {
     if (!targetClass) {
       return new Parse.Error(135, `type ${type} needs a class name`);
     } else if (typeof targetClass !== 'string') {
-       return invalidJsonError;
+      return invalidJsonError;
     } else if (!classNameIsValid(targetClass)) {
       return new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(targetClass));
-     } else {
+    } else {
       return undefined;
-     }
-   }
-   if (typeof type !== 'string') {
+    }
+  }
+  if (typeof type !== 'string') {
     return invalidJsonError;
-   }
+  }
   if (validNonRelationOrPointerTypes.indexOf(type) < 0) {
     return new Parse.Error(Parse.Error.INCORRECT_TYPE, `invalid field type: ${type}`);
-   }
+  }
   return undefined;
 }
 
@@ -281,14 +280,14 @@ const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
 const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
 const _GlobalConfigSchema = { className: "_GlobalConfig", fields: defaultColumns._GlobalConfig }
 const _PushStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
-    className: "_PushStatus",
-    fields: {},
-    classLevelPermissions: {}
+  className: "_PushStatus",
+  fields: {},
+  classLevelPermissions: {}
 }));
 const _JobStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
-    className: "_JobStatus",
-    fields: {},
-    classLevelPermissions: {}
+  className: "_JobStatus",
+  fields: {},
+  classLevelPermissions: {}
 }));
 const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _PushStatusSchema, _GlobalConfigSchema];
 
@@ -326,7 +325,7 @@ export default class SchemaController {
   reloadData(options = {clearCache: false}) {
     let promise = Promise.resolve();
     if (options.clearCache) {
-      promise = promise.then(() => {
+      promise = promise.then(() => {
         return this._cache.clear();
       });
     }
@@ -335,7 +334,7 @@ export default class SchemaController {
     }
     this.data = {};
     this.perms = {};
-    this.reloadDataPromise = promise.then(() => {
+    this.reloadDataPromise = promise.then(() => {
       return this.getAllClasses(options);
     })
     .then(allSchemas => {
@@ -353,7 +352,7 @@ export default class SchemaController {
         });
       });
       delete this.reloadDataPromise;
-    }, (err) => {
+    }, (err) => {
       delete this.reloadDataPromise;
       throw err;
     });
@@ -365,16 +364,16 @@ export default class SchemaController {
     if (options.clearCache) {
       promise = this._cache.clear();
     }
-    return promise.then(() => {
-       return this._cache.getAllClasses()
-    }).then((allClasses) => {
+    return promise.then(() => {
+      return this._cache.getAllClasses()
+    }).then((allClasses) => {
       if (allClasses && allClasses.length && !options.clearCache) {
         return Promise.resolve(allClasses);
       }
       return this._dbAdapter.getAllClasses()
         .then(allSchemas => allSchemas.map(injectDefaultSchema))
         .then(allSchemas => {
-          return this._cache.setAllClasses(allSchemas).then(() => {
+          return this._cache.setAllClasses(allSchemas).then(() => {
             return allSchemas;
           });
         })
@@ -386,18 +385,18 @@ export default class SchemaController {
     if (options.clearCache) {
       promise = this._cache.clear();
     }
-    return promise.then(() => {
+    return promise.then(() => {
       if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
         return Promise.resolve(this.data[className]);
       }
-      return this._cache.getOneSchema(className).then((cached) => {
+      return this._cache.getOneSchema(className).then((cached) => {
         if (cached && !options.clearCache) {
           return Promise.resolve(cached);
         }
         return this._dbAdapter.getClass(className)
         .then(injectDefaultSchema)
-        .then((result) => {
-          return this._cache.setOneSchema(className, result).then(() => {
+        .then((result) => {
+          return this._cache.setOneSchema(className, result).then(() => {
             return result;
           })
         });
@@ -420,9 +419,9 @@ export default class SchemaController {
 
     return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
     .then(convertAdapterSchemaToParseSchema)
-    .then((res) => {
-      return this._cache.clear().then(() => {
-         return Promise.resolve(res);
+    .then((res) => {
+      return this._cache.clear().then(() => {
+        return Promise.resolve(res);
       });
     })
     .catch(error => {
@@ -505,7 +504,7 @@ export default class SchemaController {
     return this.addClassIfNotExists(className)
     // The schema update succeeded. Reload the schema
     .then(() => this.reloadData({ clearCache: true }))
-    .catch(error => {
+    .catch(() => {
       // The schema update failed. This can be okay - it might
       // have failed because there's a race condition and a different
       // client is making the exact same schema update that we want.
@@ -520,7 +519,7 @@ export default class SchemaController {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `Failed to add ${className}`);
       }
     })
-    .catch(error => {
+    .catch(() => {
       // The schema still doesn't validate. Give up
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'schema class name does not revalidate');
     });
@@ -587,7 +586,7 @@ export default class SchemaController {
   // object if the provided className-fieldName-type tuple is valid.
   // The className must already be validated.
   // If 'freeze' is true, refuse to update the schema for this field.
-  enforceFieldExists(className, fieldName, type, freeze) {
+  enforceFieldExists(className, fieldName, type) {
     if (fieldName.indexOf(".") > 0) {
       // subdocument key (x.y) => ok if x is of type 'object'
       fieldName = fieldName.split(".")[ 0 ];
@@ -621,14 +620,14 @@ export default class SchemaController {
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData({ clearCache: true });
-      }, error => {
+      }, () => {
         //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
 
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
         return this.reloadData({ clearCache: true });
-      }).then(error => {
+      }).then(() => {
         // Ensure that the schema now validates
         if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
@@ -677,7 +676,7 @@ export default class SchemaController {
         .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
       }
       return database.adapter.deleteFields(className, schema, [fieldName]);
-    }).then(() => {
+    }).then(() => {
       this._cache.clear();
     });
   }
@@ -773,7 +772,6 @@ export default class SchemaController {
       return true;
     }
     let classPerms = this.perms[className];
-    let perms = classPerms[operation];
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
     let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
@@ -786,11 +784,11 @@ export default class SchemaController {
 
     // Process the readUserFields later
     if (Array.isArray(classPerms[permissionField]) && classPerms[permissionField].length > 0) {
-        return Promise.resolve();
+      return Promise.resolve();
     }
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
         `Permission denied for action ${operation} on class ${className}.`);
-  };
+  }
 
   // Returns the expected type for a className+key combination
   // or undefined if the schema is not set
@@ -800,7 +798,7 @@ export default class SchemaController {
       return expectedType === 'map' ? 'Object' : expectedType;
     }
     return undefined;
-  };
+  }
 
   // Checks if a given class is in the schema.
   hasClass(className) {
@@ -860,23 +858,23 @@ function thenValidateRequiredColumns(schemaPromise, className, object, query) {
 function getType(obj) {
   let type = typeof obj;
   switch(type) {
-    case 'boolean':
-      return 'Boolean';
-    case 'string':
-      return 'String';
-    case 'number':
-      return 'Number';
-    case 'map':
-    case 'object':
-      if (!obj) {
-        return undefined;
-      }
-      return getObjectType(obj);
-    case 'function':
-    case 'symbol':
-    case 'undefined':
-    default:
-      throw 'bad obj: ' + obj;
+  case 'boolean':
+    return 'Boolean';
+  case 'string':
+    return 'String';
+  case 'number':
+    return 'Number';
+  case 'map':
+  case 'object':
+    if (!obj) {
+      return undefined;
+    }
+    return getObjectType(obj);
+  case 'function':
+  case 'symbol':
+  case 'undefined':
+  default:
+    throw 'bad obj: ' + obj;
   }
 }
 
@@ -889,56 +887,68 @@ function getObjectType(obj) {
   }
   if (obj.__type){
     switch(obj.__type) {
-      case 'Pointer' :
-        if(obj.className) {
-          return {
-            type: 'Pointer',
-            targetClass: obj.className
-          }
+    case 'Pointer' :
+      if(obj.className) {
+        return {
+          type: 'Pointer',
+          targetClass: obj.className
         }
-      case 'File' :
-        if(obj.name) {
-          return 'File';
+      }
+      break;
+    case 'Relation' :
+      if(obj.className) {
+        return {
+          type: 'Relation',
+          targetClass: obj.className
         }
-      case 'Date' :
-        if(obj.iso) {
-          return 'Date';
-        }
-      case 'GeoPoint' :
-        if(obj.latitude != null && obj.longitude != null) {
-          return 'GeoPoint';
-        }
-      case 'Bytes' :
-        if(obj.base64) {
-          return;
-        }
-      default:
-        throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
+      }
+      break;
+    case 'File' :
+      if(obj.name) {
+        return 'File';
+      }
+      break;
+    case 'Date' :
+      if(obj.iso) {
+        return 'Date';
+      }
+      break;
+    case 'GeoPoint' :
+      if(obj.latitude != null && obj.longitude != null) {
+        return 'GeoPoint';
+      }
+      break;
+    case 'Bytes' :
+      if(obj.base64) {
+        return;
+      }
+      break;
     }
+    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);
   }
   if (obj.__op) {
     switch(obj.__op) {
-      case 'Increment':
-        return 'Number';
-      case 'Delete':
-        return null;
-      case 'Add':
-      case 'AddUnique':
-      case 'Remove':
-        return 'Array';
-      case 'AddRelation':
-      case 'RemoveRelation':
-        return {
-          type: 'Relation',
-          targetClass: obj.objects[0].className
-        }
-      case 'Batch':
-        return getObjectType(obj.ops[0]);
-      default:
-        throw 'unexpected op: ' + obj.__op;
+    case 'Increment':
+      return 'Number';
+    case 'Delete':
+      return null;
+    case 'Add':
+    case 'AddUnique':
+    case 'Remove':
+      return 'Array';
+    case 'AddRelation':
+    case 'RemoveRelation':
+      return {
+        type: 'Relation',
+        targetClass: obj.objects[0].className
+      }
+    case 'Batch':
+      return getObjectType(obj.ops[0]);
+    default:
+      throw 'unexpected op: ' + obj.__op;
     }
   }
   return 'Object';

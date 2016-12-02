@@ -42,7 +42,7 @@ function request(host, access_token) {
       res.on('end', function () {
         resolve(JSON.parse(data));
       });
-    }).on('error', function(e) {
+    }).on('error', function() {
       reject('Failed to validate this access token with Janrain capture.');
     });
   });

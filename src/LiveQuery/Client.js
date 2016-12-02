@@ -1,4 +1,3 @@
-import Parse from 'parse/node';
 import logger from '../logger';
 
 import type { FlattenedObjectData } from './Subscription';
@@ -54,7 +53,7 @@ class Client {
     this.subscriptionInfos.set(requestId, subscriptionInfo);
   }
 
-  getSubscriptionInfo(requestId: numner): any {
+  getSubscriptionInfo(requestId: number): any {
     return this.subscriptionInfos.get(requestId);
   }
 

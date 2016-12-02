@@ -13,7 +13,7 @@ function getSessionToken(options) {
 
 function getAuth(options, config) {
   if (options.useMasterKey) {
-      return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
+    return Parse.Promise.as(new Auth.Auth({config, isMaster: true, installationId: 'cloud' }));
   }
   return getSessionToken(options).then((sessionToken) => {
     if (sessionToken) {
@@ -33,7 +33,7 @@ function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}) {
     // Store the arguments, for later use if internal fails
     let args = arguments;
-    
+
     let config = new Config(applicationId);
     let serverURL = URL.parse(config.serverURL);
     if (path.indexOf(serverURL.path) === 0) {
@@ -75,7 +75,7 @@ function ParseServerRESTController(applicationId, router) {
         return Promise.resolve().then(() => {
           return router.tryRouteRequest(method, path, request);
         }).then((response) => {
-            resolve(response.response, response.status, response);
+          resolve(response.response, response.status, response);
         }, (err) => {
           if (err instanceof Parse.Error &&
               err.code == Parse.Error.INVALID_JSON &&
@@ -87,13 +87,13 @@ function ParseServerRESTController(applicationId, router) {
         });
       }, reject);
     });
-  };
+  }
 
   return  {
     request: handleRequest,
     ajax: RESTController.ajax
   };
-};
+}
 
 export default ParseServerRESTController;
 export { ParseServerRESTController };

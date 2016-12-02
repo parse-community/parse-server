@@ -1,7 +1,7 @@
 import PromiseRouter from '../PromiseRouter';
 var request = require("request");
 var rest = require("../rest");
-var Auth = require("../Auth");
+import Parse from 'parse/node';
 
 // TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -15,7 +15,7 @@ const APP_STORE_ERRORS = {
   21005: "The receipt server is not currently available.",
   21006: "This receipt is valid but the subscription has expired.",
   21007: "This receipt is from the test environment, but it was sent to the production environment for verification. Send it to the test environment instead.",
-  21008: "This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead."  
+  21008: "This receipt is from the production environment, but it was sent to the test environment for verification. Send it to the production environment instead."
 }
 
 function appStoreError(status) {
@@ -49,7 +49,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
       // Error not found or too many
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.')
     }
-    
+
     var download = products[0].download;
     return Promise.resolve({response: download});
   });
@@ -58,16 +58,16 @@ function getFileForProductIdentifier(productIdentifier, req) {
 
 
 export class IAPValidationRouter extends PromiseRouter {
- 
- handleRequest(req) {
+
+  handleRequest(req) {
     let receipt = req.body.receipt;
     const productIdentifier = req.body.productIdentifier;
-    
+
     if (!receipt || ! productIdentifier) {
       // TODO: Error, malformed request
       throw new Parse.Error(Parse.Error.INVALID_JSON, "missing receipt or productIdentifier");
     }
-    
+
     // Transform the object if there
     // otherwise assume it's in Base64 already
     if (typeof receipt == "object") {
@@ -75,37 +75,37 @@ export class IAPValidationRouter extends PromiseRouter {
         receipt = receipt.base64;
       }
     }
-    
+
     if (process.env.NODE_ENV == "test" && req.body.bypassAppStoreValidation) {
       return getFileForProductIdentifier(productIdentifier, req);
     }
 
     function successCallback() {
-        return getFileForProductIdentifier(productIdentifier, req);
-    };
+      return getFileForProductIdentifier(productIdentifier, req);
+    }
 
     function errorCallback(error) {
-        return Promise.resolve({response: appStoreError(error.status) });
+      return Promise.resolve({response: appStoreError(error.status) });
     }
-    
+
     return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
-      
+
       return successCallback();
 
     }, (error) => {
       if (error.status == 21007) {
         return validateWithAppStore(IAP_SANDBOX_URL, receipt).then( () => {
-            return successCallback();
-          }, (error) => {
-            return errorCallback(error);
-          }
+          return successCallback();
+        }, (error) => {
+          return errorCallback(error);
+        }
         );
-      } 
+      }
 
       return errorCallback(error);
     });
   }
-  
+
   mountRoutes() {
     this.route("POST","/validate_purchase", this.handleRequest);
   }

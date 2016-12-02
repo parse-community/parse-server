@@ -1,5 +1,4 @@
 // FilesController.js
-import { Parse } from 'parse/node';
 import { randomHexString } from '../cryptoUtils';
 import AdaptableController from './AdaptableController';
 import { FilesAdapter } from '../Adapters/Files/FilesAdapter';
@@ -85,7 +84,7 @@ export class FilesController extends AdaptableController {
 
   getFileStream(config, filename) {
     return this.adapter.getFileStream(filename);
-   }
+  }
 }
 
 export default FilesController;

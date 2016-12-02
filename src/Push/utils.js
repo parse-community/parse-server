@@ -1,8 +1,9 @@
+import Parse from 'parse/node';
 
 export function isPushIncrementing(body) {
-  return body.data && 
-         body.data.badge && 
-         typeof body.data.badge == 'string' && 
+  return body.data &&
+         body.data.badge &&
+         typeof body.data.badge == 'string' &&
          body.data.badge.toLowerCase() == "increment"
 }
 
@@ -16,7 +17,7 @@ export function validatePushType(where = {}, validPushTypes = []) {
   var deviceTypes = [];
   if (typeof deviceTypeField === 'string') {
     deviceTypes.push(deviceTypeField);
-  } else if (typeof deviceTypeField['$in'] === 'array') {
+  } else if (Array.isArray(deviceTypeField['$in'])) {
     deviceTypes.concat(deviceTypeField['$in']);
   }
   for (var i = 0; i < deviceTypes.length; i++) {

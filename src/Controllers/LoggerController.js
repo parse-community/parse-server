@@ -1,5 +1,4 @@
 import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 import url from 'url';

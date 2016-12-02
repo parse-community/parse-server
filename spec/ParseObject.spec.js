@@ -14,7 +14,7 @@
 
 describe('Parse.Object testing', () => {
   it("create", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       ok(model.id, "Should have an objectId set");
       equal(model.get("test"), "test", "Should have the right attribute");
       done();
@@ -22,11 +22,11 @@ describe('Parse.Object testing', () => {
   });
 
   it("update", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       var t2 = new TestObject({ objectId: model.id });
       t2.set("test", "changed");
       t2.save(null, {
-        success: function(model, response) {
+        success: function(model) {
           equal(model.get("test"), "changed", "Update should have succeeded");
           done();
         }
@@ -72,10 +72,10 @@ describe('Parse.Object testing', () => {
   });
 
   it("get", function(done) {
-    create({ "test" : "test" }, function(model, response) {
+    create({ "test" : "test" }, function(model) {
       var t2 = new TestObject({ objectId: model.id });
       t2.fetch({
-        success: function(model2, response) {
+        success: function(model2) {
           equal(model2.get("test"), "test", "Update should have succeeded");
           ok(model2.id);
           equal(model2.id, model.id, "Ids should match");
@@ -269,20 +269,19 @@ describe('Parse.Object testing', () => {
   });
 
   it_exclude_dbs(['postgres'])("can set null", function(done) {
-    var errored = false;
     var obj = new Parse.Object("TestObject");
     obj.set("foo", null);
     obj.save(null, {
       success: function(obj) {
-        on_db('mongo', () => {
+        on_db('mongo', () => {
           equal(obj.get("foo"), null);
         });
-        on_db('postgres', () => {
+        on_db('postgres', () => {
           fail('should not succeed');
         });
         done();
       },
-      error: function(obj, error) {
+      error: function() {
         fail('should not fail');
         done();
       }
@@ -323,11 +322,11 @@ describe('Parse.Object testing', () => {
   it("invalid class name", function(done) {
     var item = new Parse.Object("Foo^bar");
     item.save(null, {
-      success: function(item) {
+      success: function() {
         ok(false, "The name should have been invalid.");
         done();
       },
-      error: function(item, error) {
+      error: function() {
         // Because the class name is invalid, the router will not be able to route
         // it, so it will actually return a -1 error code.
         // equal(error.code, Parse.Error.INVALID_CLASS_NAME);
@@ -346,7 +345,6 @@ describe('Parse.Object testing', () => {
   it("invalid __type", function(done) {
     var item = new Parse.Object("Item");
     var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes'];
-    var Error = Parse.Error;
     var tests = types.map(type => {
       var test = new Parse.Object("Item");
       test.set('foo', {
@@ -368,7 +366,7 @@ describe('Parse.Object testing', () => {
       "foo": {
         __type: "IvalidName"
       }
-    }).then(fail, err => next(0));
+    }).then(fail, () => next(0));
   });
 
   it("simple field deletion", function(done) {
@@ -609,7 +607,7 @@ describe('Parse.Object testing', () => {
       on_db('mongo', () => {
         jfail(error);
       });
-      on_db('postgres', () => {
+      on_db('postgres', () => {
         expect(error.message).toEqual("Postgres does not support AddUnique operator.");
       });
       done();
@@ -688,7 +686,7 @@ describe('Parse.Object testing', () => {
 
         done();
       },
-      error: function(object, error) {
+      error: function() {
         ok(false, "This should have saved.");
         done();
       }
@@ -1079,7 +1077,7 @@ describe('Parse.Object testing', () => {
     parent.set('children', [child1, child2]);
 
     parent.save(null, {
-      success: function(parent) {
+      success: function() {
         var query = new Parse.Query(Child);
         query.ascending('name');
         query.find({
@@ -1199,8 +1197,7 @@ describe('Parse.Object testing', () => {
   });
 
   it("toJSON saved object", function(done) {
-    var _ = Parse._;
-    create({ "foo" : "bar" }, function(model, response) {
+    create({ "foo" : "bar" }, function(model) {
       var objJSON = model.toJSON();
       ok(objJSON.foo, "expected json to contain key 'foo'");
       ok(objJSON.objectId, "expected json to contain key 'objectId'");
@@ -1274,7 +1271,7 @@ describe('Parse.Object testing', () => {
       return bryan.save({
         meal: "tomatoes"
       });
-    }, function(error) {
+    }, function() {
       ok(false, "Save should have succeeded.");
     }).then(function() {
       ok(false, "Save should have failed.");
@@ -1474,7 +1471,7 @@ describe('Parse.Object testing', () => {
           });
           done();
         },
-        error: function(error) {
+        error: function() {
           ok(false, "Failed to fetchAll");
           done();
         }
@@ -1507,8 +1504,6 @@ describe('Parse.Object testing', () => {
 
   it("fetchAll error on deleted object", function(done) {
     var numItems = 11;
-    var container = new Container();
-    var subContainer = new Container();
     var items = [];
     for (var i = 0; i < numItems; i++) {
       var item = new Item();
@@ -1639,7 +1634,7 @@ describe('Parse.Object testing', () => {
           done();
         },
 
-        error: function(error) {
+        error: function() {
           ok(false, "Failed to fetchAll");
           done();
         }
@@ -1763,7 +1758,7 @@ describe('Parse.Object testing', () => {
       var obj2 = new TestObject();
       obj2.increment('astring');
       return obj2.save();
-    }).then((obj2) => {
+    }).then(() => {
       fail('Should not have saved.');
       done();
     }, (error) => {
@@ -1850,7 +1845,7 @@ describe('Parse.Object testing', () => {
     object.save().then( res => {
       ok(res);
       return res.fetch();
-    }).then( res => {
+    }).then( res => {
       const foo = res.get("foo");
       expect(foo["_bar"]).toEqual("_");
       expect(foo["baz_bar"]).toEqual(1);
@@ -1869,7 +1864,7 @@ describe('Parse.Object testing', () => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
 
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
       obj1.set("obj", obj2);
       // Save the pointer, delete the pointee
       return obj1.save().then(() => { return obj2.destroy() });
@@ -1884,7 +1879,7 @@ describe('Parse.Object testing', () => {
       }
       let query = new Parse.Query("AnObject");
       return query.find();
-    }).then((res) => {
+    }).then((res) => {
       expect(res.length).toBe(1);
       if (res[0]) {
         expect(res[0].get("obj")).not.toBe(undefined);
@@ -1904,7 +1899,7 @@ describe('Parse.Object testing', () => {
     let obj1 = new Parse.Object("AnObject");
     let obj2 =  new Parse.Object("AnObject");
     let obj3 = new Parse.Object("AnObject");
-    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
       obj1.set("obj", obj2);
       obj2.set("obj", obj3);
       // Save the pointer, delete the pointee
@@ -1934,7 +1929,7 @@ describe('Parse.Object testing', () => {
       "key": obj3
     })
 
-    Parse.Object.saveAll([obj1, obj2]).then(() => {
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
       obj1.set("objects", [null, null, obj2]);
       return obj1.save();
     }).then(() => {
@@ -1963,7 +1958,7 @@ describe('Parse.Object testing', () => {
       "score": 1234
     });
 
-    score.save().then(() => {
+    score.save().then(() => {
       player.set("gameScore", score);
       player.set("other", "value");
       return player.save();

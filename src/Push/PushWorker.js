@@ -32,7 +32,7 @@ export class PushWorker {
   constructor(pushAdapter: PushAdapter, subscriberConfig: any = {}) {
     AdaptableController.validateAdapter(pushAdapter, this, PushAdapter);
     this.adapter = pushAdapter;
-    
+
     this.channel = subscriberConfig.channel || PushQueue.defaultPushChannel();
     this.subscriber = ParseMessageQueue.createSubscriber(subscriberConfig);
     if (this.subscriber) {

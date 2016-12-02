@@ -7,7 +7,7 @@ var Parse = require('parse/node').Parse;
 var logger = require('../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
-function validateAuthData(authData, params) {  
+function validateAuthData(authData, params) {
   return vkOAuth2Request(params).then(function (response) {
     if (response && response && response.access_token) {
       return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token).then(function (response) {
@@ -50,7 +50,7 @@ function request(host, path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function (e) {
+    }).on('error', function () {
       reject('Failed to validate this access token with Vk.');
     });
   });

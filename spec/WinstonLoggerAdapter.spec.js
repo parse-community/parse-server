@@ -1,37 +1,36 @@
 'use strict';
 
 var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-var Parse = require('parse/node').Parse;
 var request = require('request');
 
 describe('info logs', () => {
 
   it("Verify INFO logs", (done) => {
-      var winstonLoggerAdapter = new WinstonLoggerAdapter();
-      winstonLoggerAdapter.log('info', 'testing info logs', () => {
+    var winstonLoggerAdapter = new WinstonLoggerAdapter();
+    winstonLoggerAdapter.log('info', 'testing info logs', () => {
+      winstonLoggerAdapter.query({
+        from: new Date(Date.now() - 500),
+        size: 100,
+        level: 'info'
+      }, (results) => {
+        if (results.length == 0) {
+          fail('The adapter should return non-empty results');
+        } else {
+          expect(results[0].message).toEqual('testing info logs');
+        }
+          // Check the error log
+          // Regression #2639
         winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
           size: 100,
-          level: 'info'
+          level: 'error'
         }, (results) => {
-          if (results.length == 0) {
-            fail('The adapter should return non-empty results');
-          } else {
-            expect(results[0].message).toEqual('testing info logs');
-          }
-          // Check the error log
-          // Regression #2639
-          winstonLoggerAdapter.query({
-            from: new Date(Date.now() - 500),
-            size: 100,
-            level: 'error'
-          }, (results) => {
-            expect(results.length).toEqual(0);
-            done();
-          });
+          expect(results.length).toEqual(0);
+          done();
         });
       });
     });
+  });
 });
 
 describe('error logs', () => {
@@ -79,7 +78,7 @@ describe('verbose logs', () => {
       request.get({
         headers: headers,
         url: 'http://localhost:8378/1/login?username=test&password=moon-y'
-      }, (error, response, body) => {
+      }, () => {
         let winstonLoggerAdapter = new WinstonLoggerAdapter();
         return winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
@@ -92,7 +91,7 @@ describe('verbose logs', () => {
           done();
         });
       });
-    }).catch((err) => {
+    }).catch((err) => {
       fail(JSON.stringify(err));
       done();
     })

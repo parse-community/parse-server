@@ -1,7 +1,6 @@
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import rest                   from '../rest';
 import { isPushIncrementing } from './utils';
-import { pushStatusHandler }  from '../StatusHandler';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
@@ -29,23 +28,23 @@ export class PushQueue {
     // and createdAt to fix the order
     const order = isPushIncrementing(body) ? 'badge,createdAt' : 'createdAt';
 
-    return Promise.resolve().then(() => {
-      return rest.find( config, 
-                        auth, 
-                        '_Installation', 
-                        where, 
+    return Promise.resolve().then(() => {
+      return rest.find( config,
+                        auth,
+                        '_Installation',
+                        where,
                         {limit: 0, count: true});
-    }).then(({results, count}) => {
+    }).then(({results, count}) => {
       if (!results) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
       pushStatus.setRunning(count);
       let skip = 0;
       while (skip < count) {
-        const query = { where, 
-                        limit, 
-                        skip,
-                        order };
+        const query = { where,
+          limit,
+          skip,
+          order };
 
         let pushWorkItem = {
           body,

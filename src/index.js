@@ -4,7 +4,7 @@ import FileSystemAdapter    from 'parse-server-fs-adapter'
 import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter'
 import NullCacheAdapter     from './Adapters/Cache/NullCacheAdapter'
 import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
-import TestUtils            from './TestUtils';
+import * as TestUtils       from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
 import { PushWorker }       from './Push/PushWorker';

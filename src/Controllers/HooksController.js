@@ -53,8 +53,7 @@ export class HooksController {
     return this._removeHooks({ className: className, triggerName: triggerName });
   }
 
-  _getHooks(query = {}, limit) {
-    let options = limit ? { limit: limit } : undefined;
+  _getHooks(query = {}) {
     return this.database.find(DefaultHooksCollectionName, query).then((results) => {
       return results.map((result) => {
         delete result.objectId;
@@ -115,7 +114,7 @@ export class HooksController {
     }
 
     return this.addHook(hook);
-  };
+  }
 
   createHook(aHook) {
     if (aHook.functionName) {
@@ -136,7 +135,7 @@ export class HooksController {
     }
 
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 
   updateHook(aHook) {
     if (aHook.functionName) {
@@ -155,7 +154,7 @@ export class HooksController {
       });
     }
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 }
 
 function wrapToHTTPRequest(hook, key) {

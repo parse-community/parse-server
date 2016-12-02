@@ -52,7 +52,7 @@ function request(path, access_token) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
+    }).on('error', function() {
       reject('Failed to validate this access token with Spotify.');
     });
   });

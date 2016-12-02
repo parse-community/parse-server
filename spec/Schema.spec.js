@@ -20,14 +20,14 @@ var hasAllPODobject = () => {
 };
 
 describe('SchemaController', () => {
-  beforeEach(() => {
+  beforeEach(() => {
     config = new Config('test');
   });
 
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
       jfail(error);
@@ -38,7 +38,7 @@ describe('SchemaController', () => {
   it('can validate one object with dot notation', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObjectWithSubDoc', {x: false, y: 'YY', z: 1, 'aObject.k1': 'newValue'});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
       jfail(error);
@@ -51,7 +51,22 @@ describe('SchemaController', () => {
       return schema.validateObject('Foo', {x: true, y: 'yyy', z: 0});
     }).then((schema) => {
       return schema.validateObject('Foo', {x: false, y: 'YY', z: 1});
+    }).then(() => {
+      done();
+    });
+  });
+
+  it('can validate Relation object', (done) => {
+    config.database.loadSchema().then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Relation',className:'Stuff'}});
     }).then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Pointer',className:'Stuff'}})
+      .then(() => {
+        fail('expected invalidity');
+        done();
+      }, done);
+    }, (err) => {
+      fail(err);
       done();
     });
   });
@@ -88,13 +103,13 @@ describe('SchemaController', () => {
       return schema.setPermissions('Stuff', {
         'find': {}
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail('Class permissions should have rejected this query.');
       done();
-    }, (e) => {
+    }, () => {
       done();
     });
   });
@@ -113,12 +128,12 @@ describe('SchemaController', () => {
       return schema.setPermissions('Stuff', {
         'find': find
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       done();
-    }, (e) => {
+    }, () => {
       fail('Class permissions should have allowed this query.');
       done();
     });
@@ -140,7 +155,7 @@ describe('SchemaController', () => {
           'find': find,
           'get': get
         });
-      }).then((schema) => {
+      }).then(() => {
         obj = new Parse.Object('Stuff');
         obj.set('foo', 'bar');
         return obj.save();
@@ -148,14 +163,14 @@ describe('SchemaController', () => {
         obj = o;
         var query = new Parse.Query('Stuff');
         return query.find();
-      }).then((results) => {
+      }).then(() => {
         fail('Class permissions should have rejected this query.');
         done();
-      }, (e) => {
+      }, () => {
         var query = new Parse.Query('Stuff');
-        return query.get(obj.id).then((o) => {
+        return query.get(obj.id).then(() => {
           done();
-        }, (e) => {
+        }, () => {
           fail('Class permissions should have allowed this get query');
           done();
         });
@@ -412,7 +427,6 @@ describe('SchemaController', () => {
           ACL: { type: 'ACL' },
           aString: { type: 'String' },
           aNumber: { type: 'Number' },
-          aString: { type: 'String' },
           aBool: { type: 'Boolean' },
           aDate: { type: 'Date' },
           aObject: { type: 'Object' },
@@ -576,7 +590,7 @@ describe('SchemaController', () => {
         jfail(error);
       });
     })
-    .catch(error => fail('Couldn\'t load schema'));
+    .catch(() => fail('Couldn\'t load schema'));
   });
 
   it('refuses to delete fields from invalid class names', done => {
@@ -688,10 +702,10 @@ describe('SchemaController', () => {
       })
       .then(() => config.database.collectionExists('_Join:relationField:NewClass'))
       .then(exist => {
-        on_db('postgres', () => {
+        on_db('postgres', () => {
           // We create the table when creating the column
           expect(exist).toEqual(true);
-        }, () => {
+        }, () => {
           expect(exist).toEqual(false);
         });
         
@@ -715,7 +729,7 @@ describe('SchemaController', () => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
-    var p = Parse.Object.saveAll([obj1, obj2])
+    Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
@@ -809,58 +823,58 @@ describe('SchemaController', () => {
     done();
   });
 
-  it('yields a proper schema mismatch error (#2661)', done => {
+  it('yields a proper schema mismatch error (#2661)', done => {
     let anObject = new Parse.Object('AnObject');
     let anotherObject = new Parse.Object('AnotherObject');
     let someObject = new Parse.Object('SomeObject');
-    Parse.Object.saveAll([anObject, anotherObject, someObject]).then(() => {
+    Parse.Object.saveAll([anObject, anotherObject, someObject]).then(() => {
       anObject.set('pointer', anotherObject);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       anObject.set('pointer', someObject);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       fail('shoud not save correctly');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err instanceof Parse.Error).toBeTruthy();
       expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<AnotherObject> but got Pointer<SomeObject>')
       done();
     });
   });
 
-  it('yields a proper schema mismatch error bis (#2661)', done => {
+  it('yields a proper schema mismatch error bis (#2661)', done => {
     let anObject = new Parse.Object('AnObject');
     let someObject = new Parse.Object('SomeObject');
-    Parse.Object.saveAll([anObject, someObject]).then(() => {
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
       anObject.set('number', 1);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       anObject.set('number', someObject);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       fail('shoud not save correctly');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err instanceof Parse.Error).toBeTruthy();
       expect(err.message).toEqual('schema mismatch for AnObject.number; expected Number but got Pointer<SomeObject>')
       done();
     });
   });
 
-  it('yields a proper schema mismatch error ter (#2661)', done => {
+  it('yields a proper schema mismatch error ter (#2661)', done => {
     let anObject = new Parse.Object('AnObject');
     let someObject = new Parse.Object('SomeObject');
-    Parse.Object.saveAll([anObject, someObject]).then(() => {
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
       anObject.set('pointer', someObject);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       anObject.set('pointer', 1);
       return anObject.save();
-    }).then(() => {
+    }).then(() => {
       fail('shoud not save correctly');
       done();
-    }, (err) => {
+    }, (err) => {
       expect(err instanceof Parse.Error).toBeTruthy();
       expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<SomeObject> but got Number')
       done();

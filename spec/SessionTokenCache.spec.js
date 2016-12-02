@@ -17,7 +17,7 @@ describe('SessionTokenCache', function() {
   it('can get undefined userId', function(done) {
     var sessionTokenCache = new SessionTokenCache();
 
-    sessionTokenCache.getUserId(undefined).then((userIdFromCache) => {
+    sessionTokenCache.getUserId(undefined).then(() => {
     }, (error) => {
       expect(error).not.toBeNull();
       done();

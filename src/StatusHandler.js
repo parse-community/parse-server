@@ -14,7 +14,7 @@ const incrementOp = function(object = {}, key, amount = 1) {
 }
 
 export function flatten(array) {
-  return array.reduce((memo, element) => {
+  return array.reduce((memo, element) => {
     if (Array.isArray(element)) {
       memo = memo.concat(flatten(element));
     } else {
@@ -28,8 +28,8 @@ function statusHandler(className, database) {
   let lastPromise = Promise.resolve();
 
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
+    lastPromise = lastPromise.then(() => {
+      return database.create(className, object).then(() => {
         return Promise.resolve(object);
       });
     });
@@ -37,7 +37,7 @@ function statusHandler(className, database) {
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
+    lastPromise = lastPromise.then(() => {
       return database.update(className, where, object);
     });
     return lastPromise;
@@ -53,7 +53,6 @@ export function jobStatusHandler(config) {
   let jobStatus;
   let objectId = newObjectId();
   let database = config.database;
-  let lastPromise = Promise.resolve();
   let handler = statusHandler(JOB_STATUS_COLLECTION, database);
   let setRunning = function(jobName, params) {
     let now = new Date();
@@ -158,7 +157,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
     };
     if (Array.isArray(results)) {
       results = flatten(results);
-      results.reduce((memo, result) => {
+      results.reduce((memo, result) => {
         // Cannot handle that
         if (!result || !result.device || !result.device.deviceType) {
           return memo;
@@ -175,10 +174,10 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
       }, update);
       incrementOp(update, 'count', -results.length);
     }
-    
+
     logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
-    
-    ['numSent', 'numFailed'].forEach((key) => {
+
+    ['numSent', 'numFailed'].forEach((key) => {
       if (update[key] > 0) {
         update[key] = {
           __op: 'Increment',
@@ -189,7 +188,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
       }
     });
 
-    return handler.update({ objectId }, update).then((res) => {
+    return handler.update({ objectId }, update).then((res) => {
       if (res && res.count === 0) {
         return this.complete();
       }

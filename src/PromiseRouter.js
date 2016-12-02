@@ -5,9 +5,8 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import AppCache  from './cache';
+import Parse     from 'parse/node';
 import express   from 'express';
-import url       from 'url';
 import log       from './logger';
 import {inspect} from 'util';
 const Layer = require('express/lib/router/layer');
@@ -52,7 +51,7 @@ export default class PromiseRouter {
     for (var route of router.routes) {
       this.routes.push(route);
     }
-  };
+  }
 
   route(method, path, ...handlers) {
     switch(method) {
@@ -68,10 +67,9 @@ export default class PromiseRouter {
     let handler = handlers[0];
 
     if (handlers.length > 1) {
-      const length = handlers.length;
       handler = function(req) {
         return handlers.reduce((promise, handler) => {
-          return promise.then((result) => {
+          return promise.then(() => {
             return handler(req);
           });
         }, Promise.resolve());
@@ -84,7 +82,7 @@ export default class PromiseRouter {
       handler: handler,
       layer: new Layer(path, null, handler)
     });
-  };
+  }
 
   // Returns an object with:
   //   handler: the handler that should deal with this request
@@ -105,17 +103,17 @@ export default class PromiseRouter {
         return {params: params, handler: route.handler};
       }
     }
-  };
+  }
 
   // Mount the routes on this router onto an express app (or express router)
   mountOnto(expressApp) {
-    this.routes.forEach((route) => {
+    this.routes.forEach((route) => {
       let method = route.method.toLowerCase();
       let handler = makeExpressHandler(this.appId, route.handler);
       expressApp[method].call(expressApp, route.path, handler);
     });
     return expressApp;
-  };
+  }
 
   expressRouter() {
     return this.mountOnto(express.Router());
@@ -140,7 +138,6 @@ export default class PromiseRouter {
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
 function makeExpressHandler(appId, promiseHandler) {
-  let config = AppCache.get(appId);
   return function(req, res, next) {
     try {
       let url = maskSensitiveUrl(req);

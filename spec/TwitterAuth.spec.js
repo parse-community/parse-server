@@ -1,7 +1,7 @@
 let twitter = require('../src/authDataManager/twitter');
 
-describe('Twitter Auth', () => {
-  it('should use the proper configuration', () => {
+describe('Twitter Auth', () => {
+  it('should use the proper configuration', () => {
     // Multiple options, consumer_key found
     expect(twitter.handleMultipleConfigurations({
       consumer_key: 'hello',

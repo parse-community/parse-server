@@ -1,15 +1,9 @@
 import { Parse }              from 'parse/node';
-import PromiseRouter          from '../PromiseRouter';
-import rest                   from '../rest';
-import AdaptableController    from './AdaptableController';
-import { PushAdapter }        from '../Adapters/Push/PushAdapter';
 import deepcopy               from 'deepcopy';
 import RestQuery              from '../RestQuery';
 import RestWrite              from '../RestWrite';
 import { master }             from '../Auth';
 import { pushStatusHandler }  from '../StatusHandler';
-import { isPushIncrementing,
-         validatePushType } from '../Push/utils';
 
 export class PushController {
 
@@ -57,7 +51,7 @@ export class PushController {
     }).then(() => {
       return config.pushControllerQueue.enqueue(body, where, config, auth, pushStatus);
     }).catch((err) => {
-      return pushStatus.fail(err).then(() => {
+      return pushStatus.fail(err).then(() => {
         throw err;
       });
     });

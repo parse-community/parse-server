@@ -22,7 +22,7 @@ export class GlobalConfigRouter extends PromiseRouter {
       acc[`params.${key}`] = params[key];
       return acc;
     }, {});
-    return req.config.database.update('_GlobalConfig', {objectId: "1"}, update, {upsert: true}).then(() => ({ response: { result: true } }));
+    return req.config.database.update('_GlobalConfig', {objectId: "1"}, update, {upsert: true}).then(() => ({ response: { result: true } }));
   }
 
   mountRoutes() {

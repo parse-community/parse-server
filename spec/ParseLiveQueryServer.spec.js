@@ -159,7 +159,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add two mock clients
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     var clientIdAgain = 2;
     var clientAgain = addMockClient(parseLiveQueryServer, clientIdAgain);
     // Add subscription for mock client 1
@@ -232,7 +232,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add mock client
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     // Handle unsubscribe command
     var parseWebSocket = {
       clientId: 1
@@ -274,7 +274,7 @@ describe('ParseLiveQueryServer', function() {
     expect(subscriptions.size).toBe(0);
   });
 
- it('can set connect command message handler for a parseWebSocket', function() {
+  it('can set connect command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Register mock connect/subscribe/unsubscribe handler for the server
     parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleSubscribe');
@@ -533,7 +533,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a enter, we need original match return false
     // and the current match return true
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -567,7 +567,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -603,7 +603,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a leave, we need original match return true
     // and the current match return false
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -637,7 +637,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -746,7 +746,6 @@ describe('ParseLiveQueryServer', function() {
     };
     var requestId = 0;
 
-    var isChecked = false;
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
       expect(isMatched).toBe(false);
       done();
@@ -916,7 +915,7 @@ describe('ParseLiveQueryServer', function() {
 
     spyOn(Parse, "Query").and.callFake(function(){
       return {
-        equalTo(relation, value) {
+        equalTo() {
           // Nothing to do here
         },
         find() {
@@ -952,7 +951,7 @@ describe('ParseLiveQueryServer', function() {
 
     spyOn(Parse, "Query").and.callFake(function(){
       return {
-        equalTo(relation, value) {
+        equalTo() {
           // Nothing to do here
         },
         find() {

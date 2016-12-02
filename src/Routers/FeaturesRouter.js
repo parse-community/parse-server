@@ -13,10 +13,10 @@ export class FeaturesRouter extends PromiseRouter {
           delete: true,
         },
         hooks: {
-          create: false,
-          read: false,
-          update: false,
-          delete: false,
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
         },
         cloudCode: {
           jobs: true,
@@ -47,9 +47,9 @@ export class FeaturesRouter extends PromiseRouter {
       };
 
       return { response: {
-				features: features,
-				parseServerVersion: version,
-			} };
+        features: features,
+        parseServerVersion: version,
+      } };
     });
   }
 }

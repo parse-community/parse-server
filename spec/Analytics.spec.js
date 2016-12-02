@@ -1,6 +1,6 @@
 const analyticsAdapter = {
-  appOpened: function(parameters, req) {}, 
-  trackEvent: function(eventName, parameters, req) {}
+  appOpened: function() {}, 
+  trackEvent: function() {}
 }
 
 describe('AnalyticsController', () => {
@@ -9,7 +9,7 @@ describe('AnalyticsController', () => {
     spyOn(analyticsAdapter, 'trackEvent').and.callThrough();
     reconfigureServer({
       analyticsAdapter
-    }).then(() => {
+    }).then(() => {
       return Parse.Analytics.track('MyEvent', {
         key: 'value',
         count: '0'
@@ -26,7 +26,7 @@ describe('AnalyticsController', () => {
         }
       });
       done();
-    }, (err) => {
+    }, (err) => {
       fail(JSON.stringify(err));
       done();
     })
@@ -37,7 +37,7 @@ describe('AnalyticsController', () => {
     spyOn(analyticsAdapter, 'appOpened').and.callThrough();
     reconfigureServer({
       analyticsAdapter
-    }).then(() => {
+    }).then(() => {
       return Parse.Analytics.track('AppOpened', {
         key: 'value',
         count: '0'
@@ -53,7 +53,7 @@ describe('AnalyticsController', () => {
         }
       });
       done();
-    }, (err) => {
+    }, (err) => {
       fail(JSON.stringify(err));
       done();
     })

@@ -1,16 +1,15 @@
 // These methods handle the User-related routes.
 
 import deepcopy       from 'deepcopy';
+import Parse          from 'parse/node';
 import Config         from '../Config';
 import AccountLockout from '../AccountLockout';
 import ClassesRouter  from './ClassesRouter';
-import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 let cryptoUtils = require('../cryptoUtils');
-let triggers = require('../triggers');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -105,6 +104,28 @@ export class UsersRouter extends ClassesRouter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 
+        // handle password expiry policy
+        if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+          let changedAt = user._password_changed_at;
+
+          if (!changedAt) {
+            // password was created before expiry policy was enabled.
+            // simply update _User object so that it will start enforcing from now
+            changedAt = new Date();
+            req.config.database.update('_User', {username: user.username},
+              {_password_changed_at: Parse._encode(changedAt)});
+          } else {
+            // check whether the password has expired
+            if (changedAt.__type == 'Date') {
+              changedAt = new Date(changedAt.iso);
+            }
+            // Calculate the expiry time.
+            const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge);
+            if (expiresAt < new Date()) // fail of current time is past password expiry time
+              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
+          }
+        }
+
         let token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
@@ -194,10 +215,10 @@ export class UsersRouter extends ClassesRouter {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
     }
     let userController = req.config.userController;
-    return userController.sendPasswordResetEmail(email).then(token => {
-       return Promise.resolve({
-         response: {}
-       });
+    return userController.sendPasswordResetEmail(email).then(() => {
+      return Promise.resolve({
+        response: {}
+      });
     }, err => {
       if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
