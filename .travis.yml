@@ -9,7 +9,7 @@ services:
   - redis-server
   - docker
 addons:
-  postgresql: '9.5'
+  postgresql: '9.6'
 before_script:
   - ls -al "$HOME/.mongodb/versions"
   - psql -U postgres -c "create extension postgis"
