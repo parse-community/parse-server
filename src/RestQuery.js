@@ -386,6 +386,32 @@ RestQuery.prototype.replaceDontSelect = function() {
   })
 };
 
+const cleanResultOfSensitiveUserInfo = function (result, auth, config) {
+  delete result.password;
+
+  if (auth.isMaster || (auth.user && auth.user.id === result.objectId)) {
+    return;
+  }
+
+  for (const field of config.userSensitiveFields) {
+    delete result[field];
+  }
+};
+
+const cleanResultAuthData = function (result) {
+  if (result.authData) {
+    Object.keys(result.authData).forEach((provider) => {
+      if (result.authData[provider] === null) {
+        delete result.authData[provider];
+      }
+    });
+
+    if (Object.keys(result.authData).length == 0) {
+      delete result.authData;
+    }
+  }
+};
+
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function(options = {}) {
@@ -406,18 +432,8 @@ RestQuery.prototype.runFind = function(options = {}) {
     this.className, this.restWhere, findOptions).then((results) => {
       if (this.className === '_User') {
         for (var result of results) {
-          delete result.password;
-
-          if (result.authData) {
-            Object.keys(result.authData).forEach((provider) => {
-              if (result.authData[provider] === null) {
-                delete result.authData[provider];
-              }
-            });
-            if (Object.keys(result.authData).length == 0) {
-              delete result.authData;
-            }
-          }
+          cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
+          cleanResultAuthData(result);
         }
       }
 
