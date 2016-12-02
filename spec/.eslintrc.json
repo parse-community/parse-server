@@ -1,8 +1,5 @@
 {
-    "extends": "eslint:recommended",
     "env": {
-        "node": true,
-        "es6": true,
         "jasmine": true
     },
     "globals": {
@@ -29,9 +26,6 @@
       "arrayContains": true
     },
     "rules": {
-      "no-console": [0],
-      "indent": ["error", 2],
-      "no-trailing-spaces": 2,
-      "eol-last": 2
+      "no-console": [0]
     }
 }

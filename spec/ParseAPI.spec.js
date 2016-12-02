@@ -816,7 +816,7 @@ describe('miscellaneous', function() {
 
   it('should return the updated fields on PUT', done => {
     let obj = new Parse.Object('GameScore');
-    obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
+    obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(() => {
       var headers = {
         'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',

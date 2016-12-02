@@ -131,7 +131,7 @@ export class Config {
         throw 'passwordPolicy.validatorPattern must be a RegExp.';
       }
 
-      if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function' ) {
+      if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function') {
         throw 'passwordPolicy.validatorCallback must be a function.';
       }
 

@@ -26,7 +26,7 @@ describe('Hooks', () => {
   });
 
   it("should have no triggers registered", (done) => {
-    Parse.Hooks.getTriggers().then( (res) => {
+    Parse.Hooks.getTriggers().then((res) => {
       expect(res.constructor).toBe(Array.prototype.constructor);
       done();
     }, (err) => {
@@ -143,11 +143,11 @@ describe('Hooks', () => {
   });
 
   it("should fail trying to create two times the same function", (done) => {
-    Parse.Hooks.createFunction("my_new_function", "http://url.com").then( () => {
+    Parse.Hooks.createFunction("my_new_function", "http://url.com").then(() => {
       return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
     }, () => {
       fail("should create a new function");
-    }).then( () => {
+    }).then(() => {
       fail("should not be able to create the same function");
     }, (err) => {
       expect(err).not.toBe(undefined);
@@ -166,11 +166,11 @@ describe('Hooks', () => {
   });
 
   it("should fail trying to create two times the same trigger", (done) => {
-    Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then( () => {
+    Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com").then(() => {
       return  Parse.Hooks.createTrigger("MyClass", "beforeSave", "http://url.com")
     }, () => {
       fail("should create a new trigger");
-    }).then( () => {
+    }).then(() => {
       fail("should not be able to create the same trigger");
     }, (err) => {
       expect(err).not.toBe(undefined);
@@ -189,7 +189,7 @@ describe('Hooks', () => {
   });
 
   it("should fail trying to update a function that don't exist", (done) => {
-    Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then( () => {
+    Parse.Hooks.updateFunction("A_COOL_FUNCTION", "http://url.com").then(() => {
       fail("Should not succeed")
     }, (err) => {
       expect(err).not.toBe(undefined);
@@ -214,7 +214,7 @@ describe('Hooks', () => {
   });
 
   it("should fail trying to update a trigger that don't exist", (done) => {
-    Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then( () => {
+    Parse.Hooks.updateTrigger("AClassName","beforeSave",  "http://url.com").then(() => {
       fail("Should not succeed")
     }, (err) => {
       expect(err).not.toBe(undefined);
@@ -240,7 +240,7 @@ describe('Hooks', () => {
 
 
   it("should fail trying to create a malformed function", (done) => {
-    Parse.Hooks.createFunction("MyFunction").then( (res) => {
+    Parse.Hooks.createFunction("MyFunction").then((res) => {
       fail(res);
     }, (err) => {
       expect(err).not.toBe(undefined);

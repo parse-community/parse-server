@@ -816,7 +816,7 @@ describe('Parse.Query testing', () => {
     var makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
     };
-    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber)).then( function() {
+    Parse.Object.saveAll([3, 1, 2].map(makeBoxedNumber)).then(function() {
       var query = new Parse.Query(BoxedNumber);
       query.descending("number");
       query.find(expectSuccess({
@@ -2435,7 +2435,7 @@ describe('Parse.Query testing', () => {
     var user = new Parse.User();
     user.set("username", "foo");
     user.set("password", "bar");
-    return user.save().then( (user) => {
+    return user.save().then((user) => {
       var objIdQuery = new Parse.Query("_User").equalTo("objectId", user.id);
       var blockedUserQuery = user.relation("blockedUsers").query();
 
