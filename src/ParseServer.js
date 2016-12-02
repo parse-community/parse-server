@@ -166,7 +166,7 @@ class ParseServer {
 
     // Pass the push options too as it works with the default
     const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-    // We pass the options and the base class for the adatper,
+    // We pass the options and the base class for the adapter,
     // Note that passing an instance would work too
     const pushController = new PushController(pushControllerAdapter, appId, push);
 
@@ -183,7 +183,7 @@ class ParseServer {
     const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
-    const dbInitPromise = databaseController.performInitizalization();
+    const dbInitPromise = databaseController.performInitialization();
 
     AppCache.put(appId, {
       appId,
@@ -225,7 +225,7 @@ class ParseServer {
       enableSingleSchemaCache
     });
 
-    // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
+    // To maintain compatibility. TODO: Remove in some version that breaks backwards compatibility
     if (process.env.FACEBOOK_APP_ID) {
       AppCache.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
     }
