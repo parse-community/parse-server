@@ -126,6 +126,7 @@ We have provided a basic [Node.js application](https://github.com/ParsePlatform/
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 * [HyperDev](https://hyperdev.com/blog/use-parse-server-apps-backend-hyperdev/)
+* [Buddy](https://buddy.com/parse/)
 
 ### Parse Server + Express
 
