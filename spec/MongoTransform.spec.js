@@ -242,7 +242,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     };
     var output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {
-        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+        aRelation: { __type: 'Relation', className: 'Stuff' },
       },
     });
     expect(output).toEqual({});
@@ -302,7 +302,7 @@ describe('transformUpdate', () => {
     };
     var output = transform.transformUpdate(null, input, {
       fields: {
-        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+        aRelation: { __type: 'Relation', className: 'Stuff' },
       },
     });
     expect(output).toEqual({});

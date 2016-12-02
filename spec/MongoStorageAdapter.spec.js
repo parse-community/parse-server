@@ -192,14 +192,14 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it("handles updating a single object with array, object date", (done) => {
     let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    
+
     let schema = { fields: {
       array: { type: 'Array' },
       object: { type: 'Object' },
       date: { type: 'Date' },
     } };
 
-    
+
     adapter.createObject('MyClass', schema, {})
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {

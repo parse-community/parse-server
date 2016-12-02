@@ -263,7 +263,7 @@ describe("Account Lockout Policy: ", () => {
       return isAccountLockoutError('username3', 'wrong password', 0.05, 1);
     })
     .then(() => {
-      // account should still be locked even after 2 seconds. 
+      // account should still be locked even after 2 seconds.
       return isAccountLockoutError('username3', 'wrong password', 0.05, 2000);
     })
     .then(() => {
@@ -297,7 +297,7 @@ describe("Account Lockout Policy: ", () => {
       return loginWithWrongCredentialsShouldFail('username4', 'wrong password');
     })
     .then(() => {
-      // allow locked user to login after 3 seconds with a valid userid and password 
+      // allow locked user to login after 3 seconds with a valid userid and password
       return new Promise((resolve, reject) => {
         setTimeout(() => {
           Parse.User.logIn('username4', 'correct password')

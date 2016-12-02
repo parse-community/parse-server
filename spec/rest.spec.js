@@ -10,7 +10,7 @@ var config = new Config('test');
 let database = config.database;
 
 describe('rest create', () => {
-  
+
   beforeEach(() => {
     config = new Config('test');
   });

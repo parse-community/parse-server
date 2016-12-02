@@ -708,7 +708,7 @@ describe('SchemaController', () => {
         }, () => {
           expect(exist).toEqual(false);
         });
-        
+
       })
       .then(() => schema.deleteField('relationField', 'NewClass', config.database))
       .then(() => schema.reloadData())
