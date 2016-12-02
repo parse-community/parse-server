@@ -12,6 +12,7 @@ addons:
   postgresql: '9.5'
 before_script:
   - ls -al "$HOME/.mongodb/versions"
+  - psql -U postgres -c "create extension postgis"
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
   - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
@@ -26,7 +27,7 @@ env:
   - PARSE_SERVER_TEST_CACHE=redis
 matrix:
   fast_finish: true
-  allow_failures: 
+  allow_failures:
   - env: PARSE_SERVER_TEST_DB=postgres
 branches:
   only:
