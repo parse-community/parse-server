@@ -288,9 +288,9 @@ describe('Installations', () => {
       expect(results.length).toEqual(1);
       expect(results[0]['_id']).toEqual(secondObject._id);
       done();
-    }).catch((error) => { 
-      jfail(error); 
-      done(); 
+    }).catch((error) => {
+      jfail(error);
+      done();
     });
   });
 

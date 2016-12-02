@@ -20,12 +20,12 @@ describe('ClientSDK', () => {
       version: '1.9.0'
     });
   });
-  
+
   it('should properly sastisfy', () => {
     expect(ClientSDK.compatible({
       js: '>=1.9.0'
     })("js1.9.0")).toBe(true);
-    
+
     expect(ClientSDK.compatible({
       js: '>=1.9.0'
     })("js2.0.0")).toBe(true);

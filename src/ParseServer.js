@@ -202,7 +202,7 @@ class ParseServer {
     const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
-    const dbInitPromise = databaseController.performInitizalization();
+    const dbInitPromise = databaseController.performInitialization();
 
     AppCache.put(appId, {
       appId,
@@ -247,7 +247,7 @@ class ParseServer {
       hasPushSupport
     });
 
-    // To maintain compatibility. TODO: Remove in some version that breaks backwards compatability
+    // To maintain compatibility. TODO: Remove in some version that breaks backwards compatibility
     if (process.env.FACEBOOK_APP_ID) {
       AppCache.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
     }

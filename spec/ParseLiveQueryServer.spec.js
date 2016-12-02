@@ -928,7 +928,7 @@ describe('ParseLiveQueryServer', function() {
         }
       }
     });
-      
+
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
       expect(isMatched).toBe(false);
       done();

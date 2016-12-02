@@ -272,7 +272,7 @@ describe("httpRequest", () => {
     Parse._encode(httpResponse);
     let serialized = JSON.stringify(httpResponse);
     let result = JSON.parse(serialized);
-    
+
     expect(httpResponse.text).toEqual('{"foo":"bar"}');
     expect(httpResponse.data).toEqual({foo: 'bar'});
     expect(httpResponse.body).toEqual({foo: 'bar'});
