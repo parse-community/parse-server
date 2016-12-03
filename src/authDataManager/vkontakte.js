@@ -25,7 +25,7 @@ function validateAuthData(authData, params) {
 function vkOAuth2Request(params) {
   var promise = new Parse.Promise();
   return promise.then(function(){
-    if (!params || !params.appIds || !params.appIds.length || !params.appSecret || !params.appSecret.length ) {
+    if (!params || !params.appIds || !params.appIds.length || !params.appSecret || !params.appSecret.length) {
       logger.error('Vk Auth', 'Vk auth is not configured. Missing appIds or appSecret.');
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is not configured. Missing appIds or appSecret.');
     }

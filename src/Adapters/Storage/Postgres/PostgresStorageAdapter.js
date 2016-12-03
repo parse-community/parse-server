@@ -258,7 +258,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       let allowNull = false;
       values.push(fieldName);
       fieldValue.$in.forEach((listElem, listIndex) => {
-        if (listElem === null ) {
+        if (listElem === null) {
           allowNull = true;
         } else {
           values.push(listElem);

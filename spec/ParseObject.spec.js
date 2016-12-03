@@ -1842,10 +1842,10 @@ describe('Parse.Object testing', () => {
         "_nested": "key"
       }
     });
-    object.save().then( res => {
+    object.save().then(res => {
       ok(res);
       return res.fetch();
-    }).then( res => {
+    }).then(res => {
       const foo = res.get("foo");
       expect(foo["_bar"]).toEqual("_");
       expect(foo["baz_bar"]).toEqual(1);
@@ -1853,7 +1853,7 @@ describe('Parse.Object testing', () => {
       expect(foo["_0"]).toEqual("underscore_zero");
       expect(foo["_more"]["_nested"]).toEqual("key");
       done();
-    }).fail( err => {
+    }).fail(err => {
       jfail(err);
       fail("should not fail");
       done();

@@ -20,7 +20,7 @@ function createProduct() {
 }
 
 describe("test validate_receipt endpoint", () => {
-  beforeEach( done => {
+  beforeEach(done => {
     createProduct().then(done).fail(function(){
       done();
     });
