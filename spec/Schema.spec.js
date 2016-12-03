@@ -880,6 +880,36 @@ describe('SchemaController', () => {
       done();
     });
   });
+
+  it('properly handles volatile _Schemas', done => {
+    function validateSchemaStructure(schema) {
+      console.log(schema);
+      expect(schema.hasOwnProperty('className')).toBe(true);
+      expect(schema.hasOwnProperty('fields')).toBe(true);
+      expect(schema.hasOwnProperty('classLevelPermissions')).toBe(true);
+    }
+    function validateSchemaDataStructure(schemaData) {
+      Object.keys(schemaData).forEach(className => {
+        let schema = schemaData[className];
+        expect(schema.hasOwnProperty('className')).toBe(false);
+        expect(schema.hasOwnProperty('fields')).toBe(false);
+        expect(schema.hasOwnProperty('classLevelPermissions')).toBe(false);
+      });
+    }
+    let schema;
+    config.database.loadSchema().then(s => {
+      schema = s;
+      return schema.getOneSchema('_User', false);
+    }).then(userSchema => {
+      validateSchemaStructure(userSchema);
+      validateSchemaDataStructure(schema.data);
+      return schema.getOneSchema('_PushStatus', true);
+    }).then(pushStatusSchema => {
+      validateSchemaStructure(pushStatusSchema);
+      validateSchemaDataStructure(schema.data);
+      done();
+    });
+  });
 });
 
 describe('Class Level Permissions for requiredAuth', () => {
