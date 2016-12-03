@@ -9,6 +9,8 @@ services:
   - docker
 addons:
   postgresql: '9.5'
+  apt_packages:
+  - postgresql-9.5-postgis-2.3
 before_script:
   - ls -al "$HOME/.mongodb/versions"
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
