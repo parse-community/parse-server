@@ -1,6 +1,6 @@
 language: node_js
 dist: trusty
-sudo: false
+sudo: required
 node_js:
 - '4.5'
 - '6.1'
