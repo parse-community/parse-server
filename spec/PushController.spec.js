@@ -192,7 +192,7 @@ describe('PushController', () => {
   });
 
   it('properly set badges to 1', (done) => {
-    
+
     var pushAdapter = {
       send: function(body, installations) {
         var badge = body.data.badge;
