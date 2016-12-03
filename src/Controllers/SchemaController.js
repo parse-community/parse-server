@@ -346,11 +346,9 @@ export default class SchemaController {
 
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
-        this.data[className] = injectDefaultSchema({
-          className,
-          fields: {},
-          classLevelPermissions: {}
-        });
+        let schema = injectDefaultSchema({ className });
+        this.data[className] = schema.fields;
+        this.perms[className] = schema.classLevelPermissions;
       });
       delete this.reloadDataPromise;
     }, (err) => {
@@ -388,7 +386,11 @@ export default class SchemaController {
     }
     return promise.then(() => {
       if (allowVolatileClasses && volatileClasses.indexOf(className) > -1) {
-        return Promise.resolve(this.data[className]);
+        return Promise.resolve({
+          className,
+          fields: this.data[className],
+          classLevelPermissions: this.perms[className]
+        });
       }
       return this._cache.getOneSchema(className).then((cached) => {
         if (cached && !options.clearCache) {
