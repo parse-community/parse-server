@@ -1283,13 +1283,13 @@ describe('schemas', () => {
       })
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     })
@@ -1346,13 +1346,13 @@ describe('schemas', () => {
       });
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     })
@@ -1404,7 +1404,7 @@ describe('schemas', () => {
       });
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
@@ -1470,13 +1470,13 @@ describe('schemas', () => {
       });
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }).catch( (err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     })
@@ -1523,7 +1523,7 @@ describe('schemas', () => {
       })
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then(() => {
@@ -1534,7 +1534,7 @@ describe('schemas', () => {
       return Promise.resolve();
     }).then(() => {
       return Parse.User.logIn('user2', 'user2');
-    }).then( () => {
+    }).then(() => {
       let query = new Parse.Query('AClass');
       return query.find();
     }).then(() => {

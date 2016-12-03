@@ -24,7 +24,7 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     let userController = config.userController;
-    return userController.verifyEmail(username, token).then( () => {
+    return userController.verifyEmail(username, token).then(() => {
       let params = qs.stringify({username});
       return Promise.resolve({
         status: 302,
@@ -71,7 +71,7 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
 
-    return config.userController.checkResetTokenValidity(username, token).then( () => {
+    return config.userController.checkResetTokenValidity(username, token).then(() => {
       let params = qs.stringify({token, id: config.applicationId, username, app: config.appName, });
       return Promise.resolve({
         status: 302,

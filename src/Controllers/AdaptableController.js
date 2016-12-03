@@ -53,7 +53,7 @@ export class AdaptableController {
     }
 
     // Makes sure the prototype matches
-    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce( (obj, key) => {
+    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
       const adapterType = typeof adapter[key];
       const expectedType = typeof Type.prototype[key];
       if (adapterType !== expectedType) {

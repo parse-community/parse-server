@@ -115,6 +115,7 @@ class ParseServer {
     webhookKey,
     fileKey,
     facebookAppIds = [],
+    userSensitiveFields = [],
     enableAnonymousUsers = defaults.enableAnonymousUsers,
     allowClientClassCreation = defaults.allowClientClassCreation,
     oauth = {},
@@ -156,6 +157,11 @@ class ParseServer {
     if (!filesAdapter && !databaseURI) {
       throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
     }
+
+    userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
+      defaults.userSensitiveFields,
+      userSensitiveFields
+    )));
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
@@ -242,6 +248,7 @@ class ParseServer {
       databaseController,
       schemaCacheTTL,
       enableSingleSchemaCache,
+      userSensitiveFields,
       pushWorker,
       pushControllerQueue,
       hasPushSupport
@@ -327,7 +334,7 @@ class ParseServer {
     //This causes tests to spew some useless warnings, so disable in test
     if (!process.env.TESTING) {
       process.on('uncaughtException', (err) => {
-        if ( err.code === "EADDRINUSE" ) { // user-friendly message for this common error
+        if (err.code === "EADDRINUSE") { // user-friendly message for this common error
           /* eslint-disable no-console */
           console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
           /* eslint-enable no-console */

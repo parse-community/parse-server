@@ -88,13 +88,13 @@ export class IAPValidationRouter extends PromiseRouter {
       return Promise.resolve({response: appStoreError(error.status) });
     }
 
-    return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then( () => {
+    return validateWithAppStore(IAP_PRODUCTION_URL, receipt).then(() => {
 
       return successCallback();
 
     }, (error) => {
       if (error.status == 21007) {
-        return validateWithAppStore(IAP_SANDBOX_URL, receipt).then( () => {
+        return validateWithAppStore(IAP_SANDBOX_URL, receipt).then(() => {
           return successCallback();
         }, (error) => {
           return errorCallback(error);

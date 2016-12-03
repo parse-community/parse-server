@@ -160,6 +160,10 @@ export default {
     help: "Max file size for uploads.",
     default: "20mb"
   },
+  "userSensitiveFields": {
+    help: "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
+    default: "email"
+  },
   "sessionLength": {
     env: "PARSE_SERVER_SESSION_LENGTH",
     help: "Session duration, defaults to 1 year",

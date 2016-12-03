@@ -4,7 +4,7 @@ import * as middleware from "../middlewares";
 
 export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
-    return config.hooksController.createHook(aHook).then( (hook) => ({response: hook}));
+    return config.hooksController.createHook(aHook).then((hook) => ({response: hook}));
   }
 
   updateHook(aHook, config) {
@@ -18,7 +18,7 @@ export class HooksRouter extends PromiseRouter {
   handleGetFunctions(req) {
     var hooksController = req.config.hooksController;
     if (req.params.functionName) {
-      return hooksController.getFunction(req.params.functionName).then( (foundFunction) => {
+      return hooksController.getFunction(req.params.functionName).then((foundFunction) => {
         if (!foundFunction) {
           throw new Parse.Error(143, `no function named: ${req.params.functionName} is defined`);
         }

@@ -460,7 +460,7 @@ describe("Email Verification Token Expiration: ", () => {
       user.set('email', 'user@parse.com');
       return new Promise((resolve) => {
         // wait for half a sec to get a new expiration time
-        setTimeout( () => resolve(user.save()), 500 );
+        setTimeout(() => resolve(user.save()), 500);
       });
     })
     .then(() => {
