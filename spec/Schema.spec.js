@@ -883,7 +883,7 @@ describe('SchemaController', () => {
 });
 
 describe('Class Level Permissions for requiredAuth', () => {
-  
+
   beforeEach(() => {
     config = new Config('test');
   });
@@ -916,7 +916,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth test find authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -941,7 +941,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth should allow create authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -966,7 +966,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth should reject create when not authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -989,7 +989,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth test create/get/update/delete authenticated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -1030,7 +1030,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth test create/get/update/delete not authenitcated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -1065,7 +1065,7 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
-  
+
   it('required auth test create/get/update/delete not authenitcated', (done) => {
     config.database.loadSchema().then((schema) => {
       // Just to create a valid class
@@ -1098,7 +1098,7 @@ describe('Class Level Permissions for requiredAuth', () => {
     }).then((result) => {
       expect(result.get('foo')).toEqual('bar');
       let query = new Parse.Query('Stuff');
-      return query.find();  
+      return query.find();
     }).then(() => {
       fail("Should not succeed!");
       done();
