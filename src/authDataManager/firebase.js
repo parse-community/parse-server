@@ -19,8 +19,7 @@ function validateAuthData(authData) {
 
     return admin.auth().verifyIdToken(authData.access_token)
         .then(function (decodedToken) {
-            console.log(decodedToken)
-            if (uid == null || uid == "") {
+            if (decodedToken == null || decodedToken.uid == null || decodedToken.uid == "") {
                 throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, "Firebase user not found");
             }
             return;
