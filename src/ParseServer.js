@@ -7,7 +7,7 @@ var batch = require('./batch'),
   Parse = require('parse/node').Parse,
   path = require('path'),
   url = require('url'),
-  authDataManager = require('./authDataManager');
+  authDataManager = require('./Adapters/Auth');
 
 import defaults                 from './defaults';
 import * as logging             from './logger';

@@ -1,7 +1,7 @@
 // Helper functions for accessing the twitter API.
 var OAuth = require('./OAuth1Client');
 var Parse = require('parse/node').Parse;
-var logger = require('../logger').default;
+var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {

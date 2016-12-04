@@ -1,4 +1,4 @@
-var OAuth = require("../src/authDataManager/OAuth1Client");
+var OAuth = require("../src/Adapters/Auth/OAuth1Client");
 var request = require('request');
 var Config = require("../src/Config");
 var defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
@@ -139,7 +139,7 @@ describe('OAuth', function() {
 
   ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of "+providerName, (done) => {
-      var provider = require("../src/authDataManager/"+providerName);
+      var provider = require("../src/Adapters/Auth/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
       jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);
