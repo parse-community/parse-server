@@ -370,7 +370,6 @@ function mockFacebook() {
 }
 
 
-
 // This is polluting, but, it makes it way easier to directly port old tests.
 global.Parse = Parse;
 global.TestObject = TestObject;

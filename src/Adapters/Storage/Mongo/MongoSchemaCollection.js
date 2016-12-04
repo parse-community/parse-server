@@ -83,7 +83,6 @@ function _mongoSchemaQueryFromNameQuery(name: string, query) {
 }
 
 
-
 // Returns a type suitable for inserting into mongo _SCHEMA collection.
 // Does no validation. That is expected to be done in Parse Server.
 function parseFieldTypeToMongoFieldType({ type, targetClass }) {
