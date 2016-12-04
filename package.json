@@ -23,6 +23,7 @@
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
     "express": "4.14.0",
+    "firebase-admin": "^4.0.3",
     "intersect": "1.0.1",
     "lodash": "4.17.2",
     "lru-cache": "4.0.2",
