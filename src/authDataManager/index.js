@@ -15,6 +15,7 @@ let wechat = require("./wechat");
 let weibo = require("./weibo");
 let firebase = require("./firebase");
 
+
 let anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
@@ -41,7 +42,7 @@ let providers = {
   qq,
   wechat,
   weibo,
-    firebase
+  firebase
 }
 
 module.exports = function(oauthOptions = {}, enableAnonymousUsers = true) {
