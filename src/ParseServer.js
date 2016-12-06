@@ -193,7 +193,7 @@ class ParseServer {
       /* eslint-disable no-console */
       console.warn('oauth option is deprecated and will be removed in a future release, please use auth option instead');
       if (Object.keys(auth).length > 0) {
-        console.warn('You should your only use the auth option.');
+        console.warn('You should use only the auth option.');
       }
       /* eslint-enable */
     }
