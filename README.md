@@ -122,7 +122,6 @@ We have provided a basic [Node.js application](https://github.com/ParsePlatform/
 * [Microsoft Azure](https://azure.microsoft.com/en-us/blog/azure-welcomes-parse-developers/)
 * [SashiDo](https://blog.sashido.io/tag/migration/)
 * [Digital Ocean](https://www.digitalocean.com/community/tutorials/how-to-run-parse-server-on-ubuntu-14-04)
-* [NodeChef](https://nodechef.com/blog/post/6/migrate-from-parse-to-nodechef%E2%80%99s-managed-parse-server)
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 * [HyperDev](https://hyperdev.com/blog/use-parse-server-apps-backend-hyperdev/)
