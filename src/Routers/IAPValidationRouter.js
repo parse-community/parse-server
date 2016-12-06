@@ -56,7 +56,6 @@ function getFileForProductIdentifier(productIdentifier, req) {
 }
 
 
-
 export class IAPValidationRouter extends PromiseRouter {
 
   handleRequest(req) {
