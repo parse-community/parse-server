@@ -2655,6 +2655,46 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('select nested keys 2 level without include (issue #3185)', function(done) {
+    var Foobar = new Parse.Object('Foobar');
+    var BarBaz = new Parse.Object('Barbaz');
+    var Bazoo = new Parse.Object('Bazoo');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    Bazoo.save().then(() => {
+      BarBaz.set('key', 'value');
+      BarBaz.set('otherKey', 'value');
+      BarBaz.set('bazoo', Bazoo);
+      return BarBaz.save();
+    }).then(() => {
+      Foobar.set('foo', 'bar');
+      Foobar.set('fizz', 'buzz');
+      Foobar.set('barBaz', BarBaz);
+      return Foobar.save();
+    }).then(function(savedFoobar){
+      var foobarQuery = new Parse.Query('Foobar');
+      foobarQuery.select(['fizz', 'barBaz.key', 'barBaz.bazoo.some']);
+      return foobarQuery.get(savedFoobar.id);
+    }).then((foobarObj) => {
+      equal(foobarObj.get('fizz'), 'buzz');
+      equal(foobarObj.get('foo'), undefined);
+      if (foobarObj.has('barBaz')) {
+        equal(foobarObj.get('barBaz').get('key'), 'value');
+        equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+        if (foobarObj.get('barBaz').has('bazoo')) {
+          equal(foobarObj.get('barBaz').get('bazoo').get('some'), 'thing');
+          equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
+        } else {
+          fail('bazoo should be set');
+        }
+      } else {
+        fail('barBaz should be set');
+      }
+      done();
+    })
+  });
+
   it('properly handles nested ors', function(done) {
     var objects = [];
     while(objects.length != 4) {
