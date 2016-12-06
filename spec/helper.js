@@ -102,7 +102,7 @@ var defaultConfiguration = {
       bundleId: 'bundleId',
     }
   },
-  oauth: { // Override the facebook provider
+  auth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src

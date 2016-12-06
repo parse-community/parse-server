@@ -7,7 +7,7 @@ var batch = require('./batch'),
   Parse = require('parse/node').Parse,
   path = require('path'),
   url = require('url'),
-  authDataManager = require('./authDataManager');
+  authDataManager = require('./Adapters/Auth');
 
 import defaults                 from './defaults';
 import * as logging             from './logger';
@@ -73,8 +73,6 @@ addParseCloud();
 //          to register your cloud code hooks and functions.
 // "appId": the application id to host
 // "masterKey": the master key for requests to this app
-// "facebookAppIds": an array of valid Facebook Application IDs, required
-//                   if using Facebook login
 // "collectionPrefix": optional prefix for database collection names
 // "fileKey": optional key from Parse dashboard for supporting older files
 //            hosted by Parse
@@ -112,11 +110,11 @@ class ParseServer {
     restAPIKey,
     webhookKey,
     fileKey,
-    facebookAppIds = [],
     userSensitiveFields = [],
     enableAnonymousUsers = defaults.enableAnonymousUsers,
     allowClientClassCreation = defaults.allowClientClassCreation,
     oauth = {},
+    auth = {},
     serverURL = requiredParameter('You must provide a serverURL!'),
     maxUploadSize = defaults.maxUploadSize,
     verifyUserEmails = defaults.verifyUserEmails,
@@ -191,6 +189,17 @@ class ParseServer {
 
     const dbInitPromise = databaseController.performInitialization();
 
+    if (Object.keys(oauth).length > 0) {
+      /* eslint-disable no-console */
+      console.warn('oauth option is deprecated and will be removed in a future release, please use auth option instead');
+      if (Object.keys(auth).length > 0) {
+        console.warn('You should use only the auth option.');
+      }
+      /* eslint-enable */
+    }
+
+    auth = Object.assign({}, oauth, auth);
+
     AppCache.put(appId, {
       appId,
       masterKey: masterKey,
@@ -202,7 +211,6 @@ class ParseServer {
       restAPIKey: restAPIKey,
       webhookKey: webhookKey,
       fileKey: fileKey,
-      facebookAppIds: facebookAppIds,
       analyticsController: analyticsController,
       cacheController: cacheController,
       filesController: filesController,
@@ -216,7 +224,7 @@ class ParseServer {
       accountLockout: accountLockout,
       passwordPolicy: passwordPolicy,
       allowClientClassCreation: allowClientClassCreation,
-      authDataManager: authDataManager(oauth, enableAnonymousUsers),
+      authDataManager: authDataManager(auth, enableAnonymousUsers),
       appName: appName,
       publicServerURL: publicServerURL,
       customPages: customPages,
@@ -231,11 +239,6 @@ class ParseServer {
       enableSingleSchemaCache,
       userSensitiveFields
     });
-
-    // To maintain compatibility. TODO: Remove in some version that breaks backwards compatibility
-    if (process.env.FACEBOOK_APP_ID) {
-      AppCache.get(appId)['facebookAppIds'].push(process.env.FACEBOOK_APP_ID);
-    }
 
     Config.validate(AppCache.get(appId));
     this.config = AppCache.get(appId);
