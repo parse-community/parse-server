@@ -26,6 +26,11 @@ export default {
     default: 1337,
     action: numberParser("port")
   },
+  "host": {
+    env: "PARSE_SERVER_HOST",
+    help: "The host to serve ParseServer on. defaults to 0.0.0.0",
+    default: '0.0.0.0',
+  },
   "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",
     help: "The full URI to your mongodb database"
