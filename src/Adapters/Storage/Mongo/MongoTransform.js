@@ -223,7 +223,7 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 
   // Handle query constraints
-  let transformedConstraint = transformConstraint(value, expectedTypeIsArray);
+  const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
   if (transformedConstraint !== CannotTransform) {
     return {key, value: transformedConstraint};
   }

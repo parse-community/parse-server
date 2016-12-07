@@ -2486,7 +2486,7 @@ describe('Parse.Query testing', () => {
       return new Parse.Query(PostObject)
         .matchesKeyInQuery("author", "members", new Parse.Query(GroupObject))
         .find()
-        .then(r => {
+        .then((r) => {
           expect(r.length).toEqual(1);
           if (r.length > 0) {
             expect(r[0].id).toEqual(p.id);
