@@ -15,7 +15,6 @@ let wechat = require("./wechat");
 let weibo = require("./weibo");
 let firebase = require("./firebase");
 
-
 let anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
