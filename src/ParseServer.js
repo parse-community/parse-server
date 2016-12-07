@@ -251,13 +251,16 @@ class ParseServer {
     }
 
     if (cloud) {
+      if (!javascriptKey) {
+        throw 'javascriptKey must be set when using cloud code';
+      }
       addParseCloud();
       if (typeof cloud === 'function') {
         cloud(Parse)
       } else if (typeof cloud === 'string') {
         require(path.resolve(process.cwd(), cloud));
       } else {
-        throw "argument 'cloud' must either be a string or a function";
+        throw 'argument \'cloud\' must either be a string or a function';
       }
     }
   }

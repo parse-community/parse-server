@@ -1,4 +1,4 @@
-"use strict"
+'use strict';
 var request = require('request');
 var parseServerPackage = require('../package.json');
 var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
@@ -206,7 +206,7 @@ describe('server', () => {
 
   it('can create a parse-server v2', done => {
     let objId;
-    let server
+    let server;
     let parseServer = ParseServer.ParseServer(Object.assign({},
       defaultConfiguration, {
         appId: "anOtherTestApp",
@@ -233,7 +233,7 @@ describe('server', () => {
           server.close(done);
         })
         .catch(error => {
-          fail(JSON.stringify(error))
+          fail(JSON.stringify(error));
           if (server) {
             server.close(done);
           } else {
@@ -282,7 +282,7 @@ describe('server', () => {
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' })
     .catch(error => {
-      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
+      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://');
       done();
     })
   });
@@ -317,10 +317,18 @@ describe('server', () => {
       expireInactiveSessions: false
     }))
     .then(done);
-  })
+  });
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
     .catch(done);
   });
+
+  it('fails when there is cloud code with no javascriptKey', (done) => {
+    reconfigureServer({
+      cloud: () => {},
+      javascriptKey: undefined
+    })
+    .catch(done);
+  })
 });
