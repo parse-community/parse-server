@@ -48,8 +48,8 @@ export class UserController extends AdaptableController {
       throw undefined;
     }
 
-    let query = {username: username, _email_verify_token: token};
-    let updateFields = { emailVerified: true, _email_verify_token: {__op: 'Delete'}};
+    const query = {username: username, _email_verify_token: token};
+    const updateFields = { emailVerified: true, _email_verify_token: {__op: 'Delete'}};
 
     // if the email verify token needs to be validated then
     // add additional query params and additional fields that need to be updated
@@ -119,8 +119,8 @@ export class UserController extends AdaptableController {
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
-      let link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
-      let options = {
+      const link = `${this.config.verifyEmailURL}?token=${token}&username=${username}`;
+      const options = {
         appName: this.config.appName,
         link: link,
         user: inflate('_User', user),
@@ -153,9 +153,9 @@ export class UserController extends AdaptableController {
     .then(user => {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
-      let link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
+      const link = `${this.config.requestResetPasswordURL}?token=${token}&username=${username}`
 
-      let options = {
+      const options = {
         appName: this.config.appName,
         link: link,
         user: inflate('_User', user),
@@ -188,22 +188,22 @@ export class UserController extends AdaptableController {
   }
 
   defaultVerificationEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" +
+    const text = "Hi,\n\n" +
         "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
         "" +
         "Click here to confirm it:\n" + link;
-    let to = user.get("email");
-    let subject = 'Please verify your e-mail for ' + appName;
+    const to = user.get("email");
+    const subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
   }
 
   defaultResetPasswordEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" +
+    const text = "Hi,\n\n" +
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
-    let to = user.get("email") || user.get('username');
-    let subject =  'Password Reset for ' + appName;
+    const to = user.get("email") || user.get('username');
+    const subject =  'Password Reset for ' + appName;
     return { text, to, subject };
   }
 }

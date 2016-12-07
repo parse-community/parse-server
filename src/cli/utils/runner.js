@@ -2,7 +2,7 @@
 import program from './commander';
 
 function logStartupOptions(options) {
-  for (let key in options) {
+  for (const key in options) {
     let value = options[key];
     if (key == "masterKey") {
       value = "***REDACTED***";
@@ -31,7 +31,7 @@ export default function({
   }
   program.parse(process.argv, process.env);
 
-  let options = program.getOptions();
+  const options = program.getOptions();
   start(program, options, function() {
     logStartupOptions(options);
   });

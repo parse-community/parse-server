@@ -1,9 +1,9 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-let transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
-let dd = require('deep-diff');
-let mongodb = require('mongodb');
+const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const dd = require('deep-diff');
+const mongodb = require('mongodb');
 
 describe('parseObjectToMongoObjectForCreate', () => {
   it('a basic number', (done) => {
@@ -179,7 +179,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('untransforms objects containing nested special keys', done => {
-    let input = {array: [{
+    const input = {array: [{
       _id: "Test ID",
       _hashed_password: "I Don't know why you would name a key this, but if you do it should work",
       _tombstone: {
@@ -190,7 +190,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
       },
       regularKey: "some data",
     }]}
-    let output = transform.mongoObjectToParseObject(null, input, {
+    const output = transform.mongoObjectToParseObject(null, input, {
       fields: { array: { type: 'Array' }},
     });
     expect(dd(output, input)).toEqual(undefined);

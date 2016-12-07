@@ -563,7 +563,7 @@ describe('Parse.File testing', () => {
       var query = new Parse.Query('FileTest');
       return query.first();
     }).then(result => {
-      let fileAgain = result.get('file');
+      const fileAgain = result.get('file');
       expect(fileAgain.url()).toMatch(/123.txt$/);
       done();
     }).catch((e) => {
@@ -587,7 +587,7 @@ describe('Parse.File testing', () => {
       var query = new Parse.Query('FileTest');
       return query.first();
     }).then(result => {
-      let fileAgain = result.get('file');
+      const fileAgain = result.get('file');
       expect(fileAgain.url().indexOf('https://mydomain/parse')).toBe(0);
       done();
     }).catch((e) => {

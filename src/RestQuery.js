@@ -252,7 +252,7 @@ RestQuery.prototype.replaceInQuery = function() {
                           'improper usage of $inQuery');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey
   };
 
@@ -300,7 +300,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
                           'improper usage of $notInQuery');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
   };
 
@@ -350,7 +350,7 @@ RestQuery.prototype.replaceSelect = function() {
                           'improper usage of $select');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey
   };
 
@@ -398,7 +398,7 @@ RestQuery.prototype.replaceDontSelect = function() {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
   };
 
@@ -445,7 +445,7 @@ RestQuery.prototype.runFind = function(options = {}) {
     this.response = {results: []};
     return Promise.resolve();
   }
-  let findOptions = Object.assign({}, this.findOptions);
+  const findOptions = Object.assign({}, this.findOptions);
   if (this.keys) {
     findOptions.keys = this.keys.map((key) => {
       return key.split('.')[0];
@@ -535,23 +535,23 @@ function includePath(config, auth, response, path, restOptions = {}) {
   if (pointers.length == 0) {
     return response;
   }
-  let pointersHash = {};
+  const pointersHash = {};
   for (var pointer of pointers) {
     if (!pointer) {
       continue;
     }
-    let className = pointer.className;
+    const className = pointer.className;
     // only include the good pointers
     if (className) {
       pointersHash[className] = pointersHash[className] || new Set();
       pointersHash[className].add(pointer.objectId);
     }
   }
-  let includeRestOptions = {};
+  const includeRestOptions = {};
   if (restOptions.keys) {
-    let keys = new Set(restOptions.keys.split(','));
-    let keySet = Array.from(keys).reduce((set, key) => {
-      let keyPath = key.split('.');
+    const keys = new Set(restOptions.keys.split(','));
+    const keySet = Array.from(keys).reduce((set, key) => {
+      const keyPath = key.split('.');
       let i=0;
       for (i; i<path.length; i++) {
         if (path[i] != keyPath[i]) {
@@ -568,8 +568,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
     }
   }
 
-  let queryPromises = Object.keys(pointersHash).map((className) => {
-    let where = {'objectId': {'$in': Array.from(pointersHash[className])}};
+  const queryPromises = Object.keys(pointersHash).map((className) => {
+    const where = {'objectId': {'$in': Array.from(pointersHash[className])}};
     var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute({op: 'get'}).then((results) => {
       results.className = className;
@@ -682,7 +682,7 @@ function findObjectWithKey(root, key) {
   }
   if (root instanceof Array) {
     for (var item of root) {
-      let answer = findObjectWithKey(item, key);
+      const answer = findObjectWithKey(item, key);
       if (answer) {
         return answer;
       }
@@ -692,7 +692,7 @@ function findObjectWithKey(root, key) {
     return root;
   }
   for (var subkey in root) {
-    let answer = findObjectWithKey(root[subkey], key);
+    const answer = findObjectWithKey(root[subkey], key);
     if (answer) {
       return answer;
     }

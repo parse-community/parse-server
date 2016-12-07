@@ -57,11 +57,11 @@ function authDataValidator(adapter, appIds, options) {
 
 module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
   let _enableAnonymousUsers = enableAnonymousUsers;
-  let setEnableAnonymousUsers = function(enable) {
+  const setEnableAnonymousUsers = function(enable) {
     _enableAnonymousUsers = enable;
   }
   // To handle the test cases on configuration
-  let getValidatorForProvider = function(provider) {
+  const getValidatorForProvider = function(provider) {
 
     if (provider === 'anonymous' && !_enableAnonymousUsers) {
       return;

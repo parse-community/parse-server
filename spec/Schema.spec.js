@@ -824,9 +824,9 @@ describe('SchemaController', () => {
   });
 
   it('yields a proper schema mismatch error (#2661)', done => {
-    let anObject = new Parse.Object('AnObject');
-    let anotherObject = new Parse.Object('AnotherObject');
-    let someObject = new Parse.Object('SomeObject');
+    const anObject = new Parse.Object('AnObject');
+    const anotherObject = new Parse.Object('AnotherObject');
+    const someObject = new Parse.Object('SomeObject');
     Parse.Object.saveAll([anObject, anotherObject, someObject]).then(() => {
       anObject.set('pointer', anotherObject);
       return anObject.save();
@@ -844,8 +844,8 @@ describe('SchemaController', () => {
   });
 
   it('yields a proper schema mismatch error bis (#2661)', done => {
-    let anObject = new Parse.Object('AnObject');
-    let someObject = new Parse.Object('SomeObject');
+    const anObject = new Parse.Object('AnObject');
+    const someObject = new Parse.Object('SomeObject');
     Parse.Object.saveAll([anObject, someObject]).then(() => {
       anObject.set('number', 1);
       return anObject.save();
@@ -863,8 +863,8 @@ describe('SchemaController', () => {
   });
 
   it('yields a proper schema mismatch error ter (#2661)', done => {
-    let anObject = new Parse.Object('AnObject');
-    let someObject = new Parse.Object('SomeObject');
+    const anObject = new Parse.Object('AnObject');
+    const someObject = new Parse.Object('SomeObject');
     Parse.Object.saveAll([anObject, someObject]).then(() => {
       anObject.set('pointer', someObject);
       return anObject.save();
@@ -889,7 +889,7 @@ describe('SchemaController', () => {
     }
     function validateSchemaDataStructure(schemaData) {
       Object.keys(schemaData).forEach(className => {
-        let schema = schemaData[className];
+        const schema = schemaData[className];
         // Hooks has className...
         if (className != '_Hooks') {
           expect(schema.hasOwnProperty('className')).toBe(false);
@@ -921,7 +921,7 @@ describe('Class Level Permissions for requiredAuth', () => {
   });
 
   function createUser() {
-    let user =  new Parse.User();
+    const user =  new Parse.User();
     user.set("username", "hello");
     user.set("password", "world");
     return user.signUp(null);
@@ -987,7 +987,7 @@ describe('Class Level Permissions for requiredAuth', () => {
     }).then(() => {
       return createUser();
     }).then(() => {
-      let stuff = new Parse.Object('Stuff');
+      const stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save();
     }).then(() => {
@@ -1010,7 +1010,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         }
       });
     }).then(() => {
-      let stuff = new Parse.Object('Stuff');
+      const stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save();
     }).then(() => {
@@ -1044,10 +1044,10 @@ describe('Class Level Permissions for requiredAuth', () => {
     }).then(() => {
       return createUser();
     }).then(() => {
-      let stuff = new Parse.Object('Stuff');
+      const stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
-        let query = new Parse.Query('Stuff');
+        const query = new Parse.Query('Stuff');
         return query.get(stuff.id);
       });
     }).then((gotStuff) => {
@@ -1083,10 +1083,10 @@ describe('Class Level Permissions for requiredAuth', () => {
         }
       });
     }).then(() => {
-      let stuff = new Parse.Object('Stuff');
+      const stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
-        let query = new Parse.Query('Stuff');
+        const query = new Parse.Query('Stuff');
         return query.get(stuff.id);
       });
     }).then(() => {
@@ -1121,15 +1121,15 @@ describe('Class Level Permissions for requiredAuth', () => {
         }
       });
     }).then(() => {
-      let stuff = new Parse.Object('Stuff');
+      const stuff = new Parse.Object('Stuff');
       stuff.set('foo', 'bar');
       return stuff.save().then(() => {
-        let query = new Parse.Query('Stuff');
+        const query = new Parse.Query('Stuff');
         return query.get(stuff.id);
       })
     }).then((result) => {
       expect(result.get('foo')).toEqual('bar');
-      let query = new Parse.Query('Stuff');
+      const query = new Parse.Query('Stuff');
       return query.find();
     }).then(() => {
       fail("Should not succeed!");

@@ -33,10 +33,10 @@ function getAuth(options = {}, config) {
 function ParseServerRESTController(applicationId, router) {
   function handleRequest(method, path, data = {}, options = {}) {
     // Store the arguments, for later use if internal fails
-    let args = arguments;
+    const args = arguments;
 
-    let config = new Config(applicationId);
-    let serverURL = URL.parse(config.serverURL);
+    const config = new Config(applicationId);
+    const serverURL = URL.parse(config.serverURL);
     if (path.indexOf(serverURL.path) === 0) {
       path = path.slice(serverURL.path.length, path.length);
     }
@@ -46,7 +46,7 @@ function ParseServerRESTController(applicationId, router) {
     }
 
     if (path === '/batch') {
-      let promises = data.requests.map((request) => {
+      const promises = data.requests.map((request) => {
         return handleRequest(request.method, request.path, request.body, options).then((response) => {
           return Parse.Promise.as({success: response});
         }, (error) => {
@@ -63,7 +63,7 @@ function ParseServerRESTController(applicationId, router) {
 
     return new Parse.Promise((resolve, reject) => {
       getAuth(options, config).then((auth) => {
-        let request = {
+        const request = {
           body: data,
           config,
           auth,

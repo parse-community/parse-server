@@ -60,14 +60,14 @@ describe('verbose logs', () => {
     reconfigureServer({ verbose: true })
     .then(() => createTestUser())
     .then(() => {
-      let winstonLoggerAdapter = new WinstonLoggerAdapter();
+      const winstonLoggerAdapter = new WinstonLoggerAdapter();
       return winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
         size: 100,
         level: 'verbose'
       });
     }).then((results) => {
-      let logString = JSON.stringify(results);
+      const logString = JSON.stringify(results);
       expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
       expect(logString.match(/moon-y/g)).toBe(null);
 
@@ -79,13 +79,13 @@ describe('verbose logs', () => {
         headers: headers,
         url: 'http://localhost:8378/1/login?username=test&password=moon-y'
       }, () => {
-        let winstonLoggerAdapter = new WinstonLoggerAdapter();
+        const winstonLoggerAdapter = new WinstonLoggerAdapter();
         return winstonLoggerAdapter.query({
           from: new Date(Date.now() - 500),
           size: 100,
           level: 'verbose'
         }).then((results) => {
-          let logString = JSON.stringify(results);
+          const logString = JSON.stringify(results);
           expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
           expect(logString.match(/moon-y/g)).toBe(null);
           done();

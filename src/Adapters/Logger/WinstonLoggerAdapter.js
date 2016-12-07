@@ -28,11 +28,11 @@ export class WinstonLoggerAdapter extends LoggerAdapter {
       options = {};
     }
     // defaults to 7 days prior
-    let from = options.from || new Date(Date.now() - (7 * MILLISECONDS_IN_A_DAY));
-    let until = options.until || new Date();
-    let limit = options.size || 10;
-    let order = options.order || 'desc';
-    let level = options.level || 'info';
+    const from = options.from || new Date(Date.now() - (7 * MILLISECONDS_IN_A_DAY));
+    const until = options.until || new Date();
+    const limit = options.size || 10;
+    const order = options.order || 'desc';
+    const level = options.level || 'info';
 
     const queryOptions = {
       from,

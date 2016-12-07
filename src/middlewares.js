@@ -274,7 +274,7 @@ export function enforceMasterKeyAccess(req, res, next) {
 
 export function promiseEnforceMasterKeyAccess(request) {
   if (!request.auth.isMaster) {
-    let error = new Error();
+    const error = new Error();
     error.status = 403;
     error.message = "unauthorized: master key is required";
     throw error;

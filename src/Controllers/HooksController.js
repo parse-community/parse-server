@@ -157,7 +157,7 @@ export class HooksController {
 
 function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
-    let jsonBody = {};
+    const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
     }
@@ -169,7 +169,7 @@ function wrapToHTTPRequest(hook, key) {
       jsonBody.original = req.original.toJSON();
       jsonBody.original.className = req.original.className;
     }
-    let jsonRequest: any = {
+    const jsonRequest: any = {
       headers: {
         'Content-Type': 'application/json'
       },

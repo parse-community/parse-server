@@ -10,7 +10,7 @@ export class InMemoryCache {
   }
 
   get(key) {
-    let record = this.cache[key];
+    const record = this.cache[key];
     if (record == null) {
       return null;
     }

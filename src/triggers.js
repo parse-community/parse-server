@@ -12,10 +12,10 @@ export const Types = {
 };
 
 const baseStore = function() {
-  let Validators = {};
-  let Functions = {};
-  let Jobs = {};
-  let Triggers = Object.keys(Types).reduce(function(base, key){
+  const Validators = {};
+  const Functions = {};
+  const Jobs = {};
+  const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
   }, {});
@@ -286,7 +286,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
 }
 
 export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth) {
-  let trigger = getTrigger(className, triggerType, config.applicationId);
+  const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
       restWhere,
@@ -294,7 +294,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     });
   }
 
-  let parseQuery = new Parse.Query(className);
+  const parseQuery = new Parse.Query(className);
   if (restWhere) {
     parseQuery._where = restWhere;
   }
@@ -309,7 +309,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       parseQuery._limit = restOptions.limit;
     }
   }
-  let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
   return Promise.resolve().then(() => {
     return trigger(requestObject);
   }).then((result) => {
@@ -317,7 +317,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (result && result instanceof Parse.Query) {
       queryResult = result;
     }
-    let jsonQuery = queryResult.toJSON();
+    const jsonQuery = queryResult.toJSON();
     if (jsonQuery.where) {
       restWhere = jsonQuery.where;
     }

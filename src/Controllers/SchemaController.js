@@ -128,7 +128,7 @@ const requireAuthenticationRegex = /^requiresAuthentication$/
 const permissionKeyRegex = Object.freeze([userIdRegex, roleRegex, publicRegex, requireAuthenticationRegex]);
 
 function verifyPermissionKey(key) {
-  let result = permissionKeyRegex.reduce((isGood, regEx) => {
+  const result = permissionKeyRegex.reduce((isGood, regEx) => {
     isGood = isGood || key.match(regEx) != null;
     return isGood;
   }, false);
@@ -162,7 +162,7 @@ function validateCLP(perms, fields) {
 
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
-      let perm = perms[operation][key];
+      const perm = perms[operation][key];
       if (perm !== true) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perm}' is not a valid value for class level permissions ${operation}:${key}:${perm}`);
       }
@@ -346,7 +346,7 @@ export default class SchemaController {
 
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
-        let schema = injectDefaultSchema({ className });
+        const schema = injectDefaultSchema({ className });
         this.data[className] = schema.fields;
         this.perms[className] = schema.classLevelPermissions;
       });
@@ -439,9 +439,9 @@ export default class SchemaController {
   updateClass(className, submittedFields, classLevelPermissions, database) {
     return this.getOneSchema(className)
     .then(schema => {
-      let existingFields = schema.fields;
+      const existingFields = schema.fields;
       Object.keys(submittedFields).forEach(name => {
-        let field = submittedFields[name];
+        const field = submittedFields[name];
         if (existingFields[name] && field.__op !== 'Delete') {
           throw new Parse.Error(255, `Field ${name} exists, cannot update.`);
         }
@@ -452,16 +452,16 @@ export default class SchemaController {
 
       delete existingFields._rperm;
       delete existingFields._wperm;
-      let newSchema = buildMergedSchemaObject(existingFields, submittedFields);
-      let validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
+      const newSchema = buildMergedSchemaObject(existingFields, submittedFields);
+      const validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
       if (validationError) {
         throw new Parse.Error(validationError.code, validationError.error);
       }
 
       // Finally we have checked to make sure the request is valid and we can start deleting fields.
       // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
-      let deletePromises = [];
-      let insertedFields = [];
+      const deletePromises = [];
+      const insertedFields = [];
       Object.keys(submittedFields).forEach(fieldName => {
         if (submittedFields[fieldName].__op === 'Delete') {
           const promise = this.deleteField(fieldName, className, database);
@@ -474,7 +474,7 @@ export default class SchemaController {
       return Promise.all(deletePromises) // Delete Everything
       .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
       .then(() => {
-        let promises = insertedFields.map(fieldName => {
+        const promises = insertedFields.map(fieldName => {
           const type = submittedFields[fieldName];
           return this.enforceFieldExists(className, fieldName, type);
         });
@@ -542,7 +542,7 @@ export default class SchemaController {
   }
 
   validateSchemaData(className, fields, classLevelPermissions, existingFieldNames) {
-    for (let fieldName in fields) {
+    for (const fieldName in fields) {
       if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName)) {
           return {
@@ -561,11 +561,11 @@ export default class SchemaController {
       }
     }
 
-    for (let fieldName in defaultColumns[className]) {
+    for (const fieldName in defaultColumns[className]) {
       fields[fieldName] = defaultColumns[className][fieldName];
     }
 
-    let geoPoints = Object.keys(fields).filter(key => fields[key] && fields[key].type === 'GeoPoint');
+    const geoPoints = Object.keys(fields).filter(key => fields[key] && fields[key].type === 'GeoPoint');
     if (geoPoints.length > 1) {
       return {
         code: Parse.Error.INCORRECT_TYPE,
@@ -605,7 +605,7 @@ export default class SchemaController {
     }
 
     return this.reloadData().then(() => {
-      let expectedType = this.getExpectedType(className, fieldName);
+      const expectedType = this.getExpectedType(className, fieldName);
       if (typeof type === 'string') {
         type = { type };
       }
@@ -690,11 +690,11 @@ export default class SchemaController {
   validateObject(className, object, query) {
     let geocount = 0;
     let promise = this.enforceClassExists(className);
-    for (let fieldName in object) {
+    for (const fieldName in object) {
       if (object[fieldName] === undefined) {
         continue;
       }
-      let expected = getType(object[fieldName]);
+      const expected = getType(object[fieldName]);
       if (expected === 'GeoPoint') {
         geocount++;
       }
@@ -722,12 +722,12 @@ export default class SchemaController {
 
   // Validates that all the properties are set for the object
   validateRequiredColumns(className, object, query) {
-    let columns = requiredColumns[className];
+    const columns = requiredColumns[className];
     if (!columns || columns.length == 0) {
       return Promise.resolve(this);
     }
 
-    let missingColumns = columns.filter(function(column){
+    const missingColumns = columns.filter(function(column){
       if (query && query.objectId) {
         if (object[column] && typeof object[column] === "object") {
           // Trying to delete a required column
@@ -752,8 +752,8 @@ export default class SchemaController {
     if (!this.perms[className] || !this.perms[className][operation]) {
       return true;
     }
-    let classPerms = this.perms[className];
-    let perms = classPerms[operation];
+    const classPerms = this.perms[className];
+    const perms = classPerms[operation];
     // Handle the public scenario quickly
     if (perms['*']) {
       return true;
@@ -774,8 +774,8 @@ export default class SchemaController {
     if (!this.perms[className] || !this.perms[className][operation]) {
       return true;
     }
-    let classPerms = this.perms[className];
-    let perms = classPerms[operation];
+    const classPerms = this.perms[className];
+    const perms = classPerms[operation];
 
     // If only for authenticated users
     // make sure we have an aclGroup
@@ -797,7 +797,7 @@ export default class SchemaController {
 
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
-    let permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+    const permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
 
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {
@@ -831,7 +831,7 @@ export default class SchemaController {
 
 // Returns a promise for a new Schema.
 const load = (dbAdapter, schemaCache, options) => {
-  let schema = new SchemaController(dbAdapter, schemaCache);
+  const schema = new SchemaController(dbAdapter, schemaCache);
   return schema.reloadData(options).then(() => schema);
 }
 
@@ -841,20 +841,20 @@ const load = (dbAdapter, schemaCache, options) => {
 // to mongoSchemaFromFieldsAndClassName. No validation is done here, it
 // is done in mongoSchemaFromFieldsAndClassName.
 function buildMergedSchemaObject(existingFields, putRequest) {
-  let newSchema = {};
-  let sysSchemaField = Object.keys(defaultColumns).indexOf(existingFields._id) === -1 ? [] : Object.keys(defaultColumns[existingFields._id]);
-  for (let oldField in existingFields) {
+  const newSchema = {};
+  const sysSchemaField = Object.keys(defaultColumns).indexOf(existingFields._id) === -1 ? [] : Object.keys(defaultColumns[existingFields._id]);
+  for (const oldField in existingFields) {
     if (oldField !== '_id' && oldField !== 'ACL' &&  oldField !== 'updatedAt' && oldField !== 'createdAt' && oldField !== 'objectId') {
       if (sysSchemaField.length > 0 && sysSchemaField.indexOf(oldField) !== -1) {
         continue;
       }
-      let fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
+      const fieldIsDeleted = putRequest[oldField] && putRequest[oldField].__op === 'Delete'
       if (!fieldIsDeleted) {
         newSchema[oldField] = existingFields[oldField];
       }
     }
   }
-  for (let newField in putRequest) {
+  for (const newField in putRequest) {
     if (newField !== 'objectId' && putRequest[newField].__op !== 'Delete') {
       if (sysSchemaField.length > 0 && sysSchemaField.indexOf(newField) !== -1) {
         continue;
@@ -879,7 +879,7 @@ function thenValidateRequiredColumns(schemaPromise, className, object, query) {
 // The output should be a valid schema value.
 // TODO: ensure that this is compatible with the format used in Open DB
 function getType(obj) {
-  let type = typeof obj;
+  const type = typeof obj;
   switch(type) {
   case 'boolean':
     return 'Boolean';

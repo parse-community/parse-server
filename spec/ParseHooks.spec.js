@@ -8,7 +8,7 @@ var bodyParser = require('body-parser');
 
 var port = 12345;
 var hookServerURL = "http://localhost:"+port;
-let AppCache = require('../src/cache').AppCache;
+const AppCache = require('../src/cache').AppCache;
 
 var app = express();
 app.use(bodyParser.json({ 'type': '*/*' }))

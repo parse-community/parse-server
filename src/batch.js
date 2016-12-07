@@ -22,10 +22,10 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   serverURL = serverURL ? parseURL(serverURL) : undefined;
   publicServerURL = publicServerURL ? parseURL(publicServerURL): undefined;
 
-  let apiPrefixLength = originalUrl.length - batchPath.length;
+  const apiPrefixLength = originalUrl.length - batchPath.length;
   let apiPrefix = originalUrl.slice(0, apiPrefixLength);
 
-  let makeRoutablePath = function(requestPath) {
+  const makeRoutablePath = function(requestPath) {
       // The routablePath is the path minus the api prefix
     if (requestPath.slice(0, apiPrefix.length) != apiPrefix) {
       throw new Parse.Error(
@@ -37,14 +37,14 @@ function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
 
   if (serverURL && publicServerURL
         && (serverURL.path != publicServerURL.path)) {
-    let localPath = serverURL.path;
-    let publicPath = publicServerURL.path;
+    const localPath = serverURL.path;
+    const publicPath = publicServerURL.path;
       // Override the api prefix
     apiPrefix = localPath;
     return function(requestPath) {
         // Build the new path by removing the public path
         // and joining with the local path
-      let newPath = path.posix.join('/', localPath, '/' , requestPath.slice(publicPath.length));
+      const newPath = path.posix.join('/', localPath, '/' , requestPath.slice(publicPath.length));
         // Use the method for local routing
       return makeRoutablePath(newPath);
     }

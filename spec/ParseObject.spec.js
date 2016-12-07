@@ -596,8 +596,8 @@ describe('Parse.Object testing', () => {
       var query = new Parse.Query('X');
       return query.get(x1.id);
     }).then((x3) => {
-      let stuff = x3.get('stuff');
-      let expected = [1, 2, 4];
+      const stuff = x3.get('stuff');
+      const expected = [1, 2, 4];
       expect(stuff.length).toBe(expected.length);
       for (var i of stuff) {
         expect(expected.indexOf(i) >= 0).toBe(true);
@@ -628,12 +628,12 @@ describe('Parse.Object testing', () => {
       var query = new Parse.Query('X');
       return query.get(x1.id);
     }).then((x3) => {
-      let stuff = x3.get('stuff');
-      let target = [1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}];
+      const stuff = x3.get('stuff');
+      const target = [1, {'hello': 'world'},  {'foo': 'bar'}, {'bar': 'baz'}];
       expect(stuff.length).toEqual(target.length);
       let found = 0;
-      for (let thing in target) {
-        for (let st in stuff) {
+      for (const thing in target) {
+        for (const st in stuff) {
           if (st == thing) {
             found++;
           }
@@ -1861,15 +1861,15 @@ describe('Parse.Object testing', () => {
   });
 
   it('should have undefined includes when object is missing', (done) => {
-    let obj1 = new Parse.Object("AnObject");
-    let obj2 =  new Parse.Object("AnObject");
+    const obj1 = new Parse.Object("AnObject");
+    const obj2 =  new Parse.Object("AnObject");
 
     Parse.Object.saveAll([obj1, obj2]).then(() => {
       obj1.set("obj", obj2);
       // Save the pointer, delete the pointee
       return obj1.save().then(() => { return obj2.destroy() });
     }).then(() => {
-      let query = new Parse.Query("AnObject");
+      const query = new Parse.Query("AnObject");
       query.include("obj");
       return query.find();
     }).then((res) => {
@@ -1877,7 +1877,7 @@ describe('Parse.Object testing', () => {
       if (res[0]) {
         expect(res[0].get("obj")).toBe(undefined);
       }
-      let query = new Parse.Query("AnObject");
+      const query = new Parse.Query("AnObject");
       return query.find();
     }).then((res) => {
       expect(res.length).toBe(1);
@@ -1896,16 +1896,16 @@ describe('Parse.Object testing', () => {
   });
 
   it('should have undefined includes when object is missing on deeper path', (done) => {
-    let obj1 = new Parse.Object("AnObject");
-    let obj2 =  new Parse.Object("AnObject");
-    let obj3 = new Parse.Object("AnObject");
+    const obj1 = new Parse.Object("AnObject");
+    const obj2 =  new Parse.Object("AnObject");
+    const obj3 = new Parse.Object("AnObject");
     Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
       obj1.set("obj", obj2);
       obj2.set("obj", obj3);
       // Save the pointer, delete the pointee
       return Parse.Object.saveAll([obj1, obj2]).then(() => { return obj3.destroy() });
     }).then(() => {
-      let query = new Parse.Query("AnObject");
+      const query = new Parse.Query("AnObject");
       query.include("obj.obj");
       return query.get(obj1.id);
     }).then((res) => {
@@ -1919,9 +1919,9 @@ describe('Parse.Object testing', () => {
   });
 
   it('should handle includes on null arrays #2752', (done) => {
-    let obj1 = new Parse.Object("AnObject");
-    let obj2 = new Parse.Object("AnotherObject");
-    let obj3 = new Parse.Object("NestedObject");
+    const obj1 = new Parse.Object("AnObject");
+    const obj2 = new Parse.Object("AnotherObject");
+    const obj3 = new Parse.Object("NestedObject");
     obj3.set({
       "foo": "bar"
     })
@@ -1933,13 +1933,13 @@ describe('Parse.Object testing', () => {
       obj1.set("objects", [null, null, obj2]);
       return obj1.save();
     }).then(() => {
-      let query = new Parse.Query("AnObject");
+      const query = new Parse.Query("AnObject");
       query.include("objects.key");
       return query.find();
     }).then((res) => {
-      let obj = res[0];
+      const obj = res[0];
       expect(obj.get("objects")).not.toBe(undefined);
-      let array = obj.get("objects");
+      const array = obj.get("objects");
       expect(Array.isArray(array)).toBe(true);
       expect(array[0]).toBe(null);
       expect(array[1]).toBe(null);
@@ -1952,8 +1952,8 @@ describe('Parse.Object testing', () => {
   });
 
   it('should handle select and include #2786', (done) => {
-    let score = new Parse.Object("GameScore");
-    let player = new Parse.Object("Player");
+    const score = new Parse.Object("GameScore");
+    const player = new Parse.Object("Player");
     score.set({
       "score": 1234
     });
@@ -1963,14 +1963,14 @@ describe('Parse.Object testing', () => {
       player.set("other", "value");
       return player.save();
     }).then(() => {
-      let query = new Parse.Query("Player");
+      const query = new Parse.Query("Player");
       query.include("gameScore");
       query.select("gameScore");
       return query.find();
     }).then((res) => {
-      let obj = res[0];
-      let gameScore = obj.get("gameScore");
-      let other = obj.get("other");
+      const obj = res[0];
+      const gameScore = obj.get("gameScore");
+      const other = obj.get("other");
       expect(other).toBeUndefined();
       expect(gameScore).not.toBeUndefined();
       expect(gameScore.get("score")).toBe(1234);

@@ -23,11 +23,11 @@ export function randomString(size: number): string {
   if (size === 0) {
     throw new Error('Zero-length randomString is useless.');
   }
-  let chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
+  const chars = ('ABCDEFGHIJKLMNOPQRSTUVWXYZ' +
                'abcdefghijklmnopqrstuvwxyz' +
                '0123456789');
   let objectId = '';
-  let bytes = randomBytes(size);
+  const bytes = randomBytes(size);
   for (let i = 0; i < bytes.length; ++i) {
     objectId += chars[bytes.readUInt8(i) % chars.length];
   }
