@@ -347,4 +347,67 @@ describe('Parse Role testing', () => {
     })
   });
 
+  it('should add multiple users to a role and remove users', (done) => {
+    var user, user2, user3;
+    var role;
+    var obj;
+
+    var prACL = new Parse.ACL();
+    prACL.setPublicReadAccess(true);
+    prACL.setPublicWriteAccess(true);
+
+    createTestUser().then((x) => {
+      user = x;
+      user2 = new Parse.User();
+      return user2.save({ username: 'user2', password: 'omgbbq' });
+    }).then(() => {
+      user3 = new Parse.User();
+      return user3.save({ username: 'user3', password: 'omgbbq' });
+    }).then(() => {
+      role = new Parse.Role('sharedRole', prACL);
+      var users = role.relation('users');
+      users.add(user);
+      users.add(user2);
+      users.add(user3);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      // query for saved role and get 3 users
+      var query = new Parse.Query('_Role');
+      query.equalTo('name', 'sharedRole');
+      return query.find({ useMasterKey: true });
+    }).then((role) => {
+      expect(role.length).toEqual(1);
+      var users = role[0].relation('users').query();
+      return users.find({ useMasterKey: true });
+    }).then((users) => {
+      expect(users.length).toEqual(3);
+      obj = new Parse.Object('TestObjectRoles');
+      obj.set('ACL', prACL);
+      return obj.save(null, { useMasterKey: true });
+    }).then(() => {
+      // Above, the Admin role was added to the Customer role.
+      // An object secured by the Customer ACL should be able to be edited by the Admin user.
+      obj.set('changedByUsers', true);
+      return obj.save(null, { sessionToken: user.getSessionToken() });
+    }).then(() => {
+      // query for saved role and get 3 users
+      var query = new Parse.Query('_Role');
+      query.equalTo('name', 'sharedRole');
+      return query.find({ useMasterKey: true });
+    }).then((role) => {
+      expect(role.length).toEqual(1);
+      var users = role[0].relation('users');
+      users.remove(user);
+      users.remove(user3);
+      return role[0].save({}, { useMasterKey: true });
+    }).then((role) =>{
+      var users = role.relation('users').query();
+      return users.find({ useMasterKey: true });
+    }).then((users) => {
+      expect(users.length).toEqual(1);
+      expect(users[0].get('username')).toEqual('user2');
+      done();
+    });
+  });
+
 });
