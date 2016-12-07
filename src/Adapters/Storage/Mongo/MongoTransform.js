@@ -223,8 +223,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 
   // Handle query constraints
-  if (transformConstraint(value, expectedTypeIsArray) !== CannotTransform) {
-    return {key, value: transformConstraint(value, expectedTypeIsArray)};
+  let transformedConstraint = transformConstraint(value, expectedTypeIsArray);
+  if (transformedConstraint !== CannotTransform) {
+    return {key, value: transformedConstraint};
   }
 
   if (expectedTypeIsArray && !(value instanceof Array)) {
@@ -508,7 +509,14 @@ function transformConstraint(constraint, inArray) {
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
-
+  const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
+  const transformer = (atom) => {
+    const result = transformFunction(atom);
+    if (result === CannotTransform) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
+    }
+    return result;
+  }
   // keys is the constraints in reverse alphabetical order.
   // This is a hack so that:
   //   $regex is handled before $options
@@ -524,10 +532,7 @@ function transformConstraint(constraint, inArray) {
     case '$exists':
     case '$ne':
     case '$eq':
-      answer[key] = inArray ? transformInteriorAtom(constraint[key]) : transformTopLevelAtom(constraint[key]);
-      if (answer[key] === CannotTransform) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${constraint[key]}`);
-      }
+      answer[key] = transformer(constraint[key]);
       break;
 
     case '$in':
@@ -536,12 +541,14 @@ function transformConstraint(constraint, inArray) {
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
       }
-      answer[key] = arr.map(value => {
-        const result = inArray ? transformInteriorAtom(value) : transformTopLevelAtom(value);
-        if (result === CannotTransform) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${value}`);
-        }
-        return result;
+      answer[key] = _.flatMap(arr, value => {
+        return ((atom) => {
+          if (Array.isArray(atom)) {
+            return value.map(transformer);
+          } else {
+            return transformer(atom);
+          }
+        })(value);
       });
       break;
     }
