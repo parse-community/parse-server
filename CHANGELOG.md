@@ -1,5 +1,24 @@
 ## Parse Server Changelog
 
+### 2.3.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.25...2.3.0)
+
+#### New Features
+* **Breaking Change**: Strip personally identifiable information from Parse.User queries, thanks to [acinader](https://github.com/acinader)
+* Password history support to passwordPolicy, thanks to [bhaskaryasa](https://github.com/bhaskaryasa)
+* Adds class level permission requiring authenticated user, thanks to [flovilmart](https://github.com/flovilmart)
+
+#### Improvements
+* **Breaking Change**: Change arg check from truthy to defined, thanks to [steven-supersolid](https://github.com/steven-supersolid)
+* Ensure batch routing paths are posix, thanks to [steven-supersolid](https://github.com/steven-supersolid)
+* Add a CLI option to specify the host, thanks to [kulshekhar](https://github.com/kulshekhar)
+* Ability to pass custom installationId to create sessions in cloud code, thanks to [flovilmart](https://github.com/flovilmart)
+* Auth Adapters refactoring, thanks to [flovilmart](https://github.com/flovilmart)
+
+#### Bug Fixes
+* Allow select (keys) to be altered in triggers, thanks to [acinader](https://github.com/acinader)
+* Fix SchemaController data for Volatile Classes, thanks to [flovilmart](https://github.com/flovilmart)
+
 ### 2.2.25
 
 Postgres support requires v9.5
@@ -83,7 +102,7 @@ Postgres support requires v9.5
 ### 2.2.20
 
 * New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart) 
+* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Better support for upgradeToRevocableSession with missing session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)
