@@ -60,9 +60,8 @@ ParseCloud._removeAllHooks = () => {
 }
 
 ParseCloud.useMasterKey = () => {
-  /* eslint-disable no-console */
+  // eslint-disable-next-line instead
   console.warn("Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: https://github.com/ParsePlatform/parse-server/wiki/Compatibility-with-Hosted-Parse#cloud-code")
-  /* eslint-enable */
 }
 
 ParseCloud.httpRequest = require("./httpRequest");
