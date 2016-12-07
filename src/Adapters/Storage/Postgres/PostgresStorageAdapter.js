@@ -1,5 +1,6 @@
 import { createClient } from './PostgresClient';
 import Parse            from 'parse/node';
+import _                from 'lodash';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -296,10 +297,10 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       }
       if (fieldValue.$in) {
-        createConstraint(fieldValue.$in, false);
+        createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
       }
       if (fieldValue.$nin) {
-        createConstraint(fieldValue.$nin, true);
+        createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
     }
 
