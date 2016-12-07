@@ -101,6 +101,7 @@ class ParseServer {
     silent = defaults.silent,
     databaseURI = defaults.DefaultMongoURI,
     databaseOptions,
+    geoQueryOnSecondary,
     databaseAdapter,
     cloud,
     collectionPrefix = '',
@@ -142,10 +143,10 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
-      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
+    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '' || geoQueryOnSecondary !== undefined) && databaseAdapter) {
+      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix/geoQueryOnSecondary.';
     } else if (!databaseAdapter) {
-      databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions)
+      databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions, geoQueryOnSecondary)
     } else {
       databaseAdapter = loadAdapter(databaseAdapter)
     }
@@ -262,7 +263,7 @@ class ParseServer {
     }
   }
 
-  getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
+  getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions, geoQueryOnSecondary) {
     let protocol;
     try {
       const parsedURI = url.parse(databaseURI);
@@ -280,6 +281,7 @@ class ParseServer {
         uri: databaseURI,
         collectionPrefix,
         mongoOptions: databaseOptions,
+        geoQueryOnSecondary,
       });
     }
   }
