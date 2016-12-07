@@ -15,7 +15,7 @@ export class FilesController extends AdaptableController {
 
   createFile(config, filename, data, contentType) {
 
-    let extname = path.extname(filename);
+    const extname = path.extname(filename);
 
     const hasExtension = extname.length > 0;
 
@@ -53,13 +53,13 @@ export class FilesController extends AdaptableController {
     if (typeof object !== 'object') {
       return;
     }
-    for (let key in object) {
-      let fileObject = object[key];
+    for (const key in object) {
+      const fileObject = object[key];
       if (fileObject && fileObject['__type'] === 'File') {
         if (fileObject['url']) {
           continue;
         }
-        let filename = fileObject['name'];
+        const filename = fileObject['name'];
         // all filenames starting with "tfss-" should be from files.parsetfss.com
         // all filenames starting with a "-" seperated UUID should be from files.parse.com
         // all other filenames have been migrated or created from Parse Server

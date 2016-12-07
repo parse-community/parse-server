@@ -13,7 +13,7 @@ describe('Parse Role testing', () => {
 
     createTestUser().then((x) => {
       user = x;
-      let acl = new Parse.ACL();
+      const acl = new Parse.ACL();
       acl.setPublicReadAccess(true);
       acl.setPublicWriteAccess(false);
       role = new Parse.Object('_Role');
@@ -193,11 +193,11 @@ describe('Parse Role testing', () => {
   });
 
   it("Should properly resolve roles", (done) => {
-    let admin = new Parse.Role("Admin", new Parse.ACL());
-    let moderator = new Parse.Role("Moderator", new Parse.ACL());
-    let superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
-    let contentManager = new Parse.Role('ContentManager', new Parse.ACL());
-    let superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    const admin = new Parse.Role("Admin", new Parse.ACL());
+    const moderator = new Parse.Role("Moderator", new Parse.ACL());
+    const superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
+    const contentManager = new Parse.Role('ContentManager', new Parse.ACL());
+    const superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
     Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
       contentManager.getRoles().add([moderator, superContentManager]);
       moderator.getRoles().add([admin, superModerator]);
@@ -207,7 +207,7 @@ describe('Parse Role testing', () => {
       var auth = new Auth({ config: new Config("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
-      let promises = [admin, moderator, contentManager, superModerator].map((role) => {
+      const promises = [admin, moderator, contentManager, superModerator].map((role) => {
         return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
           return Parse.Promise.as({
             id: role.id,
@@ -220,8 +220,8 @@ describe('Parse Role testing', () => {
       return Parse.Promise.when(promises);
     }).then((results) => {
       results.forEach((result) => {
-        let id = result.id;
-        let roleNames = result.roleNames;
+        const id = result.id;
+        const roleNames = result.roleNames;
         if (id == admin.id) {
           expect(roleNames.length).toBe(2);
           expect(roleNames.indexOf("Moderator")).not.toBe(-1);

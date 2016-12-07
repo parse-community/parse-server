@@ -307,7 +307,7 @@ class ParseServer {
     api.use(middlewares.allowMethodOverride);
     api.use(middlewares.handleParseHeaders);
 
-    let appRouter = ParseServer.promiseRouter({ appId });
+    const appRouter = ParseServer.promiseRouter({ appId });
     api.use(appRouter.expressRouter());
 
     api.use(middlewares.handleParseErrors);
@@ -332,7 +332,7 @@ class ParseServer {
   }
 
   static promiseRouter({appId}) {
-    let routers = [
+    const routers = [
       new ClassesRouter(),
       new UsersRouter(),
       new SessionsRouter(),
@@ -351,11 +351,11 @@ class ParseServer {
       new CloudCodeRouter()
     ];
 
-    let routes = routers.reduce((memo, router) => {
+    const routes = routers.reduce((memo, router) => {
       return memo.concat(router.routes);
     }, []);
 
-    let appRouter = new PromiseRouter(routes, appId);
+    const appRouter = new PromiseRouter(routes, appId);
 
     batch.mountOnto(appRouter);
     return appRouter;

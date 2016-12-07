@@ -1,13 +1,13 @@
 'use strict';
 
-let request = require('request');
+const request = require('request');
 
 describe('Parse.Push', () => {
   var setup = function() {
     var pushAdapter = {
       send: function(body, installations) {
         var badge = body.data.badge;
-        let promises = installations.map((installation) => {
+        const promises = installations.map((installation) => {
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
             expect(installation.originalBadge+1).toEqual(installation.badge);

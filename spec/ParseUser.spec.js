@@ -141,8 +141,8 @@ describe('Parse.User testing', () => {
   });
 
   it('should respect ACL without locking user out', (done) => {
-    let user = new Parse.User();
-    let ACL = new Parse.ACL();
+    const user = new Parse.User();
+    const ACL = new Parse.ACL();
     ACL.setPublicReadAccess(false);
     ACL.setPublicWriteAccess(false);
     user.setUsername('asdf');
@@ -163,7 +163,7 @@ describe('Parse.User testing', () => {
       expect(perms[user.id].write).toBe(true);
       expect(perms['*']).toBeUndefined();
       // Try to lock out user
-      let newACL = new Parse.ACL();
+      const newACL = new Parse.ACL();
       newACL.setReadAccess(user.id, false);
       newACL.setWriteAccess(user.id, false);
       user.setACL(newACL);
@@ -190,13 +190,13 @@ describe('Parse.User testing', () => {
   });
 
   it("user login with files", (done) => {
-    let file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
+    const file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
       return Parse.User.signUp("asdf", "zxcv", { "file" : file });
     }).then(() => {
       return Parse.User.logIn("asdf", "zxcv");
     }).then((user) => {
-      let fileAgain = user.get('file');
+      const fileAgain = user.get('file');
       ok(fileAgain.name());
       ok(fileAgain.url());
       done();
@@ -1153,11 +1153,11 @@ describe('Parse.User testing', () => {
 
   it('returns authData when authed and logged in with provider (regression test for #1498)', done => {
     Parse.Object.enableSingleInstance();
-    let provider = getMockFacebookProvider();
+    const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith('facebook', {
       success: user => {
-        let userQuery = new Parse.Query(Parse.User);
+        const userQuery = new Parse.Query(Parse.User);
         userQuery.get(user.id)
         .then(user => {
           expect(user.get('authData')).not.toBeUndefined();
@@ -1169,18 +1169,18 @@ describe('Parse.User testing', () => {
   });
 
   it('log in with provider with files', done => {
-    let provider = getMockFacebookProvider();
+    const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
-    let file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
+    const file = new Parse.File("yolo.txt", [1, 2, 3], "text/plain");
     file.save().then(file => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.set('file', file);
       return user._linkWith('facebook', {});
     }).then(user => {
       expect(user._isLinked("facebook")).toBeTruthy();
       return Parse.User._logInWith('facebook', {});
     }).then(user => {
-      let fileAgain = user.get('file');
+      const fileAgain = user.get('file');
       expect(fileAgain.name()).toMatch(/yolo.txt$/);
       expect(fileAgain.url()).toMatch(/yolo.txt$/);
     }).then(() => {
@@ -1535,7 +1535,7 @@ describe('Parse.User testing', () => {
         strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
         Parse.User._registerAuthenticationProvider(mockProvider);
-        let objectId = model.id;
+        const objectId = model.id;
         model._linkWith("myoauth", {
           success: function(model) {
             expect(model.id).toEqual(objectId);
@@ -1571,7 +1571,7 @@ describe('Parse.User testing', () => {
     Parse.User._logInWith("facebook", {
       success: function(model) {
         Parse.User._registerAuthenticationProvider(mockProvider);
-        let objectId = model.id;
+        const objectId = model.id;
         model._linkWith("myoauth", {
           success: function() {
             Parse.User._registerAuthenticationProvider(secondProvider);
@@ -1612,7 +1612,7 @@ describe('Parse.User testing', () => {
         strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
         Parse.User._registerAuthenticationProvider(mockProvider);
-        let objectId = model.id;
+        const objectId = model.id;
         model._linkWith("myoauth", {
           success: function(model) {
             expect(model.id).toEqual(objectId);
@@ -1650,7 +1650,7 @@ describe('Parse.User testing', () => {
     Parse.User._logInWith("facebook", {
       success: function() {
         Parse.User.logOut().then(() => {
-          let user = new Parse.User();
+          const user = new Parse.User();
           user.setUsername('user');
           user.setPassword('password');
           return user.signUp().then(() => {
@@ -1675,7 +1675,7 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
       success: function(model) {
-        let userId = model.id;
+        const userId = model.id;
         Parse.User.logOut().then(() => {
           request.post({
             url:Parse.serverURL+'/classes/_User',
@@ -1722,7 +1722,7 @@ describe('Parse.User testing', () => {
   it('should have authData in beforeSave and afterSave', (done) => {
 
     Parse.Cloud.beforeSave('_User', (request, response) => {
-      let authData = request.object.get('authData');
+      const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
         expect(authData.facebook.id).toEqual('8675309');
@@ -1734,7 +1734,7 @@ describe('Parse.User testing', () => {
     });
 
     Parse.Cloud.afterSave('_User', (request, response) => {
-      let authData = request.object.get('authData');
+      const authData = request.object.get('authData');
       expect(authData).not.toBeUndefined();
       if (authData) {
         expect(authData.facebook.id).toEqual('8675309');
@@ -2326,7 +2326,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should cleanup null authData keys (regression test for #935)', (done) => {
-    let database = new Config(Parse.applicationId).database;
+    const database = new Config(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2349,7 +2349,7 @@ describe('Parse.User testing', () => {
         })
       })
     }).then((user) => {
-      let authData = user.authData;
+      const authData = user.authData;
       expect(user.username).toEqual('user');
       expect(authData).toBeUndefined();
       done();
@@ -2360,7 +2360,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {
-    let database = new Config(Parse.applicationId).database;
+    const database = new Config(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2370,7 +2370,7 @@ describe('Parse.User testing', () => {
         .equalTo('username', 'user')
         .first({useMasterKey: true});
     }).then((user) => {
-      let authData = user.get('authData');
+      const authData = user.get('authData');
       expect(user.get('username')).toEqual('user');
       expect(authData).toBeUndefined();
       done();
@@ -2570,7 +2570,7 @@ describe('Parse.User testing', () => {
       expect(req.object.get('username')).toEqual('User');
       res.success();
     });
-    let user = new Parse.User()
+    const user = new Parse.User()
     user.setUsername('User');
     user.setPassword('pass');
     user.signUp().then(()=> {
@@ -2587,7 +2587,7 @@ describe('Parse.User testing', () => {
       expect(req.user.get('han')).toEqual('solo');
       res.success({});
     });
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('harrison');
     user.setPassword('ford');
     user.signUp().then(() => {
@@ -2645,19 +2645,19 @@ describe('Parse.User testing', () => {
   });
 
   it('should not create extraneous session tokens', (done) => {
-    let config = new Config(Parse.applicationId);
+    const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((s) => {
       // Lock down the _User class for creation
       return s.addClassIfNotExists('_User', {}, {create: {}})
     }).then(() => {
-      let user  = new Parse.User();
+      const user  = new Parse.User();
       return user.save({'username': 'user', 'password': 'pass'});
     }).then(() => {
       fail('should not be able to save the user');
     }, () => {
       return Promise.resolve();
     }).then(() => {
-      let q = new Parse.Query('_Session');
+      const q = new Parse.Query('_Session');
       return q.find({useMasterKey: true})
     }).then((res) => {
       // We should have no session created
@@ -2713,7 +2713,7 @@ describe('Parse.User testing', () => {
     }, (err, res, body) => {
       Parse.User.become(body.sessionToken)
       .then(user => {
-        let obj = new Parse.Object('TestObject');
+        const obj = new Parse.Object('TestObject');
         obj.setACL(new Parse.ACL(user));
         return obj.save()
         .then(() => {
@@ -2751,7 +2751,7 @@ describe('Parse.User testing', () => {
       }, (err, res, body) => {
         Parse.User.become(body.sessionToken)
         .then(user => {
-          let obj = new Parse.Object('TestObject');
+          const obj = new Parse.Object('TestObject');
           obj.setACL(new Parse.ACL(user));
           return obj.save()
           .then(() => {
@@ -2769,7 +2769,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should not fail querying non existing relations', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.set({
       username: 'hello',
       password: 'world'

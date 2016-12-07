@@ -10,13 +10,13 @@ export class GlobalConfigRouter extends PromiseRouter {
         // If there is no config in the database - return empty config.
         return { response: { params: {} } };
       }
-      let globalConfig = results[0];
+      const globalConfig = results[0];
       return { response: { params: globalConfig.params } };
     });
   }
 
   updateGlobalConfig(req) {
-    let params = req.body.params;
+    const params = req.body.params;
     // Transform in dot notation to make sure it works
     const update = Object.keys(params).reduce((acc, key) => {
       acc[`params.${key}`] = params[key];

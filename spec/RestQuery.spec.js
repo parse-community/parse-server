@@ -173,7 +173,7 @@ describe('rest query', () => {
         'X-Parse-REST-API-Key': 'rest'
       };
 
-      let p0 = rp.get({
+      const p0 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
@@ -181,19 +181,19 @@ describe('rest query', () => {
                            limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
-        let error = response.error;
+        const error = response.error;
         var b = JSON.parse(error);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
       });
 
-      let p1 = rp.get({
+      const p1 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
                            limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
-        let error = response.error;
+        const error = response.error;
         var b = JSON.parse(error);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
       });
@@ -235,21 +235,21 @@ describe('rest query', () => {
   });
 
   it('makes sure null pointers are handed correctly #2189', done => {
-    let object = new Parse.Object('AnObject');
-    let anotherObject = new Parse.Object('AnotherObject');
+    const object = new Parse.Object('AnObject');
+    const anotherObject = new Parse.Object('AnotherObject');
     anotherObject.save().then(() => {
       object.set('values', [null, null, anotherObject]);
       return object.save();
     }).then(() => {
-      let query = new Parse.Query('AnObject');
+      const query = new Parse.Query('AnObject');
       query.include('values');
       return query.first();
     }).then((result) => {
-      let values = result.get('values');
+      const values = result.get('values');
       expect(values.length).toBe(3);
       let anotherObjectFound = false;
       let nullCounts = 0;
-      for(let value of values) {
+      for(const value of values) {
         if (value === null) {
           nullCounts++;
         } else if (value instanceof Parse.Object) {

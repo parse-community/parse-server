@@ -1,5 +1,5 @@
-let mongodb = require('mongodb');
-let Collection = mongodb.Collection;
+const mongodb = require('mongodb');
+const Collection = mongodb.Collection;
 
 export default class MongoCollection {
   _mongoCollection:Collection;
@@ -21,7 +21,7 @@ export default class MongoCollection {
           throw error;
         }
         // Figure out what key needs an index
-        let key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
+        const key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
         if (!key) {
           throw error;
         }
@@ -50,7 +50,7 @@ export default class MongoCollection {
   }
 
   count(query, { skip, limit, sort, maxTimeMS } = {}) {
-    let countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS });
+    const countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS });
 
     return countOperation;
   }

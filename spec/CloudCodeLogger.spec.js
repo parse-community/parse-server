@@ -37,10 +37,10 @@ describe("Cloud Code Logger", () => {
       return logController.getLogs({ from: Date.now() - 500, size: 1000 });
     }).then((res) => {
       expect(res.length).not.toBe(0);
-      let lastLogs = res.slice(0, 3);
-      let cloudFunctionMessage = lastLogs[0];
-      let errorMessage = lastLogs[1];
-      let infoMessage = lastLogs[2];
+      const lastLogs = res.slice(0, 3);
+      const cloudFunctionMessage = lastLogs[0];
+      const errorMessage = lastLogs[1];
+      const infoMessage = lastLogs[2];
       expect(cloudFunctionMessage.level).toBe('info');
       expect(cloudFunctionMessage.params).toEqual({});
       expect(cloudFunctionMessage.message).toMatch(/Ran cloud function loggerTest for user [^ ]* with:\n {2}Input: {}\n {2}Result: {}/);
@@ -82,15 +82,15 @@ describe("Cloud Code Logger", () => {
       res.success({});
     });
 
-    let obj = new Parse.Object('MyObject');
+    const obj = new Parse.Object('MyObject');
     obj.save().then(() => {
       return logController.getLogs({ from: Date.now() - 500, size: 1000 })
     }).then((res) => {
       expect(res.length).not.toBe(0);
-      let lastLogs = res.slice(0, 3);
-      let cloudTriggerMessage = lastLogs[0];
-      let errorMessage = lastLogs[1];
-      let infoMessage = lastLogs[2];
+      const lastLogs = res.slice(0, 3);
+      const cloudTriggerMessage = lastLogs[0];
+      const errorMessage = lastLogs[1];
+      const infoMessage = lastLogs[2];
       expect(cloudTriggerMessage.level).toBe('info');
       expect(cloudTriggerMessage.triggerType).toEqual('beforeSave');
       expect(cloudTriggerMessage.message).toMatch(/beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {}/);

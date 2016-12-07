@@ -73,7 +73,7 @@ function mongoSchemaToParseSchema(mongoSchema) {
 }
 
 function _mongoSchemaQueryFromNameQuery(name: string, query) {
-  let object = { _id: name };
+  const object = { _id: name };
   if (query) {
     Object.keys(query).forEach(key => {
       object[key] = query[key];

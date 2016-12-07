@@ -76,7 +76,7 @@ export default class SchemaCache {
       if (!allKeys) {
         return;
       }
-      let promises = Object.keys(allKeys).map((key) => {
+      const promises = Object.keys(allKeys).map((key) => {
         return this.cache.del(key);
       });
       return Promise.all(promises);

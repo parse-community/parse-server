@@ -22,7 +22,7 @@ describe_only_db('mongo')('revocable sessions', () => {
   });
 
   it('should upgrade legacy session token', done => {
-    let user = Parse.Object.fromJSON({
+    const user = Parse.Object.fromJSON({
       className: '_User',
       objectId: '1234567890',
       sessionToken: sessionToken
@@ -49,7 +49,7 @@ describe_only_db('mongo')('revocable sessions', () => {
   });
 
   it('should be able to become with revocable session token', done => {
-    let user = Parse.Object.fromJSON({
+    const user = Parse.Object.fromJSON({
       className: '_User',
       objectId: '1234567890',
       sessionToken: sessionToken

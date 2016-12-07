@@ -20,7 +20,7 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
   return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth).then((result) => {
     restWhere = result.restWhere || restWhere;
     restOptions = result.restOptions || restOptions;
-    let query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
     return query.execute();
   });
 }
@@ -28,7 +28,7 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK) => {
   enforceRoleSecurity('get', className, auth);
-  let query = new RestQuery(config, auth, className, { objectId }, restOptions, clientSDK);
+  const query = new RestQuery(config, auth, className, { objectId }, restOptions, clientSDK);
   return query.execute();
 }
 
@@ -129,7 +129,7 @@ function update(config, auth, className, objectId, restObject, clientSDK) {
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
-      let error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
+      const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
     }
   }

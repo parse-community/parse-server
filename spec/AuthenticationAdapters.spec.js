@@ -208,7 +208,7 @@ describe('AuthenticationProviers', function() {
       id: 'hello',
       token: 'world'
     }
-    let adapter = {
+    const adapter = {
       validateAppId: function() {
         return Promise.resolve();
       },
@@ -220,15 +220,15 @@ describe('AuthenticationProviers', function() {
       }
     };
 
-    let authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
-    let appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
+    const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
+    const appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
 
-    let authenticationHandler = authenticationLoader({
+    const authenticationHandler = authenticationLoader({
       customAuthentication: adapter
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    let validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator(validAuthData).then(() => {
@@ -243,12 +243,12 @@ describe('AuthenticationProviers', function() {
   });
 
   it('properly loads custom adapter module object', (done) => {
-    let authenticationHandler = authenticationLoader({
+    const authenticationHandler = authenticationLoader({
       customAuthentication: path.resolve('./spec/support/CustomAuth.js')
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    let validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator({
@@ -262,12 +262,12 @@ describe('AuthenticationProviers', function() {
   });
 
   it('properly loads custom adapter module object', (done) => {
-    let authenticationHandler = authenticationLoader({
+    const authenticationHandler = authenticationLoader({
       customAuthentication: { module: path.resolve('./spec/support/CustomAuthFunction.js'), options: { token: 'valid-token' }}
     });
 
     validateAuthenticationHandler(authenticationHandler);
-    let validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
     validateValidator(validator);
 
     validator({

@@ -243,9 +243,9 @@ function transformQueryKeyValue(className, key, value, schema) {
 // restWhere is the "where" clause in REST API form.
 // Returns the mongo form of the query.
 function transformWhere(className, restWhere, schema) {
-  let mongoWhere = {};
-  for (let restKey in restWhere) {
-    let out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
+  const mongoWhere = {};
+  for (const restKey in restWhere) {
+    const out = transformQueryKeyValue(className, restKey, restWhere[restKey], schema);
     mongoWhere[out.key] = out.value;
   }
   return mongoWhere;
@@ -331,12 +331,12 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
 
 const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
   restCreate = addLegacyACL(restCreate);
-  let mongoCreate = {}
-  for (let restKey in restCreate) {
+  const mongoCreate = {}
+  for (const restKey in restCreate) {
     if (restCreate[restKey] && restCreate[restKey].__type === 'Relation') {
       continue;
     }
-    let { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
+    const { key, value } = parseObjectKeyValueToMongoObjectKeyValue(
       restKey,
       restCreate[restKey],
       schema
@@ -361,8 +361,8 @@ const parseObjectToMongoObjectForCreate = (className, restCreate, schema) => {
 
 // Main exposed method to help update old objects.
 const transformUpdate = (className, restUpdate, parseFormatSchema) => {
-  let mongoUpdate = {};
-  let acl = addLegacyACL(restUpdate);
+  const mongoUpdate = {};
+  const acl = addLegacyACL(restUpdate);
   if (acl._rperm || acl._wperm || acl._acl) {
     mongoUpdate.$set = {};
     if (acl._rperm) {
@@ -398,8 +398,8 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
 
 // Add the legacy _acl format.
 const addLegacyACL = restObject => {
-  let restObjectCopy = {...restObject};
-  let _acl = {};
+  const restObjectCopy = {...restObject};
+  const _acl = {};
 
   if (restObject._wperm) {
     restObject._wperm.forEach(entry => {
@@ -532,12 +532,12 @@ function transformConstraint(constraint, inArray) {
 
     case '$in':
     case '$nin': {
-      let arr = constraint[key];
+      const arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
       }
       answer[key] = arr.map(value => {
-        let result = inArray ? transformInteriorAtom(value) : transformTopLevelAtom(value);
+        const result = inArray ? transformInteriorAtom(value) : transformTopLevelAtom(value);
         if (result === CannotTransform) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${value}`);
         }
@@ -546,7 +546,7 @@ function transformConstraint(constraint, inArray) {
       break;
     }
     case '$all': {
-      let arr = constraint[key];
+      const arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
                               'bad ' + key + ' value');
@@ -761,7 +761,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       return BytesCoder.databaseToJSON(mongoObject);
     }
 
-    let restObject = {};
+    const restObject = {};
     if (mongoObject._rperm || mongoObject._wperm) {
       restObject._rperm = mongoObject._rperm || [];
       restObject._wperm = mongoObject._wperm || [];
@@ -861,7 +861,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
     }
 
     const relationFieldNames = Object.keys(schema.fields).filter(fieldName => schema.fields[fieldName].type === 'Relation');
-    let relationFields = {};
+    const relationFields = {};
     relationFieldNames.forEach(relationFieldName => {
       relationFields[relationFieldName] = {
         __type: 'Relation',

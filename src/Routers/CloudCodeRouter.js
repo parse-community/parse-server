@@ -7,8 +7,8 @@ export class CloudCodeRouter extends PromiseRouter {
   }
 
   static getJobs(req) {
-    let config = req.config;
-    let jobs = triggers.getJobs(config.applicationId) || {};
+    const config = req.config;
+    const jobs = triggers.getJobs(config.applicationId) || {};
     return Promise.resolve({
       response: Object.keys(jobs).map((jobName) => {
         return {

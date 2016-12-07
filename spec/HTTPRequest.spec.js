@@ -162,10 +162,10 @@ describe("httpRequest", () => {
   });
 
   it("should encode a query string body by default", (done) => {
-    let options = {
+    const options = {
       body: {"foo": "bar"},
     }
-    let result = httpRequest.encodeBody(options);
+    const result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('foo=bar');
     expect(result.headers['Content-Type']).toEqual('application/x-www-form-urlencoded');
     done();
@@ -173,30 +173,30 @@ describe("httpRequest", () => {
   })
 
   it("should encode a JSON body", (done) => {
-    let options = {
+    const options = {
       body: {"foo": "bar"},
       headers: {'Content-Type': 'application/json'}
     }
-    let result = httpRequest.encodeBody(options);
+    const result = httpRequest.encodeBody(options);
     expect(result.body).toEqual('{"foo":"bar"}');
     done();
 
   })
   it("should encode a www-form body", (done) => {
-    let options = {
+    const options = {
       body: {"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'application/x-www-form-urlencoded'}
     }
-    let result = httpRequest.encodeBody(options);
+    const result = httpRequest.encodeBody(options);
     expect(result.body).toEqual("foo=bar&bar=baz");
     done();
   });
   it("should not encode a wrong content type", (done) => {
-    let options = {
+    const options = {
       body:{"foo": "bar", "bar": "baz"},
       headers: {'cOntent-tYpe': 'mime/jpeg'}
     }
-    let result = httpRequest.encodeBody(options);
+    const result = httpRequest.encodeBody(options);
     expect(result.body).toEqual({"foo": "bar", "bar": "baz"});
     done();
   });
@@ -247,7 +247,7 @@ describe("httpRequest", () => {
   });
 
   it('should not crash with undefined body', () => {
-    let httpResponse = new HTTPResponse({});
+    const httpResponse = new HTTPResponse({});
     expect(httpResponse.body).toBeUndefined();
     expect(httpResponse.data).toBeUndefined();
     expect(httpResponse.text).toBeUndefined();
@@ -255,23 +255,23 @@ describe("httpRequest", () => {
   });
 
   it('serialized httpResponse correctly with body string', () => {
-    let httpResponse = new HTTPResponse({}, 'hello');
+    const httpResponse = new HTTPResponse({}, 'hello');
     expect(httpResponse.text).toBe('hello');
     expect(httpResponse.data).toBe(undefined);
     expect(httpResponse.body).toBe('hello');
 
-    let serialized = JSON.stringify(httpResponse);
-    let result = JSON.parse(serialized);
+    const serialized = JSON.stringify(httpResponse);
+    const result = JSON.parse(serialized);
     expect(result.text).toBe('hello');
     expect(result.data).toBe(undefined);
     expect(result.body).toBe(undefined);
   });
 
   it('serialized httpResponse correctly with body object', () => {
-    let httpResponse = new HTTPResponse({}, {foo: "bar"});
+    const httpResponse = new HTTPResponse({}, {foo: "bar"});
     Parse._encode(httpResponse);
-    let serialized = JSON.stringify(httpResponse);
-    let result = JSON.parse(serialized);
+    const serialized = JSON.stringify(httpResponse);
+    const result = JSON.parse(serialized);
 
     expect(httpResponse.text).toEqual('{"foo":"bar"}');
     expect(httpResponse.data).toEqual({foo: 'bar'});
@@ -283,29 +283,29 @@ describe("httpRequest", () => {
   });
 
   it('serialized httpResponse correctly with body buffer string', () => {
-    let httpResponse = new HTTPResponse({}, new Buffer('hello'));
+    const httpResponse = new HTTPResponse({}, new Buffer('hello'));
     expect(httpResponse.text).toBe('hello');
     expect(httpResponse.data).toBe(undefined);
 
-    let serialized = JSON.stringify(httpResponse);
-    let result = JSON.parse(serialized);
+    const serialized = JSON.stringify(httpResponse);
+    const result = JSON.parse(serialized);
     expect(result.text).toBe('hello');
     expect(result.data).toBe(undefined);
   });
 
   it('serialized httpResponse correctly with body buffer JSON Object', () => {
-    let json = '{"foo":"bar"}';
-    let httpResponse = new HTTPResponse({}, new Buffer(json));
-    let serialized = JSON.stringify(httpResponse);
-    let result = JSON.parse(serialized);
+    const json = '{"foo":"bar"}';
+    const httpResponse = new HTTPResponse({}, new Buffer(json));
+    const serialized = JSON.stringify(httpResponse);
+    const result = JSON.parse(serialized);
     expect(result.text).toEqual('{"foo":"bar"}');
     expect(result.data).toEqual({foo: 'bar'});
   });
 
   it('serialized httpResponse with Parse._encode should be allright', () => {
-    let json = '{"foo":"bar"}';
-    let httpResponse = new HTTPResponse({}, new Buffer(json));
-    let encoded = Parse._encode(httpResponse);
+    const json = '{"foo":"bar"}';
+    const httpResponse = new HTTPResponse({}, new Buffer(json));
+    const encoded = Parse._encode(httpResponse);
     let foundData, foundText, foundBody = false;
     for(var key in encoded) {
       if (key == 'data') {

@@ -9,14 +9,14 @@ import logger                 from '../logger';
 import * as SchemaController  from './SchemaController';
 
 function addWriteACL(query, acl) {
-  let newQuery = _.cloneDeep(query);
+  const newQuery = _.cloneDeep(query);
   //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
   newQuery._wperm = { "$in" : [null, ...acl]};
   return newQuery;
 }
 
 function addReadACL(query, acl) {
-  let newQuery = _.cloneDeep(query);
+  const newQuery = _.cloneDeep(query);
   //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
   newQuery._rperm = { "$in" : [null, "*", ...acl]};
   return newQuery;
@@ -31,7 +31,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   result._wperm = [];
   result._rperm = [];
 
-  for (let entry in ACL) {
+  for (const entry in ACL) {
     if (ACL[entry].read) {
       result._rperm.push(entry);
     }
@@ -139,7 +139,7 @@ DatabaseController.prototype.redirectClassNameForKey = function(className, key) 
 // batch request, that could confuse other users of the schema.
 DatabaseController.prototype.validateObject = function(className, object, query, { acl }) {
   let schema;
-  let isMaster = acl === undefined;
+  const isMaster = acl === undefined;
   var aclGroup = acl || [];
   return this.loadSchema().then(s => {
     schema = s;
@@ -241,7 +241,7 @@ DatabaseController.prototype.update = function(className, query, update, {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
           }
         });
-        for (let updateOperation in update) {
+        for (const updateOperation in update) {
           if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
             throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
           }
@@ -270,12 +270,12 @@ DatabaseController.prototype.update = function(className, query, update, {
 };
 
 function sanitizeDatabaseResult(originalObject, result) {
-  let response = {};
+  const response = {};
   if (!result) {
     return Promise.resolve(response);
   }
   Object.keys(originalObject).forEach(key => {
-    let keyUpdate = originalObject[key];
+    const keyUpdate = originalObject[key];
     // determine if that was an op
     if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
       && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
@@ -300,7 +300,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
       return;
     }
     if (op.__op == 'AddRelation') {
-      for (let object of op.objects) {
+      for (const object of op.objects) {
         pending.push(this.addRelation(key, className,
                                       objectId,
                                       object.objectId));
@@ -309,7 +309,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
 
     if (op.__op == 'RemoveRelation') {
-      for (let object of op.objects) {
+      for (const object of op.objects) {
         pending.push(this.removeRelation(key, className,
                                          objectId,
                                          object.objectId));
@@ -324,10 +324,10 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
   };
 
-  for (let key in update) {
+  for (const key in update) {
     process(update[key], key);
   }
-  for (let key of deleteMe) {
+  for (const key of deleteMe) {
     delete update[key];
   }
   return Promise.all(pending);
@@ -337,7 +337,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
 // Returns a promise that resolves successfully iff the add was successful.
 const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, toId) {
-  let doc = {
+  const doc = {
     relatedId: toId,
     owningId : fromId
   };
@@ -410,7 +410,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
 };
 
 const flattenUpdateOperatorsForCreate = object => {
-  for (let key in object) {
+  for (const key in object) {
     if (object[key] && object[key].__op) {
       switch (object[key].__op) {
       case 'Increment':
@@ -469,7 +469,7 @@ const transformAuthData = (className, object, schema) => {
 // Returns a promise that resolves successfully iff the object saved.
 DatabaseController.prototype.create = function(className, object, { acl } = {}) {
   // Make a copy of the object, so we don't mutate the incoming data.
-  let originalObject = object;
+  const originalObject = object;
   object = transformObjectACL(object);
 
   object.createdAt = { iso: object.createdAt, __type: 'Date' };
@@ -496,13 +496,13 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
 };
 
 DatabaseController.prototype.canAddField = function(schema, className, object, aclGroup) {
-  let classSchema = schema.data[className];
+  const classSchema = schema.data[className];
   if (!classSchema) {
     return Promise.resolve();
   }
-  let fields = Object.keys(object);
-  let schemaFields = Object.keys(classSchema);
-  let newKeys = fields.filter((field) => {
+  const fields = Object.keys(object);
+  const schemaFields = Object.keys(classSchema);
+  const newKeys = fields.filter((field) => {
     return schemaFields.indexOf(field) < 0;
   })
   if (newKeys.length > 0) {
@@ -543,7 +543,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   // Search for an in-relation or equal-to-relation
   // Make it sequential for now, not sure of paralleization side effects
   if (query['$or']) {
-    let ors = query['$or'];
+    const ors = query['$or'];
     return Promise.all(ors.map((aQuery, index) => {
       return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
         query['$or'][index] = aQuery;
@@ -553,14 +553,14 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
     });
   }
 
-  let promises = Object.keys(query).map((key) => {
+  const promises = Object.keys(query).map((key) => {
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
-      let t = schema.getExpectedType(className, key);
+      const t = schema.getExpectedType(className, key);
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
       // Build the list of queries
-      let queries = Object.keys(query[key]).map((constraintKey) => {
+      const queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
         let isNegation = false;
         if (constraintKey === 'objectId') {
@@ -586,7 +586,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
       delete query[key];
       // execute each query independnently to build the list of
       // $in / $nin
-      let promises = queries.map((q) => {
+      const promises = queries.map((q) => {
         if (!q) {
           return Promise.resolve();
         }
@@ -637,12 +637,12 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 };
 
 DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
-  let idsFromString = typeof query.objectId === 'string' ? [query.objectId] : null;
-  let idsFromEq = query.objectId && query.objectId['$eq'] ? [query.objectId['$eq']] : null;
-  let idsFromIn = query.objectId && query.objectId['$in'] ? query.objectId['$in'] : null;
+  const idsFromString = typeof query.objectId === 'string' ? [query.objectId] : null;
+  const idsFromEq = query.objectId && query.objectId['$eq'] ? [query.objectId['$eq']] : null;
+  const idsFromIn = query.objectId && query.objectId['$in'] ? query.objectId['$in'] : null;
 
-  let allIds = [idsFromString, idsFromEq, idsFromIn, ids].filter(list => list !== null);
-  let totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
+  const allIds = [idsFromString, idsFromEq, idsFromIn, ids].filter(list => list !== null);
+  const totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
 
   let idsIntersection = [];
   if (totalLength > 125) {
@@ -665,7 +665,7 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
 }
 
 DatabaseController.prototype.addNotInObjectIdsIds = function(ids = [], query) {
-  let idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : [];
+  const idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : [];
   let allIds = [...idsFromNin,...ids].filter(list => list !== null);
 
   // make a set and spread to remove duplicates
@@ -707,8 +707,8 @@ DatabaseController.prototype.find = function(className, query, {
   keys,
   op
 } = {}) {
-  let isMaster = acl === undefined;
-  let aclGroup = acl || [];
+  const isMaster = acl === undefined;
+  const aclGroup = acl || [];
   op = op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
   let classExists = true;
   return this.loadSchema()
@@ -846,9 +846,9 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   if (schema.testBaseCLP(className, aclGroup, operation)) {
     return query;
   }
-  let perms = schema.perms[className];
-  let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
-  let userACL = aclGroup.filter((acl) => {
+  const perms = schema.perms[className];
+  const field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+  const userACL = aclGroup.filter((acl) => {
     return acl.indexOf('role:') != 0 && acl != '*';
   });
   // the ACL should have exactly 1 user
@@ -858,16 +858,16 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
     if (userACL.length != 1) {
       return;
     }
-    let userId = userACL[0];
-    let userPointer =  {
+    const userId = userACL[0];
+    const userPointer =  {
       "__type": "Pointer",
       "className": "_User",
       "objectId": userId
     };
 
-    let permFields = perms[field];
-    let ors = permFields.map((key) => {
-      let q = {
+    const permFields = perms[field];
+    const ors = permFields.map((key) => {
+      const q = {
         [key]: userPointer
       };
       return {'$and': [q, query]};
@@ -886,17 +886,17 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 DatabaseController.prototype.performInitialization = function() {
   const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
 
-  let userClassPromise = this.loadSchema()
+  const userClassPromise = this.loadSchema()
     .then(schema => schema.enforceClassExists('_User'))
 
-  let usernameUniqueness = userClassPromise
+  const usernameUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
       return Promise.reject(error);
     });
 
-  let emailUniqueness = userClassPromise
+  const emailUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
@@ -904,7 +904,7 @@ DatabaseController.prototype.performInitialization = function() {
     });
 
   // Create tables for volatile classes
-  let adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
+  const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
   return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }
 

@@ -217,8 +217,8 @@ function matchesKeyConstraints(object, key, constraints) {
       }
       break;
     case '$exists': {
-      let propertyExists = typeof object[key] !== 'undefined';
-      let existenceIsRequired = constraints['$exists'];
+      const propertyExists = typeof object[key] !== 'undefined';
+      const existenceIsRequired = constraints['$exists'];
       if (typeof constraints['$exists'] !== 'boolean') {
           // The SDK will never submit a non-boolean for $exists, but if someone
           // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.

@@ -207,7 +207,7 @@ describe('server', () => {
   it('can create a parse-server v2', done => {
     let objId;
     let server
-    let parseServer = ParseServer.ParseServer(Object.assign({},
+    const parseServer = ParseServer.ParseServer(Object.assign({},
       defaultConfiguration, {
         appId: "anOtherTestApp",
         masterKey: "anOtherTestMasterKey",
@@ -216,16 +216,16 @@ describe('server', () => {
           promise
         .then(() => {
           expect(Parse.applicationId).toEqual("anOtherTestApp");
-          let app = express();
+          const app = express();
           app.use('/parse', parseServer);
 
           server = app.listen(12667);
-          let obj = new Parse.Object("AnObject");
+          const obj = new Parse.Object("AnObject");
           return obj.save()
         })
         .then(obj => {
           objId = obj.id;
-          let q = new Parse.Query("AnObject");
+          const q = new Parse.Query("AnObject");
           return q.first();
         })
         .then(obj => {

@@ -68,7 +68,7 @@ function parseConfigFile(program) {
   if (program.args.length > 0) {
     let jsonPath = program.args[0];
     jsonPath = path.resolve(jsonPath);
-    let jsonConfig = require(jsonPath);
+    const jsonConfig = require(jsonPath);
     if (jsonConfig.apps) {
       if (jsonConfig.apps.length > 1) {
         throw 'Multiple apps are not supported';
@@ -78,11 +78,11 @@ function parseConfigFile(program) {
       options = jsonConfig;
     }
     Object.keys(options).forEach((key) => {
-      let value = options[key];
+      const value = options[key];
       if (!_definitions[key]) {
         throw `error: unknown option ${key}`;
       }
-      let action = _definitions[key].action;
+      const action = _definitions[key].action;
       if (action) {
         options[key] = action(value);
       }

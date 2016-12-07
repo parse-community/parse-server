@@ -5,7 +5,7 @@ import rest from '../rest';
 
 export class InstallationsRouter extends ClassesRouter {
   handleFind(req) {
-    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     var options = {};
 
     if (body.skip) {

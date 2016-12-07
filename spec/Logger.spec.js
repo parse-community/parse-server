@@ -23,8 +23,8 @@ describe('Logger', () => {
 
   it('should have files transports', (done) => {
     reconfigureServer().then(() => {
-      let transports = logging.logger.transports;
-      let transportKeys = Object.keys(transports);
+      const transports = logging.logger.transports;
+      const transportKeys = Object.keys(transports);
       expect(transportKeys.length).toBe(3);
       done();
     });
@@ -34,8 +34,8 @@ describe('Logger', () => {
     reconfigureServer({
       logsFolder: null
     }).then(() => {
-      let transports = logging.logger.transports;
-      let transportKeys = Object.keys(transports);
+      const transports = logging.logger.transports;
+      const transportKeys = Object.keys(transports);
       expect(transportKeys.length).toBe(1);
       done();
     });

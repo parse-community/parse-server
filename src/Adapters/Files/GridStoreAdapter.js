@@ -30,7 +30,7 @@ export class GridStoreAdapter extends FilesAdapter {
   // Returns a promise
   createFile(filename: string, data) {
     return this._connect().then(database => {
-      let gridStore = new GridStore(database, filename, 'w');
+      const gridStore = new GridStore(database, filename, 'w');
       return gridStore.open();
     }).then(gridStore => {
       return gridStore.write(data);
@@ -41,7 +41,7 @@ export class GridStoreAdapter extends FilesAdapter {
 
   deleteFile(filename: string) {
     return this._connect().then(database => {
-      let gridStore = new GridStore(database, filename, 'r');
+      const gridStore = new GridStore(database, filename, 'r');
       return gridStore.open();
     }).then((gridStore) => {
       return gridStore.unlink();
@@ -54,7 +54,7 @@ export class GridStoreAdapter extends FilesAdapter {
     return this._connect().then(database => {
       return GridStore.exist(database, filename)
         .then(() => {
-          let gridStore = new GridStore(database, filename, 'r');
+          const gridStore = new GridStore(database, filename, 'r');
           return gridStore.open();
         });
     }).then(gridStore => {
@@ -69,7 +69,7 @@ export class GridStoreAdapter extends FilesAdapter {
   getFileStream(filename: string) {
     return this._connect().then(database => {
       return GridStore.exist(database, filename).then(() => {
-        let gridStore = new GridStore(database, filename, 'r');
+        const gridStore = new GridStore(database, filename, 'r');
         return gridStore.open();
       });
     });

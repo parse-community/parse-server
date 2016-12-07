@@ -153,7 +153,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }
 
   let originalObject = null;
-  let updatedObject = triggers.inflate(extraData, this.originalData);
+  const updatedObject = triggers.inflate(extraData, this.originalData);
   if (this.query && this.query.objectId) {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
@@ -221,7 +221,7 @@ RestWrite.prototype.validateAuthData = function() {
   var authData = this.data.authData;
   var providers = Object.keys(authData);
   if (providers.length > 0) {
-    let canHandleAuthData = providers.reduce((canHandle, provider) => {
+    const canHandleAuthData = providers.reduce((canHandle, provider) => {
       var providerAuthData = authData[provider];
       var hasToken = (providerAuthData && providerAuthData.id);
       return canHandle && (hasToken || providerAuthData == null);
@@ -235,11 +235,11 @@ RestWrite.prototype.validateAuthData = function() {
 };
 
 RestWrite.prototype.handleAuthDataValidation = function(authData) {
-  let validations = Object.keys(authData).map((provider) => {
+  const validations = Object.keys(authData).map((provider) => {
     if (authData[provider] === null) {
       return Promise.resolve();
     }
-    let validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
+    const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
     if (!validateAuthData) {
       throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
                             'This authentication method is unsupported.');
@@ -250,13 +250,13 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
 }
 
 RestWrite.prototype.findUsersWithAuthData = function(authData) {
-  let providers = Object.keys(authData);
-  let query = providers.reduce((memo, provider) => {
+  const providers = Object.keys(authData);
+  const query = providers.reduce((memo, provider) => {
     if (!authData[provider]) {
       return memo;
     }
-    let queryKey = `authData.${provider}.id`;
-    let query = {};
+    const queryKey = `authData.${provider}.id`;
+    const query = {};
     query[queryKey] = authData[provider].id;
     memo.push(query);
     return memo;
@@ -293,16 +293,16 @@ RestWrite.prototype.handleAuthData = function(authData) {
       if (!this.query) {
         // Login with auth data
         delete results[0].password;
-        let userResult = results[0];
+        const userResult = results[0];
 
         // need to set the objectId first otherwise location has trailing undefined
         this.data.objectId = userResult.objectId;
 
         // Determine if authData was updated
-        let mutatedAuthData = {};
+        const mutatedAuthData = {};
         Object.keys(authData).forEach((provider) => {
-          let providerData = authData[provider];
-          let userAuthData = userResult.authData[provider];
+          const providerData = authData[provider];
+          const userAuthData = userResult.authData[provider];
           if (!_.isEqual(providerData, userAuthData)) {
             mutatedAuthData[provider] = providerData;
           }
@@ -489,7 +489,7 @@ RestWrite.prototype._validatePasswordHistory = function() {
         oldPasswords.push(user.password);
         const newPassword = this.data.password;
         // compare the new password hash with all old password hashes
-        let promises = oldPasswords.map(function (hash) {
+        const promises = oldPasswords.map(function (hash) {
           return passwordCrypto.compare(newPassword, hash).then((result) => {
             if (result) // reject if there is a match
               return Promise.reject("REPEAT_PASSWORD");
@@ -687,7 +687,7 @@ RestWrite.prototype.handleInstallation = function() {
   var deviceTokenMatches = [];
 
   // Instead of issuing 3 reads, let's do it with one OR.
-  let orQueries = [];
+  const orQueries = [];
   if (this.query && this.query.objectId) {
     orQueries.push({
       objectId: this.query.objectId
@@ -802,7 +802,7 @@ RestWrite.prototype.handleInstallation = function() {
         // Exactly one device token match and it doesn't have an installation
         // ID. This is the one case where we want to merge with the existing
         // object.
-        let delQuery = {objectId: idMatch.objectId};
+        const delQuery = {objectId: idMatch.objectId};
         return this.config.database.destroy('_Installation', delQuery)
           .then(() => {
             return deviceTokenMatches[0]['objectId'];
@@ -813,7 +813,7 @@ RestWrite.prototype.handleInstallation = function() {
           // We're setting the device token on an existing installation, so
           // we should try cleaning out old installations that match this
           // device token.
-          let delQuery = {
+          const delQuery = {
             'deviceToken': this.data.deviceToken,
           };
           // We have a unique install Id, use that to preserve
@@ -1004,8 +1004,8 @@ RestWrite.prototype.runAfterTrigger = function() {
   }
 
   // Avoid doing any setup for triggers if there is no 'afterSave' trigger for this class.
-  let hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
-  let hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
+  const hasAfterSaveHook = triggers.triggerExists(this.className, triggers.Types.afterSave, this.config.applicationId);
+  const hasLiveQuery = this.config.liveQueryController.hasLiveQuery(this.className);
   if (!hasAfterSaveHook && !hasLiveQuery) {
     return Promise.resolve();
   }
@@ -1023,7 +1023,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
-  let updatedObject = triggers.inflate(extraData, this.originalData);
+  const updatedObject = triggers.inflate(extraData, this.originalData);
   updatedObject.set(this.sanitizedData());
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
@@ -1049,7 +1049,7 @@ RestWrite.prototype.objectId = function() {
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
 RestWrite.prototype.sanitizedData = function() {
-  let data = Object.keys(this.data).reduce((data, key) => {
+  const data = Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
       delete data[key];
@@ -1061,7 +1061,7 @@ RestWrite.prototype.sanitizedData = function() {
 
 RestWrite.prototype.cleanUserAuthData = function() {
   if (this.response && this.response.response && this.className === '_User') {
-    let user = this.response.response;
+    const user = this.response.response;
     if (user.authData) {
       Object.keys(user.authData).forEach((provider) => {
         if (user.authData[provider] === null) {
@@ -1079,10 +1079,10 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   if (_.isEmpty(this.storage.fieldsChangedByTrigger)) {
     return response;
   }
-  let clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
+  const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
-    let dataValue = data[fieldName];
-    let responseValue = response[fieldName];
+    const dataValue = data[fieldName];
+    const responseValue = response[fieldName];
 
     response[fieldName] = responseValue || dataValue;
 

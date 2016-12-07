@@ -4,7 +4,7 @@ import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
 import { LoggerController }     from './Controllers/LoggerController';
 
 function defaultLogger() {
-  let adapter = new WinstonLoggerAdapter({
+  const adapter = new WinstonLoggerAdapter({
     logsFolder: defaults.logsFolder,
     jsonLogs: defaults.jsonLogs,
     verbose: defaults.verbose,
