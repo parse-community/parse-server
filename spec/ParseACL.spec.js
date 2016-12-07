@@ -733,6 +733,40 @@ describe('Parse.ACL', () => {
     });
   });
 
+  it("acl making an object privately writable (#3194)", (done) => {
+    // Create an object owned by Alice.
+    var object;
+    var user2;
+    var user = new Parse.User();
+    user.set("username", "alice");
+    user.set("password", "wonderland");
+    user.signUp().then(() => {
+      object = new TestObject();
+      var acl = new Parse.ACL(user);
+      acl.setPublicWriteAccess(false);
+      acl.setPublicReadAccess(true);
+      object.setACL(acl);
+      return object.save().then(() => {
+        return Parse.User.logOut();
+      })
+    }).then(() => {
+      user2 = new Parse.User();
+      user2.set("username", "bob");
+      user2.set("password", "burger");
+      return user2.signUp();
+    }).then(() => {
+      console.log(user2.getSessionToken());
+      return object.destroy({sessionToken: user2.getSessionToken() });
+    }).then((res) => {
+      console.log(res);
+      fail('should not be able to destroy the object');
+      done();
+    }, (err) => {
+      console.error(err);
+      done();
+    });
+  });
+
   it("acl sharing with another user and get", (done) => {
     // Sign in as Bob.
     Parse.User.signUp("bob", "pass", null, {
