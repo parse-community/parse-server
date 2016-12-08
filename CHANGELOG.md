@@ -1,6 +1,7 @@
 ## Parse Server Changelog
 
 ### 2.3.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.25...2.3.0)
 
 #### Breaking changes
 * Parse.Cloud.useMasterKey() is a no-op, please refer to (Cloud Code migration guide)[https://github.com/ParsePlatform/parse-server/wiki/Compatibility-with-Hosted-Parse#cloud-code]
