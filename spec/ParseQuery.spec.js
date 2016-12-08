@@ -2467,6 +2467,35 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("should match a key in an array (#3195)", function(done) {
+    var AuthorObject = Parse.Object.extend("Author");
+    var GroupObject = Parse.Object.extend("Group");
+    var PostObject = Parse.Object.extend("Post");
+
+    return new AuthorObject().save().then((user) => {
+      const post = new PostObject({
+        author: user
+      });
+
+      const group = new GroupObject({
+        members: [user],
+      });
+
+      return Parse.Promise.when(post.save(), group.save());
+    }).then((p) => {
+      return new Parse.Query(PostObject)
+        .matchesKeyInQuery("author", "members", new Parse.Query(GroupObject))
+        .find()
+        .then((r) => {
+          expect(r.length).toEqual(1);
+          if (r.length > 0) {
+            expect(r[0].id).toEqual(p.id);
+          }
+          done();
+        }, done.fail);
+    });
+  });
+
   it('should find objects with array of pointers', (done) => {
     var objects = [];
     while(objects.length != 5) {
