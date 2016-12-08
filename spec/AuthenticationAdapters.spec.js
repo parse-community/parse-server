@@ -203,6 +203,13 @@ describe('AuthenticationProviers', function() {
     expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
   }
 
+  function validateAuthenticationAdapter(authAdapter) {
+    expect(authAdapter).not.toBeUndefined();
+    if (!authAdapter) { return; }
+    expect(typeof authAdapter.validateAuthData).toBe('function');
+    expect(typeof authAdapter.validateAppId).toBe('function');
+  }
+
   it('properly loads custom adapter', (done) => {
     var validAuthData = {
       id: 'hello',
@@ -278,5 +285,15 @@ describe('AuthenticationProviers', function() {
       jfail(err);
       done();
     })
+  });
+
+  it('properly loads a default adapter with options', () => {
+    const adapter = authenticationLoader.loadAuthAdapter('facebook', {
+      facebook: {
+        appIds: ['a', 'b']
+      }
+    });
+    console.log(adapter);
+    validateAuthenticationAdapter(adapter);
   });
 });
