@@ -206,7 +206,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
-* `oauth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/OAuth).
+* `auth` - Used to configure support for [3rd party authentication](https://github.com/ParsePlatform/parse-server/wiki/OAuth--and-Custom-Authentication).
 * `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
 * `mountPath` - Mount path for the server. Defaults to `/parse`.
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/ParsePlatform/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
