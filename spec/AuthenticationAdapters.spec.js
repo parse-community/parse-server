@@ -288,12 +288,28 @@ describe('AuthenticationProviers', function() {
   });
 
   it('properly loads a default adapter with options', () => {
-    const adapter = authenticationLoader.loadAuthAdapter('facebook', {
+    const options = {
       facebook: {
         appIds: ['a', 'b']
       }
-    });
-    console.log(adapter);
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
     validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.facebook);
+  });
+
+  it('properly loads a custom adapter with options', () => {
+    const options = {
+      custom: {
+        validateAppId: () => {},
+        validateAuthData: () => {},
+        appIds: ['a', 'b']
+      }
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('custom', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.custom);
   });
 });
