@@ -1,5 +1,11 @@
 ## Parse Server Changelog
 
+### 2.3.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.0...2.3.1)
+
+A major issue was introduced when refactoring the authentication modules.
+This release addresses only that issue.
+
 ### 2.3.0
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.25...2.3.0)
 
