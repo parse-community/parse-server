@@ -21,6 +21,7 @@
 
 #### Bug fixes
 * Ensure batch routes are only using posix paths, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Ensure falsy options from CLI are properly taken into account, thanks to [Steven Shipton](https://github.com/steven-supersolid)
 * Fixes issues affecting calls to `matchesKeyInQuery` with pointers.
 * Ensure that `select` keys can be changed in triggers (beforeFind...), thanks to [Arthur Cinader](https://github.com/acinader)
 
