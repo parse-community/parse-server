@@ -28,7 +28,6 @@
 #### Housekeeping
 * Enables and enforces linting with eslint, thanks to [Arthur Cinader](https://github.com/acinader)
 
-
 ### 2.2.25
 
 Postgres support requires v9.5
