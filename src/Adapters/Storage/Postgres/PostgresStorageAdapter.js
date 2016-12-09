@@ -169,11 +169,11 @@ const joinTablesForSchema = (schema) => {
 }
 
 const processClassLevelPermissions = ({ schema, query }) => {
-  if ( schema.classLevelPermissions 
-    && schema.classLevelPermissions.find 
-    && schema.classLevelPermissions.find['*'] === true ) {
+  if (schema.classLevelPermissions
+    && schema.classLevelPermissions.find
+    && schema.classLevelPermissions.find['*'] === true) {
 
-    delete query['_rperm']
+    delete query['_rperm'];
   }
   return query;
 };
