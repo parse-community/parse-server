@@ -404,9 +404,6 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
   }
   values = values.map(transformValue);
-  console.log('>>>', query);
-  console.log('###', schema);
-  console.log('===', { pattern: patterns.join(' AND '), values, sorts });
   return { pattern: patterns.join(' AND '), values, sorts };
 }
 
