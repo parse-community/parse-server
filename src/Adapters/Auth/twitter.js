@@ -1,7 +1,7 @@
 // Helper functions for accessing the twitter API.
 var OAuth = require('./OAuth1Client');
 var Parse = require('parse/node').Parse;
-var logger = require('../logger').default;
+var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
@@ -28,7 +28,7 @@ function validateAppId() {
 
 function handleMultipleConfigurations(authData, options) {
   if (Array.isArray(options)) {
-    let consumer_key = authData.consumer_key;
+    const consumer_key = authData.consumer_key;
     if (!consumer_key) {
       logger.error('Twitter Auth', 'Multiple twitter configurations are available, by no consumer_key was sent by the client.');
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Twitter auth is invalid for this user.');

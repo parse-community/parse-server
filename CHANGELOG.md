@@ -1,5 +1,39 @@
 ## Parse Server Changelog
 
+### 2.3.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.0...2.3.1)
+
+A major issue was introduced when refactoring the authentication modules.
+This release addresses only that issue.
+
+### 2.3.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.25...2.3.0)
+
+#### Breaking changes
+* Parse.Cloud.useMasterKey() is a no-op, please refer to (Cloud Code migration guide)[https://github.com/ParsePlatform/parse-server/wiki/Compatibility-with-Hosted-Parse#cloud-code]
+* Authentication helpers are now proper adapters, deprecates oauth option in favor of auth.
+* DEPRECATES: facebookAppIds, use `auth: { facebook: { appIds: ["AAAAAAAAA" ] } }`
+* `email` field is not returned anymore for `Parse.User` queries. (Provided only on the user itself if provided).
+
+#### New Features
+* Adds ability to restrict access through Class Level Permissions to only authenticated users [see docs](http://parseplatform.github.io/docs/ios/guide/#requires-authentication-permission-requires-parse-server---230)
+* Adds ability to strip sensitive data from _User responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
+* Adds password history support for password policies, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+
+#### Improvements
+* Bump parse-server-s3-adapter to 1.0.6, thanks to [Arthur Cinader](https://github.com/acinader)
+* Using PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS let you create user sessions when passing {installationId: "xxx-xxx"} on signup in cloud code, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Add CLI option to pass `host` parameter when creating parse-server from CLI, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
+#### Bug fixes
+* Ensure batch routes are only using posix paths, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Ensure falsy options from CLI are properly taken into account, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Fixes issues affecting calls to `matchesKeyInQuery` with pointers.
+* Ensure that `select` keys can be changed in triggers (beforeFind...), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Housekeeping
+* Enables and enforces linting with eslint, thanks to [Arthur Cinader](https://github.com/acinader)
+
 ### 2.2.25
 
 Postgres support requires v9.5

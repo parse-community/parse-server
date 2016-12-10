@@ -46,7 +46,7 @@ export class PushQueue {
           skip,
           order };
 
-        let pushWorkItem = {
+        const pushWorkItem = {
           body,
           query,
           pushStatus: { objectId: pushStatus.objectId },

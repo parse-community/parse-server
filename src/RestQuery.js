@@ -5,6 +5,7 @@ var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
 
+const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt'];
 // restOptions can include:
 //   skip
 //   limit
@@ -52,15 +53,36 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   // this.include = [['foo'], ['foo', 'baz'], ['foo', 'bar']]
   this.include = [];
 
+  // If we have keys, we probably want to force some includes (n-1 level)
+  // See issue: https://github.com/ParsePlatform/parse-server/issues/3185
+  if (restOptions.hasOwnProperty('keys')) {
+    const keysForInclude = restOptions.keys.split(',').filter((key) => {
+      // At least 2 components
+      return key.split(".").length > 1;
+    }).map((key) => {
+      // Slice the last component (a.b.c -> a.b)
+      // Otherwise we'll include one level too much.
+      return key.slice(0, key.lastIndexOf("."));
+    }).join(',');
+
+    // Concat the possibly present include string with the one from the keys
+    // Dedup / sorting is handle in 'include' case.
+    if (keysForInclude.length > 0) {
+      if (!restOptions.include || restOptions.include.length == 0) {
+        restOptions.include = keysForInclude;
+      } else {
+        restOptions.include += "," + keysForInclude;
+      }
+    }
+  }
+
   for (var option in restOptions) {
     switch(option) {
-    case 'keys':
-      this.keys = new Set(restOptions.keys.split(','));
-        // Add the default
-      this.keys.add('objectId');
-      this.keys.add('createdAt');
-      this.keys.add('updatedAt');
+    case 'keys': {
+      const keys = restOptions.keys.split(',').concat(AlwaysSelectedKeys);
+      this.keys = Array.from(new Set(keys));
       break;
+    }
     case 'count':
       this.doCount = true;
       break;
@@ -80,22 +102,26 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
         return sortMap;
       }, {});
       break;
-    case 'include':
-      var paths = restOptions.include.split(',');
-      var pathSet = {};
-      for (var path of paths) {
-        // Add all prefixes with a .-split to pathSet
-        var parts = path.split('.');
-        for (var len = 1; len <= parts.length; len++) {
-          pathSet[parts.slice(0, len).join('.')] = true;
-        }
-      }
-      this.include = Object.keys(pathSet).sort((a, b) => {
-        return a.length - b.length;
-      }).map((s) => {
+    case 'include': {
+      const paths = restOptions.include.split(',');
+      // Load the existing includes (from keys)
+      const pathSet = paths.reduce((memo, path) => {
+        // Split each paths on . (a.b.c -> [a,b,c])
+        // reduce to create all paths
+        // ([a,b,c] -> {a: true, 'a.b': true, 'a.b.c': true})
+        return path.split('.').reduce((memo, path, index, parts) => {
+          memo[parts.slice(0, index+1).join('.')] = true;
+          return memo;
+        }, memo);
+      }, {});
+
+      this.include = Object.keys(pathSet).map((s) => {
         return s.split('.');
+      }).sort((a, b) => {
+        return a.length - b.length; // Sort by number of components
       });
       break;
+    }
     case 'redirectClassNameForKey':
       this.redirectKey = restOptions.redirectClassNameForKey;
       this.redirectClassName = null;
@@ -226,7 +252,7 @@ RestQuery.prototype.replaceInQuery = function() {
                           'improper usage of $inQuery');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey
   };
 
@@ -274,7 +300,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
                           'improper usage of $notInQuery');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
   };
 
@@ -324,7 +350,7 @@ RestQuery.prototype.replaceSelect = function() {
                           'improper usage of $select');
   }
 
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey
   };
 
@@ -372,7 +398,7 @@ RestQuery.prototype.replaceDontSelect = function() {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
                           'improper usage of $dontSelect');
   }
-  let additionalOptions = {
+  const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
   };
 
@@ -419,9 +445,9 @@ RestQuery.prototype.runFind = function(options = {}) {
     this.response = {results: []};
     return Promise.resolve();
   }
-  let findOptions = Object.assign({}, this.findOptions);
+  const findOptions = Object.assign({}, this.findOptions);
   if (this.keys) {
-    findOptions.keys = Array.from(this.keys).map((key) => {
+    findOptions.keys = this.keys.map((key) => {
       return key.split('.')[0];
     });
   }
@@ -509,23 +535,23 @@ function includePath(config, auth, response, path, restOptions = {}) {
   if (pointers.length == 0) {
     return response;
   }
-  let pointersHash = {};
+  const pointersHash = {};
   for (var pointer of pointers) {
     if (!pointer) {
       continue;
     }
-    let className = pointer.className;
+    const className = pointer.className;
     // only include the good pointers
     if (className) {
       pointersHash[className] = pointersHash[className] || new Set();
       pointersHash[className].add(pointer.objectId);
     }
   }
-  let includeRestOptions = {};
+  const includeRestOptions = {};
   if (restOptions.keys) {
-    let keys = new Set(restOptions.keys.split(','));
-    let keySet = Array.from(keys).reduce((set, key) => {
-      let keyPath = key.split('.');
+    const keys = new Set(restOptions.keys.split(','));
+    const keySet = Array.from(keys).reduce((set, key) => {
+      const keyPath = key.split('.');
       let i=0;
       for (i; i<path.length; i++) {
         if (path[i] != keyPath[i]) {
@@ -542,8 +568,8 @@ function includePath(config, auth, response, path, restOptions = {}) {
     }
   }
 
-  let queryPromises = Object.keys(pointersHash).map((className) => {
-    let where = {'objectId': {'$in': Array.from(pointersHash[className])}};
+  const queryPromises = Object.keys(pointersHash).map((className) => {
+    const where = {'objectId': {'$in': Array.from(pointersHash[className])}};
     var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute({op: 'get'}).then((results) => {
       results.className = className;
@@ -656,7 +682,7 @@ function findObjectWithKey(root, key) {
   }
   if (root instanceof Array) {
     for (var item of root) {
-      let answer = findObjectWithKey(item, key);
+      const answer = findObjectWithKey(item, key);
       if (answer) {
         return answer;
       }
@@ -666,7 +692,7 @@ function findObjectWithKey(root, key) {
     return root;
   }
   for (var subkey in root) {
-    let answer = findObjectWithKey(root[subkey], key);
+    const answer = findObjectWithKey(root[subkey], key);
     if (answer) {
       return answer;
     }

@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.2.25",
+  "version": "2.3.1",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -32,7 +32,7 @@
     "parse": "1.9.2",
     "parse-server-fs-adapter": "1.0.1",
     "parse-server-push-adapter": "1.1.0",
-    "parse-server-s3-adapter": "1.0.5",
+    "parse-server-s3-adapter": "1.0.6",
     "parse-server-simple-mailgun-adapter": "1.0.0",
     "pg-promise": "5.4.5",
     "redis": "2.6.3",
@@ -84,6 +84,6 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "0.8.7"
+    "bcrypt": "1.0.1"
   }
 }

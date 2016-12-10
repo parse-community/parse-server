@@ -1,7 +1,7 @@
 import events from 'events';
 
-let emitter = new events.EventEmitter();
-let subscriptions = new Map();
+const emitter = new events.EventEmitter();
+const subscriptions = new Map();
 
 function unsubscribe(channel: string) {
   if (!subscriptions.has(channel)) {
@@ -35,7 +35,7 @@ class Consumer extends events.EventEmitter {
 
   subscribe(channel: string): void {
     unsubscribe(channel);
-    let handler = (message) => {
+    const handler = (message) => {
       this.emit('message', channel, message);
     }
     subscriptions.set(channel, handler);
@@ -55,7 +55,7 @@ function createSubscriber(): any {
   return new Consumer(emitter);
 }
 
-let EventEmitterMQ = {
+const EventEmitterMQ = {
   createPublisher,
   createSubscriber
 }

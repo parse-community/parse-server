@@ -249,35 +249,35 @@ describe('Parse.Relation testing', () => {
   });
 
   it("queries on relation fields with multiple containedIn (regression test for #1271)", (done) => {
-    let ChildObject = Parse.Object.extend("ChildObject");
-    let childObjects = [];
+    const ChildObject = Parse.Object.extend("ChildObject");
+    const childObjects = [];
     for (let i = 0; i < 10; i++) {
       childObjects.push(new ChildObject({x: i}));
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-      let ParentObject = Parse.Object.extend("ParentObject");
-      let parent = new ParentObject();
+      const ParentObject = Parse.Object.extend("ParentObject");
+      const parent = new ParentObject();
       parent.set("x", 4);
-      let parent1Children = parent.relation("child");
+      const parent1Children = parent.relation("child");
       parent1Children.add(childObjects[0]);
       parent1Children.add(childObjects[1]);
       parent1Children.add(childObjects[2]);
-      let parent2 = new ParentObject();
+      const parent2 = new ParentObject();
       parent2.set("x", 3);
-      let parent2Children = parent2.relation("child");
+      const parent2Children = parent2.relation("child");
       parent2Children.add(childObjects[4]);
       parent2Children.add(childObjects[5]);
       parent2Children.add(childObjects[6]);
 
-      let parent2OtherChildren = parent2.relation("otherChild");
+      const parent2OtherChildren = parent2.relation("otherChild");
       parent2OtherChildren.add(childObjects[0]);
       parent2OtherChildren.add(childObjects[1]);
       parent2OtherChildren.add(childObjects[2]);
 
       return Parse.Object.saveAll([parent, parent2]);
     }).then(() => {
-      let objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
+      const objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
       objectsWithChild0InBothChildren.containedIn("child", [childObjects[0]]);
       objectsWithChild0InBothChildren.containedIn("otherChild", [childObjects[0]]);
       return objectsWithChild0InBothChildren.find();
@@ -285,7 +285,7 @@ describe('Parse.Relation testing', () => {
       //No parent has child 0 in both it's "child" and "otherChild" field;
       expect(objectsWithChild0InBothChildren.length).toEqual(0);
     }).then(() => {
-      let objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
+      const objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
       objectsWithChild4andOtherChild1.containedIn("child", [childObjects[4]]);
       objectsWithChild4andOtherChild1.containedIn("otherChild", [childObjects[1]]);
       return objectsWithChild4andOtherChild1.find();
@@ -510,24 +510,24 @@ describe('Parse.Relation testing', () => {
   });
 
   it('should properly get related objects with unfetched queries', (done) => {
-    let objects = [];
-    let owners = [];
-    let allObjects = [];
+    const objects = [];
+    const owners = [];
+    const allObjects = [];
     // Build 10 Objects and 10 owners
     while (objects.length != 10) {
-      let object = new Parse.Object('AnObject');
+      const object = new Parse.Object('AnObject');
       object.set({
         index: objects.length,
         even: objects.length % 2 == 0
       });
       objects.push(object);
-      let owner = new Parse.Object('AnOwner');
+      const owner = new Parse.Object('AnOwner');
       owners.push(owner);
       allObjects.push(object);
       allObjects.push(owner);
     }
 
-    let anotherOwner = new Parse.Object('AnotherOwner');
+    const anotherOwner = new Parse.Object('AnotherOwner');
 
     return Parse.Object.saveAll(allObjects.concat([anotherOwner])).then(() => {
       // put all the AnObject into the anotherOwner relationKey
@@ -539,13 +539,13 @@ describe('Parse.Relation testing', () => {
       return Parse.Object.saveAll(owners.concat([anotherOwner]));
     }).then(() => {
       // Query on the relation of another owner
-      let object = new Parse.Object('AnotherOwner');
+      const object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
-      let relationQuery = object.relation('relationKey').query();
+      const relationQuery = object.relation('relationKey').query();
       // Just get the even ones
       relationQuery.equalTo('even', true);
       // Make the query on anOwner
-      let query = new Parse.Query('AnOwner');
+      const query = new Parse.Query('AnOwner');
       // where key match the relation query.
       query.matchesQuery('key', relationQuery);
       query.include('key');
@@ -558,13 +558,13 @@ describe('Parse.Relation testing', () => {
       return Promise.resolve();
     }).then(() => {
       // Query on the relation of another owner
-      let object = new Parse.Object('AnotherOwner');
+      const object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
-      let relationQuery = object.relation('relationKey').query();
+      const relationQuery = object.relation('relationKey').query();
       // Just get the even ones
       relationQuery.equalTo('even', true);
       // Make the query on anOwner
-      let query = new Parse.Query('AnOwner');
+      const query = new Parse.Query('AnOwner');
       // where key match the relation query.
       query.doesNotMatchQuery('key', relationQuery);
       query.include('key');
@@ -586,19 +586,19 @@ describe('Parse.Relation testing', () => {
       new RestaurantObject({ ratings: 5, location: "Djibouti" }),
       new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
     ];
-    let persons = [
+    const persons = [
       new PersonObject({ name: "Bob", hometown: "Djibouti" }),
       new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
-    let owner = new OwnerObject({name: 'Joe'});
-    let allObjects = [owner].concat(restaurants).concat(persons);
+    const owner = new OwnerObject({name: 'Joe'});
+    const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
-      let unfetchedOwner = new OwnerObject();
+      const unfetchedOwner = new OwnerObject();
       unfetchedOwner.id = owner.id;
       var query = unfetchedOwner.relation('restaurants').query();
       query.greaterThan("ratings", 4);
@@ -624,19 +624,19 @@ describe('Parse.Relation testing', () => {
       new RestaurantObject({ ratings: 5, location: "Djibouti" }),
       new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
     ];
-    let persons = [
+    const persons = [
       new PersonObject({ name: "Bob", hometown: "Djibouti" }),
       new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
-    let owner = new OwnerObject({name: 'Joe'});
-    let allObjects = [owner].concat(restaurants).concat(persons);
+    const owner = new OwnerObject({name: 'Joe'});
+    const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
-      let unfetchedOwner = new OwnerObject();
+      const unfetchedOwner = new OwnerObject();
       unfetchedOwner.id = owner.id;
       var query = unfetchedOwner.relation('restaurants').query();
       query.greaterThan("ratings", 4);
@@ -657,21 +657,21 @@ describe('Parse.Relation testing', () => {
   });
 
   it('relations are not bidirectional (regression test for #871)', done => {
-    let PersonObject = Parse.Object.extend("Person");
-    let p1 = new PersonObject();
-    let p2 = new PersonObject();
+    const PersonObject = Parse.Object.extend("Person");
+    const p1 = new PersonObject();
+    const p2 = new PersonObject();
     Parse.Object.saveAll([p1, p2]).then(results => {
-      let p1 = results[0];
-      let p2 = results[1];
-      let relation = p1.relation('relation');
+      const p1 = results[0];
+      const p2 = results[1];
+      const relation = p1.relation('relation');
       relation.add(p2);
       p1.save().then(() => {
-        let query = new Parse.Query(PersonObject);
+        const query = new Parse.Query(PersonObject);
         query.equalTo('relation', p1);
         query.find().then(results => {
           expect(results.length).toEqual(0);
 
-          let query = new Parse.Query(PersonObject);
+          const query = new Parse.Query(PersonObject);
           query.equalTo('relation', p2);
           query.find().then(results => {
             expect(results.length).toEqual(1);
@@ -685,12 +685,12 @@ describe('Parse.Relation testing', () => {
 
   it('can query roles in Cloud Code (regession test #1489)', done => {
     Parse.Cloud.define('isAdmin', (request, response) => {
-      let query = new Parse.Query(Parse.Role);
+      const query = new Parse.Query(Parse.Role);
       query.equalTo('name', 'admin');
       query.first({ useMasterKey: true })
       .then(role => {
-        let relation = new Parse.Relation(role, 'users');
-        let admins = relation.query();
+        const relation = new Parse.Relation(role, 'users');
+        const admins = relation.query();
         admins.equalTo('username', request.user.get('username'));
         admins.first({ useMasterKey: true })
         .then(user => {
@@ -712,16 +712,16 @@ describe('Parse.Relation testing', () => {
       });
     });
 
-    let adminUser = new Parse.User();
+    const adminUser = new Parse.User();
     adminUser.set('username', 'name');
     adminUser.set('password', 'pass');
     adminUser.signUp()
     .then(adminUser => {
-      let adminACL = new Parse.ACL();
+      const adminACL = new Parse.ACL();
       adminACL.setPublicReadAccess(true);
 
       // Create admin role
-      let adminRole = new Parse.Role('admin', adminACL);
+      const adminRole = new Parse.Role('admin', adminACL);
       adminRole.getUsers().add(adminUser);
       adminRole.save()
       .then(() => {
@@ -739,13 +739,13 @@ describe('Parse.Relation testing', () => {
   });
 
   it('can be saved without error', done => {
-    let obj1 = new Parse.Object('PPAP');
+    const obj1 = new Parse.Object('PPAP');
     obj1.save()
     .then(() => {
-      let newRelation = obj1.relation('aRelation');
+      const newRelation = obj1.relation('aRelation');
       newRelation.add(obj1);
       obj1.save().then(() => {
-        let relation = obj1.get('aRelation');
+        const relation = obj1.get('aRelation');
         obj1.set('aRelation', relation);
         obj1.save().then(() => {
           done();

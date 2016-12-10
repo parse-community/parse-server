@@ -26,6 +26,11 @@ export default {
     default: 1337,
     action: numberParser("port")
   },
+  "host": {
+    env: "PARSE_SERVER_HOST",
+    help: "The host to serve ParseServer on. defaults to 0.0.0.0",
+    default: '0.0.0.0',
+  },
   "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",
     help: "The full URI to your mongodb database"
@@ -78,7 +83,12 @@ export default {
   },
   "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
-    help: "Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    action: objectParser
+  },
+  "auth": {
+    env: "PARSE_SERVER_AUTH_PROVIDERS",
+    help: "Configuration for your authentication providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
     action: objectParser
   },
   "fileKey": {
@@ -87,9 +97,15 @@ export default {
   },
   "facebookAppIds": {
     env: "PARSE_SERVER_FACEBOOK_APP_IDS",
-    help: "Comma separated list for your facebook app Ids",
-    type: "list",
-    action: arrayParser
+    help: "[DEPRECATED (use auth option)]",
+    action: function() {
+      throw 'facebookAppIds is deprecated, please use { auth: \
+         {facebook: \
+           { appIds: [] } \
+          }\
+        }\
+      }';
+    }
   },
   "enableAnonymousUsers": {
     env: "PARSE_SERVER_ENABLE_ANON_USERS",

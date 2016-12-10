@@ -114,7 +114,7 @@ describe('Parse.Query testing', () => {
       // Only cake3 is liked only by user1
       return query.find().then(function(results){
         equal(results.length, 1);
-        let cake = results[0];
+        const cake = results[0];
         expect(cake.id).toBe(cake3.id);
       });
     }).then(function(){
@@ -864,7 +864,7 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
 
-    let objects = [3, 1, 3, 2].map(makeBoxedNumber);
+    const objects = [3, 1, 3, 2].map(makeBoxedNumber);
     Parse.Object.saveAll(objects)
     .then(() => {
       var query = new Parse.Query(BoxedNumber);
@@ -1566,26 +1566,26 @@ describe('Parse.Query testing', () => {
   });
 
   it('properly includes array', (done) => {
-    let objects = [];
+    const objects = [];
     let total = 0;
     while(objects.length != 5) {
-      let object = new Parse.Object('AnObject');
+      const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       total += objects.length;
       objects.push(object);
     }
     Parse.Object.saveAll(objects).then(() => {
-      let object = new Parse.Object("AContainer");
+      const object = new Parse.Object("AContainer");
       object.set('objects', objects);
       return object.save();
     }).then(() => {
-      let query = new Parse.Query('AContainer');
+      const query = new Parse.Query('AContainer');
       query.include('objects');
       return query.find()
     }).then((results) => {
       expect(results.length).toBe(1);
-      let res = results[0];
-      let objects = res.get('objects');
+      const res = results[0];
+      const objects = res.get('objects');
       expect(objects.length).toBe(5);
       objects.forEach((object) => {
         total -= object.get('key');
@@ -1599,32 +1599,32 @@ describe('Parse.Query testing', () => {
   });
 
   it('properly includes array of mixed objects', (done) => {
-    let objects = [];
+    const objects = [];
     let total = 0;
     while(objects.length != 5) {
-      let object = new Parse.Object('AnObject');
+      const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       total += objects.length;
       objects.push(object);
     }
     while(objects.length != 10) {
-      let object = new Parse.Object('AnotherObject');
+      const object = new Parse.Object('AnotherObject');
       object.set('key', objects.length);
       total += objects.length;
       objects.push(object);
     }
     Parse.Object.saveAll(objects).then(() => {
-      let object = new Parse.Object("AContainer");
+      const object = new Parse.Object("AContainer");
       object.set('objects', objects);
       return object.save();
     }).then(() => {
-      let query = new Parse.Query('AContainer');
+      const query = new Parse.Query('AContainer');
       query.include('objects');
       return query.find()
     }).then((results) => {
       expect(results.length).toBe(1);
-      let res = results[0];
-      let objects = res.get('objects');
+      const res = results[0];
+      const objects = res.get('objects');
       expect(objects.length).toBe(10);
       objects.forEach((object) => {
         total -= object.get('key');
@@ -1638,20 +1638,20 @@ describe('Parse.Query testing', () => {
   });
 
   it('properly nested array of mixed objects with bad ids', (done) => {
-    let objects = [];
+    const objects = [];
     let total = 0;
     while(objects.length != 5) {
-      let object = new Parse.Object('AnObject');
+      const object = new Parse.Object('AnObject');
       object.set('key', objects.length);
       objects.push(object);
     }
     while(objects.length != 10) {
-      let object = new Parse.Object('AnotherObject');
+      const object = new Parse.Object('AnotherObject');
       object.set('key', objects.length);
       objects.push(object);
     }
     Parse.Object.saveAll(objects).then(() => {
-      let object = new Parse.Object("AContainer");
+      const object = new Parse.Object("AContainer");
       for (var i=0; i<objects.length; i++) {
         if (i%2 == 0) {
           objects[i].id = 'randomThing'
@@ -1662,13 +1662,13 @@ describe('Parse.Query testing', () => {
       object.set('objects', objects);
       return object.save();
     }).then(() => {
-      let query = new Parse.Query('AContainer');
+      const query = new Parse.Query('AContainer');
       query.include('objects');
       return query.find()
     }).then((results) => {
       expect(results.length).toBe(1);
-      let res = results[0];
-      let objects = res.get('objects');
+      const res = results[0];
+      const objects = res.get('objects');
       expect(objects.length).toBe(5);
       objects.forEach((object) => {
         total -= object.get('key');
@@ -1683,25 +1683,25 @@ describe('Parse.Query testing', () => {
   });
 
   it('properly fetches nested pointers', (done) =>  {
-    let color = new Parse.Object('Color');
+    const color = new Parse.Object('Color');
     color.set('hex','#133733');
-    let circle = new Parse.Object('Circle');
+    const circle = new Parse.Object('Circle');
     circle.set('radius', 1337);
 
     Parse.Object.saveAll([color, circle]).then(() => {
       circle.set('color', color);
-      let badCircle = new Parse.Object('Circle');
+      const badCircle = new Parse.Object('Circle');
       badCircle.id = 'badId';
-      let complexFigure = new Parse.Object('ComplexFigure');
+      const complexFigure = new Parse.Object('ComplexFigure');
       complexFigure.set('consistsOf', [circle, badCircle]);
       return complexFigure.save();
     }).then(() => {
-      let q = new Parse.Query('ComplexFigure');
+      const q = new Parse.Query('ComplexFigure');
       q.include('consistsOf.color');
       return q.find()
     }).then((results) => {
       expect(results.length).toBe(1);
-      let figure = results[0];
+      const figure = results[0];
       expect(figure.get('consistsOf').length).toBe(1);
       expect(figure.get('consistsOf')[0].get('color').get('hex')).toBe('#133733');
       done();
@@ -2357,15 +2357,15 @@ describe('Parse.Query testing', () => {
   });
 
   it('supports include on the wrong key type (#2262)', function(done) {
-    let childObject = new Parse.Object('TestChildObject');
+    const childObject = new Parse.Object('TestChildObject');
     childObject.set('hello', 'world');
     childObject.save().then(() => {
-      let obj = new Parse.Object('TestObject');
+      const obj = new Parse.Object('TestObject');
       obj.set('foo', 'bar');
       obj.set('child', childObject);
       return obj.save();
     }).then(() => {
-      let q = new Parse.Query('TestObject');
+      const q = new Parse.Query('TestObject');
       q.include('child');
       q.include('child.parent');
       q.include('createdAt');
@@ -2467,6 +2467,35 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("should match a key in an array (#3195)", function(done) {
+    var AuthorObject = Parse.Object.extend("Author");
+    var GroupObject = Parse.Object.extend("Group");
+    var PostObject = Parse.Object.extend("Post");
+
+    return new AuthorObject().save().then((user) => {
+      const post = new PostObject({
+        author: user
+      });
+
+      const group = new GroupObject({
+        members: [user],
+      });
+
+      return Parse.Promise.when(post.save(), group.save());
+    }).then((p) => {
+      return new Parse.Query(PostObject)
+        .matchesKeyInQuery("author", "members", new Parse.Query(GroupObject))
+        .find()
+        .then((r) => {
+          expect(r.length).toEqual(1);
+          if (r.length > 0) {
+            expect(r[0].id).toEqual(p.id);
+          }
+          done();
+        }, done.fail);
+    });
+  });
+
   it('should find objects with array of pointers', (done) => {
     var objects = [];
     while(objects.length != 5) {
@@ -2485,13 +2514,13 @@ describe('Parse.Query testing', () => {
         }
       })
       container.set('objects', pointers);
-      let container2 = new Parse.Object('Container');
+      const container2 = new Parse.Object('Container');
       container2.set('objects', pointers.slice(2, 3));
       return Parse.Object.saveAll([container, container2]);
     }).then(() => {
-      let inQuery = new Parse.Query('ContainedObject');
+      const inQuery = new Parse.Query('ContainedObject');
       inQuery.greaterThanOrEqualTo('index', 1);
-      let query = new Parse.Query('Container');
+      const query = new Parse.Query('Container');
       query.matchesQuery('objects', inQuery);
       return query.find();
     }).then((results) => {
@@ -2507,16 +2536,16 @@ describe('Parse.Query testing', () => {
   })
 
   it('query with two OR subqueries (regression test #1259)', done => {
-    let relatedObject = new Parse.Object('Class2');
+    const relatedObject = new Parse.Object('Class2');
     relatedObject.save().then(relatedObject => {
-      let anObject = new Parse.Object('Class1');
-      let relation = anObject.relation('relation');
+      const anObject = new Parse.Object('Class1');
+      const relation = anObject.relation('relation');
       relation.add(relatedObject);
       return anObject.save();
     }).then(anObject => {
-      let q1 = anObject.relation('relation').query();
+      const q1 = anObject.relation('relation').query();
       q1.doesNotExist('nonExistantKey1');
-      let q2 = anObject.relation('relation').query();
+      const q2 = anObject.relation('relation').query();
       q2.doesNotExist('nonExistantKey2');
       Parse.Query.or(q1, q2).find().then(results => {
         expect(results.length).toEqual(1);
@@ -2529,14 +2558,14 @@ describe('Parse.Query testing', () => {
   });
 
   it('objectId containedIn with multiple large array', done => {
-    let obj = new Parse.Object('MyClass');
+    const obj = new Parse.Object('MyClass');
     obj.save().then(obj => {
-      let longListOfStrings = [];
+      const longListOfStrings = [];
       for (let i = 0; i < 130; i++) {
         longListOfStrings.push(i.toString());
       }
       longListOfStrings.push(obj.id);
-      let q = new Parse.Query('MyClass');
+      const q = new Parse.Query('MyClass');
       q.containedIn('objectId', longListOfStrings);
       q.containedIn('objectId', longListOfStrings);
       return q.find();
@@ -2655,6 +2684,46 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('select nested keys 2 level without include (issue #3185)', function(done) {
+    var Foobar = new Parse.Object('Foobar');
+    var BarBaz = new Parse.Object('Barbaz');
+    var Bazoo = new Parse.Object('Bazoo');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    Bazoo.save().then(() => {
+      BarBaz.set('key', 'value');
+      BarBaz.set('otherKey', 'value');
+      BarBaz.set('bazoo', Bazoo);
+      return BarBaz.save();
+    }).then(() => {
+      Foobar.set('foo', 'bar');
+      Foobar.set('fizz', 'buzz');
+      Foobar.set('barBaz', BarBaz);
+      return Foobar.save();
+    }).then(function(savedFoobar){
+      var foobarQuery = new Parse.Query('Foobar');
+      foobarQuery.select(['fizz', 'barBaz.key', 'barBaz.bazoo.some']);
+      return foobarQuery.get(savedFoobar.id);
+    }).then((foobarObj) => {
+      equal(foobarObj.get('fizz'), 'buzz');
+      equal(foobarObj.get('foo'), undefined);
+      if (foobarObj.has('barBaz')) {
+        equal(foobarObj.get('barBaz').get('key'), 'value');
+        equal(foobarObj.get('barBaz').get('otherKey'), undefined);
+        if (foobarObj.get('barBaz').has('bazoo')) {
+          equal(foobarObj.get('barBaz').get('bazoo').get('some'), 'thing');
+          equal(foobarObj.get('barBaz').get('bazoo').get('otherSome'), undefined);
+        } else {
+          fail('bazoo should be set');
+        }
+      } else {
+        fail('barBaz should be set');
+      }
+      done();
+    })
+  });
+
   it('properly handles nested ors', function(done) {
     var objects = [];
     while(objects.length != 4) {
@@ -2663,13 +2732,13 @@ describe('Parse.Query testing', () => {
       objects.push(obj)
     }
     Parse.Object.saveAll(objects).then(() => {
-      let q0 = new Parse.Query('Object');
+      const q0 = new Parse.Query('Object');
       q0.equalTo('x', 0);
-      let q1 = new Parse.Query('Object');
+      const q1 = new Parse.Query('Object');
       q1.equalTo('x', 1);
-      let q2 = new Parse.Query('Object');
+      const q2 = new Parse.Query('Object');
       q2.equalTo('x', 2);
-      let or01 = Parse.Query.or(q0,q1);
+      const or01 = Parse.Query.or(q0,q1);
       return Parse.Query.or(or01, q2).find();
     }).then((results) => {
       expect(results.length).toBe(3);

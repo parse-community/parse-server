@@ -18,7 +18,7 @@ function removeTrailingSlash(str) {
 
 export class Config {
   constructor(applicationId: string, mount: string) {
-    let cacheInfo = AppCache.get(applicationId);
+    const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
@@ -32,7 +32,6 @@ export class Config {
     this.restAPIKey = cacheInfo.restAPIKey;
     this.webhookKey = cacheInfo.webhookKey;
     this.fileKey = cacheInfo.fileKey;
-    this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
     this.userSensitiveFields = cacheInfo.userSensitiveFields;
 

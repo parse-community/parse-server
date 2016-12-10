@@ -73,7 +73,7 @@ describe('ParseServerRESTController', () => {
     let userId;
     Parse.User.signUp('user', 'pass').then((user) => {
       userId = user.id;
-      let sessionToken = user.getSessionToken();
+      const sessionToken = user.getSessionToken();
       return RESTController.request("GET", "/users/me", undefined, {sessionToken});
     }).then((res) => {
       // Result is in JSON format
@@ -104,11 +104,27 @@ describe('ParseServerRESTController', () => {
   });
 
   it('ensures no session token is created on creating users', (done) => {
-    RESTController.request("POST", "/classes/_User", {username: "hello", password: "world"}).then(() => {
-      let query = new Parse.Query('_Session');
+    RESTController.request("POST", "/classes/_User", {username: "hello", password: "world"}).then((user) => {
+      expect(user.sessionToken).toBeUndefined();
+      const query = new Parse.Query('_Session');
       return query.find({useMasterKey: true});
     }).then(sessions => {
       expect(sessions.length).toBe(0);
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
+
+  it('ensures a session token is created when passing installationId != cloud', (done) => {
+    RESTController.request("POST", "/classes/_User", {username: "hello", password: "world"}, {installationId: 'my-installation'}).then((user) => {
+      expect(user.sessionToken).not.toBeUndefined();
+      const query = new Parse.Query('_Session');
+      return query.find({useMasterKey: true});
+    }).then(sessions => {
+      expect(sessions.length).toBe(1);
+      expect(sessions[0].get('installationId')).toBe('my-installation');
       done();
     }, (err) => {
       jfail(err);

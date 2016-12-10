@@ -35,7 +35,7 @@ function startServer(options, callback) {
 
   app.use(options.mountPath, api);
 
-  let server = app.listen(options.port, callback);
+  const server = app.listen(options.port, options.host, callback);
   server.on('connection', initializeConnections);
 
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -69,7 +69,7 @@ function startServer(options, callback) {
     }
   }
 
-  let handleShutdown = function() {
+  const handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
     server.close(function () {

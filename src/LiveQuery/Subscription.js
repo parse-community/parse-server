@@ -21,18 +21,18 @@ class Subscription {
     if (!this.clientRequestIds.has(clientId)) {
       this.clientRequestIds.set(clientId, []);
     }
-    let requestIds = this.clientRequestIds.get(clientId);
+    const requestIds = this.clientRequestIds.get(clientId);
     requestIds.push(requestId);
   }
 
   deleteClientSubscription(clientId: number, requestId: number): void {
-    let requestIds = this.clientRequestIds.get(clientId);
+    const requestIds = this.clientRequestIds.get(clientId);
     if (typeof requestIds === 'undefined') {
       logger.error('Can not find client %d to delete', clientId);
       return;
     }
 
-    let index = requestIds.indexOf(requestId);
+    const index = requestIds.indexOf(requestId);
     if (index < 0) {
       logger.error('Can not find client %d subscription %d to delete', clientId, requestId);
       return;

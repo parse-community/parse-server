@@ -102,7 +102,7 @@ var defaultConfiguration = {
       bundleId: 'bundleId',
     }
   },
-  oauth: { // Override the facebook provider
+  auth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
@@ -114,7 +114,7 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
   defaultConfiguration.cacheAdapter = new RedisCacheAdapter();
 }
 
-let openConnections = {};
+const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
 var app = express();
@@ -125,7 +125,7 @@ app.use('/1', () => {
 });
 var server = app.listen(port);
 server.on('connection', connection => {
-  let key = `${connection.remoteAddress}:${connection.remotePort}`;
+  const key = `${connection.remoteAddress}:${connection.remotePort}`;
   openConnections[key] = connection;
   connection.on('close', () => { delete openConnections[key] });
 });
@@ -134,7 +134,7 @@ const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
     server.close(() => {
       try {
-        let newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
           __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
         });
         cache.clear();
@@ -147,7 +147,7 @@ const reconfigureServer = changedConfiguration => {
         });
         server = app.listen(port);
         server.on('connection', connection => {
-          let key = `${connection.remoteAddress}:${connection.remotePort}`;
+          const key = `${connection.remoteAddress}:${connection.remotePort}`;
           openConnections[key] = connection;
           connection.on('close', () => { delete openConnections[key] });
         });
@@ -203,7 +203,7 @@ beforeEach(done => {
 });
 
 afterEach(function(done) {
-  let afterLogOut = () => {
+  const afterLogOut = () => {
     if (Object.keys(openConnections).length > 0) {
       fail('There were open connections to the server left after the test finished');
     }
@@ -368,7 +368,6 @@ function mockFacebookAuthenticator(id, token) {
 function mockFacebook() {
   return mockFacebookAuthenticator('8675309', 'jenny');
 }
-
 
 
 // This is polluting, but, it makes it way easier to directly port old tests.

@@ -8,9 +8,9 @@ describe('Pointer Permissions', () => {
   });
 
   it('should work with find', (done) => {
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -19,8 +19,8 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
-    let obj2 = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
+    const obj2 = new Parse.Object('AnObject');
 
     Parse.Object.saveAll([user, user2]).then(() => {
       obj.set('owner', user);
@@ -33,7 +33,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(1);
@@ -47,9 +47,9 @@ describe('Pointer Permissions', () => {
 
 
   it('should work with write', (done) => {
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -58,8 +58,8 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
-    let obj2 = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
+    const obj2 = new Parse.Object('AnObject');
 
     Parse.Object.saveAll([user, user2]).then(() => {
       obj.set('owner', user);
@@ -91,7 +91,7 @@ describe('Pointer Permissions', () => {
       fail('User should be able to update');
       return Promise.resolve();
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }, () => {
       fail('should login with user 2');
@@ -112,9 +112,9 @@ describe('Pointer Permissions', () => {
   });
 
   it('should let a proper user find', (done) => {
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -123,8 +123,8 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
-    let obj2 = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
+    const obj2 = new Parse.Object('AnObject');
     user.signUp().then(() => {
       return user2.signUp()
     }).then(() => {
@@ -137,18 +137,18 @@ describe('Pointer Permissions', () => {
         return schema.updateClass('AnObject', {}, {find: {}, get:{}, readUserFields: ['owner']})
       });
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(0);
     }).then(() => {
       return Parse.User.logIn('user2', 'password');
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(0);
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.get(obj.id);
     }).then(() => {
       fail('User 2 should not get the obj1 object');
@@ -159,7 +159,7 @@ describe('Pointer Permissions', () => {
     }).then(() => {
       return Parse.User.logIn('user1', 'password');
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }).then((res) => {
       expect(res.length).toBe(1);
@@ -172,13 +172,13 @@ describe('Pointer Permissions', () => {
   });
 
   it('should not allow creating objects', (done) => {
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     user.save().then(() => {
       return config.database.loadSchema().then((schema) => {
         return schema.addClassIfNotExists('AnObject', {owner: {type:'Pointer', targetClass: '_User'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
@@ -198,9 +198,9 @@ describe('Pointer Permissions', () => {
   });
 
   it('should handle multiple writeUserFields', done => {
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -209,7 +209,7 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2])
     .then(() => {
       obj.set('owner', user);
@@ -224,7 +224,7 @@ describe('Pointer Permissions', () => {
     .then(() => obj.save({hello: 'fromUser2'}))
     .then(() => Parse.User.logOut())
     .then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.first();
     })
     .then(result => {
@@ -237,7 +237,7 @@ describe('Pointer Permissions', () => {
   });
 
   it('should prevent creating pointer permission on missing field', (done) => {
-    let config = new Config(Parse.applicationId);
+    const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
       return schema.addClassIfNotExists('AnObject', {}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
     }).then(() => {
@@ -250,7 +250,7 @@ describe('Pointer Permissions', () => {
   });
 
   it('should prevent creating pointer permission on bad field', (done) => {
-    let config = new Config(Parse.applicationId);
+    const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'String'}}, {create: {}, writeUserFields: ['owner'], readUserFields: ['owner']});
     }).then(() => {
@@ -263,8 +263,8 @@ describe('Pointer Permissions', () => {
   });
 
   it('should prevent creating pointer permission on bad field', (done) => {
-    let config = new Config(Parse.applicationId);
-    let object = new Parse.Object('AnObject');
+    const config = new Config(Parse.applicationId);
+    const object = new Parse.Object('AnObject');
     object.set('owner', 'value');
     object.save().then(() => {
       return config.database.loadSchema();
@@ -288,9 +288,9 @@ describe('Pointer Permissions', () => {
 
       The owner is another user than the ACL
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -299,9 +299,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
       obj.setACL(ACL);
@@ -333,9 +333,9 @@ describe('Pointer Permissions', () => {
       PointerPerm: "owner"
       ACL: logged in user has access
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -344,9 +344,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
       obj.setACL(ACL);
@@ -378,9 +378,9 @@ describe('Pointer Permissions', () => {
       PointerPerm: "owner"
       ACL: logged in user has access
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -389,9 +389,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setWriteAccess(user, true);
       ACL.setWriteAccess(user2, true);
       obj.setACL(ACL);
@@ -425,9 +425,9 @@ describe('Pointer Permissions', () => {
 
       The owner is another user than the ACL
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -436,9 +436,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
       obj.setACL(ACL);
@@ -470,9 +470,9 @@ describe('Pointer Permissions', () => {
       PointerPerm: "owner" : read
       ACL: logged in user has access
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -481,9 +481,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
       ACL.setReadAccess(user2, true);
@@ -517,9 +517,9 @@ describe('Pointer Permissions', () => {
       PointerPerm: "owner" : read // proper owner
       ACL: logged in user has not access
      */
-    let config = new Config(Parse.applicationId);
-    let user = new Parse.User();
-    let user2 = new Parse.User();
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
     user.set({
       username: 'user1',
       password: 'password'
@@ -528,9 +528,9 @@ describe('Pointer Permissions', () => {
       username: 'user2',
       password: 'password'
     });
-    let obj = new Parse.Object('AnObject');
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2]).then(() => {
-      let ACL = new Parse.ACL();
+      const ACL = new Parse.ACL();
       ACL.setReadAccess(user, true);
       ACL.setWriteAccess(user, true);
       obj.setACL(ACL);
@@ -556,8 +556,8 @@ describe('Pointer Permissions', () => {
   });
 
   it('should let master key find objects', (done) => {
-    let config = new Config(Parse.applicationId);
-    let object = new Parse.Object('AnObject');
+    const config = new Config(Parse.applicationId);
+    const object = new Parse.Object('AnObject');
     object.set('hello', 'world');
     return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
@@ -565,7 +565,7 @@ describe('Pointer Permissions', () => {
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
       });
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find();
     }).then(() => {
 
@@ -573,7 +573,7 @@ describe('Pointer Permissions', () => {
       expect(err.code).toBe(101);
       return Promise.resolve();
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.find({useMasterKey: true});
     }).then((objects) => {
       expect(objects.length).toBe(1);
@@ -585,8 +585,8 @@ describe('Pointer Permissions', () => {
   });
 
   it('should let master key get objects', (done) => {
-    let config = new Config(Parse.applicationId);
-    let object = new Parse.Object('AnObject');
+    const config = new Config(Parse.applicationId);
+    const object = new Parse.Object('AnObject');
     object.set('hello', 'world');
     return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
@@ -594,7 +594,7 @@ describe('Pointer Permissions', () => {
         return schema.updateClass('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {find: {}, get: {}, readUserFields: ['owner']});
       });
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.get(object.id);
     }).then(() => {
 
@@ -602,7 +602,7 @@ describe('Pointer Permissions', () => {
       expect(err.code).toBe(101);
       return Promise.resolve();
     }).then(() => {
-      let q = new Parse.Query('AnObject');
+      const q = new Parse.Query('AnObject');
       return q.get(object.id, {useMasterKey: true});
     }).then((objectAgain) => {
       expect(objectAgain).not.toBeUndefined();
@@ -616,8 +616,8 @@ describe('Pointer Permissions', () => {
 
 
   it('should let master key update objects', (done) => {
-    let config = new Config(Parse.applicationId);
-    let object = new Parse.Object('AnObject');
+    const config = new Config(Parse.applicationId);
+    const object = new Parse.Object('AnObject');
     object.set('hello', 'world');
     return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
@@ -643,8 +643,8 @@ describe('Pointer Permissions', () => {
   });
 
   it('should let master key delete objects', (done) => {
-    let config = new Config(Parse.applicationId);
-    let object = new Parse.Object('AnObject');
+    const config = new Config(Parse.applicationId);
+    const object = new Parse.Object('AnObject');
     object.set('hello', 'world');
     return object.save().then(() => {
       return config.database.loadSchema().then((schema) => {
@@ -669,7 +669,7 @@ describe('Pointer Permissions', () => {
   });
 
   it('should fail with invalid pointer perms', (done) => {
-    let config = new Config(Parse.applicationId);
+    const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
@@ -680,7 +680,7 @@ describe('Pointer Permissions', () => {
   });
 
   it('should fail with invalid pointer perms', (done) => {
-    let config = new Config(Parse.applicationId);
+    const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
         // Lock the update, and let only owner write
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});

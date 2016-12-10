@@ -11,7 +11,7 @@ export class AccountLockout {
    * set _failed_login_count to value
    */
   _setFailedLoginCount(value) {
-    let query = {
+    const query = {
       username: this._user.username
     };
 

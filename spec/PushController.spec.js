@@ -6,7 +6,7 @@ var validatePushType = require('../src/Push/utils').validatePushType;
 
 const successfulTransmissions = function(body, installations) {
 
-  let promises = installations.map((device) => {
+  const promises = installations.map((device) => {
     return Promise.resolve({
       transmitted: true,
       device: device,
@@ -18,7 +18,7 @@ const successfulTransmissions = function(body, installations) {
 
 const successfulIOS = function(body, installations) {
 
-  let promises = installations.map((device) => {
+  const promises = installations.map((device) => {
     return Promise.resolve({
       transmitted: device.deviceType == "ios",
       device: device,
@@ -155,7 +155,7 @@ describe('PushController', () => {
     }}
     var installations = [];
     while(installations.length != 10) {
-      let installation = new Parse.Object("_Installation");
+      const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("badge", installations.length);
@@ -165,7 +165,7 @@ describe('PushController', () => {
     }
 
     while(installations.length != 15) {
-      let installation = new Parse.Object("_Installation");
+      const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("deviceType", "android");
@@ -288,10 +288,10 @@ describe('PushController', () => {
     }).then(() => {
       return Parse.Object.saveAll(installations)
     }).then((installations) => {
-      let objectIds = installations.map(installation => {
+      const objectIds = installations.map(installation => {
         return installation.id;
       })
-      let where = {
+      const where = {
         objectId: {'$in': objectIds.slice(0, 5)}
       }
       return pushController.sendPush(payload, where, config, auth);
@@ -301,7 +301,7 @@ describe('PushController', () => {
       });
     }).then(() => {
       expect(matchedInstallationsCount).toBe(5);
-      let query = new Parse.Query(Parse.Installation);
+      const query = new Parse.Query(Parse.Installation);
       query.equalTo('badge', 1);
       return query.find({useMasterKey: true});
     }).then((installations) => {
@@ -317,7 +317,7 @@ describe('PushController', () => {
 
     var installations = [];
     while(installations.length != 10) {
-      let installation = new Parse.Object("_Installation");
+      const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("badge", installations.length);
@@ -327,7 +327,7 @@ describe('PushController', () => {
     }
 
     while(installations.length != 15) {
-      let installation = new Parse.Object("_Installation");
+      const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_"+installations.length);
       installation.set("deviceToken","device_token_"+installations.length)
       installation.set("deviceType", "android");
@@ -367,11 +367,11 @@ describe('PushController', () => {
        }, 1000);
      });
    }).then(() => {
-     let query = new Parse.Query('_PushStatus');
+     const query = new Parse.Query('_PushStatus');
      return query.find({useMasterKey: true});
    }).then((results) => {
      expect(results.length).toBe(1);
-     let result = results[0];
+     const result = results[0];
      expect(result.createdAt instanceof Date).toBe(true);
      expect(result.updatedAt instanceof Date).toBe(true);
      expect(result.id.length).toBe(10);
@@ -389,13 +389,12 @@ describe('PushController', () => {
        'android': 5 // android
      });
      // Try to get it without masterKey
-     let query = new Parse.Query('_PushStatus');
+     const query = new Parse.Query('_PushStatus');
      return query.find();
    }).then((results) => {
      expect(results.length).toBe(0);
      done();
    });
-
   });
 
   it('should properly report failures in _PushStatus', (done) => {
@@ -411,7 +410,7 @@ describe('PushController', () => {
         return ["ios"];
       }
     }
-    let where = { 'channels': {
+    const where = { 'channels': {
       '$ins': ['Giants', 'Mets']
     }};
     var payload = {data: {
@@ -431,10 +430,10 @@ describe('PushController', () => {
       fail('should not succeed');
       done();
     }).catch(() => {
-      let query = new Parse.Query('_PushStatus');
+      const query = new Parse.Query('_PushStatus');
       query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
-        let pushStatus = results[0];
+        const pushStatus = results[0];
         expect(pushStatus.get('status')).toBe('failed');
         done();
       });
@@ -460,7 +459,7 @@ describe('PushController', () => {
       isMaster: true
     }
 
-    let where = {
+    const where = {
       'deviceToken': {
         '$inQuery': {
           'where': {
@@ -505,7 +504,7 @@ describe('PushController', () => {
       isMaster: true
     }
 
-    let where = {
+    const where = {
       'deviceToken': {
         '$inQuery': {
           'where': {

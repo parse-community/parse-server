@@ -93,10 +93,10 @@ export default class PromiseRouter {
       if (route.method != method) {
         continue;
       }
-      let layer = route.layer || new Layer(route.path, null, route.handler);
-      let match = layer.match(path);
+      const layer = route.layer || new Layer(route.path, null, route.handler);
+      const match = layer.match(path);
       if (match) {
-        let params = layer.params;
+        const params = layer.params;
         Object.keys(params).forEach((key) => {
           params[key] = validateParameter(key, params[key]);
         });
@@ -108,8 +108,8 @@ export default class PromiseRouter {
   // Mount the routes on this router onto an express app (or express router)
   mountOnto(expressApp) {
     this.routes.forEach((route) => {
-      let method = route.method.toLowerCase();
-      let handler = makeExpressHandler(this.appId, route.handler);
+      const method = route.method.toLowerCase();
+      const handler = makeExpressHandler(this.appId, route.handler);
       expressApp[method].call(expressApp, route.path, handler);
     });
     return expressApp;
@@ -140,9 +140,9 @@ export default class PromiseRouter {
 function makeExpressHandler(appId, promiseHandler) {
   return function(req, res, next) {
     try {
-      let url = maskSensitiveUrl(req);
-      let body = Object.assign({}, req.body);
-      let stringifiedBody = JSON.stringify(body, null, 2);
+      const url = maskSensitiveUrl(req);
+      const body = Object.assign({}, req.body);
+      const stringifiedBody = JSON.stringify(body, null, 2);
       log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
         method: req.method,
         url: url,
@@ -155,7 +155,7 @@ function makeExpressHandler(appId, promiseHandler) {
           throw 'control should not get here';
         }
 
-        let stringifiedResponse = JSON.stringify(result, null, 2);
+        const stringifiedResponse = JSON.stringify(result, null, 2);
         log.verbose(
           `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
           {result: result}
@@ -198,7 +198,7 @@ function makeExpressHandler(appId, promiseHandler) {
 
 function maskSensitiveUrl(req) {
   let maskUrl = req.originalUrl.toString();
-  let shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
+  const shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
                       && !req.originalUrl.includes('classes');
   if (shouldMaskUrl) {
     maskUrl = log.maskSensitiveUrl(maskUrl);

@@ -9,12 +9,12 @@ const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 export class ClassesRouter extends PromiseRouter {
 
   handleFind(req) {
-    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    let options = {};
-    let allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const options = {};
+    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
       'include', 'redirectClassNameForKey', 'where'];
 
-    for (let key of Object.keys(body)) {
+    for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
@@ -49,7 +49,7 @@ export class ClassesRouter extends PromiseRouter {
     return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
       .then((response) => {
         if (response && response.results) {
-          for (let result of response.results) {
+          for (const result of response.results) {
             if (result.sessionToken) {
               result.sessionToken = req.info.sessionToken || result.sessionToken;
             }
@@ -61,10 +61,10 @@ export class ClassesRouter extends PromiseRouter {
 
   // Returns a promise for a {response} object.
   handleGet(req) {
-    let body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    let options = {};
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const options = {};
 
-    for (let key of Object.keys(body)) {
+    for (const key of Object.keys(body)) {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
@@ -114,8 +114,8 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   static JSONFromQuery(query) {
-    let json = {};
-    for (let [key, value] of _.entries(query)) {
+    const json = {};
+    for (const [key, value] of _.entries(query)) {
       try {
         json[key] = JSON.parse(value);
       } catch (e) {

@@ -2,7 +2,7 @@ module.exports = options => {
   if (!options) {
     throw "Options were not provided"
   }
-  let adapter = {
+  const adapter = {
     sendVerificationEmail: () => Promise.resolve(),
     sendPasswordResetEmail: () => Promise.resolve(),
     sendMail: () => Promise.resolve()

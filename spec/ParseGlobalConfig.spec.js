@@ -1,12 +1,12 @@
 'use strict';
 
 var request = require('request');
-let Config = require('../src/Config');
+const Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
   beforeEach(done => {
-    let config = new Config('test');
-    let query = on_db('mongo', () => {
+    const config = new Config('test');
+    const query = on_db('mongo', () => {
       // Legacy is with an int...
       return { objectId: 1 };
     }, () => {
@@ -104,7 +104,7 @@ describe('a GlobalConfig', () => {
   });
 
   it('failed getting config when it is missing', (done) => {
-    let config = new Config('test');
+    const config = new Config('test');
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',
       { fields: { params: { __type: 'String' } } },

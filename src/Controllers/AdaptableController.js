@@ -46,14 +46,14 @@ export class AdaptableController {
       throw new Error(self.constructor.name+" requires an adapter");
     }
 
-    let Type = ExpectedType || self.expectedAdapterType();
+    const Type = ExpectedType || self.expectedAdapterType();
     // Allow skipping for testing
     if (!Type) {
       return;
     }
 
     // Makes sure the prototype matches
-    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
+    const mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
       const adapterType = typeof adapter[key];
       const expectedType = typeof Type.prototype[key];
       if (adapterType !== expectedType) {

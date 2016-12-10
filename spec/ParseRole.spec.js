@@ -13,7 +13,7 @@ describe('Parse Role testing', () => {
 
     createTestUser().then((x) => {
       user = x;
-      let acl = new Parse.ACL();
+      const acl = new Parse.ACL();
       acl.setPublicReadAccess(true);
       acl.setPublicWriteAccess(false);
       role = new Parse.Object('_Role');
@@ -193,11 +193,11 @@ describe('Parse Role testing', () => {
   });
 
   it("Should properly resolve roles", (done) => {
-    let admin = new Parse.Role("Admin", new Parse.ACL());
-    let moderator = new Parse.Role("Moderator", new Parse.ACL());
-    let superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
-    let contentManager = new Parse.Role('ContentManager', new Parse.ACL());
-    let superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
+    const admin = new Parse.Role("Admin", new Parse.ACL());
+    const moderator = new Parse.Role("Moderator", new Parse.ACL());
+    const superModerator = new Parse.Role("SuperModerator", new Parse.ACL());
+    const contentManager = new Parse.Role('ContentManager', new Parse.ACL());
+    const superContentManager = new Parse.Role('SuperContentManager', new Parse.ACL());
     Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true}).then(() => {
       contentManager.getRoles().add([moderator, superContentManager]);
       moderator.getRoles().add([admin, superModerator]);
@@ -207,7 +207,7 @@ describe('Parse Role testing', () => {
       var auth = new Auth({ config: new Config("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
-      let promises = [admin, moderator, contentManager, superModerator].map((role) => {
+      const promises = [admin, moderator, contentManager, superModerator].map((role) => {
         return auth._getAllRolesNamesForRoleIds([role.id]).then((result) => {
           return Parse.Promise.as({
             id: role.id,
@@ -220,8 +220,8 @@ describe('Parse Role testing', () => {
       return Parse.Promise.when(promises);
     }).then((results) => {
       results.forEach((result) => {
-        let id = result.id;
-        let roleNames = result.roleNames;
+        const id = result.id;
+        const roleNames = result.roleNames;
         if (id == admin.id) {
           expect(roleNames.length).toBe(2);
           expect(roleNames.indexOf("Moderator")).not.toBe(-1);
@@ -345,6 +345,69 @@ describe('Parse Role testing', () => {
       }
       done();
     })
+  });
+
+  it('should add multiple users to a role and remove users', (done) => {
+    var user, user2, user3;
+    var role;
+    var obj;
+
+    var prACL = new Parse.ACL();
+    prACL.setPublicReadAccess(true);
+    prACL.setPublicWriteAccess(true);
+
+    createTestUser().then((x) => {
+      user = x;
+      user2 = new Parse.User();
+      return user2.save({ username: 'user2', password: 'omgbbq' });
+    }).then(() => {
+      user3 = new Parse.User();
+      return user3.save({ username: 'user3', password: 'omgbbq' });
+    }).then(() => {
+      role = new Parse.Role('sharedRole', prACL);
+      var users = role.relation('users');
+      users.add(user);
+      users.add(user2);
+      users.add(user3);
+      return role.save({}, { useMasterKey: true });
+    }).then(() => {
+      // query for saved role and get 3 users
+      var query = new Parse.Query('_Role');
+      query.equalTo('name', 'sharedRole');
+      return query.find({ useMasterKey: true });
+    }).then((role) => {
+      expect(role.length).toEqual(1);
+      var users = role[0].relation('users').query();
+      return users.find({ useMasterKey: true });
+    }).then((users) => {
+      expect(users.length).toEqual(3);
+      obj = new Parse.Object('TestObjectRoles');
+      obj.set('ACL', prACL);
+      return obj.save(null, { useMasterKey: true });
+    }).then(() => {
+      // Above, the Admin role was added to the Customer role.
+      // An object secured by the Customer ACL should be able to be edited by the Admin user.
+      obj.set('changedByUsers', true);
+      return obj.save(null, { sessionToken: user.getSessionToken() });
+    }).then(() => {
+      // query for saved role and get 3 users
+      var query = new Parse.Query('_Role');
+      query.equalTo('name', 'sharedRole');
+      return query.find({ useMasterKey: true });
+    }).then((role) => {
+      expect(role.length).toEqual(1);
+      var users = role[0].relation('users');
+      users.remove(user);
+      users.remove(user3);
+      return role[0].save({}, { useMasterKey: true });
+    }).then((role) =>{
+      var users = role.relation('users').query();
+      return users.find({ useMasterKey: true });
+    }).then((users) => {
+      expect(users.length).toEqual(1);
+      expect(users[0].get('username')).toEqual('user2');
+      done();
+    });
   });
 
 });

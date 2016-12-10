@@ -2,7 +2,7 @@ var ClientSDK = require('../src/ClientSDK');
 
 describe('ClientSDK', () => {
   it('should properly parse the SDK versions', () => {
-    let clientSDKFromVersion = ClientSDK.fromString;
+    const clientSDKFromVersion = ClientSDK.fromString;
     expect(clientSDKFromVersion('i1.1.1')).toEqual({
       sdk: 'i',
       version: '1.1.1'

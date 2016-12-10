@@ -7,7 +7,7 @@ var rest = require('../src/rest');
 var request = require('request');
 
 var config = new Config('test');
-let database = config.database;
+const database = config.database;
 
 describe('rest create', () => {
 
@@ -28,7 +28,7 @@ describe('rest create', () => {
   });
 
   it('handles array, object, date', (done) => {
-    let now = new Date();
+    const now = new Date();
     var obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
@@ -52,23 +52,23 @@ describe('rest create', () => {
   });
 
   it('handles object and subdocument', done => {
-    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     rest.create(config, auth.nobody(config), 'MyClass', obj)
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
       expect(typeof mob.objectId).toEqual('string');
-      let obj = { 'subdoc.wu': 'clan' };
+      const obj = { 'subdoc.wu': 'clan' };
       return rest.update(config, auth.nobody(config), 'MyClass', mob.objectId, obj)
     })
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('clan');
@@ -267,7 +267,7 @@ describe('rest create', () => {
   });
 
   it('stores pointers', done => {
-    let obj = {
+    const obj = {
       foo: 'bar',
       aPointer: {
         __type: 'Pointer',
@@ -282,7 +282,7 @@ describe('rest create', () => {
     }}, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let output = results[0];
+      const output = results[0];
       expect(typeof output.foo).toEqual('string');
       expect(typeof output._p_aPointer).toEqual('undefined');
       expect(output._p_aPointer).toBeUndefined();

@@ -1,8 +1,8 @@
 "use strict";
 
-let MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
-let request = require('request');
-let Config = require("../src/Config");
+const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const request = require('request');
+const Config = require("../src/Config");
 
 describe("Custom Pages, Email Verification, Password Reset", () => {
   it("should set the custom pages", (done) => {
@@ -251,7 +251,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       }),
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -338,7 +338,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       }),
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -370,7 +370,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       }),
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -401,7 +401,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       }),
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -429,7 +429,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: undefined,
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -461,7 +461,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       }),
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("zxcv");
       user.set("email", "testInvalidConfig@parse.com");
@@ -480,7 +480,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('succeeds sending a password reset username if appName, publicServerURL, and email adapter are prodvided', done => {
-    let adapter = MockEmailAdapterWithOptions({
+    const adapter = MockEmailAdapterWithOptions({
       fromAddress: 'parse@example.com',
       apiKey: 'k',
       domain: 'd',
@@ -500,7 +500,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       emailAdapter: adapter
     })
     .then(() => {
-      let user = new Parse.User();
+      const user = new Parse.User();
       user.setPassword("asdf");
       user.setUsername("testValidConfig@parse.com");
       user.signUp(null)
@@ -819,7 +819,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv');
 
             Parse.User.logIn("zxcv", "hello").then(function(){
-              let config = new Config('test');
+              const config = new Config('test');
               config.database.adapter.find('_User', { fields: {} }, { 'username': 'zxcv' }, { limit: 1 })
               .then(results => {
                 // _perishable_token should be unset after reset password

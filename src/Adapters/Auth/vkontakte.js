@@ -4,7 +4,7 @@
 
 var https = require('https');
 var Parse = require('parse/node').Parse;
-var logger = require('../logger').default;
+var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, params) {

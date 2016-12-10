@@ -3,10 +3,10 @@ import {
   EventEmitterMQ
 } from './Adapters/MessageQueue/EventEmitterMQ';
 
-let ParseMessageQueue = {};
+const ParseMessageQueue = {};
 
 ParseMessageQueue.createPublisher = function(config: any): any {
-  let adapter = loadAdapter(config.messageQueueAdapter, EventEmitterMQ, config);
+  const adapter = loadAdapter(config.messageQueueAdapter, EventEmitterMQ, config);
   if (typeof adapter.createPublisher !== 'function') {
     throw 'pubSubAdapter should have createPublisher()';
   }
@@ -14,7 +14,7 @@ ParseMessageQueue.createPublisher = function(config: any): any {
 }
 
 ParseMessageQueue.createSubscriber = function(config: any): void {
-  let adapter = loadAdapter(config.messageQueueAdapter, EventEmitterMQ, config)
+  const adapter = loadAdapter(config.messageQueueAdapter, EventEmitterMQ, config)
   if (typeof adapter.createSubscriber !== 'function') {
     throw 'messageQueueAdapter should have createSubscriber()';
   }

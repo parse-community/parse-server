@@ -1,5 +1,6 @@
 import { createClient } from './PostgresClient';
 import Parse            from 'parse/node';
+import _                from 'lodash';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -11,7 +12,7 @@ const logger = require('../../../logger');
 const debug = function(){
   let args = [...arguments];
   args = ['PG: '+arguments[0]].concat(args.slice(1, args.length));
-  let log = logger.getLogger();
+  const log = logger.getLogger();
   log.debug.apply(log, args);
 }
 
@@ -116,8 +117,8 @@ const toPostgresSchema = (schema) => {
 const handleDotFields = (object) => {
   Object.keys(object).forEach(fieldName => {
     if (fieldName.indexOf('.') > -1) {
-      let components = fieldName.split('.');
-      let first = components.shift();
+      const components = fieldName.split('.');
+      const first = components.shift();
       object[first] = object[first] || {};
       let currentObj = object[first];
       let next;
@@ -156,7 +157,7 @@ const validateKeys = (object) => {
 
 // Returns the list of join tables on a schema
 const joinTablesForSchema = (schema) => {
-  let list = [];
+  const list = [];
   if (schema) {
     Object.keys(schema.fields).forEach((field) => {
       if (schema.fields[field].type === 'Relation') {
@@ -168,17 +169,17 @@ const joinTablesForSchema = (schema) => {
 }
 
 const buildWhereClause = ({ schema, query, index }) => {
-  let patterns = [];
+  const patterns = [];
   let values = [];
-  let sorts = [];
+  const sorts = [];
 
   schema = toPostgresSchema(schema);
-  for (let fieldName in query) {
-    let isArrayField = schema.fields
+  for (const fieldName in query) {
+    const isArrayField = schema.fields
           && schema.fields[fieldName]
           && schema.fields[fieldName].type === 'Array';
-    let initialPatternsLength = patterns.length;
-    let fieldValue = query[fieldName];
+    const initialPatternsLength = patterns.length;
+    const fieldValue = query[fieldName];
 
     // nothingin the schema, it's gonna blow up
     if (!schema.fields[fieldName]) {
@@ -189,7 +190,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldName.indexOf('.') >= 0) {
-      let components = fieldName.split('.').map((cmpt, index) => {
+      const components = fieldName.split('.').map((cmpt, index) => {
         if (index === 0) {
           return `"${cmpt}"`;
         }
@@ -211,17 +212,17 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue);
       index += 2;
     } else if (fieldName === '$or' || fieldName === '$and') {
-      let clauses = [];
-      let clauseValues = [];
+      const clauses = [];
+      const clauseValues = [];
       fieldValue.forEach((subQuery) =>  {
-        let clause = buildWhereClause({ schema, query: subQuery, index });
+        const clause = buildWhereClause({ schema, query: subQuery, index });
         if (clause.pattern.length > 0) {
           clauses.push(clause.pattern);
           clauseValues.push(...clause.values);
           index += clause.values.length;
         }
       });
-      let orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
+      const orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
       patterns.push(`(${clauses.join(orOrAnd)})`);
       values.push(...clauseValues);
     }
@@ -254,7 +255,7 @@ const buildWhereClause = ({ schema, query, index }) => {
         isArrayField &&
         schema.fields[fieldName].contents &&
         schema.fields[fieldName].contents.type === 'String') {
-      let inPatterns = [];
+      const inPatterns = [];
       let allowNull = false;
       values.push(fieldName);
       fieldValue.$in.forEach((listElem, listIndex) => {
@@ -274,13 +275,13 @@ const buildWhereClause = ({ schema, query, index }) => {
     } else if (isInOrNin) {
       var createConstraint = (baseArray, notIn) => {
         if (baseArray.length > 0) {
-          let not = notIn ? ' NOT ' : '';
+          const not = notIn ? ' NOT ' : '';
           if (isArrayField) {
             patterns.push(`${not} array_contains($${index}:name, $${index+1})`);
             values.push(fieldName, JSON.stringify(baseArray));
             index += 2;
           } else {
-            let inPatterns = [];
+            const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
               values.push(listElem);
@@ -296,10 +297,10 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       }
       if (fieldValue.$in) {
-        createConstraint(fieldValue.$in, false);
+        createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
       }
       if (fieldValue.$nin) {
-        createConstraint(fieldValue.$nin, true);
+        createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
     }
 
@@ -320,9 +321,9 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldValue.$nearSphere) {
-      let point = fieldValue.$nearSphere;
-      let distance = fieldValue.$maxDistance;
-      let distanceInKM = distance*6371*1000;
+      const point = fieldValue.$nearSphere;
+      const distance = fieldValue.$maxDistance;
+      const distanceInKM = distance*6371*1000;
       patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) <= $${index+3}`);
       sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index+1}, $${index+2})::geometry) ASC`)
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
@@ -330,11 +331,11 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldValue.$within && fieldValue.$within.$box) {
-      let box = fieldValue.$within.$box;
-      let left = box[0].longitude;
-      let bottom = box[0].latitude;
-      let right = box[1].longitude;
-      let top = box[1].latitude;
+      const box = fieldValue.$within.$box;
+      const left = box[0].longitude;
+      const bottom = box[0].latitude;
+      const right = box[1].longitude;
+      const top = box[1].latitude;
 
       patterns.push(`$${index}:name::point <@ $${index+1}::box`);
       values.push(fieldName, `((${left}, ${bottom}), (${right}, ${top}))`);
@@ -344,7 +345,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
       let operator = '~';
-      let opts = fieldValue.$options;
+      const opts = fieldValue.$options;
       if (opts) {
         if (opts.indexOf('i') >= 0) {
           operator = '~*';
@@ -381,7 +382,7 @@ const buildWhereClause = ({ schema, query, index }) => {
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp]) {
-        let pgComparator = ParseToPosgresComparator[cmp];
+        const pgComparator = ParseToPosgresComparator[cmp];
         patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue[cmp]));
         index += 2;
@@ -461,9 +462,9 @@ export class PostgresStorageAdapter {
   createTable(className, schema, conn) {
     conn = conn || this._client;
     debug('createTable', className, schema);
-    let valuesArray = [];
-    let patternsArray = [];
-    let fields = Object.assign({}, schema.fields);
+    const valuesArray = [];
+    const patternsArray = [];
+    const fields = Object.assign({}, schema.fields);
     if (className === '_User') {
       fields._email_verify_token_expires_at = {type: 'Date'};
       fields._email_verify_token = {type: 'String'};
@@ -475,9 +476,9 @@ export class PostgresStorageAdapter {
       fields._password_history = { type: 'Array'};
     }
     let index = 2;
-    let relations = [];
+    const relations = [];
     Object.keys(fields).forEach((fieldName) => {
-      let parseType = fields[fieldName];
+      const parseType = fields[fieldName];
       // Skip when it's a relation
       // We'll create the tables later
       if (parseType.type === 'Relation') {
@@ -557,7 +558,7 @@ export class PostgresStorageAdapter {
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
     return Promise.resolve().then(() => {
-      let operations = [[`DROP TABLE IF EXISTS $1:name`, [className]],
+      const operations = [[`DROP TABLE IF EXISTS $1:name`, [className]],
         [`DELETE FROM "_SCHEMA" WHERE "className"=$1`, [className]]];
       return this._client.tx(t=>t.batch(operations.map(statement=>t.none(statement[0], statement[1]))));
     }).then(() => {
@@ -568,11 +569,11 @@ export class PostgresStorageAdapter {
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
-    let now = new Date().getTime();
+    const now = new Date().getTime();
     debug('deleteAllClasses');
     return this._client.any('SELECT * FROM "_SCHEMA"')
     .then(results => {
-      let joins = results.reduce((list, schema) => {
+      const joins = results.reduce((list, schema) => {
         return list.concat(joinTablesForSchema(schema.schema));
       }, []);
       const classes = ['_SCHEMA','_PushStatus','_JobStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
@@ -607,7 +608,7 @@ export class PostgresStorageAdapter {
     return Promise.resolve()
     .then(() => {
       fieldNames = fieldNames.reduce((list, fieldName) => {
-        let field = schema.fields[fieldName]
+        const field = schema.fields[fieldName]
         if (field.type !== 'Relation') {
           list.push(fieldName);
         }
@@ -615,13 +616,13 @@ export class PostgresStorageAdapter {
         return list;
       }, []);
 
-      let values = [className, ...fieldNames];
-      let columns = fieldNames.map((name, idx) => {
+      const values = [className, ...fieldNames];
+      const columns = fieldNames.map((name, idx) => {
         return `$${idx+2}:name`;
       }).join(',');
 
-      let doBatch = (t) => {
-        let batch = [
+      const doBatch = (t) => {
+        const batch = [
           t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className})
         ];
         if (values.length > 1) {
@@ -663,9 +664,9 @@ export class PostgresStorageAdapter {
   createObject(className, schema, object) {
     debug('createObject', className, object);
     let columnsArray = [];
-    let valuesArray = [];
+    const valuesArray = [];
     schema = toPostgresSchema(schema);
-    let geoPoints = {};
+    const geoPoints = {};
 
     object = handleDotFields(object);
 
@@ -747,9 +748,9 @@ export class PostgresStorageAdapter {
     });
 
     columnsArray = columnsArray.concat(Object.keys(geoPoints));
-    let initialValues = valuesArray.map((val, index) => {
+    const initialValues = valuesArray.map((val, index) => {
       let termination = '';
-      let fieldName = columnsArray[index];
+      const fieldName = columnsArray[index];
       if (['_rperm','_wperm'].indexOf(fieldName) >= 0) {
         termination = '::text[]';
       } else if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Array') {
@@ -757,18 +758,18 @@ export class PostgresStorageAdapter {
       }
       return `$${index + 2 + columnsArray.length}${termination}`;
     });
-    let geoPointsInjects = Object.keys(geoPoints).map((key) => {
-      let value = geoPoints[key];
+    const geoPointsInjects = Object.keys(geoPoints).map((key) => {
+      const value = geoPoints[key];
       valuesArray.push(value.longitude, value.latitude);
-      let l = valuesArray.length + columnsArray.length;
+      const l = valuesArray.length + columnsArray.length;
       return `POINT($${l}, $${l+1})`;
     });
 
-    let columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
-    let valuesPattern = initialValues.concat(geoPointsInjects).join(',')
+    const columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
+    const valuesPattern = initialValues.concat(geoPointsInjects).join(',')
 
-    let qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
-    let values = [className, ...columnsArray, ...valuesArray]
+    const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
+    const values = [className, ...columnsArray, ...valuesArray]
     debug(qs, values);
     return this._client.any(qs, values)
     .then(() => ({ ops: [object] }))
@@ -786,14 +787,14 @@ export class PostgresStorageAdapter {
   // If there is some other error, reject with INTERNAL_SERVER_ERROR.
   deleteObjectsByQuery(className, schema, query) {
     debug('deleteObjectsByQuery', className, query);
-    let values = [className];
-    let index = 2;
-    let where = buildWhereClause({ schema, index, query })
+    const values = [className];
+    const index = 2;
+    const where = buildWhereClause({ schema, index, query })
     values.push(...where.values);
     if (Object.keys(query).length === 0) {
       where.pattern = 'TRUE';
     }
-    let qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
+    const qs = `WITH deleted AS (DELETE FROM $1:name WHERE ${where.pattern} RETURNING *) SELECT count(*) FROM deleted`;
     debug(qs, values);
     return this._client.one(qs, values , a => +a.count)
     .then(count => {
@@ -813,8 +814,8 @@ export class PostgresStorageAdapter {
   // Apply the update to all objects that match the given Parse Query.
   updateObjectsByQuery(className, schema, query, update) {
     debug('updateObjectsByQuery', className, query, update);
-    let updatePatterns = [];
-    let values = [className]
+    const updatePatterns = [];
+    const values = [className]
     let index = 2;
     schema = toPostgresSchema(schema);
 
@@ -822,19 +823,19 @@ export class PostgresStorageAdapter {
     update = handleDotFields(update);
     // Resolve authData first,
     // So we don't end up with multiple key updates
-    for (let fieldName in update) {
-      let authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
+    for (const fieldName in update) {
+      const authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
         var provider = authDataMatch[1];
-        let value = update[fieldName];
+        const value = update[fieldName];
         delete update[fieldName];
         update['authData'] = update['authData'] || {};
         update['authData'][provider] = value;
       }
     }
 
-    for (let fieldName in update) {
-      let fieldValue = update[fieldName];
+    for (const fieldName in update) {
+      const fieldValue = update[fieldName];
       if (fieldValue === null) {
         updatePatterns.push(`$${index}:name = NULL`);
         values.push(fieldName);
@@ -842,15 +843,15 @@ export class PostgresStorageAdapter {
       } else if (fieldName == 'authData') {
         // This recursively sets the json_object
         // Only 1 level deep
-        let generate = (jsonb, key, value) => {
+        const generate = (jsonb, key, value) => {
           return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`;
         }
-        let lastKey = `$${index}:name`;
-        let fieldNameIndex = index;
+        const lastKey = `$${index}:name`;
+        const fieldNameIndex = index;
         index+=1;
         values.push(fieldName);
-        let update = Object.keys(fieldValue).reduce((lastKey, key) => {
-          let str = generate(lastKey, `$${index}::text`, `$${index+1}::jsonb`)
+        const update = Object.keys(fieldValue).reduce((lastKey, key) => {
+          const str = generate(lastKey, `$${index}::text`, `$${index+1}::jsonb`)
           index+=2;
           let value = fieldValue[key];
           if (value) {
@@ -934,7 +935,7 @@ export class PostgresStorageAdapter {
         let incrementPatterns = '';
         if (keysToIncrement.length > 0) {
           incrementPatterns = ' || ' + keysToIncrement.map((c) => {
-            let amount = fieldValue[c].amount;
+            const amount = fieldValue[c].amount;
             return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
           }).join(' || ');
           // Strip the keys
@@ -959,12 +960,12 @@ export class PostgresStorageAdapter {
       } else if (Array.isArray(fieldValue)
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Array') {
-        let expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
+        const expectedType = parseTypeToPostgresType(schema.fields[fieldName]);
         if (expectedType === 'text[]') {
           updatePatterns.push(`$${index}:name = $${index + 1}::text[]`);
         } else {
           let type = 'text';
-          for (let elt of fieldValue) {
+          for (const elt of fieldValue) {
             if (typeof elt == 'object') {
               type = 'json';
               break;
@@ -980,10 +981,10 @@ export class PostgresStorageAdapter {
       }
     }
 
-    let where = buildWhereClause({ schema, index, query })
+    const where = buildWhereClause({ schema, index, query })
     values.push(...where.values);
 
-    let qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
+    const qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     debug('update: ', qs, values);
     return this._client.any(qs, values); // TODO: This is unsafe, verification is needed, or a different query method;
   }
@@ -991,7 +992,7 @@ export class PostgresStorageAdapter {
   // Hopefully, we can get rid of this. It's only used for config and hooks.
   upsertOneObject(className, schema, query, update) {
     debug('upsertOneObject', {className, query, update});
-    let createValue = Object.assign({}, query, update);
+    const createValue = Object.assign({}, query, update);
     return this.createObject(className, schema, createValue).catch((err) => {
       // ignore duplicate value errors as it's upsert
       if (err.code === Parse.Error.DUPLICATE_VALUE) {
@@ -1006,7 +1007,7 @@ export class PostgresStorageAdapter {
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
-    let where = buildWhereClause({ schema, query, index: 2 })
+    const where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
@@ -1021,7 +1022,7 @@ export class PostgresStorageAdapter {
 
     let sortPattern = '';
     if (sort) {
-      let sorting = Object.keys(sort).map((key) => {
+      const sorting = Object.keys(sort).map((key) => {
         // Using $idx pattern gives:  non-integer constant in ORDER BY
         if (sort[key] === 1) {
           return `"${key}" ASC`;
@@ -1103,7 +1104,7 @@ export class PostgresStorageAdapter {
         object._password_changed_at = { __type: 'Date', iso: object._password_changed_at.toISOString() };
       }
 
-      for (let fieldName in object) {
+      for (const fieldName in object) {
         if (object[fieldName] === null) {
           delete object[fieldName];
         }
@@ -1143,8 +1144,8 @@ export class PostgresStorageAdapter {
   // Executes a count.
   count(className, schema, query) {
     debug('count', className, query);
-    let values = [className];
-    let where = buildWhereClause({ schema, query, index: 2 });
+    const values = [className];
+    const where = buildWhereClause({ schema, query, index: 2 });
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
@@ -1158,7 +1159,7 @@ export class PostgresStorageAdapter {
   }
 
   performInitialization({ VolatileClassesSchemas }) {
-    let now = new Date().getTime();
+    const now = new Date().getTime();
     debug('performInitialization');
     let promises = VolatileClassesSchemas.map((schema) => {
       return this.createTable(schema.className, schema).catch((err) =>{

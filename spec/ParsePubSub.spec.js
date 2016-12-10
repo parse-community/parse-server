@@ -59,7 +59,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create publisher/sub with custom adapter', function() {
-    let adapter =  {
+    const adapter =  {
       createPublisher: jasmine.createSpy('createPublisher'),
       createSubscriber: jasmine.createSpy('createSubscriber')
     }
@@ -82,7 +82,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create publisher/sub with custom function adapter', function() {
-    let adapter =  {
+    const adapter =  {
       createPublisher: jasmine.createSpy('createPublisher'),
       createSubscriber: jasmine.createSpy('createSubscriber')
     }

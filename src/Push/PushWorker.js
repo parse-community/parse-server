@@ -39,7 +39,7 @@ export class PushWorker {
       const subscriber = this.subscriber;
       subscriber.subscribe(this.channel);
       subscriber.on('message', (channel, messageStr) => {
-        let workItem = JSON.parse(messageStr);
+        const workItem = JSON.parse(messageStr);
         this.run(workItem);
       });
     }
@@ -52,9 +52,9 @@ export class PushWorker {
   }
 
   run({ body, query, pushStatus, applicationId }: any): Promise<*> {
-    let config = new Config(applicationId);
-    let auth = master(config);
-    let where  = query.where;
+    const config = new Config(applicationId);
+    const auth = master(config);
+    const where  = query.where;
     delete query.where;
     return rest.find(config, auth, '_Installation', where, query).then(({results}) => {
       if (results.length == 0) {
@@ -75,11 +75,11 @@ export class PushWorker {
     }
 
     // Collect the badges to reduce the # of calls
-    let badgeInstallationsMap = groupByBadge(installations);
+    const badgeInstallationsMap = groupByBadge(installations);
 
     // Map the on the badges count and return the send result
-    let promises = Object.keys(badgeInstallationsMap).map((badge) => {
-      let payload = deepcopy(body);
+    const promises = Object.keys(badgeInstallationsMap).map((badge) => {
+      const payload = deepcopy(body);
       if (badge == UNSUPPORTED_BADGE_KEY) {
         delete payload.data.badge;
       } else {

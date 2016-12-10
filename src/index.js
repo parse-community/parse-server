@@ -10,14 +10,14 @@ import { getLogger }        from './logger';
 import { PushWorker }       from './Push/PushWorker';
 
 // Factory function
-let _ParseServer = function(options) {
-  let server = new ParseServer(options);
+const _ParseServer = function(options) {
+  const server = new ParseServer(options);
   return server.app;
 }
 // Mount the create liveQueryServer
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 
-let GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
+const GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
 
 Object.defineProperty(module.exports, 'logger', {
   get: getLogger

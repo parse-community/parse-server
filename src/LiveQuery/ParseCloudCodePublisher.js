@@ -23,7 +23,7 @@ class ParseCloudCodePublisher {
   _onCloudCodeMessage(type: string, request: any): void {
     logger.verbose('Raw request from cloud code current : %j | original : %j', request.object, request.original);
     // We need the full JSON which includes className
-    let message = {
+    const message = {
       currentParseObject: request.object._toFullJSON()
     }
     if (request.original) {

@@ -1,4 +1,4 @@
-let twitter = require('../src/authDataManager/twitter');
+const twitter = require('../src/Adapters/Auth/twitter');
 
 describe('Twitter Auth', () => {
   it('should use the proper configuration', () => {

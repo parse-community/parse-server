@@ -1,8 +1,8 @@
 'use strict';
 
-let request = require('request');
+const request = require('request');
 
-let delayPromise = (delay) => {
+const delayPromise = (delay) => {
   return new Promise((resolve) => {
     setTimeout(resolve, delay);
   });
@@ -13,7 +13,7 @@ describe('Parse.Push', () => {
     var pushAdapter = {
       send: function(body, installations) {
         var badge = body.data.badge;
-        let promises = installations.map((installation) => {
+        const promises = installations.map((installation) => {
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
             expect(installation.originalBadge+1).toEqual(installation.badge);

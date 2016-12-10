@@ -20,7 +20,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    let req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject);
     this.liveQueryPublisher.onCloudCodeAfterSave(req);
   }
 
@@ -28,7 +28,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    let req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject);
     this.liveQueryPublisher.onCloudCodeAfterDelete(req);
   }
 
@@ -37,7 +37,7 @@ export class LiveQueryController {
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any): any {
-    let req = {
+    const req = {
       object: currentObject
     };
     if (currentObject) {

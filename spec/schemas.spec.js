@@ -23,7 +23,7 @@ var hasAllPODobject = () => {
   return obj;
 };
 
-let defaultClassLevelPermissions = {
+const defaultClassLevelPermissions = {
   find: {
     '*': true
   },
@@ -1008,7 +1008,7 @@ describe('schemas', () => {
 
   it('should fail setting schema permissions with invalid key', done => {
 
-    let object = new Parse.Object('AClass');
+    const object = new Parse.Object('AClass');
     object.save().then(() => {
       request.put({
         url: 'http://localhost:8378/1/schemas/AClass',
@@ -1056,7 +1056,7 @@ describe('schemas', () => {
       }
     }, (error) => {
       expect(error).toEqual(null);
-      let object = new Parse.Object('AClass');
+      const object = new Parse.Object('AClass');
       object.set('hello', 'world');
       return object.save().then(() => {
         fail('should not be able to add a field');
@@ -1085,7 +1085,7 @@ describe('schemas', () => {
       }
     }, (error) => {
       expect(error).toEqual(null);
-      let object = new Parse.Object('AClass');
+      const object = new Parse.Object('AClass');
       object.set('hello', 'world');
       return object.save().then(() => {
         done();
@@ -1249,15 +1249,15 @@ describe('schemas', () => {
   }
 
   it('validate CLP 1', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
 
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    let role = new Parse.Role('admin', new Parse.ACL());
+    const role = new Parse.Role('admin', new Parse.ACL());
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1270,11 +1270,11 @@ describe('schemas', () => {
       return role.save(null, {useMasterKey: true});
     }).then(() => {
       return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+        const obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then(() => {
         fail('Use should hot be able to find!')
       }, (err) => {
@@ -1284,7 +1284,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
@@ -1296,15 +1296,15 @@ describe('schemas', () => {
   });
 
   it('validate CLP 2', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
 
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    let role = new Parse.Role('admin', new Parse.ACL());
+    const role = new Parse.Role('admin', new Parse.ACL());
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1317,11 +1317,11 @@ describe('schemas', () => {
       return role.save(null, {useMasterKey: true});
     }).then(() => {
       return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+        const obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then(() => {
         fail('User should not be able to find!')
       }, (err) => {
@@ -1337,7 +1337,7 @@ describe('schemas', () => {
         }
       }, true);
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
       }, () => {
@@ -1347,7 +1347,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
@@ -1359,15 +1359,15 @@ describe('schemas', () => {
   });
 
   it('validate CLP 3', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
 
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    let role = new Parse.Role('admin', new Parse.ACL());
+    const role = new Parse.Role('admin', new Parse.ACL());
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1380,11 +1380,11 @@ describe('schemas', () => {
       return role.save(null, {useMasterKey: true});
     }).then(() => {
       return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+        const obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then(() => {
         fail('User should not be able to find!')
       }, (err) => {
@@ -1395,7 +1395,7 @@ describe('schemas', () => {
       // delete all CLP
       return setPermissionsOnClass('AClass', null, true);
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
       }, () => {
@@ -1405,7 +1405,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
@@ -1417,15 +1417,15 @@ describe('schemas', () => {
   });
 
   it('validate CLP 4', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
 
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    let role = new Parse.Role('admin', new Parse.ACL());
+    const role = new Parse.Role('admin', new Parse.ACL());
 
     setPermissionsOnClass('AClass', {
       'find': {
@@ -1438,11 +1438,11 @@ describe('schemas', () => {
       return role.save(null, {useMasterKey: true});
     }).then(() => {
       return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+        const obj = new Parse.Object('AClass');
         return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then(() => {
         fail('User should not be able to find!')
       }, (err) => {
@@ -1461,7 +1461,7 @@ describe('schemas', () => {
         return Promise.resolve();
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then(() => {
         fail('User should not be able to find!')
       }, (err) => {
@@ -1471,7 +1471,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
@@ -1483,25 +1483,25 @@ describe('schemas', () => {
   });
 
   it('validate CLP 5', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
 
-    let user2 = new Parse.User();
+    const user2 = new Parse.User();
     user2.setUsername('user2');
     user2.setPassword('user2');
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
 
-    let role = new Parse.Role('admin', new Parse.ACL());
+    const role = new Parse.Role('admin', new Parse.ACL());
 
     Promise.resolve().then(() => {
       return Parse.Object.saveAll([user, user2, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true}).then(() => {
-        let perm = {
+        const perm = {
           find: {}
         };
         // let the user find
@@ -1510,11 +1510,11 @@ describe('schemas', () => {
       })
     }).then(() => {
       return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+        const obj = new Parse.Object('AClass');
         return obj.save();
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((res) => {
         expect(res.length).toEqual(1);
       }, () => {
@@ -1524,7 +1524,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('admin', 'admin');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then(() => {
       fail("should not be able to read!");
@@ -1535,7 +1535,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('user2', 'user2');
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then(() => {
       fail("should not be able to read!");
@@ -1557,13 +1557,13 @@ describe('schemas', () => {
       delete: {'*': true},
       addField:{'*': true}
     }).then(() => {
-      let obj = new Parse.Object('AnObject');
-      let anotherObject = new Parse.Object('AnotherObject');
+      const obj = new Parse.Object('AnObject');
+      const anotherObject = new Parse.Object('AnotherObject');
       return obj.save({
         anotherObject
       })
     }).then(() => {
-      let query = new Parse.Query('AnObject');
+      const query = new Parse.Query('AnObject');
       query.include('anotherObject');
       return query.find();
     }).then((res) => {
@@ -1625,11 +1625,11 @@ describe('schemas', () => {
   });
 
   it("regression test for #1991", done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    let role = new Parse.Role('admin', new Parse.ACL());
-    let obj = new Parse.Object('AnObject');
+    const role = new Parse.Role('admin', new Parse.ACL());
+    const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, role]).then(() => {
       role.relation('users').add(user);
       return role.save(null, {useMasterKey: true});
@@ -1648,7 +1648,7 @@ describe('schemas', () => {
     }).then(() => {
       return obj.destroy();
     }).then(() => {
-      let query = new Parse.Query('AnObject');
+      const query = new Parse.Query('AnObject');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(0);
@@ -1661,8 +1661,8 @@ describe('schemas', () => {
   });
 
   it('regression test for #2246', done => {
-    let profile = new Parse.Object('UserProfile');
-    let user = new Parse.User();
+    const profile = new Parse.Object('UserProfile');
+    const user = new Parse.User();
     function initialize() {
       return user.save({
         username: 'user',
@@ -1684,7 +1684,7 @@ describe('schemas', () => {
     }).then(() => {
       return Parse.User.logIn('user', 'password')
     }).then(() => {
-      let query = new Parse.Query('_User');
+      const query = new Parse.Query('_User');
       query.include('userProfile');
       return query.get(user.id);
     }).then((user) => {

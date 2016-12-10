@@ -358,7 +358,7 @@ describe('ParseLiveQueryServer', function() {
     expect(args[0]).toBe(parseWebSocket);
     expect(JSON.stringify(args[1])).toBe(updateRequest);
     expect(parseLiveQueryServer._handleUnsubscribe).toHaveBeenCalled();
-    let unsubArgs = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
+    const unsubArgs = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
     expect(unsubArgs.length).toBe(3);
     expect(unsubArgs[2]).toBe(false);
     expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
