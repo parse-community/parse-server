@@ -839,7 +839,7 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -880,7 +880,7 @@ describe("Password Policy: ", () => {
           reconfigureServer({
             appName: 'passwordPolicy',
             passwordPolicy: {
-              maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+              maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
             },
             publicServerURL: "http://localhost:8378/1"
           }).then(() => {
@@ -979,7 +979,7 @@ describe("Password Policy: ", () => {
       appName: 'passwordPolicy',
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {

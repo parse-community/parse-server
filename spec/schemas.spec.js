@@ -1230,7 +1230,7 @@ describe('schemas', () => {
     }
     return new Promise((resolve, reject) => {
       op({
-        url: 'http://localhost:8378/1/schemas/'+className,
+        url: 'http://localhost:8378/1/schemas/' + className,
         headers: masterKeyHeaders,
         json: true,
         body: {

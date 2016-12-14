@@ -122,14 +122,14 @@ runner({
         });
       } else {
         startServer(options, () => {
-          console.log('['+process.pid+'] parse-server running on '+options.serverURL);
+          console.log('[' + process.pid + '] parse-server running on ' + options.serverURL);
         });
       }
     } else {
       startServer(options, () => {
         logOptions();
         console.log('');
-        console.log('['+process.pid+'] parse-server running on '+options.serverURL);
+        console.log('[' + process.pid + '] parse-server running on ' + options.serverURL);
       });
     }
   }

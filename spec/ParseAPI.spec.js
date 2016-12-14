@@ -825,7 +825,7 @@ describe('miscellaneous', function() {
       };
       request.put({
         headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore/'+obj.id,
+        url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
         body: JSON.stringify({
           a: 'b',
           c: {"__op":"Increment","amount":2},
@@ -1241,7 +1241,7 @@ describe('miscellaneous', function() {
             amount: amount
           }
         },
-        url: 'http://localhost:8378/1/classes/AnObject/'+object.id
+        url: 'http://localhost:8378/1/classes/AnObject/' + object.id
       })
       return new Promise((resolve, reject) => {
         request.put(options, (err, res, body)  => {

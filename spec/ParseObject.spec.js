@@ -1390,7 +1390,7 @@ describe('Parse.Object testing', () => {
       }
       equal(itemsAgain.length, numItems, "Should get the array back");
       itemsAgain.forEach(function(item, i) {
-        var newValue = i*2;
+        var newValue = i * 2;
         item.set("x", newValue);
       });
       return Parse.Object.saveAll(itemsAgain);
@@ -1400,7 +1400,7 @@ describe('Parse.Object testing', () => {
       equal(fetchedItemsAgain.length, numItems,
             "Number of items fetched should not change");
       fetchedItemsAgain.forEach(function(item, i) {
-        equal(item.get("x"), i*2);
+        equal(item.get("x"), i * 2);
       });
       done();
     });
@@ -1457,7 +1457,7 @@ describe('Parse.Object testing', () => {
       }
       equal(itemsAgain.length, numItems, "Should get the array back");
       itemsAgain.forEach(function(item, i) {
-        var newValue = i*2;
+        var newValue = i * 2;
         item.set("x", newValue);
       });
       return Parse.Object.saveAll(itemsAgain);
@@ -1467,7 +1467,7 @@ describe('Parse.Object testing', () => {
           equal(fetchedItemsAgain.length, numItems,
                 "Number of items fetched should not change");
           fetchedItemsAgain.forEach(function(item, i) {
-            equal(item.get("x"), i*2);
+            equal(item.get("x"), i * 2);
           });
           done();
         },
@@ -1581,7 +1581,7 @@ describe('Parse.Object testing', () => {
         return;
       }
       itemsAgain.forEach(function(item, i) {
-        item.set("x", i*2);
+        item.set("x", i * 2);
       });
       return Parse.Object.saveAll(itemsAgain);
     }).then(function() {
@@ -1619,7 +1619,7 @@ describe('Parse.Object testing', () => {
         return;
       }
       itemsAgain.forEach(function(item, i) {
-        item.set("x", i*2);
+        item.set("x", i * 2);
       });
       return Parse.Object.saveAll(itemsAgain);
     }).then(function() {

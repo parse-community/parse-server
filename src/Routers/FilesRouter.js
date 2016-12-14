@@ -137,7 +137,7 @@ function handleFileStream(stream, req, res, contentType) {
   }
 
   if (!partialend) {
-    if (((stream.length-1) - start) < (buffer_size)) {
+    if (((stream.length - 1) - start) < (buffer_size)) {
       end = stream.length - 1;
     }else{
       end = start + (buffer_size);

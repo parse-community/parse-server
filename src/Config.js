@@ -11,7 +11,7 @@ function removeTrailingSlash(str) {
     return str;
   }
   if (str.endsWith("/")) {
-    str = str.substr(0, str.length-1);
+    str = str.substr(0, str.length - 1);
   }
   return str;
 }
@@ -201,7 +201,7 @@ export class Config {
       return undefined;
     }
     var now = new Date();
-    return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration*1000));
+    return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration * 1000));
   }
 
   generatePasswordResetTokenExpiresAt() {
@@ -217,7 +217,7 @@ export class Config {
       return undefined;
     }
     var now = new Date();
-    return new Date(now.getTime() + (this.sessionLength*1000));
+    return new Date(now.getTime() + (this.sessionLength * 1000));
   }
 
   get invalidLinkURL() {

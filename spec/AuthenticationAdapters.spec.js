@@ -6,8 +6,8 @@ var path = require('path');
 
 describe('AuthenticationProviers', function() {
   ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
-    it("Should validate structure of "+providerName, (done) => {
-      var provider = require("../src/Adapters/Auth/"+providerName);
+    it("Should validate structure of " + providerName, (done) => {
+      var provider = require("../src/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
       jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);

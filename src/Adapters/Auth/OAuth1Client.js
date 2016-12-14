@@ -36,7 +36,7 @@ OAuth.prototype.send = function(method, path, params, body){
 
 OAuth.prototype.buildRequest = function(method, path, params, body) {
   if (path.indexOf("/") != 0) {
-    path = "/"+path;
+    path = "/" + path;
   }
   if (params && Object.keys(params).length > 0) {
     path += "?" + OAuth.buildParameterString(params);
@@ -118,7 +118,7 @@ OAuth.nonce = function(){
   var text = "";
   var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
 
-  for(var i=0; i < 30; i++)
+  for(var i = 0; i < 30; i++)
     text += possible.charAt(Math.floor(Math.random() * possible.length));
 
   return text;
@@ -162,7 +162,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
     oauth_parameters.oauth_nonce = OAuth.nonce();
   }
   if (!oauth_parameters.oauth_timestamp) {
-    oauth_parameters.oauth_timestamp = Math.floor(new Date().getTime()/1000);
+    oauth_parameters.oauth_timestamp = Math.floor(new Date().getTime() / 1000);
   }
   if (!oauth_parameters.oauth_signature_method) {
     oauth_parameters.oauth_signature_method = OAuth.signatureMethod;
@@ -172,7 +172,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
   }
 
   if(!auth_token_secret){
-    auth_token_secret="";
+    auth_token_secret = "";
   }
 	// Force GET method if unset
   if (!request.method) {
@@ -193,7 +193,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
   var parameterString = OAuth.buildParameterString(signatureParams);
 
 	// Build the signature string
-  var url = "https://"+request.host+""+request.path;
+  var url = "https://" + request.host + "" + request.path;
 
   var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
 	// Hash the signature string
@@ -210,7 +210,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 	// Set the authorization header
   var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
     var value = oauth_parameters[key];
-    return key+'="'+value+'"';
+    return key + '="' + value + '"';
   }).join(", ")
 
   request.headers.Authorization = 'OAuth ' + authHeader;

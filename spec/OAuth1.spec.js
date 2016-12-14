@@ -64,7 +64,7 @@ describe('OAuth', function() {
     var req = oauthClient.buildRequest(method, path, {"query": "param"});
 
     jequal(req.host, options.host);
-    jequal(req.path, "/"+path+"?query=param");
+    jequal(req.path, "/" + path + "?query=param");
     jequal(req.method, "GET");
     jequal(req.headers['Content-Type'], 'application/x-www-form-urlencoded');
     jequal(req.headers['Authorization'], 'OAuth oauth_consumer_key="hello", oauth_nonce="AAAAAAAAAAAAAAAAA", oauth_signature="wNkyEkDE%2F0JZ2idmqyrgHdvC0rs%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="123450000", oauth_token="token", oauth_version="1.0"')

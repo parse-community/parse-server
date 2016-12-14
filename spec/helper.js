@@ -167,7 +167,7 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 // 10 minutes timeout
-beforeAll(startDB, 10*60*1000);
+beforeAll(startDB, 10 * 60 * 1000);
 
 afterAll(stopDB);
 
