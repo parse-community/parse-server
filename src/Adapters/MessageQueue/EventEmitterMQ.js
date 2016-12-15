@@ -1,17 +1,6 @@
 import events from 'events';
 
 const emitter = new events.EventEmitter();
-const subscriptions = new Map();
-
-function unsubscribe(channel: string) {
-  if (!subscriptions.has(channel)) {
-    //console.log('No channel to unsub from');
-    return;
-  }
-  //console.log('unsub ', channel);
-  emitter.removeListener(channel, subscriptions.get(channel));
-  subscriptions.delete(channel);
-}
 
 class Publisher {
   emitter: any;
@@ -26,6 +15,7 @@ class Publisher {
 }
 
 class Consumer extends events.EventEmitter {
+  static subscriptions = new Map();
   emitter: any;
 
   constructor(emitter: any) {
@@ -34,16 +24,23 @@ class Consumer extends events.EventEmitter {
   }
 
   subscribe(channel: string): void {
-    unsubscribe(channel);
+    this.unsubscribe(channel);
     const handler = (message) => {
       this.emit('message', channel, message);
     }
-    subscriptions.set(channel, handler);
+    Consumer.subscriptions.set(channel, handler);
     this.emitter.on(channel, handler);
   }
 
   unsubscribe(channel: string): void {
-    unsubscribe(channel);
+    if (!Consumer.subscriptions.has(channel)) {
+      //console.log('No channel to unsub from');
+      return;
+    }
+
+    //console.log('unsub ', channel);
+    this.emitter.removeListener(channel, Consumer.subscriptions.get(channel));
+    Consumer.subscriptions.delete(channel);
   }
 }
 
