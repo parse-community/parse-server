@@ -217,10 +217,10 @@ function updateUserPassword(userId, password, config) {
 }
 
 function buildEmailLink(destination, username, token, config) {
-  let usernameAndToken = `token=${token}&username=${username}`
+  const usernameAndToken = `token=${token}&username=${username}`
 
   if (config.parseFrameURL) {
-    let destinationWithoutHost = destination.replace(config.publicServerURL, '');
+    const destinationWithoutHost = destination.replace(config.publicServerURL, '');
     return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
   } else {
     return `${destination}?${usernameAndToken}`;
