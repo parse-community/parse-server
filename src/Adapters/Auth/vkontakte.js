@@ -4,10 +4,10 @@
 
 var https = require('https');
 var Parse = require('parse/node').Parse;
-var logger = require('../logger').default;
+var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
-function validateAuthData(authData, params) {  
+function validateAuthData(authData, params) {
   return vkOAuth2Request(params).then(function (response) {
     if (response && response && response.access_token) {
       return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token).then(function (response) {
@@ -25,7 +25,7 @@ function validateAuthData(authData, params) {
 function vkOAuth2Request(params) {
   var promise = new Parse.Promise();
   return promise.then(function(){
-    if (!params || !params.appIds || !params.appIds.length || !params.appSecret || !params.appSecret.length ) {
+    if (!params || !params.appIds || !params.appIds.length || !params.appSecret || !params.appSecret.length) {
       logger.error('Vk Auth', 'Vk auth is not configured. Missing appIds or appSecret.');
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is not configured. Missing appIds or appSecret.');
     }
@@ -50,7 +50,7 @@ function request(host, path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function (e) {
+    }).on('error', function () {
       reject('Failed to validate this access token with Vk.');
     });
   });

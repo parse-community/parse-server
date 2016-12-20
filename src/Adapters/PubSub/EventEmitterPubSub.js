@@ -1,6 +1,6 @@
 import events from 'events';
 
-let emitter = new events.EventEmitter();
+const emitter = new events.EventEmitter();
 
 class Publisher {
   emitter: any;
@@ -25,7 +25,7 @@ class Subscriber extends events.EventEmitter {
   }
 
   subscribe(channel: string): void {
-    let handler = (message) => {
+    const handler = (message) => {
       this.emit('message', channel, message);
     }
     this.subscriptions.set(channel, handler);
@@ -49,7 +49,7 @@ function createSubscriber(): any {
   return new Subscriber(emitter);
 }
 
-let EventEmitterPubSub = {
+const EventEmitterPubSub = {
   createPublisher,
   createSubscriber
 }

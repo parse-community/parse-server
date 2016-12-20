@@ -1,6 +1,6 @@
 import {nullParser} from './cli/utils/parsers';
 
-let logsFolder = (() => {
+const logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
     folder = './test_logs/'
@@ -11,8 +11,8 @@ let logsFolder = (() => {
   return folder;
 })();
 
-let { verbose, level } = (() => {
-  let verbose = process.env.VERBOSE ? true : false;
+const { verbose, level } = (() => {
+  const verbose = process.env.VERBOSE ? true : false;
   return { verbose, level: verbose ? 'verbose' : undefined }
 })();
 
@@ -31,5 +31,6 @@ export default {
   sessionLength: 31536000,
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
-  schemaCacheTTL: 5000 // in ms
+  schemaCacheTTL: 5000, // in ms
+  userSensitiveFields: ['email']
 }

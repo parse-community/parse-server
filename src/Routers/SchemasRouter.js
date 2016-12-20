@@ -1,7 +1,6 @@
 // schemas.js
 
-var express = require('express'),
-  Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
@@ -56,8 +55,8 @@ function modifySchema(req) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  let submittedFields = req.body.fields || {};
-  let className = req.params.className;
+  const submittedFields = req.body.fields || {};
+  const className = req.params.className;
 
   return req.config.database.loadSchema({ clearCache: true})
   .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))

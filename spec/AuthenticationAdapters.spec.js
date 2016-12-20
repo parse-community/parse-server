@@ -1,145 +1,13 @@
-var OAuth = require("../src/authDataManager/OAuth1Client");
 var request = require('request');
 var Config = require("../src/Config");
 var defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
+var authenticationLoader = require('../src/Adapters/Auth');
+var path = require('path');
 
-describe('OAuth', function() {
-  it("Nonce should have right length", (done) => {
-    jequal(OAuth.nonce().length, 30);
-    done();
-  });
-
-  it("Should properly build parameter string", (done) => {
-    var string = OAuth.buildParameterString({c:1, a:2, b:3})
-    jequal(string, "a=2&b=3&c=1");
-    done();
-  });
-
-  it("Should properly build empty parameter string", (done) => {
-    var string = OAuth.buildParameterString()
-    jequal(string, "");
-    done();
-  });
-
-  it("Should properly build signature string", (done) => {
-    var string = OAuth.buildSignatureString("get", "http://dummy.com", "");
-    jequal(string, "GET&http%3A%2F%2Fdummy.com&");
-    done();
-  });
-
-  it("Should properly generate request signature", (done) => {
-    var request = {
-      host: "dummy.com",
-      path: "path"
-    };
-
-    var oauth_params = {
-      oauth_timestamp: 123450000,
-      oauth_nonce: "AAAAAAAAAAAAAAAAA",
-      oauth_consumer_key: "hello",
-      oauth_token: "token"
-    };
-
-    var consumer_secret = "world";
-    var auth_token_secret = "secret";
-    request = OAuth.signRequest(request, oauth_params, consumer_secret, auth_token_secret);
-    jequal(request.headers['Authorization'], 'OAuth oauth_consumer_key="hello", oauth_nonce="AAAAAAAAAAAAAAAAA", oauth_signature="8K95bpQcDi9Nd2GkhumTVcw4%2BXw%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="123450000", oauth_token="token", oauth_version="1.0"');
-    done();
-  });
-
-  it("Should properly build request", (done) => {
-    var options = {
-      host: "dummy.com",
-      consumer_key: "hello",
-      consumer_secret: "world",
-      auth_token: "token",
-      auth_token_secret: "secret",
-      // Custom oauth params for tests
-      oauth_params: {
-        oauth_timestamp: 123450000,
-        oauth_nonce: "AAAAAAAAAAAAAAAAA"
-      }
-    };
-    var path = "path";
-    var method = "get";
-
-    var oauthClient = new OAuth(options);
-    var req = oauthClient.buildRequest(method, path, {"query": "param"});
-
-    jequal(req.host, options.host);
-    jequal(req.path, "/"+path+"?query=param");
-    jequal(req.method, "GET");
-    jequal(req.headers['Content-Type'], 'application/x-www-form-urlencoded');
-    jequal(req.headers['Authorization'], 'OAuth oauth_consumer_key="hello", oauth_nonce="AAAAAAAAAAAAAAAAA", oauth_signature="wNkyEkDE%2F0JZ2idmqyrgHdvC0rs%3D", oauth_signature_method="HMAC-SHA1", oauth_timestamp="123450000", oauth_token="token", oauth_version="1.0"')
-    done();
-  });
-
-
-  function validateCannotAuthenticateError(data, done) {
-    jequal(typeof data, "object");
-    jequal(typeof data.errors, "object");
-    var errors = data.errors;
-    jequal(typeof errors[0], "object");
-    // Cannot authenticate error
-    jequal(errors[0].code, 32);
-    done();
-  }
-
-  it("Should fail a GET request", (done) => {
-    var options = {
-      host: "api.twitter.com",
-      consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    };
-    var path = "/1.1/help/configuration.json";
-    var params = {"lang": "en"};
-    var oauthClient = new OAuth(options);
-    oauthClient.get(path, params).then(function(data){
-      validateCannotAuthenticateError(data, done);
-    })
-  });
-
-  it("Should fail a POST request", (done) => {
-    var options = {
-      host: "api.twitter.com",
-      consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    };
-    var body = {
-      lang: "en"
-    };
-    var path = "/1.1/account/settings.json";
-
-    var oauthClient = new OAuth(options);
-    oauthClient.post(path, null, body).then(function(data){
-      validateCannotAuthenticateError(data, done);
-    })
-  });
-
-  it("Should fail a request", (done) => {
-    var options = {
-      host: "localhost",
-      consumer_key: "XXXXXXXXXXXXXXXXXXXXXXXXX",
-      consumer_secret: "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    };
-    var body = {
-      lang: "en"
-    };
-    var path = "/";
-
-    var oauthClient = new OAuth(options);
-    oauthClient.post(path, null, body).then(function(data){
-      jequal(false, true);
-      done();
-    }).catch(function(){
-      jequal(true, true);
-      done();
-    })
-  });
-
+describe('AuthenticationProviers', function() {
   ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of "+providerName, (done) => {
-      var provider = require("../src/authDataManager/"+providerName);
+      var provider = require("../src/Adapters/Auth/"+providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
       jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);
@@ -192,7 +60,7 @@ describe('OAuth', function() {
     };
   };
 
-  var ExtendedUser = Parse.User.extend({
+  Parse.User.extend({
     extended: function() {
       return true;
     }
@@ -206,13 +74,13 @@ describe('OAuth', function() {
     };
 
     var options = {
-        headers: {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-          'X-Parse-Installation-Id': 'yolo',
-          'Content-Type': 'application/json' },
-        url: 'http://localhost:8378/1/users',
-        body: JSON.stringify(jsonBody)
-      };
+      headers: {'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Installation-Id': 'yolo',
+        'Content-Type': 'application/json' },
+      url: 'http://localhost:8378/1/users',
+      body: JSON.stringify(jsonBody)
+    };
 
     return request.post(options, callback);
   }
@@ -227,15 +95,15 @@ describe('OAuth', function() {
       var sessionToken = b.sessionToken;
       var q = new Parse.Query("_Session");
       q.equalTo('sessionToken', sessionToken);
-      q.first({useMasterKey: true}).then((res) => {
+      q.first({useMasterKey: true}).then((res) => {
         if (!res) {
-           fail('should not fail fetching the session');
-           done();
-           return;
+          fail('should not fail fetching the session');
+          done();
+          return;
         }
         expect(res.get("installationId")).toEqual('yolo');
         done();
-      }).fail((err) => {
+      }).fail(() => {
         fail('should not fail fetching the session');
         done();
       })
@@ -305,25 +173,143 @@ describe('OAuth', function() {
                      "User should be linked to myoauth");
                   done();
                 },
-                error: function(model, error) {
+                error: function() {
                   ok(false, "linking again should succeed");
                   done();
                 }
               });
             });
           },
-          error: function(model, error) {
+          error: function() {
             ok(false, "unlinking should succeed");
             done();
           }
         });
       },
-      error: function(model, error) {
+      error: function() {
         ok(false, "linking should have worked");
         done();
       }
     });
   });
 
+  function validateValidator(validator) {
+    expect(typeof validator).toBe('function');
+  }
 
-})
+  function validateAuthenticationHandler(authenticatonHandler) {
+    expect(authenticatonHandler).not.toBeUndefined();
+    expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
+    expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
+  }
+
+  function validateAuthenticationAdapter(authAdapter) {
+    expect(authAdapter).not.toBeUndefined();
+    if (!authAdapter) { return; }
+    expect(typeof authAdapter.validateAuthData).toBe('function');
+    expect(typeof authAdapter.validateAppId).toBe('function');
+  }
+
+  it('properly loads custom adapter', (done) => {
+    var validAuthData = {
+      id: 'hello',
+      token: 'world'
+    }
+    const adapter = {
+      validateAppId: function() {
+        return Promise.resolve();
+      },
+      validateAuthData: function(authData) {
+        if (authData.id == validAuthData.id && authData.token == validAuthData.token) {
+          return Promise.resolve();
+        }
+        return Promise.reject();
+      }
+    };
+
+    const authDataSpy = spyOn(adapter, 'validateAuthData').and.callThrough();
+    const appIdSpy = spyOn(adapter, 'validateAppId').and.callThrough();
+
+    const authenticationHandler = authenticationLoader({
+      customAuthentication: adapter
+    });
+
+    validateAuthenticationHandler(authenticationHandler);
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    validateValidator(validator);
+
+    validator(validAuthData).then(() => {
+      expect(authDataSpy).toHaveBeenCalled();
+      // AppIds are not provided in the adapter, should not be called
+      expect(appIdSpy).not.toHaveBeenCalled();
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    })
+  });
+
+  it('properly loads custom adapter module object', (done) => {
+    const authenticationHandler = authenticationLoader({
+      customAuthentication: path.resolve('./spec/support/CustomAuth.js')
+    });
+
+    validateAuthenticationHandler(authenticationHandler);
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    validateValidator(validator);
+
+    validator({
+      token: 'my-token'
+    }).then(() => {
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    })
+  });
+
+  it('properly loads custom adapter module object', (done) => {
+    const authenticationHandler = authenticationLoader({
+      customAuthentication: { module: path.resolve('./spec/support/CustomAuthFunction.js'), options: { token: 'valid-token' }}
+    });
+
+    validateAuthenticationHandler(authenticationHandler);
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+    validateValidator(validator);
+
+    validator({
+      token: 'valid-token'
+    }).then(() => {
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    })
+  });
+
+  it('properly loads a default adapter with options', () => {
+    const options = {
+      facebook: {
+        appIds: ['a', 'b']
+      }
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.facebook);
+  });
+
+  it('properly loads a custom adapter with options', () => {
+    const options = {
+      custom: {
+        validateAppId: () => {},
+        validateAuthData: () => {},
+        appIds: ['a', 'b']
+      }
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('custom', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.custom);
+  });
+});

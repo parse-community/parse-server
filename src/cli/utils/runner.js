@@ -1,9 +1,8 @@
 
 import program from './commander';
-import { mergeWithOptions } from './commander';
 
 function logStartupOptions(options) {
-  for (let key in options) {
+  for (const key in options) {
     let value = options[key];
     if (key == "masterKey") {
       value = "***REDACTED***";
@@ -11,7 +10,9 @@ function logStartupOptions(options) {
     if (typeof value === 'object') {
       value = JSON.stringify(value);
     }
+    /* eslint-disable no-console */
     console.log(`${key}: ${value}`);
+    /* eslint-enable no-console */
   }
 }
 
@@ -30,7 +31,7 @@ export default function({
   }
   program.parse(process.argv, process.env);
 
-  let options = program.getOptions();
+  const options = program.getOptions();
   start(program, options, function() {
     logStartupOptions(options);
   });

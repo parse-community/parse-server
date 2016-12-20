@@ -5,7 +5,7 @@ const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
 export function flatten(array) {
-  return array.reduce((memo, element) => {
+  return array.reduce((memo, element) => {
     if (Array.isArray(element)) {
       memo = memo.concat(flatten(element));
     } else {
@@ -19,8 +19,8 @@ function statusHandler(className, database) {
   let lastPromise = Promise.resolve();
 
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
+    lastPromise = lastPromise.then(() => {
+      return database.create(className, object).then(() => {
         return Promise.resolve(object);
       });
     });
@@ -28,7 +28,7 @@ function statusHandler(className, database) {
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
+    lastPromise = lastPromise.then(() => {
       return database.update(className, where, object);
     });
     return lastPromise;
@@ -42,12 +42,11 @@ function statusHandler(className, database) {
 
 export function jobStatusHandler(config) {
   let jobStatus;
-  let objectId = newObjectId();
-  let database = config.database;
-  let lastPromise = Promise.resolve();
-  let handler = statusHandler(JOB_STATUS_COLLECTION, database);
-  let setRunning = function(jobName, params) {
-    let now = new Date();
+  const objectId = newObjectId();
+  const database = config.database;
+  const handler = statusHandler(JOB_STATUS_COLLECTION, database);
+  const setRunning = function(jobName, params) {
+    const now = new Date();
     jobStatus = {
       objectId,
       jobName,
@@ -62,24 +61,24 @@ export function jobStatusHandler(config) {
     return handler.create(jobStatus);
   }
 
-  let setMessage = function(message) {
+  const setMessage = function(message) {
     if (!message || typeof message !== 'string') {
       return Promise.resolve();
     }
     return handler.update({ objectId }, { message });
   }
 
-  let setSucceeded = function(message) {
+  const setSucceeded = function(message) {
     return setFinalStatus('succeeded', message);
   }
 
-  let setFailed = function(message) {
+  const setFailed = function(message) {
     return setFinalStatus('failed', message);
   }
 
-  let setFinalStatus = function(status, message = undefined) {
-    let finishedAt = new Date();
-    let update = { status, finishedAt };
+  const setFinalStatus = function(status, message = undefined) {
+    const finishedAt = new Date();
+    const update = { status, finishedAt };
     if (message && typeof message === 'string') {
       update.message = message;
     }
@@ -97,13 +96,13 @@ export function jobStatusHandler(config) {
 export function pushStatusHandler(config) {
 
   let pushStatus;
-  let objectId = newObjectId();
-  let database = config.database;
-  let handler = statusHandler(PUSH_STATUS_COLLECTION, database);
-  let setInitial = function(body = {}, where, options = {source: 'rest'}) {
-    let now = new Date();
-    let data =  body.data || {};
-    let payloadString = JSON.stringify(data);
+  const objectId = newObjectId();
+  const database = config.database;
+  const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
+  const setInitial = function(body = {}, where, options = {source: 'rest'}) {
+    const now = new Date();
+    const data =  body.data || {};
+    const payloadString = JSON.stringify(data);
     let pushHash;
     if (typeof data.alert === 'string') {
       pushHash = md5Hash(data.alert);
@@ -112,7 +111,7 @@ export function pushStatusHandler(config) {
     } else {
       pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
     }
-    let object = {
+    const object = {
       objectId,
       createdAt: now,
       pushTime: now.toISOString(),
@@ -136,14 +135,14 @@ export function pushStatusHandler(config) {
     });
   }
 
-  let setRunning = function(installations) {
+  const setRunning = function(installations) {
     logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
+    return handler.update({status:"pending", objectId: objectId},
         {status: "running", updatedAt: new Date() });
   }
 
-  let complete = function(results) {
-    let update = {
+  const complete = function(results) {
+    const update = {
       status: 'succeeded',
       updatedAt: new Date(),
       numSent: 0,
@@ -151,12 +150,12 @@ export function pushStatusHandler(config) {
     };
     if (Array.isArray(results)) {
       results = flatten(results);
-      results.reduce((memo, result) => {
+      results.reduce((memo, result) => {
         // Cannot handle that
         if (!result || !result.device || !result.device.deviceType) {
           return memo;
         }
-        let deviceType = result.device.deviceType;
+        const deviceType = result.device.deviceType;
         if (result.transmitted)
         {
           memo.numSent++;
@@ -176,8 +175,8 @@ export function pushStatusHandler(config) {
     return handler.update({status:"running", objectId }, update);
   }
 
-  let fail = function(err) {
-    let update = {
+  const fail = function(err) {
+    const update = {
       errorMessage: JSON.stringify(err),
       status: 'failed',
       updatedAt: new Date()

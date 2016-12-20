@@ -1,4 +1,4 @@
-let general = {
+const general = {
   'title': 'General request schema',
   'type': 'object',
   'properties': {
@@ -9,7 +9,7 @@ let general = {
   },
 };
 
-let connect =  {
+const connect =  {
   'title': 'Connect operation schema',
   'type': 'object',
   'properties': {
@@ -40,7 +40,7 @@ let connect =  {
   "additionalProperties": false
 };
 
-let subscribe = {
+const subscribe = {
   'title': 'Subscribe operation schema',
   'type': 'object',
   'properties': {
@@ -61,7 +61,7 @@ let subscribe = {
         'fields': {
           "type": "array",
           "items": {
-              "type": "string"
+            "type": "string"
           },
           "minItems": 1,
           "uniqueItems": true
@@ -78,7 +78,7 @@ let subscribe = {
   'additionalProperties': false
 };
 
-let update = {
+const update = {
   'title': 'Update operation schema',
   'type': 'object',
   'properties': {
@@ -99,7 +99,7 @@ let update = {
         'fields': {
           "type": "array",
           "items": {
-              "type": "string"
+            "type": "string"
           },
           "minItems": 1,
           "uniqueItems": true
@@ -116,7 +116,7 @@ let update = {
   'additionalProperties': false
 };
 
-let unsubscribe = {
+const unsubscribe = {
   'title': 'Unsubscribe operation schema',
   'type': 'object',
   'properties': {
@@ -129,7 +129,7 @@ let unsubscribe = {
   "additionalProperties": false
 }
 
-let RequestSchema = {
+const RequestSchema = {
   'general': general,
   'connect': connect,
   'subscribe': subscribe,

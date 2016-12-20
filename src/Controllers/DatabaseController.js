@@ -3,21 +3,20 @@
 
 import { Parse }              from 'parse/node';
 import _                      from 'lodash';
-import mongdb                 from 'mongodb';
 import intersect              from 'intersect';
 import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
 import * as SchemaController  from './SchemaController';
 
 function addWriteACL(query, acl) {
-  let newQuery = _.cloneDeep(query);
+  const newQuery = _.cloneDeep(query);
   //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
   newQuery._wperm = { "$in" : [null, ...acl]};
   return newQuery;
 }
 
 function addReadACL(query, acl) {
-  let newQuery = _.cloneDeep(query);
+  const newQuery = _.cloneDeep(query);
   //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
   newQuery._rperm = { "$in" : [null, "*", ...acl]};
   return newQuery;
@@ -32,7 +31,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   result._wperm = [];
   result._rperm = [];
 
-  for (let entry in ACL) {
+  for (const entry in ACL) {
     if (ACL[entry].read) {
       result._rperm.push(entry);
     }
@@ -45,7 +44,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
 
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
-const isSpecialQueryKey = key => {
+const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
 }
 
@@ -140,7 +139,7 @@ DatabaseController.prototype.redirectClassNameForKey = function(className, key) 
 // batch request, that could confuse other users of the schema.
 DatabaseController.prototype.validateObject = function(className, object, query, { acl }) {
   let schema;
-  let isMaster = acl === undefined;
+  const isMaster = acl === undefined;
   var aclGroup = acl || [];
   return this.loadSchema().then(s => {
     schema = s;
@@ -148,7 +147,7 @@ DatabaseController.prototype.validateObject = function(className, object, query,
       return Promise.resolve();
     }
     return this.canAddField(schema, className, object, aclGroup);
-  }).then(() => {
+  }).then(() => {
     return schema.validateObject(className, object, query);
   });
 };
@@ -191,9 +190,9 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
 //   acl:  a list of strings. If the object to be updated has an ACL,
 //         one of the provided strings must provide the caller with
 //         write permissions.
-const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count', '_perishable_token_expires_at', '_password_changed_at'];
+const specialKeysForUpdate = ['_hashed_password', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count', '_perishable_token_expires_at', '_password_changed_at', '_password_history'];
 
-const isSpecialUpdateKey = key => {
+const isSpecialUpdateKey = key => {
   return specialKeysForUpdate.indexOf(key) >= 0;
 }
 
@@ -208,7 +207,6 @@ DatabaseController.prototype.update = function(className, query, update, {
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
-  var mongoUpdate;
   return this.loadSchema()
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
@@ -243,7 +241,7 @@ DatabaseController.prototype.update = function(className, query, update, {
             throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
           }
         });
-        for (let updateOperation in update) {
+        for (const updateOperation in update) {
           if (Object.keys(updateOperation).some(innerKey => innerKey.includes('$') || innerKey.includes('.'))) {
             throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
           }
@@ -272,15 +270,15 @@ DatabaseController.prototype.update = function(className, query, update, {
 };
 
 function sanitizeDatabaseResult(originalObject, result) {
-  let response = {};
+  const response = {};
   if (!result) {
     return Promise.resolve(response);
   }
   Object.keys(originalObject).forEach(key => {
-    let keyUpdate = originalObject[key];
+    const keyUpdate = originalObject[key];
     // determine if that was an op
     if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
-      && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
+      && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
       // only valid ops that produce an actionable result
       response[key] = result[key];
     }
@@ -302,7 +300,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
       return;
     }
     if (op.__op == 'AddRelation') {
-      for (var object of op.objects) {
+      for (const object of op.objects) {
         pending.push(this.addRelation(key, className,
                                       objectId,
                                       object.objectId));
@@ -311,7 +309,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
 
     if (op.__op == 'RemoveRelation') {
-      for (var object of op.objects) {
+      for (const object of op.objects) {
         pending.push(this.removeRelation(key, className,
                                          objectId,
                                          object.objectId));
@@ -326,10 +324,10 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
     }
   };
 
-  for (var key in update) {
+  for (const key in update) {
     process(update[key], key);
   }
-  for (var key of deleteMe) {
+  for (const key of deleteMe) {
     delete update[key];
   }
   return Promise.all(pending);
@@ -339,7 +337,7 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
 // Returns a promise that resolves successfully iff the add was successful.
 const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 DatabaseController.prototype.addRelation = function(key, fromClassName, fromId, toId) {
-  let doc = {
+  const doc = {
     relatedId: toId,
     owningId : fromId
   };
@@ -412,38 +410,38 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
 };
 
 const flattenUpdateOperatorsForCreate = object => {
-  for (let key in object) {
+  for (const key in object) {
     if (object[key] && object[key].__op) {
       switch (object[key].__op) {
-        case 'Increment':
-          if (typeof object[key].amount !== 'number') {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].amount;
-          break;
-        case 'Add':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'AddUnique':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = object[key].objects;
-          break;
-        case 'Remove':
-          if (!(object[key].objects instanceof Array)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-          }
-          object[key] = []
-          break;
-        case 'Delete':
-          delete object[key];
-          break;
-        default:
-          throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
+      case 'Increment':
+        if (typeof object[key].amount !== 'number') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].amount;
+        break;
+      case 'Add':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'AddUnique':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = object[key].objects;
+        break;
+      case 'Remove':
+        if (!(object[key].objects instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
+        }
+        object[key] = []
+        break;
+      case 'Delete':
+        delete object[key];
+        break;
+      default:
+        throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${object[key].__op} operator is not supported yet.`);
       }
     }
   }
@@ -451,7 +449,7 @@ const flattenUpdateOperatorsForCreate = object => {
 
 const transformAuthData = (className, object, schema) => {
   if (object.authData && className === '_User') {
-    Object.keys(object.authData).forEach(provider => {
+    Object.keys(object.authData).forEach(provider => {
       const providerData = object.authData[provider];
       const fieldName = `_auth_data_${provider}`;
       if (providerData == null) {
@@ -471,7 +469,7 @@ const transformAuthData = (className, object, schema) => {
 // Returns a promise that resolves successfully iff the object saved.
 DatabaseController.prototype.create = function(className, object, { acl } = {}) {
   // Make a copy of the object, so we don't mutate the incoming data.
-  let originalObject = object;
+  const originalObject = object;
   object = transformObjectACL(object);
 
   object.createdAt = { iso: object.createdAt, __type: 'Date' };
@@ -498,13 +496,13 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
 };
 
 DatabaseController.prototype.canAddField = function(schema, className, object, aclGroup) {
-  let classSchema = schema.data[className];
+  const classSchema = schema.data[className];
   if (!classSchema) {
     return Promise.resolve();
   }
-  let fields = Object.keys(object);
-  let schemaFields = Object.keys(classSchema);
-  let newKeys = fields.filter((field) => {
+  const fields = Object.keys(object);
+  const schemaFields = Object.keys(classSchema);
+  const newKeys = fields.filter((field) => {
     return schemaFields.indexOf(field) < 0;
   })
   if (newKeys.length > 0) {
@@ -522,20 +520,6 @@ DatabaseController.prototype.deleteEverything = function() {
     this.schemaCache.clear()
   ]);
 };
-
-// Finds the keys in a query. Returns a Set. REST format only
-function keysForQuery(query) {
-  var sublist = query['$and'] || query['$or'];
-  if (sublist) {
-    let answer = sublist.reduce((memo, subquery) => {
-      return memo.concat(keysForQuery(subquery));
-    }, []);
-
-    return new Set(answer);
-  }
-
-  return new Set(Object.keys(query));
-}
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
@@ -559,25 +543,24 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   // Search for an in-relation or equal-to-relation
   // Make it sequential for now, not sure of paralleization side effects
   if (query['$or']) {
-    let ors = query['$or'];
+    const ors = query['$or'];
     return Promise.all(ors.map((aQuery, index) => {
-      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
+      return this.reduceInRelation(className, aQuery, schema).then((aQuery) => {
         query['$or'][index] = aQuery;
       });
-    })).then(() => {
+    })).then(() => {
       return Promise.resolve(query);
     });
   }
 
-  let promises = Object.keys(query).map((key) => {
+  const promises = Object.keys(query).map((key) => {
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
-      let t = schema.getExpectedType(className, key);
+      const t = schema.getExpectedType(className, key);
       if (!t || t.type !== 'Relation') {
         return Promise.resolve(query);
       }
-      let relatedClassName = t.targetClass;
       // Build the list of queries
-      let queries = Object.keys(query[key]).map((constraintKey) => {
+      const queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
         let isNegation = false;
         if (constraintKey === 'objectId') {
@@ -603,7 +586,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
       delete query[key];
       // execute each query independnently to build the list of
       // $in / $nin
-      let promises = queries.map((q) => {
+      const promises = queries.map((q) => {
         if (!q) {
           return Promise.resolve();
         }
@@ -625,7 +608,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
     return Promise.resolve();
   })
 
-  return Promise.all(promises).then(() => {
+  return Promise.all(promises).then(() => {
     return Promise.resolve(query);
   })
 };
@@ -654,12 +637,12 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
 };
 
 DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
-  let idsFromString = typeof query.objectId === 'string' ? [query.objectId] : null;
-  let idsFromEq = query.objectId && query.objectId['$eq'] ? [query.objectId['$eq']] : null;
-  let idsFromIn = query.objectId && query.objectId['$in'] ? query.objectId['$in'] : null;
+  const idsFromString = typeof query.objectId === 'string' ? [query.objectId] : null;
+  const idsFromEq = query.objectId && query.objectId['$eq'] ? [query.objectId['$eq']] : null;
+  const idsFromIn = query.objectId && query.objectId['$in'] ? query.objectId['$in'] : null;
 
-  let allIds = [idsFromString, idsFromEq, idsFromIn, ids].filter(list => list !== null);
-  let totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
+  const allIds = [idsFromString, idsFromEq, idsFromIn, ids].filter(list => list !== null);
+  const totalLength = allIds.reduce((memo, list) => memo + list.length, 0);
 
   let idsIntersection = [];
   if (totalLength > 125) {
@@ -682,7 +665,7 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
 }
 
 DatabaseController.prototype.addNotInObjectIdsIds = function(ids = [], query) {
-  let idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : [];
+  const idsFromNin = query.objectId && query.objectId['$nin'] ? query.objectId['$nin'] : [];
   let allIds = [...idsFromNin,...ids].filter(list => list !== null);
 
   // make a set and spread to remove duplicates
@@ -724,8 +707,8 @@ DatabaseController.prototype.find = function(className, query, {
   keys,
   op
 } = {}) {
-  let isMaster = acl === undefined;
-  let aclGroup = acl || [];
+  const isMaster = acl === undefined;
+  const aclGroup = acl || [];
   op = op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
   let classExists = true;
   return this.loadSchema()
@@ -839,7 +822,7 @@ DatabaseController.prototype.deleteSchema = function(className) {
   })
   .then(schema => {
     return this.collectionExists(className)
-    .then(exist => this.adapter.count(className, { fields: {} }))
+    .then(() => this.adapter.count(className, { fields: {} }))
     .then(count => {
       if (count > 0) {
         throw new Parse.Error(255, `Class ${className} is not empty, contains ${count} objects, cannot drop schema.`);
@@ -863,34 +846,33 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   if (schema.testBaseCLP(className, aclGroup, operation)) {
     return query;
   }
-  let perms = schema.perms[className];
-  let field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
-  let userACL = aclGroup.filter((acl) => {
-     return acl.indexOf('role:') != 0 && acl != '*';
+  const perms = schema.perms[className];
+  const field = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+  const userACL = aclGroup.filter((acl) => {
+    return acl.indexOf('role:') != 0 && acl != '*';
   });
   // the ACL should have exactly 1 user
-  if (perms && perms[field] && perms[field].length > 0) {
+  if (perms && perms[field] && perms[field].length > 0) {
     // No user set return undefined
     // If the length is > 1, that means we didn't dedup users correctly
     if (userACL.length != 1) {
       return;
     }
-    let userId = userACL[0];
-    let userPointer =  {
-          "__type": "Pointer",
-          "className": "_User",
-          "objectId": userId
-        };
+    const userId = userACL[0];
+    const userPointer =  {
+      "__type": "Pointer",
+      "className": "_User",
+      "objectId": userId
+    };
 
-    let constraints = {};
-    let permFields = perms[field];
-    let ors = permFields.map((key) => {
-      let q = {
+    const permFields = perms[field];
+    const ors = permFields.map((key) => {
+      const q = {
         [key]: userPointer
       };
       return {'$and': [q, query]};
     });
-    if (ors.length > 1) {
+    if (ors.length > 1) {
       return {'$or': ors};
     }
     return ors[0];
@@ -901,28 +883,28 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 
 // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
 // have a Parse app without it having a _User collection.
-DatabaseController.prototype.performInitizalization = function() {
+DatabaseController.prototype.performInitialization = function() {
   const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
 
-  let userClassPromise = this.loadSchema()
+  const userClassPromise = this.loadSchema()
     .then(schema => schema.enforceClassExists('_User'))
 
-  let usernameUniqueness = userClassPromise
+  const usernameUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
       return Promise.reject(error);
     });
 
-  let emailUniqueness = userClassPromise
+  const emailUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
       return Promise.reject(error);
     });
 
-  // Create tables for volatile classes 
-  let adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
+  // Create tables for volatile classes
+  const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
   return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
 }
 

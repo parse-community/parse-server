@@ -18,7 +18,7 @@ function removeTrailingSlash(str) {
 
 export class Config {
   constructor(applicationId: string, mount: string) {
-    let cacheInfo = AppCache.get(applicationId);
+    const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
@@ -32,8 +32,8 @@ export class Config {
     this.restAPIKey = cacheInfo.restAPIKey;
     this.webhookKey = cacheInfo.webhookKey;
     this.fileKey = cacheInfo.fileKey;
-    this.facebookAppIds = cacheInfo.facebookAppIds;
     this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
+    this.userSensitiveFields = cacheInfo.userSensitiveFields;
 
     // Create a new DatabaseController per request
     if (cacheInfo.databaseController) {
@@ -131,12 +131,16 @@ export class Config {
         throw 'passwordPolicy.validatorPattern must be a RegExp.';
       }
 
-      if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function' ) {
+      if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function') {
         throw 'passwordPolicy.validatorCallback must be a function.';
       }
 
       if(passwordPolicy.doNotAllowUsername && typeof passwordPolicy.doNotAllowUsername !== 'boolean') {
         throw 'passwordPolicy.doNotAllowUsername must be a boolean value.';
+      }
+
+      if (passwordPolicy.maxPasswordHistory && (!Number.isInteger(passwordPolicy.maxPasswordHistory) || passwordPolicy.maxPasswordHistory <= 0 || passwordPolicy.maxPasswordHistory > 20)) {
+        throw 'passwordPolicy.maxPasswordHistory must be an integer ranging 0 - 20';
       }
     }
   }

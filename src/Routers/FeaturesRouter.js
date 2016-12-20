@@ -47,9 +47,9 @@ export class FeaturesRouter extends PromiseRouter {
       };
 
       return { response: {
-				features: features,
-				parseServerVersion: version,
-			} };
+        features: features,
+        parseServerVersion: version,
+      } };
     });
   }
 }

@@ -6,11 +6,11 @@ export function destroyAllDataPermanently() {
     throw 'Only supported in test environment';
   }
   return Promise.all(Object.keys(AppCache.cache).map(appId => {
-      const app = AppCache.get(appId);
-      if (app.databaseController) {
-        return app.databaseController.deleteEverything();
-      } else {
-        return Promise.resolve();
-      }
-    }));
+    const app = AppCache.get(appId);
+    if (app.databaseController) {
+      return app.databaseController.deleteEverything();
+    } else {
+      return Promise.resolve();
+    }
+  }));
 }

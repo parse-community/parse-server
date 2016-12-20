@@ -48,7 +48,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('stores objectId in _id', done => {
-    let adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
     adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
     .then(() => adapter._rawFind('Foo', {}))
     .then(results => {
@@ -62,7 +62,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('find succeeds when query is within maxTimeMS', (done) => {
     const maxTimeMS = 250;
-    let adapter = new MongoStorageAdapter({
+    const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
@@ -78,7 +78,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
   it('find fails when query exceeds maxTimeMS', (done) => {
     const maxTimeMS = 250;
-    let adapter = new MongoStorageAdapter({
+    const adapter = new MongoStorageAdapter({
       uri: databaseURI,
       mongoOptions: { maxTimeMS },
     });
@@ -98,7 +98,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('stores pointers with a _p_ prefix', (done) => {
-    let obj = {
+    const obj = {
       objectId: 'bar',
       aPointer: {
         __type: 'Pointer',
@@ -106,7 +106,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         objectId: 'qwerty'
       }
     };
-    let adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
     adapter.createObject('APointerDarkly', { fields: {
       objectId: { type: 'String' },
       aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
@@ -114,7 +114,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     .then(() => adapter._rawFind('APointerDarkly', {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let output = results[0];
+      const output = results[0];
       expect(typeof output._id).toEqual('string');
       expect(typeof output._p_aPointer).toEqual('string');
       expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
@@ -124,24 +124,24 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('handles object and subdocument', done => {
-    let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    let schema = { fields : { subdoc: { type: 'Object' } } };
-    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const schema = { fields : { subdoc: { type: 'Object' } } };
+    const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     adapter.createObject('MyClass', schema, obj)
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
-      let obj = { 'subdoc.wu': 'clan' };
+      const obj = { 'subdoc.wu': 'clan' };
       return adapter.findOneAndUpdate('MyClass', schema, {}, obj);
     })
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('clan');
@@ -150,8 +150,8 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it('handles creating an array, object, date', (done) => {
-    let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    let obj = {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
       date: {
@@ -159,7 +159,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         iso: '2016-05-26T20:55:01.154Z',
       },
     };
-    let schema = { fields: {
+    const schema = { fields: {
       array: { type: 'Array' },
       object: { type: 'Object' },
       date: { type: 'Date' },
@@ -168,7 +168,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date instanceof Date).toBe(true);
@@ -176,7 +176,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     })
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date.__type).toBe('Date');
@@ -191,20 +191,20 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   });
 
   it("handles updating a single object with array, object date", (done) => {
-    let adapter = new MongoStorageAdapter({ uri: databaseURI });
-    
-    let schema = { fields: {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+
+    const schema = { fields: {
       array: { type: 'Array' },
       object: { type: 'Object' },
       date: { type: 'Date' },
     } };
 
-    
+
     adapter.createObject('MyClass', schema, {})
     .then(() => adapter._rawFind('MyClass', {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let update = {
+      const update = {
         array: [1, 2, 3],
         object: {foo: 'bar'},
         date: {
@@ -212,11 +212,11 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
           iso: '2016-05-26T20:55:01.154Z',
         },
       };
-      let query = {};
+      const query = {};
       return adapter.findOneAndUpdate('MyClass', schema, query, update)
     })
     .then(results => {
-      let mob = results;
+      const mob = results;
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date.__type).toBe('Date');
@@ -225,7 +225,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     })
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(mob.array instanceof Array).toBe(true);
       expect(typeof mob.object).toBe('object');
       expect(mob.date instanceof Date).toBe(true);

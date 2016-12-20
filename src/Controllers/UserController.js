@@ -3,10 +3,9 @@ import { inflate }         from '../triggers';
 import AdaptableController from './AdaptableController';
 import MailAdapter         from '../Adapters/Email/MailAdapter';
 import rest                from '../rest';
+import Parse               from 'parse/node';
 
-var RestWrite = require('../RestWrite');
 var RestQuery = require('../RestQuery');
-var hash = require('../password').hash;
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
@@ -49,8 +48,8 @@ export class UserController extends AdaptableController {
       throw undefined;
     }
 
-    let query = {username: username, _email_verify_token: token};
-    let updateFields = { emailVerified: true, _email_verify_token: {__op: 'Delete'}};
+    const query = {username: username, _email_verify_token: token};
+    const updateFields = { emailVerified: true, _email_verify_token: {__op: 'Delete'}};
 
     // if the email verify token needs to be validated then
     // add additional query params and additional fields that need to be updated
@@ -118,10 +117,11 @@ export class UserController extends AdaptableController {
     }
     const token = encodeURIComponent(user._email_verify_token);
     // We may need to fetch the user in case of update email
-    this.getUserIfNeeded(user).then((user) => {
+    this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
-      let link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
-      let options = {
+
+      const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
+      const options = {
         appName: this.config.appName,
         link: link,
         user: inflate('_User', user),
@@ -148,7 +148,6 @@ export class UserController extends AdaptableController {
     if (!this.adapter) {
       throw "Trying to send a reset password but no adapter is set";
       //  TODO: No adapter?
-      return;
     }
 
     return this.setPasswordResetToken(email)
@@ -156,8 +155,8 @@ export class UserController extends AdaptableController {
       const token = encodeURIComponent(user._perishable_token);
       const username = encodeURIComponent(user.username);
 
-      let link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
-      let options = {
+      const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+      const options = {
         appName: this.config.appName,
         link: link,
         user: inflate('_User', user),
@@ -173,7 +172,7 @@ export class UserController extends AdaptableController {
     });
   }
 
-  updatePassword(username, token, password, config) {
+  updatePassword(username, token, password) {
     return this.checkResetTokenValidity(username, token)
       .then(user => updateUserPassword(user.objectId, password, this.config))
       // clear reset password token
@@ -190,22 +189,22 @@ export class UserController extends AdaptableController {
   }
 
   defaultVerificationEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" +
-	      "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
-	      "" +
-	      "Click here to confirm it:\n" + link;
-    let to = user.get("email");
-    let subject = 'Please verify your e-mail for ' + appName;
+    const text = "Hi,\n\n" +
+        "You are being asked to confirm the e-mail address " + user.get("email") + " with " + appName + "\n\n" +
+        "" +
+        "Click here to confirm it:\n" + link;
+    const to = user.get("email");
+    const subject = 'Please verify your e-mail for ' + appName;
     return { text, to, subject };
   }
 
   defaultResetPasswordEmail({link, user, appName, }) {
-    let text = "Hi,\n\n" +
+    const text = "Hi,\n\n" +
         "You requested to reset your password for " + appName + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
-    let to = user.get("email") || user.get('username');
-    let subject =  'Password Reset for ' + appName;
+    const to = user.get("email") || user.get('username');
+    const subject =  'Password Reset for ' + appName;
     return { text, to, subject };
   }
 }
@@ -215,7 +214,7 @@ function updateUserPassword(userId, password, config) {
   return rest.update(config, Auth.master(config), '_User', userId, {
     password: password
   });
- }
+}
 
 function buildEmailLink(destination, username, token, config) {
   let usernameAndToken = `token=${token}&username=${username}`

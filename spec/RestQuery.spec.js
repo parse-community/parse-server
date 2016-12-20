@@ -1,12 +1,10 @@
 'use strict'
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var rest = require('../src/rest');
 
 var querystring = require('querystring');
-var request = require('request');
 var rp = require('request-promise');
 
 var config;
@@ -15,7 +13,7 @@ var nobody = auth.nobody(config);
 
 describe('rest query', () => {
 
-  beforeEach(() => {
+  beforeEach(() => {
     config = new Config('test');
     database = config.database;
   });
@@ -145,7 +143,7 @@ describe('rest query', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
-    });
+      });
   });
 
   it('query existent class when disabled client class creation', (done) => {
@@ -159,7 +157,7 @@ describe('rest query', () => {
     .then((result) => {
       expect(result.results.length).toEqual(0);
       done();
-    }, err => {
+    }, () => {
       fail('Should not throw error')
     });
   });
@@ -174,33 +172,33 @@ describe('rest query', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
       };
-      
-      let p0 = rp.get({
+
+      const p0 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                             where: '{"foo":{"$ne": "baz"}}',
-                             limit: 1
+                           where: '{"foo":{"$ne": "baz"}}',
+                           limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
-        let error = response.error;
+        const error = response.error;
         var b = JSON.parse(error);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
       });
 
-      let p1 = rp.get({
+      const p1 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                             limit: 1
+                           limit: 1
                          }).replace('=', '%3D'),
       }).then(fail, (response) => {
-        let error = response.error;
+        const error = response.error;
         var b = JSON.parse(error);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
       });
       return Promise.all([p0, p1]);
-    }).then(done).catch((err) => {
+    }).then(done).catch((err) => {
       jfail(err);
       fail('should not fail');
       done();
@@ -237,21 +235,21 @@ describe('rest query', () => {
   });
 
   it('makes sure null pointers are handed correctly #2189', done => {
-    let object = new Parse.Object('AnObject');
-    let anotherObject = new Parse.Object('AnotherObject');
-    anotherObject.save().then(() => {
+    const object = new Parse.Object('AnObject');
+    const anotherObject = new Parse.Object('AnotherObject');
+    anotherObject.save().then(() => {
       object.set('values', [null, null, anotherObject]);
       return object.save();
-    }).then(() => {
-      let query = new Parse.Query('AnObject');
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
       query.include('values');
       return query.first();
-    }).then((result) => {
-      let values = result.get('values');
+    }).then((result) => {
+      const values = result.get('values');
       expect(values.length).toBe(3);
       let anotherObjectFound = false;
       let nullCounts = 0;
-      for(let value of values) {
+      for(const value of values) {
         if (value === null) {
           nullCounts++;
         } else if (value instanceof Parse.Object) {
@@ -261,7 +259,7 @@ describe('rest query', () => {
       expect(nullCounts).toBe(2);
       expect(anotherObjectFound).toBeTruthy();
       done();
-    }, (err) => {
+    }, (err) => {
       console.error(err);
       fail(err);
       done();

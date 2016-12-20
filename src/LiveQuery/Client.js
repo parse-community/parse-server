@@ -1,10 +1,9 @@
-import Parse from 'parse/node';
 import logger from '../logger';
 
 import type { FlattenedObjectData } from './Subscription';
 export type Message = { [attr: string]: any };
 
-let dafaultFields = ['className', 'objectId', 'updatedAt', 'createdAt', 'ACL'];
+const dafaultFields = ['className', 'objectId', 'updatedAt', 'createdAt', 'ACL'];
 
 class Client {
   id: number;
@@ -54,7 +53,7 @@ class Client {
     this.subscriptionInfos.set(requestId, subscriptionInfo);
   }
 
-  getSubscriptionInfo(requestId: numner): any {
+  getSubscriptionInfo(requestId: number): any {
     return this.subscriptionInfos.get(requestId);
   }
 
@@ -64,7 +63,7 @@ class Client {
 
   _pushEvent(type: string): Function {
     return function(subscriptionId: number, parseObjectJSON: any): void {
-      let response: Message = {
+      const response: Message = {
         'op' : type,
         'clientId' : this.id
       };
@@ -86,11 +85,11 @@ class Client {
     if (!fields) {
       return parseObjectJSON;
     }
-    let limitedParseObject = {};
-    for (let field of dafaultFields) {
+    const limitedParseObject = {};
+    for (const field of dafaultFields) {
       limitedParseObject[field] = parseObjectJSON[field];
     }
-    for (let field of fields) {
+    for (const field of fields) {
       if (field in parseObjectJSON) {
         limitedParseObject[field] = parseObjectJSON[field];
       }

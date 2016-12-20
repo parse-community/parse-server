@@ -9,7 +9,7 @@ var express = require('express');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 
 describe('server', () => {
-   it('requires a master key and app id', done => {
+  it('requires a master key and app id', done => {
     reconfigureServer({ appId: undefined })
     .catch(error => {
       expect(error).toEqual('You must provide an appId!');
@@ -32,7 +32,7 @@ describe('server', () => {
         headers: {
           'Authorization': 'Basic ' + new Buffer('test:' + 'test').toString('base64')
         }
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         done();
       });
@@ -46,7 +46,7 @@ describe('server', () => {
         headers: {
           'Authorization': 'Basic ' + new Buffer('test:javascript-key=' + 'test').toString('base64')
         }
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         done();
       });
@@ -167,20 +167,20 @@ describe('server', () => {
   it('can respond 200 on path health', done => {
     request.get({
       url: 'http://localhost:8378/1/health',
-    }, (error, response, body) => {
+    }, (error, response) => {
       expect(response.statusCode).toBe(200);
       done();
     });
   });
 
-  it('can create a parse-server v1', done => {
+  it('can create a parse-server v1', done => {
     var parseServer = new ParseServer.default(Object.assign({},
       defaultConfiguration, {
-      appId: "aTestApp",
-      masterKey: "aTestMasterKey",
-      serverURL: "http://localhost:12666/parse",
-      __indexBuildCompletionCallbackForTests: promise => {
-        promise
+        appId: "aTestApp",
+        masterKey: "aTestMasterKey",
+        serverURL: "http://localhost:12666/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
         .then(() => {
           expect(Parse.applicationId).toEqual("aTestApp");
           var app = express();
@@ -189,46 +189,46 @@ describe('server', () => {
           var server = app.listen(12666);
           var obj  = new Parse.Object("AnObject");
           var objId;
-          obj.save().then((obj) => {
+          obj.save().then((obj) => {
             objId = obj.id;
             var q = new Parse.Query("AnObject");
             return q.first();
-          }).then((obj) => {
+          }).then((obj) => {
             expect(obj.id).toEqual(objId);
             server.close(done);
-          }).fail((err) => {
+          }).fail(() => {
             server.close(done);
           })
         });
-      }})
+        }})
     );
   });
 
-  it('can create a parse-server v2', done => {
+  it('can create a parse-server v2', done => {
     let objId;
     let server
-    let parseServer = ParseServer.ParseServer(Object.assign({},
+    const parseServer = ParseServer.ParseServer(Object.assign({},
       defaultConfiguration, {
-      appId: "anOtherTestApp",
-      masterKey: "anOtherTestMasterKey",
-      serverURL: "http://localhost:12667/parse",
-      __indexBuildCompletionCallbackForTests: promise => {
-        promise
+        appId: "anOtherTestApp",
+        masterKey: "anOtherTestMasterKey",
+        serverURL: "http://localhost:12667/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
         .then(() => {
           expect(Parse.applicationId).toEqual("anOtherTestApp");
-          let app = express();
+          const app = express();
           app.use('/parse', parseServer);
 
           server = app.listen(12667);
-          let obj = new Parse.Object("AnObject");
+          const obj = new Parse.Object("AnObject");
           return obj.save()
         })
-        .then(obj => {
+        .then(obj => {
           objId = obj.id;
-          let q = new Parse.Query("AnObject");
+          const q = new Parse.Query("AnObject");
           return q.first();
         })
-        .then(obj => {
+        .then(obj => {
           expect(obj.id).toEqual(objId);
           server.close(done);
         })
@@ -240,11 +240,11 @@ describe('server', () => {
             done();
           }
         });
-      }}
+        }}
     ));
   });
 
-  it('has createLiveQueryServer', done => {
+  it('has createLiveQueryServer', done => {
     // original implementation through the factory
     expect(typeof ParseServer.ParseServer.createLiveQueryServer).toEqual('function');
     // For import calls
@@ -261,7 +261,7 @@ describe('server', () => {
     done();
   });
 
-  it('properly gives publicServerURL when set', done => {
+  it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
     .then(() => {
       var config = new Config('test', 'http://localhost:8378/1');
@@ -270,7 +270,7 @@ describe('server', () => {
     });
   });
 
-  it('properly removes trailing slash in mount', done => {
+  it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
     .then(() => {
       var config = new Config('test', 'http://localhost:8378/1/');
@@ -279,7 +279,7 @@ describe('server', () => {
     });
   });
 
-  it('should throw when getting invalid mount', done => {
+  it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' })
     .catch(error => {
       expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')

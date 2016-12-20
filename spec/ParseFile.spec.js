@@ -113,7 +113,7 @@ describe('Parse.File testing', () => {
             'X-Parse-Master-Key': 'test'
           },
           url: 'http://localhost:8378/1/files/' + b.name
-        }, (error, response, body) => {
+        }, (error, response) => {
           expect(error).toBe(null);
           expect(response.statusCode).toEqual(200);
           request.get({
@@ -122,7 +122,7 @@ describe('Parse.File testing', () => {
               'X-Parse-REST-API-Key': 'rest'
             },
             url: b.url
-          }, (error, response, body) => {
+          }, (error, response) => {
             expect(error).toBe(null);
             try {
               expect(response.statusCode).toEqual(404);
@@ -370,7 +370,7 @@ describe('Parse.File testing', () => {
     object.save({
       file: file
     }, expectSuccess({
-      success: function(obj) {
+      success: function() {
         ok(object.toJSON().file.url);
         done();
       }
@@ -391,7 +391,7 @@ describe('Parse.File testing', () => {
       expect(error).toBe(null);
       var b = JSON.parse(body);
       expect(b.name).toMatch(/\.html$/);
-      request.get(b.url, (error, response, body) => {
+      request.get(b.url, (error, response) => {
         if (!response) {
           fail('response should be set');
           return done();
@@ -563,7 +563,7 @@ describe('Parse.File testing', () => {
       var query = new Parse.Query('FileTest');
       return query.first();
     }).then(result => {
-      let fileAgain = result.get('file');
+      const fileAgain = result.get('file');
       expect(fileAgain.url()).toMatch(/123.txt$/);
       done();
     }).catch((e) => {
@@ -572,10 +572,10 @@ describe('Parse.File testing', () => {
     });
   });
 
-  it('return with publicServerURL when provided', done => {
+  it('return with publicServerURL when provided', done => {
     reconfigureServer({
       publicServerURL: 'https://mydomain/parse'
-    }).then(() => {
+    }).then(() => {
       var file = {
         __type: 'File',
         name: '123.txt'
@@ -587,7 +587,7 @@ describe('Parse.File testing', () => {
       var query = new Parse.Query('FileTest');
       return query.first();
     }).then(result => {
-      let fileAgain = result.get('file');
+      const fileAgain = result.get('file');
       expect(fileAgain.url().indexOf('https://mydomain/parse')).toBe(0);
       done();
     }).catch((e) => {

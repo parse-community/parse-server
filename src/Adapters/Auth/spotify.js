@@ -1,43 +1,49 @@
-// Helper functions for accessing the Facebook Graph API.
+// Helper functions for accessing the Spotify API.
 var https = require('https');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return graphRequest('me?fields=id&access_token=' + authData.access_token)
+  return request('me', authData.access_token)
     .then((data) => {
       if (data && data.id == authData.id) {
         return;
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Facebook auth is invalid for this user.');
+        'Spotify auth is invalid for this user.');
     });
 }
 
-// Returns a promise that fulfills iff this app id is valid.
+// Returns a promise that fulfills if this app id is valid.
 function validateAppId(appIds, authData) {
   var access_token = authData.access_token;
   if (!appIds.length) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook auth is not configured.');
+      'Spotify auth is not configured.');
   }
-  return graphRequest('app?access_token=' + access_token)
+  return request('me', access_token)
     .then((data) => {
       if (data && appIds.indexOf(data.id) != -1) {
         return;
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Facebook auth is invalid for this user.');
+        'Spotify auth is invalid for this user.');
     });
 }
 
-// A promisey wrapper for FB graph requests.
-function graphRequest(path) {
+// A promisey wrapper for Spotify API requests.
+function request(path, access_token) {
   return new Promise(function(resolve, reject) {
-    https.get('https://graph.facebook.com/v2.5/' + path, function(res) {
+    https.get({
+      host: 'api.spotify.com',
+      path: '/v1/' + path,
+      headers: {
+        'Authorization': 'Bearer '+access_token
+      }
+    }, function(res) {
       var data = '';
       res.on('data', function(chunk) {
         data += chunk;
@@ -46,8 +52,8 @@ function graphRequest(path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
-      reject('Failed to validate this access token with Facebook.');
+    }).on('error', function() {
+      reject('Failed to validate this access token with Spotify.');
     });
   });
 }

@@ -21,10 +21,15 @@ export default {
     required: true
   },
   "port": {
-     env: "PORT",
-     help: "The port to run the ParseServer. defaults to 1337.",
-     default: 1337,
-     action: numberParser("port")
+    env: "PORT",
+    help: "The port to run the ParseServer. defaults to 1337.",
+    default: 1337,
+    action: numberParser("port")
+  },
+  "host": {
+    env: "PARSE_SERVER_HOST",
+    help: "The host to serve ParseServer on. defaults to 0.0.0.0",
+    default: '0.0.0.0',
   },
   "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",
@@ -78,7 +83,12 @@ export default {
   },
   "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
-    help: "Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    action: objectParser
+  },
+  "auth": {
+    env: "PARSE_SERVER_AUTH_PROVIDERS",
+    help: "Configuration for your authentication providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
     action: objectParser
   },
   "fileKey": {
@@ -87,9 +97,15 @@ export default {
   },
   "facebookAppIds": {
     env: "PARSE_SERVER_FACEBOOK_APP_IDS",
-    help: "Comma separated list for your facebook app Ids",
-    type: "list",
-    action: arrayParser
+    help: "[DEPRECATED (use auth option)]",
+    action: function() {
+      throw 'facebookAppIds is deprecated, please use { auth: \
+         {facebook: \
+           { appIds: [] } \
+          }\
+        }\
+      }';
+    }
   },
   "enableAnonymousUsers": {
     env: "PARSE_SERVER_ENABLE_ANON_USERS",
@@ -150,11 +166,6 @@ export default {
     help: "Adapter module for the logging sub-system",
     action: moduleOrObjectParser
   },
-  "liveQuery": {
-    env: "PARSE_SERVER_LIVE_QUERY_OPTIONS",
-    help: "liveQuery options",
-    action: objectParser
-  },
   "customPages": {
     env: "PARSE_SERVER_CUSTOM_PAGES",
     help: "custom pages for password validation and reset",
@@ -164,6 +175,10 @@ export default {
     env: "PARSE_SERVER_MAX_UPLOAD_SIZE",
     help: "Max file size for uploads.",
     default: "20mb"
+  },
+  "userSensitiveFields": {
+    help: "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
+    default: "email"
   },
   "sessionLength": {
     env: "PARSE_SERVER_SESSION_LENGTH",
@@ -210,7 +225,8 @@ export default {
     help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
     action: numberOrBoolParser("cluster")
   },
-   "liveQuery": {
+  "liveQuery": {
+    env: "PARSE_SERVER_LIVE_QUERY_OPTIONS",
     help: "parse-server's LiveQuery configuration object",
     action: objectParser
   },

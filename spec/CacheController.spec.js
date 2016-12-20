@@ -62,13 +62,13 @@ describe('CacheController', function() {
 
   it('should handle cache rejections', (done) => {
 
-      FakeCacheAdapter.get = () => Promise.reject();
+    FakeCacheAdapter.get = () => Promise.reject();
 
-      var cache = new CacheController(FakeCacheAdapter, FakeAppID);
+    var cache = new CacheController(FakeCacheAdapter, FakeAppID);
 
-      cache.get('foo').then(done, () => {
-          fail('Promise should not be rejected.');
-      });
+    cache.get('foo').then(done, () => {
+      fail('Promise should not be rejected.');
+    });
   });
 
 });

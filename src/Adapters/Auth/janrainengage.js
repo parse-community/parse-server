@@ -41,7 +41,7 @@ function request(api_key, auth_token) {
     }
   };
 
-  return new Promise(function (resolve, reject) {
+  return new Promise(function (resolve) {
     // Create the post request.
     var post_req = https.request(post_options, function (res) {
       var data = '';

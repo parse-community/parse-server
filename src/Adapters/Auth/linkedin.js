@@ -1,17 +1,17 @@
-// Helper functions for accessing the instagram API.
+// Helper functions for accessing the linkedin API.
 var https = require('https');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request("users/self/?access_token="+authData.access_token)
-    .then((response) => {
-      if (response && response.data && response.data.id == authData.id) {
+  return request('people/~:(id)', authData.access_token, authData.is_mobile_sdk)
+    .then((data) => {
+      if (data && data.id == authData.id) {
         return;
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Instagram auth is invalid for this user.');
+        'Linkedin auth is invalid for this user.');
     });
 }
 
@@ -21,9 +21,22 @@ function validateAppId() {
 }
 
 // A promisey wrapper for api requests
-function request(path) {
+function request(path, access_token, is_mobile_sdk) {
+  var headers = {
+    'Authorization': 'Bearer ' + access_token,
+    'x-li-format': 'json',
+  }
+
+  if(is_mobile_sdk) {
+    headers['x-li-src'] = 'msdk';
+  }
+
   return new Promise(function(resolve, reject) {
-    https.get("https://api.instagram.com/v1/" + path, function(res) {
+    https.get({
+      host: 'api.linkedin.com',
+      path: '/v1/' + path,
+      headers: headers
+    }, function(res) {
       var data = '';
       res.on('data', function(chunk) {
         data += chunk;
@@ -32,8 +45,8 @@ function request(path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
-      reject('Failed to validate this access token with Instagram.');
+    }).on('error', function() {
+      reject('Failed to validate this access token with Linkedin.');
     });
   });
 }

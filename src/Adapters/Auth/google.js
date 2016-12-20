@@ -29,7 +29,7 @@ function validateAuthToken(id, token) {
 // Returns a promise that fulfills if this user id is valid.
 function validateAuthData(authData) {
   if (authData.id_token) {
-    return validateIdToken(authData.id, authData.id_token); 
+    return validateIdToken(authData.id, authData.id_token);
   } else {
     return validateAuthToken(authData.id, authData.access_token).then(() => {
       // Validation with auth token worked
@@ -58,7 +58,7 @@ function request(path) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
+    }).on('error', function() {
       reject('Failed to validate this access token with Google.');
     });
   });

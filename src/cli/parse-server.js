@@ -1,4 +1,4 @@
-import path from 'path';
+/* eslint-disable no-console */
 import express from 'express';
 import { ParseServer } from '../index';
 import definitions from './definitions/parse-server';
@@ -9,7 +9,7 @@ import runner from './utils/runner';
 const help = function(){
   console.log('  Get Started guide:');
   console.log('');
-  console.log('    Please have a look at the get started guide!')
+  console.log('    Please have a look at the get started guide!');
   console.log('    https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide');
   console.log('');
   console.log('');
@@ -35,7 +35,7 @@ function startServer(options, callback) {
 
   app.use(options.mountPath, api);
 
-  var server = app.listen(options.port, callback);
+  const server = app.listen(options.port, options.host, callback);
   server.on('connection', initializeConnections);
 
   if (options.startLiveQueryServer || options.liveQueryServerOptions) {
@@ -65,11 +65,11 @@ function startServer(options, callback) {
     for (const socketId in sockets) {
       try {
         sockets[socketId].destroy();
-      } catch (e) { }
+      } catch (e) { /* */ }
     }
   }
 
-  var handleShutdown = function() {
+  const handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
     server.close(function () {
@@ -112,15 +112,16 @@ runner({
     if (options.cluster) {
       const numCPUs = typeof options.cluster === 'number' ? options.cluster : os.cpus().length;
       if (cluster.isMaster) {
-        for(var i = 0; i < numCPUs; i++) {
+        logOptions();
+        for(let i = 0; i < numCPUs; i++) {
           cluster.fork();
         }
-        cluster.on('exit', (worker, code, signal) => {
-          console.log(`worker ${worker.process.pid} died... Restarting`);
+        cluster.on('exit', (worker, code) => {
+          console.log(`worker ${worker.process.pid} died (${code})... Restarting`);
           cluster.fork();
         });
       } else {
-        startServer(options, () => {
+        startServer(options, () => {
           console.log('['+process.pid+'] parse-server running on '+options.serverURL);
         });
       }
@@ -132,7 +133,6 @@ runner({
       });
     }
   }
-})
+});
 
-
-
+/* eslint-enable no-console */

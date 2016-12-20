@@ -1,9 +1,9 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-let transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
-let dd = require('deep-diff');
-let mongodb = require('mongodb');
+const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const dd = require('deep-diff');
+const mongodb = require('mongodb');
 
 describe('parseObjectToMongoObjectForCreate', () => {
   it('a basic number', (done) => {
@@ -179,7 +179,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('untransforms objects containing nested special keys', done => {
-    let input = {array: [{
+    const input = {array: [{
       _id: "Test ID",
       _hashed_password: "I Don't know why you would name a key this, but if you do it should work",
       _tombstone: {
@@ -190,7 +190,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
       },
       regularKey: "some data",
     }]}
-    let output = transform.mongoObjectToParseObject(null, input, {
+    const output = transform.mongoObjectToParseObject(null, input, {
       fields: { array: { type: 'Array' }},
     });
     expect(dd(output, input)).toEqual(undefined);
@@ -242,7 +242,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     };
     var output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {
-        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+        aRelation: { __type: 'Relation', className: 'Stuff' },
       },
     });
     expect(output).toEqual({});
@@ -278,7 +278,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('untransforms mongodb number types', (done) => {
+  it('untransforms mongodb number types', (done) => {
     var input = {
       long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
       double: new mongodb.Double(Number.MAX_VALUE)
@@ -302,7 +302,7 @@ describe('transformUpdate', () => {
     };
     var output = transform.transformUpdate(null, input, {
       fields: {
-        aRelation: { __type: 'Relation', className: 'Stuff' }, 
+        aRelation: { __type: 'Relation', className: 'Stuff' },
       },
     });
     expect(output).toEqual({});

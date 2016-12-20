@@ -42,23 +42,23 @@ export class AdaptableController {
       throw new Error(this.constructor.name+" requires an adapter");
     }
 
-    let Type = this.expectedAdapterType();
+    const Type = this.expectedAdapterType();
     // Allow skipping for testing
     if (!Type) {
       return;
     }
 
     // Makes sure the prototype matches
-    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce( (obj, key) => {
-       const adapterType = typeof adapter[key];
-       const expectedType = typeof Type.prototype[key];
-       if (adapterType !== expectedType) {
-         obj[key] = {
-           expected: expectedType,
-           actual: adapterType
-         }
-       }
-       return obj;
+    const mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
+      const adapterType = typeof adapter[key];
+      const expectedType = typeof Type.prototype[key];
+      if (adapterType !== expectedType) {
+        obj[key] = {
+          expected: expectedType,
+          actual: adapterType
+        }
+      }
+      return obj;
     }, {});
 
     if (Object.keys(mismatches).length > 0) {

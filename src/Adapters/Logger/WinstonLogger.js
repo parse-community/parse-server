@@ -9,9 +9,9 @@ const logger = new winston.Logger();
 const additionalTransports = [];
 
 function updateTransports(options) {
-  let transports = Object.assign({}, logger.transports);
+  const transports = Object.assign({}, logger.transports);
   if (options) {
-    let silent = options.silent;
+    const silent = options.silent;
     delete options.silent;
     if (_.isNull(options.dirname)) {
       delete transports['parse-server'];
@@ -37,7 +37,7 @@ function updateTransports(options) {
       }, options));
   }
   // Mount the additional transports
-  additionalTransports.forEach((transport) => {
+  additionalTransports.forEach((transport) => {
     transports[transport.name] = transport;
   });
   logger.configure({
@@ -65,7 +65,7 @@ export function configureLogger({
     }
     try {
       fs.mkdirSync(logsFolder);
-    } catch (exception) {}
+    } catch (e) { /* */ }
   }
   options.dirname = logsFolder;
   options.level = logLevel;
@@ -84,13 +84,13 @@ export function addTransport(transport) {
 }
 
 export function removeTransport(transport) {
-  let transportName = typeof transport == 'string' ? transport : transport.name;
-  let transports = Object.assign({}, logger.transports);
+  const transportName = typeof transport == 'string' ? transport : transport.name;
+  const transports = Object.assign({}, logger.transports);
   delete transports[transportName];
   logger.configure({
     transports: _.values(transports)
   });
-  _.remove(additionalTransports, (transport) => {
+  _.remove(additionalTransports, (transport) => {
     return transport.name === transportName;
   });
 }

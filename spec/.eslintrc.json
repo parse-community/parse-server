@@ -1,0 +1,31 @@
+{
+    "env": {
+        "jasmine": true
+    },
+    "globals": {
+      "Parse": true,
+      "reconfigureServer": true,
+      "createTestUser": true,
+      "jfail": true,
+      "ok": true,
+      "strictEqual": true,
+      "TestObject": true,
+      "Item": true,
+      "Container": true,
+      "equal": true,
+      "notEqual": true,
+      "it_exclude_dbs": true,
+      "describe_only_db": true,
+      "on_db": true,
+      "defaultConfiguration": true,
+      "expectSuccess": true,
+      "range": true,
+      "expectError": true,
+      "jequal": true,
+      "create": true,
+      "arrayContains": true
+    },
+    "rules": {
+      "no-console": [0]
+    }
+}

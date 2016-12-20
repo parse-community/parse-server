@@ -19,7 +19,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create redis publisher', function() {
-    var publisher = ParsePubSub.createPublisher({
+    ParsePubSub.createPublisher({
       redisURL: 'redisURL'
     });
 
@@ -30,7 +30,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create event emitter publisher', function() {
-    var publisher = ParsePubSub.createPublisher({});
+    ParsePubSub.createPublisher({});
 
     var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
     var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
@@ -39,7 +39,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create redis subscriber', function() {
-    var subscriber = ParsePubSub.createSubscriber({
+    ParsePubSub.createSubscriber({
       redisURL: 'redisURL'
     });
 
@@ -50,7 +50,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create event emitter subscriber', function() {
-    var subscriptionInfos = ParsePubSub.createSubscriber({});
+    ParsePubSub.createSubscriber({});
 
     var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
     var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
@@ -59,7 +59,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create publisher/sub with custom adapter', function() {
-    let adapter =  {
+    const adapter =  {
       createPublisher: jasmine.createSpy('createPublisher'),
       createSubscriber: jasmine.createSpy('createSubscriber')
     }
@@ -82,7 +82,7 @@ describe('ParsePubSub', function() {
   });
 
   it('can create publisher/sub with custom function adapter', function() {
-    let adapter =  {
+    const adapter =  {
       createPublisher: jasmine.createSpy('createPublisher'),
       createSubscriber: jasmine.createSpy('createSubscriber')
     }

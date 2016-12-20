@@ -1,17 +1,17 @@
-// Helper functions for accessing the meetup API.
+// Helper functions for accessing the github API.
 var https = require('https');
 var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request('member/self', authData.access_token)
+  return request('user', authData.access_token)
     .then((data) => {
       if (data && data.id == authData.id) {
         return;
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Meetup auth is invalid for this user.');
+        'Github auth is invalid for this user.');
     });
 }
 
@@ -24,10 +24,11 @@ function validateAppId() {
 function request(path, access_token) {
   return new Promise(function(resolve, reject) {
     https.get({
-      host: 'api.meetup.com',
-      path: '/2/' + path,
+      host: 'api.github.com',
+      path: '/' + path,
       headers: {
-        'Authorization': 'bearer '+access_token
+        'Authorization': 'bearer '+access_token,
+        'User-Agent': 'parse-server'
       }
     }, function(res) {
       var data = '';
@@ -38,8 +39,8 @@ function request(path, access_token) {
         data = JSON.parse(data);
         resolve(data);
       });
-    }).on('error', function(e) {
-      reject('Failed to validate this access token with Meetup.');
+    }).on('error', function() {
+      reject('Failed to validate this access token with Github.');
     });
   });
 }

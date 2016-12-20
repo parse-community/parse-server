@@ -1,18 +1,17 @@
 "use strict";
 // These tests check the "create" / "update" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');
 
 var config = new Config('test');
-let database = config.database;
+const database = config.database;
 
 describe('rest create', () => {
-  
-  beforeEach(() => {
+
+  beforeEach(() => {
     config = new Config('test');
   });
 
@@ -29,7 +28,7 @@ describe('rest create', () => {
   });
 
   it('handles array, object, date', (done) => {
-    let now = new Date();
+    const now = new Date();
     var obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
@@ -53,23 +52,23 @@ describe('rest create', () => {
   });
 
   it('handles object and subdocument', done => {
-    let obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+    const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     rest.create(config, auth.nobody(config), 'MyClass', obj)
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('tan');
       expect(typeof mob.objectId).toEqual('string');
-      let obj = { 'subdoc.wu': 'clan' };
+      const obj = { 'subdoc.wu': 'clan' };
       return rest.update(config, auth.nobody(config), 'MyClass', mob.objectId, obj)
     })
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let mob = results[0];
+      const mob = results[0];
       expect(typeof mob.subdoc).toBe('object');
       expect(mob.subdoc.foo).toBe('bar');
       expect(mob.subdoc.wu).toBe('clan');
@@ -93,7 +92,7 @@ describe('rest create', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
-    });
+      });
   });
 
   it('handles create on existent class when disabled client class creation', (done) => {
@@ -106,7 +105,7 @@ describe('rest create', () => {
     })
     .then(() => {
       done();
-    }, err => {
+    }, () => {
       fail('Should not throw error')
     });
   });
@@ -186,7 +185,6 @@ describe('rest create', () => {
       username: 'hello',
       password: 'world'
     }
-    var username1;
     var objectId;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
@@ -197,24 +195,24 @@ describe('rest create', () => {
         return auth.getAuthForSessionToken({config, sessionToken: r.response.sessionToken })
       }).then((sessionAuth) => {
         return rest.update(config, sessionAuth, '_User', objectId, updatedData);
-      }).then((r) => {
-        return Parse.User.logOut().then(() => {
+      }).then(() => {
+        return Parse.User.logOut().then(() => {
           return Parse.User.logIn('hello', 'world');
         })
       }).then((r) => {
         expect(r.id).toEqual(objectId);
         expect(r.get('username')).toEqual('hello');
         done();
-      }).catch((err) => {
+      }).catch((err) => {
         jfail(err);
         done();
       })
   });
 
   it('handles no anonymous users config', (done) => {
-     var NoAnnonConfig = Object.assign({}, config);
-     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
-     var data1 = {
+    var NoAnnonConfig = Object.assign({}, config);
+    NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
+    var data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -262,14 +260,14 @@ describe('rest create', () => {
         var output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
-      }).catch(err => {
+      }).catch(err => {
         jfail(err);
         done();
       })
   });
 
   it('stores pointers', done => {
-    let obj = {
+    const obj = {
       foo: 'bar',
       aPointer: {
         __type: 'Pointer',
@@ -284,7 +282,7 @@ describe('rest create', () => {
     }}, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      let output = results[0];
+      const output = results[0];
       expect(typeof output.foo).toEqual('string');
       expect(typeof output._p_aPointer).toEqual('undefined');
       expect(output._p_aPointer).toBeUndefined();
@@ -359,7 +357,7 @@ describe('rest create', () => {
       foo: 'bar',
     };
     var sessionLength = 3600, // 1 Hour ahead
-        now = new Date(); // For reference later
+      now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
     rest.create(config, auth.nobody(config), '_User', user)
@@ -385,7 +383,7 @@ describe('rest create', () => {
         expect(actual.getMinutes()).toEqual(expected.getMinutes());
 
         done();
-      }).catch(err => {
+      }).catch(err => {
         jfail(err);
         done();
       });
@@ -415,10 +413,41 @@ describe('rest create', () => {
         expect(session.expiresAt).toBeUndefined();
 
         done();
-      }).catch(err => {
+      }).catch(err => {
         console.error(err);
         fail(err);
         done();
       })
   });
+});
+
+describe('rest update', () => {
+
+  it('ignores createdAt', done => {
+    const nobody = auth.nobody(config);
+    const className = 'Foo';
+    const newCreatedAt = new Date('1970-01-01T00:00:00.000Z');
+
+    rest.create(config, nobody, className, {}).then(res => {
+      const objectId = res.response.objectId;
+      const restObject = {
+        createdAt: {__type: "Date", iso: newCreatedAt}, // should be ignored
+      };
+
+      return rest.update(config, nobody, className, objectId, restObject).then(() => {
+        const restWhere = {
+          objectId: objectId,
+        };
+        return rest.find(config, nobody, className, restWhere, {});
+      });
+    }).then(res2 => {
+      const updatedObject = res2.results[0];
+      expect(new Date(updatedObject.createdAt)).not.toEqual(newCreatedAt);
+      done();
+    }).then(done).catch(err => {
+      fail(err);
+      done();
+    });
+  });
+
 });

@@ -7,10 +7,10 @@ import {
   RedisPubSub
 } from '../Adapters/PubSub/RedisPubSub';
 
-let ParsePubSub = {};
+const ParsePubSub = {};
 
 function useRedis(config: any): boolean {
-  let redisURL = config.redisURL;
+  const redisURL = config.redisURL;
   return typeof redisURL !== 'undefined' && redisURL !== '';
 }
 
@@ -18,7 +18,7 @@ ParsePubSub.createPublisher = function(config: any): any {
   if (useRedis(config)) {
     return RedisPubSub.createPublisher(config);
   } else {
-    let adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
+    const adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
     if (typeof adapter.createPublisher !== 'function') {
       throw 'pubSubAdapter should have createPublisher()';
     }
@@ -30,7 +30,7 @@ ParsePubSub.createSubscriber = function(config: any): void {
   if (useRedis(config)) {
     return RedisPubSub.createSubscriber(config);
   } else {
-    let adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
+    const adapter = loadAdapter(config.pubSubAdapter, EventEmitterPubSub, config)
     if (typeof adapter.createSubscriber !== 'function') {
       throw 'pubSubAdapter should have createSubscriber()';
     }

@@ -1,5 +1,4 @@
 import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
 import AdaptableController from './AdaptableController';
 import { LoggerAdapter } from '../Adapters/Logger/LoggerAdapter';
 import url from 'url';
@@ -46,7 +45,7 @@ export class LoggerController extends AdaptableController {
       }
 
       if (e.body) {
-        for (let key of Object.keys(e.body)) {
+        for (const key of Object.keys(e.body)) {
           if (key === 'password') {
             e.body[key] = '********';
             break;
@@ -112,12 +111,12 @@ export class LoggerController extends AdaptableController {
   }
 
   static parseOptions(options = {}) {
-    let from = LoggerController.validDateTime(options.from) ||
+    const from = LoggerController.validDateTime(options.from) ||
       new Date(Date.now() - 7 * MILLISECONDS_IN_A_DAY);
-    let until = LoggerController.validDateTime(options.until) || new Date();
-    let size = Number(options.size) || 10;
-    let order = options.order || LogOrder.DESCENDING;
-    let level = options.level || LogLevel.INFO;
+    const until = LoggerController.validDateTime(options.until) || new Date();
+    const size = Number(options.size) || 10;
+    const order = options.order || LogOrder.DESCENDING;
+    const level = options.level || LogLevel.INFO;
 
     return {
       from,
@@ -138,7 +137,7 @@ export class LoggerController extends AdaptableController {
   getLogs(options= {}) {
     if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        'Logger adapter is not availabe');
+        'Logger adapter is not available');
     }
     if (typeof this.adapter.query !== 'function') {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
