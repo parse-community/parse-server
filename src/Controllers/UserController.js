@@ -221,6 +221,7 @@ function buildEmailLink(destination, username, token, config) {
 
   if (config.parseFrameURL) {
     const destinationWithoutHost = destination.replace(config.publicServerURL, '');
+
     return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
   } else {
     return `${destination}?${usernameAndToken}`;
