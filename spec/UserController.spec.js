@@ -13,7 +13,7 @@ describe('UserController', () => {
     describe('parseFrameURL not provided', () => {
       it('uses publicServerURL', (done) => {
 
-        AppCache.put(defaultConfiguration.appId, Object.assign(defaultConfiguration, {
+        AppCache.put(defaultConfiguration.appId, Object.assign({}, defaultConfiguration, {
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: undefined
@@ -36,7 +36,7 @@ describe('UserController', () => {
     describe('parseFrameURL provided', () => {
       it('uses parseFrameURL and includes the destination in the link parameter', (done) => {
 
-        AppCache.put(defaultConfiguration.appId, Object.assign(defaultConfiguration, {
+        AppCache.put(defaultConfiguration.appId, Object.assign({}, defaultConfiguration, {
           publicServerURL: 'http://www.example.com',
           customPages: {
             parseFrameURL: 'http://someother.example.com/handle-parse-iframe'
