@@ -119,6 +119,7 @@ export class UserController extends AdaptableController {
     // We may need to fetch the user in case of update email
     this.getUserIfNeeded(user).then((user) => {
       const username = encodeURIComponent(user.username);
+
       const link = buildEmailLink(this.config.verifyEmailURL, username, token, this.config);
       const options = {
         appName: this.config.appName,
@@ -216,10 +217,11 @@ function updateUserPassword(userId, password, config) {
 }
 
 function buildEmailLink(destination, username, token, config) {
-  let usernameAndToken = `token=${token}&username=${username}`
+  const usernameAndToken = `token=${token}&username=${username}`
 
   if (config.parseFrameURL) {
-    let destinationWithoutHost = destination.replace(config.publicServerURL, '');
+    const destinationWithoutHost = destination.replace(config.publicServerURL, '');
+
     return `${config.parseFrameURL}?link=${encodeURIComponent(destinationWithoutHost)}&${usernameAndToken}`;
   } else {
     return `${destination}?${usernameAndToken}`;
