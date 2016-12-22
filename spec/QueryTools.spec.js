@@ -88,6 +88,22 @@ describe('queryHash', function() {
 });
 
 describe('matchesQuery', function() {
+  it('matches subquery', function() {
+    var obj = {
+      id: new Id('Item', '01'),
+      value: 42,
+      component: {
+        name: 'World',
+        type: 'question'
+      }
+    };
+    var q = new Parse.Query('Item');
+    q.equalTo('component.name', 'World');
+    expect(matchesQuery(obj, q)).toBe(true);
+    obj['component.name'] = 'Other world';
+    expect(matchesQuery(obj, q)).toBe(false);
+  });
+
   it('matches blanket queries', function() {
     var obj = {
       id: new Id('Klass', 'O1'),
