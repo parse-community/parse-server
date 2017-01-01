@@ -84,6 +84,6 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "1.0.1"
+    "bcrypt": "1.0.2"
   }
 }
