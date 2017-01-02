@@ -203,6 +203,13 @@ describe('AuthenticationProviers', function() {
     expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
   }
 
+  function validateAuthenticationAdapter(authAdapter) {
+    expect(authAdapter).not.toBeUndefined();
+    if (!authAdapter) { return; }
+    expect(typeof authAdapter.validateAuthData).toBe('function');
+    expect(typeof authAdapter.validateAppId).toBe('function');
+  }
+
   it('properly loads custom adapter', (done) => {
     var validAuthData = {
       id: 'hello',
@@ -278,5 +285,31 @@ describe('AuthenticationProviers', function() {
       jfail(err);
       done();
     })
+  });
+
+  it('properly loads a default adapter with options', () => {
+    const options = {
+      facebook: {
+        appIds: ['a', 'b']
+      }
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('facebook', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.facebook);
+  });
+
+  it('properly loads a custom adapter with options', () => {
+    const options = {
+      custom: {
+        validateAppId: () => {},
+        validateAuthData: () => {},
+        appIds: ['a', 'b']
+      }
+    };
+    const { adapter, appIds, providerOptions } = authenticationLoader.loadAuthAdapter('custom', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions).toEqual(options.custom);
   });
 });
