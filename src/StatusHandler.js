@@ -5,14 +5,15 @@ const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
 export function flatten(array) {
-  return array.reduce((memo, element) => {
-    if (Array.isArray(element)) {
-      memo = memo.concat(flatten(element));
+  var flattened = [];
+  for(var i = 0; i < array.length; i++) {
+    if(Array.isArray(array[i])) {
+      flattened = flattened.concat(flatten(array[i]));
     } else {
-      memo = memo.concat(element);
+      flattened.push(array[i]);
     }
-    return memo;
-  }, []);
+  }
+  return flattened;
 }
 
 function statusHandler(className, database) {
