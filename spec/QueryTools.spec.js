@@ -468,5 +468,10 @@ describe('matchesQuery', function() {
     q.doesNotExist("nonexistent.z");
     expect(matchesQuery(message, q)).toBe(true);
 
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    q.doesNotExist("status.y");
+    expect(matchesQuery(message, q)).toBe(false);
+
   });
 });
