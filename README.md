@@ -281,7 +281,7 @@ var server = ParseServer({
   passwordPolicy: {
     // Two optional settings to enforce strong passwords. Either one or both can be specified. 
     // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp representing the pattern to enforce 
+    // 1. a RegExp object or a regex string representing the pattern to enforce 
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
     // 2. a callback function to be invoked to validate the password  
     validatorCallback: (password) => { return validatePassword(password) }, 

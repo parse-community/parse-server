@@ -147,14 +147,14 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        validatorPattern: "abc" // string is not a valid setting
+        validatorPattern: 1234 // number is not a valid setting
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
       fail('passwordPolicy.validatorPattern type test failed');
       done();
     }).catch(err => {
-      expect(err).toEqual('passwordPolicy.validatorPattern must be a RegExp.');
+      expect(err).toEqual('passwordPolicy.validatorPattern must be a regex string or RegExp object.');
       done();
     });
   });
@@ -197,6 +197,28 @@ describe("Password Policy: ", () => {
     })
   });
 
+  it('signup should fail if password does not conform to the policy enforced using validatorPattern string', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: "^.{8,}"  // password should contain at least 8 char
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("less");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        fail('Should have failed as password does not conform to the policy.');
+        done();
+      }).catch((error) => {
+        expect(error.code).toEqual(142);
+        done();
+      });
+    })
+  });
+
   it('signup should succeed if password conforms to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({
@@ -212,6 +234,40 @@ describe("Password Policy: ", () => {
       user.signUp().then(() => {
         Parse.User.logOut().then(() => {
           Parse.User.logIn("user1", "1digit").then(function () {
+            done();
+          }).catch((err) => {
+            jfail(err);
+            fail("Should be able to login");
+            done();
+          });
+        }).catch((error) => {
+          jfail(error);
+          fail('logout should have succeeded');
+          done();
+        });
+      }).catch((error) => {
+        jfail(error);
+        fail('Signup should have succeeded as password conforms to the policy.');
+        done();
+      });
+    })
+  });
+
+  it('signup should succeed if password conforms to the policy enforced using validatorPattern string', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: "[!@#$]+"  // password should contain at least one special char
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("p@sswrod");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        Parse.User.logOut().then(() => {
+          Parse.User.logIn("user1", "p@sswrod").then(function () {
             done();
           }).catch((err) => {
             jfail(err);
@@ -409,12 +465,12 @@ describe("Password Policy: ", () => {
               fail("should login with new password");
               done();
             });
-          }).catch((error)=> {
+          }).catch((error) => {
             jfail(error);
             fail("Failed to POST request password reset");
             done();
           });
-        }).catch((error)=> {
+        }).catch((error) => {
           jfail(error);
           fail("Failed to get the reset link");
           done();
@@ -839,7 +895,7 @@ describe("Password Policy: ", () => {
     reconfigureServer({
       appName: 'passwordPolicy',
       passwordPolicy: {
-        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
@@ -880,7 +936,7 @@ describe("Password Policy: ", () => {
           reconfigureServer({
             appName: 'passwordPolicy',
             passwordPolicy: {
-              maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+              maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
             },
             publicServerURL: "http://localhost:8378/1"
           }).then(() => {
@@ -979,7 +1035,7 @@ describe("Password Policy: ", () => {
       appName: 'passwordPolicy',
       emailAdapter: emailAdapter,
       passwordPolicy: {
-        maxPasswordAge: 0.5/(24*60*60) // 0.5 sec
+        maxPasswordAge: 0.5 / (24 * 60 * 60) // 0.5 sec
       },
       publicServerURL: "http://localhost:8378/1"
     }).then(() => {
