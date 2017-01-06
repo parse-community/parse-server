@@ -21,12 +21,12 @@ function updateTransports(options) {
         Object.assign({}, {
           filename: 'parse-server.info',
           name: 'parse-server',
-        }, options));
+        }, options, { timestamp: true }));
       transports['parse-server-error'] = new (DailyRotateFile)(
         Object.assign({}, {
           filename: 'parse-server.err',
           name: 'parse-server-error',
-        }, options, { level: 'error'}));
+        }, options, { level: 'error', timestamp: true  }));
     }
 
     transports.console = new (winston.transports.Console)(
