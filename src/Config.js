@@ -127,9 +127,15 @@ export class Config {
         throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
       }
 
-      if(passwordPolicy.validatorPattern && !(passwordPolicy.validatorPattern instanceof RegExp)) {
-        throw 'passwordPolicy.validatorPattern must be a RegExp.';
+      if(passwordPolicy.validatorPattern){
+        if(typeof(passwordPolicy.validatorPattern) === 'string') {
+          passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
+        }
+        else if(!(passwordPolicy.validatorPattern instanceof RegExp)){
+          throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
+        }
       }
+
 
       if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function') {
         throw 'passwordPolicy.validatorCallback must be a function.';
@@ -238,6 +244,10 @@ export class Config {
 
   get passwordResetSuccessURL() {
     return this.customPages.passwordResetSuccess || `${this.publicServerURL}/apps/password_reset_success.html`;
+  }
+
+  get parseFrameURL() {
+    return this.customPages.parseFrameURL;
   }
 
   get verifyEmailURL() {
