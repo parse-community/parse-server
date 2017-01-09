@@ -1,5 +1,20 @@
 ## Parse Server Changelog
 
+### 2.3.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.1...2.3.2)
+
+#### New features
+* Add parseFrameURL for masking user-facing pages (#3267), thanks to  [Lenart Rudel](https://github.com/lenart)
+
+#### Bug fixes
+* Fix Parse-Server to work with winston-daily-rotate-1.4.2 (#3335), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Improvements
+* Add support for regex string for password policy validatorPattern setting (#3331), thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* LiveQuery should match subobjects with dot notation (#3322), thanks to [David Starke](https://github.com/dstarke)
+* Reduce time to process high number of installations for push (#3264), thanks to [jeacott1](https://github.com/jeacott1)
+* Fix trivial typo in error message (#3238), thanks to [Arthur Cinader](https://github.com/acinader)
+
 ### 2.3.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.0...2.3.1)
 
