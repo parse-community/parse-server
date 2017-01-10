@@ -42,6 +42,8 @@
     "winston": "2.3.0",
     "winston-daily-rotate-file": "1.4.2",
     "ws": "1.1.1"
+  },
+  "devDependencies": {
     "babel-cli": "6.18.0",
     "babel-core": "6.21.0",
     "babel-eslint": "^7.1.1",
