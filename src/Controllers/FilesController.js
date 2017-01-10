@@ -66,13 +66,13 @@ export class FilesController extends AdaptableController {
         if (config.fileKey === undefined) {
           fileObject['url'] = this.adapter.getFileLocation(config, filename);
         } else {
-          if (filename.indexOf('tfss-') === 0) {
-            fileObject['url'] = 'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else if (legacyFilesRegex.test(filename)) {
-            fileObject['url'] = 'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
-          } else {
+          //if (filename.indexOf('tfss-') === 0) {
+            //fileObject['url'] = 'http://files.parsetfss.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+          //} else if (legacyFilesRegex.test(filename)) {
+            //fileObject['url'] = 'http://files.parse.com/' + config.fileKey + '/' + encodeURIComponent(filename);
+          //} else {
             fileObject['url'] = this.adapter.getFileLocation(config, filename);
-          }
+          //}
         }
       }
     }
