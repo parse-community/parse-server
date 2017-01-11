@@ -91,7 +91,18 @@ export class PushController extends AdaptableController {
       if (!response.results) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
-      pushStatus.setRunning(response.results);
+
+      /*
+       * The following code change ensures the correct order of the update of a particular _PushStatus row
+       * (first from 'pending' to 'running' and only then from 'running' to 'succeeded').
+       * Without this change, the order is not predictable always and cann lead to 'Object not found' error
+       * while updating the _PushStatus row.
+       */
+      let runningPromise = pushStatus.setRunning(response.results);
+      return runningPromise.then(() => {
+        return response;
+      });
+    }).then((response) => {
       return this.sendToAdapter(body, response.results, pushStatus, config);
     }).then((results) => {
       return pushStatus.complete(results);
