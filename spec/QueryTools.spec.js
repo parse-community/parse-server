@@ -412,4 +412,66 @@ describe('matchesQuery', function() {
     expect(matchesQuery(caltrainStation, q)).toBe(false);
     expect(matchesQuery(santaClara, q)).toBe(false);
   });
+
+  it('matches on subobjects with dot notation', function() {
+    var message = {
+      id: new Id('Message', 'O1'),
+      text: "content",
+      status: {x: "read", y: "delivered"}
+    };
+
+    var q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.x");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.z");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.exists("nonexistent.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("nonexistent.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    q.doesNotExist("status.y");
+    expect(matchesQuery(message, q)).toBe(false);
+
+  });
 });

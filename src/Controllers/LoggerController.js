@@ -137,7 +137,7 @@ export class LoggerController extends AdaptableController {
   getLogs(options = {}) {
     if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        'Logger adapter is not availabe');
+        'Logger adapter is not available');
     }
     if (typeof this.adapter.query !== 'function') {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
