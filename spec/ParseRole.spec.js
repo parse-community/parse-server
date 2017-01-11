@@ -124,7 +124,7 @@ describe('Parse Role testing', () => {
       expect(roles.length).toEqual(4);
 
       allRoles.forEach(function(name) {
-        expect(roles.indexOf("role:"+name)).not.toBe(-1);
+        expect(roles.indexOf("role:" + name)).not.toBe(-1);
       });
 
       // 1 Query for the initial setup
@@ -165,7 +165,7 @@ describe('Parse Role testing', () => {
     }).then((roles) => {
       expect(roles.length).toEqual(3);
       rolesNames.forEach((name) => {
-        expect(roles.indexOf('role:'+name)).not.toBe(-1);
+        expect(roles.indexOf('role:' + name)).not.toBe(-1);
       });
       done();
     }, function(){

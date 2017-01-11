@@ -174,7 +174,7 @@ function makeExpressHandler(appId, promiseHandler) {
           // Override the default expressjs response
           // as it double encodes %encoded chars in URL
           if (!result.response) {
-            res.send('Found. Redirecting to '+result.location);
+            res.send('Found. Redirecting to ' + result.location);
             return;
           }
         }

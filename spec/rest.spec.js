@@ -374,7 +374,7 @@ describe('rest create', () => {
 
         var session = r.results[0];
         var actual = new Date(session.expiresAt.iso);
-        var expected = new Date(now.getTime() + (sessionLength*1000));
+        var expected = new Date(now.getTime() + (sessionLength * 1000));
 
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());

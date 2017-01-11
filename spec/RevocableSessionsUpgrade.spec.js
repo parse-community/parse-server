@@ -71,7 +71,7 @@ describe_only_db('mongo')('revocable sessions', () => {
 
   it('should not upgrade bad legacy session token', done => {
     rp.post({
-      url: Parse.serverURL+'/upgradeToRevocableSession',
+      url: Parse.serverURL + '/upgradeToRevocableSession',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Rest-API-Key': 'rest',
@@ -92,7 +92,7 @@ describe_only_db('mongo')('revocable sessions', () => {
 
   it('should not crash without session token #2720', done => {
     rp.post({
-      url: Parse.serverURL+'/upgradeToRevocableSession',
+      url: Parse.serverURL + '/upgradeToRevocableSession',
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Rest-API-Key': 'rest'

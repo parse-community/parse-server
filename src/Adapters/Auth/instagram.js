@@ -4,7 +4,7 @@ var Parse = require('parse/node').Parse;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData) {
-  return request("users/self/?access_token="+authData.access_token)
+  return request("users/self/?access_token=" + authData.access_token)
     .then((response) => {
       if (response && response.data && response.data.id == authData.id) {
         return;

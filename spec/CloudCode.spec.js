@@ -1361,7 +1361,7 @@ describe('afterFind hooks', () => {
     Parse.Cloud.afterFind('MyObject', (req, res) => {
       const filteredResults = [];
       for(let i = 0 ; i < req.objects.length ; i++){
-        if(req.objects[i].get("secretField")==="SSID1") {
+        if(req.objects[i].get("secretField") === "SSID1") {
           filteredResults.push(req.objects[i]);
         }
       }

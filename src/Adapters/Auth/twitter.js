@@ -12,7 +12,7 @@ function validateAuthData(authData, options) {
   client.auth_token_secret = authData.auth_token_secret;
 
   return client.get("/1.1/account/verify_credentials.json").then((data) => {
-    if (data && data.id_str == ''+authData.id) {
+    if (data && data.id_str == '' + authData.id) {
       return;
     }
     throw new Parse.Error(

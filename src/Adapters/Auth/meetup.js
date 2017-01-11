@@ -27,7 +27,7 @@ function request(path, access_token) {
       host: 'api.meetup.com',
       path: '/2/' + path,
       headers: {
-        'Authorization': 'bearer '+access_token
+        'Authorization': 'bearer ' + access_token
       }
     }, function(res) {
       var data = '';

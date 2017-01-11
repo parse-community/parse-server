@@ -27,7 +27,7 @@ function request(path, access_token) {
       host: 'api.github.com',
       path: '/' + path,
       headers: {
-        'Authorization': 'bearer '+access_token,
+        'Authorization': 'bearer ' + access_token,
         'User-Agent': 'parse-server'
       }
     }, function(res) {

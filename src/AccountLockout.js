@@ -98,7 +98,7 @@ export class AccountLockout {
       const now = new Date();
 
       const updateFields = {
-        _account_lockout_expires_at: Parse._encode(new Date(now.getTime() + this._config.accountLockout.duration*60*1000))
+        _account_lockout_expires_at: Parse._encode(new Date(now.getTime() + this._config.accountLockout.duration * 60 * 1000))
       };
 
       this._config.database.update('_User', query, updateFields)
