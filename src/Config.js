@@ -246,6 +246,10 @@ export class Config {
     return this.customPages.passwordResetSuccess || `${this.publicServerURL}/apps/password_reset_success.html`;
   }
 
+  get parseFrameURL() {
+    return this.customPages.parseFrameURL;
+  }
+
   get verifyEmailURL() {
     return `${this.publicServerURL}/apps/${this.applicationId}/verify_email`;
   }

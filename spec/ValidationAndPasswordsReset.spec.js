@@ -12,7 +12,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         invalidLink: "myInvalidLink",
         verifyEmailSuccess: "myVerifyEmailSuccess",
         choosePassword: "myChoosePassword",
-        passwordResetSuccess: "myPasswordResetSuccess"
+        passwordResetSuccess: "myPasswordResetSuccess",
+        parseFrameURL: "http://example.com/handle-parse-iframe"
       },
       publicServerURL: "https://my.public.server.com/1"
     })
@@ -22,6 +23,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
       expect(config.choosePasswordURL).toEqual("myChoosePassword");
       expect(config.passwordResetSuccessURL).toEqual("myPasswordResetSuccess");
+      expect(config.parseFrameURL).toEqual("http://example.com/handle-parse-iframe");
       expect(config.verifyEmailURL).toEqual("https://my.public.server.com/1/apps/test/verify_email");
       expect(config.requestResetPasswordURL).toEqual("https://my.public.server.com/1/apps/test/request_password_reset");
       done();
