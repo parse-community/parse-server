@@ -170,13 +170,13 @@ class ParseServer {
     });
     const filesController = new FilesController(filesControllerAdapter, appId);
 
-    const pushQueueOptions = (push || {}).queueOptions || {};
-
-    if ((push || {}).queueOptions) {
-      delete push.queueOptions;
+    const pushOptions = Object.assign({}, push);
+    const pushQueueOptions = pushOptions.queueOptions || {};
+    if (pushOptions.queueOptions) {
+      delete pushOptions.queueOptions;
     }
     // Pass the push options too as it works with the default
-    const pushAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
+    const pushAdapter = loadAdapter(pushOptions && pushOptions.adapter, ParsePushAdapter, pushOptions);
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController();
