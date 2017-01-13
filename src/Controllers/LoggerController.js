@@ -134,10 +134,10 @@ export class LoggerController extends AdaptableController {
   // until (optional) End time for the search. Defaults to current time.
   // order (optional) Direction of results returned, either “asc” or “desc”. Defaults to “desc”.
   // size (optional) Number of rows returned by search. Defaults to 10
-  getLogs(options= {}) {
+  getLogs(options = {}) {
     if (!this.adapter) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        'Logger adapter is not availabe');
+        'Logger adapter is not available');
     }
     if (typeof this.adapter.query !== 'function') {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,

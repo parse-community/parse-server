@@ -266,7 +266,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
     logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
     request.objects = objects.map(object => {
       //setting the class name to transform into parse object
-      object.className=className;
+      object.className = className;
       return Parse.Object.fromJSON(object);
     });
     const triggerPromise = trigger(request, response);

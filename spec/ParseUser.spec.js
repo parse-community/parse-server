@@ -1678,7 +1678,7 @@ describe('Parse.User testing', () => {
         const userId = model.id;
         Parse.User.logOut().then(() => {
           request.post({
-            url:Parse.serverURL+'/classes/_User',
+            url:Parse.serverURL + '/classes/_User',
             headers: {
               'X-Parse-Application-Id': Parse.applicationId,
               'X-Parse-REST-API-Key': 'rest'
@@ -1688,7 +1688,7 @@ describe('Parse.User testing', () => {
             // make sure the location header is properly set
             expect(userId).not.toBeUndefined();
             expect(body.objectId).toEqual(userId);
-            expect(res.headers.location).toEqual(Parse.serverURL+'/users/'+userId);
+            expect(res.headers.location).toEqual(Parse.serverURL + '/users/' + userId);
             done();
           });
         });

@@ -3,7 +3,7 @@ var https = require('https');
 var Parse = require('parse/node').Parse;
 
 function validateIdToken(id, token) {
-  return request("tokeninfo?id_token="+token)
+  return request("tokeninfo?id_token=" + token)
     .then((response) => {
       if (response && (response.sub == id || response.user_id == id)) {
         return;
@@ -15,7 +15,7 @@ function validateIdToken(id, token) {
 }
 
 function validateAuthToken(id, token) {
-  return request("tokeninfo?access_token="+token)
+  return request("tokeninfo?access_token=" + token)
     .then((response) => {
       if (response &&  (response.sub == id || response.user_id == id)) {
         return;

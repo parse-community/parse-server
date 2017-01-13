@@ -1,6 +1,6 @@
 "use strict"
 // Sets up a Parse API server for testing.
-const SpecReporter = require('jasmine-spec-reporter');
+const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
 
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
@@ -167,7 +167,7 @@ Parse.serverURL = 'http://localhost:' + port + '/1';
 Parse.Promise.disableAPlusCompliant();
 
 // 10 minutes timeout
-beforeAll(startDB, 10*60*1000);
+beforeAll(startDB, 10 * 60 * 1000);
 
 afterAll(stopDB);
 

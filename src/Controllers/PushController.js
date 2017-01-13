@@ -110,8 +110,8 @@ export class PushController extends AdaptableController {
         if (installation.deviceType != "ios") {
           badge = UNSUPPORTED_BADGE_KEY;
         }
-        map[badge+''] = map[badge+''] || [];
-        map[badge+''].push(installation);
+        map[badge + ''] = map[badge + ''] || [];
+        map[badge + ''].push(installation);
         return map;
       }, {});
 

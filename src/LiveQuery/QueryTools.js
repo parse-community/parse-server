@@ -133,6 +133,13 @@ function matchesKeyConstraints(object, key, constraints) {
   if (constraints === null) {
     return false;
   }
+  if(key.indexOf(".") >= 0){
+    // Key references a subobject
+    var keyComponents = key.split(".");
+    var subObjectKey = keyComponents[0];
+    var keyRemainder = keyComponents.slice(1).join(".");
+    return matchesKeyConstraints(object[subObjectKey] || {}, keyRemainder, constraints);
+  }
   var i;
   if (key === '$or') {
     for (i = 0; i < constraints.length; i++) {
