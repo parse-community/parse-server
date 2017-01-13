@@ -1,6 +1,5 @@
 import logger from '../logger';
 
-/* eslint-disable */
 const typeMap = new Map([['disconnect', 'close']]);
 const getWS = function() {
   try {
