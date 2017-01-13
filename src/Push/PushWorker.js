@@ -14,7 +14,7 @@ const UNSUPPORTED_BADGE_KEY = "unsupported";
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
-    let badge = installation.badge+'';
+    let badge = installation.badge + '';
     if (installation.deviceType != "ios") {
       badge = UNSUPPORTED_BADGE_KEY;
     }

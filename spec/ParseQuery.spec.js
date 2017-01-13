@@ -1652,8 +1652,8 @@ describe('Parse.Query testing', () => {
     }
     Parse.Object.saveAll(objects).then(() => {
       const object = new Parse.Object("AContainer");
-      for (var i=0; i<objects.length; i++) {
-        if (i%2 == 0) {
+      for (var i = 0; i < objects.length; i++) {
+        if (i % 2 == 0) {
           objects[i].id = 'randomThing'
         } else {
           total += objects[i].get('key');
@@ -2401,7 +2401,7 @@ describe('Parse.Query testing', () => {
   it('query match on array with multiple objects', (done) => {
     var target1 = {__type: 'Pointer', className: 'TestObject', objectId: 'abc'};
     var target2 = {__type: 'Pointer', className: 'TestObject', objectId: '123'};
-    var obj= new Parse.Object('TestObject');
+    var obj = new Parse.Object('TestObject');
     obj.set('someObjs', [target1, target2]);
     obj.save().then(() => {
       var query = new Parse.Query('TestObject');

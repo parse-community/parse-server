@@ -5,7 +5,7 @@ import logger from '../logger';
 class SessionTokenCache {
   cache: Object;
 
-  constructor(timeout: number = 30 * 24 * 60 *60 * 1000, maxSize: number = 10000) {
+  constructor(timeout: number = 30 * 24 * 60 * 60 * 1000, maxSize: number = 10000) {
     this.cache = new LRU({
       max: maxSize,
       maxAge: timeout

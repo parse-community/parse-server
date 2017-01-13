@@ -216,6 +216,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
 * `passwordPolicy` - Optional password policy rules to enforce.
+* `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
 
 ##### Logging
 
@@ -281,7 +282,7 @@ var server = ParseServer({
   passwordPolicy: {
     // Two optional settings to enforce strong passwords. Either one or both can be specified. 
     // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp representing the pattern to enforce 
+    // 1. a RegExp object or a regex string representing the pattern to enforce 
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
     // 2. a callback function to be invoked to validate the password  
     validatorCallback: (password) => { return validatePassword(password) }, 

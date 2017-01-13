@@ -743,7 +743,7 @@ export default class SchemaController {
     if (missingColumns.length > 0) {
       throw new Parse.Error(
         Parse.Error.INCORRECT_TYPE,
-        missingColumns[0]+' is required.');
+        missingColumns[0] + ' is required.');
     }
     return Promise.resolve(this);
   }
@@ -948,7 +948,7 @@ function getObjectType(obj) {
       }
       break;
     }
-    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid "+obj.__type);
+    throw new Parse.Error(Parse.Error.INCORRECT_TYPE, "This is not a valid " + obj.__type);
   }
   if (obj['$ne']) {
     return getObjectType(obj['$ne']);

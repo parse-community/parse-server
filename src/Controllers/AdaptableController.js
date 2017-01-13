@@ -43,7 +43,7 @@ export class AdaptableController {
 
   static validateAdapter(adapter, self, ExpectedType) {
     if (!adapter) {
-      throw new Error(self.constructor.name+" requires an adapter");
+      throw new Error(this.constructor.name + " requires an adapter");
     }
 
     const Type = ExpectedType || self.expectedAdapterType();

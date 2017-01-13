@@ -20,7 +20,7 @@ function parseURL(URL) {
 
 function makeBatchRoutingPathFunction(originalUrl, serverURL, publicServerURL) {
   serverURL = serverURL ? parseURL(serverURL) : undefined;
-  publicServerURL = publicServerURL ? parseURL(publicServerURL): undefined;
+  publicServerURL = publicServerURL ? parseURL(publicServerURL) : undefined;
 
   const apiPrefixLength = originalUrl.length - batchPath.length;
   let apiPrefix = originalUrl.slice(0, apiPrefixLength);

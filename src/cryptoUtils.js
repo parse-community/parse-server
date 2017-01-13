@@ -10,7 +10,7 @@ export function randomHexString(size: number): string {
   if (size % 2 !== 0) {
     throw new Error('randomHexString size must be divisible by 2.')
   }
-  return randomBytes(size/2).toString('hex');
+  return randomBytes(size / 2).toString('hex');
 }
 
 // Returns a new random alphanumeric string of the given size.

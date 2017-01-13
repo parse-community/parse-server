@@ -11,7 +11,7 @@ function removeTrailingSlash(str) {
     return str;
   }
   if (str.endsWith("/")) {
-    str = str.substr(0, str.length-1);
+    str = str.substr(0, str.length - 1);
   }
   return str;
 }
@@ -130,9 +130,15 @@ export class Config {
         throw 'passwordPolicy.resetTokenValidityDuration must be a positive number';
       }
 
-      if(passwordPolicy.validatorPattern && !(passwordPolicy.validatorPattern instanceof RegExp)) {
-        throw 'passwordPolicy.validatorPattern must be a RegExp.';
+      if(passwordPolicy.validatorPattern){
+        if(typeof(passwordPolicy.validatorPattern) === 'string') {
+          passwordPolicy.validatorPattern = new RegExp(passwordPolicy.validatorPattern);
+        }
+        else if(!(passwordPolicy.validatorPattern instanceof RegExp)){
+          throw 'passwordPolicy.validatorPattern must be a regex string or RegExp object.';
+        }
       }
+
 
       if(passwordPolicy.validatorCallback && typeof passwordPolicy.validatorCallback !== 'function') {
         throw 'passwordPolicy.validatorCallback must be a function.';
@@ -204,7 +210,7 @@ export class Config {
       return undefined;
     }
     var now = new Date();
-    return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration*1000));
+    return new Date(now.getTime() + (this.emailVerifyTokenValidityDuration * 1000));
   }
 
   generatePasswordResetTokenExpiresAt() {
@@ -220,7 +226,7 @@ export class Config {
       return undefined;
     }
     var now = new Date();
-    return new Date(now.getTime() + (this.sessionLength*1000));
+    return new Date(now.getTime() + (this.sessionLength * 1000));
   }
 
   get invalidLinkURL() {
@@ -241,6 +247,10 @@ export class Config {
 
   get passwordResetSuccessURL() {
     return this.customPages.passwordResetSuccess || `${this.publicServerURL}/apps/password_reset_success.html`;
+  }
+
+  get parseFrameURL() {
+    return this.customPages.parseFrameURL;
   }
 
   get verifyEmailURL() {

@@ -138,7 +138,7 @@ describe('PushController', () => {
         installations.forEach((installation) => {
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge+1).toEqual(installation.badge);
+            expect(installation.originalBadge + 1).toEqual(installation.badge);
           } else {
             expect(installation.badge).toBeUndefined();
           }
@@ -156,8 +156,8 @@ describe('PushController', () => {
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("badge", installations.length);
       installation.set("originalBadge", installations.length);
       installation.set("deviceType", "ios");
@@ -166,8 +166,8 @@ describe('PushController', () => {
 
     while(installations.length != 15) {
       const installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("deviceType", "android");
       installations.push(installation);
     }
@@ -214,8 +214,8 @@ describe('PushController', () => {
     var installations = [];
     while(installations.length != 10) {
       var installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("badge", installations.length);
       installation.set("originalBadge", installations.length);
       installation.set("deviceType", "ios");
@@ -253,8 +253,8 @@ describe('PushController', () => {
     var installations = [];
     while(installations.length != 10) {
       var installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("badge", installations.length);
       installation.set("originalBadge", installations.length);
       installation.set("deviceType", "ios");
@@ -318,8 +318,8 @@ describe('PushController', () => {
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("badge", installations.length);
       installation.set("originalBadge", installations.length);
       installation.set("deviceType", "ios");
@@ -328,8 +328,8 @@ describe('PushController', () => {
 
     while(installations.length != 15) {
       const installation = new Parse.Object("_Installation");
-      installation.set("installationId", "installation_"+installations.length);
-      installation.set("deviceToken","device_token_"+installations.length)
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
       installation.set("deviceType", "android");
       installations.push(installation);
     }

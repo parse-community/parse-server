@@ -16,7 +16,7 @@ describe('Parse.Push', () => {
         const promises = installations.map((installation) => {
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge+1).toEqual(installation.badge);
+            expect(installation.originalBadge + 1).toEqual(installation.badge);
           } else {
             expect(installation.badge).toBeUndefined();
           }
@@ -45,8 +45,8 @@ describe('Parse.Push', () => {
       var installations = [];
       while(installations.length != 10) {
         var installation = new Parse.Object("_Installation");
-        installation.set("installationId", "installation_"+installations.length);
-        installation.set("deviceToken","device_token_"+installations.length)
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken","device_token_" + installations.length)
         installation.set("badge", installations.length);
         installation.set("originalBadge", installations.length);
         installation.set("deviceType", "ios");
