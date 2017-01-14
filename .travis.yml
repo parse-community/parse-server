@@ -26,8 +26,6 @@ env:
   - PARSE_SERVER_TEST_CACHE=redis
 matrix:
   fast_finish: true
-  allow_failures: 
-  - env: PARSE_SERVER_TEST_DB=postgres
 branches:
   only:
   - master
