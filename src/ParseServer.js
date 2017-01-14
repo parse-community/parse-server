@@ -39,6 +39,8 @@ import { LogsRouter }           from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
 import { PushController }       from './Controllers/PushController';
+import { PushQueue }            from './Push/PushQueue';
+import { PushWorker }           from './Push/PushWorker';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { RolesRouter }          from './Routers/RolesRouter';
@@ -168,11 +170,28 @@ class ParseServer {
     });
     const filesController = new FilesController(filesControllerAdapter, appId);
 
+    const pushOptions = Object.assign({}, push);
+    const pushQueueOptions = pushOptions.queueOptions || {};
+    if (pushOptions.queueOptions) {
+      delete pushOptions.queueOptions;
+    }
     // Pass the push options too as it works with the default
-    const pushControllerAdapter = loadAdapter(push && push.adapter, ParsePushAdapter, push || {});
-    // We pass the options and the base class for the adapter,
+    const pushAdapter = loadAdapter(pushOptions && pushOptions.adapter, ParsePushAdapter, pushOptions);
+    // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
-    const pushController = new PushController(pushControllerAdapter, appId, push);
+    const pushController = new PushController();
+
+    const hasPushSupport = pushAdapter && push;
+
+    const {
+      disablePushWorker
+    } = pushQueueOptions;
+
+    const pushControllerQueue = new PushQueue(pushQueueOptions);
+    let pushWorker;
+    if (!disablePushWorker) {
+      pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
+    }
 
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
@@ -237,7 +256,10 @@ class ParseServer {
       databaseController,
       schemaCacheTTL,
       enableSingleSchemaCache,
-      userSensitiveFields
+      userSensitiveFields,
+      pushWorker,
+      pushControllerQueue,
+      hasPushSupport
     });
 
     Config.validate(AppCache.get(appId));

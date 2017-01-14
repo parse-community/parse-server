@@ -2,6 +2,7 @@
 var PushController = require('../src/Controllers/PushController').PushController;
 var StatusHandler = require('../src/StatusHandler');
 var Config = require('../src/Config');
+var validatePushType = require('../src/Push/utils').validatePushType;
 
 const successfulTransmissions = function(body, installations) {
 
@@ -35,7 +36,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -48,7 +49,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -63,7 +64,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).not.toThrow();
     done();
   });
@@ -76,7 +77,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -89,7 +90,7 @@ describe('PushController', () => {
     var validPushTypes = ['ios', 'android'];
 
     expect(function(){
-      PushController.validatePushType(where, validPushTypes);
+      validatePushType(where, validPushTypes);
     }).toThrow();
     done();
   });
@@ -131,7 +132,23 @@ describe('PushController', () => {
   });
 
   it('properly increment badges', (done) => {
-
+    var pushAdapter = {
+      send: function(body, installations) {
+        var badge = body.data.badge;
+        installations.forEach((installation) => {
+          if (installation.deviceType == "ios") {
+            expect(installation.badge).toEqual(badge);
+            expect(installation.originalBadge + 1).toEqual(installation.badge);
+          } else {
+            expect(installation.badge).toBeUndefined();
+          }
+        })
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios", "android"];
+      }
+    }
     var payload = {data:{
       alert: "Hello World!",
       badge: "Increment",
@@ -154,32 +171,17 @@ describe('PushController', () => {
       installation.set("deviceType", "android");
       installations.push(installation);
     }
-
-    var pushAdapter = {
-      send: function(body, installations) {
-        var badge = body.data.badge;
-        installations.forEach((installation) => {
-          if (installation.deviceType == "ios") {
-            expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge + 1).toEqual(installation.badge);
-          } else {
-            expect(installation.badge).toBeUndefined();
-          }
-        })
-        return successfulTransmissions(body, installations);
-      },
-      getValidPushTypes: function() {
-        return ["ios", "android"];
-      }
-    }
-
     var config = new Config(Parse.applicationId);
     var auth = {
       isMaster: true
     }
 
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    Parse.Object.saveAll(installations).then(() => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return Parse.Object.saveAll(installations)
+    }).then(() => {
       return pushController.sendPush(payload, {}, config, auth);
     }).then(() => {
       done();
@@ -187,10 +189,23 @@ describe('PushController', () => {
       jfail(err);
       done();
     });
-
   });
 
   it('properly set badges to 1', (done) => {
+
+    var pushAdapter = {
+      send: function(body, installations) {
+        var badge = body.data.badge;
+        installations.forEach((installation) => {
+          expect(installation.badge).toEqual(badge);
+          expect(1).toEqual(installation.badge);
+        })
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
 
     var payload = {data: {
       alert: "Hello World!",
@@ -207,27 +222,17 @@ describe('PushController', () => {
       installations.push(installation);
     }
 
-    var pushAdapter = {
-      send: function(body, installations) {
-        var badge = body.data.badge;
-        installations.forEach((installation) => {
-          expect(installation.badge).toEqual(badge);
-          expect(1).toEqual(installation.badge);
-        })
-        return successfulTransmissions(body, installations);
-      },
-      getValidPushTypes: function() {
-        return ["ios"];
-      }
-    }
-
     var config = new Config(Parse.applicationId);
     var auth = {
       isMaster: true
     }
 
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    Parse.Object.saveAll(installations).then(() => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return Parse.Object.saveAll(installations)
+    }).then(() => {
       return pushController.sendPush(payload, {}, config, auth);
     }).then(() => {
       done();
@@ -235,7 +240,6 @@ describe('PushController', () => {
       fail("should not fail");
       done();
     });
-
   });
 
   it('properly set badges to 1 with complex query #2903 #3022', (done) => {
@@ -276,9 +280,14 @@ describe('PushController', () => {
     var auth = {
       isMaster: true
     }
-
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    Parse.Object.saveAll(installations).then((installations) => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: {
+        adapter: pushAdapter
+      }
+    }).then(() => {
+      return Parse.Object.saveAll(installations)
+    }).then((installations) => {
       const objectIds = installations.map(installation => {
         return installation.id;
       })
@@ -286,6 +295,10 @@ describe('PushController', () => {
         objectId: {'$in': objectIds.slice(0, 5)}
       }
       return pushController.sendPush(payload, where, config, auth);
+    }).then(() => {
+      return new Promise((res) => {
+        setTimeout(res, 300);
+      });
     }).then(() => {
       expect(matchedInstallationsCount).toBe(5);
       const query = new Parse.Query(Parse.Installation);
@@ -338,46 +351,50 @@ describe('PushController', () => {
     var auth = {
       isMaster: true
     }
-
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    Parse.Object.saveAll(installations).then(() => {
-      return pushController.sendPush(payload, {}, config, auth);
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
     }).then(() => {
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          resolve();
-        }, 1000);
-      });
-    }).then(() => {
-      const query = new Parse.Query('_PushStatus');
-      return query.find({useMasterKey: true});
-    }).then((results) => {
-      expect(results.length).toBe(1);
-      const result = results[0];
-      expect(result.createdAt instanceof Date).toBe(true);
-      expect(result.updatedAt instanceof Date).toBe(true);
-      expect(result.id.length).toBe(10);
-      expect(result.get('source')).toEqual('rest');
-      expect(result.get('query')).toEqual(JSON.stringify({}));
-      expect(typeof result.get('payload')).toEqual("string");
-      expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
-      expect(result.get('status')).toEqual('succeeded');
-      expect(result.get('numSent')).toEqual(10);
-      expect(result.get('sentPerType')).toEqual({
-        'ios': 10 // 10 ios
-      });
-      expect(result.get('numFailed')).toEqual(5);
-      expect(result.get('failedPerType')).toEqual({
-        'android': 5 // android
-      });
+      return Parse.Object.saveAll(installations)
+    })
+   .then(() => {
+     return pushController.sendPush(payload, {}, config, auth);
+   }).then(() => {
+     // it is enqueued so it can take time
+     return new Promise((resolve) => {
+       setTimeout(() => {
+         resolve();
+       }, 1000);
+     });
+   }).then(() => {
+     const query = new Parse.Query('_PushStatus');
+     return query.find({useMasterKey: true});
+   }).then((results) => {
+     expect(results.length).toBe(1);
+     const result = results[0];
+     expect(result.createdAt instanceof Date).toBe(true);
+     expect(result.updatedAt instanceof Date).toBe(true);
+     expect(result.id.length).toBe(10);
+     expect(result.get('source')).toEqual('rest');
+     expect(result.get('query')).toEqual(JSON.stringify({}));
+     expect(typeof result.get('payload')).toEqual("string");
+     expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
+     expect(result.get('status')).toEqual('succeeded');
+     expect(result.get('numSent')).toEqual(10);
+     expect(result.get('sentPerType')).toEqual({
+       'ios': 10 // 10 ios
+     });
+     expect(result.get('numFailed')).toEqual(5);
+     expect(result.get('failedPerType')).toEqual({
+       'android': 5 // android
+     });
      // Try to get it without masterKey
-      const query = new Parse.Query('_PushStatus');
-      return query.find();
-    }).then((results) => {
-      expect(results.length).toBe(0);
-      done();
-    });
-
+     const query = new Parse.Query('_PushStatus');
+     return query.find();
+   }).then((results) => {
+     expect(results.length).toBe(0);
+     done();
+   });
   });
 
   it('should properly report failures in _PushStatus', (done) => {
@@ -404,8 +421,12 @@ describe('PushController', () => {
     var auth = {
       isMaster: true
     }
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    pushController.sendPush(payload, where, config, auth).then(() => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return pushController.sendPush(payload, where, config, auth)
+    }).then(() => {
       fail('should not succeed');
       done();
     }).catch(() => {
@@ -416,7 +437,7 @@ describe('PushController', () => {
         expect(pushStatus.get('status')).toBe('failed');
         done();
       });
-    })
+    });
   });
 
   it('should support full RESTQuery for increment', (done) => {
@@ -433,7 +454,6 @@ describe('PushController', () => {
         return ["ios"];
       }
     }
-
     var config = new Config(Parse.applicationId);
     var auth = {
       isMaster: true
@@ -450,8 +470,12 @@ describe('PushController', () => {
       }
     }
 
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    pushController.sendPush(payload, where, config, auth).then(() => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return pushController.sendPush(payload, where, config, auth);
+    }).then(() => {
       done();
     }).catch((err) => {
       jfail(err);
@@ -491,8 +515,12 @@ describe('PushController', () => {
       }
     }
 
-    var pushController = new PushController(pushAdapter, Parse.applicationId, defaultConfiguration.push);
-    pushController.sendPush(payload, where, config, auth).then(() => {
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      pushController.sendPush(payload, where, config, auth)
+    }).then(() => {
       done();
     }).catch(() => {
       fail('should not fail');

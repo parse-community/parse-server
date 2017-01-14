@@ -92,15 +92,15 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       break;
     case 'order':
       var fields = restOptions.order.split(',');
-      var sortMap = {};
-      for (var field of fields) {
+      this.findOptions.sort = fields.reduce((sortMap, field) => {
+        field = field.trim();
         if (field[0] == '-') {
           sortMap[field.slice(1)] = -1;
         } else {
           sortMap[field] = 1;
         }
-      }
-      this.findOptions.sort = sortMap;
+        return sortMap;
+      }, {});
       break;
     case 'include': {
       const paths = restOptions.include.split(',');

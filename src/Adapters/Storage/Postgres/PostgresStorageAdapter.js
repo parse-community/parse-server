@@ -926,16 +926,34 @@ export class PostgresStorageAdapter {
       } else if (typeof fieldValue === 'object'
                     && schema.fields[fieldName]
                     && schema.fields[fieldName].type === 'Object') {
+        // Gather keys to increment
+        const keysToIncrement = Object.keys(originalUpdate).filter(k => {
+          // choose top level fields that have a delete operation set
+          return originalUpdate[k].__op === 'Increment' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
+        }).map(k => k.split('.')[1]);
+
+        let incrementPatterns = '';
+        if (keysToIncrement.length > 0) {
+          incrementPatterns = ' || ' + keysToIncrement.map((c) => {
+            const amount = fieldValue[c].amount;
+            return `CONCAT('{"${c}":', COALESCE($${index}:name->>'${c}','0')::int + ${amount}, '}')::jsonb`;
+          }).join(' || ');
+          // Strip the keys
+          keysToIncrement.forEach((key) => {
+            delete fieldValue[key];
+          });
+        }
+
         const keysToDelete = Object.keys(originalUpdate).filter(k => {
           // choose top level fields that have a delete operation set
-          return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2
+          return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
         }).map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p, c, i) => {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
-        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
 
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;

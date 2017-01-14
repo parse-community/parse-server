@@ -2,6 +2,12 @@
 
 const request = require('request');
 
+const delayPromise = (delay) => {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delay);
+  });
+}
+
 describe('Parse.Push', () => {
   var setup = function() {
     var pushAdapter = {
@@ -16,8 +22,8 @@ describe('Parse.Push', () => {
           }
           return Promise.resolve({
             err: null,
-            deviceType: installation.deviceType,
-            result: true
+            device: installation,
+            transmitted: true
           })
         });
         return Promise.all(promises);
@@ -63,6 +69,8 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true})
+    }).then(() => {
+      return delayPromise(500);
     })
     .then(() => {
       done();
@@ -83,6 +91,8 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true})
+    }).then(() => {
+      return delayPromise(500);
     }).then(() => {
       done();
     }).catch((err) => {

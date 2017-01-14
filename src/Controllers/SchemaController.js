@@ -86,6 +86,7 @@ const defaultColumns = Object.freeze({
     "errorMessage": {type:'Object'},
     "sentPerType":  {type:'Object'},
     "failedPerType":{type:'Object'},
+    "count":       {type:'Number'}
   },
   _JobStatus: {
     "jobName":    {type: 'String'},

@@ -4,6 +4,15 @@ import { logger }               from './logger';
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
+const incrementOp = function(object = {}, key, amount = 1) {
+  if (!object[key]) {
+    object[key] = {__op: 'Increment', amount: amount}
+  } else {
+    object[key].amount += amount;
+  }
+  return object[key];
+}
+
 export function flatten(array) {
   var flattened = [];
   for(var i = 0; i < array.length; i++) {
@@ -94,10 +103,9 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config) {
+export function pushStatusHandler(config, objectId = newObjectId()) {
 
   let pushStatus;
-  const objectId = newObjectId();
   const database = config.database;
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
@@ -136,18 +144,17 @@ export function pushStatusHandler(config) {
     });
   }
 
-  const setRunning = function(installations) {
-    logger.verbose('sending push to %d installations', installations.length);
+  const setRunning = function(count) {
+    logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date() });
+        {status: "running", updatedAt: new Date(), count });
   }
 
-  const complete = function(results) {
+  const trackSent = function(results) {
     const update = {
-      status: 'succeeded',
       updatedAt: new Date(),
       numSent: 0,
-      numFailed: 0,
+      numFailed: 0
     };
     if (Array.isArray(results)) {
       results = flatten(results);
@@ -157,23 +164,44 @@ export function pushStatusHandler(config) {
           return memo;
         }
         const deviceType = result.device.deviceType;
-        if (result.transmitted)
-        {
+        const key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
+        memo[key] = incrementOp(memo, key);
+        if (result.transmitted) {
           memo.numSent++;
-          memo.sentPerType = memo.sentPerType || {};
-          memo.sentPerType[deviceType] = memo.sentPerType[deviceType] || 0;
-          memo.sentPerType[deviceType]++;
         } else {
           memo.numFailed++;
-          memo.failedPerType = memo.failedPerType || {};
-          memo.failedPerType[deviceType] = memo.failedPerType[deviceType] || 0;
-          memo.failedPerType[deviceType]++;
         }
         return memo;
       }, update);
+      incrementOp(update, 'count', -results.length);
     }
-    logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update);
+
+    logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
+
+    ['numSent', 'numFailed'].forEach((key) => {
+      if (update[key] > 0) {
+        update[key] = {
+          __op: 'Increment',
+          amount: update[key]
+        };
+      } else {
+        delete update[key];
+      }
+    });
+
+    return handler.update({ objectId }, update).then((res) => {
+      if (res && res.count === 0) {
+        return this.complete();
+      }
+    })
+  }
+
+  const complete = function() {
+    return handler.update({ objectId }, {
+      status: 'succeeded',
+      count: {__op: 'Delete'},
+      updatedAt: new Date()
+    });
   }
 
   const fail = function(err) {
@@ -182,7 +210,7 @@ export function pushStatusHandler(config) {
       status: 'failed',
       updatedAt: new Date()
     }
-    logger.info('warning: error while sending push', err);
+    logger.warn(`_PushStatus ${objectId}: error while sending push`, err);
     return handler.update({ objectId }, update);
   }
 
@@ -190,6 +218,7 @@ export function pushStatusHandler(config) {
     objectId,
     setInitial,
     setRunning,
+    trackSent,
     complete,
     fail
   })
