@@ -14,7 +14,9 @@ describe('ParseWebSocketServer', function() {
 
   it('can handle connect event when ws is open', function(done) {
     var onConnectCallback = jasmine.createSpy('onConnectCallback');
-    var parseWebSocketServer = new ParseWebSocketServer({}, onConnectCallback, 5).server;
+    var http = require('http');
+    var server = http.createServer();
+    var parseWebSocketServer = new ParseWebSocketServer(server, onConnectCallback, 5).server;
     var ws = {
       readyState: 0,
       OPEN: 0,
@@ -27,6 +29,7 @@ describe('ParseWebSocketServer', function() {
     // Make sure we ping to the client
     setTimeout(function() {
       expect(ws.ping).toHaveBeenCalled();
+      server.close();
       done();
     }, 10)
   });

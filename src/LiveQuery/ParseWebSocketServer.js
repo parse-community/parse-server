@@ -1,12 +1,19 @@
 import logger from '../logger';
 
 const typeMap = new Map([['disconnect', 'close']]);
+const getWS = function() {
+  try {
+    return require('uws');
+  } catch(e) {
+    return require('ws');
+  }
+}
 
 export class ParseWebSocketServer {
   server: Object;
 
   constructor(server: any, onConnect: Function, websocketTimeout: number = 10 * 1000) {
-    const WebSocketServer = require('ws').Server;
+    const WebSocketServer = getWS().Server;
     const wss = new WebSocketServer({ server: server });
     wss.on('listening', () => {
       logger.info('Parse LiveQuery Server starts running');
