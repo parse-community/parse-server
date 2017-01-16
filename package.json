@@ -31,7 +31,7 @@
     "multer": "1.2.1",
     "parse": "1.9.2",
     "parse-server-fs-adapter": "1.0.1",
-    "parse-server-push-adapter": "1.1.0",
+    "parse-server-push-adapter": "1.2.0",
     "parse-server-s3-adapter": "1.0.6",
     "parse-server-simple-mailgun-adapter": "1.0.0",
     "pg-promise": "5.5.0",
