@@ -1631,8 +1631,9 @@ describe('Parse.Query testing', () => {
       });
       expect(total).toBe(0);
       done()
-    }, () => {
+    }, (e) => {
       fail('should not fail');
+      fail(JSON.stringify(e));
       done();
     })
   });

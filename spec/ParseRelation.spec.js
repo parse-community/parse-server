@@ -575,6 +575,9 @@ describe('Parse.Relation testing', () => {
         expect(result.get('key').get('even')).toBe(false);
       });
       done();
+    }, (e) => {
+      fail(JSON.stringify(e));
+      done();
     })
   });
 
@@ -613,6 +616,9 @@ describe('Parse.Relation testing', () => {
           done();
         }
       }));
+    }, (e) => {
+      fail(JSON.stringify(e));
+      done();
     });
   });
 
@@ -653,6 +659,9 @@ describe('Parse.Relation testing', () => {
           done();
         }
       }));
+    }, (e) => {
+      fail(JSON.stringify(e));
+      done();
     });
   });
 
