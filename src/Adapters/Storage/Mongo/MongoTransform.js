@@ -728,7 +728,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
 
     if (mongoObject.hasOwnProperty('__type') && mongoObject.__type == 'Date' && mongoObject.iso instanceof Date) {
       mongoObject.iso = mongoObject.iso.toJSON();
-      return mongoObject; 
+      return mongoObject;
     }
 
     return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
