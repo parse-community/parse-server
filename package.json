@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "bcryptjs": "2.4.0",
-    "body-parser": "1.15.2",
+    "body-parser": "1.16.0",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
     "express": "4.14.0",
