@@ -179,6 +179,8 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
     return object;
   }
   delete object.authData;
+  delete object.email;
+
   return object;
 };
 

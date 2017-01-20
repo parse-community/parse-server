@@ -2784,4 +2784,30 @@ describe('Parse.User testing', () => {
       done();
     });
   });
+
+  it("should not reveal other users' email", done => {
+    const userA = new Parse.User();
+    userA.setUsername('asdf');
+    userA.setPassword('zxcv');
+    userA.set("email", "asdf@example.com");
+
+    const userB = new Parse.User();
+    userB.setUsername('ghjk');
+    userB.setPassword('bnmz');
+    userB.set("email", "ghjk@example.com");
+
+    userA.signUp().then(() => {
+      userB.signUp().then(() => {
+        var query = new Parse.Query(Parse.User);
+        query.get(userA.id).then(fetchedUserA => {
+          expect(fetchedUserA.email).toBeUndefined();
+          // should include the current user's email though
+          query.get(userB.id).then(fetchedUserB => {
+            expect(fetchedUserB.email).toEqual(userB.email);
+            done();
+          });
+        });
+      });
+    });
+  });
 });
