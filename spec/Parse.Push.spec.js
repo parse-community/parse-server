@@ -10,10 +10,14 @@ const delayPromise = (delay) => {
 
 describe('Parse.Push', () => {
   var setup = function() {
+    var sendToInstallationSpy = jasmine.createSpy();
+
     var pushAdapter = {
       send: function(body, installations) {
         var badge = body.data.badge;
         const promises = installations.map((installation) => {
+          sendToInstallationSpy(installation);
+
           if (installation.deviceType == "ios") {
             expect(installation.badge).toEqual(badge);
             expect(installation.originalBadge + 1).toEqual(installation.badge);
@@ -53,13 +57,21 @@ describe('Parse.Push', () => {
         installations.push(installation);
       }
       return Parse.Object.saveAll(installations);
-    }).catch((err) => {
+    })
+    .then(() => {
+      return {
+        sendToInstallationSpy,
+      };
+    })
+    .catch((err) => {
       console.error(err);
+
+      throw err;
     })
   }
 
   it('should properly send push', (done) => {
-    return setup().then(() => {
+    return setup().then(({ sendToInstallationSpy }) => {
       return Parse.Push.send({
         where: {
           deviceType: 'ios'
@@ -69,10 +81,13 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true})
+      .then(() => {
+        return delayPromise(500);
+      })
+      .then(() => {
+        expect(sendToInstallationSpy.calls.count()).toEqual(10);
+      })
     }).then(() => {
-      return delayPromise(500);
-    })
-    .then(() => {
       done();
     }).catch((err) => {
       jfail(err);
