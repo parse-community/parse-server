@@ -20,7 +20,8 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 ### Locally
 ```
-$ npm install -g parse-server mongodb-runner
+$ # root user will have to use "npm install --unsafe-perm" instead of "npm install"
+$ npm install -g parse-server mongodb-runner 
 $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
