@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "bcryptjs": "2.4.0",
-    "body-parser": "1.15.2",
+    "body-parser": "1.16.0",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
     "express": "4.14.0",
@@ -34,12 +34,12 @@
     "parse-server-push-adapter": "1.2.0",
     "parse-server-s3-adapter": "1.0.6",
     "parse-server-simple-mailgun-adapter": "1.0.0",
-    "pg-promise": "5.5.0",
+    "pg-promise": "5.5.2",
     "redis": "2.6.4",
     "request": "2.79.0",
     "semver": "5.2.0",
     "tv4": "1.2.7",
-    "winston": "2.3.0",
+    "winston": "2.3.1",
     "winston-daily-rotate-file": "1.4.3",
     "ws": "1.1.1"
   },
