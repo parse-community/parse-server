@@ -1,9 +1,10 @@
-import express             from 'express';
-import BodyParser          from 'body-parser';
-import * as Middlewares    from '../middlewares';
-import Parse               from 'parse/node';
-import Config              from '../Config';
-import mime                from 'mime';
+import express from 'express';
+import BodyParser from 'body-parser';
+import * as Middlewares from '../middlewares';
+import Parse from 'parse/node';
+import Config from '../Config';
+import mime from 'mime';
+import ParseServer from '../ParseServer';
 
 export class FilesRouter {
 
@@ -87,8 +88,10 @@ export class FilesRouter {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);
-    }).catch(() => {
-      next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.'));
+    }).catch((e) => {
+      const parseError = new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.');
+      const parseServerError = new ParseServer.Error(e.message, parseError);
+      next(parseServerError);
     });
   }
 
