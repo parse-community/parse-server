@@ -1,4 +1,4 @@
-var InMemoryCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
+var RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
 
 describe('RedisCacheAdapter', function() {
   var KEY = 'hello';
