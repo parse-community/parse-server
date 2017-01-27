@@ -37,8 +37,6 @@ export class ExportRouter extends PromiseRouter {
   }
 
   exportClass(req, data) {
-
-
     const databaseController = req.config.database;
     const tmpJsonFile = tmp.fileSync();
     const jsonFileStream = fs.createWriteStream(tmpJsonFile.name);
@@ -102,7 +100,6 @@ export class ExportRouter extends PromiseRouter {
   }
 
   handleExport(req) {
-
     const databaseController = req.config.database;
 
     const emailControllerAdapter = req.config.emailControllerAdapter;
@@ -124,6 +121,7 @@ export class ExportRouter extends PromiseRouter {
     .then(schemaController => schemaController.getOneSchema(req.body.name, true))
     .then((schema) => {
       const classNames = [ req.body.name ];
+      const where = req.body.where;
       Object.keys(schema.fields).forEach((fieldName) => {
         const field = schema.fields[fieldName];
 
@@ -133,7 +131,10 @@ export class ExportRouter extends PromiseRouter {
       });
 
       const promisses = classNames.map((name) => {
-        return this.exportClass(req, { name });
+        return this.exportClass(req, {
+          name,
+          where,
+        });
       });
 
       return Promise.all(promisses)
