@@ -50,10 +50,15 @@ describe("FilesController",() =>{
       )
       .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
       .then((logs) => {
-        const log = logs.pop();
-        expect(log.level).toBe('error');
-        expect(log.code).toBe(130);
-        expect(log.message).toBe('Could not store file.');
+        // we get two logs here: 1. the source of the failure to save the file
+        // and 2 the message that will be sent back to the client.
+        const log1 = logs.pop();
+        expect(log1.level).toBe('error');
+        expect(log1.message).toBe('it failed');
+        const log2 = logs.pop();
+        expect(log2.level).toBe('error');
+        expect(log2.code).toBe(130);
+        expect(log2.message).toBe('Could not store file.');
         done();
       });
   });
