@@ -1,9 +1,9 @@
-import AppCache   from './cache';
-import log        from './logger';
-import Parse      from 'parse/node';
-import auth       from './Auth';
-import Config     from './Config';
-import ClientSDK  from './ClientSDK';
+import AppCache from './cache';
+import log from './logger';
+import Parse from 'parse/node';
+import auth from './Auth';
+import Config from './Config';
+import ClientSDK from './ClientSDK';
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -233,10 +233,8 @@ export function allowMethodOverride(req, res, next) {
 }
 
 export function handleParseErrors(err, req, res, next) {
-  // TODO: Add logging as those errors won't make it to the PromiseRouter
   if (err instanceof Parse.Error) {
-    var httpStatus;
-
+    let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
     case Parse.Error.INTERNAL_SERVER_ERROR:
@@ -250,17 +248,22 @@ export function handleParseErrors(err, req, res, next) {
     }
 
     res.status(httpStatus);
-    res.json({code: err.code, error: err.message});
+    res.json({ code: err.code, error: err.message });
+    log.error(err.message, err);
   } else if (err.status && err.message) {
     res.status(err.status);
-    res.json({error: err.message});
+    res.json({ error: err.message });
+    next(err);
   } else {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
-    res.json({code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error.'});
+    res.json({
+      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      message: 'Internal server error.'
+    });
+    next(err);
   }
-  next(err);
+
 }
 
 export function enforceMasterKeyAccess(req, res, next) {
