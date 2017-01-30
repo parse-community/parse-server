@@ -394,4 +394,6 @@ function addParseCloud() {
   global.Parse = Parse;
 }
 
+ParseServer.Error = require('./ServerError').default;
+
 export default ParseServer;

@@ -1,9 +1,10 @@
-import AppCache   from './cache';
-import log        from './logger';
-import Parse      from 'parse/node';
-import auth       from './Auth';
-import Config     from './Config';
-import ClientSDK  from './ClientSDK';
+import AppCache from './cache';
+import log from './logger';
+import Parse from 'parse/node';
+import auth from './Auth';
+import Config from './Config';
+import ClientSDK from './ClientSDK';
+import ParseServer from './ParseServer';
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -232,13 +233,13 @@ export function allowMethodOverride(req, res, next) {
   next();
 }
 
-export function handleParseErrors(err, req, res, next) {
-  // TODO: Add logging as those errors won't make it to the PromiseRouter
-  if (err instanceof Parse.Error) {
-    var httpStatus;
+export function handleParseErrors(err, req, res) {
+  if (err instanceof Parse.Error || err instanceof ParseServer.Error) {
+    const parseError = err instanceof Parse.Error ? err : err.source;
+    let httpStatus;
 
     // TODO: fill out this mapping
-    switch (err.code) {
+    switch (parseError.code) {
     case Parse.Error.INTERNAL_SERVER_ERROR:
       httpStatus = 500;
       break;
@@ -249,9 +250,11 @@ export function handleParseErrors(err, req, res, next) {
       httpStatus = 400;
     }
 
+    log.error(err.message);
     res.status(httpStatus);
-    res.json({code: err.code, error: err.message});
+    res.json({code: parseError.code, error: parseError.message});
   } else if (err.status && err.message) {
+    log.error(err.message);
     res.status(err.status);
     res.json({error: err.message});
   } else {
@@ -260,7 +263,11 @@ export function handleParseErrors(err, req, res, next) {
     res.json({code: Parse.Error.INTERNAL_SERVER_ERROR,
       message: 'Internal server error.'});
   }
-  next(err);
+
+  // this is the end of the road.  Don't call next()
+  // or else the error will go to the default express
+  // error handler.
+
 }
 
 export function enforceMasterKeyAccess(req, res, next) {
