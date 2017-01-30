@@ -41,7 +41,7 @@
     "tv4": "1.2.7",
     "winston": "2.3.1",
     "winston-daily-rotate-file": "1.4.4",
-    "ws": "1.1.1"
+    "ws": "2.0.0"
   },
   "devDependencies": {
     "babel-cli": "6.18.0",
