@@ -84,7 +84,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle atomic values
-  var value = transformTopLevelAtom(restValue);
+  var value = transformTopLevelAtom(restValue, className);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -454,7 +454,7 @@ const transformInteriorAtom = atom => {
 // or arrays with generic stuff inside.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom
-function transformTopLevelAtom(atom) {
+function transformTopLevelAtom(atom, className) {
   switch(typeof atom) {
   case 'string':
   case 'number':
@@ -490,7 +490,9 @@ function transformTopLevelAtom(atom) {
       return GeoPointCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
-      return FileCoder.JSONToDatabase(atom);
+      // normally we transform a 'File' to just the name when storing to the db, but
+      // _GlobalConfig has no schema so we must preserve type information and other fields
+      return (className === "_GlobalConfig") ? atom : FileCoder.JSONToDatabase(atom);
     }
     return CannotTransform;
 
