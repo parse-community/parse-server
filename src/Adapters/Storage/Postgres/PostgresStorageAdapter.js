@@ -23,7 +23,7 @@ const parseTypeToPostgresType = type => {
   case 'Object': return 'jsonb';
   case 'File': return 'text';
   case 'Boolean': return 'boolean';
-  case 'Pointer': return 'char(10)';
+  case 'Pointer': return 'text';
   case 'Number': return 'double precision';
   case 'GeoPoint': return 'point';
   case 'Array':
