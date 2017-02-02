@@ -22,7 +22,7 @@
     "body-parser": "1.16.0",
     "commander": "2.9.0",
     "deepcopy": "0.6.3",
-    "express": "4.14.0",
+    "express": "4.14.1",
     "intersect": "1.0.1",
     "lodash": "4.17.4",
     "lru-cache": "4.0.2",
@@ -35,12 +35,12 @@
     "parse-server-s3-adapter": "1.0.6",
     "parse-server-simple-mailgun-adapter": "1.0.0",
     "pg-promise": "5.5.2",
-    "redis": "2.6.4",
+    "redis": "2.6.5",
     "request": "2.79.0",
     "semver": "5.2.0",
     "tv4": "1.2.7",
     "winston": "2.3.1",
-    "winston-daily-rotate-file": "1.4.3",
+    "winston-daily-rotate-file": "1.4.4",
     "ws": "1.1.1"
   },
   "devDependencies": {
