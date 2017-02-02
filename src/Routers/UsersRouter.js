@@ -191,7 +191,7 @@ export class UsersRouter extends ClassesRouter {
     return Promise.resolve(success);
   }
 
-  handleResetRequest(req) {
+  _throwOnBadEmailConfig(req) {
     try {
       Config.validateEmailConfiguration({
         emailAdapter: req.config.userController.adapter,
@@ -202,11 +202,16 @@ export class UsersRouter extends ClassesRouter {
     } catch (e) {
       if (typeof e === 'string') {
         // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
-        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset functionality.');
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.');
       } else {
         throw e;
       }
     }
+  }
+
+  handleResetRequest(req) {
+    this._throwOnBadEmailConfig(req);
+
     const { email } = req.body;
     if (!email) {
       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
@@ -228,6 +233,33 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  handleVerificationEmailRequest(req) {
+    this._throwOnBadEmailConfig(req);
+
+    const { email } = req.body;
+    if (!email) {
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
+    }
+    if (typeof email !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
+    }
+
+    return req.config.database.find('_User', { email: email }).then((results) => {
+      if (!results.length || results.length < 1) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'Invalid email.');
+      }
+      const user = results[0];
+
+      if (user.emailVerified) {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User email is already verified.');
+      }
+
+      const userController = req.config.userController;
+      userController.sendVerificationEmail(user);
+      return { response: {} };
+    });
+  }
+
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -238,7 +270,8 @@ export class UsersRouter extends ClassesRouter {
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
-    this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); })
+    this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
+    this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });
   }
 }
 
