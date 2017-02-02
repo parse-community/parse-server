@@ -4,6 +4,7 @@ import * as Middlewares    from '../middlewares';
 import Parse               from 'parse/node';
 import Config              from '../Config';
 import mime                from 'mime';
+import logger              from '../logger';
 
 export class FilesRouter {
 
@@ -87,7 +88,8 @@ export class FilesRouter {
       res.status(201);
       res.set('Location', result.url);
       res.json(result);
-    }).catch(() => {
+    }).catch((e) => {
+      logger.error(e.message, e);
       next(new Parse.Error(Parse.Error.FILE_SAVE_ERROR, 'Could not store file.'));
     });
   }
