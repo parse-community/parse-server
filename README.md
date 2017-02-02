@@ -156,7 +156,7 @@ For a full list of available options, run `parse-server --help`.
 
 ## Logging
 
-Parse Server will, by default, will log:
+Parse Server will, by default, log:
 * to the console
 * daily rotating files as new line delimited JSON
 
