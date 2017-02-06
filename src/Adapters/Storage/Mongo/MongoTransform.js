@@ -84,7 +84,8 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle atomic values
-  var value = transformTopLevelAtom(restValue, className);
+  var skipTransform = className === "_GlobalConfig" && restValue && (restValue.__type === 'File' || restValue.__type === 'GeoPoint');
+  var value = skipTransform ? restValue : transformTopLevelAtom(restValue);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -380,6 +381,7 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
     if (restUpdate[restKey] && restUpdate[restKey].__type === 'Relation') {
       continue;
     }
+
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an
@@ -454,7 +456,7 @@ const transformInteriorAtom = atom => {
 // or arrays with generic stuff inside.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom
-function transformTopLevelAtom(atom, className) {
+function transformTopLevelAtom(atom) {
   switch(typeof atom) {
   case 'string':
   case 'number':
@@ -487,14 +489,10 @@ function transformTopLevelAtom(atom, className) {
       return BytesCoder.JSONToDatabase(atom);
     }
     if (GeoPointCoder.isValidJSON(atom)) {
-      // normally we transform a 'GeoPoint' to just the name when storing to the db, but
-      // _GlobalConfig has no schema so we must preserve type information and other fields
-      return className === "_GlobalConfig" ? atom : GeoPointCoder.JSONToDatabase(atom);
+      return GeoPointCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
-      // normally we transform a 'File' to just the name when storing to the db, but
-      // _GlobalConfig has no schema so we must preserve type information and other fields
-      return (className === "_GlobalConfig") ? atom : FileCoder.JSONToDatabase(atom);
+      return FileCoder.JSONToDatabase(atom);
     }
     return CannotTransform;
 
