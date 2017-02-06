@@ -487,7 +487,9 @@ function transformTopLevelAtom(atom, className) {
       return BytesCoder.JSONToDatabase(atom);
     }
     if (GeoPointCoder.isValidJSON(atom)) {
-      return GeoPointCoder.JSONToDatabase(atom);
+      // normally we transform a 'GeoPoint' to just the name when storing to the db, but
+      // _GlobalConfig has no schema so we must preserve type information and other fields
+      return className === "_GlobalConfig" ? atom : GeoPointCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
       // normally we transform a 'File' to just the name when storing to the db, but
