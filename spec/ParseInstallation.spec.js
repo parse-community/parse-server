@@ -12,6 +12,10 @@ let config;
 let database;
 const defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
 
+const delay = function delay(delay) {
+  return new Promise(resolve => setTimeout(resolve, delay));
+}
+
 const installationSchema = { fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation) };
 
 describe('Installations', () => {
@@ -542,12 +546,14 @@ describe('Installations', () => {
       };
       return rest.create(config, auth.nobody(config), '_Installation', input);
     })
+    .then(() => delay(100))
     .then(() => database.adapter.find('_Installation', installationSchema, {installationId: installId1}, {}))
     .then((results) => {
       expect(results.length).toEqual(1);
       firstObject = results[0];
-      return database.adapter.find('_Installation', installationSchema, {installationId: installId2}, {});
     })
+    .then(() => delay(100))
+    .then(() => database.adapter.find('_Installation', installationSchema, {installationId: installId2}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
       secondObject = results[0];
@@ -558,6 +564,7 @@ describe('Installations', () => {
       };
       return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
     })
+    .then(() => delay(100))
     .then(() => database.adapter.find('_Installation', installationSchema, {objectId: firstObject.objectId}, {}))
     .then(results => {
       // The first object should have been deleted

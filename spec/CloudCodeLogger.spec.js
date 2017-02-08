@@ -156,8 +156,9 @@ describe("Cloud Code Logger", () => {
             .save()
             .then(
                 () => done.fail('this is not supposed to succeed'),
-                () => logController.getLogs({ from: Date.now() - 500, size: 1000 })
+                () => new Promise(resolve => setTimeout(resolve, 100))
             )
+            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
             .then(logs => {
               const log = logs[1]; // 0 is the 'uh oh!' from rejection...
               expect(log.level).toEqual('error');
