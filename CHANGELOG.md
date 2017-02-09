@@ -1,5 +1,21 @@
 ## Parse Server Changelog
 
+### 2.3.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.2...2.3.3)
+
+#### Breaking Changes
+* **Minimum Node engine bumped to 4.6** (#3480), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes
+* Add logging on failure to create file (#3424), thanks to [Arthur Cinader](https://github.com/acinader)
+* Log Parse Errors so they are intelligible (#3431), thanks to [Arthur Cinader](https://github.com/acinader)
+* MongoDB $or Queries avoid SERVER-13732 bug (#3476), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Mongo object to Parse object date serialization - avoid re-serialization of iso of type Date (#3389), thanks to [nodechefMatt](https://github.com/nodechefMatt)
+
+#### Improvements
+* Ground preparations for push scalability (#3080), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Use uWS as optional dependency for ws server (#3231), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.3.2
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.1...2.3.2)
 
@@ -32,7 +48,7 @@ This release addresses only that issue.
 
 #### New Features
 * Adds ability to restrict access through Class Level Permissions to only authenticated users [see docs](http://parseplatform.github.io/docs/ios/guide/#requires-authentication-permission-requires-parse-server---230)
-* Adds ability to strip sensitive data from _User responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
+* Adds ability to strip sensitive data from `_User` responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
 * Adds password history support for password policies, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
 
 #### Improvements
@@ -132,7 +148,7 @@ Postgres support requires v9.5
 ### 2.2.20
 
 * New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart) 
+* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Better support for upgradeToRevocableSession with missing session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)
