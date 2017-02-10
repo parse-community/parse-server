@@ -122,10 +122,10 @@ export function handleParseHeaders(req, res, next) {
   //  to preserve original behavior.
   const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
   const oneKeyConfigured = keys.some(function(key) {
-    return req.config[key];
+    return req.config[key] !== undefined;
   });
   const oneKeyMatches = keys.some(function(key){
-    return req.config[key] && info[key] == req.config[key];
+    return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
   if (oneKeyConfigured && !oneKeyMatches) {
