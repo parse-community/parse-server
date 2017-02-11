@@ -95,10 +95,10 @@ confirm 'Y' 'Do you want to continue? (Y/n): '
 check_node
 check_npm
 
-printf "Setting up parse-server in %s" "${INSTALL_DIR}\n"
+printf "Setting up parse-server in %s\n" "${INSTALL_DIR}"
 
 if [ -d "${INSTALL_DIR}" ]; then
-  echo "{CHECK} ${INSTALL_DIR} exists"
+  echo "${CHECK} ${INSTALL_DIR} exists"
 else
   mkdir -p "${INSTALL_DIR}"
   echo "${CHECK} Created ${INSTALL_DIR}"
