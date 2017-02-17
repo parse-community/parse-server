@@ -37,7 +37,6 @@ class ParseLiveQueryServer {
 
     // Initialize Parse
     Parse.Object.disableSingleInstance();
-    Parse.User.enableUnsafeCurrentUser();
 
     const serverURL = config.serverURL || Parse.serverURL;
     Parse.serverURL = serverURL;
