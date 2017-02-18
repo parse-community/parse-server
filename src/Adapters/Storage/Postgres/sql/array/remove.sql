@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION array_remove(
-  array   jsonb,
-  values  jsonb
+  "array"   jsonb,
+  "values"  jsonb
 )
   RETURNS jsonb
   LANGUAGE sql
