@@ -1,7 +1,7 @@
 -- Function to set a key on a nested JSON document
 
 CREATE OR REPLACE FUNCTION json_object_set_key(
-  json          jsonb,
+  "json"        jsonb,
   key_to_set    TEXT,
   value_to_set  anyelement
 )
