@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION array_add_unique(
-  array   jsonb,
-  values  jsonb
+  "array"   jsonb,
+  "values"  jsonb
 )
   RETURNS jsonb
   LANGUAGE sql
