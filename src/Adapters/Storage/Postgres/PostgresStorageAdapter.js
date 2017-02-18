@@ -1,6 +1,7 @@
 import { createClient } from './PostgresClient';
 import Parse            from 'parse/node';
 import _                from 'lodash';
+import sql              from './sql';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -1171,22 +1172,22 @@ export class PostgresStorageAdapter {
     });
     /* eslint-disable no-console */
     promises = promises.concat([
-      this._client.any(json_object_set_key).catch((err) => {
+      this._client.none(sql.misc.jsonObjectSetKeys).catch((err) => {
         console.error(err);
       }),
-      this._client.any(array_add).catch((err) => {
+      this._client.none(sql.array.add).catch((err) => {
         console.error(err);
       }),
-      this._client.any(array_add_unique).catch((err) => {
+      this._client.none(sql.array.addUnique).catch((err) => {
         console.error(err);
       }),
-      this._client.any(array_remove).catch((err) => {
+      this._client.none(sql.array.remove).catch((err) => {
         console.error(err);
       }),
-      this._client.any(array_contains_all).catch((err) => {
+      this._client.none(sql.array.containsAll).catch((err) => {
         console.error(err);
       }),
-      this._client.any(array_contains).catch((err) => {
+      this._client.none(sql.array.contains).catch((err) => {
         console.error(err);
       })
     ]);
@@ -1269,85 +1270,6 @@ function literalizeRegexPart(s) {
       .replace(/^'([^'])/, `''$1`)
   );
 }
-
-// Function to set a key on a nested JSON document
-const json_object_set_key = 'CREATE OR REPLACE FUNCTION "json_object_set_key"(\
-  "json"          jsonb,\
-  "key_to_set"    TEXT,\
-  "value_to_set"  anyelement\
-)\
-  RETURNS jsonb \
-  LANGUAGE sql \
-  IMMUTABLE \
-  STRICT \
-AS $function$\
-SELECT concat(\'{\', string_agg(to_json("key") || \':\' || "value", \',\'), \'}\')::jsonb\
-  FROM (SELECT *\
-          FROM jsonb_each("json")\
-         WHERE "key" <> "key_to_set"\
-         UNION ALL\
-        SELECT "key_to_set", to_json("value_to_set")::jsonb) AS "fields"\
-$function$;'
-
-const array_add = `CREATE OR REPLACE FUNCTION "array_add"(
-  "array"   jsonb,
-  "values"  jsonb
-)
-  RETURNS jsonb 
-  LANGUAGE sql 
-  IMMUTABLE 
-  STRICT 
-AS $function$ 
-  SELECT array_to_json(ARRAY(SELECT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT jsonb_array_elements("values")))))::jsonb;
-$function$;`;
-
-const array_add_unique = `CREATE OR REPLACE FUNCTION "array_add_unique"(
-  "array"   jsonb,
-  "values"  jsonb
-)
-  RETURNS jsonb 
-  LANGUAGE sql 
-  IMMUTABLE 
-  STRICT 
-AS $function$ 
-  SELECT array_to_json(ARRAY(SELECT DISTINCT unnest(ARRAY(SELECT DISTINCT jsonb_array_elements("array")) ||  ARRAY(SELECT DISTINCT jsonb_array_elements("values")))))::jsonb;
-$function$;`;
-
-const array_remove = `CREATE OR REPLACE FUNCTION "array_remove"(
-  "array"   jsonb,
-  "values"  jsonb
-)
-  RETURNS jsonb 
-  LANGUAGE sql 
-  IMMUTABLE 
-  STRICT 
-AS $function$ 
-  SELECT array_to_json(ARRAY(SELECT * FROM jsonb_array_elements("array") as elt WHERE elt NOT IN (SELECT * FROM (SELECT jsonb_array_elements("values")) AS sub)))::jsonb;
-$function$;`;
-
-const array_contains_all = `CREATE OR REPLACE FUNCTION "array_contains_all"(
-  "array"   jsonb,
-  "values"  jsonb
-)
-  RETURNS boolean 
-  LANGUAGE sql 
-  IMMUTABLE 
-  STRICT 
-AS $function$ 
-  SELECT RES.CNT = jsonb_array_length("values") FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
-$function$;`;
-
-const array_contains = `CREATE OR REPLACE FUNCTION "array_contains"(
-  "array"   jsonb,
-  "values"  jsonb
-)
-  RETURNS boolean 
-  LANGUAGE sql 
-  IMMUTABLE 
-  STRICT 
-AS $function$ 
-  SELECT RES.CNT >= 1 FROM (SELECT COUNT(*) as CNT FROM jsonb_array_elements("array") as elt WHERE elt IN (SELECT jsonb_array_elements("values"))) as RES ;
-$function$;`;
 
 export default PostgresStorageAdapter;
 module.exports = PostgresStorageAdapter; // Required for tests
