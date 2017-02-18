@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION array_contains_all(
-  array   jsonb,
-  values  jsonb
+  "array"   jsonb,
+  "values"  jsonb
 )
   RETURNS boolean
   LANGUAGE sql
