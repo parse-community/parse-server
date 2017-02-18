@@ -25,8 +25,7 @@ function sql(file) {
   var qf = new QueryFile(fullPath, {minify: true});
 
   if (qf.error) {
-    // commented out because Lint doesn't permit console messages:
-    // console.error(qf.error);
+    throw qf.error;
   }
 
   return qf;
