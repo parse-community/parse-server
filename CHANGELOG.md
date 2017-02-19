@@ -1,6 +1,6 @@
 ## Parse Server Changelog
 
-### 2.3.4
+### 2.3.5
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.4)
 
 #### Bug Fixes
