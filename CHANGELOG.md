@@ -1,5 +1,19 @@
 ## Parse Server Changelog
 
+### 2.3.4
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.4)
+
+#### Bug Fixes
+* Allow empty client key
+(#3497), thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix LiveQuery unsafe user
+(#3525), thanks to [David Starke](https://github.com/dstarke)
+* Use `flushdb` instead of `flushall` in RedisCacheAdapter
+(#3523), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix saving GeoPoints and Files in `_GlobalConfig` (Make sure we don't treat
+dot notation keys as topLevel atoms)
+(#3531), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.3.3
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.2...2.3.3)
 
@@ -101,7 +115,7 @@ Postgres support requires v9.5
 * Better Postgres support, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
 * Logs the function name when failing (#2963), thanks to [Michael Helvey](https://github.com/michaelhelvey)
 * CLI: forces closing the connections with SIGINT/SIGTERM (#2964), thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
-* Reduce the number of calls to the _SCHEMA table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Reduce the number of calls to the `_SCHEMA` table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
 * LiveQuery: Support for Role ACL's, thanks to [Aaron Blondeau](https://github.com/aaron-blondeau-dose)
 
 #### Bug Fixes
