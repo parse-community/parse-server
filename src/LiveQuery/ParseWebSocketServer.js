@@ -1,20 +1,27 @@
-import PLog from './PLog';
+import logger from '../logger';
 
-let typeMap = new Map([['disconnect', 'close']]);
+const typeMap = new Map([['disconnect', 'close']]);
+const getWS = function() {
+  try {
+    return require('uws');
+  } catch(e) {
+    return require('ws');
+  }
+}
 
 export class ParseWebSocketServer {
   server: Object;
 
   constructor(server: any, onConnect: Function, websocketTimeout: number = 10 * 1000) {
-    let WebSocketServer = require('ws').Server;
-    let wss = new WebSocketServer({ server: server });
+    const WebSocketServer = getWS().Server;
+    const wss = new WebSocketServer({ server: server });
     wss.on('listening', () => {
-      PLog.log('Parse LiveQuery Server starts running');
+      logger.info('Parse LiveQuery Server starts running');
     });
     wss.on('connection', (ws) => {
       onConnect(new ParseWebSocket(ws));
       // Send ping to client periodically
-      let pingIntervalId = setInterval(() => {
+      const pingIntervalId = setInterval(() => {
         if (ws.readyState == ws.OPEN) {
           ws.ping();
         } else {
@@ -34,11 +41,11 @@ export class ParseWebSocket {
   }
 
   on(type: string, callback): void {
-    let wsType = typeMap.has(type) ? typeMap.get(type) : type;
+    const wsType = typeMap.has(type) ? typeMap.get(type) : type;
     this.ws.on(wsType, callback);
   }
 
-  send(message: any, channel: string): void {
+  send(message: any): void {
     this.ws.send(message);
   }
 }

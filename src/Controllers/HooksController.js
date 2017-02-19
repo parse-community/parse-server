@@ -1,20 +1,21 @@
 /** @flow weak */
 
-import * as DatabaseAdapter from "../DatabaseAdapter";
-import * as triggers from "../triggers";
-import * as Parse from "parse/node";
-import * as request from "request";
+import * as triggers        from "../triggers";
+import * as Parse           from "parse/node";
+import * as request         from "request";
+import { logger }           from '../logger';
 
 const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
   _applicationId:string;
-  _collectionPrefix:string;
-  _collection;
+  _webhookKey:string;
+  database: any;
 
-  constructor(applicationId:string, collectionPrefix:string = '') {
+  constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
-    this._collectionPrefix = collectionPrefix;
+    this._webhookKey = webhookKey;
+    this.database = databaseController;
   }
 
   load() {
@@ -23,18 +24,6 @@ export class HooksController {
       hooks.forEach((hook) => {
         this.addHookToTriggers(hook);
       });
-    });
-  }
-
-  getCollection() {
-    if (this._collection) {
-      return Promise.resolve(this._collection)
-    }
-
-    let database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix);
-    return database.adaptiveCollection(DefaultHooksCollectionName).then(collection => {
-      this._collection = collection;
-      return collection;
     });
   }
 
@@ -64,16 +53,18 @@ export class HooksController {
     return this._removeHooks({ className: className, triggerName: triggerName });
   }
 
-  _getHooks(query, limit) {
-    let options = limit ? { limit: limit } : undefined;
-    return this.getCollection().then(collection => collection.find(query, options));
+  _getHooks(query = {}) {
+    return this.database.find(DefaultHooksCollectionName, query).then((results) => {
+      return results.map((result) => {
+        delete result.objectId;
+        return result;
+      });
+    });
   }
 
   _removeHooks(query) {
-    return this.getCollection().then(collection => {
-      return collection.deleteMany(query);
-    }).then(() => {
-      return {};
+    return this.database.destroy(DefaultHooksCollectionName, query).then(() => {
+      return Promise.resolve({});
     });
   }
 
@@ -86,15 +77,13 @@ export class HooksController {
     } else {
       throw new Parse.Error(143, "invalid hook declaration");
     }
-    return this.getCollection()
-      .then(collection => collection.upsertOne(query, hook))
-      .then(() => {
-        return hook;
-      });
+    return this.database.update(DefaultHooksCollectionName, query, hook, {upsert: true}).then(() => {
+      return Promise.resolve(hook);
+    })
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook);
+    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
@@ -125,7 +114,7 @@ export class HooksController {
     }
 
     return this.addHook(hook);
-  };
+  }
 
   createHook(aHook) {
     if (aHook.functionName) {
@@ -146,7 +135,7 @@ export class HooksController {
     }
 
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 
   updateHook(aHook) {
     if (aHook.functionName) {
@@ -165,12 +154,12 @@ export class HooksController {
       });
     }
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 }
 
-function wrapToHTTPRequest(hook) {
+function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
-    let jsonBody = {};
+    const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
     }
@@ -182,17 +171,23 @@ function wrapToHTTPRequest(hook) {
       jsonBody.original = req.original.toJSON();
       jsonBody.original.className = req.original.className;
     }
-    let jsonRequest = {
+    const jsonRequest: any = {
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(jsonBody)
     };
 
+    if (key) {
+      jsonRequest.headers['X-Parse-Webhook-Key'] = key;
+    } else {
+      logger.warn('Making outgoing webhook request without webhookKey being set!');
+    }
+
     request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
       var result;
       if (body) {
-        if (typeof body == "string") {
+        if (typeof body === "string") {
           try {
             body = JSON.parse(body);
           } catch (e) {
@@ -204,8 +199,15 @@ function wrapToHTTPRequest(hook) {
           err = body.error;
         }
       }
+
       if (err) {
         return res.error(err);
+      } else if (hook.triggerName === 'beforeSave') {
+        if (typeof result === 'object') {
+          delete result.createdAt;
+          delete result.updatedAt;
+        }
+        return res.success({object: result});
       } else {
         return res.success(result);
       }

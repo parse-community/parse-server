@@ -1,15 +1,15 @@
 // These methods handle the User-related routes.
 
 import deepcopy       from 'deepcopy';
-
+import Parse          from 'parse/node';
+import Config         from '../Config';
+import AccountLockout from '../AccountLockout';
 import ClassesRouter  from './ClassesRouter';
-import PromiseRouter  from '../PromiseRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
-let cryptoUtils = require('../cryptoUtils');
-let triggers = require('../triggers');
+const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
   handleFind(req) {
@@ -23,7 +23,7 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleCreate(req) {
-    let data = deepcopy(req.body);
+    const data = deepcopy(req.body);
     req.body = data;
     req.params.className = '_User';
 
@@ -44,17 +44,17 @@ export class UsersRouter extends ClassesRouter {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
     }
-    let sessionToken = req.info.sessionToken;
+    const sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
-      { _session_token: sessionToken },
-      { include: 'user' })
+      { sessionToken },
+      { include: 'user' }, req.info.clientSDK)
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
           !response.results[0].user) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
         } else {
-          let user = response.results[0].user;
+          const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
           user.sessionToken = sessionToken;
           return { response: user };
@@ -75,21 +75,58 @@ export class UsersRouter extends ClassesRouter {
     if (!req.body.password) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
     }
+    if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    }
 
     let user;
+    let isValidPassword = false;
+
     return req.config.database.find('_User', { username: req.body.username })
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
         user = results[0];
+
+        if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
+          throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+        }
         return passwordCrypto.compare(req.body.password, user.password);
-      }).then((correct) => {
-        if (!correct) {
+      })
+      .then((correct) => {
+        isValidPassword = correct;
+        const accountLockoutPolicy = new AccountLockout(user, req.config);
+        return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
+      })
+      .then(() => {
+        if (!isValidPassword) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
 
-        let token = 'r:' + cryptoUtils.newToken();
+        // handle password expiry policy
+        if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+          let changedAt = user._password_changed_at;
+
+          if (!changedAt) {
+            // password was created before expiry policy was enabled.
+            // simply update _User object so that it will start enforcing from now
+            changedAt = new Date();
+            req.config.database.update('_User', {username: user.username},
+              {_password_changed_at: Parse._encode(changedAt)});
+          } else {
+            // check whether the password has expired
+            if (changedAt.__type == 'Date') {
+              changedAt = new Date(changedAt.iso);
+            }
+            // Calculate the expiry time.
+            const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge);
+            if (expiresAt < new Date()) // fail of current time is past password expiry time
+              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
+          }
+        }
+
+        const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
 
@@ -108,10 +145,8 @@ export class UsersRouter extends ClassesRouter {
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        let expiresAt = new Date();
-        expiresAt.setFullYear(expiresAt.getFullYear() + 1);
-
-        let sessionData = {
+        const expiresAt = req.config.generateSessionExpiresAt();
+        const sessionData = {
           sessionToken: token,
           user: {
             __type: 'Pointer',
@@ -130,7 +165,7 @@ export class UsersRouter extends ClassesRouter {
           sessionData.installationId = req.info.installationId
         }
 
-        let create = new RestWrite(req.config, Auth.master(req.config), '_Session', null, sessionData);
+        const create = new RestWrite(req.config, Auth.master(req.config), '_Session', null, sessionData);
         return create.execute();
       }).then(() => {
         return { response: user };
@@ -138,10 +173,10 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleLogOut(req) {
-    let success = {response: {}};
+    const success = {response: {}};
     if (req.info && req.info.sessionToken) {
       return rest.find(req.config, Auth.master(req.config), '_Session',
-        { _session_token: req.info.sessionToken }
+        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
       ).then((records) => {
         if (records.results && records.results.length) {
           return rest.del(req.config, Auth.master(req.config), '_Session',
@@ -157,19 +192,40 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleResetRequest(req) {
-     let { email } = req.body;
-     if (!email) {
-       throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
-     }
-     let userController = req.config.userController;
-
-     return userController.sendPasswordResetEmail(email).then((token) => {
-        return Promise.resolve({
-          response: {}
-        });
-     }, (err) => {
-       throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `no user found with email ${email}`);
-     });
+    try {
+      Config.validateEmailConfiguration({
+        emailAdapter: req.config.userController.adapter,
+        appName: req.config.appName,
+        publicServerURL: req.config.publicServerURL,
+        emailVerifyTokenValidityDuration: req.config.emailVerifyTokenValidityDuration
+      });
+    } catch (e) {
+      if (typeof e === 'string') {
+        // Maybe we need a Bad Configuration error, but the SDKs won't understand it. For now, Internal Server Error.
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'An appName, publicServerURL, and emailAdapter are required for password reset functionality.');
+      } else {
+        throw e;
+      }
+    }
+    const { email } = req.body;
+    if (!email) {
+      throw new Parse.Error(Parse.Error.EMAIL_MISSING, "you must provide an email");
+    }
+    if (typeof email !== 'string') {
+      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
+    }
+    const userController = req.config.userController;
+    return userController.sendPasswordResetEmail(email).then(() => {
+      return Promise.resolve({
+        response: {}
+      });
+    }, err => {
+      if (err.code === Parse.Error.OBJECT_NOT_FOUND) {
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}.`);
+      } else {
+        throw err;
+      }
+    });
   }
 
 

@@ -2,7 +2,6 @@ var ParseCloudCodePublisher = require('../src/LiveQuery/ParseCloudCodePublisher'
 var Parse = require('parse/node');
 
 describe('ParseCloudCodePublisher', function() {
-
   beforeEach(function(done) {
     // Mock ParsePubSub
     var mockParsePubSub = {
@@ -21,7 +20,7 @@ describe('ParseCloudCodePublisher', function() {
 
   it('can initialize', function() {
     var config = {}
-    var publisher = new ParseCloudCodePublisher(config);
+    new ParseCloudCodePublisher(config);
 
     var ParsePubSub = require('../src/LiveQuery/ParsePubSub').ParsePubSub;
     expect(ParsePubSub.createPublisher).toHaveBeenCalledWith(config);
@@ -33,7 +32,7 @@ describe('ParseCloudCodePublisher', function() {
     var request = {};
     publisher.onCloudCodeAfterSave(request);
 
-    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith('afterSave', request);
+    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(Parse.applicationId + 'afterSave', request);
   });
 
   it('can handle cloud code afterDelete request', function() {
@@ -42,7 +41,7 @@ describe('ParseCloudCodePublisher', function() {
     var request = {};
     publisher.onCloudCodeAfterDelete(request);
 
-    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith('afterDelete', request);
+    expect(publisher._onCloudCodeMessage).toHaveBeenCalledWith(Parse.applicationId + 'afterDelete', request);
   });
 
   it('can handle cloud code request', function() {

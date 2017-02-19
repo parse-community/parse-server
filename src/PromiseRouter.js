@@ -5,7 +5,26 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import express from 'express';
+import Parse     from 'parse/node';
+import express   from 'express';
+import log       from './logger';
+import {inspect} from 'util';
+const Layer = require('express/lib/router/layer');
+
+function validateParameter(key, value) {
+  if (key == 'className') {
+    if (value.match(/_?[A-Za-z][A-Za-z_0-9]*/)) {
+      return value;
+    }
+  } else if (key == 'objectId') {
+    if (value.match(/[A-Za-z0-9]+/)) {
+      return value;
+    }
+  } else {
+    return value;
+  }
+}
+
 
 export default class PromiseRouter {
   // Each entry should be an object with:
@@ -17,8 +36,9 @@ export default class PromiseRouter {
   //     status: optional. the http status code. defaults to 200
   //     response: a json object with the content of the response
   //     location: optional. a location header
-  constructor(routes = []) {
+  constructor(routes = [], appId) {
     this.routes = routes;
+    this.appId = appId;
     this.mountRoutes();
   }
 
@@ -31,7 +51,7 @@ export default class PromiseRouter {
     for (var route of router.routes) {
       this.routes.push(route);
     }
-  };
+  }
 
   route(method, path, ...handlers) {
     switch(method) {
@@ -47,10 +67,9 @@ export default class PromiseRouter {
     let handler = handlers[0];
 
     if (handlers.length > 1) {
-      const length = handlers.length;
       handler = function(req) {
         return handlers.reduce((promise, handler) => {
-          return promise.then((result) => {
+          return promise.then(() => {
             return handler(req);
           });
         }, Promise.resolve());
@@ -60,9 +79,10 @@ export default class PromiseRouter {
     this.routes.push({
       path: path,
       method: method,
-      handler: handler
+      handler: handler,
+      layer: new Layer(path, null, handler)
     });
-  };
+  }
 
   // Returns an object with:
   //   handler: the handler that should deal with this request
@@ -73,107 +93,80 @@ export default class PromiseRouter {
       if (route.method != method) {
         continue;
       }
-      // NOTE: we can only route the specific wildcards :className and
-      // :objectId, and in that order.
-      // This is pretty hacky but I don't want to rebuild the entire
-      // express route matcher. Maybe there's a way to reuse its logic.
-      var pattern = '^' + route.path + '$';
-
-      pattern = pattern.replace(':className',
-                                '(_?[A-Za-z][A-Za-z_0-9]*)');
-      pattern = pattern.replace(':objectId',
-                                '([A-Za-z0-9]+)');
-      var re = new RegExp(pattern);
-      var m = path.match(re);
-      if (!m) {
-        continue;
+      const layer = route.layer || new Layer(route.path, null, route.handler);
+      const match = layer.match(path);
+      if (match) {
+        const params = layer.params;
+        Object.keys(params).forEach((key) => {
+          params[key] = validateParameter(key, params[key]);
+        });
+        return {params: params, handler: route.handler};
       }
-      var params = {};
-      if (m[1]) {
-        params.className = m[1];
-      }
-      if (m[2]) {
-        params.objectId = m[2];
-      }
-
-      return {params: params, handler: route.handler};
     }
-  };
+  }
 
   // Mount the routes on this router onto an express app (or express router)
   mountOnto(expressApp) {
-    for (var route of this.routes) {
-      switch(route.method) {
-      case 'POST':
-        expressApp.post(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'GET':
-        expressApp.get(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'PUT':
-        expressApp.put(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'DELETE':
-        expressApp.delete(route.path, makeExpressHandler(route.handler));
-        break;
-      default:
-        throw 'unexpected code branch';
-      }
-    }
-  };
-
-  expressApp() {
-    var expressApp = express();
-    for (var route of this.routes) {
-      switch(route.method) {
-      case 'POST':
-        expressApp.post(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'GET':
-        expressApp.get(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'PUT':
-        expressApp.put(route.path, makeExpressHandler(route.handler));
-        break;
-      case 'DELETE':
-        expressApp.delete(route.path, makeExpressHandler(route.handler));
-        break;
-      default:
-        throw 'unexpected code branch';
-      }
-    }
+    this.routes.forEach((route) => {
+      const method = route.method.toLowerCase();
+      const handler = makeExpressHandler(this.appId, route.handler);
+      expressApp[method].call(expressApp, route.path, handler);
+    });
     return expressApp;
   }
-}
 
-// Global flag. Set this to true to log every request and response.
-PromiseRouter.verbose = process.env.VERBOSE || false;
+  expressRouter() {
+    return this.mountOnto(express.Router());
+  }
+
+  tryRouteRequest(method, path, request) {
+    var match = this.match(method, path);
+    if (!match) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_JSON,
+        'cannot route ' + method + ' ' + path);
+    }
+    request.params = match.params;
+    return new Promise((resolve, reject) => {
+      match.handler(request).then(resolve, reject);
+    });
+  }
+}
 
 // A helper function to make an express handler out of a a promise
 // handler.
 // Express handlers should never throw; if a promise handler throws we
 // just treat it like it resolved to an error.
-function makeExpressHandler(promiseHandler) {
+function makeExpressHandler(appId, promiseHandler) {
   return function(req, res, next) {
     try {
-      if (PromiseRouter.verbose) {
-        console.log(req.method, req.originalUrl, req.headers,
-                    JSON.stringify(req.body, null, 2));
-      }
+      const url = maskSensitiveUrl(req);
+      const body = Object.assign({}, req.body);
+      const stringifiedBody = JSON.stringify(body, null, 2);
+      log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
+        method: req.method,
+        url: url,
+        headers: req.headers,
+        body: body
+      });
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
-          console.log('BUG: the handler did not include a "response" or a "location" field');
+          log.error('the handler did not include a "response" or a "location" field');
           throw 'control should not get here';
         }
-        if (PromiseRouter.verbose) {
-          console.log('response:', JSON.stringify(result, null, 2));
-        }
+
+        const stringifiedResponse = JSON.stringify(result, null, 2);
+        log.verbose(
+          `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
+          {result: result}
+        );
 
         var status = result.status || 200;
         res.status(status);
 
         if (result.text) {
-          return res.send(result.text);
+          res.send(result.text);
+          return;
         }
 
         if (result.location) {
@@ -181,21 +174,34 @@ function makeExpressHandler(promiseHandler) {
           // Override the default expressjs response
           // as it double encodes %encoded chars in URL
           if (!result.response) {
-            return res.send('Found. Redirecting to '+result.location);
+            res.send('Found. Redirecting to ' + result.location);
+            return;
           }
+        }
+        if (result.headers) {
+          Object.keys(result.headers).forEach((header) => {
+            res.set(header, result.headers[header]);
+          })
         }
         res.json(result.response);
       }, (e) => {
-        if (PromiseRouter.verbose) {
-          console.log('error:', e);
-        }
+        log.error(`Error generating response. ${inspect(e)}`, {error: e});
         next(e);
       });
     } catch (e) {
-      if (PromiseRouter.verbose) {
-        console.log('error:', e);
-      }
+      log.error(`Error handling request: ${inspect(e)}`, {error: e});
       next(e);
     }
   }
+}
+
+
+function maskSensitiveUrl(req) {
+  let maskUrl = req.originalUrl.toString();
+  const shouldMaskUrl = req.method === 'GET' && req.originalUrl.includes('/login')
+                      && !req.originalUrl.includes('classes');
+  if (shouldMaskUrl) {
+    maskUrl = log.maskSensitiveUrl(maskUrl);
+  }
+  return maskUrl;
 }

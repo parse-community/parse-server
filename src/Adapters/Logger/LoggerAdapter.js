@@ -1,17 +1,16 @@
+/*eslint no-unused-vars: "off"*/
 // Logger Adapter
 //
 // Allows you to change the logger mechanism
 //
 // Adapter classes must implement the following functions:
-// * info(obj1 [, obj2, .., objN])
-// * error(obj1 [, obj2, .., objN])
-// * query(options, callback)
-// Default is FileLoggerAdapter.js
+// * log() {}
+// * query(options, callback) /* optional */
+// Default is WinstonLoggerAdapter.js
 
 export class LoggerAdapter {
-  info() {}
-  error() {}
-  query(options, callback) {}
+  constructor(options) {}
+  log(level, message, /* meta */) {}
 }
 
 export default LoggerAdapter;

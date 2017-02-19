@@ -46,10 +46,10 @@ describe('Parse.Relation testing', () => {
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
       childObjects.push(new ChildObject({x:i}));
-    };
+    }
 
     Parse.Object.saveAll(childObjects, expectSuccess({
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -84,7 +84,7 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects, {
-      success: function(list) {
+      success: function() {
         var ParentObject = Parse.Object.extend("ParentObject");
         var parent = new ParentObject();
         parent.set("x", 4);
@@ -106,7 +106,7 @@ describe('Parse.Relation testing', () => {
                        "The relation should not be dirty");
                     done();
                   },
-                  error: function(list) {
+                  error: function() {
                     ok(false, "This shouldn't have failed");
                     done();
                   }
@@ -131,7 +131,7 @@ describe('Parse.Relation testing', () => {
     var parent;
     var relation;
 
-    Parse.Object.saveAll(childObjects).then(function(list) {
+    Parse.Object.saveAll(childObjects).then(function() {
       var ParentObject = Parse.Object.extend('ParentObject');
       parent = new ParentObject();
       parent.set('x', 4);
@@ -164,7 +164,7 @@ describe('Parse.Relation testing', () => {
   });
 
 
-  it("queries with relations", (done) => {
+  it_exclude_dbs(['postgres'])("queries with relations", (done) => {
 
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
@@ -248,7 +248,55 @@ describe('Parse.Relation testing', () => {
     });
   });
 
-  it("queries on relation fields with multiple ins", (done) => {
+  it("queries on relation fields with multiple containedIn (regression test for #1271)", (done) => {
+    const ChildObject = Parse.Object.extend("ChildObject");
+    const childObjects = [];
+    for (let i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x: i}));
+    }
+
+    Parse.Object.saveAll(childObjects).then(() => {
+      const ParentObject = Parse.Object.extend("ParentObject");
+      const parent = new ParentObject();
+      parent.set("x", 4);
+      const parent1Children = parent.relation("child");
+      parent1Children.add(childObjects[0]);
+      parent1Children.add(childObjects[1]);
+      parent1Children.add(childObjects[2]);
+      const parent2 = new ParentObject();
+      parent2.set("x", 3);
+      const parent2Children = parent2.relation("child");
+      parent2Children.add(childObjects[4]);
+      parent2Children.add(childObjects[5]);
+      parent2Children.add(childObjects[6]);
+
+      const parent2OtherChildren = parent2.relation("otherChild");
+      parent2OtherChildren.add(childObjects[0]);
+      parent2OtherChildren.add(childObjects[1]);
+      parent2OtherChildren.add(childObjects[2]);
+
+      return Parse.Object.saveAll([parent, parent2]);
+    }).then(() => {
+      const objectsWithChild0InBothChildren = new Parse.Query(ParentObject);
+      objectsWithChild0InBothChildren.containedIn("child", [childObjects[0]]);
+      objectsWithChild0InBothChildren.containedIn("otherChild", [childObjects[0]]);
+      return objectsWithChild0InBothChildren.find();
+    }).then(objectsWithChild0InBothChildren => {
+      //No parent has child 0 in both it's "child" and "otherChild" field;
+      expect(objectsWithChild0InBothChildren.length).toEqual(0);
+    }).then(() => {
+      const objectsWithChild4andOtherChild1 = new Parse.Query(ParentObject);
+      objectsWithChild4andOtherChild1.containedIn("child", [childObjects[4]]);
+      objectsWithChild4andOtherChild1.containedIn("otherChild", [childObjects[1]]);
+      return objectsWithChild4andOtherChild1.find();
+    }).then(objects => {
+      // parent2 has child 4 and otherChild 1
+      expect(objects.length).toEqual(1);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])("query on pointer and relation fields with equal", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -259,74 +307,33 @@ describe('Parse.Relation testing', () => {
       var ParentObject = Parse.Object.extend("ParentObject");
       var parent = new ParentObject();
       parent.set("x", 4);
-      var relation = parent.relation("child");
+      var relation = parent.relation("toChilds");
       relation.add(childObjects[0]);
       relation.add(childObjects[1]);
       relation.add(childObjects[2]);
+
       var parent2 = new ParentObject();
       parent2.set("x", 3);
-      var relation2 = parent2.relation("child");
-      relation2.add(childObjects[4]);
-      relation2.add(childObjects[5]);
-      relation2.add(childObjects[6]);
-
-      var otherChild2 = parent2.relation("otherChild");
-      otherChild2.add(childObjects[0]);
-      otherChild2.add(childObjects[1]);
-      otherChild2.add(childObjects[2]);
+      parent2.set("toChild", childObjects[2]);
 
       var parents = [];
       parents.push(parent);
       parents.push(parent2);
-      return Parse.Object.saveAll(parents);
-    }).then(() => {
-      var query = new Parse.Query(ParentObject);
-      var objects = [];
-      objects.push(childObjects[0]);
-      query.containedIn("child", objects);
-      query.containedIn("otherChild", [childObjects[0]]);
-      return query.find();
-    }).then((list) => {
-      equal(list.length, 2, "There should be 2 results");
-      done();
-    });
-  });
+      parents.push(new ParentObject());
 
-  it("query on pointer and relation fields with equal", (done) => {
-    var ChildObject = Parse.Object.extend("ChildObject");
-    var childObjects = [];
-    for (var i = 0; i < 10; i++) {
-      childObjects.push(new ChildObject({x: i}));
-    }
+      return Parse.Object.saveAll(parents).then(() => {
+        var query = new Parse.Query(ParentObject);
+        query.equalTo("objectId", parent.id);
+        query.equalTo("toChilds", childObjects[2]);
 
-    Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
-
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.set("toChild", childObjects[2]);
-
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
-
-       return Parse.Object.saveAll(parents).then(() => {
-          var query = new Parse.Query(ParentObject);
-          query.equalTo("objectId", parent.id);
-          query.equalTo("toChilds", childObjects[2]);
-
-          return query.find().then((list) => {
-            equal(list.length, 1, "There should be 1 result");
-            done();
-          });
+        return query.find().then((list) => {
+          equal(list.length, 1, "There should be 1 result");
+          done();
         });
+      });
+    }).catch(err => {
+      jfail(err);
+      done();
     });
   });
 
@@ -338,39 +345,39 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("toChilds");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.relation("toChilds").add(childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      parent2.relation("toChilds").add(childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-       return Parse.Object.saveAll(parents).then(() => {
-          var query = new Parse.Query(ParentObject);
-          query.equalTo("objectId", parent2.id);
+      return Parse.Object.saveAll(parents).then(() => {
+        var query = new Parse.Query(ParentObject);
+        query.equalTo("objectId", parent2.id);
           // childObjects[2] is in 2 relations
           // before the fix, that woul yield 2 results
-          query.equalTo("toChilds", childObjects[2]);
+        query.equalTo("toChilds", childObjects[2]);
 
-          return query.find().then((list) => {
-            equal(list.length, 1, "There should be 1 result");
-            done();
-          });
+        return query.find().then((list) => {
+          equal(list.length, 1, "There should be 1 result");
+          done();
         });
+      });
     });
   });
 
-  it("or queries on pointer and relation fields", (done) => {
+  it_exclude_dbs(['postgres'])("or queries on pointer and relation fields", (done) => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
@@ -378,39 +385,39 @@ describe('Parse.Relation testing', () => {
     }
 
     Parse.Object.saveAll(childObjects).then(() => {
-        var ParentObject = Parse.Object.extend("ParentObject");
-        var parent = new ParentObject();
-        parent.set("x", 4);
-        var relation = parent.relation("toChilds");
-        relation.add(childObjects[0]);
-        relation.add(childObjects[1]);
-        relation.add(childObjects[2]);
+      var ParentObject = Parse.Object.extend("ParentObject");
+      var parent = new ParentObject();
+      parent.set("x", 4);
+      var relation = parent.relation("toChilds");
+      relation.add(childObjects[0]);
+      relation.add(childObjects[1]);
+      relation.add(childObjects[2]);
 
-        var parent2 = new ParentObject();
-        parent2.set("x", 3);
-        parent2.set("toChild", childObjects[2]);
+      var parent2 = new ParentObject();
+      parent2.set("x", 3);
+      parent2.set("toChild", childObjects[2]);
 
-        var parents = [];
-        parents.push(parent);
-        parents.push(parent2);
-        parents.push(new ParentObject());
+      var parents = [];
+      parents.push(parent);
+      parents.push(parent2);
+      parents.push(new ParentObject());
 
-       return Parse.Object.saveAll(parents).then(() => {
-          var query1 = new Parse.Query(ParentObject);
-          query1.containedIn("toChilds", [childObjects[2]]);
-          var query2 = new Parse.Query(ParentObject);
-          query2.equalTo("toChild", childObjects[2]);
-          var query = Parse.Query.or(query1, query2);
-          return query.find().then((list) => {
-            var objectIds = list.map(function(item){
-              return item.id;
-            });
-            expect(objectIds.indexOf(parent.id)).not.toBe(-1);
-            expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
-            equal(list.length, 2, "There should be 2 results");
-            done();
+      return Parse.Object.saveAll(parents).then(() => {
+        var query1 = new Parse.Query(ParentObject);
+        query1.containedIn("toChilds", [childObjects[2]]);
+        var query2 = new Parse.Query(ParentObject);
+        query2.equalTo("toChild", childObjects[2]);
+        var query = Parse.Query.or(query1, query2);
+        return query.find().then((list) => {
+          var objectIds = list.map(function(item){
+            return item.id;
           });
+          expect(objectIds.indexOf(parent.id)).not.toBe(-1);
+          expect(objectIds.indexOf(parent2.id)).not.toBe(-1);
+          equal(list.length, 2, "There should be 2 results");
+          done();
         });
+      });
     });
   });
 
@@ -503,24 +510,24 @@ describe('Parse.Relation testing', () => {
   });
 
   it('should properly get related objects with unfetched queries', (done) => {
-    let objects = [];
-    let owners = [];
-    let allObjects = [];
+    const objects = [];
+    const owners = [];
+    const allObjects = [];
     // Build 10 Objects and 10 owners
     while (objects.length != 10) {
-      let object = new Parse.Object('AnObject');
+      const object = new Parse.Object('AnObject');
       object.set({
         index: objects.length,
         even: objects.length % 2 == 0
       });
       objects.push(object);
-      let owner = new Parse.Object('AnOwner');
+      const owner = new Parse.Object('AnOwner');
       owners.push(owner);
       allObjects.push(object);
       allObjects.push(owner);
     }
 
-    let anotherOwner = new Parse.Object('AnotherOwner');
+    const anotherOwner = new Parse.Object('AnotherOwner');
 
     return Parse.Object.saveAll(allObjects.concat([anotherOwner])).then(() => {
       // put all the AnObject into the anotherOwner relationKey
@@ -532,41 +539,44 @@ describe('Parse.Relation testing', () => {
       return Parse.Object.saveAll(owners.concat([anotherOwner]));
     }).then(() => {
       // Query on the relation of another owner
-      let object = new Parse.Object('AnotherOwner');
+      const object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
-      let relationQuery = object.relation('relationKey').query();
+      const relationQuery = object.relation('relationKey').query();
       // Just get the even ones
       relationQuery.equalTo('even', true);
       // Make the query on anOwner
-      let query = new Parse.Query('AnOwner');
+      const query = new Parse.Query('AnOwner');
       // where key match the relation query.
       query.matchesQuery('key', relationQuery);
       query.include('key');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(5);
-      results.forEach((result) => {
+      results.forEach((result) => {
         expect(result.get('key').get('even')).toBe(true);
       });
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       // Query on the relation of another owner
-      let object = new Parse.Object('AnotherOwner');
+      const object = new Parse.Object('AnotherOwner');
       object.id = anotherOwner.id;
-      let relationQuery = object.relation('relationKey').query();
+      const relationQuery = object.relation('relationKey').query();
       // Just get the even ones
       relationQuery.equalTo('even', true);
       // Make the query on anOwner
-      let query = new Parse.Query('AnOwner');
+      const query = new Parse.Query('AnOwner');
       // where key match the relation query.
       query.doesNotMatchQuery('key', relationQuery);
       query.include('key');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(5);
-      results.forEach((result) => {
+      results.forEach((result) => {
         expect(result.get('key').get('even')).toBe(false);
       });
+      done();
+    }, (e) => {
+      fail(JSON.stringify(e));
       done();
     })
   });
@@ -579,21 +589,19 @@ describe('Parse.Relation testing', () => {
       new RestaurantObject({ ratings: 5, location: "Djibouti" }),
       new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
     ];
-    let persons = [
+    const persons = [
       new PersonObject({ name: "Bob", hometown: "Djibouti" }),
       new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
-    let owner = new OwnerObject({name: 'Joe'});
-    let ownerId;
-    let allObjects = [owner].concat(restaurants).concat(persons);
+    const owner = new OwnerObject({name: 'Joe'});
+    const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
-      ownerId = owner.id;
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
-      let unfetchedOwner = new OwnerObject();
+      const unfetchedOwner = new OwnerObject();
       unfetchedOwner.id = owner.id;
       var query = unfetchedOwner.relation('restaurants').query();
       query.greaterThan("ratings", 4);
@@ -608,6 +616,9 @@ describe('Parse.Relation testing', () => {
           done();
         }
       }));
+    }, (e) => {
+      fail(JSON.stringify(e));
+      done();
     });
   });
 
@@ -619,21 +630,19 @@ describe('Parse.Relation testing', () => {
       new RestaurantObject({ ratings: 5, location: "Djibouti" }),
       new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
     ];
-    let persons = [
+    const persons = [
       new PersonObject({ name: "Bob", hometown: "Djibouti" }),
       new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
       new PersonObject({ name: "Billy", hometown: "Detroit" }),
     ];
-    let owner = new OwnerObject({name: 'Joe'});
-    let ownerId;
-    let allObjects = [owner].concat(restaurants).concat(persons);
+    const owner = new OwnerObject({name: 'Joe'});
+    const allObjects = [owner].concat(restaurants).concat(persons);
     expect(allObjects.length).toEqual(6);
     Parse.Object.saveAll([owner].concat(restaurants).concat(persons)).then(function() {
-      ownerId = owner.id;
       owner.relation('restaurants').add(restaurants);
       return owner.save()
     }).then(() => {
-      let unfetchedOwner = new OwnerObject();
+      const unfetchedOwner = new OwnerObject();
       unfetchedOwner.id = owner.id;
       var query = unfetchedOwner.relation('restaurants').query();
       query.greaterThan("ratings", 4);
@@ -650,6 +659,119 @@ describe('Parse.Relation testing', () => {
           done();
         }
       }));
+    }, (e) => {
+      fail(JSON.stringify(e));
+      done();
+    });
+  });
+
+  it('relations are not bidirectional (regression test for #871)', done => {
+    const PersonObject = Parse.Object.extend("Person");
+    const p1 = new PersonObject();
+    const p2 = new PersonObject();
+    Parse.Object.saveAll([p1, p2]).then(results => {
+      const p1 = results[0];
+      const p2 = results[1];
+      const relation = p1.relation('relation');
+      relation.add(p2);
+      p1.save().then(() => {
+        const query = new Parse.Query(PersonObject);
+        query.equalTo('relation', p1);
+        query.find().then(results => {
+          expect(results.length).toEqual(0);
+
+          const query = new Parse.Query(PersonObject);
+          query.equalTo('relation', p2);
+          query.find().then(results => {
+            expect(results.length).toEqual(1);
+            expect(results[0].objectId).toEqual(p1.objectId);
+            done();
+          });
+        });
+      })
+    });
+  });
+
+  it('can query roles in Cloud Code (regession test #1489)', done => {
+    Parse.Cloud.define('isAdmin', (request, response) => {
+      const query = new Parse.Query(Parse.Role);
+      query.equalTo('name', 'admin');
+      query.first({ useMasterKey: true })
+      .then(role => {
+        const relation = new Parse.Relation(role, 'users');
+        const admins = relation.query();
+        admins.equalTo('username', request.user.get('username'));
+        admins.first({ useMasterKey: true })
+        .then(user => {
+          if (user) {
+            response.success(user);
+            done();
+          } else {
+            fail('Should have found admin user, found nothing instead');
+            done();
+          }
+        }, () => {
+          fail('User not admin');
+          done();
+        })
+      }, error => {
+        fail('Should have found admin user, errored instead');
+        fail(error);
+        done();
+      });
+    });
+
+    const adminUser = new Parse.User();
+    adminUser.set('username', 'name');
+    adminUser.set('password', 'pass');
+    adminUser.signUp()
+    .then(adminUser => {
+      const adminACL = new Parse.ACL();
+      adminACL.setPublicReadAccess(true);
+
+      // Create admin role
+      const adminRole = new Parse.Role('admin', adminACL);
+      adminRole.getUsers().add(adminUser);
+      adminRole.save()
+      .then(() => {
+        Parse.Cloud.run('isAdmin');
+      }, error => {
+        fail('failed to save role');
+        fail(error);
+        done()
+      });
+    }, error => {
+      fail('failed to sign up');
+      fail(error);
+      done();
+    });
+  });
+
+  it('can be saved without error', done => {
+    const obj1 = new Parse.Object('PPAP');
+    obj1.save()
+    .then(() => {
+      const newRelation = obj1.relation('aRelation');
+      newRelation.add(obj1);
+      obj1.save().then(() => {
+        const relation = obj1.get('aRelation');
+        obj1.set('aRelation', relation);
+        obj1.save().then(() => {
+          done();
+        }, error => {
+          fail('failed to save ParseRelation object');
+          fail(error);
+          done();
+        });
+      }, error => {
+        fail('failed to create relation field');
+        fail(error);
+        done();
+      });
+    }, error => {
+      fail('failed to save obj');
+      fail(error);
+      done();
     });
   });
 });

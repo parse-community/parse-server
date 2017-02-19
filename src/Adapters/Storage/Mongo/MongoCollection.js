@@ -1,5 +1,5 @@
-let mongodb = require('mongodb');
-let Collection = mongodb.Collection;
+const mongodb = require('mongodb');
+const Collection = mongodb.Collection;
 
 export default class MongoCollection {
   _mongoCollection:Collection;
@@ -13,48 +13,46 @@ export default class MongoCollection {
   // none, then build the geoindex.
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
-  find(query, { skip, limit, sort } = {}) {
-    return this._rawFind(query, { skip, limit, sort })
+  find(query, { skip, limit, sort, keys, maxTimeMS } = {}) {
+    return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS })
       .catch(error => {
         // Check for "no geoindex" error
-        if (error.code != 17007 || !error.message.match(/unable to find index for .geoNear/)) {
+        if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
           throw error;
         }
         // Figure out what key needs an index
-        let key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
+        const key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
         if (!key) {
           throw error;
         }
 
         var index = {};
         index[key] = '2d';
-        //TODO: condiser moving index creation logic into Schema.js
         return this._mongoCollection.createIndex(index)
           // Retry, but just once.
-          .then(() => this._rawFind(query, { skip, limit, sort }));
+          .then(() => this._rawFind(query, { skip, limit, sort, keys, maxTimeMS }));
       });
   }
 
-  _rawFind(query, { skip, limit, sort } = {}) {
-    return this._mongoCollection
+  _rawFind(query, { skip, limit, sort, keys, maxTimeMS } = {}) {
+    let findOperation = this._mongoCollection
       .find(query, { skip, limit, sort })
-      .toArray();
+
+    if (keys) {
+      findOperation = findOperation.project(keys);
+    }
+
+    if (maxTimeMS) {
+      findOperation = findOperation.maxTimeMS(maxTimeMS);
+    }
+
+    return findOperation.toArray();
   }
 
-  count(query, { skip, limit, sort } = {}) {
-    return this._mongoCollection.count(query, { skip, limit, sort });
-  }
+  count(query, { skip, limit, sort, maxTimeMS } = {}) {
+    const countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS });
 
-  // Atomically finds and updates an object based on query.
-  // The result is the promise with an object that was in the database !AFTER! changes.
-  // Postgres Note: Translates directly to `UPDATE * SET * ... RETURNING *`, which will return data after the change is done.
-  findOneAndUpdate(query, update) {
-    // arguments: query, sort, update, options(optional)
-    // Setting `new` option to true makes it return the after document, not the before one.
-    return this._mongoCollection.findAndModify(query, [], update, { new: true }).then(document => {
-      // Value is the object where mongo returns multiple fields.
-      return document.value;
-    });
+    return countOperation;
   }
 
   insertOne(object) {
@@ -65,7 +63,7 @@ export default class MongoCollection {
   // If there is nothing that matches the query - does insert
   // Postgres Note: `INSERT ... ON CONFLICT UPDATE` that is available since 9.5.
   upsertOne(query, update) {
-    return this._mongoCollection.update(query, update, { upsert: true });
+    return this._mongoCollection.update(query, update, { upsert: true })
   }
 
   updateOne(query, update) {
@@ -82,6 +80,18 @@ export default class MongoCollection {
 
   deleteMany(query) {
     return this._mongoCollection.deleteMany(query);
+  }
+
+  _ensureSparseUniqueIndexInBackground(indexRequest) {
+    return new Promise((resolve, reject) => {
+      this._mongoCollection.ensureIndex(indexRequest, { unique: true, background: true, sparse: true }, (error) => {
+        if (error) {
+          reject(error);
+        } else {
+          resolve();
+        }
+      });
+    });
   }
 
   drop() {

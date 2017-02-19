@@ -1,17 +1,43 @@
-For implementation related questions or technical support, please refer to the [Stack Overflow](http://stackoverflow.com/questions/tagged/parse.com) and [Server Fault](https://serverfault.com/tags/parse) communities.
+We use GitHub Issues for bugs.
 
-Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
+If you have a non-bug question, ask on Stack Overflow or Server Fault: 
+- https://stackoverflow.com/questions/tagged/parse.com 
+- https://serverfault.com/tags/parse
 
-- [ ] You've met the [prerequisites](https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#prerequisites).
+You may also search through existing issues before opening a new one: https://github.com/ParsePlatform/Parse-Server/issues?utf8=%E2%9C%93&q=is%3Aissue 
 
-- [ ] You're running the [latest version](https://github.com/ParsePlatform/parse-server/releases) of Parse Server.
+--- Please use this template. If you don't use this template, your issue may be closed without comment. ---
 
-- [ ] You've searched through [existing issues](https://github.com/ParsePlatform/parse-server/issues?utf8=%E2%9C%93&q=). Chances are that your issue has been reported or resolved before.
+### Issue Description
 
-#### Environment Setup
+Describe your issue in as much detail as possible.
 
+### Steps to reproduce
 
-#### Steps to reproduce
+Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable.
 
+#### Expected Results
 
-#### Logs/Trace
+What you expected to happen.
+
+#### Actual Outcome
+
+What is happening instead.
+
+### Environment Setup
+
+- **Server**
+  - parse-server version (Be specific! Don't say 'latest'.) : [FILL THIS OUT]
+  - Operating System:     [FILL THIS OUT]
+  - Hardware:             [FILL THIS OUT]
+  - Localhost or remote server? (AWS, Heroku, Azure, Digital Ocean, etc): [FILL THIS OUT]
+
+- **Database**
+  - MongoDB version: [FILL THIS OUT]
+  - Storage engine:  [FILL THIS OUT]
+  - Hardware:        [FILL THIS OUT]
+  - Localhost or remote server? (AWS, mLab, ObjectRocket, Digital Ocean, etc): [FILL THIS OUT]
+
+### Logs/Trace
+
+Include all relevant logs. You can turn on additional logging by configuring VERBOSE=1 in your environment.

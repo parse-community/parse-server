@@ -112,6 +112,20 @@ describe('matchesQuery', function() {
     expect(matchesQuery(obj, q)).toBe(false);
   });
 
+  it('matches queries with doesNotExist constraint', function() {
+    var obj = {
+      id: new Id('Item', 'O1'),
+      count: 15
+    };
+    var q = new Parse.Query('Item');
+    q.doesNotExist('name');
+    expect(matchesQuery(obj, q)).toBe(true);
+
+    q = new Parse.Query('Item');
+    q.doesNotExist('count');
+    expect(matchesQuery(obj, q)).toBe(false);
+  });
+
   it('matches on equality queries', function() {
     var day = new Date();
     var location = new Parse.GeoPoint({
@@ -151,7 +165,7 @@ describe('matchesQuery', function() {
     q = new Parse.Query('Person');
     q.equalTo('birthday', day);
     expect(matchesQuery(obj, q)).toBe(true);
-    q.equalTo('birthday', new Date());
+    q.equalTo('birthday', new Date(1990, 1));
     expect(matchesQuery(obj, q)).toBe(false);
 
     q = new Parse.Query('Person');
@@ -211,6 +225,23 @@ describe('matchesQuery', function() {
     expect(matchesQuery(img, q)).toBe(true);
 
     img.owner.objectId = 'U3';
+    expect(matchesQuery(img, q)).toBe(false);
+
+    // pointers in arrays
+    q = new Parse.Query('Image');
+    q.equalTo('owners', u);
+
+    img = {
+      className: 'Image',
+      objectId: 'I1',
+      owners: [{
+        className: '_User',
+        objectId: 'U2'
+      }]
+    };
+    expect(matchesQuery(img, q)).toBe(true);
+
+    img.owners[0].objectId = 'U3';
     expect(matchesQuery(img, q)).toBe(false);
   });
 
@@ -380,5 +411,67 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(false);
     expect(matchesQuery(santaClara, q)).toBe(false);
+  });
+
+  it('matches on subobjects with dot notation', function() {
+    var message = {
+      id: new Id('Message', 'O1'),
+      text: "content",
+      status: {x: "read", y: "delivered"}
+    };
+
+    var q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.x");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.z");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.exists("nonexistent.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("nonexistent.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    q.doesNotExist("status.y");
+    expect(matchesQuery(message, q)).toBe(false);
+
   });
 });

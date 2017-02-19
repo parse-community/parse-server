@@ -1,10 +1,10 @@
 'use strict';
 
 var Config = require('../src/Config');
-var Schema = require('../src/Schema');
+var SchemaController = require('../src/Controllers/SchemaController');
 var dd = require('deep-diff');
 
-var config = new Config('test');
+var config;
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');
@@ -19,14 +19,18 @@ var hasAllPODobject = () => {
   return obj;
 };
 
-describe('Schema', () => {
+describe('SchemaController', () => {
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
   it('can validate one object', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObject', {a: 1, b: 'yo', c: false});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -34,10 +38,10 @@ describe('Schema', () => {
   it('can validate one object with dot notation', (done) => {
     config.database.loadSchema().then((schema) => {
       return schema.validateObject('TestObjectWithSubDoc', {x: false, y: 'YY', z: 1, 'aObject.k1': 'newValue'});
-    }).then((schema) => {
+    }).then(() => {
       done();
     }, (error) => {
-      fail(error);
+      jfail(error);
       done();
     });
   });
@@ -47,7 +51,22 @@ describe('Schema', () => {
       return schema.validateObject('Foo', {x: true, y: 'yyy', z: 0});
     }).then((schema) => {
       return schema.validateObject('Foo', {x: false, y: 'YY', z: 1});
+    }).then(() => {
+      done();
+    });
+  });
+
+  it('can validate Relation object', (done) => {
+    config.database.loadSchema().then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Relation',className:'Stuff'}});
     }).then((schema) => {
+      return schema.validateObject('Stuff', {aRelation: {__type:'Pointer',className:'Stuff'}})
+      .then(() => {
+        fail('expected invalidity');
+        done();
+      }, done);
+    }, (err) => {
+      fail(err);
       done();
     });
   });
@@ -84,13 +103,13 @@ describe('Schema', () => {
       return schema.setPermissions('Stuff', {
         'find': {}
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail('Class permissions should have rejected this query.');
       done();
-    }, (e) => {
+    }, () => {
       done();
     });
   });
@@ -109,51 +128,52 @@ describe('Schema', () => {
       return schema.setPermissions('Stuff', {
         'find': find
       });
-    }).then((schema) => {
+    }).then(() => {
       var query = new Parse.Query('Stuff');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       done();
-    }, (e) => {
+    }, () => {
       fail('Class permissions should have allowed this query.');
       done();
     });
   });
 
   it('class-level permissions test get', (done) => {
-    var user;
     var obj;
-    createTestUser().then((u) => {
-      user = u;
-      return config.database.loadSchema();
-    }).then((schema) => {
-      // Just to create a valid class
-      return schema.validateObject('Stuff', {foo: 'bar'});
-    }).then((schema) => {
-      var find = {};
-      var get = {};
-      get[user.id] = true;
-      return schema.setPermissions('Stuff', {
-        'find': find,
-        'get': get
-      });
-    }).then((schema) => {
-      obj = new Parse.Object('Stuff');
-      obj.set('foo', 'bar');
-      return obj.save();
-    }).then((o) => {
-      obj = o;
-      var query = new Parse.Query('Stuff');
-      return query.find();
-    }).then((results) => {
-      fail('Class permissions should have rejected this query.');
-      done();
-    }, (e) => {
-      var query = new Parse.Query('Stuff');
-      return query.get(obj.id).then((o) => {
+    createTestUser()
+    .then(user => {
+      return config.database.loadSchema()
+      // Create a valid class
+      .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
+      .then(schema => {
+        var find = {};
+        var get = {};
+        get[user.id] = true;
+        return schema.setPermissions('Stuff', {
+          'create': {'*': true},
+          'find': find,
+          'get': get
+        });
+      }).then(() => {
+        obj = new Parse.Object('Stuff');
+        obj.set('foo', 'bar');
+        return obj.save();
+      }).then((o) => {
+        obj = o;
+        var query = new Parse.Query('Stuff');
+        return query.find();
+      }).then(() => {
+        fail('Class permissions should have rejected this query.');
         done();
-      }, (e) => {
-        fail('Class permissions should have allowed this get query');
+      }, () => {
+        var query = new Parse.Query('Stuff');
+        return query.get(obj.id).then(() => {
+          done();
+        }, () => {
+          fail('Class permissions should have allowed this get query');
+          done();
+        });
       });
     });
   });
@@ -163,14 +183,26 @@ describe('Schema', () => {
     .then(schema => schema.addClassIfNotExists('NewClass', {
       foo: {type: 'String'}
     }))
-    .then(result => {
-      expect(result).toEqual({
-        _id: 'NewClass',
-        objectId: 'string',
-        updatedAt: 'string',
-        createdAt: 'string',
-        foo: 'string',
-      })
+    .then(actualSchema => {
+      const expectedSchema = {
+        className: 'NewClass',
+        fields: {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' },
+          foo: { type: 'String' },
+        },
+        classLevelPermissions: {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: { '*': true },
+        },
+      }
+      expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       done();
     })
     .catch(error => {
@@ -201,15 +233,27 @@ describe('Schema', () => {
     .then(schema => {
       var p1 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
       var p2 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
-      Promise.race([p1, p2]) //Use race because we expect the first completed promise to be the successful one
-      .then(response => {
-        expect(response).toEqual({
-          _id: 'NewClass',
-          objectId: 'string',
-          updatedAt: 'string',
-          createdAt: 'string',
-          foo: 'string',
-        });
+      Promise.race([p1, p2])
+      .then(actualSchema => {
+        const expectedSchema = {
+          className: 'NewClass',
+          fields: {
+            objectId: { type: 'String' },
+            updatedAt: { type: 'Date' },
+            createdAt: { type: 'Date' },
+            ACL: { type: 'ACL' },
+            foo: { type: 'String' },
+          },
+          classLevelPermissions: {
+            find: { '*': true },
+            get: { '*': true },
+            create: { '*': true },
+            update: { '*': true },
+            delete: { '*': true },
+            addField: { '*': true },
+          },
+        }
+        expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       });
       Promise.all([p1,p2])
       .catch(error => {
@@ -373,23 +417,35 @@ describe('Schema', () => {
       aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
       aRelation: {type: 'Relation', targetClass: 'NewClass'},
     }))
-    .then(mongoObj => {
-      expect(mongoObj).toEqual({
-        _id: 'NewClass',
-        objectId: 'string',
-        createdAt: 'string',
-        updatedAt: 'string',
-        aNumber: 'number',
-        aString: 'string',
-        aBool: 'boolean',
-        aDate: 'date',
-        aObject: 'object',
-        aArray: 'array',
-        aGeoPoint: 'geopoint',
-        aFile: 'file',
-        aPointer: '*ThisClassDoesNotExistYet',
-        aRelation: 'relation<NewClass>',
-      });
+    .then(actualSchema => {
+      const expectedSchema = {
+        className: 'NewClass',
+        fields: {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' },
+          aString: { type: 'String' },
+          aNumber: { type: 'Number' },
+          aBool: { type: 'Boolean' },
+          aDate: { type: 'Date' },
+          aObject: { type: 'Object' },
+          aArray: { type: 'Array' },
+          aGeoPoint: { type: 'GeoPoint' },
+          aFile: { type: 'File' },
+          aPointer: { type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet' },
+          aRelation: { type: 'Relation', targetClass: 'NewClass' },
+        },
+        classLevelPermissions: {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: { '*': true },
+        },
+      }
+      expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       done();
     });
   });
@@ -399,23 +455,39 @@ describe('Schema', () => {
     .then(schema => schema.addClassIfNotExists('_Installation', {
       foo: {type: 'Number'},
     }))
-    .then(mongoObj => {
-      expect(mongoObj).toEqual({
-        _id: '_Installation',
-        createdAt: 'string',
-        updatedAt: 'string',
-        objectId: 'string',
-        foo: 'number',
-        installationId: 'string',
-        deviceToken: 'string',
-        channels: 'array',
-        deviceType: 'string',
-        pushType: 'string',
-        GCMSenderId: 'string',
-        timeZone: 'string',
-        localeIdentifier: 'string',
-        badge: 'number',
-      });
+    .then(actualSchema => {
+      const expectedSchema = {
+        className: '_Installation',
+        fields: {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' },
+          foo: { type: 'Number' },
+          installationId: { type: 'String' },
+          deviceToken: { type: 'String' },
+          channels: { type: 'Array' },
+          deviceType: { type: 'String' },
+          pushType: { type: 'String' },
+          GCMSenderId: { type: 'String' },
+          timeZone: { type: 'String' },
+          localeIdentifier: { type: 'String' },
+          badge: { type: 'Number' },
+          appVersion: { type: 'String' },
+          appName: { type: 'String' },
+          appIdentifier: { type: 'String' },
+          parseVersion: { type: 'String' },
+        },
+        classLevelPermissions: {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: { '*': true },
+        },
+      }
+      expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       done();
     });
   });
@@ -423,16 +495,28 @@ describe('Schema', () => {
   it('creates non-custom classes which include relation field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Role', {}))
-    .then(mongoObj => {
-      expect(mongoObj).toEqual({
-        _id: '_Role',
-        createdAt: 'string',
-        updatedAt: 'string',
-        objectId: 'string',
-        name: 'string',
-        users: 'relation<_User>',
-        roles: 'relation<_Role>',
-      });
+    .then(actualSchema => {
+      const expectedSchema = {
+        className: '_Role',
+        fields: {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' },
+          name: { type: 'String' },
+          users: { type: 'Relation', targetClass: '_User' },
+          roles: { type: 'Relation', targetClass: '_Role' },
+        },
+        classLevelPermissions: {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: { '*': true },
+        },
+      };
+      expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       done();
     });
   });
@@ -440,19 +524,31 @@ describe('Schema', () => {
   it('creates non-custom classes which include pointer field', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('_Session', {}))
-    .then(mongoObj => {
-      expect(mongoObj).toEqual({
-        _id: '_Session',
-        createdAt: 'string',
-        updatedAt: 'string',
-        objectId: 'string',
-        restricted: 'boolean',
-        user: '*_User',
-        installationId: 'string',
-        sessionToken: 'string',
-        expiresAt: 'date',
-        createdWith: 'object'
-      });
+    .then(actualSchema => {
+      const expectedSchema = {
+        className: '_Session',
+        fields: {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          restricted: { type: 'Boolean' },
+          user: { type: 'Pointer', targetClass: '_User' },
+          installationId: { type: 'String' },
+          sessionToken: { type: 'String' },
+          expiresAt: { type: 'Date' },
+          createdWith: { type: 'Object' },
+          ACL: { type: 'ACL' },
+        },
+        classLevelPermissions: {
+          find: { '*': true },
+          get: { '*': true },
+          create: { '*': true },
+          update: { '*': true },
+          delete: { '*': true },
+          addField: { '*': true },
+        },
+      };
+      expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       done();
     });
   });
@@ -491,10 +587,10 @@ describe('Schema', () => {
       })
       .catch(error => {
         fail('Couldn\'t create class');
-        fail(error);
+        jfail(error);
       });
     })
-    .catch(error => fail('Couldn\'t load schema'));
+    .catch(() => fail('Couldn\'t load schema'));
   });
 
   it('refuses to delete fields from invalid class names', done => {
@@ -572,7 +668,7 @@ describe('Schema', () => {
         }
         done();
       }, error => {
-        fail(error);
+        jfail(error);
         done();
       });
   });
@@ -583,27 +679,47 @@ describe('Schema', () => {
       schema.addClassIfNotExists('NewClass', {
         relationField: {type: 'Relation', targetClass: '_User'}
       })
-      .then(mongoObj => {
-        expect(mongoObj).toEqual({
-          _id: 'NewClass',
-          objectId: 'string',
-          updatedAt: 'string',
-          createdAt: 'string',
-          relationField: 'relation<_User>',
-        });
+      .then(actualSchema => {
+        const expectedSchema = {
+          className: 'NewClass',
+          fields: {
+            objectId: { type: 'String' },
+            updatedAt: { type: 'Date' },
+            createdAt: { type: 'Date' },
+            ACL: { type: 'ACL' },
+            relationField: { type: 'Relation', targetClass: '_User' },
+          },
+          classLevelPermissions: {
+            find: { '*': true },
+            get: { '*': true },
+            create: { '*': true },
+            update: { '*': true },
+            delete: { '*': true },
+            addField: { '*': true },
+          },
+        };
+        expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
       })
       .then(() => config.database.collectionExists('_Join:relationField:NewClass'))
       .then(exist => {
-        expect(exist).toEqual(false);
+        on_db('postgres', () => {
+          // We create the table when creating the column
+          expect(exist).toEqual(true);
+        }, () => {
+          expect(exist).toEqual(false);
+        });
+
       })
       .then(() => schema.deleteField('relationField', 'NewClass', config.database))
       .then(() => schema.reloadData())
       .then(() => {
-        expect(schema['data']['NewClass']).toEqual({
-          objectId: 'string',
-          updatedAt: 'string',
-          createdAt: 'string'
-        });
+        const expectedSchema = {
+          objectId: { type: 'String' },
+          updatedAt: { type: 'Date' },
+          createdAt: { type: 'Date' },
+          ACL: { type: 'ACL' },
+        };
+        expect(dd(schema.data.NewClass, expectedSchema)).toEqual(undefined);
         done();
       });
     });
@@ -613,7 +729,7 @@ describe('Schema', () => {
     Parse.Object.disableSingleInstance();
     var obj1 = hasAllPODobject();
     var obj2 = hasAllPODobject();
-    var p = Parse.Object.saveAll([obj1, obj2])
+    Parse.Object.saveAll([obj1, obj2])
     .then(() => config.database.loadSchema())
     .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
     .then(() => new Parse.Query('HasAllPOD').get(obj1.id))
@@ -630,6 +746,10 @@ describe('Schema', () => {
         done();
         Parse.Object.enableSingleInstance();
       });
+    })
+    .catch(error => {
+      jfail(error);
+      done();
     });
   });
 
@@ -660,9 +780,9 @@ describe('Schema', () => {
   });
 
   it('can merge schemas', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: 'SomeClass',
-      someType: 'number'
+      someType: { type: 'Number' }
     }, {
       newType: {type: 'Number'}
     })).toEqual({
@@ -673,10 +793,10 @@ describe('Schema', () => {
   });
 
   it('can merge deletions', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: 'SomeClass',
-      someType: 'number',
-      outDatedType: 'string',
+      someType: { type: 'Number' },
+      outDatedType: { type: 'String' },
     },{
       newType: {type: 'GeoPoint'},
       outDatedType: {__op: 'Delete'},
@@ -688,48 +808,335 @@ describe('Schema', () => {
   });
 
   it('ignore default field when merge with system class', done => {
-    expect(Schema.buildMergedSchemaObject({
+    expect(SchemaController.buildMergedSchemaObject({
       _id: '_User',
-      username: 'string',
-      password: 'string',
-      authData: 'object',
-      email: 'string',
-      emailVerified: 'boolean'
+      username: { type: 'String' },
+      password: { type: 'String' },
+      email: { type: 'String' },
+      emailVerified: { type: 'Boolean' },
     },{
-      authData: {type: 'string'},
-      customField: {type: 'string'},
+      emailVerified: { type: 'String' },
+      customField: { type: 'String' },
     })).toEqual({
-      customField: {type: 'string'}
+      customField: { type: 'String' }
     });
     done();
   });
 
-  it('handles legacy _client_permissions keys without crashing', done => {
-    Schema.mongoSchemaToSchemaAPIResponse({
-      "_id":"_Installation",
-      "_client_permissions":{
-        "get":true,
-        "find":true,
-        "update":true,
-        "create":true,
-        "delete":true,
-      },
-      "_metadata":{
-        "class_permissions":{
-          "get":{"*":true},
-          "find":{"*":true},
-          "update":{"*":true},
-          "create":{"*":true},
-          "delete":{"*":true},
-          "addField":{"*":true},
-        }
-      },
-      "installationId":"string",
-      "deviceToken":"string",
-      "deviceType":"string",
-      "channels":"array",
-      "user":"*_User",
+  it('yields a proper schema mismatch error (#2661)', done => {
+    const anObject = new Parse.Object('AnObject');
+    const anotherObject = new Parse.Object('AnotherObject');
+    const someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, anotherObject, someObject]).then(() => {
+      anObject.set('pointer', anotherObject);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('pointer', someObject);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<AnotherObject> but got Pointer<SomeObject>')
+      done();
     });
-    done();
+  });
+
+  it('yields a proper schema mismatch error bis (#2661)', done => {
+    const anObject = new Parse.Object('AnObject');
+    const someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
+      anObject.set('number', 1);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('number', someObject);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.number; expected Number but got Pointer<SomeObject>')
+      done();
+    });
+  });
+
+  it('yields a proper schema mismatch error ter (#2661)', done => {
+    const anObject = new Parse.Object('AnObject');
+    const someObject = new Parse.Object('SomeObject');
+    Parse.Object.saveAll([anObject, someObject]).then(() => {
+      anObject.set('pointer', someObject);
+      return anObject.save();
+    }).then(() => {
+      anObject.set('pointer', 1);
+      return anObject.save();
+    }).then(() => {
+      fail('shoud not save correctly');
+      done();
+    }, (err) => {
+      expect(err instanceof Parse.Error).toBeTruthy();
+      expect(err.message).toEqual('schema mismatch for AnObject.pointer; expected Pointer<SomeObject> but got Number')
+      done();
+    });
+  });
+
+  it('properly handles volatile _Schemas', done => {
+    function validateSchemaStructure(schema) {
+      expect(schema.hasOwnProperty('className')).toBe(true);
+      expect(schema.hasOwnProperty('fields')).toBe(true);
+      expect(schema.hasOwnProperty('classLevelPermissions')).toBe(true);
+    }
+    function validateSchemaDataStructure(schemaData) {
+      Object.keys(schemaData).forEach(className => {
+        const schema = schemaData[className];
+        // Hooks has className...
+        if (className != '_Hooks') {
+          expect(schema.hasOwnProperty('className')).toBe(false);
+        }
+        expect(schema.hasOwnProperty('fields')).toBe(false);
+        expect(schema.hasOwnProperty('classLevelPermissions')).toBe(false);
+      });
+    }
+    let schema;
+    config.database.loadSchema().then(s => {
+      schema = s;
+      return schema.getOneSchema('_User', false);
+    }).then(userSchema => {
+      validateSchemaStructure(userSchema);
+      validateSchemaDataStructure(schema.data);
+      return schema.getOneSchema('_PushStatus', true);
+    }).then(pushStatusSchema => {
+      validateSchemaStructure(pushStatusSchema);
+      validateSchemaDataStructure(schema.data);
+      done();
+    });
   });
 });
+
+describe('Class Level Permissions for requiredAuth', () => {
+
+  beforeEach(() => {
+    config = new Config('test');
+  });
+
+  function createUser() {
+    const user =  new Parse.User();
+    user.set("username", "hello");
+    user.set("password", "world");
+    return user.signUp(null);
+  }
+
+  it('required auth test find', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true
+        }
+      });
+    }).then(() => {
+      var query = new Parse.Query('Stuff');
+      return query.find();
+    }).then(() => {
+      fail('Class permissions should have rejected this query.');
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
+  });
+
+  it('required auth test find authenticated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true
+        }
+      });
+    }).then(() => {
+      return createUser();
+    }).then(() => {
+      var query = new Parse.Query('Stuff');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toEqual(0);
+      done();
+    }, (e) => {
+      console.error(e);
+      fail("Should not have failed");
+      done();
+    });
+  });
+
+  it('required auth should allow create authenticated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'create': {
+          'requiresAuthentication': true
+        }
+      });
+    }).then(() => {
+      return createUser();
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save();
+    }).then(() => {
+      done();
+    }, (e) => {
+      console.error(e);
+      fail("Should not have failed");
+      done();
+    });
+  });
+
+  it('required auth should reject create when not authenticated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'create': {
+          'requiresAuthentication': true
+        }
+      });
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save();
+    }).then(() => {
+      fail('Class permissions should have rejected this query.');
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
+  });
+
+  it('required auth test create/get/update/delete authenticated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'create': {
+          'requiresAuthentication': true
+        },
+        'get': {
+          'requiresAuthentication': true
+        },
+        'delete': {
+          'requiresAuthentication': true
+        },
+        'update': {
+          'requiresAuthentication': true
+        }
+      });
+    }).then(() => {
+      return createUser();
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save().then(() => {
+        const query = new Parse.Query('Stuff');
+        return query.get(stuff.id);
+      });
+    }).then((gotStuff) => {
+      return gotStuff.save({'foo': 'baz'}).then(() => {
+        return gotStuff.destroy();
+      })
+    }).then(() => {
+      done();
+    }, (e) => {
+      console.error(e);
+      fail("Should not have failed");
+      done();
+    });
+  });
+
+  it('required auth test create/get/update/delete not authenitcated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'get': {
+          'requiresAuthentication': true
+        },
+        'delete': {
+          'requiresAuthentication': true
+        },
+        'update': {
+          'requiresAuthentication': true
+        },
+        'create': {
+          '*': true
+        }
+      });
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save().then(() => {
+        const query = new Parse.Query('Stuff');
+        return query.get(stuff.id);
+      });
+    }).then(() => {
+      fail("Should not succeed!");
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
+  });
+
+  it('required auth test create/get/update/delete not authenitcated', (done) => {
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true
+        },
+        'delete': {
+          'requiresAuthentication': true
+        },
+        'update': {
+          'requiresAuthentication': true
+        },
+        'create': {
+          '*': true
+        },
+        'get': {
+          '*': true
+        }
+      });
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save().then(() => {
+        const query = new Parse.Query('Stuff');
+        return query.get(stuff.id);
+      })
+    }).then((result) => {
+      expect(result.get('foo')).toEqual('bar');
+      const query = new Parse.Query('Stuff');
+      return query.find();
+    }).then(() => {
+      fail("Should not succeed!");
+      done();
+    }, (e) => {
+      expect(e.message).toEqual('Permission denied, user needs to be authenticated.');
+      done();
+    });
+  });
+})

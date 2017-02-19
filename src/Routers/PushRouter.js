@@ -1,6 +1,6 @@
-import PromiseRouter from '../PromiseRouter';
+import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
-import { Parse } from "parse/node";
+import { Parse }       from "parse/node";
 
 export class PushRouter extends PromiseRouter {
 
@@ -14,13 +14,22 @@ export class PushRouter extends PromiseRouter {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Push controller is not set');
     }
 
-    let where = PushRouter.getQueryCondition(req);
-    pushController.sendPush(req.body, where, req.config, req.auth);
-    return Promise.resolve({
-      response: {
-        'result': true
-      }
+    const where = PushRouter.getQueryCondition(req);
+    let resolve;
+    const promise = new Promise((_resolve) => {
+      resolve = _resolve;
     });
+    pushController.sendPush(req.body, where, req.config, req.auth, (pushStatusId) => {
+      resolve({
+        headers: {
+          'X-Parse-Push-Status-Id': pushStatusId
+        },
+        response: {
+          result: true
+        }
+      });
+    });
+    return promise;
   }
 
   /**
@@ -29,9 +38,9 @@ export class PushRouter extends PromiseRouter {
    * @returns {Object} The query condition, the where field in a query api call
    */
   static getQueryCondition(req) {
-    let body = req.body || {};
-    let hasWhere = typeof body.where !== 'undefined';
-    let hasChannels = typeof body.channels !== 'undefined';
+    const body = req.body || {};
+    const hasWhere = typeof body.where !== 'undefined';
+    const hasChannels = typeof body.channels !== 'undefined';
 
     let where;
     if (hasWhere && hasChannels) {
@@ -46,8 +55,7 @@ export class PushRouter extends PromiseRouter {
         }
       }
     } else {
-      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-        'Channels and query should be set at least one.');
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Sending a push requires either "channels" or a "where" query.');
     }
     return where;
   }

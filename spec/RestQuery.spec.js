@@ -1,16 +1,23 @@
+'use strict'
 // These tests check the "find" functionality of the REST API.
 var auth = require('../src/Auth');
-var cache = require('../src/cache');
 var Config = require('../src/Config');
 var rest = require('../src/rest');
 
 var querystring = require('querystring');
-var request = require('request');
+var rp = require('request-promise');
 
-var config = new Config('test');
+var config;
+let database;
 var nobody = auth.nobody(config);
 
 describe('rest query', () => {
+
+  beforeEach(() => {
+    config = new Config('test');
+    database = config.database;
+  });
+
   it('basic query', (done) => {
     rest.create(config, nobody, 'TestObject', {}).then(() => {
       return rest.find(config, nobody, 'TestObject', {});
@@ -35,8 +42,38 @@ describe('rest query', () => {
     });
   });
 
+  var data = {
+    username: 'blah',
+    password: 'pass',
+    sessionToken: 'abc123',
+  }
+
+  it_exclude_dbs(['postgres'])('query for user w/ legacy credentials without masterKey has them stripped from results', done => {
+    database.create('_User', data).then(() => {
+      return rest.find(config, nobody, '_User')
+    }).then((result) => {
+      var user = result.results[0];
+      expect(user.username).toEqual('blah');
+      expect(user.sessionToken).toBeUndefined();
+      expect(user.password).toBeUndefined();
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('query for user w/ legacy credentials with masterKey has them stripped from results', done => {
+    database.create('_User', data).then(() => {
+      return rest.find(config, {isMaster: true}, '_User')
+    }).then((result) => {
+      var user = result.results[0];
+      expect(user.username).toEqual('blah');
+      expect(user.sessionToken).toBeUndefined();
+      expect(user.password).toBeUndefined();
+      done();
+    });
+  });
+
   // Created to test a scenario in AnyPic
-  it('query with include', (done) => {
+  it_exclude_dbs(['postgres'])('query with include', (done) => {
     var photo = {
       foo: 'bar'
     };
@@ -106,6 +143,22 @@ describe('rest query', () => {
         expect(err.message).toEqual('This user is not allowed to access ' +
                                     'non-existent class: ClientClassCreation');
         done();
+      });
+  });
+
+  it('query existent class when disabled client class creation', (done) => {
+    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    config.database.loadSchema()
+    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+    .then(actualSchema => {
+      expect(actualSchema.className).toEqual('ClientClassCreation');
+      return rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+    })
+    .then((result) => {
+      expect(result.results.length).toEqual(0);
+      done();
+    }, () => {
+      fail('Should not throw error')
     });
   });
 
@@ -119,39 +172,97 @@ describe('rest query', () => {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
       };
-      request.get({
+
+      const p0 = rp.get({
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                             where: '{"foo":{"$ne": "baz"}}',
-                             limit: 1
+                           where: '{"foo":{"$ne": "baz"}}',
+                           limit: 1
                          }).replace('=', '%3D'),
-      }, (error, response, body) => {
-        expect(error).toBe(null);
-        var b = JSON.parse(body);
+      }).then(fail, (response) => {
+        const error = response.error;
+        var b = JSON.parse(error);
         expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-        expect(b.error).toEqual('Improper encode of parameter');
-        done();
       });
+
+      const p1 = rp.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
+                         + querystring.stringify({
+                           limit: 1
+                         }).replace('=', '%3D'),
+      }).then(fail, (response) => {
+        const error = response.error;
+        var b = JSON.parse(error);
+        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
+      });
+      return Promise.all([p0, p1]);
+    }).then(done).catch((err) => {
+      jfail(err);
+      fail('should not fail');
+      done();
+    })
+  });
+
+  it('query with limit = 0', (done) => {
+    rest.create(config, nobody, 'TestObject', {foo: 'baz'}
+    ).then(() => {
+      return rest.create(config, nobody,
+        'TestObject', {foo: 'qux'});
     }).then(() => {
-      var headers = {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest'
-      };
-      request.get({
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
-                         + querystring.stringify({
-                             limit: 1
-                         }).replace('=', '%3D'),
-      }, (error, response, body) => {
-        expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-        expect(b.error).toEqual('Improper encode of parameter');
-        done();
-      });
+      return rest.find(config, nobody,
+        'TestObject', {}, {limit: 0});
+    }).then((response) => {
+      expect(response.results.length).toEqual(0);
+      done();
     });
   });
 
+  it('query with limit = 0 and count = 1', (done) => {
+    rest.create(config, nobody, 'TestObject', {foo: 'baz'}
+    ).then(() => {
+      return rest.create(config, nobody,
+        'TestObject', {foo: 'qux'});
+    }).then(() => {
+      return rest.find(config, nobody,
+        'TestObject', {}, {limit: 0, count: 1});
+    }).then((response) => {
+      expect(response.results.length).toEqual(0);
+      expect(response.count).toEqual(2);
+      done();
+    });
+  });
+
+  it('makes sure null pointers are handed correctly #2189', done => {
+    const object = new Parse.Object('AnObject');
+    const anotherObject = new Parse.Object('AnotherObject');
+    anotherObject.save().then(() => {
+      object.set('values', [null, null, anotherObject]);
+      return object.save();
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      query.include('values');
+      return query.first();
+    }).then((result) => {
+      const values = result.get('values');
+      expect(values.length).toBe(3);
+      let anotherObjectFound = false;
+      let nullCounts = 0;
+      for(const value of values) {
+        if (value === null) {
+          nullCounts++;
+        } else if (value instanceof Parse.Object) {
+          anotherObjectFound = true;
+        }
+      }
+      expect(nullCounts).toBe(2);
+      expect(anotherObjectFound).toBeTruthy();
+      done();
+    }, (err) => {
+      console.error(err);
+      fail(err);
+      done();
+    });
+  });
 });

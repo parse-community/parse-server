@@ -1,5 +1,6 @@
 # Logs
 logs
+test_logs
 *.log
 
 # Runtime data
@@ -22,6 +23,9 @@ coverage
 # Compiled binary addons (http://nodejs.org/api/addons.html)
 build/Release
 
+# build folder for automated releases
+latest
+
 # Dependency directory
 # https://www.npmjs.org/doc/misc/npm-faq.html#should-i-check-my-node_modules-folder-into-git
 node_modules
@@ -40,6 +44,7 @@ lib/
 
 # cache folder
 .cache
+.eslintcache
 
 # Mac DS_Store files
 .DS_Store

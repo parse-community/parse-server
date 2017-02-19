@@ -18,11 +18,7 @@ export class AdaptableController {
     this.options = options;
     this.appId = appId;
     this.adapter = adapter;
-    this.setFeature();
   }
-
-  // sets features for Dashboard to consume from features router
-  setFeature() {}
 
   set adapter(adapter) {
     this.validateAdapter(adapter);
@@ -42,27 +38,31 @@ export class AdaptableController {
   }
 
   validateAdapter(adapter) {
+    AdaptableController.validateAdapter(adapter, this);
+  }
+
+  static validateAdapter(adapter, self, ExpectedType) {
     if (!adapter) {
-      throw new Error(this.constructor.name+" requires an adapter");
+      throw new Error(this.constructor.name + " requires an adapter");
     }
 
-    let Type = this.expectedAdapterType();
+    const Type = ExpectedType || self.expectedAdapterType();
     // Allow skipping for testing
     if (!Type) {
       return;
     }
 
     // Makes sure the prototype matches
-    let mismatches = Object.getOwnPropertyNames(Type.prototype).reduce( (obj, key) => {
-       const adapterType = typeof adapter[key];
-       const expectedType = typeof Type.prototype[key];
-       if (adapterType !== expectedType) {
-         obj[key] = {
-           expected: expectedType,
-           actual: adapterType
-         }
-       }
-       return obj;
+    const mismatches = Object.getOwnPropertyNames(Type.prototype).reduce((obj, key) => {
+      const adapterType = typeof adapter[key];
+      const expectedType = typeof Type.prototype[key];
+      if (adapterType !== expectedType) {
+        obj[key] = {
+          expected: expectedType,
+          actual: adapterType
+        }
+      }
+      return obj;
     }, {});
 
     if (Object.keys(mismatches).length > 0) {

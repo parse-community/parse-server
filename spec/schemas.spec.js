@@ -23,7 +23,7 @@ var hasAllPODobject = () => {
   return obj;
 };
 
-let defaultClassLevelPermissions = {
+const defaultClassLevelPermissions = {
   find: {
     '*': true
   },
@@ -86,6 +86,22 @@ var pointersAndRelationsSchema = {
   classLevelPermissions: defaultClassLevelPermissions
 }
 
+const userSchema = {
+  "className": "_User",
+  "fields": {
+    "objectId": {"type": "String"},
+    "createdAt": {"type": "Date"},
+    "updatedAt": {"type": "Date"},
+    "ACL": {"type": "ACL"},
+    "username": {"type": "String"},
+    "password": {"type": "String"},
+    "email": {"type": "String"},
+    "emailVerified": {"type": "Boolean"},
+    "authData": {"type": "Object"}
+  },
+  "classLevelPermissions": defaultClassLevelPermissions,
+}
+
 var noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
 };
@@ -101,6 +117,11 @@ var masterKeyHeaders = {
 };
 
 describe('schemas', () => {
+
+  beforeEach(() => {
+    config.database.schemaCache.clear();
+  });
+
   it('requires the master key to get all schemas', (done) => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
@@ -139,13 +160,13 @@ describe('schemas', () => {
     });
   });
 
-  it('responds with empty list when there are no schemas', done => {
+  it('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
       headers: masterKeyHeaders,
     }, (error, response, body) => {
-      expect(body.results).toEqual([]);
+      expect(dd(body.results, [userSchema])).toEqual();
       done();
     });
   });
@@ -165,9 +186,9 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
       }, (error, response, body) => {
         var expected = {
-          results: [plainOldDataSchema,pointersAndRelationsSchema]
+          results: [userSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
-        expect(body).toEqual(expected);
+        expect(dd(body, expected)).toEqual(undefined);
         done();
       })
     });
@@ -277,7 +298,7 @@ describe('schemas', () => {
       body: {
         className: 'A',
       },
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       request.post({
         url: 'http://localhost:8378/1/schemas',
@@ -326,6 +347,47 @@ describe('schemas', () => {
     });
   });
 
+  it('responds with all fields when getting incomplete schema', done => {
+    config.database.loadSchema()
+    .then(schemaController => schemaController.addClassIfNotExists('_Installation', {}, defaultClassLevelPermissions))
+    .then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/schemas/_Installation',
+        headers: masterKeyHeaders,
+        json: true
+      }, (error, response, body) => {
+        expect(dd(body,{
+          className: '_Installation',
+          fields: {
+            objectId: {type: 'String'},
+            updatedAt: {type: 'Date'},
+            createdAt: {type: 'Date'},
+            installationId: {type: 'String'},
+            deviceToken: {type: 'String'},
+            channels: {type: 'Array'},
+            deviceType: {type: 'String'},
+            pushType: {type: 'String'},
+            GCMSenderId: {type: 'String'},
+            timeZone: {type: 'String'},
+            badge: {type: 'Number'},
+            appIdentifier: {type: 'String'},
+            localeIdentifier: {type: 'String'},
+            appVersion: {type: 'String'},
+            appName: {type: 'String'},
+            parseVersion: {type: 'String'},
+            ACL: {type: 'ACL'}
+          },
+          classLevelPermissions: defaultClassLevelPermissions
+        })).toBeUndefined();
+        done();
+      });
+    })
+    .catch(error => {
+      fail(JSON.stringify(error))
+      done();
+    });
+  });
+
   it('lets you specify class name in both places', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
@@ -355,7 +417,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: noAuthHeaders,
@@ -390,7 +452,7 @@ describe('schemas', () => {
       json: true,
       body: {
         fields: {
-            newField: {type: 'String'}
+          newField: {type: 'String'}
         }
       }
     }, (error, response, body) => {
@@ -545,7 +607,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
@@ -594,7 +656,7 @@ describe('schemas', () => {
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
       json: true
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/_User',
         headers: masterKeyHeaders,
@@ -605,7 +667,7 @@ describe('schemas', () => {
           }
         }
       }, (error, response, body) => {
-        expect(body).toEqual({
+        expect(dd(body,{
           className: '_User',
           fields: {
             objectId: {type: 'String'},
@@ -613,20 +675,20 @@ describe('schemas', () => {
             createdAt: {type: 'Date'},
             username: {type: 'String'},
             password: {type: 'String'},
-            authData: {type: 'Object'},
             email: {type: 'String'},
             emailVerified: {type: 'Boolean'},
+            authData: {type: 'Object'},
             newField: {type: 'String'},
             ACL: {type: 'ACL'}
           },
           classLevelPermissions: defaultClassLevelPermissions
-        });
+        })).toBeUndefined();
         request.get({
           url: 'http://localhost:8378/1/schemas/_User',
           headers: masterKeyHeaders,
           json: true
         }, (error, response, body) => {
-          expect(body).toEqual({
+          expect(dd(body,{
             className: '_User',
             fields: {
               objectId: {type: 'String'},
@@ -634,21 +696,21 @@ describe('schemas', () => {
               createdAt: {type: 'Date'},
               username: {type: 'String'},
               password: {type: 'String'},
-              authData: {type: 'Object'},
               email: {type: 'String'},
               emailVerified: {type: 'Boolean'},
+              authData: {type: 'Object'},
               newField: {type: 'String'},
               ACL: {type: 'ACL'}
             },
             classLevelPermissions: defaultClassLevelPermissions
-          });
+          })).toBeUndefined();
           done();
         });
       });
     })
   });
 
-  it('lets you delete multiple fields and add fields', done => {
+  it_exclude_dbs(['postgres'])('lets you delete multiple fields and add fields', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
     .then(() => {
@@ -719,7 +781,7 @@ describe('schemas', () => {
           url: 'http://localhost:8378/1/schemas/HasAllPOD',
           headers: masterKeyHeaders,
           json: true,
-        }, (error, response, body) => {
+        }, (error, response) => {
           expect(response.body).toEqual(plainOldDataSchema);
           done();
         });
@@ -798,7 +860,7 @@ describe('schemas', () => {
         url: 'http://localhost:8378/1/schemas/MyOtherClass',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         config.database.collectionExists('_Join:aRelation:MyOtherClass').then(exists => {
@@ -841,14 +903,14 @@ describe('schemas', () => {
       body: {
         className: 'NewClassForDelete'
       }
-    }, (error, response, body) => {
+    }, (error, response) => {
       expect(error).toEqual(null);
       expect(response.body.className).toEqual('NewClassForDelete');
       request.del({
         url: 'http://localhost:8378/1/schemas/NewClassForDelete',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body).toEqual({});
         config.database.loadSchema().then(schema => {
@@ -869,27 +931,27 @@ describe('schemas', () => {
       body: {
         className: 'NewClassForDelete'
       }
-    }, (error, response, body) => {
+    }, (error, response) => {
       expect(error).toEqual(null);
       expect(response.body.className).toEqual('NewClassForDelete');
       request.post({
         url: 'http://localhost:8378/1/classes/NewClassForDelete',
         headers: restKeyHeaders,
         json: true
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(error).toEqual(null);
         expect(typeof response.body.objectId).toEqual('string');
         request.del({
           url: 'http://localhost:8378/1/classes/NewClassForDelete/' + response.body.objectId,
           headers: restKeyHeaders,
           json: true,
-        }, (error, response, body) => {
+        }, (error) => {
           expect(error).toEqual(null);
           request.del({
             url: 'http://localhost:8378/1/schemas/NewClassForDelete',
             headers: masterKeyHeaders,
             json: true,
-          }, (error, response, body) => {
+          }, (error, response) => {
             expect(response.statusCode).toEqual(200);
             expect(response.body).toEqual({});
             config.database.loadSchema().then(schema => {
@@ -919,13 +981,13 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
       request.get({
         url: 'http://localhost:8378/1/schemas/AClass',
         headers: masterKeyHeaders,
         json: true,
-      }, (error, response, body) => {
+      }, (error, response) => {
         expect(response.statusCode).toEqual(200);
         expect(response.body.classLevelPermissions).toEqual({
           find: {
@@ -934,18 +996,10 @@ describe('schemas', () => {
           create: {
             'role:admin': true
           },
-          get: {
-            '*': true
-          },
-          update: {
-            '*': true
-          },
-          addField: {
-            '*': true
-          },
-          delete: {
-            '*': true
-          }
+          get: {},
+          update: {},
+          delete: {},
+          addField: {}
         });
         done();
       });
@@ -954,7 +1008,7 @@ describe('schemas', () => {
 
   it('should fail setting schema permissions with invalid key', done => {
 
-    let object = new Parse.Object('AClass');
+    const object = new Parse.Object('AClass');
     object.save().then(() => {
       request.put({
         url: 'http://localhost:8378/1/schemas/AClass',
@@ -981,7 +1035,7 @@ describe('schemas', () => {
       });
     });
   });
-  
+
   it('should not be able to add a field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -989,6 +1043,9 @@ describe('schemas', () => {
       json: true,
       body: {
         classLevelPermissions: {
+          create: {
+            '*': true
+          },
           find: {
             '*': true
           },
@@ -997,28 +1054,28 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
-      let object = new Parse.Object('AClass');
+      const object = new Parse.Object('AClass');
       object.set('hello', 'world');
-      return object.save().then(() => {
+      return object.save().then(() => {
         fail('should not be able to add a field');
         done();
       }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+        expect(err.message).toEqual('Permission denied for action addField on class AClass.');
         done();
       })
     })
   });
-  
-  it('should not be able to add a field', done => {
+
+  it('should be able to add a field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
       headers: masterKeyHeaders,
       json: true,
       body: {
         classLevelPermissions: {
-          find: {
+          create: {
             '*': true
           },
           addField: {
@@ -1026,19 +1083,19 @@ describe('schemas', () => {
           }
         }
       }
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toEqual(null);
-      let object = new Parse.Object('AClass');
+      const object = new Parse.Object('AClass');
       object.set('hello', 'world');
-      return object.save().then(() => {
+      return object.save().then(() => {
         done();
-      }, (err) => {
+      }, () => {
         fail('should be able to add a field');
         done();
       })
     })
   });
-  
+
   it('should throw with invalid userId (>10 chars)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1052,11 +1109,11 @@ describe('schemas', () => {
         }
       }
     }, (error, response, body) => {
-     expect(body.error).toEqual("'1234567890A' is not a valid key for class level permissions");
+      expect(body.error).toEqual("'1234567890A' is not a valid key for class level permissions");
       done();
     })
   });
-  
+
   it('should throw with invalid userId (<10 chars)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1074,7 +1131,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid userId (invalid char)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1092,7 +1149,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid * (spaces)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1110,7 +1167,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid * (spaces)', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1128,7 +1185,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid value', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1146,7 +1203,7 @@ describe('schemas', () => {
       done();
     })
   });
-  
+
   it('should throw with invalid value', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/AClass',
@@ -1160,117 +1217,115 @@ describe('schemas', () => {
         }
       }
     }, (error, response, body) => {
-       expect(body.error).toEqual("'' is not a valid value for class level permissions find:*:");
+      expect(body.error).toEqual("'' is not a valid value for class level permissions find:*:");
       done();
     })
   });
-  
+
   function setPermissionsOnClass(className, permissions, doPut) {
     let op = request.post;
-    if (doPut)  
+    if (doPut)
     {
       op = request.put;
     }
     return new Promise((resolve, reject) => {
-     op({
-      url: 'http://localhost:8378/1/schemas/'+className,
-      headers: masterKeyHeaders,
-      json: true,
-      body: {
-        classLevelPermissions: permissions
-      }
-    }, (error, response, body) => {
-      if (error) {
-        return reject(error);
-      }
-      if (body.error) {
-        return reject(body);
-      }
-      return resolve(body);
-    })
+      op({
+        url: 'http://localhost:8378/1/schemas/' + className,
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          classLevelPermissions: permissions
+        }
+      }, (error, response, body) => {
+        if (error) {
+          return reject(error);
+        }
+        if (body.error) {
+          return reject(body);
+        }
+        return resolve(body);
+      })
     });
   }
-  
+
   it('validate CLP 1', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
-    let admin = new Parse.User();
+
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
-    let role = new Parse.Role('admin', new Parse.ACL());
-    
+
+    const role = new Parse.Role('admin', new Parse.ACL());
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
-        return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
+        const obj = new Parse.Object('AClass');
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      const query = new Parse.Query('AClass');
+      return query.find().then(() => {
         fail('Use should hot be able to find!')
-      }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, () => {
-      fail("should not fail!");
-      done();
-    }).catch( (err) => {
+    }).catch((err) => {
+      jfail(err);
       done();
     })
   });
-  
+
   it('validate CLP 2', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
-    let admin = new Parse.User();
+
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
-    let role = new Parse.Role('admin', new Parse.ACL());
-    
+
+    const role = new Parse.Role('admin', new Parse.ACL());
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
-        return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
+        const obj = new Parse.Object('AClass');
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      const query = new Parse.Query('AClass');
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
@@ -1282,218 +1337,362 @@ describe('schemas', () => {
         }
       }, true);
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
-      }, (err) => {
+      }, () => {
         fail('User should be able to find!')
         done();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
-      done();
-    }).catch( (err) => {
+    }).catch((err) => {
+      jfail(err);
       done();
     })
   });
-  
+
   it('validate CLP 3', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
-    let admin = new Parse.User();
+
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
-    let role = new Parse.Role('admin', new Parse.ACL());
-    
+
+    const role = new Parse.Role('admin', new Parse.ACL());
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
-        return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
+        const obj = new Parse.Object('AClass');
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      const query = new Parse.Query('AClass');
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
       // delete all CLP
       return setPermissionsOnClass('AClass', null, true);
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((result) => {
         expect(result.length).toBe(1);
-      }, (err) => {
+      }, () => {
         fail('User should be able to find!')
         done();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
-  
+
   it('validate CLP 4', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
-    let admin = new Parse.User();
+
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
-    let role = new Parse.Role('admin', new Parse.ACL());
-    
+
+    const role = new Parse.Role('admin', new Parse.ACL());
+
     setPermissionsOnClass('AClass', {
       'find': {
         'role:admin': true
       }
-    }).then(() => {
+    }).then(() => {
       return Parse.Object.saveAll([user, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
       return role.save(null, {useMasterKey: true});
-    }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
-        return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
+        const obj = new Parse.Object('AClass');
+        return obj.save(null, {useMasterKey: true});
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
-      return query.find().then((err) => {
+      const query = new Parse.Query('AClass');
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       })
     }).then(() => {
       // borked CLP should not affec security
       return setPermissionsOnClass('AClass', {
         'found': {
-          'role:admin': true 
+          'role:admin': true
         }
-      }, true).then(() => {
+      }, true).then(() => {
         fail("Should not be able to save a borked CLP");
-      }, () => {
+      }, () => {
         return Promise.resolve();
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
-      return query.find().then((result) => {
+      const query = new Parse.Query('AClass');
+      return query.find().then(() => {
         fail('User should not be able to find!')
-      }, (err) => {
-        expect(err.message).toEqual('Permission denied for this action.');
+      }, (err) => {
+        expect(err.message).toEqual('Permission denied for action find on class AClass.');
         return Promise.resolve();
       });
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
     }).then((results) => {
       expect(results.length).toBe(1);
       done();
-    }, (err) => {
-      fail("should not fail!");
-      done();
-    }).catch( (err) => {
+    }).catch((err) => {
+      jfail(err);
       done();
     })
   });
-  
+
   it('validate CLP 5', done => {
-    let user = new Parse.User();
+    const user = new Parse.User();
     user.setUsername('user');
     user.setPassword('user');
-    
-    let user2 = new Parse.User();
+
+    const user2 = new Parse.User();
     user2.setUsername('user2');
     user2.setPassword('user2');
-    let admin = new Parse.User();
+    const admin = new Parse.User();
     admin.setUsername('admin');
     admin.setPassword('admin');
-    
-    let role = new Parse.Role('admin', new Parse.ACL());
-    
-    Promise.resolve().then(() => {
+
+    const role = new Parse.Role('admin', new Parse.ACL());
+
+    Promise.resolve().then(() => {
       return Parse.Object.saveAll([user, user2, admin, role], {useMasterKey: true});
     }).then(()=> {
       role.relation('users').add(admin);
-      return role.save(null, {useMasterKey: true}).then(() => {
-        let perm = {
+      return role.save(null, {useMasterKey: true}).then(() => {
+        const perm = {
           find: {}
         };
         // let the user find
         perm['find'][user.id] = true;
         return setPermissionsOnClass('AClass', perm);
       })
-    }).then(() => {
-     return Parse.User.logIn('user', 'user').then(() => {
-        let obj = new Parse.Object('AClass');
+    }).then(() => {
+      return Parse.User.logIn('user', 'user').then(() => {
+        const obj = new Parse.Object('AClass');
         return obj.save();
       })
     }).then(() => {
-      let query = new Parse.Query('AClass');
+      const query = new Parse.Query('AClass');
       return query.find().then((res) => {
         expect(res.length).toEqual(1);
-      }, (err) => {
-         fail('User should be able to find!')
+      }, () => {
+        fail('User should be able to find!')
         return Promise.resolve();
       })
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('admin', 'admin');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
-      expect(err.message).toEqual('Permission denied for this action.');
+      expect(err.message).toEqual('Permission denied for action create on class AClass.');
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       return Parse.User.logIn('user2', 'user2');
-    }).then( () => {
-      let query = new Parse.Query('AClass');
+    }).then(() => {
+      const query = new Parse.Query('AClass');
       return query.find();
-    }).then((results) => {
+    }).then(() => {
       fail("should not be able to read!");
       return Promise.resolve();
     }, (err) => {
-      expect(err.message).toEqual('Permission denied for this action.');
+      expect(err.message).toEqual('Permission denied for action find on class AClass.');
       return Promise.resolve();
-    }).then(() => {
+    }).then(() => {
       done();
     });
-  });  
+  });
+
+  it('can query with include and CLP (issue #2005)', (done) => {
+    setPermissionsOnClass('AnotherObject', {
+      get: {"*": true},
+      find: {},
+      create: {'*': true},
+      update: {'*': true},
+      delete: {'*': true},
+      addField:{'*': true}
+    }).then(() => {
+      const obj = new Parse.Object('AnObject');
+      const anotherObject = new Parse.Object('AnotherObject');
+      return obj.save({
+        anotherObject
+      })
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      query.include('anotherObject');
+      return query.find();
+    }).then((res) => {
+      expect(res.length).toBe(1);
+      expect(res[0].get('anotherObject')).not.toBeUndefined();
+      done();
+    }).catch((err) => {
+      jfail(err);
+      done();
+    })
+  });
+
+  it('can add field as master (issue #1257)', (done) => {
+    setPermissionsOnClass('AClass', {
+      'addField': {}
+    }).then(() => {
+      var obj = new Parse.Object('AClass');
+      obj.set('key', 'value');
+      return obj.save(null, {useMasterKey: true})
+    }).then((obj) => {
+      expect(obj.get('key')).toEqual('value');
+      done();
+    }, () => {
+      fail('should not fail');
+      done();
+    });
+  });
+
+  it('can login when addFields is false (issue #1355)', (done) => {
+    setPermissionsOnClass('_User', {
+      'create': {'*': true},
+      'addField': {}
+    }, true).then(() => {
+      return Parse.User.signUp('foo', 'bar');
+    }).then((user) => {
+      expect(user.getUsername()).toBe('foo');
+      done()
+    }, error => {
+      fail(JSON.stringify(error));
+      done();
+    })
+  })
+
+  it('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
+    new Parse.Object('MyClass').save({ data: 'foo'})
+    .then(obj => obj.destroy())
+    .then(() => setPermissionsOnClass('MyClass', { find: {}, get: {} }, true))
+    .then(() => {
+      request.del({
+        url: 'http://localhost:8378/1/schemas/MyClass',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response) => {
+        expect(response.statusCode).toEqual(200);
+        expect(response.body).toEqual({});
+        done();
+      });
+    });
+  });
+
+  it("regression test for #1991", done => {
+    const user = new Parse.User();
+    user.setUsername('user');
+    user.setPassword('user');
+    const role = new Parse.Role('admin', new Parse.ACL());
+    const obj = new Parse.Object('AnObject');
+    Parse.Object.saveAll([user, role]).then(() => {
+      role.relation('users').add(user);
+      return role.save(null, {useMasterKey: true});
+    }).then(() => {
+      return setPermissionsOnClass('AnObject', {
+        'get': {"*": true},
+        'find': {"*": true},
+        'create': {'*': true},
+        'update': {'role:admin': true},
+        'delete': {'role:admin': true}
+      })
+    }).then(() => {
+      return obj.save();
+    }).then(() => {
+      return Parse.User.logIn('user', 'user')
+    }).then(() => {
+      return obj.destroy();
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(0);
+      done();
+    }).catch((err) => {
+      fail('should not fail');
+      jfail(err);
+      done();
+    });
+  });
+
+  it('regression test for #2246', done => {
+    const profile = new Parse.Object('UserProfile');
+    const user = new Parse.User();
+    function initialize() {
+      return user.save({
+        username: 'user',
+        password: 'password'
+      }).then(() => {
+        return profile.save({user}).then(() => {
+          return user.save({
+            userProfile: profile
+          }, {useMasterKey: true});
+        });
+      });
+    }
+
+    initialize().then(() => {
+      return setPermissionsOnClass('UserProfile', {
+        'readUserFields': ['user'],
+        'writeUserFields': ['user']
+      }, true);
+    }).then(() => {
+      return Parse.User.logIn('user', 'password')
+    }).then(() => {
+      const query = new Parse.Query('_User');
+      query.include('userProfile');
+      return query.get(user.id);
+    }).then((user) => {
+      expect(user.get('userProfile')).not.toBeUndefined();
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 });

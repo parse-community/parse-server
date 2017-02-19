@@ -7,7 +7,6 @@ var testUserId = 'userId';
 var testClassName = 'TestObject';
 
 describe('ParseLiveQueryServer', function() {
-
   beforeEach(function(done) {
     // Mock ParseWebSocketServer
     var mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
@@ -160,7 +159,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add two mock clients
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     var clientIdAgain = 2;
     var clientAgain = addMockClient(parseLiveQueryServer, clientIdAgain);
     // Add subscription for mock client 1
@@ -233,7 +232,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add mock client
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     // Handle unsubscribe command
     var parseWebSocket = {
       clientId: 1
@@ -275,7 +274,7 @@ describe('ParseLiveQueryServer', function() {
     expect(subscriptions.size).toBe(0);
   });
 
- it('can set connect command message handler for a parseWebSocket', function() {
+  it('can set connect command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Register mock connect/subscribe/unsubscribe handler for the server
     parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleSubscribe');
@@ -334,6 +333,35 @@ describe('ParseLiveQueryServer', function() {
     var args = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
     expect(args[0]).toBe(parseWebSocket);
     expect(JSON.stringify(args[1])).toBe(unsubscribeRequest);
+  });
+
+  it('can set update command message handler for a parseWebSocket', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    // Register mock connect/subscribe/unsubscribe handler for the server
+    spyOn(parseLiveQueryServer, '_handleUpdateSubscription').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleUnsubscribe').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleSubscribe').and.callThrough();
+
+    // Make mock parseWebsocket
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Check updateRequest request
+    var updateRequest = '{"op":"update"}';
+    // Trigger message event
+    parseWebSocket.emit('message', updateRequest);
+    // Make sure _handleUnsubscribe is called
+    var args = parseLiveQueryServer._handleUpdateSubscription.calls.mostRecent().args;
+    expect(args[0]).toBe(parseWebSocket);
+    expect(JSON.stringify(args[1])).toBe(updateRequest);
+    expect(parseLiveQueryServer._handleUnsubscribe).toHaveBeenCalled();
+    const unsubArgs = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
+    expect(unsubArgs.length).toBe(3);
+    expect(unsubArgs[2]).toBe(false);
+    expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
   });
 
   it('can set unknown command message handler for a parseWebSocket', function() {
@@ -505,7 +533,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a enter, we need original match return false
     // and the current match return true
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -539,7 +567,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -575,7 +603,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a leave, we need original match return true
     // and the current match return false
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -609,7 +637,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -718,7 +746,6 @@ describe('ParseLiveQueryServer', function() {
     };
     var requestId = 0;
 
-    var isChecked = false;
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
       expect(isMatched).toBe(false);
       done();
@@ -833,6 +860,116 @@ describe('ParseLiveQueryServer', function() {
       expect(isMatched).toBe(false);
       done();
     });
+  });
+
+  it('won\'t match ACL that doesn\'t have public read or any roles', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('won\'t match non-public ACL with role when there is no user', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("livequery", true);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+      })
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('won\'t match ACL with role based read access set to false', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("liveQueryRead", false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    spyOn(Parse, "Query").and.callFake(function(){
+      return {
+        equalTo() {
+          // Nothing to do here
+        },
+        find() {
+          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
+          var liveQueryRole = new Parse.Role();
+          liveQueryRole.set('name', 'liveQueryRead');
+          return [
+            liveQueryRole
+          ];
+        }
+      }
+    });
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
+  });
+
+  it('will match ACL with role based read access set to true', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    acl.setRoleReadAccess("liveQueryRead", true);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+        sessionToken: 'sessionToken'
+      })
+    };
+    var requestId = 0;
+
+    spyOn(Parse, "Query").and.callFake(function(){
+      return {
+        equalTo() {
+          // Nothing to do here
+        },
+        find() {
+          //Return a role with the name "liveQueryRead" as that is what was set on the ACL
+          var liveQueryRole = new Parse.Role();
+          liveQueryRole.set('name', 'liveQueryRead');
+          return [
+            liveQueryRole
+          ];
+        }
+      }
+    });
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(true);
+      done();
+    });
+
   });
 
   it('can validate key when valid key is provided', function() {

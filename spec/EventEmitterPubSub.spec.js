@@ -1,7 +1,6 @@
-var EventEmitterPubSub = require('../src/LiveQuery/EventEmitterPubSub').EventEmitterPubSub;
+var EventEmitterPubSub = require('../src/Adapters/PubSub/EventEmitterPubSub').EventEmitterPubSub;
 
 describe('EventEmitterPubSub', function() {
-
   it('can publish and subscribe', function() {
     var publisher = EventEmitterPubSub.createPublisher();
     var subscriber = EventEmitterPubSub.createSubscriber();
@@ -26,7 +25,7 @@ describe('EventEmitterPubSub', function() {
     subscriber.unsubscribe('testChannel');
     // Register mock checked for subscriber
     var isCalled = false;
-    subscriber.on('message', function(channel, message) {
+    subscriber.on('message', function() {
       isCalled = true;
     });
 

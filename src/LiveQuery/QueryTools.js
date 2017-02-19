@@ -112,11 +112,34 @@ function matchesQuery(object: any, query: any): boolean {
   return true;
 }
 
+function equalObjectsGeneric(obj, compareTo, eqlFn) {
+  if (Array.isArray(obj)) {
+    for (var i = 0; i < obj.length; i++) {
+      if (eqlFn(obj[i], compareTo)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  return eqlFn(obj, compareTo);
+}
+
 
 /**
  * Determines whether an object matches a single key's constraints
  */
 function matchesKeyConstraints(object, key, constraints) {
+  if (constraints === null) {
+    return false;
+  }
+  if(key.indexOf(".") >= 0){
+    // Key references a subobject
+    var keyComponents = key.split(".");
+    var subObjectKey = keyComponents[0];
+    var keyRemainder = keyComponents.slice(1).join(".");
+    return matchesKeyConstraints(object[subObjectKey] || {}, keyRemainder, constraints);
+  }
   var i;
   if (key === '$or') {
     for (i = 0; i < constraints.length; i++) {
@@ -140,21 +163,16 @@ function matchesKeyConstraints(object, key, constraints) {
   var compareTo;
   if (constraints.__type) {
     if (constraints.__type === 'Pointer') {
-      return (
-        constraints.className === object[key].className &&
-        constraints.objectId === object[key].objectId
-      );
+      return equalObjectsGeneric(object[key], constraints, function(obj, ptr) {
+        return (
+          typeof obj !== 'undefined' &&
+          ptr.className === obj.className &&
+          ptr.objectId === obj.objectId
+        );
+      });
     }
-    compareTo = Parse._decode(key, constraints);
-    if (Array.isArray(object[key])) {
-      for (i = 0; i < object[key].length; i++) {
-        if (equalObjects(object[key][i], compareTo)) {
-          return true;
-        }
-      }
-      return false;
-    }
-    return equalObjects(object[key], compareTo);
+
+    return equalObjectsGeneric(object[key], Parse._decode(key, constraints), equalObjects);
   }
   // More complex cases
   for (var condition in constraints) {
@@ -163,110 +181,118 @@ function matchesKeyConstraints(object, key, constraints) {
       compareTo = Parse._decode(key, compareTo);
     }
     switch (condition) {
-      case '$lt':
-        if (object[key] >= compareTo) {
+    case '$lt':
+      if (object[key] >= compareTo) {
+        return false;
+      }
+      break;
+    case '$lte':
+      if (object[key] > compareTo) {
+        return false;
+      }
+      break;
+    case '$gt':
+      if (object[key] <= compareTo) {
+        return false;
+      }
+      break;
+    case '$gte':
+      if (object[key] < compareTo) {
+        return false;
+      }
+      break;
+    case '$ne':
+      if (equalObjects(object[key], compareTo)) {
+        return false;
+      }
+      break;
+    case '$in':
+      if (compareTo.indexOf(object[key]) < 0) {
+        return false;
+      }
+      break;
+    case '$nin':
+      if (compareTo.indexOf(object[key]) > -1) {
+        return false;
+      }
+      break;
+    case '$all':
+      for (i = 0; i < compareTo.length; i++) {
+        if (object[key].indexOf(compareTo[i]) < 0) {
           return false;
         }
+      }
+      break;
+    case '$exists': {
+      const propertyExists = typeof object[key] !== 'undefined';
+      const existenceIsRequired = constraints['$exists'];
+      if (typeof constraints['$exists'] !== 'boolean') {
+          // The SDK will never submit a non-boolean for $exists, but if someone
+          // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.
         break;
-      case '$lte':
-        if (object[key] > compareTo) {
-          return false;
-        }
-        break;
-      case '$gt':
-        if (object[key] <= compareTo) {
-          return false;
-        }
-        break;
-      case '$gte':
-        if (object[key] < compareTo) {
-          return false;
-        }
-        break;
-      case '$ne':
-        if (equalObjects(object[key], compareTo)) {
-          return false;
-        }
-        break;
-      case '$in':
-        if (compareTo.indexOf(object[key]) < 0) {
-          return false;
-        }
-        break;
-      case '$nin':
-        if (compareTo.indexOf(object[key]) > -1) {
-          return false;
-        }
-        break;
-      case '$all':
-        for (i = 0; i < compareTo.length; i++) {
-          if (object[key].indexOf(compareTo[i]) < 0) {
-            return false;
-          }
-        }
-        break;
-      case '$exists':
-        if (typeof object[key] === 'undefined') {
-          return false;
-        }
-        break;
-      case '$regex':
-        if (typeof compareTo === 'object') {
-          return compareTo.test(object[key]);
-        }
+      }
+      if ((!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired)) {
+        return false;
+      }
+      break;
+    }
+    case '$regex':
+      if (typeof compareTo === 'object') {
+        return compareTo.test(object[key]);
+      }
         // JS doesn't support perl-style escaping
-        var expString = '';
-        var escapeEnd = -2;
-        var escapeStart = compareTo.indexOf('\\Q');
-        while (escapeStart > -1) {
+      var expString = '';
+      var escapeEnd = -2;
+      var escapeStart = compareTo.indexOf('\\Q');
+      while (escapeStart > -1) {
           // Add the unescaped portion
-          expString += compareTo.substring(escapeEnd + 2, escapeStart);
-          escapeEnd = compareTo.indexOf('\\E', escapeStart);
-          if (escapeEnd > -1) {
-            expString += compareTo.substring(escapeStart + 2, escapeEnd)
+        expString += compareTo.substring(escapeEnd + 2, escapeStart);
+        escapeEnd = compareTo.indexOf('\\E', escapeStart);
+        if (escapeEnd > -1) {
+          expString += compareTo.substring(escapeStart + 2, escapeEnd)
               .replace(/\\\\\\\\E/g, '\\E').replace(/\W/g, '\\$&');
-          }
+        }
 
-          escapeStart = compareTo.indexOf('\\Q', escapeEnd);
-        }
-        expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
-        var exp = new RegExp(expString, constraints.$options || '');
-        if (!exp.test(object[key])) {
-          return false;
-        }
-        break;
-      case '$nearSphere':
-        var distance = compareTo.radiansTo(object[key]);
-        var max = constraints.$maxDistance || Infinity;
-        return distance <= max;
-      case '$within':
-        var southWest = compareTo.$box[0];
-        var northEast = compareTo.$box[1];
-        if (southWest.latitude > northEast.latitude ||
+        escapeStart = compareTo.indexOf('\\Q', escapeEnd);
+      }
+      expString += compareTo.substring(Math.max(escapeStart, escapeEnd + 2));
+      var exp = new RegExp(expString, constraints.$options || '');
+      if (!exp.test(object[key])) {
+        return false;
+      }
+      break;
+    case '$nearSphere':
+      var distance = compareTo.radiansTo(object[key]);
+      var max = constraints.$maxDistance || Infinity;
+      return distance <= max;
+    case '$within':
+      var southWest = compareTo.$box[0];
+      var northEast = compareTo.$box[1];
+      if (southWest.latitude > northEast.latitude ||
             southWest.longitude > northEast.longitude) {
           // Invalid box, crosses the date line
-          return false;
-        }
-        return (
+        return false;
+      }
+      return (
           object[key].latitude > southWest.latitude &&
           object[key].latitude < northEast.latitude &&
           object[key].longitude > southWest.longitude &&
           object[key].longitude < northEast.longitude
-        );
-      case '$options':
+      );
+    case '$options':
         // Not a query type, but a way to add options to $regex. Ignore and
         // avoid the default
-        break;
-      case '$maxDistance':
+      break;
+    case '$maxDistance':
         // Not a query type, but a way to add a cap to $nearSphere. Ignore and
         // avoid the default
-        break;
-      case '$select':
-        return false;
-      case '$dontSelect':
-        return false;
-      default:
-        return false;
+      break;
+    case '$select':
+      return false;
+    case '$dontSelect':
+      return false;
+    default:
+      return false;
     }
   }
   return true;

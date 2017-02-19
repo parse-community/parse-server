@@ -1,64 +1,65 @@
-var FilesController = require('../src/Controllers/FilesController').FilesController;
-var GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
-var S3Adapter = require("../src/Adapters/Files/S3Adapter").S3Adapter;
-var GCSAdapter = require("../src/Adapters/Files/GCSAdapter").GCSAdapter;
-var FileSystemAdapter = require("../src/Adapters/Files/FileSystemAdapter").FileSystemAdapter;
-var Config = require("../src/Config");
+const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
+const Config = require("../src/Config");
+const FilesController = require('../src/Controllers/FilesController').default;
 
-var FCTestFactory = require("./FilesControllerTestFactory");
-
+const mockAdapter = {
+  createFile: () => {
+    return Parse.Promise.reject(new Error('it failed'));
+  },
+  deleteFile: () => { },
+  getFileData: () => { },
+  getFileLocation: () => 'xyz'
+}
 
 // Small additional tests to improve overall coverage
-describe("FilesController",()=>{
+describe("FilesController",() =>{
+  it("should properly expand objects", (done) => {
 
-  // Test the grid store adapter
-  var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
-  FCTestFactory.testAdapter("GridStoreAdapter", gridStoreAdapter);
+    var config = new Config(Parse.applicationId);
+    var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
+    var filesController = new FilesController(gridStoreAdapter)
+    var result = filesController.expandFilesInObject(config, function(){});
 
-  if (process.env.S3_ACCESS_KEY && process.env.S3_SECRET_KEY) {
+    expect(result).toBeUndefined();
 
-    // Test the S3 Adapter
-    var s3Adapter = new S3Adapter(process.env.S3_ACCESS_KEY, process.env.S3_SECRET_KEY, 'parse.server.tests');
+    var fullFile = {
+      type: '__type',
+      url: "http://an.url"
+    }
 
-    FCTestFactory.testAdapter("S3Adapter",s3Adapter);
+    var anObject = {
+      aFile: fullFile
+    }
+    filesController.expandFilesInObject(config, anObject);
+    expect(anObject.aFile.url).toEqual("http://an.url");
 
-    // Test S3 with direct access
-    var s3DirectAccessAdapter = new S3Adapter(process.env.S3_ACCESS_KEY, process.env.S3_SECRET_KEY, 'parse.server.tests', {
-      directAccess: true
-    });
+    done();
+  });
 
-    FCTestFactory.testAdapter("S3AdapterDirect", s3DirectAccessAdapter);
+  it('should create a server log on failure', done => {
+    const logController = new LoggerController(new WinstonLoggerAdapter());
 
-  } else if (!process.env.TRAVIS) {
-    console.log("set S3_ACCESS_KEY and S3_SECRET_KEY to test S3Adapter")
-  }
-
-  if (process.env.GCP_PROJECT_ID && process.env.GCP_KEYFILE_PATH && process.env.GCS_BUCKET) {
-
-    // Test the GCS Adapter
-    var gcsAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET);
-
-    FCTestFactory.testAdapter("GCSAdapter", gcsAdapter);
-
-    // Test GCS with direct access
-    var gcsDirectAccessAdapter = new GCSAdapter(process.env.GCP_PROJECT_ID, process.env.GCP_KEYFILE_PATH, process.env.GCS_BUCKET, {
-      directAccess: true
-    });
-
-    FCTestFactory.testAdapter("GCSAdapterDirect", gcsDirectAccessAdapter);
-
-  } else if (!process.env.TRAVIS) {
-    console.log("set GCP_PROJECT_ID, GCP_KEYFILE_PATH, and GCS_BUCKET to test GCSAdapter")
-  }
-
-  try {
-    // Test the file system adapter
-    var fsAdapter = new FileSystemAdapter({
-      filesSubDirectory: 'sub1/sub2'
-    });
-
-    FCTestFactory.testAdapter("FileSystemAdapter", fsAdapter);
-  } catch (e) {
-    console.log("Give write access to the file system to test the FileSystemAdapter. Error: " + e);
-  }
+    reconfigureServer({ filesAdapter: mockAdapter })
+      .then(() => new Promise(resolve => setTimeout(resolve, 1000)))
+      .then(() => new Parse.File("yolo.txt", [1,2,3], "text/plain").save())
+      .then(
+        () => done.fail('should not succeed'),
+        () => setImmediate(() => Parse.Promise.as('done'))
+      )
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then((logs) => {
+        // we get two logs here: 1. the source of the failure to save the file
+        // and 2 the message that will be sent back to the client.
+        const log1 = logs.pop();
+        expect(log1.level).toBe('error');
+        expect(log1.message).toBe('it failed');
+        const log2 = logs.pop();
+        expect(log2.level).toBe('error');
+        expect(log2.code).toBe(130);
+        expect(log2.message).toBe('Could not store file.');
+        done();
+      });
+  });
 });

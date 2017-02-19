@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: "off"*/
 // Files Adapter
 //
 // Allows you to change the file storage mechanism.
@@ -12,23 +13,21 @@
 // database adapter.
 
 export class FilesAdapter {
-  /* this method is responsible to store the file in order to be retrived later by it's file name
-   * 
-   * 
-   * @param config the current config
+  /* This method is responsible to store the file in order to be retrieved later by its file name
+   *
    * @param filename the filename to save
    * @param data the buffer of data from the file
    * @param contentType the supposed contentType
-   * @discussion the contentType can be undefined if the controller was not able to determine it 
-   * 
+   * @discussion the contentType can be undefined if the controller was not able to determine it
+   *
    * @return a promise that should fail if the storage didn't succeed
-   * 
+   *
    */
-  createFile(config, filename: string, data, contentType: string) { }
+  createFile(filename: string, data, contentType: string) { }
 
-  deleteFile(config, filename) { }
+  deleteFile(filename) { }
 
-  getFileData(config, filename) { }
+  getFileData(filename) { }
 
   getFileLocation(config, filename) { }
 }
