@@ -89,6 +89,9 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
     }
+    if (restKey.indexOf('.') > 0) {
+      return {key, value: restValue}
+    }
     return {key, value};
   }
 
@@ -98,7 +101,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
     return {key, value};
   }
 
-  // Handle update operators
+    // Handle update operators
   if (typeof restValue === 'object' && '__op' in restValue) {
     return {key, value: transformUpdateOperator(restValue, false)};
   }
