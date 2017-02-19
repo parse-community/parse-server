@@ -71,7 +71,7 @@ export class RedisCacheAdapter {
     debug('clear');
     this.p = this.p.then(() => {
       return new Promise((resolve) => {
-        this.client.flushall(function() {
+        this.client.flushdb(function() {
           resolve();
         });
       });
