@@ -56,6 +56,49 @@ describe('a GlobalConfig', () => {
     });
   });
 
+  it('can add and retrive files', (done) => {
+    request.put({
+      url    : 'http://localhost:8378/1/config',
+      json   : true,
+      body   : { params: { file: { __type: 'File', name: 'name', url: 'http://url' } } },
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key'    : 'test'
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      expect(body.result).toEqual(true);
+      Parse.Config.get().then((res) => {
+        const file = res.get('file');
+        expect(file.name()).toBe('name');
+        expect(file.url()).toBe('http://url');
+        done();
+      });
+    });
+  });
+
+  it('can add and retrive Geopoints', (done) => {
+    const geopoint = new Parse.GeoPoint(10,-20);
+    request.put({
+      url    : 'http://localhost:8378/1/config',
+      json   : true,
+      body   : { params: { point: geopoint.toJSON() } },
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key'    : 'test'
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      expect(body.result).toEqual(true);
+      Parse.Config.get().then((res) => {
+        const point = res.get('point');
+        expect(point.latitude).toBe(10);
+        expect(point.longitude).toBe(-20);
+        done();
+      });
+    });
+  });
+
   it('properly handles delete op', (done) => {
     request.put({
       url    : 'http://localhost:8378/1/config',
