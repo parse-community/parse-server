@@ -1,6 +1,6 @@
 {
   "name": "parse-server",
-  "version": "2.3.4",
+  "version": "2.3.5",
   "description": "An express module providing a Parse-compatible API server",
   "main": "lib/index.js",
   "repository": {
@@ -69,7 +69,7 @@
   "scripts": {
     "dev": "npm run build && node bin/dev",
     "lint": "eslint --cache ./",
-    "build": "babel src/ -d lib/",
+    "build": "babel src/ -d lib/ --copy-files",
     "pretest": "npm run lint",
     "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 $COVERAGE_OPTION jasmine",
     "test:win": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 NODE_ENV=test TESTING=1 jasmine",
