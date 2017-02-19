@@ -34,7 +34,7 @@
     "parse-server-push-adapter": "1.2.0",
     "parse-server-s3-adapter": "1.0.6",
     "parse-server-simple-mailgun-adapter": "1.0.0",
-    "pg-promise": "5.5.6",
+    "pg-promise": "5.5.7",
     "redis": "2.6.5",
     "request": "2.79.0",
     "semver": "5.2.0",
