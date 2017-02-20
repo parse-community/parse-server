@@ -423,6 +423,117 @@ describe('rest create', () => {
 
 describe('rest update', () => {
 
+  function createObjects(user, className, objects) {
+    const createdObjects = [];
+    return objects.reduce((promise, object) => {
+      return promise.then(() => {
+        return rest.create(config, user, className, object).then((created) => {
+          createdObjects.push(created);
+        })
+      });
+    }, Promise.resolve()).then(() => createdObjects);
+  }
+
+  it('rejects update on arbitrary criteria without master key', done => {
+    const nobody = auth.nobody(config);
+    const className = 'arbitrary';
+    createObjects(nobody, className, [{ num: 1 }, { num: 2 }]).then(() => {
+      return rest.update(config, nobody, className, null, {
+        query: { num: 1 }
+      });
+    }).then(() => {
+      done('Should not succeed');
+    }, (err) => {
+      console.log(err);
+      done();
+    });
+  });
+
+  it('does not update any objects when query param is omitted on class level update', done => {
+    const master = auth.master(config);
+    const className = 'arbitrary';
+    createObjects(master, className, [{ num: 1 }, { num: 2 }]).then(() => {
+      return rest.update(config, master, className, null, {
+        update: { cool: true }
+      });
+    }).then(() => {
+      return rest.find(config, master, className, { cool: true });
+    }).then((results) => {
+      if (results.length) {
+        done('Mistakenly applied class level update');
+      } else {
+        done();
+      }
+    }, (err) => {
+      done(err);
+    });
+  });
+
+  it('can update using arbitrary criteria when using master key', done => {
+    const master = auth.master(config);
+    const className = 'arbitrary';
+    createObjects(master, className, [{ num: 1 }, { num: 1 }, { num: 2 }]).then(() => {
+      return rest.update(config, master, className, null, {
+        query: { num: 1 },
+        update: { cool: true }
+      });
+    }).then(() => {
+      return rest.find(config, master, className, { cool: true });
+    }).then((results) => {
+      if (results.length === 1 && results[0].num === 1) {
+        done();
+      } else {
+        done('Expected single matching item having update');
+      }
+    }, (err) => {
+      done(err);
+    });
+  });
+
+  it('can update many objects using arbitrary criteria', done => {
+    const master = auth.master(config);
+    const className = 'arbitrary';
+    createObjects(master, className, [{ num: 1 }, { num: 2 }, { num: 2 }]).then(() => {
+      return rest.update(config, master, className, null, {
+        query: { num: 2 },
+        update: { cool: true },
+        many: true
+      });
+    }).then(() => {
+      return rest.find(config, master, className, { cool: true });
+    }).then((results) => {
+      if (results.length === 2) {
+        done();
+      } else {
+        done('Expected two matching items having update');
+      }
+    }, (err) => {
+      done(err);
+    });
+  });
+
+  it('can update many objects using atomic operations', done => {
+    const master = auth.master(config);
+    const className = 'arbitrary';
+    createObjects(master, className, [{ num: 1 }, { num: 2 }, { num: 2 }]).then(() => {
+      return rest.update(config, master, className, null, {
+        query: { num: 2 },
+        update: { num: { "__op": "Increment", "amount": 1 } },
+        many: true
+      });
+    }).then(() => {
+      return rest.find(config, master, className, { num: 3 });
+    }).then((results) => {
+      if (results.length === 2) {
+        done();
+      } else {
+        done('Expected two matching items having update');
+      }
+    }, (err) => {
+      done(err);
+    });
+  });
+
   it('ignores createdAt', done => {
     const nobody = auth.nobody(config);
     const className = 'Foo';

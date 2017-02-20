@@ -115,26 +115,38 @@ function create(config, auth, className, restObject, clientSDK) {
 // Usually, this is just updatedAt.
 function update(config, auth, className, objectId, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
+  const query = objectId ? { objectId } : restObject.query || {};
+  const update = objectId ? restObject : restObject.update;
+  const many = objectId ? false : restObject.many;
 
   return Promise.resolve().then(() => {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
-    if (hasTriggers || hasLiveQuery) {
-      return find(config, Auth.master(config), className, {objectId: objectId});
+    if (objectId && (hasTriggers || hasLiveQuery)) {
+      return find(config, Auth.master(config), className, query);
     }
-    return Promise.resolve({});
   }).then((response) => {
     var originalRestObject;
     if (response && response.results && response.results.length) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject, clientSDK);
+    var write = new RestWrite(
+      config,
+      auth,
+      className,
+      query,
+      update,
+      originalRestObject,
+      clientSDK,
+      { many }
+    );
+
     return write.execute();
   });
 }
 
-// Disallowing access to the _Role collection except by master key
+// Disallowing access to the _Installation collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
