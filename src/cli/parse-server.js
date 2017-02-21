@@ -5,6 +5,7 @@ import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
 import runner from './utils/runner';
+import AppCache from '../cache';
 
 const help = function(){
   console.log('  Get Started guide:');
@@ -35,49 +36,59 @@ function startServer(options, callback) {
 
   app.use(options.mountPath, api);
 
-  const server = app.listen(options.port, options.host, callback);
-  server.on('connection', initializeConnections);
+  const hooksController = AppCache.get(options.appId)['hooksController'];
+  hooksController.load().then(() => {
+    const server = app.listen(options.port, options.host, callback);
+    server.on('connection', initializeConnections);
 
-  if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-    let liveQueryServer = server;
-    if (options.liveQueryPort) {
-      liveQueryServer = express().listen(options.liveQueryPort, () => {
-        console.log('ParseLiveQuery listening on ' + options.liveQueryPort);
+    if (options.startLiveQueryServer || options.liveQueryServerOptions) {
+      let liveQueryServer = server;
+      if (options.liveQueryPort) {
+        liveQueryServer = express().listen(options.liveQueryPort, () => {
+          console.log('ParseLiveQuery listening on ' + options.liveQueryPort);
+        });
+      }
+      ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
+    }
+
+    function initializeConnections(socket) {
+      /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+
+        This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
+
+      const socketId = socket.remoteAddress + ':' + socket.remotePort;
+      sockets[socketId] = socket;
+
+      socket.on('close', () => {
+        delete sockets[socketId];
       });
     }
-    ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
-  }
 
-  function initializeConnections(socket) {
-    /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
-
-      This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-
-    const socketId = socket.remoteAddress + ':' + socket.remotePort;
-    sockets[socketId] = socket;
-
-    socket.on('close', () => {
-      delete sockets[socketId];
-    });
-  }
-
-  function destroyAliveConnections() {
-    for (const socketId in sockets) {
-      try {
-        sockets[socketId].destroy();
-      } catch (e) { /* */ }
+    function destroyAliveConnections() {
+      for (const socketId in sockets) {
+        try {
+          sockets[socketId].destroy();
+        } catch (e) { /* */ }
+      }
     }
-  }
 
-  const handleShutdown = function() {
-    console.log('Termination signal received. Shutting down.');
-    destroyAliveConnections();
-    server.close(function () {
-      process.exit(0);
-    });
-  };
-  process.on('SIGTERM', handleShutdown);
-  process.on('SIGINT', handleShutdown);
+    const handleShutdown = function() {
+      console.log('Termination signal received. Shutting down.');
+      destroyAliveConnections();
+      server.close(function () {
+        process.exit(0);
+      });
+    };
+    process.on('SIGTERM', handleShutdown);
+    process.on('SIGINT', handleShutdown);
+  }).catch(() => {
+    console.error('\u001b[31mERROR: Unable to find _Hooks entries for loading webhooks\u001b[0m');
+    /*
+     * Launching Parse Server without loading hooks will cause serious problems.
+     * So force this process to shutdown before it listens the port.
+     */
+    process.exit(1);
+  });
 }
 
 
