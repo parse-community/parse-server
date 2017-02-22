@@ -217,6 +217,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
 * `passwordPolicy` - Optional password policy rules to enforce.
 * `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
+* `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
 
 ##### Logging
 
