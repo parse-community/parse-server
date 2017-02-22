@@ -5,6 +5,7 @@ import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
 import runner from './utils/runner';
+const path = require("path");
 
 const help = function(){
   console.log('  Get Started guide:');
@@ -30,9 +31,20 @@ const help = function(){
 
 function startServer(options, callback) {
   const app = express();
+  if (options.middleware) {
+    let middleware;
+    if (typeof options.middleware == 'function') {
+      middleware = options.middleware;
+    } if (typeof options.middleware == 'string') {
+      middleware = require(path.resolve(process.cwd(), options.middleware));
+    } else {
+      throw "middleware should be a string or a function";
+    }
+    app.use(middleware);
+  }
+
   const api = new ParseServer(options);
   const sockets = {};
-
   app.use(options.mountPath, api);
 
   const server = app.listen(options.port, options.host, callback);

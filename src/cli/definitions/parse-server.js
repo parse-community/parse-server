@@ -249,4 +249,7 @@ export default {
     help: "Live query server configuration options (will start the liveQuery server)",
     action: objectParser
   },
+  "middleware": {
+    help: "middleware for express server, can be string or function"
+  }
 };
