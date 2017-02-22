@@ -26,13 +26,13 @@ describe('RedisCacheAdapter', function() {
 
   it('should expire after ttl', (done) => {
     var cache = new RedisCacheAdapter({
-      ttl: 10
+      ttl: 100
     });
 
     cache.put(KEY, VALUE)
       .then(() => cache.get(KEY))
       .then((value) => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 50))
+      .then(wait.bind(null, 1000))
       .then(() => cache.get(KEY))
       .then((value) => expect(value).toEqual(null))
       .then(done);
