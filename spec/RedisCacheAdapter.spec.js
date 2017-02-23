@@ -25,17 +25,26 @@ describe('RedisCacheAdapter', function() {
   });
 
   it('should expire after ttl', (done) => {
-    var cache = new RedisCacheAdapter({
-      ttl: 100
-    });
+    var cache = new RedisCacheAdapter(null, 1);
 
     cache.put(KEY, VALUE)
       .then(() => cache.get(KEY))
       .then((value) => expect(value).toEqual(VALUE))
-      .then(wait.bind(null, 1000))
+      .then(wait.bind(null, 2))
       .then(() => cache.get(KEY))
       .then((value) => expect(value).toEqual(null))
       .then(done);
-  })
+  });
 
+  it('should find un-expired records', (done) => {
+    var cache = new RedisCacheAdapter(null, 5);
+
+    cache.put(KEY, VALUE)
+      .then(() => cache.get(KEY))
+      .then((value) => expect(value).toEqual(VALUE))
+      .then(wait.bind(null, 1))
+      .then(() => cache.get(KEY))
+      .then((value) => expect(value).not.toEqual(null))
+      .then(done);
+  });
 });

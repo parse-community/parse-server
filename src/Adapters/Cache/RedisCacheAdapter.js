@@ -1,7 +1,7 @@
 import redis from 'redis';
 import logger from '../../logger';
 
-const DEFAULT_REDIS_TTL = 30000; // 30 seconds in milliseconds
+const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
 
 function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
