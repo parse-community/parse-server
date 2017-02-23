@@ -20,11 +20,12 @@ The fastest and easiest way to get started is to run MongoDB and Parse Server lo
 
 ### Locally
 ```
-$ # If the user has enough permissions to install global modules, use "--unsafe-perm" option with npm
 $ npm install -g parse-server mongodb-runner 
 $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
+***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
+ 
 
 ### Inside a Docker container
 ```
