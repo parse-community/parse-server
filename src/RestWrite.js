@@ -366,7 +366,7 @@ RestWrite.prototype.transformUser = function() {
 
   return promise.then(() => {
     // Transform the password
-    if (!this.data.password) {
+    if (this.data.password === undefined) { // ignore only if undefined. should proceed if empty ('')
       return Promise.resolve();
     }
 
