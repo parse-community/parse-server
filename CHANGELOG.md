@@ -1,7 +1,24 @@
 ## Parse Server Changelog
 
+### 2.3.6
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.5...2.3.6)
+
+#### Improvements
+* Adds support for injecting a middleware for instumentation in the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Alleviate mongodb bug with $or queries [SERVER-13732](https://jira.mongodb.org/browse/SERVER-13732), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+
+#### Bug Fixes
+* Fix issue affecting password policy and empty passwords, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* Fix issue when logging url in non string objects, thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+
+#### Dependencies updates:
+* [ws@2.1.0](https://npmjs.com/package/ws)
+* [uws@0.13.0](https://npmjs.com/package/uws)
+* [pg-promise@5.6.1](https://npmjs.com/package/pg-promise)
+
+
 ### 2.3.5
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.4)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.5)
 
 #### Bug Fixes
 * Allow empty client key
