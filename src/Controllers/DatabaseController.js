@@ -18,14 +18,7 @@ function addWriteACL(query, acl) {
 function addReadACL(query, acl) {
   const newQuery = _.cloneDeep(query);
   //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
-  if (newQuery.hasOwnProperty('$or')) {
-    newQuery.$or = newQuery.$or.map(function(qobj) {
-      qobj._rperm = {'$in' : [null, '*', ...acl]};
-      return qobj;
-    });
-  } else {
-    newQuery._rperm = { "$in" : [null, "*", ...acl]};
-  }
+  newQuery._rperm = {"$in": [null, "*", ...acl]};
   return newQuery;
 }
 
@@ -63,6 +56,30 @@ const validateQuery = query => {
   if (query.$or) {
     if (query.$or instanceof Array) {
       query.$or.forEach(validateQuery);
+
+      /* In MongoDB, $or queries which are not alone at the top level of the
+       * query can not make efficient use of indexes due to a long standing
+       * bug known as SERVER-13732.
+       *
+       * This block restructures queries in which $or is not the sole top
+       * level element by moving all other top-level predicates inside every
+       * subdocument of the $or predicate, allowing MongoDB's query planner
+       * to make full use of the most relevant indexes.
+       *
+       * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
+       * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
+       *
+       * https://jira.mongodb.org/browse/SERVER-13732
+       */
+      Object.keys(query).forEach(key => {
+        const noCollisions = !query.$or.some(subq => subq.hasOwnProperty(key))
+        if (key != '$or' && noCollisions) {
+          query.$or.forEach(subquery => {
+            subquery[key] = query[key];
+          });
+          delete query[key];
+        }
+      });
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -919,4 +936,6 @@ function joinTableName(className, key) {
   return `_Join:${key}:${className}`;
 }
 
+// Expose validateQuery for tests
+DatabaseController._validateQuery = validateQuery;
 module.exports = DatabaseController;
