@@ -1184,6 +1184,7 @@ export class PostgresStorageAdapter {
         debug(`initialzationDone in ${data.duration}`);
       });
   }
+}
 
 function removeWhiteSpace(regex) {
   if (!regex.endsWith('\n')){
