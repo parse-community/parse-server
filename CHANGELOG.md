@@ -14,7 +14,7 @@
 #### Dependencies updates:
 * [ws@2.1.0](https://npmjs.com/package/ws)
 * [uws@0.13.0](https://npmjs.com/package/uws)
-* [pg-promise@5.6.1](https://npmjs.com/package/pg-promise)
+* [pg-promise@5.6.2](https://npmjs.com/package/pg-promise)
 
 
 ### 2.3.5
