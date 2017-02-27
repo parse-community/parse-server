@@ -1182,6 +1182,11 @@ export class PostgresStorageAdapter {
     })
       .then(data => {
         debug(`initialzationDone in ${data.duration}`);
+      })
+      .catch(error => {
+        /* eslint-disable no-console */
+        console.error(error);
+        return {};
       });
   }
 }
