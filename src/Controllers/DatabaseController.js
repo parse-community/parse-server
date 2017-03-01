@@ -909,9 +909,12 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 // have a Parse app without it having a _User collection.
 DatabaseController.prototype.performInitialization = function() {
   const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+  const requiredRoleFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._Role } };
 
   const userClassPromise = this.loadSchema()
     .then(schema => schema.enforceClassExists('_User'))
+  const roleClassPromise = this.loadSchema()
+    .then(schema => schema.enforceClassExists('_Role'))
 
   const usernameUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
@@ -927,9 +930,16 @@ DatabaseController.prototype.performInitialization = function() {
       return Promise.reject(error);
     });
 
+  const roleUniqueness = roleClassPromise
+    .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for role name: ', error);
+      return Promise.reject(error);
+    });
+
   // Create tables for volatile classes
   const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
-  return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
+  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit]);
 }
 
 function joinTableName(className, key) {

@@ -494,7 +494,8 @@ describe('SchemaController', () => {
 
   it('creates non-custom classes which include relation field', done => {
     config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists('_Role', {}))
+    //as `_Role` is always created by default, we only get it here
+    .then(schema => schema.getOneSchema('_Role'))
     .then(actualSchema => {
       const expectedSchema = {
         className: '_Role',
