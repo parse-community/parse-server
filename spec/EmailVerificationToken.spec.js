@@ -1,6 +1,7 @@
 "use strict";
 
 const request = require('request');
+const requestp = require('request-promise');
 const Config = require('../src/Config');
 
 describe("Email Verification Token Expiration: ", () => {
@@ -477,6 +478,257 @@ describe("Email Verification Token Expiration: ", () => {
       done();
     })
     .catch((error) => {
+      jfail(error);
+      done();
+    });
+  });
+
+  it('should send a new verification email when a resend is requested and the user is UNVERIFIED', done => {
+    var user = new Parse.User();
+    var sendEmailOptions;
+    var sendVerificationEmailCallCount = 0;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1'
+    })
+    .then(() => {
+      user.setUsername('resends_verification_token');
+      user.setPassword('expiringToken');
+      user.set('email', 'user@parse.com');
+      return user.signUp();
+    })
+    .then(() => {
+      expect(sendVerificationEmailCallCount).toBe(1);
+
+      return requestp.post({
+        uri: 'http://localhost:8378/1/verificationEmailRequest',
+        body: {
+          email: 'user@parse.com'
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        simple: false // this promise is only rejected if the call itself failed
+      })
+      .then((response) => {
+        expect(response.statusCode).toBe(200);
+        expect(sendVerificationEmailCallCount).toBe(2);
+        expect(sendEmailOptions).toBeDefined();
+        done();
+      });
+    })
+    .catch(error => {
+      jfail(error);
+      done();
+    });
+  });
+
+  it('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
+    var user = new Parse.User();
+    var sendEmailOptions;
+    var sendVerificationEmailCallCount = 0;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1'
+    })
+    .then(() => {
+      user.setUsername('no_new_verification_token_once_verified');
+      user.setPassword('expiringToken');
+      user.set('email', 'user@parse.com');
+      return user.signUp();
+    })
+    .then(() => {
+      return requestp.get({
+        url: sendEmailOptions.link,
+        followRedirect: false,
+        resolveWithFullResponse: true,
+        simple: false
+      })
+      .then((response) => {
+        expect(response.statusCode).toEqual(302);
+      });
+    })
+    .then(() => {
+      expect(sendVerificationEmailCallCount).toBe(1);
+
+      return requestp.post({
+        uri: 'http://localhost:8378/1/verificationEmailRequest',
+        body: {
+          email: 'user@parse.com'
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        simple: false // this promise is only rejected if the call itself failed
+      })
+      .then((response) => {
+        expect(response.statusCode).toBe(400);
+        expect(sendVerificationEmailCallCount).toBe(1);
+        done();
+      });
+    })
+    .catch(error => {
+      jfail(error);
+      done();
+    });
+  });
+
+  it('should not send a new verification email if this user does not exist', done => {
+    var sendEmailOptions;
+    var sendVerificationEmailCallCount = 0;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1'
+    })
+    .then(() => {
+      return requestp.post({
+        uri: 'http://localhost:8378/1/verificationEmailRequest',
+        body: {
+          email: 'user@parse.com'
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        simple: false
+      })
+      .then(response => {
+        expect(response.statusCode).toBe(400);
+        expect(sendVerificationEmailCallCount).toBe(0);
+        expect(sendEmailOptions).not.toBeDefined();
+        done();
+      });
+    })
+    .catch(error => {
+      jfail(error);
+      done();
+    });
+  });
+
+  it('should fail if no email is supplied', done => {
+    var sendEmailOptions;
+    var sendVerificationEmailCallCount = 0;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1'
+    })
+    .then(() => {
+      request.post({
+        uri: 'http://localhost:8378/1/verificationEmailRequest',
+        body: {},
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        simple: false
+      }, (err, response) => {
+        expect(response.statusCode).toBe(400);
+        expect(response.body.code).toBe(Parse.Error.EMAIL_MISSING);
+        expect(response.body.error).toBe('you must provide an email');
+        expect(sendVerificationEmailCallCount).toBe(0);
+        expect(sendEmailOptions).not.toBeDefined();
+        done();
+      });
+    })
+    .catch(error => {
+      jfail(error);
+      done();
+    });
+  });
+
+  it('should fail if email is not a string', done => {
+    var sendEmailOptions;
+    var sendVerificationEmailCallCount = 0;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+        sendVerificationEmailCallCount++;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => {}
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: 'http://localhost:8378/1'
+    })
+    .then(() => {
+      request.post({
+        uri: 'http://localhost:8378/1/verificationEmailRequest',
+        body: {email: 3},
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+        resolveWithFullResponse: true,
+        simple: false
+      }, (err, response) => {
+        expect(response.statusCode).toBe(400);
+        expect(response.body.code).toBe(Parse.Error.INVALID_EMAIL_ADDRESS);
+        expect(response.body.error).toBe('you must provide a valid email string');
+        expect(sendVerificationEmailCallCount).toBe(0);
+        expect(sendEmailOptions).not.toBeDefined();
+        done();
+      });
+    })
+    .catch(error => {
       jfail(error);
       done();
     });

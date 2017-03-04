@@ -383,7 +383,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         fail('sending password reset email should not have succeeded');
         done();
       }, error => {
-        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.')
         done();
       });
     })
@@ -414,7 +414,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         fail('sending password reset email should not have succeeded');
         done();
       }, error => {
-        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.')
         done();
       });
     })
@@ -442,7 +442,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         fail('sending password reset email should not have succeeded');
         done();
       }, error => {
-        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset functionality.')
+        expect(error.message).toEqual('An appName, publicServerURL, and emailAdapter are required for password reset and email verification functionality.')
         done();
       });
     })
