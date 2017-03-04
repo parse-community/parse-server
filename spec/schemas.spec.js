@@ -183,7 +183,7 @@ describe('schemas', () => {
       var expected = {
         results: [userSchema,roleSchema]
       };
-      expect(dd(body.results.sort(s => s.className), expected.results.sort(s => s.className))).toEqual();
+      expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
       done();
     });
   });
@@ -205,7 +205,7 @@ describe('schemas', () => {
         var expected = {
           results: [userSchema,roleSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
-        expect(dd(body.results.sort(s => s.className), expected.results.sort(s => s.className))).toEqual(undefined);
+        expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
         done();
       })
     });
