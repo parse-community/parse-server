@@ -189,6 +189,38 @@ describe('Parse.User testing', () => {
     })
   });
 
+  it('should allow locking user out with masterkey', (done) => {
+    const user = new Parse.User();
+    const ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('usertolockout');
+    user.setPassword('zxcv');
+    user.setACL(ACL);
+    user.signUp().then(() => {
+      return Parse.User.logIn("usertolockout", "zxcv");
+    }).then((user) => {
+      // Try to lock out user with master key
+      const newACL = new Parse.ACL();
+      newACL.setReadAccess(user.id, false);
+      newACL.setWriteAccess(user.id, false);
+      user.setACL(newACL);
+      return user.save(null, {useMasterKey: true});
+    }).then(() => {
+      return Parse.User.logIn("usertolockout", "zxcv");
+    }).then(user => {
+      // TODO: Can we prevent using the master key when using Parse.User.logIn?
+      // Parse.User.logIn returns an error when the user is locked out and not
+      // logging in with a master key
+      const ACL = user.getACL();
+      expect(ACL.getReadAccess(user)).toBe(false);
+      expect(ACL.getWriteAccess(user)).toBe(false);
+      expect(ACL.getPublicReadAccess()).toBe(false);
+      expect(ACL.getPublicWriteAccess()).toBe(false);
+      done();
+    })
+  });
+
   it("user login with files", (done) => {
     const file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
