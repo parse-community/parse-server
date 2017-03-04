@@ -246,12 +246,12 @@ export class UsersRouter extends ClassesRouter {
 
     return req.config.database.find('_User', { email: email }).then((results) => {
       if (!results.length || results.length < 1) {
-        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'Invalid email.');
+        throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
       }
       const user = results[0];
 
       if (user.emailVerified) {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'User email is already verified.');
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
       }
 
       const userController = req.config.userController;
