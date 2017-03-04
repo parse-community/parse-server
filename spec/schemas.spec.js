@@ -102,6 +102,20 @@ const userSchema = {
   "classLevelPermissions": defaultClassLevelPermissions,
 }
 
+const roleSchema = {
+  "className": "_Role",
+  "fields": {
+    "objectId": {"type": "String"},
+    "createdAt": {"type": "Date"},
+    "updatedAt": {"type": "Date"},
+    "ACL": {"type": "ACL"},
+    "name":  {"type":"String"},
+    "users": {"type":"Relation", "targetClass":"_User"},
+    "roles": {"type":"Relation", "targetClass":"_Role"}
+  },
+  "classLevelPermissions": defaultClassLevelPermissions,
+}
+
 var noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
 };
@@ -166,7 +180,10 @@ describe('schemas', () => {
       json: true,
       headers: masterKeyHeaders,
     }, (error, response, body) => {
-      expect(dd(body.results, [userSchema])).toEqual();
+      var expected = {
+        results: [userSchema,roleSchema]
+      };
+      expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
       done();
     });
   });
@@ -186,9 +203,9 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
       }, (error, response, body) => {
         var expected = {
-          results: [userSchema,plainOldDataSchema,pointersAndRelationsSchema]
+          results: [userSchema,roleSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
-        expect(dd(body, expected)).toEqual(undefined);
+        expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
         done();
       })
     });
