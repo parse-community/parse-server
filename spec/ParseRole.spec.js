@@ -192,6 +192,24 @@ describe('Parse Role testing', () => {
     });
   });
 
+  it("Different _Role objects cannot have the same name.", (done) => {
+    const roleName = "MyRole";
+    let aUser;
+    createTestUser().then((user) => {
+      aUser = user;
+      return createRole(roleName, null, aUser);
+    }).then((firstRole) => {
+      expect(firstRole.getName()).toEqual(roleName);
+      return createRole(roleName, null, aUser);
+    }).then(() => {
+      fail("_Role cannot have the same name as another role");
+      done();
+    }, (error) => {
+      expect(error.code).toEqual(137);
+      done();
+    });
+  });
+
   it("Should properly resolve roles", (done) => {
     const admin = new Parse.Role("Admin", new Parse.ACL());
     const moderator = new Parse.Role("Moderator", new Parse.ACL());
