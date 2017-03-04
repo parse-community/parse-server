@@ -1169,16 +1169,18 @@ export class PostgresStorageAdapter {
         throw err;
       });
     });
-    return this._client.tx(t => {
-      promises = promises.concat([
-        t.none(sql.misc.jsonObjectSetKeys),
-        t.none(sql.array.add),
-        t.none(sql.array.addUnique),
-        t.none(sql.array.remove),
-        t.none(sql.array.containsAll),
-        t.none(sql.array.contains)
-      ]);
-      return t.batch(promises);
+    return Promise.all(promises)
+      .then(() => {
+        return this._client.tx(t => {
+          return t.batch([
+            t.none(sql.misc.jsonObjectSetKeys),
+            t.none(sql.array.add),
+            t.none(sql.array.addUnique),
+            t.none(sql.array.remove),
+            t.none(sql.array.containsAll),
+            t.none(sql.array.contains)            
+          ]);
+      });
     })
       .then(data => {
         debug(`initialzationDone in ${data.duration}`);
@@ -1186,7 +1188,6 @@ export class PostgresStorageAdapter {
       .catch(error => {
         /* eslint-disable no-console */
         console.error(error);
-        return {};
       });
   }
 }
