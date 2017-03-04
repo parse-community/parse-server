@@ -1161,7 +1161,7 @@ export class PostgresStorageAdapter {
 
   performInitialization({ VolatileClassesSchemas }) {
     debug('performInitialization');
-    let promises = VolatileClassesSchemas.map((schema) => {
+    const promises = VolatileClassesSchemas.map((schema) => {
       return this.createTable(schema.className, schema).catch((err) => {
         if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
           return Promise.resolve();
@@ -1178,10 +1178,10 @@ export class PostgresStorageAdapter {
             t.none(sql.array.addUnique),
             t.none(sql.array.remove),
             t.none(sql.array.containsAll),
-            t.none(sql.array.contains)            
+            t.none(sql.array.contains)
           ]);
-      });
-    })
+        });
+      })
       .then(data => {
         debug(`initialzationDone in ${data.duration}`);
       })
