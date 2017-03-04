@@ -920,21 +920,21 @@ DatabaseController.prototype.performInitialization = function() {
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
-      return Promise.reject(error);
+      throw error;
     });
 
   const emailUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-      return Promise.reject(error);
+      throw error;
     });
 
   const roleUniqueness = roleClassPromise
     .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
-      return Promise.reject(error);
+      throw error;
     });
 
   // Create tables for volatile classes
