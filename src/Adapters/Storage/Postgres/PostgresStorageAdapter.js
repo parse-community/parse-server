@@ -1160,41 +1160,35 @@ export class PostgresStorageAdapter {
   }
 
   performInitialization({ VolatileClassesSchemas }) {
-    const now = new Date().getTime();
     debug('performInitialization');
-    let promises = VolatileClassesSchemas.map((schema) => {
-      return this.createTable(schema.className, schema).catch((err) =>{
+    const promises = VolatileClassesSchemas.map((schema) => {
+      return this.createTable(schema.className, schema).catch((err) => {
         if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
           return Promise.resolve();
         }
         throw err;
       });
     });
-    /* eslint-disable no-console */
-    promises = promises.concat([
-      this._client.none(sql.misc.jsonObjectSetKeys).catch((err) => {
-        console.error(err);
-      }),
-      this._client.none(sql.array.add).catch((err) => {
-        console.error(err);
-      }),
-      this._client.none(sql.array.addUnique).catch((err) => {
-        console.error(err);
-      }),
-      this._client.none(sql.array.remove).catch((err) => {
-        console.error(err);
-      }),
-      this._client.none(sql.array.containsAll).catch((err) => {
-        console.error(err);
-      }),
-      this._client.none(sql.array.contains).catch((err) => {
-        console.error(err);
+    return Promise.all(promises)
+      .then(() => {
+        return this._client.tx(t => {
+          return t.batch([
+            t.none(sql.misc.jsonObjectSetKeys),
+            t.none(sql.array.add),
+            t.none(sql.array.addUnique),
+            t.none(sql.array.remove),
+            t.none(sql.array.containsAll),
+            t.none(sql.array.contains)
+          ]);
+        });
       })
-    ]);
-    /* eslint-enable no-console */
-    return Promise.all(promises).then(() => {
-      debug(`initialzationDone in ${new Date().getTime() - now}`);
-    }, () => {});
+      .then(data => {
+        debug(`initializationDone in ${data.duration}`);
+      })
+      .catch(error => {
+        /* eslint-disable no-console */
+        console.error(error);
+      });
   }
 }
 
