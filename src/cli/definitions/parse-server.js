@@ -178,7 +178,7 @@ export default {
   },
   "userSensitiveFields": {
     help: "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
-    default: "email"
+    default: ["email"]
   },
   "sessionLength": {
     env: "PARSE_SERVER_SESSION_LENGTH",
