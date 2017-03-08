@@ -36,10 +36,34 @@
     }
   </style>
   </head>
+  <script type="text/javascript">
+    function getUrlParameter(name) {
+      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
+      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
+      var results = regex.exec(location.search);
+      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
+    };  
+
+    window.onload = addDataToForm;
+
+    function addDataToForm() {
+      var username = getUrlParameter("username");
+      document.getElementById("usernameField").value = username;
+
+      var appId = getUrlParameter("appId");
+      document.getElementById("resendForm").action = '/apps/' + appId + '/resend_verification_email'
+    }
+
+  </script>
 
   <body> 
     <div class="container">
-      <h1>Invalid Link</h1>
+      <h1>Invalid Verification Link</h1>
+        <form id="resendForm" method="POST" action="/resend_verification_email">
+          <input id="usernameField" class="form-control" name="username" type="hidden" value="">
+          <input id="tokenField" class="form-control" name="token" type="hidden" value="">
+          <button type="submit" class="btn btn-default">Resend Link</button>
+        </form>
     </div> 
   </body>
 </html>
