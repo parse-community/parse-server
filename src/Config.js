@@ -49,6 +49,7 @@ export class Config {
     this.verifyUserEmails = cacheInfo.verifyUserEmails;
     this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
     this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
+    this.allowLoginWithEmail = cacheInfo.allowLoginWithEmail;
     this.accountLockout = cacheInfo.accountLockout;
     this.passwordPolicy = cacheInfo.passwordPolicy;
     this.appName = cacheInfo.appName;

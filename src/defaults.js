@@ -28,6 +28,7 @@ export default {
   maxUploadSize: '20mb',
   verifyUserEmails: false,
   preventLoginWithUnverifiedEmail: false,
+  allowLoginWithEmail: false,
   sessionLength: 31536000,
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,

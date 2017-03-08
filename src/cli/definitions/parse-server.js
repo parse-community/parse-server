@@ -147,6 +147,12 @@ export default {
     help: "Email verification token validity duration",
     action: numberParser("emailVerifyTokenValidityDuration")
   },
+  "allowLoginWithEmail": {
+    env: "PARSE_SERVER_ALLOW_LOGIN_WITH_EMAIL",
+    help: "Enable (or disable) user login with email address, defaults to false",
+    default: false,
+    action: booleanParser
+  },
   "accountLockout": {
     env: "PARSE_SERVER_ACCOUNT_LOCKOUT",
     help: "account lockout policy for failed login attempts",
