@@ -140,6 +140,45 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('not allow user login with email address', (done) => {
+    const user = new Parse.User();
+    user.set({
+      username: 'test',
+      password: 'password',
+      email: 'test@test.com'
+    });
+    user.signUp(null, {
+      success: function() {
+        Parse.User.logIn('test@test.com', 'password', {
+          success: function() {
+            ok(false, 'should not have allowed login with email address')
+          },
+          error: done
+        })
+      }
+    })
+  })
+
+  it('allow user login with email address if server is configured to allow it', (done) => {
+    reconfigureServer({ allowLoginWithEmail: true })
+    const user = new Parse.User();
+    user.set({
+      username: 'test',
+      password: 'password',
+      email: 'test@test.com'
+    });
+    user.signUp(null, {
+      success: function() {
+        Parse.User.logIn('test@test.com', 'password', {
+          success: done,
+          error: function() {
+            ok(false, 'should have allowed user login with email address')
+          }
+        })
+      }
+    })
+  })
+
   it('should respect ACL without locking user out', (done) => {
     const user = new Parse.User();
     const ACL = new Parse.ACL();
