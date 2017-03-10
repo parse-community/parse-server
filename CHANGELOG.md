@@ -1,5 +1,27 @@
 ## Parse Server Changelog
 
+### 2.3.7
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.6...2.3.7)
+
+#### New features
+* New endpoint to resend verification email, thanks to [Xy Ziemba](https://github.com/xyziemba)
+
+#### Improvements
+* Add TTL option for Redis Cache Adapter, thanks to [Ryan Foster](https://github.com/f0ster)
+* Update Postgres Storage Adapter, thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+
+#### Bug Fixes
+* Add index on Role.name, fixes (#3579), thanks to [Natan Rolnik](https://github.com/natanrolnik)
+* Fix default value of userSensitiveFields, fixes (#3593), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Dependencies updates:
+* [body-parser@1.17.1](https://www.npmjs.com/package/body-parser)
+* [express@4.15.2](https://www.npmjs.com/package/express)
+* [request@2.81.0](https://www.npmjs.com/package/request)
+* [winston-daily-rotate-file@1.4.5](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [ws@2.2.0](https://www.npmjs.com/package/ws)
+
+
 ### 2.3.6
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.5...2.3.6)
 
