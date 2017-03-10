@@ -3,7 +3,7 @@
 ### 2.3.7
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.6...2.3.7)
 
-#### New features
+#### New Features
 * New endpoint to resend verification email, thanks to [Xy Ziemba](https://github.com/xyziemba)
 
 #### Improvements
@@ -14,7 +14,7 @@
 * Add index on Role.name, fixes (#3579), thanks to [Natan Rolnik](https://github.com/natanrolnik)
 * Fix default value of userSensitiveFields, fixes (#3593), thanks to [Arthur Cinader](https://github.com/acinader)
 
-#### Dependencies updates:
+#### Dependency Updates:
 * [body-parser@1.17.1](https://www.npmjs.com/package/body-parser)
 * [express@4.15.2](https://www.npmjs.com/package/express)
 * [request@2.81.0](https://www.npmjs.com/package/request)
