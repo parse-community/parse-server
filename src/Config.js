@@ -233,6 +233,18 @@ export class Config {
     return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
   }
 
+  get invalidVerificationLinkURL() {
+    return this.customPages.invalidVerificationLink || `${this.publicServerURL}/apps/invalid_verification_link.html`;
+  }
+
+  get linkSendSuccessURL() {
+    return this.customPages.linkSendSuccess || `${this.publicServerURL}/apps/link_send_success.html`
+  }
+
+  get linkSendFailURL() {
+    return this.customPages.linkSendFail || `${this.publicServerURL}/apps/link_send_fail.html`
+  }
+
   get verifyEmailSuccessURL() {
     return this.customPages.verifyEmailSuccess || `${this.publicServerURL}/apps/verify_email_success.html`;
   }

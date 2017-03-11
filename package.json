@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ParsePlatform/parse-server"
+    "url": "https://github.com/LoungeBuddy/parse-server"
   },
   "files": [
     "bin/",
