@@ -45,7 +45,7 @@
   },
   "devDependencies": {
 
-    "babel-cli": "6.23.0",
+    "babel-cli": "6.24.0",
     "babel-core": "6.23.1",
     "babel-eslint": "^7.1.1",
     "babel-plugin-syntax-flow": "6.13.0",
