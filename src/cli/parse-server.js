@@ -84,9 +84,7 @@ function startServer(options, callback) {
   const handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
-    server.close(function () {
-      process.exit(0);
-    });
+    server.close();
   };
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
