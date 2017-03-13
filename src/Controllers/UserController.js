@@ -65,7 +65,7 @@ export class UserController extends AdaptableController {
     return checkIfAlreadyVerified.execute().then(function(result) {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
-      } 
+      }
       return self.config.database.update('_User', query, updateFields).then((document) => {
         if (!document) {
           throw undefined
@@ -148,7 +148,7 @@ export class UserController extends AdaptableController {
         throw undefined;
       }
       self.setEmailVerifyToken(aUser);
-      return self.config.database.update('_User', {username}, aUser).then(function(res) {
+      return self.config.database.update('_User', {username}, aUser).then(function() {
         self.sendVerificationEmail(aUser);
       });
     });
