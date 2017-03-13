@@ -41,7 +41,7 @@
     "tv4": "1.2.7",
     "winston": "2.3.1",
     "winston-daily-rotate-file": "1.4.6",
-    "ws": "2.2.0"
+    "ws": "2.2.1"
   },
   "devDependencies": {
 
