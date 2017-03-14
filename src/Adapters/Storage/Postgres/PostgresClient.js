@@ -9,13 +9,17 @@ export function createClient(uri, databaseOptions) {
     dbOptions = parser.getDatabaseOptionsFromURI(uri);
   }
 
-  let pgp = require('pg-promise')(databaseOptions);
+  for (const key in databaseOptions) {
+    dbOptions[key] = databaseOptions[key];
+  }
 
+  const initOptions = dbOptions.initOptions || {};
+  const pgp = require('pg-promise')(initOptions);
   const client = pgp(dbOptions);
 
   if (dbOptions.pgOptions) {
     for (const key in dbOptions.pgOptions) {
-      client.pg.defaults[key] = dbOptions.pgOptions[key];
+      pgp.pg.defaults[key] = dbOptions.pgOptions[key];
     }
   }
 
