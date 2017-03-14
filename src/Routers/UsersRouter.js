@@ -81,8 +81,17 @@ export class UsersRouter extends ClassesRouter {
 
     let user;
     let isValidPassword = false;
-
-    return req.config.database.find('_User', { username: req.body.username })
+      
+    //find out if user wants to get logged in with username or email
+    let isEmail = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/.test(req.body.username);
+    let queryOptions = {}
+    if(isEmail){
+      queryOptions.email = req.body.username;
+    }else{
+      queryOptions.username = req.body.username;
+    }
+    
+    return req.config.database.find('_User', queryOptions)
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
