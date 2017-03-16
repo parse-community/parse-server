@@ -60,13 +60,12 @@ export class UserController extends AdaptableController {
       updateFields._email_verify_token_expires_at = {__op: 'Delete'};
     }
 
-    var self = this;
-    var checkIfAlreadyVerified = new RestQuery(self.config, Auth.master(self.config), '_User', {username: username, emailVerified: true});
-    return checkIfAlreadyVerified.execute().then(function(result) {
+    var checkIfAlreadyVerified = new RestQuery(this.config, Auth.master(this.config), '_User', {username: username, emailVerified: true});
+    return checkIfAlreadyVerified.execute().then(() => {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
-      return self.config.database.update('_User', query, updateFields).then((document) => {
+      return this.config.database.update('_User', query, updateFields).then((document) => {
         if (!document) {
           throw undefined
         }
@@ -142,14 +141,13 @@ export class UserController extends AdaptableController {
   }
 
   resendVerificationEmail(username) {
-    var self = this;
-    return self.getUserIfNeeded({username: username}).then((aUser) => {
+    return this.getUserIfNeeded({username: username}).then((aUser) => {
       if (!aUser || aUser.emailVerified) {
         throw undefined;
       }
-      self.setEmailVerifyToken(aUser);
-      return self.config.database.update('_User', {username}, aUser).then(function() {
-        self.sendVerificationEmail(aUser);
+      this.setEmailVerifyToken(aUser);
+      return this.config.database.update('_User', {username}, aUser).then(() => {
+        this.sendVerificationEmail(aUser);
       });
     });
   }

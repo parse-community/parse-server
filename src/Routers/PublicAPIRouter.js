@@ -152,10 +152,12 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 
   invalidVerificationLink(req) {
+    const config = req.config;
     if (req.query.username && req.params.appId) {
+      const params = qs.stringify({username: req.query.username, appId: req.params.appId});
       return Promise.resolve({
         status: 302,
-        location: req.config.invalidVerificationLinkURL + '?username=' + req.query.username + '&appId=' + req.params.appId
+        location: `${config.invalidVerificationLinkURL}?${params}`
       });
     } else {
       return this.invalidLink(req);
@@ -180,7 +182,7 @@ export class PublicAPIRouter extends PromiseRouter {
       req => { return this.verifyEmail(req); });
 
     this.route('POST', '/apps/:appId/resend_verification_email',
-      req => {this.setConfig(req) },
+      req => { this.setConfig(req); },
       req => { return this.resendVerificationEmail(req); });
 
     this.route('GET','/apps/choose_password',
