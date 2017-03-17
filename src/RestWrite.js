@@ -204,11 +204,11 @@ RestWrite.prototype.validateAuthData = function() {
   }
 
   if (!this.query && !this.data.authData) {
-    if (typeof this.data.username !== 'string') {
+    if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING,
                             'bad or missing username');
     }
-    if (typeof this.data.password !== 'string') {
+    if (typeof this.data.password !== 'string' || _.isEmpty(this.data.password)) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING,
                             'password is required');
     }
