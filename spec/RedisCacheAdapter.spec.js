@@ -1,6 +1,12 @@
 var RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
-
-describe('RedisCacheAdapter', function() {
+/*
+To run this test part of the complete suite
+set PARSE_SERVER_TEST_CACHE='redis'
+and make sure a redis server is available on the default port
+ */
+describe_only(() => {
+  return process.env.PARSE_SERVER_TEST_CACHE === 'redis';
+})('RedisCacheAdapter', function() {
   var KEY = 'hello';
   var VALUE = 'world';
 

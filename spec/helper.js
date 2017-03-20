@@ -419,6 +419,14 @@ global.describe_only_db = db => {
   }
 }
 
+global.describe_only = (validator) =>{
+  if (validator()) {
+    return describe;
+  } else {
+    return xdescribe;
+  }
+};
+
 
 var libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {

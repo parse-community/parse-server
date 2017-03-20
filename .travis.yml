@@ -18,7 +18,7 @@ before_script:
   - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
 env:
   global:
-  - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
+  - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6

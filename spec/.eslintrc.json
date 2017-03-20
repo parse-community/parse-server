@@ -16,6 +16,7 @@
       "notEqual": true,
       "it_exclude_dbs": true,
       "describe_only_db": true,
+      "describe_only": true,
       "on_db": true,
       "defaultConfiguration": true,
       "expectSuccess": true,
