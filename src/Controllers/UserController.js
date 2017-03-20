@@ -61,7 +61,7 @@ export class UserController extends AdaptableController {
     }
 
     var checkIfAlreadyVerified = new RestQuery(this.config, Auth.master(this.config), '_User', {username: username, emailVerified: true});
-    return checkIfAlreadyVerified.execute().then(() => {
+    return checkIfAlreadyVerified.execute().then(result => {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
