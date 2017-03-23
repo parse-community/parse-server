@@ -325,8 +325,8 @@ const buildWhereClause = ({ schema, query, index }) => {
       const point = fieldValue.$nearSphere;
       const distance = fieldValue.$maxDistance;
       const distanceInKM = distance * 6371 * 1000;
-      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) <= $${index + 3}`);
-      sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) ASC`)
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 2}, $${index + 1})::geometry) <= $${index + 3}`);
+      sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 2}, $${index + 1})::geometry) ASC`)
       values.push(fieldName, point.longitude, point.latitude, distanceInKM);
       index += 4;
     }
@@ -1071,8 +1071,8 @@ export class PostgresStorageAdapter {
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
           object[fieldName] = {
-            latitude: object[fieldName].y,
-            longitude: object[fieldName].x
+            latitude: object[fieldName].x,
+            longitude: object[fieldName].y
           }
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'File') {
