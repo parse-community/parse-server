@@ -13,7 +13,6 @@ const databaseOptions1 = {
 	}
 };
 
-
 //not exists schema
 const databaseOptions2 = {
 	initOptions: {
@@ -24,7 +23,6 @@ const databaseOptions2 = {
 		}
 	}
 };
-
 
 const GameScore = Parse.Object.extend({
 	className: "GameScore"
