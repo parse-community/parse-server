@@ -28,6 +28,7 @@
     "commander": "2.17.1",
     "deepcopy": "1.0.0",
     "express": "4.16.2",
+    "graphql": "^0.9.1",
     "intersect": "1.0.1",
     "lodash": "4.17.5",
     "lru-cache": "4.1.3",
