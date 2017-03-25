@@ -85,6 +85,6 @@
   },
   "optionalDependencies": {
     "bcrypt": "1.0.2",
-    "uws": "^0.13.0"
+    "uws": "^0.14.0"
   }
 }
