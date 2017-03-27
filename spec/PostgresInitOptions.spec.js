@@ -1,10 +1,6 @@
 const Parse = require('parse/node').Parse;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
-const postgresURI = 'postgres://username:password@localhost:5432/db-name';
-
-const GameScore = Parse.Object.extend({
-  className: "GameScore"
-});
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 
 //public schema
 const databaseOptions1 = {
@@ -27,6 +23,10 @@ const databaseOptions2 = {
     }
   }
 };
+
+const GameScore = Parse.Object.extend({
+  className: "GameScore"
+});
 
 describe('Postgres database init options', () => {
   it('create server with public schema databaseOptions,shoud be ok', (done) => {
