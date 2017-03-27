@@ -325,21 +325,21 @@ const buildWhereClause = ({ schema, query, index }) => {
       const point = fieldValue.$nearSphere;
       const distance = fieldValue.$maxDistance;
       const distanceInKM = distance * 6371 * 1000;
-      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 2}, $${index + 1})::geometry) <= $${index + 3}`);
-      sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 2}, $${index + 1})::geometry) ASC`)
-      values.push(fieldName, point.longitude, point.latitude, distanceInKM);
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) <= $${index + 3}`);
+      sorts.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) ASC`)
+      values.push(fieldName, point.latitude, point.longitude, distanceInKM);
       index += 4;
     }
 
     if (fieldValue.$within && fieldValue.$within.$box) {
       const box = fieldValue.$within.$box;
-      const left = box[0].longitude;
       const bottom = box[0].latitude;
-      const right = box[1].longitude;
+      const left = box[0].longitude;
       const top = box[1].latitude;
+      const right = box[1].longitude;
 
       patterns.push(`$${index}:name::point <@ $${index + 1}::box`);
-      values.push(fieldName, `((${left}, ${bottom}), (${right}, ${top}))`);
+      values.push(fieldName, `((${bottom}, ${left}), (${top}, ${right}))`);
       index += 2;
     }
 
@@ -761,7 +761,7 @@ export class PostgresStorageAdapter {
     });
     const geoPointsInjects = Object.keys(geoPoints).map((key) => {
       const value = geoPoints[key];
-      valuesArray.push(value.longitude, value.latitude);
+      valuesArray.push(value.latitude, value.longitude);
       const l = valuesArray.length + columnsArray.length;
       return `POINT($${l}, $${l + 1})`;
     });
