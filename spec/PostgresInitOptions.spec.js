@@ -49,9 +49,12 @@ describe('Postgres database init options', () => {
         uri: postgresURI, collectionPrefix: 'test_',
         databaseOptions: databaseOptions2
       })
-    }).catch(error => {
-      expect(error.code).toEqual('42P01');
+    }).then(() => {
       done();
-    });
+    })
+      .catch(error => {
+        expect(error.code).toEqual('42P01');
+        done();
+      });
   });
 });
