@@ -1,7 +1,7 @@
 language: node_js
 dist: trusty
 node_js:
-- '4.5'
+- '4.6'
 - '6.1'
 services:
   - postgresql
@@ -12,13 +12,13 @@ addons:
   apt_packages:
   - postgresql-9.5-postgis-2.3
 before_script:
-  - ls -al "$HOME/.mongodb/versions"
+  - node -e 'require("./lib/index.js")'
   - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
   - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
   - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
 env:
   global:
-  - COVERAGE_OPTION='./node_modules/.bin/istanbul cover'
+  - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
   - MONGODB_VERSION=3.0.8
   - MONGODB_VERSION=3.2.6

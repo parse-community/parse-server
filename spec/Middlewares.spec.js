@@ -79,6 +79,19 @@ describe('middlewares', () => {
     });
   });
 
+  it('should succeed when client key supplied but empty', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      clientKey: '',
+      masterKey: 'masterKey',
+      restAPIKey: 'restAPIKey'
+    });
+    fakeReq.headers['x-parse-client-key'] = '';
+    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
   it('should succeed when no keys are configured and none supplied', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey'

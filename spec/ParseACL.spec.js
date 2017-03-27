@@ -755,14 +755,12 @@ describe('Parse.ACL', () => {
       user2.set("password", "burger");
       return user2.signUp();
     }).then(() => {
-      console.log(user2.getSessionToken());
       return object.destroy({sessionToken: user2.getSessionToken() });
-    }).then((res) => {
-      console.log(res);
+    }).then(() => {
       fail('should not be able to destroy the object');
       done();
     }, (err) => {
-      console.error(err);
+      expect(err).not.toBeUndefined();
       done();
     });
   });

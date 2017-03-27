@@ -156,8 +156,9 @@ describe("Cloud Code Logger", () => {
             .save()
             .then(
                 () => done.fail('this is not supposed to succeed'),
-                () => logController.getLogs({ from: Date.now() - 500, size: 1000 })
+                () => new Promise(resolve => setTimeout(resolve, 100))
             )
+            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
             .then(logs => {
               const log = logs[1]; // 0 is the 'uh oh!' from rejection...
               expect(log.level).toEqual('error');
@@ -194,7 +195,7 @@ describe("Cloud Code Logger", () => {
     Parse.Cloud.run('aFunction', { foo: 'bar' })
             .then(null, () => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
             .then(logs => {
-              const log = logs[1];
+              const log = logs[2];
               expect(log.level).toEqual('error');
               expect(log.message).toMatch(
                     /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error: {"code":141,"message":"it failed!"}/);

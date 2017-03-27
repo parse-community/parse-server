@@ -143,7 +143,9 @@ describe('Hooks', () => {
   });
 
   it("should fail trying to create two times the same function", (done) => {
-    Parse.Hooks.createFunction("my_new_function", "http://url.com").then(() => {
+    Parse.Hooks.createFunction("my_new_function", "http://url.com")
+    .then(() => new Promise(resolve => setTimeout(resolve, 100)))
+    .then(() => {
       return  Parse.Hooks.createFunction("my_new_function", "http://url.com")
     }, () => {
       fail("should create a new function");
@@ -421,8 +423,8 @@ describe('Hooks', () => {
        // But this should override the key upon return
       res.json({success: object});
     });
-     // The function is delete as the DB is dropped between calls
-    Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave" ,hookServerURL + "/BeforeSaveSome").then(function(){
+     // The function is deleted as the DB is dropped between calls
+    Parse.Hooks.createTrigger("SomeRandomObject", "beforeSave", hookServerURL + "/BeforeSaveSome").then(function () {
       const obj = new Parse.Object("SomeRandomObject");
       return obj.save();
     }).then(function(res) {
@@ -444,7 +446,7 @@ describe('Hooks', () => {
       object.set('hello', "world");
       res.json({success: object});
     });
-    Parse.Hooks.createTrigger("SomeRandomObject2", "beforeSave" ,hookServerURL + "/BeforeSaveSome2").then(function(){
+    Parse.Hooks.createTrigger("SomeRandomObject2", "beforeSave", hookServerURL + "/BeforeSaveSome2").then(function(){
       const obj = new Parse.Object("SomeRandomObject2");
       return obj.save();
     }).then(function(res) {
@@ -470,20 +472,19 @@ describe('Hooks', () => {
         res.json({success: {}});
       })
     });
-     // The function is delete as the DB is dropped between calls
-    Parse.Hooks.createTrigger("SomeRandomObject", "afterSave" ,hookServerURL + "/AfterSaveSome").then(function(){
+     // The function is deleted as the DB is dropped between calls
+    Parse.Hooks.createTrigger("SomeRandomObject", "afterSave", hookServerURL + "/AfterSaveSome").then(function(){
       const obj = new Parse.Object("SomeRandomObject");
       return obj.save();
     }).then(function() {
       var promise = new Parse.Promise();
-       // Wait a bit here as it's an after save
-      setTimeout(function(){
+      // Wait a bit here as it's an after save
+      setTimeout(() => {
         expect(triggerCount).toBe(1);
-        var q = new Parse.Query("AnotherObject");
-        q.get(newObjectId).then(function(r){
-          promise.resolve(r);
-        });
-      }, 300)
+        new Parse.Query("AnotherObject")
+          .get(newObjectId)
+          .then((r) => promise.resolve(r));
+      }, 500);
       return promise;
     }).then(function(res){
       expect(res.get("foo")).toEqual("bar");

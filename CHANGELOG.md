@@ -1,5 +1,74 @@
 ## Parse Server Changelog
 
+### 2.3.7
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.6...2.3.7)
+
+#### New Features
+* New endpoint to resend verification email, thanks to [Xy Ziemba](https://github.com/xyziemba)
+
+#### Improvements
+* Add TTL option for Redis Cache Adapter, thanks to [Ryan Foster](https://github.com/f0ster)
+* Update Postgres Storage Adapter, thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+
+#### Bug Fixes
+* Add index on Role.name, fixes (#3579), thanks to [Natan Rolnik](https://github.com/natanrolnik)
+* Fix default value of userSensitiveFields, fixes (#3593), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Dependency Updates:
+* [body-parser@1.17.1](https://www.npmjs.com/package/body-parser)
+* [express@4.15.2](https://www.npmjs.com/package/express)
+* [request@2.81.0](https://www.npmjs.com/package/request)
+* [winston-daily-rotate-file@1.4.5](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [ws@2.2.0](https://www.npmjs.com/package/ws)
+
+
+### 2.3.6
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.5...2.3.6)
+
+#### Improvements
+* Adds support for injecting a middleware for instumentation in the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Alleviate mongodb bug with $or queries [SERVER-13732](https://jira.mongodb.org/browse/SERVER-13732), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+
+#### Bug Fixes
+* Fix issue affecting password policy and empty passwords, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* Fix issue when logging url in non string objects, thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+
+#### Dependencies updates:
+* [ws@2.1.0](https://npmjs.com/package/ws)
+* [uws@0.13.0](https://npmjs.com/package/uws)
+* [pg-promise@5.6.2](https://npmjs.com/package/pg-promise)
+
+
+### 2.3.5
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.5)
+
+#### Bug Fixes
+* Allow empty client key
+(#3497), thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix LiveQuery unsafe user
+(#3525), thanks to [David Starke](https://github.com/dstarke)
+* Use `flushdb` instead of `flushall` in RedisCacheAdapter
+(#3523), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix saving GeoPoints and Files in `_GlobalConfig` (Make sure we don't treat
+dot notation keys as topLevel atoms)
+(#3531), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.3.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.2...2.3.3)
+
+#### Breaking Changes
+* **Minimum Node engine bumped to 4.6** (#3480), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes
+* Add logging on failure to create file (#3424), thanks to [Arthur Cinader](https://github.com/acinader)
+* Log Parse Errors so they are intelligible (#3431), thanks to [Arthur Cinader](https://github.com/acinader)
+* MongoDB $or Queries avoid SERVER-13732 bug (#3476), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Mongo object to Parse object date serialization - avoid re-serialization of iso of type Date (#3389), thanks to [nodechefMatt](https://github.com/nodechefMatt)
+
+#### Improvements
+* Ground preparations for push scalability (#3080), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Use uWS as optional dependency for ws server (#3231), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
 ### 2.3.2
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.1...2.3.2)
 
@@ -32,7 +101,7 @@ This release addresses only that issue.
 
 #### New Features
 * Adds ability to restrict access through Class Level Permissions to only authenticated users [see docs](http://parseplatform.github.io/docs/ios/guide/#requires-authentication-permission-requires-parse-server---230)
-* Adds ability to strip sensitive data from _User responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
+* Adds ability to strip sensitive data from `_User` responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
 * Adds password history support for password policies, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
 
 #### Improvements
@@ -85,7 +154,7 @@ Postgres support requires v9.5
 * Better Postgres support, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
 * Logs the function name when failing (#2963), thanks to [Michael Helvey](https://github.com/michaelhelvey)
 * CLI: forces closing the connections with SIGINT/SIGTERM (#2964), thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
-* Reduce the number of calls to the _SCHEMA table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Reduce the number of calls to the `_SCHEMA` table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
 * LiveQuery: Support for Role ACL's, thanks to [Aaron Blondeau](https://github.com/aaron-blondeau-dose)
 
 #### Bug Fixes
@@ -132,7 +201,7 @@ Postgres support requires v9.5
 ### 2.2.20
 
 * New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart) 
+* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Better support for upgradeToRevocableSession with missing session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)

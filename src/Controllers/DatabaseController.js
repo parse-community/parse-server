@@ -18,7 +18,7 @@ function addWriteACL(query, acl) {
 function addReadACL(query, acl) {
   const newQuery = _.cloneDeep(query);
   //Can't be any existing '_rperm' query, we don't allow client queries on that, no need to $and
-  newQuery._rperm = { "$in" : [null, "*", ...acl]};
+  newQuery._rperm = {"$in": [null, "*", ...acl]};
   return newQuery;
 }
 
@@ -56,6 +56,30 @@ const validateQuery = query => {
   if (query.$or) {
     if (query.$or instanceof Array) {
       query.$or.forEach(validateQuery);
+
+      /* In MongoDB, $or queries which are not alone at the top level of the
+       * query can not make efficient use of indexes due to a long standing
+       * bug known as SERVER-13732.
+       *
+       * This block restructures queries in which $or is not the sole top
+       * level element by moving all other top-level predicates inside every
+       * subdocument of the $or predicate, allowing MongoDB's query planner
+       * to make full use of the most relevant indexes.
+       *
+       * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
+       * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
+       *
+       * https://jira.mongodb.org/browse/SERVER-13732
+       */
+      Object.keys(query).forEach(key => {
+        const noCollisions = !query.$or.some(subq => subq.hasOwnProperty(key))
+        if (key != '$or' && noCollisions) {
+          query.$or.forEach(subquery => {
+            subquery[key] = query[key];
+          });
+          delete query[key];
+        }
+      });
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -885,31 +909,43 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 // have a Parse app without it having a _User collection.
 DatabaseController.prototype.performInitialization = function() {
   const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
+  const requiredRoleFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._Role } };
 
   const userClassPromise = this.loadSchema()
     .then(schema => schema.enforceClassExists('_User'))
+  const roleClassPromise = this.loadSchema()
+    .then(schema => schema.enforceClassExists('_Role'))
 
   const usernameUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for usernames: ', error);
-      return Promise.reject(error);
+      throw error;
     });
 
   const emailUniqueness = userClassPromise
     .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
-      return Promise.reject(error);
+      throw error;
+    });
+
+  const roleUniqueness = roleClassPromise
+    .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
+    .catch(error => {
+      logger.warn('Unable to ensure uniqueness for role name: ', error);
+      throw error;
     });
 
   // Create tables for volatile classes
   const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
-  return Promise.all([usernameUniqueness, emailUniqueness, adapterInit]);
+  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit]);
 }
 
 function joinTableName(className, key) {
   return `_Join:${key}:${className}`;
 }
 
+// Expose validateQuery for tests
+DatabaseController._validateQuery = validateQuery;
 module.exports = DatabaseController;

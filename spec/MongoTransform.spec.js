@@ -293,6 +293,32 @@ describe('parseObjectToMongoObjectForCreate', () => {
     expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
+
+  it('Date object where iso attribute is of type Date', (done) => {
+    var input = {
+      ts : { __type: 'Date', iso: new Date('2017-01-18T00:00:00.000Z') }
+    }
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields : {
+        ts : { type : 'Date' }
+      }
+    });
+    expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
+    done();
+  });
+
+  it('Date object where iso attribute is of type String', (done) => {
+    var input = {
+      ts : { __type: 'Date', iso: '2017-01-18T00:00:00.000Z' }
+    }
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields : {
+        ts : { type : 'Date' }
+      }
+    });
+    expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
+    done();
+  });
 });
 
 describe('transformUpdate', () => {

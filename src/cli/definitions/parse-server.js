@@ -178,7 +178,7 @@ export default {
   },
   "userSensitiveFields": {
     help: "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
-    default: "email"
+    default: ["email"]
   },
   "sessionLength": {
     env: "PARSE_SERVER_SESSION_LENGTH",
@@ -249,4 +249,7 @@ export default {
     help: "Live query server configuration options (will start the liveQuery server)",
     action: objectParser
   },
+  "middleware": {
+    help: "middleware for express server, can be string or function"
+  }
 };

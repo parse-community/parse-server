@@ -9,9 +9,10 @@ function debug() {
 
 export class RedisCacheAdapter {
 
-  constructor(ctx) {
-    this.client = redis.createClient(ctx);
+  constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
+    this.client = redis.createClient(redisCtx);
     this.p = Promise.resolve();
+    this.ttl = ttl;
   }
 
   get(key) {
@@ -30,7 +31,7 @@ export class RedisCacheAdapter {
     return this.p;
   }
 
-  put(key, value, ttl = DEFAULT_REDIS_TTL) {
+  put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
     debug('put', key, value, ttl);
     if (ttl === 0) {
@@ -71,7 +72,7 @@ export class RedisCacheAdapter {
     debug('clear');
     this.p = this.p.then(() => {
       return new Promise((resolve) => {
-        this.client.flushall(function() {
+        this.client.flushdb(function() {
           resolve();
         });
       });

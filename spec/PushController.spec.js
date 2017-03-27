@@ -519,7 +519,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      pushController.sendPush(payload, where, config, auth)
+      return pushController.sendPush(payload, where, config, auth)
     }).then(() => {
       done();
     }).catch(() => {

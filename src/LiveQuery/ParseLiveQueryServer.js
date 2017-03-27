@@ -37,7 +37,6 @@ class ParseLiveQueryServer {
 
     // Initialize Parse
     Parse.Object.disableSingleInstance();
-    Parse.User.enableUnsafeCurrentUser();
 
     const serverURL = config.serverURL || Parse.serverURL;
     Parse.serverURL = serverURL;
@@ -363,7 +362,7 @@ class ParseLiveQueryServer {
             // Then get the user's roles
           var rolesQuery = new Parse.Query(Parse.Role);
           rolesQuery.equalTo("users", user);
-          return rolesQuery.find();
+          return rolesQuery.find({useMasterKey:true});
         }).
         then((roles) => {
 
