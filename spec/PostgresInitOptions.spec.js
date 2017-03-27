@@ -50,7 +50,7 @@ describe('Postgres database init options', () => {
         databaseOptions: databaseOptions2
       })
     }).catch(error => {
-      expect(error.code).toEqual('3F000');
+      expect(error.code).toEqual('42P01');
       done();
     });
   });
