@@ -1891,6 +1891,41 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("dontSelect and equalTo (#3678)", function(done) {
+    var AuthorObject = Parse.Object.extend("Author");
+    var BlockedObject = Parse.Object.extend("Blocked");
+    var PostObject = Parse.Object.extend("Post");
+
+    var postAuthor = null;
+    var requestUser = null;
+
+    return new AuthorObject({ name: "Julius"}).save().then((user) => {
+      postAuthor = user;
+      return new AuthorObject({ name: "Bob"}).save();
+    }).then((user) => {
+      requestUser = user;
+      var objects = [
+        new PostObject({ author: postAuthor, title: "Lorem ipsum" }),
+        new PostObject({ author: requestUser, title: "Kafka" }),
+        new PostObject({ author: requestUser, title: "Brown fox" }),
+        new BlockedObject({ blockedBy: postAuthor, blockedUser: requestUser})
+      ];
+      return Parse.Object.saveAll(objects);
+    }).then(() => {
+      var banListQuery = new Parse.Query(BlockedObject);
+      banListQuery.equalTo("blockedUser", requestUser);
+
+      return new Parse.Query(PostObject)
+        .equalTo("author", postAuthor)
+        .doesNotMatchKeyInQuery("author", "blockedBy", banListQuery)
+        .find()
+        .then((r) => {
+          expect(r.length).toEqual(0);
+          done();
+        }, done.fail);
+    })
+  });
+
   it("object with length", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
