@@ -1891,7 +1891,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("dontSelect and equalTo (#3678)", function(done) {
+  it("equalTo on same column as $dontSelect should not break $dontSelect functionality (#3678)", function(done) {
     var AuthorObject = Parse.Object.extend("Author");
     var BlockedObject = Parse.Object.extend("Blocked");
     var PostObject = Parse.Object.extend("Post");
