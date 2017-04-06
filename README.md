@@ -127,6 +127,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 * [Gomix](https://gomix.com/#!/project/parse-server)
+* [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
 ### Parse Server + Express
 
