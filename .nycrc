@@ -1,0 +1,11 @@
+{
+  "reporter": [
+    "lcov",
+    "text-summary"
+  ],
+  "exclude": [
+    "**/spec/**",
+    "lib/"
+  ]
+}
+
