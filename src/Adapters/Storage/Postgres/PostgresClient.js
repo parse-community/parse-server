@@ -13,13 +13,13 @@ export function createClient(uri, databaseOptions) {
     dbOptions[key] = databaseOptions[key];
   }
 
-  const client = pgp(dbOptions);
-
   if (dbOptions.pgOptions) {
     for (const key in dbOptions.pgOptions) {
-      client.pg.defaults[key] = dbOptions.pgOptions[key];
+      pgp.pg.defaults[key] = dbOptions.pgOptions[key];
     }
   }
+
+  const client = pgp(dbOptions);
 
   return client;
 }
