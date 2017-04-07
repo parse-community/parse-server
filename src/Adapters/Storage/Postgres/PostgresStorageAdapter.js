@@ -1074,6 +1074,7 @@ export class PostgresStorageAdapter {
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
           object[fieldName] = {
+            __type: "GeoPoint",
             latitude: object[fieldName].y,
             longitude: object[fieldName].x
           }

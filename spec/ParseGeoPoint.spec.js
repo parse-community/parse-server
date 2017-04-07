@@ -26,6 +26,29 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
+  it('has the correct __type field in the json response', done => {
+    var point = new Parse.GeoPoint(44.0, -11.0);
+    var obj = new TestObject();
+    obj.set('location', point);
+    obj.set('name', 'Zhoul')
+    obj.save(null, {
+      success: (obj) => {
+        console.log(obj);
+        Parse.Cloud.httpRequest({
+          url: 'http://localhost:8378/1/classes/TestObject/' + obj.id,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test'
+          }
+        }).then(response => {
+          equal(response.data.location.__type, 'GeoPoint');
+          done();
+        })
+      }
+    })
+  });
+
+
   it('geo point exception two fields', (done) => {
     var point = new Parse.GeoPoint(20, 20);
     var obj = new TestObject();
