@@ -133,4 +133,14 @@ describe('OAuth', function() {
       done();
     })
   });
+
+  it("Should fail with missing options", (done) => {
+    var options = undefined;
+    try {
+      new OAuth(options);
+    } catch (error) {
+      jequal(error.message, 'No options passed to OAuth');
+      done();
+    }
+  });
 });
