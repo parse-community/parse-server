@@ -11,18 +11,79 @@ import {
   GraphQLID,
 } from 'graphql'
 
-// import {
-//   GraphQLJSONObject
-// } from './types';
-
 import rest from '../rest';
-/* eslint-disable */
+
+// Flatten all graphQL selections to the dot notation.
+function reduceSelections(selections) {
+  return selections.reduce((memo, selection) => {
+    const value = selection.name.value;
+    if (selection.selectionSet === null) {
+      memo.push(value);
+    } else {
+      // Get the sub seletions and add on current key
+      const subSelections = reduceSelections(selection.selectionSet.selections);
+      memo = memo.concat(subSelections.map((key) => {
+        return value + '.' + key;
+      }));
+    }
+    return memo;
+  }, []);
+}
+
+// Get the selections for the 1st node in a array of . separated keys
+function getSelections(info) {
+  const node = info.fieldNodes[0];
+  return reduceSelections(node.selectionSet.selections);
+}
+
+function getQueryOptions(info) {
+  const selectedKeys = getSelections(info);
+  const keys = selectedKeys.join(',');
+  return {
+    keys,
+    include: keys
+  }
+}
+
+function injectClassName(className, result) {
+  if (Array.isArray(result)) {
+    return result.map(injectClassName(className));
+  }
+  return Object.assign({className}, result);
+}
+
+function toGraphQLResult(className, singleResult) {
+  return (restResult) => {
+    const results = restResult.results;
+    if (singleResult) {
+      return injectClassName(className, results[0]);
+    }
+    return injectClassName(className, results);
+  }
+}
+
+// Runs a find against the rest API
+function runFind(context, info, className, where) {
+  const options = getQueryOptions(info);
+  return rest.find(context.config, context.auth, className, where, options)
+    .then(toGraphQLResult(className));
+}
+
+// runs a get against the rest API
+function runGet(context, info, className, objectId) {
+  const options = getQueryOptions(info);
+  return rest.get(context.config, context.auth, className, objectId, options)
+    .then(toGraphQLResult(className, true));
+}
 
 export class GraphQLParseSchema {
   schema;
   types;
-  constructor(schema) {
+  applicationId;
+
+  constructor(schema, applicationId) {
     this.schema = schema;
+    this.applicationId = applicationId;
     this.types = {};
   }
 
@@ -46,83 +107,21 @@ export class GraphQLParseSchema {
 
       MainSchemaOptions.fields[className] = {
         type: new GraphQLList(objectType),
+        description: `Use this endpoint to get or query ${className} objects`,
         args: {
-          id: { type: GraphQLID, name: 'objectId' },
+          objectId: { type: GraphQLID, name: 'objectId' },
           where: { type: queryType }
         },
         resolve: (root, args, context, info) => {
-          // console.log(className, info.fieldNodes);
-          // console.log(info.fieldName);
-          // console.log(info.fieldASTs);
-
-          // function getSelections(info) {
-          //   const fieldName = info.fieldName;
-          //   const fieldNodes = info.fieldNodes;
-          //   for(const i in fieldNodes) {
-          //     const node = fieldNodes[i];
-          //     if (node.name.value == fieldName) {
-          //       return node.selectionSet.selections;
-          //     }
-          //   }
-          // }
-
-          // const selections = getSelections(info);
-          // console.log(selections);
-          // var all = [];
-          // selections.forEach((node) => {
-          //   const key = node.name.value;
-          //   if (node.selectionSet && node.selectionSet.selections) {
-          //     node.selectionSet.selections.map((node) => {
-          //       return node.name.value;
-          //     }).forEach((subKey) => {
-          //       all.push(key + '.' + subKey);
-          //     });
-          //   } else {
-          //     all.push(key);
-          //   }
-          // });
-
-          // console.log(all);
-          console.log(args);
-
-          // console.log(info);
-          // function flattenSelectionSets(nodes) {
-          //   return nodes.reduce((node) => {
-          //     const name = node.name.value;
-          //     if (node.selectionSet && node.selectionSet.selections) {
-          //       const descendants = flattenSelectionSets(node.selectionSet.selections);
-          //       console.log(name, descendants);
-          //       const results = [];
-          //       descendants.forEach(descendant => {
-          //         results.push()
-          //       });
-          //       return results;
-          //     }
-          //     return name;
-          //   }, []);
-          // }
-          // const selectedNodes = flattenSelectionSets(info.fieldNodes);
-          // console.log(selectedNodes);
-          // console.log(JSON.stringify(selectedNodes));
-         // console.log(root, args, context, info);
-          // console.log(info.fieldNodes);
-          // console.log(info.operation.selectionSet.selections);
-          // info.fieldNodes.forEach((node) => {
-          //   console.log(node.selectionSet.selections);
-          // });
-          return rest.find(context.config, context.auth, className, args.where).then((restResponse) => {
-            //console.log(restResponse);
-            return restResponse.results;
-          });
-          // return [{
-          //   className,
-          //   foo: 'Hello',
-          //   bar: true
-          // }, {
-          //   className,
-          //   foo: 'Hello',
-          //   bar: false
-          // }]
+          // Get the selections
+          let query = {};
+          if (args.where) {
+            query = Object.assign(query, args.where);
+          }
+          if (args.objectId) {
+            query = Object.assign(query, { objectId: args.objectId });
+          }
+          return runFind(context, info, className, query);
         }
       };
     });
@@ -135,70 +134,57 @@ export class GraphQLParseSchema {
       name: 'ParseSchemaMutation',
       fields: {}
     }
+    // TODO: Refactor FunctionRouter to extract (as it's a new entry)
+    // TODO: Implement Functions as mutations
+
     Object.keys(this.schema).forEach((className) => {
       const {
         inputType, objectType, updateType
       } = loadClass(className, this.schema);
+
       MainSchemaMutationOptions.fields['create' + className] = {
         type: objectType,
         fields: objectType.fields,
+        description: `use this method to create a new ${className}`,
         args: { input: { type: inputType }},
         name: 'create',
-        resolve: (a,data,context) => {
-          console.log('Create resolve ' + className);
-          //console.log(a,b,context);
-          return rest.create(context.config, context.auth, className, data).then((res) => {
-            console.log(res);
-            return Object.assign({className}, data, res.response);
+        resolve: (root, args, context, info) => {
+          return rest.create(context.config, context.auth, className, args).then((res) => {
+            // Run find to match graphQL style
+            return runGet(context, info, className, res.response.objectId);
           });
         }
       }
+
       MainSchemaMutationOptions.fields['update' + className] = {
         type: objectType,
+        description: `use this method to update an existing ${className}`,
         args: {
           objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' },
           input: { type: updateType }
         },
         name: 'update',
-        resolve: (a, data, context) => {
-          console.log(a,data);
-          console.log('update resolve');
-          const objectId = data.objectId;
-          delete data.objectId;
-          if (data.incrementKey) {
-            data[data.incrementKey.key] = {"__op":"Increment","amount":data.incrementKey.value};
-            delete data.incrementKey;
-          }
-          return rest.update(context.config, context.auth, className, objectId, data).then((res) => {
-            console.log(res);
-            const response = Object.assign({className, objectId}, data, res.response);
-            console.log(response);
-            return response;
+        resolve: (root, args, context, info) => {
+          const objectId = args.objectId;
+          const input = args.input;
+          return rest.update(context.config, context.auth, className, objectId, input).then(() => {
+            // Run find to match graphQL style
+            return runGet(context, info, className, objectId);
           });
         }
       }
+
       MainSchemaMutationOptions.fields['destroy' + className] = {
-        type: objectType,
+        type: GraphQLID,
+        description: `use this method to update delete an existing ${className}`,
         args: {
-          id: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' }
+          objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' }
         },
         name: 'destroy',
-        resolve: (a,b,c) => {
-          console.log('destroy resolve')
-          console.log(a,b,c);
-          return a;
-        }
-      }
-      MainSchemaMutationOptions.fields['destroyAll' + className] =  {
-        type: objectType,
-        args: {
-          ids: { type: new GraphQLNonNull(new GraphQLList(new GraphQLNonNull(GraphQLID))), name: 'objectIds' }
-        },
-        name: 'destroyAll',
-        resolve: (a,b,c) => {
-          console.log('destroyAll resolve')
-          console.log(a,b,c);
-          return a;
+        resolve: (root, args, context) => {
+          return rest.del(context.config, context.auth, className, args.objectId).then(() => {
+            return args.objectId;
+          });
         }
       }
     });

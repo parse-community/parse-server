@@ -5,7 +5,7 @@ import {
   GraphQLID,
   GraphQLString,
 } from 'graphql'
-/* eslint-disable */
+
 export const GraphQLPointer = new GraphQLScalarType({
   name: 'Pointer',
   fields: {
@@ -26,26 +26,9 @@ export const GraphQLPointer = new GraphQLScalarType({
   parseValue: () => {
     throw "parseValue not implemented"
   },
-  parseLiteral: (l, a,b) => {
-    console.log('parse-literal!', l,a,b);
-    //console.log(a,b,c);
-    //throw "parseLiteral not implemented"
-    return {objectId: l.value };
+  parseLiteral: (litteral) => {
+    return { objectId: litteral.value };
   }
 });
 
-export const GraphQLPointerInput = GraphQLPointer; /*new GraphQLInputObjectType({
-  name: 'PointerInput',
-  fields: {
-    objectId: {
-      type: GraphQLID,
-      name: 'objectId',
-      description: 'pointer\'s objectId'
-    },
-    className: {
-      type: GraphQLString,
-      name: 'className',
-      description: 'pointer\'s className'
-    }
-  }
-});*/
+export const GraphQLPointerInput = GraphQLPointer;

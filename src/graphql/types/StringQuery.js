@@ -5,7 +5,7 @@ import {
 
 export const StringQuery = new GraphQLScalarType({
   name: 'StringQuery',
-  description: `# Query constraint on string parameters
+  description: `Query constraint on string parameters
   Supported constraints:
 
   - key: "value"

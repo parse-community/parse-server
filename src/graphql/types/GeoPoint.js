@@ -28,18 +28,4 @@ export const GraphQLGeoPoint = new GraphQLScalarType({
   }
 });
 
-export const GraphQLGeoPointInput = GraphQLGeoPoint; /*new GraphQLInputObjectType({
-  name: 'GeoPointInput',
-  fields: {
-    latitude: {
-      type: GraphQLFloat,
-      name: 'latitude',
-      description: 'laititude of the point, in degrees'
-    },
-    longitude: {
-      type: GraphQLFloat,
-      name: 'latitude',
-      description: 'latitude of the point, in degrees'
-    }
-  }
-});*/
+export const GraphQLGeoPointInput = GraphQLGeoPoint;

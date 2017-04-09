@@ -3,6 +3,7 @@ const GraphQLParseSchema = require('../src/graphql/Schema').GraphQLParseSchema;
 const Config = require('../src/Config');
 const Auth = require('../src/Auth').Auth;
 const { /*print, */printSchema, graphql }  = require('graphql');
+const { addFunction } = require('../src/triggers');
 //const { /*print, printSchema,*/ GraphQLID, GraphQLNonNull }  = require('graphql');
 
 let config;
@@ -15,20 +16,33 @@ describe('graphQLbridge', () => {
 
   fit('base test', (done) => {
     let schema;
+    let nc;
+    let obj;
+    addFunction('MyFunction', ()=>{}, null, 'test');
+
     config.database.loadSchema()
     .then(dbSchema => {
       schema = dbSchema;
       return dbSchema.addClassIfNotExists('NewClass', {
         foo: { type: 'String' },
         bar: { type: 'Boolean' },
-        increment: { type: 'Number' }
+        increment: { type: 'Number' },
+        other: { type: 'Pointer', targetClass: 'OtherClass' }
       }).then(() => {
         return dbSchema.addClassIfNotExists('OtherClass', {
           foo: { type: 'String' },
           baz: { type: 'Pointer', targetClass: 'NewClass' }
         })
       }).then(() => {
-        return schema.getAllClasses(true);
+        obj = new Parse.Object('OtherClass', {foo: 'baz'});
+        nc = new Parse.Object('NewClass', {foo: 'hello'});
+        return Parse.Object.saveAll([obj, nc]).then(() => {
+          nc.set('other', obj);
+          obj.set('baz', nc);
+          return Parse.Object.saveAll([obj, nc]);
+        }).then(() => {
+          return schema.getAllClasses(true);
+        });
       });
     })
     .then((allClasses) => {
@@ -37,7 +51,7 @@ describe('graphQLbridge', () => {
         return memo;
       }, {});
 
-      const Schema = new GraphQLParseSchema(fullSchema);
+      const Schema = new GraphQLParseSchema(fullSchema, 'test');
       const s = Schema.Schema();
       const root = Schema.Root();
       const context = {
@@ -109,14 +123,35 @@ describe('graphQLbridge', () => {
       }
        */
  
-      return graphql(s, `
+      /*return graphql(s, `
       query {
-        NewClass(where: {foo: { regex: "hello" }}) {
+        NewClass(where: {}) {
           objectId
         }
+        OtherClass(where: {}) {
+          objectId,
+          foo,
+          baz {
+            objectId,
+            increment,
+            other {
+              foo,
+              objectId,
+              baz {
+                objectId
+              }
+            }
+          }
+        }
       }
-      `,root, context)
+      `,root, context)*/
+      return graphql(s, `
+      mutation yMutation($id: ID!) {
+        destroyNewClass(objectId: $id)
+      }
+      `, root, context, {id: nc.id})
       .then((res) => {
+        console.log('GOT RES!');
         console.log(JSON.stringify(res, null, 2));
         done();
       });
