@@ -1,16 +1,13 @@
 import {
   GraphQLScalarType
 } from 'graphql'
-/* eslint-disable */
 // http://graphql.org/graphql-js/type/#graphqlscalartype
 export const GraphQLJSONObject = new GraphQLScalarType({
   name: 'JSONObject',
-  serialize: (...options) => {
-    console.log(options);
+  serialize: () => {
     throw "JSONObject serialize not implemented"
   },
-  parseValue: (...options) => {
-    console.log(options);
+  parseValue: () => {
     throw "JSONObject parseValue not implemented"
   },
   parseLiteral: (litteral) => {
@@ -21,7 +18,6 @@ export const GraphQLJSONObject = new GraphQLScalarType({
       } else {
         memo[field.name.value] = value.value;
       }
-      console.log(field);
       return memo;
     }, {});
   }

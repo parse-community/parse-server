@@ -41,6 +41,10 @@ import {
   NumberQuery,
 } from './NumberQuery';
 
+import {
+  NumberInput,
+} from './NumberInput';
+
 export {
   GraphQLACL,
   GraphQLACLInput,
@@ -71,6 +75,8 @@ export function type(fieldName, field) {
     return GraphQLACL;
   } else if (type == 'Date') {
     return GraphQLDate;
+  } else if (type == 'Pointer') {
+    return GraphQLPointer;
   }
 }
 
@@ -82,7 +88,7 @@ export function inputType(fieldName, field) {
   if (type == 'String') {
     return GraphQLString;
   } if (type == 'Number') {
-    return GraphQLFloat;
+    return NumberInput;
   } if (type == 'Boolean') {
     return GraphQLBoolean;
   } if (type == 'GeoPoint') {
@@ -114,7 +120,8 @@ export function queryType(fieldName, field) {
   } if (type == 'File') {
     return GraphQLFile;
   } else if (type == 'ACL') {
-    return GraphQLACLInput;
+    // cannot query on ACL!
+    return;
   } else if (type == 'Date') {
     return GraphQLDate;
   } else if (type == 'Pointer') {

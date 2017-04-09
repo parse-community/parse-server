@@ -29,18 +29,4 @@ export const GraphQLACL = new GraphQLScalarType({
   }
 });
 
-export const GraphQLACLInput = GraphQLACL; /*new GraphQLInputObjectType({
-  name: 'ACLInput',
-  fields: {
-    read: {
-      type: new GraphQLList(GraphQLString),
-      name: 'read',
-      description: 'Read access for the object'
-    },
-    write: {
-      type: new GraphQLList(GraphQLString),
-      name: 'write',
-      description: 'Write access for the object'
-    }
-  }
-});*/
+export const GraphQLACLInput = GraphQLACL;

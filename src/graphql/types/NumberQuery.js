@@ -5,6 +5,15 @@ import {
 
 export const NumberQuery = new GraphQLScalarType({
   name: 'NumberQuery',
+  description: `Queries for number values
+  Supported constraints:
+
+  - key: 1
+  - key: {$lt: 1} # less than
+  - key: {$gt: 1} # greater than
+  - key: {$lte: 1} # less than or equal
+  - key: {$gte: 1} # greater than or equal
+  `,
   serialize: () => {
     throw "NumberQuery serialize not implemented"
   },

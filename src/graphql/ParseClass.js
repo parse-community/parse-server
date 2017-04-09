@@ -3,12 +3,11 @@ import {
   GraphQLObjectType,
   GraphQLInputObjectType,
   //GraphQLString,
-  GraphQLNonNull,
+  //GraphQLNonNull,
   //GraphQLBoolean,
-  GraphQLID,
+  //GraphQLID,
 } from 'graphql'
 
-/* eslint-disable */
 import {
   queryType,
   inputType,
@@ -18,34 +17,19 @@ import {
   GraphQLJSONObject
 } from './types'
 
-import {
-  AtomicOps
-} from './ParseQuery';
-
 function graphQLField(fieldName, field) {
   const gQLType = type(fieldName, field);
   if (!gQLType) {
+    /* eslint-disable */
+    console.log('no type: ', fieldName, field);
     return;
   }
-  const fieldDef = {
+  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
+  return {
     name: fieldName,
     type: gQLType,
-    description: `Accessor for ${fieldName} (${field.type})`,
-    // resolve: () => {
-    //   /* eslint-disable */
-    //   console.log(arguments);
-    //   /* eslint-enable */
-    //   return arguments
-    // }
+    description: `Accessor for ${fieldName} (${fieldType})`,
   };
-  if (gQLType === GraphQLPointer) {
-    fieldDef.args = {
-      objectId: {
-        type: new GraphQLNonNull(GraphQLID)
-      }
-    }
-  }
-  return fieldDef;
 }
 
 function graphQLInputField(fieldName, field) {
@@ -53,10 +37,11 @@ function graphQLInputField(fieldName, field) {
   if (!gQLType) {
     return;
   }
+  const fieldType = (gQLType === GraphQLPointer ? `Pointer<${field.targetClass}>` :  `${field.type}`);
   return {
     name: fieldName,
     type: gQLType,
-    description: `Setter for ${fieldName} (${field.type})`,
+    description: `Setter for ${fieldName} (${fieldType})`,
   };
 }
 
@@ -126,12 +111,14 @@ export const ParseObject = new GraphQLObjectType({
       type: GraphQLJSONObject
     }
   },
-  isTypeOf: (args, context, info) => {
+  isTypeOf: (args, context, info) => {
     // Use that type when impossible to map to a Schema type
     return typeof info.schema._typeMap[args.className] === 'undefined';
   },
-  resolve: () => {
+  resolve: () => {
+    /* eslint-disable */
     console.log('RESOLVE CALLED!');
+    /* eslint-enable */
   }
 });
 
@@ -155,13 +142,10 @@ export class ParseClass {
       fields: () => {
         return this.buildFields(graphQLField);
       },
-      resolve: () => {
-        console.log('Resilt!');
+      resolve: () => {
         return;
       },
-      isTypeOf: function(a,b, c,d) {
-        console.log(a,b,c,d);
-        console.log('isTypeOf, '+className);
+      isTypeOf: function(a) {
         return a.className == className;
       }
     };
@@ -197,8 +181,8 @@ export class ParseClass {
         return this.buildFields(graphQLInputField, true);
       },
       resolve: this.get.bind(this),
-      isTypeOf: function(a,b,c,d) {
-        return a.className == className;
+      isTypeOf: function(input) {
+        return input.className == className;
       }
     };
   }
@@ -212,8 +196,8 @@ export class ParseClass {
         return this.buildFields(graphQLQueryField, true);
       },
       resolve: this.get.bind(this),
-      isTypeOf: function(a,b,c,d) {
-        return a.className == className;
+      isTypeOf: function(input) {
+        return input.className == className;
       }
     };
   }
@@ -224,12 +208,11 @@ export class ParseClass {
       name: className + 'Update',
       description: `Parse Class ${className} Update`,
       fields: () => {
-        const fields = this.buildFields(graphQLInputField, true);
-        return Object.assign({}, fields, AtomicOps);
+        return this.buildFields(graphQLInputField, true);
       },
       resolve: this.get.bind(this),
-      isTypeOf: function(a,b,c,d) {
-        return a.className == className;
+      isTypeOf: function(input) {
+        return input.className == className;
       }
     };
   }
@@ -254,6 +237,7 @@ export class ParseClass {
     /*eslint-disable*/
     console.log('ParseClass resolve...');
     console.log(a,b,c);
+    /* eslint-enable */
     return null;
   }
 }
