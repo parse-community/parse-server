@@ -53,7 +53,7 @@ deploy:
       tags: true
       all_branches: true
       condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
-      repo: ParsePlatform/parse-server
+      repo: parse-community/parse-server
   - provider: script
     skip_cleanup: true
     script: ./resources/npm-git.sh
