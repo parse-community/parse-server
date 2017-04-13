@@ -67,7 +67,7 @@ export class PushController {
    * @returns {Number|undefined} The expiration time if it exists in the request
    */
   static getExpirationTime(body = {}) {
-    var hasExpirationTime = !!body['expiration_time'];
+    var hasExpirationTime = body.hasOwnProperty('expiration_time');
     if (!hasExpirationTime) {
       return;
     }
@@ -95,7 +95,7 @@ export class PushController {
    * @returns {Number|undefined} The push time if it exists in the request
    */
   static getPushTime(body = {}) {
-    var hasPushTime = !!body['push_time'];
+    var hasPushTime = body.hasOwnProperty('push_time');
     if (!hasPushTime) {
       return;
     }
