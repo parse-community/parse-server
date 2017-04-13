@@ -110,6 +110,8 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
+    const pushTime = body.push_time || new Date();
+    const status = body.push_time ? "scheduled" : "pending";
     const data =  body.data || {};
     const payloadString = JSON.stringify(data);
     let pushHash;
@@ -123,13 +125,13 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
     const object = {
       objectId,
       createdAt: now,
-      pushTime: now.toISOString(),
+      pushTime: pushTime.toISOString(),
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
-      status: "pending",
+      status: status,
       numSent: 0,
       pushHash,
       // lockdown!

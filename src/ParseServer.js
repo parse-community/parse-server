@@ -95,6 +95,7 @@ class ParseServer {
     analyticsAdapter,
     filesAdapter,
     push,
+    scheduledPush = false,
     loggerAdapter,
     jsonLogs = defaults.jsonLogs,
     logsFolder = defaults.logsFolder,
@@ -182,6 +183,7 @@ class ParseServer {
     const pushController = new PushController();
 
     const hasPushSupport = pushAdapter && push;
+    const hasPushScheduledSupport = pushAdapter && push && scheduledPush;
 
     const {
       disablePushWorker
@@ -259,7 +261,8 @@ class ParseServer {
       userSensitiveFields,
       pushWorker,
       pushControllerQueue,
-      hasPushSupport
+      hasPushSupport,
+      hasPushScheduledSupport
     });
 
     Config.validate(AppCache.get(appId));

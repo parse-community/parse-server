@@ -61,6 +61,7 @@ export class Config {
     this.pushControllerQueue = cacheInfo.pushControllerQueue;
     this.pushWorker = cacheInfo.pushWorker;
     this.hasPushSupport = cacheInfo.hasPushSupport;
+    this.hasPushScheduledSupport = cacheInfo.hasPushScheduledSupport;
     this.loggerController = cacheInfo.loggerController;
     this.userController = cacheInfo.userController;
     this.authDataManager = cacheInfo.authDataManager;
