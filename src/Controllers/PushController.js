@@ -50,7 +50,7 @@ export class PushController {
       onPushStatusSaved(pushStatus.objectId);
       return badgeUpdate();
     }).then(() => {
-      if (body.push_time) {
+      if (body.push_time && config.hasPushScheduledSupport) {
         return Promise.resolve();
       }
       return config.pushControllerQueue.enqueue(body, where, config, auth, pushStatus);
