@@ -349,6 +349,11 @@ RestWrite.prototype.transformUser = function() {
     return promise;
   }
 
+  if (!this.auth.isMaster && "emailVerified" in this.data) {
+    const error = `Clients aren't allowed to manually update email verification.`
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
+
   if (this.query) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
