@@ -110,8 +110,18 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
-    const pushTime = body.push_time || new Date();
-    const status = body.push_time ? "scheduled" : "pending";
+    let pushTime = new Date();
+    let status = 'pending';
+    if (body.push_time) {
+      if (config.hasPushScheduledSupport) {
+        pushTime = body.push_time;
+        status = 'scheduled';
+      } else {
+        logger.warn('Trying to schedule a push while server is not configured.');
+        logger.warn('Push will be sent immediately');
+      }
+    }
+
     const data =  body.data || {};
     const payloadString = JSON.stringify(data);
     let pushHash;

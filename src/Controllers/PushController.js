@@ -114,7 +114,7 @@ export class PushController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
                             body['push_time'] + ' is not valid time.');
     }
-    return pushTime.valueOf();
+    return pushTime;
   }
 }
 
