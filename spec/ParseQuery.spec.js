@@ -2770,7 +2770,7 @@ describe('Parse.Query testing', () => {
       }
       return require('request-promise').post({
         url: Parse.serverURL + "/classes/Game",
-        json: { where, "_method":"GET" },
+        json: { where, "_method": "GET" },
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
           'X-Parse-Javascript-Key': Parse.javaScriptKey
@@ -2779,9 +2779,6 @@ describe('Parse.Query testing', () => {
     }).then((response) => {
       expect(response.results.length).toBe(1);
       done();
-    }, (err) => {
-      console.error(err);
-      done.fail();
-    })
+    }, done.fail);
   });
 });
