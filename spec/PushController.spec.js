@@ -531,5 +531,21 @@ describe('PushController', () => {
   it('should flatten', () => {
     var res = StatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
     expect(res).toEqual([1,2,3,4,5,6]);
-  })
+  });
+
+  it('properly transforms push time', () => {
+    expect(PushController.getPushTime()).toBe(undefined);
+    expect(PushController.getPushTime({
+      'push_time': 1000
+    })).toBe(new Date(1000 * 1000).valueOf());
+    expect(PushController.getPushTime({
+      'push_time': '2017-01-01'
+    })).toBe(new Date('2017-01-01').valueOf());
+    expect(() => {PushController.getPushTime({
+      'push_time': 'gibberish-time'
+    })}).toThrow();
+    expect(() => {PushController.getPushTime({
+      'push_time': Number.NaN
+    })}).toThrow();
+  });
 });
