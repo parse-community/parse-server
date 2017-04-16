@@ -39,7 +39,11 @@ function graphRequest(access_token) {
         data += chunk;
       });
       res.on('end', function () {
-        data = JSON.parse(data);
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
         resolve(data);
       });
       res.on('error', function () {
