@@ -2750,4 +2750,35 @@ describe('Parse.Query testing', () => {
       done();
     })
   });
+
+  it('should not depend on parameter order #3169', function(done) {
+    const score1 = new Parse.Object('Score', {scoreId: '1'});
+    const score2 = new Parse.Object('Score', {scoreId: '2'});
+    const game1 = new Parse.Object('Game', {gameId: '1'});
+    const game2 = new Parse.Object('Game', {gameId: '2'});
+    Parse.Object.saveAll([score1, score2, game1, game2]).then(() => {
+      game1.set('score', [score1]);
+      game2.set('score', [score2]);
+      return Parse.Object.saveAll([game1, game2]);
+    }).then(() => {
+      const where = {
+        score: {
+          objectId: score1.id,
+          className: 'Score',
+          __type: 'Pointer',
+        }
+      }
+      return require('request-promise').post({
+        url: Parse.serverURL + "/classes/Game",
+        json: { where, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(1);
+      done();
+    }, done.fail);
+  });
 });
