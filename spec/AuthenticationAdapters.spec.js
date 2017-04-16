@@ -10,8 +10,12 @@ describe('AuthenticationProviers', function() {
       var provider = require("../src/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
-      jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);
-      jequal(provider.validateAppId("app", "key", {}).constructor, Promise.prototype.constructor);
+      const authDataPromise = provider.validateAuthData({}, {});
+      const validateAppIdPromise = provider.validateAppId("app", "key", {});
+      jequal(authDataPromise.constructor, Promise.prototype.constructor);
+      jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
+      authDataPromise.then(()=>{}, ()=>{});
+      validateAppIdPromise.then(()=>{}, ()=>{});
       done();
     });
   });
