@@ -42,7 +42,7 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 ### Saving your first object
 
-Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](https://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](https://parseplatform.github.io/#sdks). Run the following:
+Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](http://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](http://docs.parseplatform.org/#sdks). Run the following:
 
 ```bash
 curl -X POST \
@@ -104,7 +104,7 @@ $ curl -X GET \
 
 ```
 
-To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](https://docs.parseplatform.org).
+To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](http://docs.parseplatform.org).
 
 ### Connect your app to Parse Server
 
