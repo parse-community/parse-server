@@ -727,6 +727,47 @@ describe('schemas', () => {
     })
   });
 
+  it('lets you delete multiple fields and check schema', done => {
+    var simpleOneObject = () => {
+      var obj = new Parse.Object('SimpleOne');
+      obj.set('aNumber', 5);
+      obj.set('aString', 'string');
+      obj.set('aBool', true);
+      return obj;
+    };
+
+    simpleOneObject().save()
+      .then(() => {
+        request.put({
+          url: 'http://localhost:8378/1/schemas/SimpleOne',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            fields: {
+              aString: {__op: 'Delete'},
+              aNumber: {__op: 'Delete'},
+            }
+          }
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'SimpleOne',
+            fields: {
+              //Default fields
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+              //Custom fields
+              aBool: {type: 'Boolean'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions
+          });
+
+          done();
+        });
+      });
+  });
+
   it_exclude_dbs(['postgres'])('lets you delete multiple fields and add fields', done => {
     var obj1 = hasAllPODobject();
     obj1.save()
