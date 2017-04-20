@@ -113,7 +113,7 @@ class ParseServer {
     restAPIKey,
     webhookKey,
     fileKey,
-    userSensitiveFields = [],
+    userSensitiveFields,
     enableAnonymousUsers = defaults.enableAnonymousUsers,
     allowClientClassCreation = defaults.allowClientClassCreation,
     oauth = {},
@@ -157,10 +157,10 @@ class ParseServer {
       throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
     }
 
-    userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
-      defaults.userSensitiveFields,
-      userSensitiveFields
-    )));
+    // allow 'userSensitiveFields' from constructor to override default list
+    if (typeof userSensitiveFields === 'undefined'){
+      userSensitiveFields = defaults.userSensitiveFields
+    }
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
