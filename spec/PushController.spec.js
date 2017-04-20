@@ -531,5 +531,130 @@ describe('PushController', () => {
   it('should flatten', () => {
     var res = StatusHandler.flatten([1, [2], [[3, 4], 5], [[[6]]]])
     expect(res).toEqual([1,2,3,4,5,6]);
-  })
+  });
+
+  it('properly transforms push time', () => {
+    expect(PushController.getPushTime()).toBe(undefined);
+    expect(PushController.getPushTime({
+      'push_time': 1000
+    })).toEqual(new Date(1000 * 1000));
+    expect(PushController.getPushTime({
+      'push_time': '2017-01-01'
+    })).toEqual(new Date('2017-01-01'));
+    expect(() => {PushController.getPushTime({
+      'push_time': 'gibberish-time'
+    })}).toThrow();
+    expect(() => {PushController.getPushTime({
+      'push_time': Number.NaN
+    })}).toThrow();
+  });
+
+  it('should not schedule push when not configured', (done) => {
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime()
+    }
+
+    var installations = [];
+    while(installations.length != 10) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('status')).not.toBe('scheduled');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
+  });
+
+  it('should not schedule push when configured', (done) => {
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime() / 1000
+    }
+
+    var installations = [];
+    while(installations.length != 10) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter },
+      scheduledPush: true
+    }).then(() => {
+      var config = new Config(Parse.applicationId);
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('status')).toBe('scheduled');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
+  });
 });

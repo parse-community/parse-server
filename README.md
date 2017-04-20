@@ -42,7 +42,7 @@ That's it! You are now running a standalone version of Parse Server on your mach
 
 ### Saving your first object
 
-Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](https://parse.com/docs/rest/guide), but you can easily do the same using any of the [Parse SDKs](https://parseplatform.github.io/#sdks). Run the following:
+Now that you're running Parse Server, it is time to save your first object. We'll use the [REST API](https://docs.parseplatform.org/rest/guide), but you can easily do the same using any of the [Parse SDKs](https://parseplatform.github.io/#sdks). Run the following:
 
 ```bash
 curl -X POST \
@@ -104,7 +104,7 @@ $ curl -X GET \
 
 ```
 
-To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](https://parse.com/docs).
+To learn more about using saving and querying objects on Parse Server, check out the [Parse documentation](https://docs.parseplatform.org).
 
 ### Connect your app to Parse Server
 
@@ -127,6 +127,7 @@ We have provided a basic [Node.js application](https://github.com/parse-communit
 * [Pivotal Web Services](https://github.com/cf-platform-eng/pws-parse-server)
 * [Back4app](http://blog.back4app.com/2016/03/01/quick-wizard-migration/)
 * [Gomix](https://gomix.com/#!/project/parse-server)
+* [Flynn](https://flynn.io/blog/parse-apps-on-flynn)
 
 ### Parse Server + Express
 
@@ -172,11 +173,7 @@ Logs are also be viewable in Parse Dashboard.
 
 # Documentation
 
-The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](https://github.com/parse-community/parse-server/wiki/Parse-Server-Guide) is a good place to get started. If you're interested in developing for Parse Server, the [Development guide](https://github.com/parse-community/parse-server/wiki/Development-Guide) will help you get set up.
-
-## Migrating an Existing Parse App
-
-The hosted version of Parse will be fully retired on January 28th, 2017. If you are planning to migrate an app, you need to begin work as soon as possible. There are a few areas where Parse Server does not provide compatibility with the hosted version of Parse. Learn more in the [Migration guide](https://parse.com/migration).
+The full documentation for Parse Server is available in the [wiki](https://github.com/parse-community/parse-server/wiki). The [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/) is a good place to get started. If you're interested in developing for Parse Server, the [Development guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) will help you get set up.
 
 ## Configuration
 
@@ -192,7 +189,7 @@ For the full list of available options, run `parse-server --help`.
 * `port` - The default port is 1337, specify this parameter to use a different port.
 * `serverURL` - URL to your Parse Server (don't forget to specify http:// or https://). This URL will be used when making requests to Parse Server from Cloud Code.
 * `cloud` - The absolute path to your cloud code `main.js` file.
-* `push` - Configuration options for APNS and GCM push. See the [Push Notifications wiki entry](https://github.com/parse-community/parse-server/wiki/Push).
+* `push` - Configuration options for APNS and GCM push. See the [Push Notifications quick start](http://docs.parseplatform.org/parse-server/guide/#push-notifications_push-notifications-quick-start).
 
 #### Client key options
 
@@ -208,7 +205,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
-* `auth` - Used to configure support for [3rd party authentication](https://github.com/parse-community/parse-server/wiki/OAuth--and-Custom-Authentication).
+* `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).
 * `facebookAppIds` - An array of valid Facebook application IDs that users may authenticate with.
 * `mountPath` - Mount path for the server. Defaults to `/parse`.
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
@@ -339,7 +336,7 @@ Parse Server allows developers to choose from several options when hosting files
 * `S3Adapter`, which is backed by [Amazon S3](https://aws.amazon.com/s3/); or
 * `GCSAdapter`, which is backed by [Google Cloud Storage](https://cloud.google.com/storage/)
 
-`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server wiki](https://github.com/parse-community/parse-server/wiki/Configuring-File-Adapters).
+`GridStoreAdapter` is used by default and requires no setup, but if you're interested in using S3 or Google Cloud Storage, additional configuration information is available in the [Parse Server guide](http://docs.parseplatform.org/parse-server/guide/#configuring-file-adapters).
 
 # Support
 
@@ -347,7 +344,7 @@ For implementation related questions or technical support, please refer to the [
 
 If you believe you've found an issue with Parse Server, make sure these boxes are checked before [reporting an issue](https://github.com/parse-community/parse-server/issues):
 
-- [ ] You've met the [prerequisites](https://github.com/parse-community/parse-server/wiki/Parse-Server-Guide#prerequisites).
+- [ ] You've met the [prerequisites](http://docs.parseplatform.org/parse-server/guide/#prerequisites).
 
 - [ ] You're running the [latest version](https://github.com/parse-community/parse-server/releases) of Parse Server.
 

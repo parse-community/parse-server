@@ -55,7 +55,11 @@ function request(path) {
         data += chunk;
       });
       res.on('end', function() {
-        data = JSON.parse(data);
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
         resolve(data);
       });
     }).on('error', function() {
