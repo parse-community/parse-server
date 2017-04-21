@@ -181,7 +181,7 @@ describe('SchemaController', () => {
   it('can add classes without needing an object', done => {
     config.database.loadSchema()
     .then(schema => schema.addClassIfNotExists('NewClass', {
-      foo: {type: 'String'}
+      foo: {type: 'String'},
     }))
     .then(actualSchema => {
       const expectedSchema = {
@@ -208,6 +208,81 @@ describe('SchemaController', () => {
     .catch(error => {
       fail('Error creating class: ' + JSON.stringify(error));
     });
+  });
+
+  it('can update classes without needing an object', done => {
+    const levelPermissions = {
+      find: { '*': true },
+      get: { '*': true },
+      create: { '*': true },
+      update: { '*': true },
+      delete: { '*': true },
+      addField: { '*': true },
+    };
+    config.database.loadSchema()
+      .then(schema => {
+        schema.validateObject('NewClass', { foo: 2 })
+          .then(() => schema.reloadData())
+          .then(() => schema.updateClass('NewClass', {
+            fooOne: {type: 'Number'},
+            fooTwo: {type: 'Array'},
+            fooThree: {type: 'Date'},
+            fooFour: {type: 'Object'},
+            fooFive: {type: 'Relation', targetClass: '_User' },
+            fooSix: {type: 'String'},
+            fooSeven: {type: 'Object' },
+            fooEight: {type: 'String'},
+            fooNine: {type: 'String'},
+            fooTeen: {type: 'Number' },
+            fooEleven: {type: 'String'},
+            fooTwelve: {type: 'String'},
+            fooThirteen: {type: 'String'},
+            fooFourteen: {type: 'String'},
+            fooFifteen: {type: 'String'},
+            fooSixteen: {type: 'String'},
+            fooEighteen: {type: 'String'},
+            fooNineteen: {type: 'String'},
+          }, levelPermissions, config.database))
+          .then(actualSchema => {
+            const expectedSchema = {
+              className: 'NewClass',
+              fields: {
+                objectId: { type: 'String' },
+                updatedAt: { type: 'Date' },
+                createdAt: { type: 'Date' },
+                ACL: { type: 'ACL' },
+                foo: { type: 'Number' },
+                fooOne: {type: 'Number'},
+                fooTwo: {type: 'Array'},
+                fooThree: {type: 'Date'},
+                fooFour: {type: 'Object'},
+                fooFive: {type: 'Relation', targetClass: '_User' },
+                fooSix: {type: 'String'},
+                fooSeven: {type: 'Object' },
+                fooEight: {type: 'String'},
+                fooNine: {type: 'String'},
+                fooTeen: {type: 'Number' },
+                fooEleven: {type: 'String'},
+                fooTwelve: {type: 'String'},
+                fooThirteen: {type: 'String'},
+                fooFourteen: {type: 'String'},
+                fooFifteen: {type: 'String'},
+                fooSixteen: {type: 'String'},
+                fooEighteen: {type: 'String'},
+                fooNineteen: {type: 'String'},
+              },
+              classLevelPermissions: { ...levelPermissions },
+            };
+
+            expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
+            done();
+          })
+          .catch(error => {
+            console.trace(error);
+            done();
+            fail('Error creating class: ' + JSON.stringify(error));
+          });
+      });
   });
 
   it('will fail to create a class if that class was already created by an object', done => {
