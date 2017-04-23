@@ -29,7 +29,7 @@ const GameScore = Parse.Object.extend({
 });
 
 describe('Postgres database init options', () => {
-  it('create server with public schema databaseOptions,shoud be ok', (done) => {
+  it('should create server with public schema databaseOptions', (done) => {
     reconfigureServer({
       databaseAdapter: new PostgresStorageAdapter({
         uri: postgresURI, collectionPrefix: 'test_',
@@ -43,7 +43,7 @@ describe('Postgres database init options', () => {
     score.save().then(done, fail);
   });
 
-  it('create server with not exists schema databaseOptions,shoud be fail', (done) => {
+  it('should fail to create server if schema databaseOptions does not exist', (done) => {
     reconfigureServer({
       databaseAdapter: new PostgresStorageAdapter({
         uri: postgresURI, collectionPrefix: 'test_',
