@@ -12,6 +12,7 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
+
 April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
