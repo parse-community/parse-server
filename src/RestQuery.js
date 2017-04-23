@@ -448,7 +448,7 @@ const replaceEqualityConstraint = (constraint) => {
   let hasDirectConstraint = false;
   let hasOperatorConstraint = false;
   for (const key in constraint) {
-    if (key.indexOf('$') != 0) {
+    if (key.indexOf('$') !== 0) {
       hasDirectConstraint = true;
       equalToObject[key] = constraint[key];
     } else {
