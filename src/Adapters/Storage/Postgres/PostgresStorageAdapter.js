@@ -623,7 +623,7 @@ export class PostgresStorageAdapter {
       const values = [className, ...fieldNames];
       const columns = fieldNames.map((name, idx) => {
         return `$${idx + 2}:name`;
-      }).join(',');
+      }).join(', DROP COLUMN');
 
       const doBatch = (t) => {
         const batch = [
