@@ -2547,7 +2547,7 @@ describe('Parse.Query testing', () => {
       season.equalTo("fullIdentifier", "CD117");
 
       return new Parse.Query("Fixture")
-        .matchesKeyInQuery("objectId", "season", season)
+        .matchesKeyInQuery("season", "objectId", season)
         .find()
         .then((r) => {
           expect(r.length).toEqual(1);
