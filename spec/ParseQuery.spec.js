@@ -2532,6 +2532,33 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("should return a dataset when matching a key in query (#3711)", function(done) {
+    var SeasonObject = new Parse.Object("Season");
+    SeasonObject.set("fullIdentifier", "CD117");
+
+    return SeasonObject.save().then(() => {
+      var FixtureObject = new Parse.Object("Fixture");
+      FixtureObject.set("season", SeasonObject);
+
+      return Parse.Promise.when(FixtureObject.save());
+    }).then((p) => {
+
+      var season = new Parse.Query("Season");
+      season.equalTo("fullIdentifier", "CD117");
+
+      return new Parse.Query("Fixture")
+        .matchesKeyInQuery("objectId", "season", season)
+        .find()
+        .then((r) => {
+          expect(r.length).toEqual(1);
+          if (r.length > 0) {
+            expect(r[0].id).toEqual(p.id);
+          }
+          done();
+        }, done.fail);
+    });
+  });
+
   it('should find objects with array of pointers', (done) => {
     var objects = [];
     while(objects.length != 5) {
