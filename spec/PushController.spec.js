@@ -680,7 +680,6 @@ describe('PushController', () => {
       push_time: new Date().getTime()
     }
 
-    var pushController = new PushController();
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
