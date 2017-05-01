@@ -54,7 +54,7 @@
     "babel-register": "6.24.1",
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "4.0.0",
-    "deep-diff": "0.3.6",
+    "deep-diff": "0.3.7",
     "eslint": "^3.16.1",
     "eslint-plugin-flowtype": "^2.25.0",
     "gaze": "1.1.2",
