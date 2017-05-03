@@ -62,7 +62,7 @@ You should get a response similar to this:
 }
 ```
 
-You can now retrieve this object directly (make sure to replace `2ntvSpRGIK` with the actual `objectId` you received when the object was created):
+You can now retrieve this object directly (make sure to replace `APPLICATION_ID` with the actual `objectId` you received when the object was created):
 
 ```bash
 $ curl -X GET \
