@@ -8,6 +8,7 @@ import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
+import { RoleCache } from './RoleCache';
 import _ from 'lodash';
 
 class ParseLiveQueryServer {
@@ -79,6 +80,7 @@ class ParseLiveQueryServer {
 
     // Initialize sessionToken cache
     this.sessionTokenCache = new SessionTokenCache(config.cacheTimeout);
+    this.roleCache = new RoleCache(config.cacheTimeout);
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
@@ -360,9 +362,7 @@ class ParseLiveQueryServer {
           }
 
             // Then get the user's roles
-          var rolesQuery = new Parse.Query(Parse.Role);
-          rolesQuery.equalTo("users", user);
-          return rolesQuery.find({useMasterKey:true});
+          return this.roleCache.getRoles(user.id);
         }).
         then((roles) => {
 
