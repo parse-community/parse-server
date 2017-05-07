@@ -7,8 +7,13 @@ import logger from '../logger';
 import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
-import { SessionTokenCache } from './SessionTokenCache';
-import { RoleCache } from './RoleCache';
+import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
+import { loadAdapter } from '../Adapters/AdapterLoader';
+import auth from '../Auth';
+import { CacheController } from '../Controllers/CacheController';
+
+
+
 import _ from 'lodash';
 
 class ParseLiveQueryServer {
@@ -20,6 +25,7 @@ class ParseLiveQueryServer {
   keyPairs : any;
   // The subscriber we use to get object update from publisher
   subscriber: Object;
+  config: Object;
 
   constructor(server: any, config: any) {
     this.clientId = 0;
@@ -78,9 +84,11 @@ class ParseLiveQueryServer {
       }
     });
 
-    // Initialize sessionToken cache
-    this.sessionTokenCache = new SessionTokenCache(config.cacheTimeout);
-    this.roleCache = new RoleCache(config.cacheTimeout);
+    // Initialize cache
+    const cacheControllerAdapter = loadAdapter(config.cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    config.cacheController = new CacheController(cacheControllerAdapter, appId);
+
+    this.config = config;
   }
 
   // Message is the JSON object from publisher. Message.currentParseObject is the ParseObject JSON after changes.
@@ -316,6 +324,7 @@ class ParseLiveQueryServer {
     if (!acl || acl.getPublicReadAccess()) {
       return Parse.Promise.as(true);
     }
+
     // Check subscription sessionToken matches ACL first
     const subscriptionInfo = client.getSubscriptionInfo(requestId);
     if (typeof subscriptionInfo === 'undefined') {
@@ -323,78 +332,41 @@ class ParseLiveQueryServer {
     }
 
     const subscriptionSessionToken = subscriptionInfo.sessionToken;
-    return this.sessionTokenCache.getUserId(subscriptionSessionToken).then((userId) => {
-      return acl.getReadAccess(userId);
-    }).then((isSubscriptionSessionTokenMatched) => {
-      if (isSubscriptionSessionTokenMatched) {
-        return Parse.Promise.as(true);
-      }
 
-      // Check if the user has any roles that match the ACL
-      return new Parse.Promise((resolve, reject) => {
-
-        // Resolve false right away if the acl doesn't have any roles
-        const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
-        if (!acl_has_roles) {
-          return resolve(false);
-        }
-
-        this.sessionTokenCache.getUserId(subscriptionSessionToken)
-        .then((userId) => {
-
-            // Pass along a null if there is no user id
-          if (!userId) {
-            return Parse.Promise.as(null);
+    return auth.getAuthForSessionToken({
+      config: this.config,
+      sessionToken: subscriptionSessionToken}).then((subscriptionAuth) => {
+        return new Parse.Promise((resolve, reject) => {
+          // check if there is a user
+          if (!subscriptionAuth.user) {
+            return resolve(false);
           }
 
-            // Prepare a user object to query for roles
-            // To eliminate a query for the user, create one locally with the id
-          var user = new Parse.User();
-          user.id = userId;
-          return user;
-
-        })
-        .then((user) => {
-
-            // Pass along an empty array (of roles) if no user
-          if (!user) {
-            return Parse.Promise.as([]);
+          // check if the user has right access
+          if (acl.getReadAccess(subscriptionAuth.user.id)) {
+            return resolve(true);
           }
 
-            // Then get the user's roles
-          return this.roleCache.getRoles(user.id);
-        }).
-        then((roles) => {
+          // Resolve false right away if the acl doesn't have any roles
+          const acl_has_roles = Object.keys(acl.permissionsById).some(key => key.startsWith("role:"));
+          if (!acl_has_roles) {
+            return resolve(false);
+          }
 
+          // Get the user's roles
+          subscriptionAuth.getUserRoles().then((roles) => {
             // Finally, see if any of the user's roles allow them read access
-          for (const role of roles) {
-            if (acl.getRoleReadAccess(role)) {
-              return resolve(true);
+            for (const role of roles) {
+              if (acl.getRoleReadAccess(role)) {
+                return resolve(true);
+              }
             }
-          }
-          resolve(false);
-        })
-        .catch((error) => {
-          reject(error);
+            resolve(false);
+          }).catch((error) => {
+            reject(error);
+          });
         });
-
       });
-    }).then((isRoleMatched) => {
-
-      if(isRoleMatched) {
-        return Parse.Promise.as(true);
-      }
-
-      // Check client sessionToken matches ACL
-      const clientSessionToken = client.sessionToken;
-      return this.sessionTokenCache.getUserId(clientSessionToken).then((userId) => {
-        return acl.getReadAccess(userId);
-      });
-    }).then((isMatched) => {
-      return Parse.Promise.as(isMatched);
-    }, () => {
-      return Parse.Promise.as(false);
-    });
   }
 
   _handleConnect(parseWebsocket: any, request: any): any {
