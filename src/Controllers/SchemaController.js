@@ -813,11 +813,9 @@ export default class SchemaController {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
         'Permission denied, user needs to be authenticated.');
       }
-      // no other CLP than requiresAuthentication
-      // let's resolve that!
-      if (Object.keys(perms).length == 1) {
-        return Promise.resolve();
-      }
+      // requiresAuthentication passed, just move forward
+      // probably would be wise at some point to rename to 'authenticatedUser'
+      return Promise.resolve();
     }
 
     // No matching CLP, let's check the Pointer permissions
