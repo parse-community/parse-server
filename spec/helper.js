@@ -106,7 +106,8 @@ var defaultConfiguration = {
     facebook: mockFacebook(),
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
-    }
+    },
+    shortLivedAuth: mockShortLivedAuth()
   }
 };
 
@@ -367,6 +368,25 @@ function mockFacebookAuthenticator(id, token) {
 
 function mockFacebook() {
   return mockFacebookAuthenticator('8675309', 'jenny');
+}
+
+function mockShortLivedAuth() {
+  const auth = {};
+  let accessToken;
+  auth.setValidAccessToken = function(validAccessToken) {
+    accessToken = validAccessToken;
+  }
+  auth.validateAuthData = function(authData) {
+    if (authData.access_token == accessToken) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject('Invalid access token');
+    }
+  };
+  auth.validateAppId = function() {
+    return Promise.resolve();
+  };
+  return auth;
 }
 
 
