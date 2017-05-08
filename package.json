@@ -63,7 +63,7 @@
     "mongodb-runner": "3.5.0",
     "nodemon": "1.11.0",
     "nyc": "^10.1.2",
-    "request-promise": "4.2.0"
+    "request-promise": "4.2.1"
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
