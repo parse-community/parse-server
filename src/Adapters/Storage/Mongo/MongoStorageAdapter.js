@@ -97,17 +97,6 @@ export class MongoStorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
-    process.on('SIGTERM', this.handleShutdown(this));
-    process.on('SIGINT', this.handleShutdown(this));
-  }
-
-  handleShutdown(storageAdapter) {
-    return () => {
-      if (!storageAdapter.database) {
-        return;
-      }
-      storageAdapter.database.close(false);
-    }
   }
 
   connect() {
@@ -137,6 +126,13 @@ export class MongoStorageAdapter {
     });
 
     return this.connectionPromise;
+  }
+
+  handleShutdown() {
+    if (!this.database) {
+      return;
+    }
+    this.database.close(false);
   }
 
   _adaptiveCollection(name: string) {

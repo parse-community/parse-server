@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import express from 'express';
-import { ParseServer } from '../index';
+import ParseServer from '../index';
 import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
@@ -43,9 +43,9 @@ function startServer(options, callback) {
     app.use(middleware);
   }
 
-  const api = new ParseServer(options);
+  const parseServer = new ParseServer(options);
   const sockets = {};
-  app.use(options.mountPath, api);
+  app.use(options.mountPath, parseServer.app);
 
   const server = app.listen(options.port, options.host, callback);
   server.on('connection', initializeConnections);
@@ -85,6 +85,7 @@ function startServer(options, callback) {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
     server.close();
+    parseServer.handleShutdown();
   };
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
