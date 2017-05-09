@@ -64,6 +64,15 @@ export class LoggerController extends AdaptableController {
         }
       }
 
+      if (e.params) {
+        for (const key of Object.keys(e.params)) {
+          if (key === 'password') {
+            e.params[key] = '********';
+            break;
+          }
+        }
+      }
+
       return e;
     });
   }
