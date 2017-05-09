@@ -793,7 +793,15 @@ RestWrite.prototype.handleInstallation = function() {
         if (this.data.appIdentifier) {
           delQuery['appIdentifier'] = this.data.appIdentifier;
         }
-        this.config.database.destroy('_Installation', delQuery);
+        this.config.database.destroy('_Installation', delQuery)
+          .catch(err => {
+            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+              // no deletions were made. Can be ignored.
+              return;
+            }
+            // rethrow the error
+            throw err;
+          });
         return;
       }
     } else {
@@ -806,6 +814,14 @@ RestWrite.prototype.handleInstallation = function() {
         return this.config.database.destroy('_Installation', delQuery)
           .then(() => {
             return deviceTokenMatches[0]['objectId'];
+          })
+          .catch(err => {
+            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+              // no deletions were made. Can be ignored
+              return;
+            }
+            // rethrow the error
+            throw err;
           });
       } else {
         if (this.data.deviceToken &&
@@ -835,7 +851,15 @@ RestWrite.prototype.handleInstallation = function() {
           if (this.data.appIdentifier) {
             delQuery['appIdentifier'] = this.data.appIdentifier;
           }
-          this.config.database.destroy('_Installation', delQuery);
+          this.config.database.destroy('_Installation', delQuery)
+            .catch(err => {
+              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+                // no deletions were made. Can be ignored.
+                return;
+              }
+              // rethrow the error
+              throw err;
+            });
         }
         // In non-merge scenarios, just return the installation match id
         return idMatch.objectId;
