@@ -313,6 +313,13 @@ class ParseServer {
     return ParseServer.app(this.config);
   }
 
+  handleShutdown() {
+    const { adapter } = this.config.databaseController;
+    if (adapter && typeof adapter.handleShutdown === 'function') {
+      adapter.handleShutdown();
+    }
+  }
+
   static app({maxUploadSize = '20mb', appId}) {
     // This app serves the Parse API directly.
     // It's the equivalent of https://api.parse.com/1 in the hosted Parse API.
