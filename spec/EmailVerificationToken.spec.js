@@ -6,7 +6,7 @@ const Config = require('../src/Config');
 
 describe("Email Verification Token Expiration: ", () => {
 
-  it('show the invalid link page, if the user clicks on the verify email link after the email verify token expires', done => {
+  it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
@@ -37,7 +37,7 @@ describe("Email Verification Token Expiration: ", () => {
           followRedirect: false,
         }, (error, response) => {
           expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test');
           done();
         });
       }, 1000);
@@ -313,7 +313,7 @@ describe("Email Verification Token Expiration: ", () => {
     });
   });
 
-  it('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show an invalid link', done => {
+  it('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show email verify email success', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
@@ -359,7 +359,7 @@ describe("Email Verification Token Expiration: ", () => {
         followRedirect: false,
       }, (error, response) => {
         expect(response.statusCode).toEqual(302);
-        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/verify_email_success.html?username=testEmailVerifyTokenValidity');
         done();
       });
     })
@@ -369,7 +369,7 @@ describe("Email Verification Token Expiration: ", () => {
     });
   });
 
-  it('clicking on the email verify link by an email UNVERIFIED user that was setup before enabling the expire email verify token should show an invalid link', done => {
+  it('clicking on the email verify link by an email UNVERIFIED user that was setup before enabling the expire email verify token should show invalid verficiation link page', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
@@ -409,7 +409,7 @@ describe("Email Verification Token Expiration: ", () => {
         followRedirect: false,
       }, (error, response) => {
         expect(response.statusCode).toEqual(302);
-        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test');
         done();
       });
     })
