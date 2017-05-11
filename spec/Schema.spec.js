@@ -1215,4 +1215,57 @@ describe('Class Level Permissions for requiredAuth', () => {
       done();
     });
   });
+
+  it('required auth test create/get/update/delete with roles (#3753)', (done) => {
+    let user;
+    config.database.loadSchema().then((schema) => {
+      // Just to create a valid class
+      return schema.validateObject('Stuff', {foo: 'bar'});
+    }).then((schema) => {
+      return schema.setPermissions('Stuff', {
+        'find': {
+          'requiresAuthentication': true,
+          'role:admin': true
+        },
+        'create': { 'role:admin': true },
+        'update': { 'role:admin': true },
+        'delete': { 'role:admin': true },
+        'get': {
+          'requiresAuthentication': true,
+          'role:admin': true
+        }
+      });
+    }).then(() => {
+      const stuff = new Parse.Object('Stuff');
+      stuff.set('foo', 'bar');
+      return stuff.save(null, {useMasterKey: true}).then(() => {
+        const query = new Parse.Query('Stuff');
+        return query.get(stuff.id).then(() => {
+          done.fail('should not succeed');
+        }, () => {
+          return new Parse.Query('Stuff').find();
+        }).then(() => {
+          done.fail('should not succeed');
+        }, () => {
+          return Promise.resolve();
+        });
+      }).then(() => {
+        return Parse.User.signUp('user', 'password').then((signedUpUser) => {
+          user = signedUpUser;
+          const query = new Parse.Query('Stuff');
+          return query.get(stuff.id, {sessionToken: user.getSessionToken()});
+        });
+      });
+    }).then((result) => {
+      expect(result.get('foo')).toEqual('bar');
+      const query = new Parse.Query('Stuff');
+      return query.find({sessionToken: user.getSessionToken()});
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      done();
+    }, (e) => {
+      console.error(e);
+      done.fail(e);
+    });
+  });
 })
