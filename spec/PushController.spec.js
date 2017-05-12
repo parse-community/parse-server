@@ -657,4 +657,80 @@ describe('PushController', () => {
       done();
     });
   });
+
+  it('should not enqueue push when device token is not set', (done) => {
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        const promises = installations.map((device) => {
+          if (!device.deviceToken) {
+            // Simulate error when device token is not set
+            return Promise.reject();
+          }
+          return Promise.resolve({
+            transmitted: true,
+            device: device,
+          })
+        });
+
+        return Promise.all(promises);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime() / 1000
+    }
+
+    var installations = [];
+    while(installations.length != 5) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    while(installations.length != 15) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var config = new Config(Parse.applicationId);
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('numSent')).toBe(5);
+        expect(pushStatus.get('status')).toBe('succeeded');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
+
+  });
 });
