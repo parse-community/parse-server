@@ -47,14 +47,13 @@ jobs:
     - stage: release
       node_js: '6.1'
       script: skip
-      - deploy:
-          provider: script
+      deploy:
+        - provider: script
           skip_cleanup: true
           script: ./resources/npm-git.sh
           on:
             branch: master
-      - deploy:
-          provider: npm
+        - provider: npm
           skip_cleanup: true
           email:
             secure: "YweTGc22uqFWpzbfiUa5ptBLRAy6tt6d9TZLwEkPtmnsWzN9dguGyKWmXiw0qL+848FWQ5PWzUgBn5XdigV9tF3rJY6RGs8i38WulNjwSoGuRZa3AChsQHAb1KenANcJybzhnwgEj9gRsrGZPEsyI2whfake/xLDtG91kHjpJANsd4gseOh6fdS4FIYCbyXvSbC7S0yZzIJkgSkMqJO7RJ8r0HYQ7srYIw31dM3ZXSmUYu+GaMDUUu3RLAGYoKaROxhDRnzkjdeLLiwZH8hQ/6CaqwqX54iJ6OS+MOQU3fi5ZXalA7RZvtC4RmrcCkaTf3i0f+5xejYIFgzXdYGMVm8DUc82tDw1s4b6Pb19bgi1xXOQ0IKzRmZuGxnvkRN61dnYdnpnnNuG97HXgVjiOigZXVLZkWazUdnf9zXqmkC+KxPfa4Ldqg0TMjQ9J14n6TXxRti8Tt0xMa1Uzho7VdsxdJy35Bghy398O6X8VdX6parfzEkX7c/JzcA3TIMJ9+S1dy3J4Tb2URB5367W6h7cDeXtGmwLTFu75Q1CNqRJkUGbSrX2NyMqG5tc8oaTM+OWvLxcbKPRy9T6qN7x2JmCHHaapf8/8VR9wCy2PwE5j+KWhmctEHqqOgrtG5gsjC0eCPJsposxZWyM7M6aUpXe3w+olBfKq9apUGStUSU="
@@ -64,8 +63,7 @@ jobs:
             tags: true
             all_branches: true
             repo: parse-community/parse-server
-      - deploy:
-          provider: script
+        - provider: script
           skip_cleanup: true
           script: ./resources/docker-hub.sh
           on:
