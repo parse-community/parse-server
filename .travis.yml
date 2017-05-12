@@ -15,7 +15,7 @@ matrix:
   fast_finish: true
 branches:
   only:
-    - master
+  - master
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
   - /^greenkeeper/.*$/
 cache:
