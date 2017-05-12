@@ -1,6 +1,7 @@
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import rest                   from '../rest';
 import { isPushIncrementing } from './utils';
+import deepcopy               from 'deepcopy';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
@@ -27,7 +28,10 @@ export class PushQueue {
     // Order by badge (because the payload is badge dependant)
     // and createdAt to fix the order
     const order = isPushIncrementing(body) ? 'badge,createdAt' : 'createdAt';
-
+    where = deepcopy(where);
+    if (!where.hasOwnProperty('deviceToken')) {
+      where['deviceToken'] = {'$exists': true};
+    }
     return Promise.resolve().then(() => {
       return rest.find(config,
                        auth,
