@@ -716,12 +716,7 @@ describe('PushController', () => {
       var config = new Config(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      }).then(() => {
-        // Wait a few ms to let the push be sent
-        return new Promise((resolve) => {
-          setTimeout(resolve, 100);
-        });
-      });
+      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
