@@ -42,7 +42,7 @@ after_script:
 
 jobs:
   include:
-  - stage: Publish Latest
+  - stage: publish latest
     script: echo "Deploying latest to git ..."
     node_js: "6.1"
     deploy:
