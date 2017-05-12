@@ -657,4 +657,38 @@ describe('PushController', () => {
       done();
     });
   });
+
+  it('sends push only when a deviceToken is set', (done) => {
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios", "android"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime()
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      return pushController.sendPush(payload, {}, config, auth);
+    }).then(() => {
+      done();
+    }, (err) => {
+      jfail(err);
+      done();
+    });
+  });
 });
