@@ -46,7 +46,6 @@ jobs:
   include:
   - stage: publish latest
     script: echo "Deploying latest to git ..."
-    node_js: "6.1"
     deploy:
     - provider: script
       skip_cleanup: true
@@ -55,7 +54,6 @@ jobs:
         branch: master
   - stage: npm release
     script: echo "Deploying latest to git ..."
-    node_js: "6.1"
     deploy:
     - provider: npm
       skip_cleanup: true
@@ -69,7 +67,6 @@ jobs:
         repo: parse-community/parse-server
   - stage: docker release
     script: echo "Deploying latest to docker ..."
-    node_js: "6.1"
     deploy:
     - provider: script
       skip_cleanup: true
