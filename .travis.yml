@@ -63,14 +63,14 @@ jobs:
           tags: true
           all_branches: true
           repo: parse-community/parse-server
-    - stage: docker release
-      script: echo "Deploying latest to docker ..."
-      node_js: "6.1"
-      deploy:
-        - provider: script
-          skip_cleanup: true
-          script: ./resources/docker-hub.sh
-          on:
-            tags: true
-            all_branches: true
+  - stage: docker release
+    script: echo "Deploying latest to docker ..."
+    node_js: "6.1"
+    deploy:
+      - provider: script
+        skip_cleanup: true
+        script: ./resources/docker-hub.sh
+        on:
+          tags: true
+          all_branches: true
 
