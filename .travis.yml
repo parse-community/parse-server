@@ -28,9 +28,9 @@ env:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
   - MONGODB_VERSION=3.0.8
-  # - MONGODB_VERSION=3.2.6
-  # - PARSE_SERVER_TEST_DB=postgres
-  # - PARSE_SERVER_TEST_CACHE=redis
+  - MONGODB_VERSION=3.2.6
+  - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_CACHE=redis
 before_script:
 - node -e 'require("./lib/index.js")'
 - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
@@ -41,9 +41,10 @@ after_script:
 
 jobs:
   include:
+    # release on github latest branch
     - stage: release
       node_js: '6.1'
-      env: skip
+      env: RELEASE=github-latest
       before_script: skip
       after_script: skip
       script: skip
@@ -53,13 +54,13 @@ jobs:
           script: ./resources/npm-git.sh
           on:
            branch: master
+    # release on npm
     - stage: release
       before_script: skip
       after_script: skip
       script: skip
       node_js: '6.1'
-      env:
-        - RELEASE=npm
+      env: RELEASE=npm
       deploy:
         - provider: npm
           skip_cleanup: true
@@ -71,13 +72,13 @@ jobs:
             tags: true
             all_branches: true
             repo: parse-community/parse-server
+    # publish on docker
     - stage: release
       before_script: skip
       after_script: skip
       script: skip
       node_js: '6.1'
-      env:
-        - RELEASE=docker
+      env: RELEASE=docker
       deploy:
       - provider: script
         skip_cleanup: true
