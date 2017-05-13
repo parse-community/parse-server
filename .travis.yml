@@ -43,6 +43,9 @@ after_script:
 jobs:
   include:
     - stage: release
+      node_js: '6.1'
+      env:
+        - RELEASE=github-latest
       script: skip
       deploy:
         - provider: script
@@ -52,6 +55,9 @@ jobs:
           #   branch: master
     - stage: release
       script: skip
+      node_js: '6.1'
+      env:
+        - RELEASE=npm
       deploy:
         - provider: npm
           skip_cleanup: true
@@ -65,6 +71,9 @@ jobs:
             repo: parse-community/parse-server
     - stage: release
       script: skip
+      node_js: '6.1'
+      env:
+        - RELEASE=docker
       deploy:
       - provider: script
         skip_cleanup: true
