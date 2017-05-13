@@ -4,6 +4,7 @@ node_js:
 - '6.10'
 - '7.10'
 services:
+  - mongodb
   - postgresql
   - redis-server
   - docker
