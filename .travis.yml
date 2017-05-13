@@ -28,8 +28,7 @@ env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
-  - MONGODB_VERSION=3.0.8
-  - MONGODB_VERSION=3.2.6
+  - 
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
 before_script:
