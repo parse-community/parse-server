@@ -47,12 +47,14 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
     uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
     collectionPrefix: 'test_',
   });
-} else if (process.env.TRAVIS != 'true') {
-  startDB = require('mongodb-runner/mocha/before').bind({
-    timeout: () => {},
-    slow: () => {}
-  })
-  stopDB = require('mongodb-runner/mocha/after');
+} else {
+  if (process.env.TRAVIS != 'true') {
+    startDB = require('mongodb-runner/mocha/before').bind({
+      timeout: () => {},
+      slow: () => {}
+    })
+    stopDB = require('mongodb-runner/mocha/after');
+  }
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
     collectionPrefix: 'test_',
