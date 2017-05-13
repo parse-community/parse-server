@@ -2,7 +2,6 @@
 // hungry/js/test/parse_acl_test.js
 var rest = require('../src/rest');
 var Config = require('../src/Config');
-var config = new Config('test');
 var auth = require('../src/Auth');
 
 describe('Parse.ACL', () => {
@@ -1235,6 +1234,7 @@ describe('Parse.ACL', () => {
   });
 
   it('regression test #701', done => {
+    const config = new Config('test');
     var anonUser = {
       authData: {
         anonymous: {
@@ -1248,6 +1248,7 @@ describe('Parse.ACL', () => {
         var user = req.object;
         var acl = new Parse.ACL(user);
         user.setACL(acl);
+        console.log('IN AFTER SAVE!');
         user.save(null, {useMasterKey: true}).then(user => {
           new Parse.Query('_User').get(user.objectId).then(() => {
             fail('should not have fetched user without public read enabled');
@@ -1256,7 +1257,7 @@ describe('Parse.ACL', () => {
             expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
             done();
           });
-        });
+        }, done.fail);
       }
     });
 
