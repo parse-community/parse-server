@@ -11,8 +11,6 @@ addons:
   postgresql: '9.5'
   apt_packages:
   - postgresql-9.5-postgis-2.3
-matrix:
-  fast_finish: true
 branches:
   only:
   - master
