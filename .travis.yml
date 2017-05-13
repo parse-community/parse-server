@@ -42,17 +42,19 @@ after_script:
 
 jobs:
   include:
-    - script: 'echo "Running!"'
-    - script: 'echo "Running2!"'
-    - stage: release
+    - stage: release latest
       node_js: '6.1'
       script: skip
       deploy:
         - provider: script
           skip_cleanup: true
           script: ./resources/npm-git.sh
-          on:
-            branch: master
+          # on:
+          #   branch: master
+    - stage: release on npm
+      node_js: '6.1'
+      script: skip
+      deploy:
         - provider: npm
           skip_cleanup: true
           email:
@@ -63,6 +65,10 @@ jobs:
             tags: true
             all_branches: true
             repo: parse-community/parse-server
+      - stage: release on docker
+        node_js: '6.1'
+        script: skip
+        deploy:
         - provider: script
           skip_cleanup: true
           script: ./resources/docker-hub.sh
