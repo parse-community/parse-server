@@ -11,21 +11,6 @@ addons:
   postgresql: '9.5'
   apt_packages:
   - postgresql-9.5-postgis-2.3
-before_script:
-  - node -e 'require("./lib/index.js")'
-  - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
-  - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
-  - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
-env:
-  global:
-  - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  matrix:
-  - MONGODB_VERSION=3.0.8
-  - MONGODB_VERSION=3.2.6
-  - PARSE_SERVER_TEST_DB=postgres
-  - PARSE_SERVER_TEST_CACHE=redis
-matrix:
-  fast_finish: true
 branches:
   only:
   - master
@@ -35,36 +20,69 @@ cache:
   directories:
   - node_modules
   - "$HOME/.mongodb/versions"
+
+# Test stage
+stage: test
+env:
+  global:
+  - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  matrix:
+  - MONGODB_VERSION=3.0.8
+  - MONGODB_VERSION=3.2.6
+  - PARSE_SERVER_TEST_DB=postgres
+  - PARSE_SERVER_TEST_CACHE=redis
+before_script:
+- node -e 'require("./lib/index.js")'
+- psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
+- psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
+- psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
 after_script:
 - bash <(curl -s https://codecov.io/bash)
-after_failure:
-  - (cd resources; python travis_after_all.py)
-after_success:
-  - (cd resources; python travis_after_all.py)
-  - export $(cat resources/.to_export_back)
 
-deploy:
-  - provider: npm
-    skip_cleanup: true
-    email:
-      secure: "YweTGc22uqFWpzbfiUa5ptBLRAy6tt6d9TZLwEkPtmnsWzN9dguGyKWmXiw0qL+848FWQ5PWzUgBn5XdigV9tF3rJY6RGs8i38WulNjwSoGuRZa3AChsQHAb1KenANcJybzhnwgEj9gRsrGZPEsyI2whfake/xLDtG91kHjpJANsd4gseOh6fdS4FIYCbyXvSbC7S0yZzIJkgSkMqJO7RJ8r0HYQ7srYIw31dM3ZXSmUYu+GaMDUUu3RLAGYoKaROxhDRnzkjdeLLiwZH8hQ/6CaqwqX54iJ6OS+MOQU3fi5ZXalA7RZvtC4RmrcCkaTf3i0f+5xejYIFgzXdYGMVm8DUc82tDw1s4b6Pb19bgi1xXOQ0IKzRmZuGxnvkRN61dnYdnpnnNuG97HXgVjiOigZXVLZkWazUdnf9zXqmkC+KxPfa4Ldqg0TMjQ9J14n6TXxRti8Tt0xMa1Uzho7VdsxdJy35Bghy398O6X8VdX6parfzEkX7c/JzcA3TIMJ9+S1dy3J4Tb2URB5367W6h7cDeXtGmwLTFu75Q1CNqRJkUGbSrX2NyMqG5tc8oaTM+OWvLxcbKPRy9T6qN7x2JmCHHaapf8/8VR9wCy2PwE5j+KWhmctEHqqOgrtG5gsjC0eCPJsposxZWyM7M6aUpXe3w+olBfKq9apUGStUSU="
-    api_key:
-      secure: "QprkaqQ+WCvZQR4qIEs5iS6peMCbRd8Hgt0s6HfdmhavNXwDFY8Bkdf6zJwWHLiqs4pyClXDZ2f6QiOs7y9IvJZ+wOIbsf4N5V6s06zOxJ0NAOwhe0mgWS3Us0zgXIfmW4BpmGnU4ql/qGL+9vNfyQJ7wxEJxVK7hiYh9Epu49E2jmefDqTX+SNSrDCg4HkRcxerxYGnAJDCP50QaNlyLSciODD6wHaddrSYkdvmISLMnLHug61OkE4OBIOWXfYV+e31kDj+zgczAfVQgekDKtaimCQclHFrmaEPl0KIm6wsDQAw5HWkepA/WZfv4SbCrDaKJDZw+LBI7dR0ezmiOH/zmWWrRW7D4wjkDGiumWjA8etuf8I4GRyC/d1RS+hnlvPr0Bu+WljuVxLoK3nhZOdiK5t4QlVDoGankkRjLylwFQgo8tzu5N0dc26z3ClowTwcKsjStmFr53gjCD7l3qoFjyPot1JlW3LPhG9Nch7rK33/7ONqVai3zxb1xB9ynd8TSzKi4/66LeYEDcGVM5A9Vmkp+egCnOhkOAXdI8O4jid98NANir+U4xmUYZ2PAMNmSeHlpSpwH2pC1/BHpDKA9RZEuEdr3sgmtuXXwwOCp+xvuVwxZZ6+gVEjG4nGTqSNxUIq1fzjGih8ElJtbM1Uhh2dVE9uxW7EC/oCuuk="
-    on:
-      tags: true
-      all_branches: true
-      condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
-      repo: parse-community/parse-server
-  - provider: script
-    skip_cleanup: true
-    script: ./resources/npm-git.sh
-    on:
-      branch: master
-      condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
-  - provider: script
-    skip_cleanup: true
-    script: ./resources/docker-hub.sh
-    on:
-      tags: true
-      all_branches: true
-      condition: "$BUILD_LEADER$BUILD_AGGREGATE_STATUS = YESothers_succeeded"
+jobs:
+  include:
+    # release on github latest branch
+    - stage: release
+      node_js: '6.1'
+      env: RELEASE=github-latest
+      before_script: skip
+      after_script: skip
+      script: skip
+      deploy:
+        - provider: script
+          skip_cleanup: true
+          script: ./resources/npm-git.sh
+          on:
+           branch: master
+    # release on npm
+    - stage: release
+      before_script: skip
+      after_script: skip
+      script: skip
+      node_js: '6.1'
+      env: RELEASE=npm
+      deploy:
+        - provider: npm
+          skip_cleanup: true
+          email:
+            secure: "YweTGc22uqFWpzbfiUa5ptBLRAy6tt6d9TZLwEkPtmnsWzN9dguGyKWmXiw0qL+848FWQ5PWzUgBn5XdigV9tF3rJY6RGs8i38WulNjwSoGuRZa3AChsQHAb1KenANcJybzhnwgEj9gRsrGZPEsyI2whfake/xLDtG91kHjpJANsd4gseOh6fdS4FIYCbyXvSbC7S0yZzIJkgSkMqJO7RJ8r0HYQ7srYIw31dM3ZXSmUYu+GaMDUUu3RLAGYoKaROxhDRnzkjdeLLiwZH8hQ/6CaqwqX54iJ6OS+MOQU3fi5ZXalA7RZvtC4RmrcCkaTf3i0f+5xejYIFgzXdYGMVm8DUc82tDw1s4b6Pb19bgi1xXOQ0IKzRmZuGxnvkRN61dnYdnpnnNuG97HXgVjiOigZXVLZkWazUdnf9zXqmkC+KxPfa4Ldqg0TMjQ9J14n6TXxRti8Tt0xMa1Uzho7VdsxdJy35Bghy398O6X8VdX6parfzEkX7c/JzcA3TIMJ9+S1dy3J4Tb2URB5367W6h7cDeXtGmwLTFu75Q1CNqRJkUGbSrX2NyMqG5tc8oaTM+OWvLxcbKPRy9T6qN7x2JmCHHaapf8/8VR9wCy2PwE5j+KWhmctEHqqOgrtG5gsjC0eCPJsposxZWyM7M6aUpXe3w+olBfKq9apUGStUSU="
+          api_key:
+            secure: "QprkaqQ+WCvZQR4qIEs5iS6peMCbRd8Hgt0s6HfdmhavNXwDFY8Bkdf6zJwWHLiqs4pyClXDZ2f6QiOs7y9IvJZ+wOIbsf4N5V6s06zOxJ0NAOwhe0mgWS3Us0zgXIfmW4BpmGnU4ql/qGL+9vNfyQJ7wxEJxVK7hiYh9Epu49E2jmefDqTX+SNSrDCg4HkRcxerxYGnAJDCP50QaNlyLSciODD6wHaddrSYkdvmISLMnLHug61OkE4OBIOWXfYV+e31kDj+zgczAfVQgekDKtaimCQclHFrmaEPl0KIm6wsDQAw5HWkepA/WZfv4SbCrDaKJDZw+LBI7dR0ezmiOH/zmWWrRW7D4wjkDGiumWjA8etuf8I4GRyC/d1RS+hnlvPr0Bu+WljuVxLoK3nhZOdiK5t4QlVDoGankkRjLylwFQgo8tzu5N0dc26z3ClowTwcKsjStmFr53gjCD7l3qoFjyPot1JlW3LPhG9Nch7rK33/7ONqVai3zxb1xB9ynd8TSzKi4/66LeYEDcGVM5A9Vmkp+egCnOhkOAXdI8O4jid98NANir+U4xmUYZ2PAMNmSeHlpSpwH2pC1/BHpDKA9RZEuEdr3sgmtuXXwwOCp+xvuVwxZZ6+gVEjG4nGTqSNxUIq1fzjGih8ElJtbM1Uhh2dVE9uxW7EC/oCuuk="
+          on:
+            tags: true
+            all_branches: true
+            repo: parse-community/parse-server
+    # publish on docker
+    - stage: release
+      before_script: skip
+      after_script: skip
+      script: skip
+      node_js: '6.1'
+      env: RELEASE=docker
+      deploy:
+      - provider: script
+        skip_cleanup: true
+        script: ./resources/docker-hub.sh
+        on:
+          tags: true
+          all_branches: true
