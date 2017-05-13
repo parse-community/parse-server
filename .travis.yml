@@ -51,8 +51,9 @@ jobs:
         - provider: script
           skip_cleanup: true
           script: ./resources/npm-git.sh
-          # on:
-          #   branch: master
+          on:
+            all_branches: true
+          #  branch: master
     - stage: release
       script: skip
       node_js: '6.1'
