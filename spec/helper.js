@@ -48,10 +48,14 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
     collectionPrefix: 'test_',
   });
 } else {
-  startDB = require('mongodb-runner/mocha/before').bind({
-    timeout: () => {},
-    slow: () => {}
-  });
+  startDB = function(done) {
+    require('mongodb-runner/mocha/before').bind({
+      timeout: () => {},
+      slow: () => {}
+    })(() => {
+      setTimeout(done, 500);
+    });
+  }
   stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
