@@ -65,13 +65,13 @@ jobs:
             tags: true
             all_branches: true
             repo: parse-community/parse-server
-      - stage: release on docker
-        node_js: '6.1'
-        script: skip
-        deploy:
-        - provider: script
-          skip_cleanup: true
-          script: ./resources/docker-hub.sh
-          on:
-            tags: true
-            all_branches: true
+    - stage: release on docker
+      node_js: '6.1'
+      script: skip
+      deploy:
+      - provider: script
+        skip_cleanup: true
+        script: ./resources/docker-hub.sh
+        on:
+          tags: true
+          all_branches: true
