@@ -1471,7 +1471,7 @@ describe('afterFind hooks', () => {
       });
   });
 
-  it('should report count if passed', (done) => {
+  it('should set count to true on beforeFind hooks if query is count', (done) => {
     const hook = {
       method: function(req) {
         expect(req.count).toBe(true);
@@ -1487,7 +1487,7 @@ describe('afterFind hooks', () => {
     });
   });
 
-  it('should report count if passed', (done) => {
+  it('should set count to false on beforeFind hooks if query is not count', (done) => {
     const hook = {
       method: function(req) {
         expect(req.count).toBe(false);

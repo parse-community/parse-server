@@ -158,9 +158,9 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
 export function getRequestQueryObject(triggerType, auth, query, count, config) {
   var request = {
     triggerName: triggerType,
-    query: query,
+    query,
     master: false,
-    count: count,
+    count,
     log: config.loggerController
   };
 
