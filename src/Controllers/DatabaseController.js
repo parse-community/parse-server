@@ -744,6 +744,7 @@ DatabaseController.prototype.find = function(className, query, {
   const isMaster = acl === undefined;
   const aclGroup = acl || [];
   op = op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
+  op = (typeof count != 'undefined' ? 'count' : op);
   let classExists = true;
   return this.loadSchema()
   .then(schemaController => {
