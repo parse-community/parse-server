@@ -5,7 +5,7 @@ var request = require('request');
 var dd = require('deep-diff');
 var Config = require('../src/Config');
 
-var config = new Config('test');
+var config;
 
 var hasAllPODobject = () => {
   var obj = new Parse.Object('HasAllPOD');
@@ -131,8 +131,11 @@ var masterKeyHeaders = {
 };
 
 describe('schemas', () => {
-
   beforeEach(() => {
+    config = new Config('test');
+  });
+
+  afterEach(() => {
     config.database.schemaCache.clear();
   });
 
