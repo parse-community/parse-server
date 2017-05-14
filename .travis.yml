@@ -46,7 +46,7 @@ jobs:
     # release on github latest branch
     - stage: release
       node_js: '6.10'
-      env: RELEASE=github-latest
+      env: 
       before_script: skip
       after_script: skip
       script: skip
@@ -56,14 +56,6 @@ jobs:
           script: ./resources/npm-git.sh
           on:
            branch: master
-    # release on npm
-    - stage: release
-      before_script: skip
-      after_script: skip
-      script: skip
-      node_js: '6.10'
-      env: RELEASE=npm
-      deploy:
         - provider: npm
           skip_cleanup: true
           email:
