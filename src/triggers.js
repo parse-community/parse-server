@@ -155,11 +155,12 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, config) {
+export function getRequestQueryObject(triggerType, auth, query, count, config) {
   var request = {
     triggerName: triggerType,
     query: query,
     master: false,
+    count: count,
     log: config.loggerController
   };
 
@@ -298,6 +299,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
   if (restWhere) {
     parseQuery._where = restWhere;
   }
+  let count = false;
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
@@ -308,8 +310,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (restOptions.limit) {
       parseQuery._limit = restOptions.limit;
     }
+    count = !!restOptions.count;
   }
-  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config);
   return Promise.resolve().then(() => {
     return trigger(requestObject);
   }).then((result) => {

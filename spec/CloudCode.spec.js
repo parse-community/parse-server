@@ -1470,4 +1470,36 @@ describe('afterFind hooks', () => {
           });
       });
   });
+
+  it('should report count if passed', (done) => {
+    const hook = {
+      method: function(req) {
+        expect(req.count).toBe(true);
+        return Promise.resolve();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('Stuff', hook.method);
+    new Parse.Query('Stuff').count().then((count) => {
+      expect(count).toBe(0);
+      expect(hook.method).toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should report count if passed', (done) => {
+    const hook = {
+      method: function(req) {
+        expect(req.count).toBe(false);
+        return Promise.resolve();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('Stuff', hook.method);
+    new Parse.Query('Stuff').find().then((res) => {
+      expect(res.length).toBe(0);
+      expect(hook.method).toHaveBeenCalled();
+      done();
+    });
+  });
 });
