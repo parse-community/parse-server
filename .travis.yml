@@ -28,7 +28,8 @@ env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
   matrix:
-  - MONGODB_VERSION=3.2.6
+  - MONGODB_VERSION=3.2.13
+  - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
 before_script:
@@ -44,7 +45,7 @@ jobs:
   include:
     # release on github latest branch
     - stage: release
-      node_js: '6.1'
+      node_js: '6.10'
       env: RELEASE=github-latest
       before_script: skip
       after_script: skip
@@ -60,7 +61,7 @@ jobs:
       before_script: skip
       after_script: skip
       script: skip
-      node_js: '6.1'
+      node_js: '6.10'
       env: RELEASE=npm
       deploy:
         - provider: npm
