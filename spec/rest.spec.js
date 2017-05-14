@@ -6,13 +6,14 @@ var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');
 
-var config = new Config('test');
-const database = config.database;
+let config;
+let database;
 
 describe('rest create', () => {
 
   beforeEach(() => {
     config = new Config('test');
+    database = config.database;
   });
 
   it('handles _id', done => {
