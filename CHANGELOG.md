@@ -2,6 +2,7 @@
 
 ### 2.4.0
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.8...2.4.0)
+
 Starting 2.4.0, parse-server is tested against node 6.10 and 7.10, mongodb 3.2 and 3.4.
 If you experience issues with older versions, please [open a issue](https://github.com/parse-community/parse-server/issues).
 
