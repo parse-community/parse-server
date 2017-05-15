@@ -1,5 +1,56 @@
 ## Parse Server Changelog
 
+### 2.4.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.8...2.4.0)
+Starting 2.4.0, parse-server is tested against node 6.10 and 7.10, mongodb 3.2 and 3.4.
+If you experience issues with older versions, please [open a issue](https://github.com/parse-community/parse-server/issues).
+
+#### New Features:
+* Adds `count` Class Level Permission (#3814), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Proper graceful shutdown support (#3786), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Let parse-server store as `scheduled` Push Notifications with push_time (#3717, #3722), thanks to [Felipe Andrade](https://github.com/felipemobile)
+
+#### Improvements
+* Parse-Server images are built through docker hub, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Skip authData validation if it hasn't changed, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* [postgres] Improve performance when adding many new fields to the Schema (#3740), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Test maintenance, wordsmithing and nits (#3744), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Bug Fixes:
+* [postgres] Fixes issue affecting deleting multiple fields of a Schema (#3734, #3735), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Fix issue affecting _PushStatus state (#3808), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* requiresAuthentication Class Level Permission behaves correctly, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Email Verification related fields are not exposed (#3681, #3393, #3432), thanks to [Anthony Mosca](https://github.com/aontas)
+* HTTP query parameters are properly obfuscated in logs (#3793, #3789), thanks to [@youngerong](https://github.com/youngerong)
+* Improve handling of `$near` operators in `$or` queries (#3767, #3798), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Fix issue affecting arrays of pointers (#3169), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix issue affecting overloaded query constraints (#3723, #3678), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Properly catch unhandled rejections in _Installation updates (#3795), thanks to [kahoona77](https://github.com/kahoona77)
+
+#### Dependency Updates: 
+
+* [uws@0.14.5](https://www.npmjs.com/package/uws)
+* [mime@1.3.6](https://www.npmjs.com/package/mime)
+* [mongodb@2.2.26](https://www.npmjs.com/package/mongodb)
+* [pg-promise@5.6.8](https://www.npmjs.com/package/pg-promise)
+* [semver@5.3.0](https://www.npmjs.com/package/semver)
+
+##### Devevelopment dependencies
+* [babel-cli@6.24.1](https://www.npmjs.com/package/babel-cli)
+* [babel-core@6.24.1](https://www.npmjs.com/package/babel-core)
+* [babel-preset-es2015@6.24.1](https://www.npmjs.com/package/babel-preset-es2015)
+* [babel-preset-stage-0@6.24.1](https://www.npmjs.com/package/babel-preset-stage-0)
+* [babel-register@6.24.1](https://www.npmjs.com/package/babel-register)
+* [cross-env@5.0.0](https://www.npmjs.com/package/cross-env)
+* [deep-diff@0.3.8](https://www.npmjs.com/package/deep-diff)
+* [gaze@1.1.2](https://www.npmjs.com/package/gaze)
+* [jasmine@2.6.0](https://www.npmjs.com/package/jasmine)
+* [jasmine-spec-reporter@4.1.0](https://www.npmjs.com/package/jasmine-spec-reporter)
+* [mongodb-runner@3.5.0](https://www.npmjs.com/package/mongodb-runner)
+* [nyc@10.3.2](https://www.npmjs.com/package/nyc)
+* [request-promise@4.2.1](https://www.npmjs.com/package/request-promise)
+
+
 ### 2.3.8
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.7...2.3.8)
 
