@@ -6,26 +6,26 @@ Starting 2.4.0, parse-server is tested against node 6.10 and 7.10, mongodb 3.2 a
 If you experience issues with older versions, please [open a issue](https://github.com/parse-community/parse-server/issues).
 
 #### New Features:
-* Adds `count` Class Level Permission (#3814), thanks to [Florent Vilmart](https://github.com/flovilmart)
-* Proper graceful shutdown support (#3786), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Adds `count` Class Level Permission ([#3814](https://github.com/parse-community/parse-server/pull/3814)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Proper graceful shutdown support ([#3786](https://github.com/parse-community/parse-server/pull/3786)), thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Let parse-server store as `scheduled` Push Notifications with push_time (#3717, #3722), thanks to [Felipe Andrade](https://github.com/felipemobile)
 
 #### Improvements
 * Parse-Server images are built through docker hub, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Skip authData validation if it hasn't changed, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* [postgres] Improve performance when adding many new fields to the Schema (#3740), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
-* Test maintenance, wordsmithing and nits (#3744), thanks to [Arthur Cinader](https://github.com/acinader)
+* [postgres] Improve performance when adding many new fields to the Schema ([#3740](https://github.com/parse-community/parse-server/pull/3740)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Test maintenance, wordsmithing and nits ([#3744](https://github.com/parse-community/parse-server/pull/3744)), thanks to [Arthur Cinader](https://github.com/acinader)
 
 #### Bug Fixes:
-* [postgres] Fixes issue affecting deleting multiple fields of a Schema (#3734, #3735), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
-* Fix issue affecting _PushStatus state (#3808), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* [postgres] Fixes issue affecting deleting multiple fields of a Schema ([#3734](https://github.com/parse-community/parse-server/pull/3734), [#3735](https://github.com/parse-community/parse-server/pull/3735)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Fix issue affecting _PushStatus state ([#3808](https://github.com/parse-community/parse-server/pull/3808)), thanks to [Florent Vilmart](https://github.com/flovilmart)
 * requiresAuthentication Class Level Permission behaves correctly, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* Email Verification related fields are not exposed (#3681, #3393, #3432), thanks to [Anthony Mosca](https://github.com/aontas)
-* HTTP query parameters are properly obfuscated in logs (#3793, #3789), thanks to [@youngerong](https://github.com/youngerong)
-* Improve handling of `$near` operators in `$or` queries (#3767, #3798), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
-* Fix issue affecting arrays of pointers (#3169), thanks to [Florent Vilmart](https://github.com/flovilmart)
-* Fix issue affecting overloaded query constraints (#3723, #3678), thanks to [Florent Vilmart](https://github.com/flovilmart)
-* Properly catch unhandled rejections in _Installation updates (#3795), thanks to [kahoona77](https://github.com/kahoona77)
+* Email Verification related fields are not exposed ([#3681](https://github.com/parse-community/parse-server/pull/3681), [#3393](https://github.com/parse-community/parse-server/pull/3393), [#3432](https://github.com/parse-community/parse-server/pull/3432)), thanks to [Anthony Mosca](https://github.com/aontas)
+* HTTP query parameters are properly obfuscated in logs ([#3793](https://github.com/parse-community/parse-server/pull/3793), [#3789](https://github.com/parse-community/parse-server/pull/3789)), thanks to [@youngerong](https://github.com/youngerong)
+* Improve handling of `$near` operators in `$or` queries ([#3767](https://github.com/parse-community/parse-server/pull/3767), [#3798](https://github.com/parse-community/parse-server/pull/3798)), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Fix issue affecting arrays of pointers ([#3169](https://github.com/parse-community/parse-server/pull/3169)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix issue affecting overloaded query constraints ([#3723](https://github.com/parse-community/parse-server/pull/3723), [#3678](https://github.com/parse-community/parse-server/pull/3678)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Properly catch unhandled rejections in _Installation updates ([#3795](https://github.com/parse-community/parse-server/pull/3795)), thanks to [kahoona77](https://github.com/kahoona77)
 
 #### Dependency Updates: 
 
