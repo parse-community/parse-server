@@ -33,7 +33,7 @@ If you experience issues with older versions, please [open a issue](https://gith
 * [uws@0.14.5](https://www.npmjs.com/package/uws)
 * [mime@1.3.6](https://www.npmjs.com/package/mime)
 * [mongodb@2.2.26](https://www.npmjs.com/package/mongodb)
-* [pg-promise@5.6.8](https://www.npmjs.com/package/pg-promise)
+* [pg-promise@5.7.0](https://www.npmjs.com/package/pg-promise)
 * [semver@5.3.0](https://www.npmjs.com/package/semver)
 
 ##### Devevelopment dependencies
