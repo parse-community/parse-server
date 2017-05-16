@@ -23,5 +23,5 @@ export function createClient(uri, databaseOptions) {
     }
   }
 
-  return client;
+  return { client, pgp };
 }
