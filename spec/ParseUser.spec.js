@@ -424,6 +424,34 @@ describe('Parse.User testing', () => {
     }).then(done, done.fail);
   });
 
+  it('saveAll propagates the sessionToken correctly with a role (#3665)', (done) => {
+    let sessionToken;
+    const objects = [];
+    const adminRole = new Parse.Role('admin', new Parse.ACL());
+    const signUp = Parse.User.signUp('username', 'password');
+    Parse.Promise.when(signUp, adminRole.save()).then((user, admin) => {
+      sessionToken = user.getSessionToken();
+      const acl = new Parse.ACL();
+      acl.setRoleReadAccess(admin, true);
+      acl.setRoleWriteAccess(admin, true);
+
+      while(objects.length != 10) {
+        const obj = new Parse.Object('Object');
+        obj.setACL(acl);
+        objects.push(obj);
+      }
+      admin.relation('users').add(user);
+      return admin.save(null, {useMasterKey: true}).then(() => {
+        return Parse.Object.saveAll(objects, {useMasterKey: true});
+      })
+    }).then(() => {
+      objects.forEach((obj) => {
+        obj.set('key', 'value');
+      });
+      return Parse.Object.saveAll(objects, { sessionToken });
+    }).then(done, done.fail);
+  });
+
   it("current user", (done) => {
     var user = new Parse.User();
     user.set("password", "asdf");
