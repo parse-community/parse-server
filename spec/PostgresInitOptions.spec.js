@@ -50,11 +50,12 @@ describe('Postgres database init options', () => {
         databaseOptions: databaseOptions2
       })
     }).then(() => {
+      done.fail('Should not succeed');
+    }, error => {
+      // INVALID_SCHEMA error 3F000
+      // https://www.postgresql.org/docs/9.5/static/errcodes-appendix.html
+      expect(error.code).toEqual('3F000');
       done();
-    })
-      .catch(error => {
-        expect(error.code).toEqual('42P01');
-        done();
-      });
+    });
   });
 });
