@@ -2935,4 +2935,21 @@ describe('Parse.User testing', () => {
       done();
     });
   });
+
+  it('should revoke sessions when setting paswword with masterKey (#3289)', (done) => {
+    let user;
+    Parse.User.signUp('username', 'password')
+      .then((newUser) => {
+        user = newUser;
+        user.set('password', 'newPassword');
+        return user.save(null, {useMasterKey: true});
+      }).then(() => {
+        const query = new Parse.Query('_Session');
+        query.equalTo('user', user);
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(0);
+        done();
+      }, done.fail);
+  });
 });
