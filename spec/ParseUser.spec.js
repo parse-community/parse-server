@@ -429,11 +429,17 @@ describe('Parse.User testing', () => {
     const objects = [];
     const adminRole = new Parse.Role('admin', new Parse.ACL());
     const signUp = Parse.User.signUp('username', 'password');
-    Parse.Promise.when(signUp, adminRole.save()).then((user, admin) => {
+    const otherUser = new Parse.User();
+    Parse.Promise.when(signUp, adminRole.save(), otherUser.save({
+      username: 'other',
+      password: 'password'
+    })).then((user, admin) => {
       sessionToken = user.getSessionToken();
       const acl = new Parse.ACL();
       acl.setRoleReadAccess(admin, true);
       acl.setRoleWriteAccess(admin, true);
+      acl.setReadAccess(otherUser.id, true);
+      acl.setWriteAccess(otherUser.id, true);
 
       while(objects.length != 10) {
         const obj = new Parse.Object('Object');
