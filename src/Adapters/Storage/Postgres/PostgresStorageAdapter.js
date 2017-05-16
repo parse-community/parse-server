@@ -403,6 +403,7 @@ export class PostgresStorageAdapter {
   // Private
   _collectionPrefix: string;
   _client;
+  _pgp;
 
   constructor({
     uri,
@@ -410,7 +411,9 @@ export class PostgresStorageAdapter {
     databaseOptions
   }) {
     this._collectionPrefix = collectionPrefix;
-    this._client = createClient(uri, databaseOptions);
+    const { client, pgp } = createClient(uri, databaseOptions);
+    this._client = client;
+    this._pgp = pgp;
   }
 
   _ensureSchemaCollectionExists(conn) {
