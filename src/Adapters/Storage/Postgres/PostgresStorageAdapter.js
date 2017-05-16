@@ -170,6 +170,16 @@ const joinTablesForSchema = (schema) => {
   return list;
 }
 
+const processClassLevelPermissions = ({ schema, query }) => {
+  if (schema.classLevelPermissions
+    && schema.classLevelPermissions.find
+    && schema.classLevelPermissions.find['*'] === true) {
+
+    delete query['_rperm'];
+  }
+  return query;
+};
+
 const buildWhereClause = ({ schema, query, index }) => {
   const patterns = [];
   let values = [];
@@ -1014,6 +1024,7 @@ export class PostgresStorageAdapter {
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
     let values = [className];
+    query = processClassLevelPermissions({ schema, query });
     const where = buildWhereClause({ schema, query, index: 2 })
     values.push(...where.values);
 
