@@ -400,6 +400,30 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('saveAll propagates the sessionToken correctly (#3665)', (done) => {
+    let sessionToken;
+    const objects = [];
+    Parse.User
+    .signUp('username', 'password').then((user) => {
+      sessionToken = user.getSessionToken();
+      const acl = new Parse.ACL();
+      acl.setReadAccess(user.id, true);
+      acl.setWriteAccess(user.id, true);
+
+      while(objects.length != 10) {
+        const obj = new Parse.Object('Object');
+        obj.setACL(acl);
+        objects.push(obj);
+      }
+      return Parse.Object.saveAll(objects, {useMasterKey: true});
+    }).then(() => {
+      objects.forEach((obj) => {
+        obj.set('key', 'value');
+      });
+      return Parse.Object.saveAll(objects, { sessionToken });
+    }).then(done, done.fail);
+  });
+
   it("current user", (done) => {
     var user = new Parse.User();
     user.set("password", "asdf");
