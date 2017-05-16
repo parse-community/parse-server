@@ -375,9 +375,12 @@ RestWrite.prototype.transformUser = function() {
       return Promise.resolve();
     }
 
-    if (this.query && !this.auth.isMaster) {
+    if (this.query) {
       this.storage['clearSessions'] = true;
-      this.storage['generateNewSession'] = true;
+      // Generate a new session only if the user requested
+      if (!this.auth.isMaster) {
+        this.storage['generateNewSession'] = true;
+      }
     }
 
     return this._validatePasswordPolicy().then(() => {
