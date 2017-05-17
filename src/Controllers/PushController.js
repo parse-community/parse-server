@@ -14,9 +14,9 @@ export class PushController {
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
-    let push_time = PushController.getPushTime(body);
-    if (typeof push_time !== 'undefined') { 
-      body['push_time'] = push_time; 
+    const push_time = PushController.getPushTime(body);
+    if (typeof push_time !== 'undefined') {
+      body['push_time'] = push_time;
     }
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
