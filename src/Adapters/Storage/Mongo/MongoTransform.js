@@ -232,7 +232,7 @@ function transformQueryKeyValue(className, key, value, schema) {
   }
 
   if (expectedTypeIsArray && !(value instanceof Array)) {
-    return {key, value: { '$all' : [value] }};
+    return {key, value: { '$all' : [transformInteriorAtom(value)] }};
   }
 
   // Handle atomic values

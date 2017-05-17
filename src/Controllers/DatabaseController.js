@@ -69,17 +69,27 @@ const validateQuery = query => {
        * EG:      {$or: [{a: 1}, {a: 2}], b: 2}
        * Becomes: {$or: [{a: 1, b: 2}, {a: 2, b: 2}]}
        *
+       * The only exceptions are $near and $nearSphere operators, which are
+       * constrained to only 1 operator per query. As a result, these ops
+       * remain at the top level
+       *
        * https://jira.mongodb.org/browse/SERVER-13732
+       * https://github.com/parse-community/parse-server/issues/3767
        */
       Object.keys(query).forEach(key => {
         const noCollisions = !query.$or.some(subq => subq.hasOwnProperty(key))
-        if (key != '$or' && noCollisions) {
+        let hasNears = false
+        if (query[key] != null && typeof query[key] == 'object') {
+          hasNears = ('$near' in query[key] || '$nearSphere' in query[key])
+        }
+        if (key != '$or' && noCollisions && !hasNears) {
           query.$or.forEach(subquery => {
             subquery[key] = query[key];
           });
           delete query[key];
         }
       });
+      query.$or.forEach(validateQuery);
     } else {
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
@@ -734,6 +744,9 @@ DatabaseController.prototype.find = function(className, query, {
   const isMaster = acl === undefined;
   const aclGroup = acl || [];
   op = op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
+  // Count operation if counting
+  op = (count === true ? 'count' : op);
+
   let classExists = true;
   return this.loadSchema()
   .then(schemaController => {

@@ -1,5 +1,86 @@
 ## Parse Server Changelog
 
+### 2.4.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.8...2.4.0)
+
+Starting 2.4.0, parse-server is tested against node 6.10 and 7.10, mongodb 3.2 and 3.4.
+If you experience issues with older versions, please [open a issue](https://github.com/parse-community/parse-server/issues).
+
+#### New Features:
+* Adds `count` Class Level Permission ([#3814](https://github.com/parse-community/parse-server/pull/3814)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Proper graceful shutdown support ([#3786](https://github.com/parse-community/parse-server/pull/3786)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Let parse-server store as `scheduled` Push Notifications with push_time (#3717, #3722), thanks to [Felipe Andrade](https://github.com/felipemobile)
+
+#### Improvements
+* Parse-Server images are built through docker hub, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Skip authData validation if it hasn't changed, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* [postgres] Improve performance when adding many new fields to the Schema ([#3740](https://github.com/parse-community/parse-server/pull/3740)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Test maintenance, wordsmithing and nits ([#3744](https://github.com/parse-community/parse-server/pull/3744)), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Bug Fixes:
+* [postgres] Fixes issue affecting deleting multiple fields of a Schema ([#3734](https://github.com/parse-community/parse-server/pull/3734), [#3735](https://github.com/parse-community/parse-server/pull/3735)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Fix issue affecting _PushStatus state ([#3808](https://github.com/parse-community/parse-server/pull/3808)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* requiresAuthentication Class Level Permission behaves correctly, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Email Verification related fields are not exposed ([#3681](https://github.com/parse-community/parse-server/pull/3681), [#3393](https://github.com/parse-community/parse-server/pull/3393), [#3432](https://github.com/parse-community/parse-server/pull/3432)), thanks to [Anthony Mosca](https://github.com/aontas)
+* HTTP query parameters are properly obfuscated in logs ([#3793](https://github.com/parse-community/parse-server/pull/3793), [#3789](https://github.com/parse-community/parse-server/pull/3789)), thanks to [@youngerong](https://github.com/youngerong)
+* Improve handling of `$near` operators in `$or` queries ([#3767](https://github.com/parse-community/parse-server/pull/3767), [#3798](https://github.com/parse-community/parse-server/pull/3798)), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Fix issue affecting arrays of pointers ([#3169](https://github.com/parse-community/parse-server/pull/3169)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix issue affecting overloaded query constraints ([#3723](https://github.com/parse-community/parse-server/pull/3723), [#3678](https://github.com/parse-community/parse-server/pull/3678)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Properly catch unhandled rejections in _Installation updates ([#3795](https://github.com/parse-community/parse-server/pull/3795)), thanks to [kahoona77](https://github.com/kahoona77)
+
+#### Dependency Updates: 
+
+* [uws@0.14.5](https://www.npmjs.com/package/uws)
+* [mime@1.3.6](https://www.npmjs.com/package/mime)
+* [mongodb@2.2.26](https://www.npmjs.com/package/mongodb)
+* [pg-promise@5.7.0](https://www.npmjs.com/package/pg-promise)
+* [semver@5.3.0](https://www.npmjs.com/package/semver)
+
+##### Devevelopment dependencies
+* [babel-cli@6.24.1](https://www.npmjs.com/package/babel-cli)
+* [babel-core@6.24.1](https://www.npmjs.com/package/babel-core)
+* [babel-preset-es2015@6.24.1](https://www.npmjs.com/package/babel-preset-es2015)
+* [babel-preset-stage-0@6.24.1](https://www.npmjs.com/package/babel-preset-stage-0)
+* [babel-register@6.24.1](https://www.npmjs.com/package/babel-register)
+* [cross-env@5.0.0](https://www.npmjs.com/package/cross-env)
+* [deep-diff@0.3.8](https://www.npmjs.com/package/deep-diff)
+* [gaze@1.1.2](https://www.npmjs.com/package/gaze)
+* [jasmine@2.6.0](https://www.npmjs.com/package/jasmine)
+* [jasmine-spec-reporter@4.1.0](https://www.npmjs.com/package/jasmine-spec-reporter)
+* [mongodb-runner@3.5.0](https://www.npmjs.com/package/mongodb-runner)
+* [nyc@10.3.2](https://www.npmjs.com/package/nyc)
+* [request-promise@4.2.1](https://www.npmjs.com/package/request-promise)
+
+
+### 2.3.8
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.7...2.3.8)
+
+#### New Features
+* Support for PG-Promise options, thanks to [ren dong](https://github.com/rendongsc)
+
+#### Improvements
+* Improves support for graceful shutdown, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improves configuration validation for Twitter Authentication, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+
+#### Bug Fixes
+* Fixes issue affecting GeoPoint __type with Postgres, thanks to [zhoul-HS](https://github.com/zhoul-HS)
+* Prevent user creation if username or password is empty, thanks to [Wissam Abirached](https://github.com/wabirached)
+
+#### Dependency Updates:
+* [cross-env@4.0.0 ](https://www.npmjs.com/package/cross-env)
+* [ws@2.2.3](https://www.npmjs.com/package/ws)
+* [babel-core@6.24.0](https://www.npmjs.com/package/babel-core)
+* [uws@0.14.0](https://www.npmjs.com/package/uws)
+* [babel-preset-es2015@6.24.0](https://www.npmjs.com/package/babel-preset-es2015)
+* [babel-plugin-syntax-flow@6.18.0](https://www.npmjs.com/package/babel-plugin-syntax-flow)
+* [babel-cli@6.24.0](https://www.npmjs.com/package/babel-cli)
+* [babel-register@6.24.0](https://www.npmjs.com/package/babel-register)
+* [winston-daily-rotate-file@1.4.6](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [mongodb@2.2.25](https://www.npmjs.com/package/mongodb)
+* [redis@2.7.0](https://www.npmjs.com/package/redis)
+* [pg-promise@5.6.4](https://www.npmjs.com/package/pg-promise)
+* [parse-server-push-adapter@1.3.0](https://www.npmjs.com/package/parse-server-push-adapter)
+
 ### 2.3.7
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.6...2.3.7)
 

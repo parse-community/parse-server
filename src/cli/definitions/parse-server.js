@@ -81,6 +81,11 @@ export default {
     help: "Configuration for push, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Push",
     action: objectParser
   },
+  "scheduledPush": {
+    env: "PARSE_SERVER_SCHEDULED_PUSH",
+    help: "Configuration for push scheduling. Defaults to false.",
+    action: booleanParser
+  },
   "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
     help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",

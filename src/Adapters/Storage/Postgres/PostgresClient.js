@@ -1,4 +1,4 @@
-const pgp = require('pg-promise')();
+
 const parser = require('./PostgresConfigParser');
 
 export function createClient(uri, databaseOptions) {
@@ -13,13 +13,15 @@ export function createClient(uri, databaseOptions) {
     dbOptions[key] = databaseOptions[key];
   }
 
+  const initOptions = dbOptions.initOptions || {};
+  const pgp = require('pg-promise')(initOptions);
   const client = pgp(dbOptions);
 
   if (dbOptions.pgOptions) {
     for (const key in dbOptions.pgOptions) {
-      client.pg.defaults[key] = dbOptions.pgOptions[key];
+      pgp.pg.defaults[key] = dbOptions.pgOptions[key];
     }
   }
 
-  return client;
+  return { client, pgp };
 }
