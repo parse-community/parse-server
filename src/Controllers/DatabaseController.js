@@ -235,17 +235,18 @@ DatabaseController.prototype.update = function(className, query, update, {
   many,
   upsert,
 } = {}, skipSanitization = false) {
+  const originalQuery = query;
   const originalUpdate = update;
   // Make a copy of the object, so we don't mutate the incoming data.
   update = deepcopy(update);
-
+  var relationUpdates = [];
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
   return this.loadSchema()
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'update'))
-    .then(() => this.handleRelationUpdates(className, query.objectId, update))
     .then(() => {
+      relationUpdates = this.collectRelationUpdates(className, originalQuery.objectId, update);
       if (!isMaster) {
         query = this.addPointerPermissions(schemaController, className, 'update', query, aclGroup);
       }
@@ -295,6 +296,10 @@ DatabaseController.prototype.update = function(className, query, update, {
       if (!result) {
         return Promise.reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.'));
       }
+      return this.handleRelationUpdates(className, originalQuery.objectId, update, relationUpdates).then(() => {
+        return result;
+      });
+    }).then((result) => {
       if (skipSanitization) {
         return Promise.resolve(result);
       }
@@ -320,12 +325,8 @@ function sanitizeDatabaseResult(originalObject, result) {
   return Promise.resolve(response);
 }
 
-// Processes relation-updating operations from a REST-format update.
-// Returns a promise that resolves successfully when these are
-// processed.
-// This mutates update.
-DatabaseController.prototype.handleRelationUpdates = function(className, objectId, update) {
-  var pending = [];
+DatabaseController.prototype.collectRelationUpdates = function(className, objectId, update) {
+  var ops = [];
   var deleteMe = [];
   objectId = update.objectId || objectId;
 
@@ -334,20 +335,12 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
       return;
     }
     if (op.__op == 'AddRelation') {
-      for (const object of op.objects) {
-        pending.push(this.addRelation(key, className,
-                                      objectId,
-                                      object.objectId));
-      }
+      ops.push({key, op});
       deleteMe.push(key);
     }
 
     if (op.__op == 'RemoveRelation') {
-      for (const object of op.objects) {
-        pending.push(this.removeRelation(key, className,
-                                         objectId,
-                                         object.objectId));
-      }
+      ops.push({key, op});
       deleteMe.push(key);
     }
 
@@ -364,6 +357,37 @@ DatabaseController.prototype.handleRelationUpdates = function(className, objectI
   for (const key of deleteMe) {
     delete update[key];
   }
+  return ops;
+}
+
+// Processes relation-updating operations from a REST-format update.
+// Returns a promise that resolves successfully when these are
+// processed.
+// This mutates update.
+DatabaseController.prototype.handleRelationUpdates = function(className, objectId, update, ops) {
+  var pending = [];
+  objectId = update.objectId || objectId;
+  ops.forEach(({key, op}) => {
+    if (!op) {
+      return;
+    }
+    if (op.__op == 'AddRelation') {
+      for (const object of op.objects) {
+        pending.push(this.addRelation(key, className,
+                                      objectId,
+                                      object.objectId));
+      }
+    }
+
+    if (op.__op == 'RemoveRelation') {
+      for (const object of op.objects) {
+        pending.push(this.removeRelation(key, className,
+                                         objectId,
+                                         object.objectId));
+      }
+    }
+  });
+
   return Promise.all(pending);
 };
 
@@ -511,12 +535,12 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
 
   var isMaster = acl === undefined;
   var aclGroup = acl || [];
-
+  const relationUpdates = this.collectRelationUpdates(className, null, object);
   return this.validateClassName(className)
   .then(() => this.loadSchema())
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'create'))
-    .then(() => this.handleRelationUpdates(className, null, object))
+    .then(() => this.handleRelationUpdates(className, null, object, relationUpdates))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.reloadData())
     .then(() => schemaController.getOneSchema(className, true))
