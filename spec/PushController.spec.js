@@ -131,6 +131,42 @@ describe('PushController', () => {
     done();
   });
 
+  it('can get push time in string format', (done) => {
+    // Make mock request
+    var timeStr = '2015-03-19T22:05:08Z';
+    var body = {
+      'push_time': timeStr
+    }
+
+    var time = PushController.getPushTime(body);
+    expect(time).toEqual(new Date(timeStr));
+    done();
+  });
+
+  it('can get push time in number format', (done) => {
+    // Make mock request
+    var timeNumber = 1426802708;
+    var body = {
+      'push_time': timeNumber
+    }
+
+    var time = PushController.getPushTime(body).valueOf();
+    expect(time).toEqual(timeNumber * 1000);
+    done();
+  });
+
+  it('can throw on getPushTime in invalid format', (done) => {
+    // Make mock request
+    var body = {
+      'push_time': 'abcd'
+    }
+
+    expect(function(){
+      PushController.getPushTime(body);
+    }).toThrow();
+    done();
+  });
+
   it('properly increment badges', (done) => {
     var pushAdapter = {
       send: function(body, installations) {
@@ -603,13 +639,24 @@ describe('PushController', () => {
     });
   });
 
-  it('should not schedule push when configured', (done) => {
+  it('should schedule push when configured', (done) => {
     var auth = {
       isMaster: true
     }
     var pushAdapter = {
       send: function(body, installations) {
-        return successfulTransmissions(body, installations);
+        const promises = installations.map((device) => {
+          if (!device.deviceToken) {
+            // Simulate error when device token is not set
+            return Promise.reject();
+          }
+          return Promise.resolve({
+            transmitted: true,
+            device: device,
+          })
+        });
+
+        return Promise.all(promises);
       },
       getValidPushTypes: function() {
         return ["ios"];
@@ -642,7 +689,7 @@ describe('PushController', () => {
       var config = new Config(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      });
+      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
