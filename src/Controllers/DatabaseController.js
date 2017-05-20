@@ -325,6 +325,9 @@ function sanitizeDatabaseResult(originalObject, result) {
   return Promise.resolve(response);
 }
 
+// Collect all relation-updating operations from a REST-format update.
+// Returns a list of all relation updates to perform
+// This mutates update.
 DatabaseController.prototype.collectRelationUpdates = function(className, objectId, update) {
   var ops = [];
   var deleteMe = [];
@@ -361,9 +364,7 @@ DatabaseController.prototype.collectRelationUpdates = function(className, object
 }
 
 // Processes relation-updating operations from a REST-format update.
-// Returns a promise that resolves successfully when these are
-// processed.
-// This mutates update.
+// Returns a promise that resolves when all updates have been performed
 DatabaseController.prototype.handleRelationUpdates = function(className, objectId, update, ops) {
   var pending = [];
   objectId = update.objectId || objectId;
@@ -540,7 +541,6 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
   .then(() => this.loadSchema())
   .then(schemaController => {
     return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, 'create'))
-    .then(() => this.handleRelationUpdates(className, null, object, relationUpdates))
     .then(() => schemaController.enforceClassExists(className))
     .then(() => schemaController.reloadData())
     .then(() => schemaController.getOneSchema(className, true))
@@ -549,7 +549,11 @@ DatabaseController.prototype.create = function(className, object, { acl } = {}) 
       flattenUpdateOperatorsForCreate(object);
       return this.adapter.createObject(className, SchemaController.convertSchemaToAdapterSchema(schema), object);
     })
-    .then(result => sanitizeDatabaseResult(originalObject, result.ops[0]));
+    .then(result => {
+      return this.handleRelationUpdates(className, null, object, relationUpdates).then(() => {
+        return sanitizeDatabaseResult(originalObject, result.ops[0])
+      });
+    });
   })
 };
 
