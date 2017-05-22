@@ -428,4 +428,24 @@ describe('Parse Role testing', () => {
     });
   });
 
+  it('should be secure (#3835)', (done) => {
+    const acl = new Parse.ACL();
+    acl.getPublicReadAccess(true);
+    const role = new Parse.Role('admin', acl);
+    role.save().then(() => {
+      const user = new Parse.User();
+      return user.signUp({username: 'hello', password: 'world'});
+    }).then((user) => {
+      role.getUsers().add(user)
+      return role.save();
+    }).then(done.fail, () => {
+      const query = role.getUsers().query();
+      return query.find({useMasterKey: true});
+    }).then((results) => {
+      expect(results.length).toBe(0);
+      done();
+    })
+    .catch(done.fail);
+  });
+
 });
