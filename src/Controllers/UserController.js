@@ -6,6 +6,7 @@ import rest                from '../rest';
 import Parse               from 'parse/node';
 
 var RestQuery = require('../RestQuery');
+var RestWrite = require('../RestWrite');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
@@ -65,12 +66,7 @@ export class UserController extends AdaptableController {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
-      return this.config.database.update('_User', query, updateFields).then((document) => {
-        if (!document) {
-          throw undefined
-        }
-        return Promise.resolve(document);
-      })
+      return new RestWrite(this.config, Auth.master(this.config), '_User', query, updateFields).execute();
     });
   }
 
