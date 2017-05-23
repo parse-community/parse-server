@@ -6,6 +6,11 @@
   "exclude": [
     "**/spec/**",
     "lib/"
-  ]
+  ],
+  "require": [
+    "babel-register"
+  ],
+  "sourceMap": false,
+  "instrument": false
 }
 
