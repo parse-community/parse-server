@@ -58,7 +58,8 @@ const toPostgresValue = value => {
 }
 
 const transformValue = value => {
-  if (value.__type === 'Pointer') {
+  if (typeof value == 'object' &&
+        value.__type === 'Pointer') {
     return value.objectId;
   }
   return value;
