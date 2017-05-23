@@ -220,8 +220,33 @@ describe('PushController', () => {
     }).then(() => {
       return pushController.sendPush(payload, {}, config, auth);
     }).then(() => {
-      done();
-    }, (err) => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      // Check we actually sent 15 pushes.
+      const query = new Parse.Query('_PushStatus');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('numSent')).toBe(15);
+    }).then(() => {
+      // Check that the installations were actually updated.
+      const query = new Parse.Query('_Installation');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(15);
+      for (var i = 0; i < 15; i++) {
+        const installation = results[i];
+        if (installation.get('deviceType') == 'ios') {
+          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
+        } else {
+          expect(installation.get('badge')).toBe(undefined);
+          expect(installation.get('originalBadge')).toBe(undefined);
+        }
+      }
+      done()
+    }).catch((err) => {
       jfail(err);
       done();
     });
@@ -271,9 +296,29 @@ describe('PushController', () => {
     }).then(() => {
       return pushController.sendPush(payload, {}, config, auth);
     }).then(() => {
-      done();
-    }, () => {
-      fail("should not fail");
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      // Check we actually sent the pushes.
+      const query = new Parse.Query('_PushStatus');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('numSent')).toBe(10);
+    }).then(() => {
+      // Check that the installations were actually updated.
+      const query = new Parse.Query('_Installation');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(10);
+      for (var i = 0; i < 10; i++) {
+        const installation = results[i];
+        expect(installation.get('badge')).toBe(1);
+      }
+      done()
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
@@ -497,12 +542,7 @@ describe('PushController', () => {
 
     const where = {
       'deviceToken': {
-        '$inQuery': {
-          'where': {
-            'deviceType': 'ios'
-          },
-          className: '_Installation'
-        }
+        '$in': ['device_token_0', 'device_token_1', 'device_token_2']
       }
     }
 
@@ -510,8 +550,29 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken", "device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
       return pushController.sendPush(payload, where, config, auth);
     }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('numSent')).toBe(3);
       done();
     }).catch((err) => {
       jfail(err);
@@ -541,22 +602,36 @@ describe('PushController', () => {
     }
 
     const where = {
-      'deviceToken': {
-        '$inQuery': {
-          'where': {
-            'deviceType': 'ios'
-          },
-          className: '_Installation'
-        }
-      }
+      'deviceType': 'ios'
     }
 
     var pushController = new PushController();
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken", "device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
       return pushController.sendPush(payload, where, config, auth)
     }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const pushStatus = results[0];
+      expect(pushStatus.get('numSent')).toBe(5);
       done();
     }).catch(() => {
       fail('should not fail');
