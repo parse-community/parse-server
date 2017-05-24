@@ -103,7 +103,8 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleUpdate(req) {
-    return rest.update(req.config, req.auth, req.params.className, req.params.objectId, req.body, req.info.clientSDK);
+    const where = { objectId: req.params.objectId }
+    return rest.update(req.config, req.auth, req.params.className, where, req.body, req.info.clientSDK);
   }
 
   handleDelete(req) {

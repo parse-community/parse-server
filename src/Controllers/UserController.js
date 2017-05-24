@@ -225,7 +225,7 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(userId, password, config) {
-  return rest.update(config, Auth.master(config), '_User', userId, {
+  return rest.update(config, Auth.master(config), '_User', { objectId: userId }, {
     password: password
   });
 }
