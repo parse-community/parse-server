@@ -6,7 +6,6 @@ import rest                from '../rest';
 import Parse               from 'parse/node';
 
 var RestQuery = require('../RestQuery');
-var RestWrite = require('../RestWrite');
 var Auth = require('../Auth');
 
 export class UserController extends AdaptableController {
@@ -60,13 +59,13 @@ export class UserController extends AdaptableController {
 
       updateFields._email_verify_token_expires_at = {__op: 'Delete'};
     }
-
+    const masterAuth = Auth.master(this.config);
     var checkIfAlreadyVerified = new RestQuery(this.config, Auth.master(this.config), '_User', {username: username, emailVerified: true});
     return checkIfAlreadyVerified.execute().then(result => {
       if (result.results.length) {
         return Promise.resolve(result.results.length[0]);
       }
-      return new RestWrite(this.config, Auth.master(this.config), '_User', query, updateFields).execute();
+      return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
   }
 
