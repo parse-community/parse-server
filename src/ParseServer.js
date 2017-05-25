@@ -176,8 +176,12 @@ class ParseServer {
     if (pushOptions.queueOptions) {
       delete pushOptions.queueOptions;
     }
+    var tmpAdapter=pushOptions.adapter;
+    if (pushOptions.adapter && typeof pushOptions.adapter === "string") {
+      delete pushOptions.adapter;
+    }
     // Pass the push options too as it works with the default
-    const pushAdapter = loadAdapter(pushOptions && pushOptions.adapter, ParsePushAdapter, pushOptions);
+    const pushAdapter = loadAdapter(pushOptions && tmpAdapter, ParsePushAdapter, pushOptions);
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController();
