@@ -319,6 +319,18 @@ describe('parseObjectToMongoObjectForCreate', () => {
     expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
     done();
   });
+
+  it('$regex in $all list', (done) => {
+    var input = {
+      arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$regex: '^\\Qtwo\\E'}, {$regex: '^\\Qthree\\E'}]},
+    };
+    var outputValue = {
+      arrayField: {'$all': [/^\Qone\E/, /^\Qtwo\E/, /^\Qthree\E/]},
+    };
+    var output = transform.transformWhere(null, input);
+    jequal(outputValue.arrayField, output.arrayField);
+    done();
+  });
 });
 
 describe('transformUpdate', () => {
