@@ -1,6 +1,7 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_geo_point_test.js
 
+const rp = require('request-promise');
 var TestObject = Parse.Object.extend('TestObject');
 
 describe('Parse.GeoPoint testing', () => {
@@ -353,6 +354,69 @@ describe('Parse.GeoPoint testing', () => {
           }
         });
       }
+    });
+  });
+
+  it('supports withinPolygon', (done) => {
+    const point1 = new Parse.GeoPoint(1.5, 1.5);
+    const point2 = new Parse.GeoPoint(2, 8);
+    const point3 = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: point1});
+    const obj2 = new Parse.Object('TestObject', {location: point2});
+    const obj3 = new Parse.Object('TestObject', {location: point3});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 10 },
+              { __type: 'GeoPoint', latitude: 10, longitude: 10 },
+              { __type: 'GeoPoint', latitude: 10, longitude: 0 }
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
+  it('invalid input withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new TestObject();
+    obj.set('location', point);
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: 1234
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
     });
   });
 });
