@@ -776,7 +776,7 @@ export class PostgresStorageAdapter {
     const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     const values = [className, ...columnsArray, ...valuesArray]
     debug(qs, values);
-    return this._client.any(qs, values)
+    return this._client.none(qs, values)
     .then(() => ({ ops: [object] }))
     .catch(error => {
       if (error.code === PostgresUniqueIndexViolationError) {
@@ -991,7 +991,7 @@ export class PostgresStorageAdapter {
 
     const qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     debug('update: ', qs, values);
-    return this._client.any(qs, values); // TODO: This is unsafe, verification is needed, or a different query method;
+    return this._client.any(qs, values);
   }
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
