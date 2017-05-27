@@ -361,9 +361,9 @@ describe('Parse.GeoPoint testing', () => {
     const point1 = new Parse.GeoPoint(1.5, 1.5);
     const point2 = new Parse.GeoPoint(2, 8);
     const point3 = new Parse.GeoPoint(20, 20);
-    const obj1 = new Parse.Object('TestObject', {location: point1});
-    const obj2 = new Parse.Object('TestObject', {location: point2});
-    const obj3 = new Parse.Object('TestObject', {location: point3});
+    const obj1 = new Parse.Object('Polygon', {location: point1});
+    const obj2 = new Parse.Object('Polygon', {location: point2});
+    const obj3 = new Parse.Object('Polygon', {location: point3});
     Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
       const where = {
         location: {
@@ -378,7 +378,7 @@ describe('Parse.GeoPoint testing', () => {
         }
       };
       return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
+        url: Parse.serverURL + '/classes/Polygon',
         json: { where, '_method': 'GET' },
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -393,8 +393,7 @@ describe('Parse.GeoPoint testing', () => {
 
   it('invalid input withinPolygon', (done) => {
     const point = new Parse.GeoPoint(1.5, 1.5);
-    const obj = new TestObject();
-    obj.set('location', point);
+    const obj = new Parse.Object('Polygon', {location: point});
     obj.save().then(() => {
       const where = {
         location: {
@@ -404,7 +403,7 @@ describe('Parse.GeoPoint testing', () => {
         }
       };
       return rp.post({
-        url: Parse.serverURL + '/classes/TestObject',
+        url: Parse.serverURL + '/classes/Polygon',
         json: { where, '_method': 'GET' },
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
@@ -416,6 +415,98 @@ describe('Parse.GeoPoint testing', () => {
       done();
     }).catch((err) => {
       expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
+  });
+
+  it('invalid geoPoint withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              {}
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
+  });
+
+  it('invalid latitude withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 181, longitude: 0 }
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(1);
+      done();
+    });
+  });
+
+  it('invalid longitude withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 181 }
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(1);
       done();
     });
   });
