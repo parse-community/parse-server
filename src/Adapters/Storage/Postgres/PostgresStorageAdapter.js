@@ -10,6 +10,7 @@ const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const PostgresTransactionAbortedError = '25P02';
 const logger = require('../../../logger');
+const _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; };
 
 const debug = function(){
   let args = [...arguments];
@@ -346,7 +347,18 @@ const buildWhereClause = ({ schema, query, index }) => {
 
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
       const polygon = fieldValue.$geoWithin.$polygon;
-      const points = polygon.map((point) => `(${point.longitude}, ${point.latitude})`).join(', ');
+      if (!(polygon instanceof Array)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+      }
+      const points = polygon.map((point) => {
+        if (!((typeof point === 'undefined' ? 'undefined' : _typeof(point)) === 'object' && point !== null && point.__type === 'GeoPoint')) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+        } else {
+          Parse.GeoPoint._validate(point.latitude, point.longitude);
+        }
+        return `(${point.longitude}, ${point.latitude})`;
+      }).join(', ');
+
       patterns.push(`$${index}:name::point <@ $${index + 1}::polygon`);
       values.push(fieldName, `(${points})`);
       index += 2;
