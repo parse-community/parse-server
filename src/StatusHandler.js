@@ -110,6 +110,18 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
+    let pushTime = new Date();
+    let status = 'pending';
+    if (body.hasOwnProperty('push_time')) {
+      if (config.hasPushScheduledSupport) {
+        pushTime = body.push_time;
+        status = 'scheduled';
+      } else {
+        logger.warn('Trying to schedule a push while server is not configured.');
+        logger.warn('Push will be sent immediately');
+      }
+    }
+
     const data =  body.data || {};
     const payloadString = JSON.stringify(data);
     let pushHash;
@@ -123,13 +135,13 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
     const object = {
       objectId,
       createdAt: now,
-      pushTime: now.toISOString(),
+      pushTime: pushTime.toISOString(),
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
-      status: "pending",
+      status: status,
       numSent: 0,
       pushHash,
       // lockdown!

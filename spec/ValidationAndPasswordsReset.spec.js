@@ -655,7 +655,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     });
   });
 
-  it('redirects you to invalid link if you try to validate a nonexistant users email', done => {
+  it('redirects you to invalid verification link page if you try to validate a nonexistant users email', done => {
     reconfigureServer({
       appName: 'emailing app',
       verifyUserEmails: true,
@@ -671,7 +671,32 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         followRedirect: false,
       }, (error, response) => {
         expect(response.statusCode).toEqual(302);
-        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=sadfasga&appId=test');
+        done();
+      });
+    });
+  });
+
+  it('redirects you to link send fail page if you try to resend a link for a nonexistant user', done => {
+    reconfigureServer({
+      appName: 'emailing app',
+      verifyUserEmails: true,
+      emailAdapter: {
+        sendVerificationEmail: () => Promise.resolve(),
+        sendPasswordResetEmail: () => Promise.resolve(),
+        sendMail: () => {}
+      },
+      publicServerURL: "http://localhost:8378/1"
+    })
+    .then(() => {
+      request.post('http://localhost:8378/1/apps/test/resend_verification_email', {
+        followRedirect: false,
+        form: {
+          username: "sadfasga"
+        }
+      }, (error, response) => {
+        expect(response.statusCode).toEqual(302);
+        expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/link_send_fail.html');
         done();
       });
     });
@@ -685,7 +710,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           followRedirect: false,
         }, (error, response) => {
           expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_link.html');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=zxcv&appId=test');
           user.fetch()
           .then(() => {
             expect(user.get('emailVerified')).toEqual(false);

@@ -411,6 +411,7 @@ export class PostgresStorageAdapter {
   // Private
   _collectionPrefix: string;
   _client;
+  _pgp;
 
   constructor({
     uri,
@@ -418,7 +419,9 @@ export class PostgresStorageAdapter {
     databaseOptions
   }) {
     this._collectionPrefix = collectionPrefix;
-    this._client = createClient(uri, databaseOptions);
+    const { client, pgp } = createClient(uri, databaseOptions);
+    this._client = client;
+    this._pgp = pgp;
   }
 
   _ensureSchemaCollectionExists(conn) {
@@ -551,15 +554,15 @@ export class PostgresStorageAdapter {
         promise = t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`})
       }
       return promise.then(() => {
-        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className});
+        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null', {className, fieldName});
       }).then(result => {
-        if (fieldName in result[0].schema.fields) {
+        if (result[0]) {
           throw "Attempted to add a field that already exists";
         } else {
-          result[0].schema.fields[fieldName] = type;
+          const path = `{fields,${fieldName}}`;
           return t.none(
-            'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
-            {schema: result[0].schema, className}
+            'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+            { path, type, className }
           );
         }
       });
@@ -631,7 +634,7 @@ export class PostgresStorageAdapter {
       const values = [className, ...fieldNames];
       const columns = fieldNames.map((name, idx) => {
         return `$${idx + 2}:name`;
-      }).join(',');
+      }).join(', DROP COLUMN');
 
       const doBatch = (t) => {
         const batch = [
@@ -1082,6 +1085,7 @@ export class PostgresStorageAdapter {
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
           object[fieldName] = {
+            __type: "GeoPoint",
             latitude: object[fieldName].y,
             longitude: object[fieldName].x
           }

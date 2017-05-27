@@ -128,6 +128,13 @@ export class MongoStorageAdapter {
     return this.connectionPromise;
   }
 
+  handleShutdown() {
+    if (!this.database) {
+      return;
+    }
+    this.database.close(false);
+  }
+
   _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))

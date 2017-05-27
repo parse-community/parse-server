@@ -13,7 +13,6 @@
 // DatabaseController. This will let us replace the schema logic for
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
-
 const Parse = require('parse/node').Parse;
 
 const defaultColumns = Object.freeze({
@@ -138,7 +137,7 @@ function verifyPermissionKey(key) {
   }
 }
 
-const CLPValidKeys = Object.freeze(['find', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
+const CLPValidKeys = Object.freeze(['find', 'count', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
 function validateCLP(perms, fields) {
   if (!perms) {
     return;
@@ -465,18 +464,22 @@ export default class SchemaController {
 
       // Finally we have checked to make sure the request is valid and we can start deleting fields.
       // Do all deletions first, then a single save to _SCHEMA collection to handle all additions.
-      const deletePromises = [];
+      const deletedFields = [];
       const insertedFields = [];
       Object.keys(submittedFields).forEach(fieldName => {
         if (submittedFields[fieldName].__op === 'Delete') {
-          const promise = this.deleteField(fieldName, className, database);
-          deletePromises.push(promise);
+          deletedFields.push(fieldName);
         } else {
           insertedFields.push(fieldName);
         }
       });
 
-      return Promise.all(deletePromises) // Delete Everything
+      let deletePromise = Promise.resolve();
+      if (deletedFields.length > 0) {
+        deletePromise = this.deleteFields(deletedFields, className, database);
+      }
+
+      return deletePromise // Delete Everything
       .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
       .then(() => {
         const promises = insertedFields.map(fieldName => {
@@ -647,24 +650,32 @@ export default class SchemaController {
     });
   }
 
-  // Delete a field, and remove that data from all objects. This is intended
+  // maintain compatibility
+  deleteField(fieldName, className, database) {
+    return this.deleteFields([fieldName], className, database);
+  }
+
+  // Delete fields, and remove that data from all objects. This is intended
   // to remove unused fields, if other writers are writing objects that include
   // this field, the field may reappear. Returns a Promise that resolves with
   // no object on success, or rejects with { code, error } on failure.
   // Passing the database and prefix is necessary in order to drop relation collections
   // and remove fields from objects. Ideally the database would belong to
   // a database adapter and this function would close over it or access it via member.
-  deleteField(fieldName, className, database) {
+  deleteFields(fieldNames, className, database) {
     if (!classNameIsValid(className)) {
       throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, invalidClassNameMessage(className));
     }
-    if (!fieldNameIsValid(fieldName)) {
-      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
-    }
-    //Don't allow deleting the default fields.
-    if (!fieldNameIsValidForClass(fieldName, className)) {
-      throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
-    }
+
+    fieldNames.forEach(fieldName => {
+      if (!fieldNameIsValid(fieldName)) {
+        throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `invalid field name: ${fieldName}`);
+      }
+      //Don't allow deleting the default fields.
+      if (!fieldNameIsValidForClass(fieldName, className)) {
+        throw new Parse.Error(136, `field ${fieldName} cannot be changed`);
+      }
+    });
 
     return this.getOneSchema(className, false, {clearCache: true})
     .catch(error => {
@@ -675,15 +686,24 @@ export default class SchemaController {
       }
     })
     .then(schema => {
-      if (!schema.fields[fieldName]) {
-        throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
-      }
-      if (schema.fields[fieldName].type == 'Relation') {
-        //For relations, drop the _Join table
-        return database.adapter.deleteFields(className, schema, [fieldName])
-        .then(() => database.adapter.deleteClass(`_Join:${fieldName}:${className}`));
-      }
-      return database.adapter.deleteFields(className, schema, [fieldName]);
+      fieldNames.forEach(fieldName => {
+        if (!schema.fields[fieldName]) {
+          throw new Parse.Error(255, `Field ${fieldName} does not exist, cannot delete.`);
+        }
+      });
+
+      const schemaFields = { ...schema.fields };
+      return database.adapter.deleteFields(className, schema, fieldNames)
+        .then(() => {
+          return Promise.all(fieldNames.map(fieldName => {
+            const field = schemaFields[fieldName];
+            if (field && field.type === 'Relation') {
+              //For relations, drop the _Join table
+              return database.adapter.deleteClass(`_Join:${fieldName}:${className}`);
+            }
+            return Promise.resolve();
+          }));
+        });
     }).then(() => {
       this._cache.clear();
     });
@@ -793,16 +813,14 @@ export default class SchemaController {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
         'Permission denied, user needs to be authenticated.');
       }
-      // no other CLP than requiresAuthentication
-      // let's resolve that!
-      if (Object.keys(perms).length == 1) {
-        return Promise.resolve();
-      }
+      // requiresAuthentication passed, just move forward
+      // probably would be wise at some point to rename to 'authenticatedUser'
+      return Promise.resolve();
     }
 
     // No matching CLP, let's check the Pointer permissions
     // And handle those later
-    const permissionField = ['get', 'find'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
+    const permissionField = ['get', 'find', 'count'].indexOf(operation) > -1 ? 'readUserFields' : 'writeUserFields';
 
     // Reject create when write lockdown
     if (permissionField == 'writeUserFields' && operation == 'create') {

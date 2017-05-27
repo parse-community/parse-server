@@ -57,6 +57,17 @@ export class UsersRouter extends ClassesRouter {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
           user.sessionToken = sessionToken;
+
+          // Remove hidden properties.
+          for (var key in user) {
+            if (user.hasOwnProperty(key)) {
+              // Regexp comes from Parse.Object.prototype.validate
+              if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+                delete user[key];
+              }
+            }
+          }
+
           return { response: user };
         }
       });
