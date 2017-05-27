@@ -344,6 +344,14 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
 
+    if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
+      const polygon = fieldValue.$geoWithin.$polygon;
+      const points = polygon.map((point) => `(${point.longitude}, ${point.latitude})`).join(', ');
+      patterns.push(`$${index}:name::point <@ $${index + 1}::polygon`);
+      values.push(fieldName, `(${points})`);
+      index += 2;
+    }
+
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
       let operator = '~';

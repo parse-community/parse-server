@@ -618,6 +618,16 @@ function transformConstraint(constraint, inArray) {
       };
       break;
 
+    case '$geoWithin': {
+      const polygon = constraint[key]['$polygon'];
+      if (!(polygon instanceof Array)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+      }
+      answer[key] = {
+        '$polygon': polygon.map((point) => [point.longitude, point.latitude])
+      };
+      break;
+    }
     default:
       if (key.match(/^\$+/)) {
         throw new Parse.Error(
