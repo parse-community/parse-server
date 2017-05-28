@@ -26,6 +26,25 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
+  it('update geopoint', (done) => {
+    const oldPoint = new Parse.GeoPoint(44.0, -11.0);
+    const newPoint = new Parse.GeoPoint(24.0, 19.0);
+    const obj = new TestObject();
+    obj.set('location', oldPoint);
+    obj.save().then(() => {
+      obj.set('location', newPoint);
+      return obj.save();
+    }).then(() => {
+      var query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const point = result.get('location');
+      equal(point.latitude, newPoint.latitude);
+      equal(point.longitude, newPoint.longitude);
+      done();
+    });
+  });
+
   it('has the correct __type field in the json response', done => {
     var point = new Parse.GeoPoint(44.0, -11.0);
     var obj = new TestObject();

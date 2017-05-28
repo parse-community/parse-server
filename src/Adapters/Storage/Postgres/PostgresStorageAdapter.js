@@ -920,7 +920,7 @@ export class PostgresStorageAdapter {
         index += 2;
       } else if (fieldValue.__type === 'GeoPoint') {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
-        values.push(fieldName, fieldValue.latitude, fieldValue.longitude);
+        values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
         index += 3;
       } else if (fieldValue.__type === 'Relation') {
         // noop
