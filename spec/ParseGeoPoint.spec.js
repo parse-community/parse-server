@@ -406,7 +406,7 @@ describe('Parse.GeoPoint testing', () => {
       done();
     });
   });
-  
+
   it('supports withinPolygon', (done) => {
     const point1 = new Parse.GeoPoint(1.5, 1.5);
     const point2 = new Parse.GeoPoint(2, 8);
