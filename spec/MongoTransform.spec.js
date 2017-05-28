@@ -320,9 +320,6 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-});
-
-describe_only_db('mongo')('parseObjectToMongoObjectForCreate', () => {
   it('$regex in $all list', (done) => {
     var input = {
       arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$regex: '^\\Qtwo\\E'}, {$regex: '^\\Qthree\\E'}]},
