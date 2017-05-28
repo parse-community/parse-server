@@ -26,23 +26,6 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it('equalTo geopoint', (done) => {
-    var point = new Parse.GeoPoint(44.0, -11.0);
-    var obj = new TestObject();
-    obj.set('location', point);
-    obj.save().then(() => {
-      const query = new Parse.Query(TestObject);
-      query.equalTo('location', point);
-      return query.find();
-    }).then((results) => {
-      equal(results.length, 1);
-      const loc = results[0].get('location');
-      equal(loc.latitude, point.latitude);
-      equal(loc.longitude, point.longitude);
-      done();
-    });
-  });
-
   it('has the correct __type field in the json response', done => {
     var point = new Parse.GeoPoint(44.0, -11.0);
     var obj = new TestObject();
@@ -369,6 +352,23 @@ describe('Parse.GeoPoint testing', () => {
           }
         });
       }
+    });
+  });
+
+  it('equalTo geopoint', (done) => {
+    var point = new Parse.GeoPoint(44.0, -11.0);
+    var obj = new TestObject();
+    obj.set('location', point);
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      query.equalTo('location', point);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      const loc = results[0].get('location');
+      equal(loc.latitude, point.latitude);
+      equal(loc.longitude, point.longitude);
+      done();
     });
   });
 });
