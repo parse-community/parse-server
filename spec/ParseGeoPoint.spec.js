@@ -315,6 +315,21 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
+  it('returns nearest location', (done) => {
+    makeSomeGeoPoints(function() {
+      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      var query = new Parse.Query(TestObject);
+      query.near('location', sfo);
+      query.find({
+        success: function(results) {
+          equal(results[0].get('name'), 'San Francisco');
+          equal(results[1].get('name'), 'Sacramento');
+          done();
+        }
+      });
+    });
+  });
+
   it('works with geobox queries', (done) => {
     var inSF = new Parse.GeoPoint(37.75, -122.4);
     var southwestOfSF = new Parse.GeoPoint(37.708813, -122.526398);
