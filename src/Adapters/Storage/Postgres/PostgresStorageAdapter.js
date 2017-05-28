@@ -382,6 +382,12 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
 
+    if (fieldValue.__type === 'GeoPoint') {
+      patterns.push('$' + index + ':name ~= POINT($' + (index + 1) + ', $' + (index + 2) + ')');
+      values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
+      index += 3;
+    }
+
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp]) {
         const pgComparator = ParseToPosgresComparator[cmp];
