@@ -564,14 +564,12 @@ export class PostgresStorageAdapter {
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
-    return Promise.resolve().then(() => {
-      const operations = [[`DROP TABLE IF EXISTS $1:name`, [className]],
-        [`DELETE FROM "_SCHEMA" WHERE "className"=$1`, [className]]];
-      return this._client.tx(t=>t.batch(operations.map(statement=>t.none(statement[0], statement[1]))));
-    }).then(() => {
-      // resolves with false when _Join table
-      return className.indexOf('_Join:') != 0;
-    });
+    const operations = [
+      {query: `DROP TABLE IF EXISTS $1:name`, values: [className]},
+      {query: `DELETE FROM "_SCHEMA" WHERE "className" = $1`, values: [className]}
+    ];
+    return this._client.tx(t => t.none(this._pgp.helpers.concat(operations)))
+      .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
   }
 
   // Delete all data known to this adapter. Used for testing.
