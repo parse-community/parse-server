@@ -31,7 +31,35 @@ export class PublicAPIRouter extends PromiseRouter {
         location: `${config.verifyEmailSuccessURL}?${params}`
       });
     }, ()=> {
+      return this.invalidVerificationLink(req);
+    })
+  }
+
+  resendVerificationEmail(req) {
+    const username = req.body.username;
+    const appId = req.params.appId;
+    const config = new Config(appId);
+
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+
+    if (!username) {
       return this.invalidLink(req);
+    }
+
+    const userController = config.userController;
+
+    return userController.resendVerificationEmail(username).then(() => {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendSuccessURL}`
+      });
+    }, ()=> {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendFailURL}`
+      });
     })
   }
 
@@ -123,6 +151,19 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  invalidVerificationLink(req) {
+    const config = req.config;
+    if (req.query.username && req.params.appId) {
+      const params = qs.stringify({username: req.query.username, appId: req.params.appId});
+      return Promise.resolve({
+        status: 302,
+        location: `${config.invalidVerificationLinkURL}?${params}`
+      });
+    } else {
+      return this.invalidLink(req);
+    }
+  }
+
   missingPublicServerURL() {
     return Promise.resolve({
       text:  'Not found.',
@@ -139,6 +180,10 @@ export class PublicAPIRouter extends PromiseRouter {
     this.route('GET','/apps/:appId/verify_email',
       req => { this.setConfig(req) },
       req => { return this.verifyEmail(req); });
+
+    this.route('POST', '/apps/:appId/resend_verification_email',
+      req => { this.setConfig(req); },
+      req => { return this.resendVerificationEmail(req); });
 
     this.route('GET','/apps/choose_password',
       req => { return this.changePassword(req); });

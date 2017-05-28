@@ -403,6 +403,7 @@ export class PostgresStorageAdapter {
   // Private
   _collectionPrefix: string;
   _client;
+  _pgp;
 
   constructor({
     uri,
@@ -410,7 +411,9 @@ export class PostgresStorageAdapter {
     databaseOptions
   }) {
     this._collectionPrefix = collectionPrefix;
-    this._client = createClient(uri, databaseOptions);
+    const { client, pgp } = createClient(uri, databaseOptions);
+    this._client = client;
+    this._pgp = pgp;
   }
 
   _ensureSchemaCollectionExists(conn) {
@@ -543,15 +546,15 @@ export class PostgresStorageAdapter {
         promise = t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`})
       }
       return promise.then(() => {
-        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className>', {className});
+        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null', {className, fieldName});
       }).then(result => {
-        if (fieldName in result[0].schema.fields) {
+        if (result[0]) {
           throw "Attempted to add a field that already exists";
         } else {
-          result[0].schema.fields[fieldName] = type;
+          const path = `{fields,${fieldName}}`;
           return t.none(
-            'UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>',
-            {schema: result[0].schema, className}
+            'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
+            { path, type, className }
           );
         }
       });
@@ -561,14 +564,12 @@ export class PostgresStorageAdapter {
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
   // and resolves with false if it wasn't (eg. a join table). Rejects if deletion was impossible.
   deleteClass(className) {
-    return Promise.resolve().then(() => {
-      const operations = [[`DROP TABLE IF EXISTS $1:name`, [className]],
-        [`DELETE FROM "_SCHEMA" WHERE "className"=$1`, [className]]];
-      return this._client.tx(t=>t.batch(operations.map(statement=>t.none(statement[0], statement[1]))));
-    }).then(() => {
-      // resolves with false when _Join table
-      return className.indexOf('_Join:') != 0;
-    });
+    const operations = [
+      {query: `DROP TABLE IF EXISTS $1:name`, values: [className]},
+      {query: `DELETE FROM "_SCHEMA" WHERE "className" = $1`, values: [className]}
+    ];
+    return this._client.tx(t => t.none(this._pgp.helpers.concat(operations)))
+      .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
   }
 
   // Delete all data known to this adapter. Used for testing.
@@ -623,7 +624,7 @@ export class PostgresStorageAdapter {
       const values = [className, ...fieldNames];
       const columns = fieldNames.map((name, idx) => {
         return `$${idx + 2}:name`;
-      }).join(',');
+      }).join(', DROP COLUMN');
 
       const doBatch = (t) => {
         const batch = [
@@ -775,7 +776,7 @@ export class PostgresStorageAdapter {
     const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     const values = [className, ...columnsArray, ...valuesArray]
     debug(qs, values);
-    return this._client.any(qs, values)
+    return this._client.none(qs, values)
     .then(() => ({ ops: [object] }))
     .catch(error => {
       if (error.code === PostgresUniqueIndexViolationError) {
@@ -990,7 +991,7 @@ export class PostgresStorageAdapter {
 
     const qs = `UPDATE $1:name SET ${updatePatterns.join(',')} WHERE ${where.pattern} RETURNING *`;
     debug('update: ', qs, values);
-    return this._client.any(qs, values); // TODO: This is unsafe, verification is needed, or a different query method;
+    return this._client.any(qs, values);
   }
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
@@ -1074,6 +1075,7 @@ export class PostgresStorageAdapter {
         }
         if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
           object[fieldName] = {
+            __type: "GeoPoint",
             latitude: object[fieldName].y,
             longitude: object[fieldName].x
           }

@@ -1891,6 +1891,41 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("equalTo on same column as $dontSelect should not break $dontSelect functionality (#3678)", function(done) {
+    var AuthorObject = Parse.Object.extend("Author");
+    var BlockedObject = Parse.Object.extend("Blocked");
+    var PostObject = Parse.Object.extend("Post");
+
+    var postAuthor = null;
+    var requestUser = null;
+
+    return new AuthorObject({ name: "Julius"}).save().then((user) => {
+      postAuthor = user;
+      return new AuthorObject({ name: "Bob"}).save();
+    }).then((user) => {
+      requestUser = user;
+      var objects = [
+        new PostObject({ author: postAuthor, title: "Lorem ipsum" }),
+        new PostObject({ author: requestUser, title: "Kafka" }),
+        new PostObject({ author: requestUser, title: "Brown fox" }),
+        new BlockedObject({ blockedBy: postAuthor, blockedUser: requestUser})
+      ];
+      return Parse.Object.saveAll(objects);
+    }).then(() => {
+      var banListQuery = new Parse.Query(BlockedObject);
+      banListQuery.equalTo("blockedUser", requestUser);
+
+      return new Parse.Query(PostObject)
+        .equalTo("author", postAuthor)
+        .doesNotMatchKeyInQuery("author", "blockedBy", banListQuery)
+        .find()
+        .then((r) => {
+          expect(r.length).toEqual(0);
+          done();
+        }, done.fail);
+    })
+  });
+
   it("object with length", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();
@@ -2749,5 +2784,36 @@ describe('Parse.Query testing', () => {
       jfail(error);
       done();
     })
+  });
+
+  it('should not depend on parameter order #3169', function(done) {
+    const score1 = new Parse.Object('Score', {scoreId: '1'});
+    const score2 = new Parse.Object('Score', {scoreId: '2'});
+    const game1 = new Parse.Object('Game', {gameId: '1'});
+    const game2 = new Parse.Object('Game', {gameId: '2'});
+    Parse.Object.saveAll([score1, score2, game1, game2]).then(() => {
+      game1.set('score', [score1]);
+      game2.set('score', [score2]);
+      return Parse.Object.saveAll([game1, game2]);
+    }).then(() => {
+      const where = {
+        score: {
+          objectId: score1.id,
+          className: 'Score',
+          __type: 'Pointer',
+        }
+      }
+      return require('request-promise').post({
+        url: Parse.serverURL + "/classes/Game",
+        json: { where, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(1);
+      done();
+    }, done.fail);
   });
 });

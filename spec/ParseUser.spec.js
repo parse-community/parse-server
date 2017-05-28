@@ -1696,6 +1696,40 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should allow login with old authData token', (done) => {
+    const provider = {
+      authData: {
+        id: '12345',
+        access_token: 'token'
+      },
+      restoreAuthentication: function() {
+        return true;
+      },
+      deauthenticate: function() {
+        provider.authData = {};
+      },
+      authenticate: function(options) {
+        options.success(this, provider.authData);
+      },
+      getAuthType: function() {
+        return "shortLivedAuth";
+      }
+    }
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("shortLivedAuth", {}).then(() => {
+      // Simulate a remotely expired token (like a short lived one)
+      // In this case, we want success as it was valid once.
+      // If the client needs an updated one, do lock the user out
+      defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+      return Parse.User._logInWith("shortLivedAuth", {});
+    }).then(() => {
+      done();
+    }, (err) => {
+      done.fail(err);
+    });
+  });
+
   it('should properly error when password is missing', (done) => {
     var provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
@@ -2783,5 +2817,139 @@ describe('Parse.User testing', () => {
       fail(JSON.stringify(err));
       done();
     });
+  });
+
+  it('should not allow updates to emailVerified', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: "test@email.com"
+    })
+
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      return user.signUp();
+    }).then(() => {
+      return Parse.User.current().set('emailVerified', true).save();
+    }).then(() => {
+      fail("Should not be able to update emailVerified");
+      done();
+    }).catch((err) => {
+      expect(err.message).toBe("Clients aren't allowed to manually update email verification.");
+      done();
+    });
+  });
+
+  it('should not retrieve hidden fields', done => {
+
+    var emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: "test@email.com"
+    })
+
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      return user.signUp();
+    }).then(() => rp({
+      method: 'GET',
+      url: 'http://localhost:8378/1/users/me',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Session-Token': Parse.User.current().getSessionToken(),
+        'X-Parse-REST-API-Key': 'rest'
+      },
+    })).then((res) => {
+      expect(res.emailVerified).toBe(false);
+      expect(res._email_verify_token).toBeUndefined();
+      done()
+    }).then(() => rp({
+      method: 'GET',
+      url: 'http://localhost:8378/1/users/' + Parse.User.current().id,
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest'
+      },
+    })).then((res) => {
+      expect(res.emailVerified).toBe(false);
+      expect(res._email_verify_token).toBeUndefined();
+      done()
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
+  });
+
+  it('should not allow updates to hidden fields', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: "test@email.com"
+    })
+
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      return user.signUp();
+    }).then(() => {
+      return Parse.User.current().set('_email_verify_token', 'bad').save();
+    }).then(() => {
+      fail("Should not be able to update email verification token");
+      done();
+    }).catch((err) => {
+      expect(err).toBeDefined();
+      done();
+    });
+  });
+
+  it('should revoke sessions when setting paswword with masterKey (#3289)', (done) => {
+    let user;
+    Parse.User.signUp('username', 'password')
+      .then((newUser) => {
+        user = newUser;
+        user.set('password', 'newPassword');
+        return user.save(null, {useMasterKey: true});
+      }).then(() => {
+        const query = new Parse.Query('_Session');
+        query.equalTo('user', user);
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(0);
+        done();
+      }, done.fail);
   });
 });

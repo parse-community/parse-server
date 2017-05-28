@@ -169,6 +169,8 @@ RestQuery.prototype.buildRestWhere = function() {
     return this.replaceInQuery();
   }).then(() => {
     return this.replaceNotInQuery();
+  }).then(() => {
+    return this.replaceEquality();
   });
 }
 
@@ -437,6 +439,39 @@ const cleanResultAuthData = function (result) {
     }
   }
 };
+
+const replaceEqualityConstraint = (constraint) => {
+  if (typeof constraint !== 'object') {
+    return constraint;
+  }
+  const equalToObject = {};
+  let hasDirectConstraint = false;
+  let hasOperatorConstraint = false;
+  for (const key in constraint) {
+    if (key.indexOf('$') !== 0) {
+      hasDirectConstraint = true;
+      equalToObject[key] = constraint[key];
+    } else {
+      hasOperatorConstraint = true;
+    }
+  }
+  if (hasDirectConstraint && hasOperatorConstraint) {
+    constraint['$eq'] = equalToObject;
+    Object.keys(equalToObject).forEach((key) => {
+      delete constraint[key];
+    });
+  }
+  return constraint;
+}
+
+RestQuery.prototype.replaceEquality = function() {
+  if (typeof this.restWhere !== 'object') {
+    return;
+  }
+  for (const key in this.restWhere) {
+    this.restWhere[key] = replaceEqualityConstraint(this.restWhere[key]);
+  }
+}
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.

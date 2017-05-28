@@ -51,7 +51,7 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   startDB = require('mongodb-runner/mocha/before').bind({
     timeout: () => {},
     slow: () => {}
-  });
+  })
   stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
@@ -106,7 +106,8 @@ var defaultConfiguration = {
     facebook: mockFacebook(),
     myoauth: {
       module: path.resolve(__dirname, "myoauth") // relative path as it's run from src
-    }
+    },
+    shortLivedAuth: mockShortLivedAuth()
   }
 };
 
@@ -117,44 +118,40 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var app = express();
-var api = new ParseServer(defaultConfiguration);
-app.use('/1', api);
-app.use('/1', () => {
-  fail('should not call next');
-});
-var server = app.listen(port);
-server.on('connection', connection => {
-  const key = `${connection.remoteAddress}:${connection.remotePort}`;
-  openConnections[key] = connection;
-  connection.on('close', () => { delete openConnections[key] });
-});
+var app;
+var api;
+var server;
+
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    server.close(() => {
-      try {
-        const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-          __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
-        });
-        cache.clear();
-        app = express();
-        api = new ParseServer(newConfiguration);
-        api.use(require('./testing-routes').router);
-        app.use('/1', api);
-        app.use('/1', () => {
-          fail('should not call next');
-        });
-        server = app.listen(port);
-        server.on('connection', connection => {
-          const key = `${connection.remoteAddress}:${connection.remotePort}`;
-          openConnections[key] = connection;
-          connection.on('close', () => { delete openConnections[key] });
-        });
-      } catch(error) {
-        reject(error);
-      }
-    });
+    if (server) {
+      return server.close(() => {
+        server = undefined;
+        reconfigureServer(changedConfiguration).then(resolve, reject);
+      });
+    }
+    try {
+      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
+      });
+      cache.clear();
+      app = express();
+      api = new ParseServer(newConfiguration);
+      api.use(require('./testing-routes').router);
+      app.use('/1', api);
+      app.use('/1', () => {
+        fail('should not call next');
+      });
+      server = app.listen(port);
+      server.on('connection', connection => {
+        const key = `${connection.remoteAddress}:${connection.remotePort}`;
+        openConnections[key] = connection;
+        connection.on('close', () => { delete openConnections[key] });
+      });
+    } catch(error) {
+      reject(error);
+    }
   });
 }
 
@@ -367,6 +364,25 @@ function mockFacebookAuthenticator(id, token) {
 
 function mockFacebook() {
   return mockFacebookAuthenticator('8675309', 'jenny');
+}
+
+function mockShortLivedAuth() {
+  const auth = {};
+  let accessToken;
+  auth.setValidAccessToken = function(validAccessToken) {
+    accessToken = validAccessToken;
+  }
+  auth.validateAuthData = function(authData) {
+    if (authData.access_token == accessToken) {
+      return Promise.resolve();
+    } else {
+      return Promise.reject('Invalid access token');
+    }
+  };
+  auth.validateAppId = function() {
+    return Promise.resolve();
+  };
+  return auth;
 }
 
 
