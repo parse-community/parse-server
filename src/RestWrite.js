@@ -360,7 +360,8 @@ RestWrite.prototype.transformUser = function() {
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 
-  if (this.query) {
+  // Do not cleanup session if objectId is not set
+  if (this.query && this.objectId()) {
     // If we're updating a _User object, we need to clear out the cache for that user. Find all their
     // session tokens, and remove them from the cache.
     promise = new RestQuery(this.config, Auth.master(this.config), '_Session', {
