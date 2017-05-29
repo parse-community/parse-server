@@ -1271,20 +1271,20 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
       success: function() {
-        Parse.User.logOut();
+        Parse.User.logOut().then(() => {
+          Parse.Cloud.beforeSave(Parse.User, function(req, res) {
+            res.error("Before save shouldn't be called on login");
+          });
 
-        Parse.Cloud.beforeSave(Parse.User, function(req, res) {
-          res.error("Before save shouldn't be called on login");
-        });
-
-        Parse.User._logInWith("facebook", {
-          success: function() {
-            done();
-          },
-          error: function(model, error) {
-            ok(undefined, error);
-            done();
-          }
+          Parse.User._logInWith("facebook", {
+            success: function() {
+              done();
+            },
+            error: function(model, error) {
+              ok(undefined, error);
+              done();
+            }
+          });
         });
       }
     });
@@ -1723,6 +1723,57 @@ describe('Parse.User testing', () => {
       // If the client needs an updated one, do lock the user out
       defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
       return Parse.User._logInWith("shortLivedAuth", {});
+    }).then(() => {
+      done();
+    }, (err) => {
+      done.fail(err);
+    });
+  });
+
+  it('should allow PUT request with stale auth Data', (done) => {
+    const provider = {
+      authData: {
+        id: '12345',
+        access_token: 'token'
+      },
+      restoreAuthentication: function() {
+        return true;
+      },
+      deauthenticate: function() {
+        provider.authData = {};
+      },
+      authenticate: function(options) {
+        options.success(this, provider.authData);
+      },
+      getAuthType: function() {
+        return "shortLivedAuth";
+      }
+    }
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('token');
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User._logInWith("shortLivedAuth", {}).then(() => {
+      // Simulate a remotely expired token (like a short lived one)
+      // In this case, we want success as it was valid once.
+      // If the client needs an updated one, do lock the user out
+      defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('otherToken');
+      return rp.put({
+        url: Parse.serverURL + '/users/' + Parse.User.current().id,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey,
+          'X-Parse-Session-Token': Parse.User.current().getSessionToken(),
+          'Content-Type': 'application/json'
+        },
+        json: {
+          key: 'value', // update a key
+          authData: { // pass the original auth data
+            shortLivedAuth: {
+              id: '12345',
+              access_token: 'token'
+            }
+          }
+        }
+      })
     }).then(() => {
       done();
     }, (err) => {

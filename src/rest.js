@@ -113,14 +113,14 @@ function create(config, auth, className, restObject, clientSDK) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, objectId, restObject, clientSDK) {
+function update(config, auth, className, restWhere, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve().then(() => {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery) {
-      return find(config, Auth.master(config), className, {objectId: objectId});
+      return find(config, Auth.master(config), className, restWhere);
     }
     return Promise.resolve({});
   }).then((response) => {
@@ -129,7 +129,7 @@ function update(config, auth, className, objectId, restObject, clientSDK) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className, {objectId: objectId}, restObject, originalRestObject, clientSDK);
+    var write = new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK);
     return write.execute();
   });
 }

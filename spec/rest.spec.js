@@ -64,7 +64,7 @@ describe('rest create', () => {
       expect(mob.subdoc.wu).toBe('tan');
       expect(typeof mob.objectId).toEqual('string');
       const obj = { 'subdoc.wu': 'clan' };
-      return rest.update(config, auth.nobody(config), 'MyClass', mob.objectId, obj)
+      return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj)
     })
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
@@ -195,7 +195,7 @@ describe('rest create', () => {
         objectId = r.response.objectId;
         return auth.getAuthForSessionToken({config, sessionToken: r.response.sessionToken })
       }).then((sessionAuth) => {
-        return rest.update(config, sessionAuth, '_User', objectId, updatedData);
+        return rest.update(config, sessionAuth, '_User', { objectId }, updatedData);
       }).then(() => {
         return Parse.User.logOut().then(() => {
           return Parse.User.logIn('hello', 'world');
@@ -435,7 +435,7 @@ describe('rest update', () => {
         createdAt: {__type: "Date", iso: newCreatedAt}, // should be ignored
       };
 
-      return rest.update(config, nobody, className, objectId, restObject).then(() => {
+      return rest.update(config, nobody, className, { objectId }, restObject).then(() => {
         const restWhere = {
           objectId: objectId,
         };
