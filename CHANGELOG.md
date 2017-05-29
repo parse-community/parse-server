@@ -16,6 +16,8 @@
 
 #### Dependency Updates:
 * [mongodb@2.2.27](https://www.npmjs.com/package/mongodb)
+* [pg-promise@5.7.2](https://www.npmjs.com/package/pg-promise)
+
 
 ### 2.4.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.0...2.4.1)
