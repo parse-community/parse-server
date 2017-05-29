@@ -445,6 +445,8 @@ const transformInteriorAtom = atom => {
     return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
+  } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
+    return new RegExp(atom.$regex);
   } else {
     return atom;
   }
