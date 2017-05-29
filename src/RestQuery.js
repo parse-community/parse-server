@@ -476,7 +476,7 @@ RestQuery.prototype.replaceEquality = function() {
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function(options = {}) {
-  if (this.findOptions.limit === 0) {
+  if (this.findOptions.limit === 0 || this.doCount) {
     this.response = {results: []};
     return Promise.resolve();
   }

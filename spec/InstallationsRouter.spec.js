@@ -143,7 +143,7 @@ describe('InstallationsRouter', () => {
     .then(() => router.handleFind(request))
     .then((res) => {
       var response = res.response;
-      expect(response.results.length).toEqual(2);
+      expect(response.results.length).toEqual(0);
       expect(response.count).toEqual(2);
       done();
     })
