@@ -1,5 +1,22 @@
 ## Parse Server Changelog
 
+### 2.4.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.1...2.4.2)
+
+#### New Features:
+* ParseQuery: Support for withinPolygon [#3866](https://github.com/parse-community/parse-server/pull/3866), thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements:
+* Postgres: Use transactions when deleting a class, [#3869](https://github.com/parse-community/parse-server/pull/3836), thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+* Postgres: Proper support for GeoPoint equality query, [#3874](https://github.com/parse-community/parse-server/pull/3836), thanks to [Diamond Lewis](https://github.com/dplewis)
+* beforeSave and liveQuery will be correctly triggered on email verification [#3851](https://github.com/parse-community/parse-server/pull/3851), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes:
+* Skip authData validation if it hasn't changed, on PUT requests [#3872](https://github.com/parse-community/parse-server/pull/3872), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [mongodb@2.2.27](https://www.npmjs.com/package/mongodb)
+
 ### 2.4.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.0...2.4.1)
 
