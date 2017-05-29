@@ -3003,4 +3003,35 @@ describe('Parse.User testing', () => {
         done();
       }, done.fail);
   });
+
+  it('should not send a verification email if the user signed up using oauth', (done) => {
+    let emailCalledCount = 0;
+    const emailAdapter = {
+      sendVerificationEmail: () => {
+        emailCalledCount++;
+        return Promise.resolve();
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    });
+    const user = new Parse.User();
+    user.set('email', 'email1@host.com');
+    Parse.FacebookUtils.link(user, {
+      id: "8675309",
+      access_token: "jenny",
+      expiration_date: new Date().toJSON()
+    }).then((user) => {
+      user.set('email', 'email2@host.com');
+      user.save().then(() => {
+        expect(emailCalledCount).toBe(0);
+        done();
+      });
+    });
+  });
 });
