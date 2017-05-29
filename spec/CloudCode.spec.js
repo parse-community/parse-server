@@ -1209,7 +1209,7 @@ describe('beforeFind hooks', () => {
       expect(jsonQuery.where.key).toEqual('value');
       expect(jsonQuery.where.some).toEqual({'$gt': 10});
       expect(jsonQuery.include).toEqual('otherKey,otherValue');
-      expect(jsonQuery.limit).toEqual(100);
+      expect(jsonQuery.limit).toEqual(1000);
       expect(jsonQuery.skip).toBe(undefined);
     });
 

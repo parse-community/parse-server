@@ -26,7 +26,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.limit || body.limit === 0) {
       options.limit = Number(body.limit);
     } else {
-      options.limit = Number(100);
+      options.limit = Number(1000);
     }
     if (body.order) {
       options.order = String(body.order);
