@@ -1271,20 +1271,20 @@ describe('Parse.User testing', () => {
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {
       success: function() {
-        Parse.User.logOut();
+        Parse.User.logOut().then(() => {
+          Parse.Cloud.beforeSave(Parse.User, function(req, res) {
+            res.error("Before save shouldn't be called on login");
+          });
 
-        Parse.Cloud.beforeSave(Parse.User, function(req, res) {
-          res.error("Before save shouldn't be called on login");
-        });
-
-        Parse.User._logInWith("facebook", {
-          success: function() {
-            done();
-          },
-          error: function(model, error) {
-            ok(undefined, error);
-            done();
-          }
+          Parse.User._logInWith("facebook", {
+            success: function() {
+              done();
+            },
+            error: function(model, error) {
+              ok(undefined, error);
+              done();
+            }
+          });
         });
       }
     });
