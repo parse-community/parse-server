@@ -216,7 +216,7 @@ export function allowCrossDomain(req, res, next) {
 
   // intercept OPTIONS method
   if ('OPTIONS' == req.method) {
-    res.sendStatus(200);
+    res.status(200).send();
   }
   else {
     next();
