@@ -444,9 +444,15 @@ RestWrite.prototype._validateEmail = function() {
     if (results.length > 0) {
       throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
     }
-    // We updated the email, send a new validation
-    this.storage['sendVerificationEmail'] = true;
-    this.config.userController.setEmailVerifyToken(this.data);
+    if (
+      !this.data.authData ||
+      !Object.keys(this.data.authData).length ||
+      Object.keys(this.data.authData).length === 1 && Object.keys(this.data.authData)[0] === 'anonymous'
+    ) {
+      // We updated the email, send a new validation
+      this.storage['sendVerificationEmail'] = true;
+      this.config.userController.setEmailVerifyToken(this.data);
+    }
   });
 };
 
