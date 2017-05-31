@@ -145,7 +145,8 @@ var api = new ParseServer({
   appId: 'myAppId',
   masterKey: 'myMasterKey', // Keep this key secret!
   fileKey: 'optionalFileKey',
-  serverURL: 'http://localhost:1337/parse' // Don't forget to change to https if needed
+  serverURL: 'http://localhost:1337/parse', // Don't forget to change to https if needed
+  publicServerURL: 'https://localhost:1337/parse' // must set equal to serverURL if using https
 });
 
 // Serve the Parse API on the /parse URL prefix
@@ -316,6 +317,7 @@ PARSE_SERVER_MASTER_KEY
 PARSE_SERVER_DATABASE_URI
 PARSE_SERVER_URL
 PARSE_SERVER_CLOUD_CODE_MAIN
+PARSE_PUBLIC_SERVER_URL
 ```
 
 The default port is 1337, to use a different port set the PORT environment variable:
@@ -323,6 +325,8 @@ The default port is 1337, to use a different port set the PORT environment varia
 ```bash
 $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 ```
+
+Must set `PARSE_PUBLIC_SERVER_URL` equal to `PARSE_SERVER_URL` if using HTTPS ([details here](https://github.com/ParsePlatform/parse-server/issues/2743)).
 
 For the full list of configurable environment variables, run `parse-server --help`.
 
