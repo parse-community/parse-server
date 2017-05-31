@@ -590,7 +590,6 @@ describe('Parse.GeoPoint testing', () => {
       done();
     }).catch((err) => {
       expect(err.error.code).toEqual(107);
-      expect(err.error.error).toEqual('Polygon must have at least 3 points');
       done();
     });
   });

@@ -621,12 +621,15 @@ function transformConstraint(constraint, inArray) {
     case '$geoWithin': {
       const polygon = constraint[key]['$polygon'];
       if (!(polygon instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+        );
       }
       if (polygon.length < 3) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'Polygon must have at least 3 points'
+          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
         );
       }
       const points = polygon.map((point) => {
