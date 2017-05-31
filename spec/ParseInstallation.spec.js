@@ -339,11 +339,11 @@ describe('Installations', () => {
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
       expect(results.length).toEqual(1);
-      var id = results[0].objectId;
+      var objectId = results[0].objectId;
       var update = {
         'channels': ['baz']
       };
-      return rest.update(config, auth.nobody(config), '_Installation', id, update);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId }, update);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -370,7 +370,7 @@ describe('Installations', () => {
     .then(results => {
       expect(results.length).toEqual(1);
       input = { 'installationId': installId2 };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     }).then(() => {
       fail('Updating the installation should have failed.');
       done();
@@ -393,7 +393,7 @@ describe('Installations', () => {
     .then(results => {
       expect(results.length).toEqual(1);
       input = { 'deviceToken': b };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     }).then(() => {
       fail('Updating the installation should have failed.');
     }).catch((error) => {
@@ -421,7 +421,7 @@ describe('Installations', () => {
         'deviceToken': u,
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -448,7 +448,7 @@ describe('Installations', () => {
       input = {
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     }).then(() => {
       fail('Should not have been able to update Installation.');
       done();
@@ -472,7 +472,7 @@ describe('Installations', () => {
       input = {
         'custom': 'allowed'
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -514,7 +514,7 @@ describe('Installations', () => {
         'objectId': secondObject.objectId,
         'deviceToken': t
       };
-      return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: secondObject.objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {objectId: firstObject.objectId}, {}))
     .then(results => {
@@ -562,7 +562,7 @@ describe('Installations', () => {
         'installationId': installId2,
         'deviceToken': t
       };
-      return rest.update(config, auth.nobody(config), '_Installation', secondObject.objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation',  { objectId: secondObject.objectId }, input);
     })
     .then(() => delay(100))
     .then(() => database.adapter.find('_Installation', installationSchema, {objectId: firstObject.objectId}, {}))
@@ -619,7 +619,7 @@ describe('Installations', () => {
         'deviceToken': t,
         'channels': []
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -657,7 +657,7 @@ describe('Installations', () => {
         'installationId': installId,
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -699,7 +699,7 @@ describe('Installations', () => {
           'amount': 1
         }
       };
-      return rest.update(config, auth.nobody(config), '_Installation', results[0].objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: results[0].objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
     .then(results => {
@@ -744,7 +744,7 @@ describe('Installations', () => {
         'deviceToken': t,
         'deviceType': 'ios'
       };
-      return rest.update(config, auth.nobody(config), '_Installation', installObj.objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: installObj.objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, { objectId: tokenObj.objectId }, {}))
     .then(results => {
@@ -791,7 +791,7 @@ describe('Installations', () => {
           'amount': 1
         }
       };
-      return rest.update(config, auth.nobody(config), '_Installation', installObj.objectId, input);
+      return rest.update(config, auth.nobody(config), '_Installation', { objectId: installObj.objectId }, input);
     })
     .then(() => database.adapter.find('_Installation', installationSchema, { objectId: tokenObj.objectId }, {}))
     .then(results => {

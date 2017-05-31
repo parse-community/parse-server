@@ -58,7 +58,8 @@ const toPostgresValue = value => {
 }
 
 const transformValue = value => {
-  if (value.__type === 'Pointer') {
+  if (typeof value === 'object' &&
+        value.__type === 'Pointer') {
     return value.objectId;
   }
   return value;
@@ -344,6 +345,25 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
 
+    if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
+      const polygon = fieldValue.$geoWithin.$polygon;
+      if (!(polygon instanceof Array)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+      }
+      const points = polygon.map((point) => {
+        if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+        } else {
+          Parse.GeoPoint._validate(point.latitude, point.longitude);
+        }
+        return `(${point.longitude}, ${point.latitude})`;
+      }).join(', ');
+
+      patterns.push(`$${index}:name::point <@ $${index + 1}::polygon`);
+      values.push(fieldName, `(${points})`);
+      index += 2;
+    }
+
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
       let operator = '~';
@@ -380,6 +400,12 @@ const buildWhereClause = ({ schema, query, index }) => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue.iso);
       index += 2;
+    }
+
+    if (fieldValue.__type === 'GeoPoint') {
+      patterns.push('$' + index + ':name ~= POINT($' + (index + 1) + ', $' + (index + 2) + ')');
+      values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
+      index += 3;
     }
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
@@ -920,7 +946,7 @@ export class PostgresStorageAdapter {
         index += 2;
       } else if (fieldValue.__type === 'GeoPoint') {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
-        values.push(fieldName, fieldValue.latitude, fieldValue.longitude);
+        values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
         index += 3;
       } else if (fieldValue.__type === 'Relation') {
         // noop
