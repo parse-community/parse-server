@@ -28,6 +28,7 @@ const parseTypeToPostgresType = type => {
   case 'Pointer': return 'char(10)';
   case 'Number': return 'double precision';
   case 'GeoPoint': return 'point';
+  case 'Bytes': return 'jsonb';
   case 'Array':
     if (type.contents && type.contents.type === 'String') {
       return 'text[]';
@@ -769,6 +770,7 @@ export class PostgresStorageAdapter {
         }
         break;
       case 'Object':
+      case 'Bytes':
       case 'String':
       case 'Number':
       case 'Boolean':
