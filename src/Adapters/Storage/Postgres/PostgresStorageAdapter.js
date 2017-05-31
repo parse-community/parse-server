@@ -350,6 +350,12 @@ const buildWhereClause = ({ schema, query, index }) => {
       if (!(polygon instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
       }
+      if (polygon.length < 3) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'Polygon must have at least 3 points'
+        );
+      }
       const points = polygon.map((point) => {
         if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');

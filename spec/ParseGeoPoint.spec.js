@@ -5,6 +5,7 @@ const rp = require('request-promise');
 var TestObject = Parse.Object.extend('TestObject');
 
 describe('Parse.GeoPoint testing', () => {
+
   it('geo point roundtrip', (done) => {
     var point = new Parse.GeoPoint(44.0, -11.0);
     var obj = new TestObject();
@@ -331,18 +332,20 @@ describe('Parse.GeoPoint testing', () => {
   });
 
   it('works with geobox queries', (done) => {
-    var inSF = new Parse.GeoPoint(37.75, -122.4);
-    var southwestOfSF = new Parse.GeoPoint(37.708813, -122.526398);
-    var northeastOfSF = new Parse.GeoPoint(37.822802, -122.373962);
-
-    var object = new TestObject();
-    object.set('point', inSF);
-    object.save().then(() => {
-      var query = new Parse.Query(TestObject);
-      query.withinGeoBox('point', southwestOfSF, northeastOfSF);
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const sw = new Parse.GeoPoint(0, 0);
+      const ne = new Parse.GeoPoint(10, 10);
+      const query = new Parse.Query(TestObject);
+      query.withinGeoBox('location', sw, ne);
       return query.find();
     }).then((results) => {
-      equal(results.length, 1);
+      equal(results.length, 2);
       done();
     });
   });
@@ -408,12 +411,12 @@ describe('Parse.GeoPoint testing', () => {
   });
 
   it('supports withinPolygon', (done) => {
-    const point1 = new Parse.GeoPoint(1.5, 1.5);
-    const point2 = new Parse.GeoPoint(2, 8);
-    const point3 = new Parse.GeoPoint(20, 20);
-    const obj1 = new Parse.Object('Polygon', {location: point1});
-    const obj2 = new Parse.Object('Polygon', {location: point2});
-    const obj3 = new Parse.Object('Polygon', {location: point3});
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', {location: inbound});
+    const obj2 = new Parse.Object('Polygon', {location: onbound});
+    const obj3 = new Parse.Object('Polygon', {location: outbound});
     Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
       const where = {
         location: {
@@ -508,7 +511,8 @@ describe('Parse.GeoPoint testing', () => {
           $geoWithin: {
             $polygon: [
               { __type: 'GeoPoint', latitude: 0, longitude: 0 },
-              { __type: 'GeoPoint', latitude: 181, longitude: 0 }
+              { __type: 'GeoPoint', latitude: 181, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 }
             ]
           }
         }
@@ -539,7 +543,8 @@ describe('Parse.GeoPoint testing', () => {
           $geoWithin: {
             $polygon: [
               { __type: 'GeoPoint', latitude: 0, longitude: 0 },
-              { __type: 'GeoPoint', latitude: 0, longitude: 181 }
+              { __type: 'GeoPoint', latitude: 0, longitude: 181 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 }
             ]
           }
         }
@@ -557,6 +562,35 @@ describe('Parse.GeoPoint testing', () => {
       done();
     }).catch((err) => {
       expect(err.error.code).toEqual(1);
+      done();
+    });
+  });
+
+  it('minimum 3 points withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: []
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(107);
+      expect(err.error.error).toEqual('Polygon must have at least 3 points');
       done();
     });
   });
