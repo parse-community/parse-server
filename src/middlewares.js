@@ -101,6 +101,10 @@ export function handleParseHeaders(req, res, next) {
   }
 
   if (fileViaJSON) {
+    // Set the correct header
+    if (req.body._ContentType) {
+      req.headers['content-type'] = req.body._ContentType;
+    }
     // We need to repopulate req.body with a buffer
     var base64 = req.body.base64;
     req.body = new Buffer(base64, 'base64');
