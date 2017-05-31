@@ -410,7 +410,7 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it('supports withinPolygon', (done) => {
+  it('supports withinPolygon open path', (done) => {
     const inbound = new Parse.GeoPoint(1.5, 1.5);
     const onbound = new Parse.GeoPoint(10, 10);
     const outbound = new Parse.GeoPoint(20, 20);
@@ -426,6 +426,41 @@ describe('Parse.GeoPoint testing', () => {
               { __type: 'GeoPoint', latitude: 0, longitude: 10 },
               { __type: 'GeoPoint', latitude: 10, longitude: 10 },
               { __type: 'GeoPoint', latitude: 10, longitude: 0 }
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
+  it('supports withinPolygon closed path', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', {location: inbound});
+    const obj2 = new Parse.Object('Polygon', {location: onbound});
+    const obj3 = new Parse.Object('Polygon', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 10 },
+              { __type: 'GeoPoint', latitude: 10, longitude: 10 },
+              { __type: 'GeoPoint', latitude: 10, longitude: 0 },
+              { __type: 'GeoPoint', latitude: 0, longitude: 0 }
             ]
           }
         }
