@@ -523,6 +523,7 @@ describe('SchemaController', () => {
       aFile: {type: 'File'},
       aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
       aRelation: {type: 'Relation', targetClass: 'NewClass'},
+      aBytes: {type: 'Bytes'},
     }))
     .then(actualSchema => {
       const expectedSchema = {
@@ -542,6 +543,7 @@ describe('SchemaController', () => {
           aFile: { type: 'File' },
           aPointer: { type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet' },
           aRelation: { type: 'Relation', targetClass: 'NewClass' },
+          aBytes: {type: 'Bytes'},
         },
         classLevelPermissions: {
           find: { '*': true },

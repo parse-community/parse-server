@@ -1328,7 +1328,7 @@ describe('Parse.Object testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])("bytes work", function(done) {
+  it("bytes work", function(done) {
     Parse.Promise.as().then(function() {
       var obj = new TestObject();
       obj.set("bytes", { __type: "Bytes", base64: "ZnJveW8=" });

@@ -97,6 +97,7 @@ function parseFieldTypeToMongoFieldType({ type, targetClass }) {
   case 'Array':    return 'array';
   case 'GeoPoint': return 'geopoint';
   case 'File':     return 'file';
+  case 'Bytes':    return 'bytes';
   }
 }
 
