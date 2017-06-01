@@ -441,8 +441,6 @@ const transformInteriorAtom = atom => {
     };
   } else if (typeof atom === 'function' || typeof atom === 'symbol') {
     throw new Parse.Error(Parse.Error.INVALID_JSON, `cannot transform value: ${atom}`);
-  } else if (DateCoder.isValidJSON(atom)) {
-    return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
   } else {
