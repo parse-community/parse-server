@@ -10,7 +10,7 @@ export class FilesRouter {
 
   expressRouter(options = {}) {
     var router = express.Router();
-    router.get('/files/:appId/:filename', this.getHandler);
+    router.get('/files/:appId/:filename/:referencingClass?/:referencingKey?/:sessionToken?', this.getHandler);
 
     router.post('/files', function(req, res, next) {
       next(new Parse.Error(Parse.Error.INVALID_FILE_NAME,
@@ -36,28 +36,39 @@ export class FilesRouter {
   getHandler(req, res) {
     const config = new Config(req.params.appId);
     const filesController = config.filesController;
-    const filename = req.params.filename;
+    const params = req.params;
+    const filename = params.filename;
     const contentType = mime.lookup(filename);
-    if (isFileStreamable(req, filesController)) {
-      filesController.getFileStream(config, filename).then((stream) => {
-        handleFileStream(stream, req, res, contentType);
-      }).catch(() => {
+
+    checkAuthentication(config, params).then((isAuthenticated) => {
+      if (isAuthenticated) {
+        if (isFileStreamable(req, filesController)) {
+          filesController.getFileStream(config, filename).then((stream) => {
+            handleFileStream(stream, req, res, contentType);
+          }).catch(() => {
+            res.status(404);
+            res.set('Content-Type', 'text/plain');
+            res.end('File not found.');
+          });
+        } else {
+          filesController.getFileData(config, filename).then((data) => {
+            res.status(200);
+            res.set('Content-Type', contentType);
+            res.set('Content-Length', data.length);
+            res.end(data);
+          }).catch(() => {
+            res.status(404);
+            res.set('Content-Type', 'text/plain');
+            res.end('File not found.');
+          });
+        }
+      } else {
         res.status(404);
         res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    } else {
-      filesController.getFileData(config, filename).then((data) => {
-        res.status(200);
-        res.set('Content-Type', contentType);
-        res.set('Content-Length', data.length);
-        res.end(data);
-      }).catch(() => {
-        res.status(404);
-        res.set('Content-Type', 'text/plain');
-        res.end('File not found.');
-      });
-    }
+        res.end('Unauthorized.');
+      }
+    })
+    
   }
 
   createHandler(req, res, next) {
@@ -105,6 +116,31 @@ export class FilesRouter {
         'Could not delete file.'));
     });
   }
+}
+
+function checkAuthentication(config, params) {
+  if (config.authenticatedFileRetrieval) {
+    const restController = Parse.CoreManager.getRESTController();
+    const filename = params.filename;
+    const referencingClass = params.referencingClass;
+    const referencingKey = params.referencingKey;
+    const sessionToken = params.sessionToken;
+    const url = `${config.publicServerURL}files/${config.appId}/${filename}`;
+    const fileObject = {name: filename, url: url, __type: 'File'};
+    const query = {where: {[referencingKey]: fileObject}};
+
+    if (!referencingClass || !referencingKey || !sessionToken) return Promise.resolve(false);
+    else {
+      return restController.request("GET", `/classes/${referencingClass}`, query, {sessionToken}).then((res) => {
+        if (res.results.length > 0)
+          return true;
+        else
+          return false;
+      }, (err) => {
+        return false;
+      });
+    }
+  } else return Promise.resolve(true);
 }
 
 function isFileStreamable(req, filesController){
