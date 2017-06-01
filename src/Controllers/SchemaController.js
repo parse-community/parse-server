@@ -216,6 +216,7 @@ const validNonRelationOrPointerTypes = [
   'Array',
   'GeoPoint',
   'File',
+  'Bytes'
 ];
 // Returns an error suitable for throwing if the type is invalid
 const fieldTypeIsInvalid = ({ type, targetClass }) => {
@@ -966,7 +967,7 @@ function getObjectType(obj) {
       break;
     case 'Bytes' :
       if(obj.base64) {
-        return;
+        return 'Bytes';
       }
       break;
     }
