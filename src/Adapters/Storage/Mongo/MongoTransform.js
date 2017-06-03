@@ -581,7 +581,7 @@ function transformConstraint(constraint, inArray) {
       if (typeof s !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${s}, should be string`
+          `bad $text: ${key}, should be string`
         );
       }
       answer[key] = s;
@@ -592,7 +592,7 @@ function transformConstraint(constraint, inArray) {
       if (typeof s !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${s}, should be string`
+          `bad $text: ${key}, should be string`
         );
       }
       answer[key] = s;
@@ -603,7 +603,7 @@ function transformConstraint(constraint, inArray) {
       if (typeof s !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${s}, should be boolean`
+          `bad $text: ${key}, should be boolean`
         );
       }
       answer[key] = s;
@@ -614,7 +614,7 @@ function transformConstraint(constraint, inArray) {
       if (typeof s !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${s}, should be boolean`
+          `bad $text: ${key}, should be boolean`
         );
       }
       answer[key] = s;
