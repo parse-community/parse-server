@@ -620,17 +620,6 @@ function transformConstraint(constraint, inArray) {
       answer[key] = s;
       break;
     }
-    case '$meta': {
-      const s = constraint[key];
-      if (s !== 'textScore') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $meta: ${s}, should be textScore`
-        );
-      }
-      answer[key] = s;
-      break;
-    }
     case '$nearSphere':
       var point = constraint[key];
       answer[key] = [point.longitude, point.latitude];

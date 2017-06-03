@@ -2886,6 +2886,31 @@ describe('Parse.Query testing', () => {
     }, done.fail);
   });
 
+  it_exclude_dbs(['postgres'])('fullTextSearch: $search, sort', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'coffee'
+        }
+      };
+      const order = '$score';
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, order, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(3);
+      expect(resp.results[0].score).toBe(1);
+      expect(resp.results[1].score).toBe(0.75);
+      expect(resp.results[2].score).toBe(0.75);
+      done();
+    }, done.fail);
+  });
+
   it_exclude_dbs(['postgres'])('fullTextSearch: $language', (done) => {
     fullTextHelper().then(() => {
       const where = {
