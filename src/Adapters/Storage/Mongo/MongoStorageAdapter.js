@@ -135,13 +135,9 @@ export class MongoStorageAdapter {
     this.database.close(false);
   }
 
-  _rawCollection(name: string) {
-    return this.connect()
-      .then(() => this.database.collection(this._collectionPrefix + name));
-  }
-
   _adaptiveCollection(name: string) {
-    return this._rawCollection(name)
+    return this.connect()
+      .then(() => this.database.collection(this._collectionPrefix + name))
       .then(rawCollection => new MongoCollection(rawCollection));
   }
 
@@ -344,22 +340,6 @@ export class MongoStorageAdapter {
       memo[transformKey(className, key, schema)] = 1;
       return memo;
     }, {});
-    if (mongoWhere.$text) {
-      return new Promise((resolve, reject) => {
-        this._rawCollection(className).then((rawCollection) => {
-          rawCollection.find(
-            mongoWhere,
-            {score: {$meta: 'textScore'}}
-          ).sort(mongoSort).toArray(function(err, objects) {
-            if (err) {
-              reject(err);
-            } else {
-              resolve(objects.map(object => mongoObjectToParseObject(className, object, schema)));
-            }
-          });
-        });
-      });
-    }
     return this._adaptiveCollection(className)
       .then(collection => collection.find(mongoWhere, {
         skip,

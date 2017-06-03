@@ -94,8 +94,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       var fields = restOptions.order.split(',');
       this.findOptions.sort = fields.reduce((sortMap, field) => {
         field = field.trim();
-        if (field == '$score') {
-          sortMap['score'] = {$meta: 'textScore'};
+        if (field === '$score') {
+          sortMap.score = {$meta: 'textScore'};
         } else if (field[0] == '-') {
           sortMap[field.slice(1)] = -1;
         } else {
