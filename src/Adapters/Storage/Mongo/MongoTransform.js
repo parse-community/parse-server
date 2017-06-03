@@ -576,6 +576,61 @@ function transformConstraint(constraint, inArray) {
       answer[key] = constraint[key];
       break;
 
+    case '$search': {
+      const s = constraint[key];
+      if (typeof s !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: ${s}, should be string`
+        );
+      }
+      answer[key] = s;
+      break;
+    }
+    case '$language': {
+      const s = constraint[key];
+      if (typeof s !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: ${s}, should be string`
+        );
+      }
+      answer[key] = s;
+      break;
+    }
+    case '$caseSensitive': {
+      const s = constraint[key];
+      if (typeof s !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: ${s}, should be boolean`
+        );
+      }
+      answer[key] = s;
+      break;
+    }
+    case '$diacriticSensitive': {
+      const s = constraint[key];
+      if (typeof s !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: ${s}, should be boolean`
+        );
+      }
+      answer[key] = s;
+      break;
+    }
+    case '$meta': {
+      const s = constraint[key];
+      if (s !== 'textScore') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $meta: ${s}, should be textScore`
+        );
+      }
+      answer[key] = s;
+      break;
+    }
     case '$nearSphere':
       var point = constraint[key];
       answer[key] = [point.longitude, point.latitude];

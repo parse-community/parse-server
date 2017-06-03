@@ -4,7 +4,10 @@
 // Some new tests are added.
 'use strict';
 
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const databaseURI = 'mongodb://localhost:27017/test';
 const Parse = require('parse/node');
+const rp = require('request-promise');
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -2813,6 +2816,77 @@ describe('Parse.Query testing', () => {
       });
     }).then((response) => {
       expect(response.results.length).toBe(1);
+      done();
+    }, done.fail);
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $search', (done) => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+      databaseAdapter: adapter
+    }).then(() => {
+      return adapter.createIndex('TestObject', {subject:'text'});
+    }).then(() => {
+      return rp.post({
+        url: 'http://localhost:8378/1/batch',
+        body: {
+          requests: [
+            {
+              method: "POST",
+              body: {
+                subject: "Joe owns a dog"
+              },
+              path: "/1/classes/TestObject"
+            },
+            {
+              method: "POST",
+              body: {
+                subject: "Dogs eat cats and dog eats pigeons too"
+              },
+              path: "/1/classes/TestObject"
+            },
+            {
+              method: "POST",
+              body: {
+                subject: "Cats eat rats"
+              },
+              path: "/1/classes/TestObject"
+            },
+            {
+              method: "POST",
+              body: {
+                subject: "Rats eat Joe"
+              },
+              path: "/1/classes/TestObject"
+            }
+          ]
+        },
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then(() => {
+      const where = {
+        $text: {
+          $search: 'dogs'
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      console.log(resp.results[0]);
+      expect(resp.results.length).toBe(2);
       done();
     }, done.fail);
   });
