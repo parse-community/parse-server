@@ -341,14 +341,14 @@ export class MongoStorageAdapter {
       return memo;
     }, {});
     return this._adaptiveCollection(className)
-      .then(collection => collection.find(mongoWhere, {
-        skip,
-        limit,
-        sort: mongoSort,
-        keys: mongoKeys,
-        maxTimeMS: this._maxTimeMS,
-      }))
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+    .then(collection => collection.find(mongoWhere, {
+      skip,
+      limit,
+      sort: mongoSort,
+      keys: mongoKeys,
+      maxTimeMS: this._maxTimeMS,
+    }))
+    .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
