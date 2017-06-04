@@ -62,7 +62,7 @@
     "jasmine-spec-reporter": "^4.1.0",
     "mongodb-runner": "3.5.0",
     "nodemon": "1.11.0",
-    "nyc": "^10.3.2",
+    "nyc": "^11.0.2",
     "request-promise": "4.2.1"
   },
   "scripts": {
