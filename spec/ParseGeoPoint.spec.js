@@ -196,6 +196,21 @@ describe('Parse.GeoPoint testing', () => {
     Parse.Object.saveAll([sacramento, sf, honolulu], callback);
   };
 
+  it('returns nearest location', (done) => {
+    makeSomeGeoPoints(function() {
+      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      var query = new Parse.Query(TestObject);
+      query.near('location', sfo);
+      query.find({
+        success: function(results) {
+          equal(results[0].get('name'), 'San Francisco');
+          equal(results[1].get('name'), 'Sacramento');
+          done();
+        }
+      });
+    });
+  });
+
   it('geo max distance in km everywhere', (done) => {
     makeSomeGeoPoints(function() {
       var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
