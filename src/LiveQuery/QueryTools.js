@@ -105,11 +105,43 @@ function matchesQuery(object: any, query: any): boolean {
     return matchesQuery(object, query._where);
   }
   for (var field in query) {
-    if (!matchesKeyConstraints(object, field, query[field])) {
+    if (~field.indexOf('.')) {
+      return matchesSubquery(object, field, query[field])
+    } else if (!matchesKeyConstraints(object, field, query[field])) {
       return false;
     }
   }
   return true;
+}
+
+/**
+ * Matches subquery
+ * Determines, if field is divided by dots, and expect field to be dotted path to object sub-key.
+ *
+ * @param object To search for key
+ * @param key Sub query, divided by dot(s)
+ * @param constraints Rules or value to apply
+ * @returns sub-object to search for key, or unmodified object, passed as param.
+ */
+function matchesSubquery(object, key, constraints){
+  var transformed = object;
+  var subKey = key;
+  var keyParts = key.split(".").filter(function(a){return !!a;});
+
+  if (keyParts.length >= 2 && !(key in object)) {
+    while (keyParts.length > 1) {
+      subKey = keyParts.shift();
+      if(transformed[subKey]){
+        transformed = transformed[subKey];
+      } else {
+        return matchesKeyConstraints(object, key, constraints);
+      }
+    }
+    subKey = keyParts.shift();
+    return matchesKeyConstraints(transformed, subKey, constraints);
+  } else {
+    return matchesKeyConstraints(object, key, constraints);
+  }
 }
 
 function equalObjectsGeneric(obj, compareTo, eqlFn) {
