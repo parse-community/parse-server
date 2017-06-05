@@ -84,7 +84,8 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle atomic values
-  var value = transformTopLevelAtom(restValue);
+  var skipTransform = className === "_GlobalConfig" && restValue && (restValue.__type === 'File' || restValue.__type === 'GeoPoint');
+  var value = skipTransform ? restValue : transformTopLevelAtom(restValue);
   if (value !== CannotTransform) {
     if (timeField && (typeof value === 'string')) {
       value = new Date(value);
@@ -383,6 +384,7 @@ const transformUpdate = (className, restUpdate, parseFormatSchema) => {
     if (restUpdate[restKey] && restUpdate[restKey].__type === 'Relation') {
       continue;
     }
+
     var out = transformKeyValueForUpdate(className, restKey, restUpdate[restKey], parseFormatSchema);
 
     // If the output value is an object with any $ keys, it's an

@@ -334,4 +334,32 @@ describe('transformUpdate', () => {
     expect(output).toEqual({});
     done();
   });
+
+  it('skips transforming \'File\' fields for class _GlobalConfig', (done) => {
+    var input = {
+      __type: "File",
+      name: "name",
+      url: "url"
+    };
+
+    var output = transform.transformUpdate("_GlobalConfig", input, {
+      fields: {}
+    });
+    expect(output).toEqual({ $set: Object({ __type: 'File', name: 'name', url: 'url' }) });
+    done();
+  });
+
+  it('skips transforming \'GeoPoint\' fields for class _GlobalConfig', (done) => {
+    var input = {
+      __type: "GeoPoint",
+      name: "10",
+      url: "20"
+    };
+
+    var output = transform.transformUpdate("_GlobalConfig", input, {
+      fields: {}
+    });
+    expect(output).toEqual({ $set: Object({ __type: 'GeoPoint', name: '10', url: '20' }) });
+    done();
+  });
 });
