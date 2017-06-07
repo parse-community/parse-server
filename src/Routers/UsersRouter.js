@@ -51,7 +51,8 @@ export class UsersRouter extends ClassesRouter {
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
-          !response.results[0].user) {
+          !response.results[0].user || 
+          ( response.results[0].user.__type && response.results[0].user.__type === 'Pointer' )) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
         } else {
           const user = response.results[0].user;
