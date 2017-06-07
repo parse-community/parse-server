@@ -281,8 +281,13 @@ class ParseServer {
         cloud(Parse)
       } else if (typeof cloud === 'string') {
         require(path.resolve(process.cwd(), cloud));
-      } else {
-        throw "argument 'cloud' must either be a string or a function";
+      } else if (cloud instanceof Array) {
+        for (var index in cloud) {
+          require(path.resolve(process.cwd(), cloud[index]));
+        }
+      }
+      else {
+        throw "argument 'cloud' must either be string, Array or a function";
       }
     }
   }
