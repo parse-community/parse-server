@@ -54,6 +54,12 @@ describe('rest create', () => {
 
   it('handles object and subdocument', done => {
     const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
+
+    Parse.Cloud.beforeSave('MyClass', function(req, res) {
+      // this beforeSave trigger should do nothing but can mess with the object
+      res.success();
+    });
+
     rest.create(config, auth.nobody(config), 'MyClass', obj)
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
@@ -64,7 +70,7 @@ describe('rest create', () => {
       expect(mob.subdoc.wu).toBe('tan');
       expect(typeof mob.objectId).toEqual('string');
       const obj = { 'subdoc.wu': 'clan' };
-      return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj)
+      return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj);
     })
     .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
     .then(results => {
