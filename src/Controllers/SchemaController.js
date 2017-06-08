@@ -348,8 +348,13 @@ export default class SchemaController {
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
         const schema = injectDefaultSchema({ className });
-        data[className] = schema.fields;
-        perms[className] = schema.classLevelPermissions;
+        //if it's specified in allSchemas, use that, otherwise use the default one.
+        if(!(className in data)){
+          data[className] = schema.fields;
+        }
+        if(!(className in perms)){
+          perms[className] = schema.classLevelPermissions;
+        }
       });
       this.data = data;
       this.perms = perms;
@@ -793,6 +798,7 @@ export default class SchemaController {
 
   // Validates an operation passes class-level-permissions set in the schema
   validatePermission(className, aclGroup, operation) {
+
     if (this.testBaseCLP(className, aclGroup, operation)) {
       return Promise.resolve();
     }
