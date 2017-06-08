@@ -348,13 +348,8 @@ export default class SchemaController {
       // Inject the in-memory classes
       volatileClasses.forEach(className => {
         const schema = injectDefaultSchema({ className });
-        //if it's specified in allSchemas, use that, otherwise use the default one.
-        if(!(className in data)){
-          data[className] = schema.fields;
-        }
-        if(!(className in perms)){
-          perms[className] = schema.classLevelPermissions;
-        }
+        data[className] = schema.fields;
+        perms[className] = schema.classLevelPermissions;
       });
       this.data = data;
       this.perms = perms;
