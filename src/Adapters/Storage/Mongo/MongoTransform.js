@@ -228,6 +228,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   // Handle query constraints
   const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
   if (transformedConstraint !== CannotTransform) {
+    if (transformedConstraint.$text) {
+      return {key: '$text', value: transformedConstraint.$text};
+    }
     return {key, value: transformedConstraint};
   }
 
@@ -576,48 +579,49 @@ function transformConstraint(constraint, inArray) {
       answer[key] = constraint[key];
       break;
 
-    case '$search': {
-      const s = constraint[key];
-      if (typeof s !== 'string') {
+    case '$text': {
+      const search = constraint[key].$search;
+      /* eslint-disable */
+      if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${key}, should be string`
+          `bad $text: $search, should be object`
         );
       }
-      answer[key] = s;
-      break;
-    }
-    case '$language': {
-      const s = constraint[key];
-      if (typeof s !== 'string') {
+      if (!search.$term || typeof search.$term !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${key}, should be string`
+          `bad $text: $term, should be string`
         );
+      } else {
+        answer[key] = {
+          '$search': search.$term
+        }
       }
-      answer[key] = s;
-      break;
-    }
-    case '$caseSensitive': {
-      const s = constraint[key];
-      if (typeof s !== 'boolean') {
+      if (search.$language && typeof search.$language !== 'string') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${key}, should be boolean`
+          `bad $text: $language, should be string`
         );
+      } else if (search.$language) {
+        answer[key].$language = search.$language;
       }
-      answer[key] = s;
-      break;
-    }
-    case '$diacriticSensitive': {
-      const s = constraint[key];
-      if (typeof s !== 'boolean') {
+      if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: ${key}, should be boolean`
+          `bad $text: $caseSensitive, should be boolean`
         );
+      } else if (search.$caseSensitive) {
+        answer[key].$caseSensitive = search.$caseSensitive;
       }
-      answer[key] = s;
+      if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive, should be boolean`
+        );
+      } else if (search.$diacriticSensitive) {
+        answer[key].$diacriticSensitive = search.$diacriticSensitive;
+      }
       break;
     }
     case '$nearSphere':

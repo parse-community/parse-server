@@ -5,7 +5,9 @@
 'use strict';
 
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-const databaseURI = 'mongodb://localhost:27017/test';
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 const Parse = require('parse/node');
 const rp = require('request-promise');
 
@@ -2821,7 +2823,12 @@ describe('Parse.Query testing', () => {
   });
 
   const fullTextHelper = () => {
-    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    let databaseAdapter;
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      databaseAdapter = new PostgresStorageAdapter({ uri: postgresURI });
+    } else {
+      databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    }
     const subjects = [
       'coffee',
       'Coffee Shopping',
@@ -2847,9 +2854,12 @@ describe('Parse.Query testing', () => {
       appId: 'test',
       restAPIKey: 'test',
       publicServerURL: 'http://localhost:8378/1',
-      databaseAdapter: adapter
+      databaseAdapter
     }).then(() => {
-      return adapter.createIndex('TestObject', {subject:'text'});
+      if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+        return Parse.Promise.as();
+      }
+      return databaseAdapter.createIndex('TestObject', {subject: 'text'});
     }).then(() => {
       return rp.post({
         url: 'http://localhost:8378/1/batch',
@@ -2866,12 +2876,11 @@ describe('Parse.Query testing', () => {
   }
 
   it_exclude_dbs(['postgres'])('fullTextSearch: $search, index not exist', (done) => {
-    const adapter = new MongoStorageAdapter({ uri: databaseURI });
     return reconfigureServer({
       appId: 'test',
       restAPIKey: 'test',
       publicServerURL: 'http://localhost:8378/1',
-      databaseAdapter: adapter
+      databaseAdapter: new MongoStorageAdapter({ uri: mongoURI })
     }).then(() => {
       return rp.post({
         url: 'http://localhost:8378/1/batch',
@@ -2901,8 +2910,12 @@ describe('Parse.Query testing', () => {
       });
     }).then(() => {
       const where = {
-        $text: {
-          $search: 'coffee'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'coffee'
+            }
+          }
         }
       };
       return rp.post({
@@ -2922,11 +2935,15 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $search', (done) => {
+  it('fullTextSearch: $search', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'coffee'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'coffee'
+            }
+          }
         }
       };
       return rp.post({
@@ -2943,11 +2960,15 @@ describe('Parse.Query testing', () => {
     }, done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $search, sort', (done) => {
+  it('fullTextSearch: $search, sort', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'coffee'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'coffee'
+            }
+          }
         }
       };
       const order = '$score';
@@ -2962,19 +2983,23 @@ describe('Parse.Query testing', () => {
       });
     }).then((resp) => {
       expect(resp.results.length).toBe(3);
-      expect(resp.results[0].score).toBe(1);
-      expect(resp.results[1].score).toBe(0.75);
-      expect(resp.results[2].score).toBe(0.75);
+      expect(resp.results[0].score);
+      expect(resp.results[1].score);
+      expect(resp.results[2].score);
       done();
     }, done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $language', (done) => {
+  it('fullTextSearch: $language', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'leche',
-          $language: 'es'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'leche',
+              $language: 'spanish'
+            }
+          }
         }
       };
       return rp.post({
@@ -2994,9 +3019,13 @@ describe('Parse.Query testing', () => {
   it_exclude_dbs(['postgres'])('fullTextSearch: $caseSensitive', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'Coffee',
-          $caseSensitive: true
+        subject: {
+          $text: {
+            $search: {
+              $term: 'Coffee',
+              $caseSensitive: true
+            }
+          }
         }
       };
       return rp.post({
@@ -3016,9 +3045,13 @@ describe('Parse.Query testing', () => {
   it_exclude_dbs(['postgres'])('fullTextSearch: $diacriticSensitive', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'CAFÉ',
-          $diacriticSensitive: true
+        subject: {
+          $text: {
+            $search: {
+              $term: 'CAFÉ',
+              $diacriticSensitive: true
+            }
+          }
         }
       };
       return rp.post({
@@ -3035,11 +3068,13 @@ describe('Parse.Query testing', () => {
     }, done.fail);
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $search, invalid input', (done) => {
+  it('fullTextSearch: $search, invalid input', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: true
+        subject: {
+          $text: {
+            $search: true
+          }
         }
       };
       return rp.post({
@@ -3059,12 +3094,16 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $language, invalid input', (done) => {
+  it('fullTextSearch: $language, invalid input', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'leche',
-          $language: true
+        subject: {
+          $text: {
+            $search: {
+              $term: 'leche',
+              $language: true
+            }
+          }
         }
       };
       return rp.post({
@@ -3084,12 +3123,16 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $caseSensitive, invalid input', (done) => {
+  it('fullTextSearch: $caseSensitive, invalid input', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'Coffee',
-          $caseSensitive: 'string'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'Coffee',
+              $caseSensitive: 'string'
+            }
+          }
         }
       };
       return rp.post({
@@ -3109,12 +3152,16 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('fullTextSearch: $diacriticSensitive, invalid input', (done) => {
+  it('fullTextSearch: $diacriticSensitive, invalid input', (done) => {
     fullTextHelper().then(() => {
       const where = {
-        $text: {
-          $search: 'CAFÉ',
-          $diacriticSensitive: 'string'
+        subject: {
+          $text: {
+            $search: {
+              $term: 'CAFÉ',
+              $diacriticSensitive: 'string'
+            }
+          }
         }
       };
       return rp.post({

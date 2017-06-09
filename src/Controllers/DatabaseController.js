@@ -42,7 +42,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 }
 
-const specialQuerykeys = ['$and', '$or', '$text', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
+const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
 const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
