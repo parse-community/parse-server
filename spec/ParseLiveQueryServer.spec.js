@@ -60,19 +60,20 @@ describe('ParseLiveQueryServer', function() {
       }
     };
     jasmine.mockLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
+
     // Make mock SessionTokenCache
-    var mockSessionTokenCache = function(){
-      this.getUserId = function(sessionToken){
-        if (typeof sessionToken === 'undefined') {
-          return Parse.Promise.as(undefined);
-        }
-        if (sessionToken === null) {
-          return Parse.Promise.error();
-        }
-        return Parse.Promise.as(testUserId);
-      };
-    };
-    jasmine.mockLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
+    // var mockSessionTokenCache = function(){
+    //   this.getUserId = function(sessionToken){
+    //     if (typeof sessionToken === 'undefined') {
+    //       return Parse.Promise.as(undefined);
+    //     }
+    //     if (sessionToken === null) {
+    //       return Parse.Promise.error();
+    //     }
+    //     return Parse.Promise.as(testUserId);
+    //   };
+    // };
+    // jasmine.mockLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache', mockSessionTokenCache);
     done();
   });
 
@@ -1026,7 +1027,8 @@ describe('ParseLiveQueryServer', function() {
     jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'matchesQuery');
     jasmine.restoreLibrary('tv4', 'validate');
     jasmine.restoreLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub');
-    jasmine.restoreLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache');
+
+    // jasmine.restoreLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache');
   });
 
   // Helper functions to add mock client and subscription to a liveQueryServer

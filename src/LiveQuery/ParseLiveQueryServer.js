@@ -26,14 +26,14 @@ class ParseLiveQueryServer {
   // The subscriber we use to get object update from publisher
   subscriber: Object;
   config: Object;
-
+  cacheController: CacheController;
   constructor(server: any, config: any) {
     this.clientId = 0;
     this.clients = new Map();
     this.subscriptions = new Map();
 
     config = config || {};
-
+    if (typeof config != 'object') config = {_original: config}
     // Store keys, convert obj to map
     const keyPairs = config.keyPairs || {};
     this.keyPairs = new Map();
