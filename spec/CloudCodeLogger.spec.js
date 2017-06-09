@@ -227,6 +227,32 @@ describe("Cloud Code Logger", () => {
       .then(null, e => done.fail(JSON.stringify(e)));
   }).pend('needs more work.....');
 
+  fdescribe('logging large objects', () => {
+    const testFilePath = './spec/support/test-image.jpg';
+    const logController = new LoggerController(new WinstonLoggerAdapter());
+
+    beforeEach(() => {
+      Parse.Cloud.define('readImageToBase64', (request, response) => {
+        try {
+          const base64String = fs.readFileSync(testFilePath, { encoding: 'base64' });
+          response.success(base64String);
+        } catch (e) {
+          response.error(e.message);
+        }
+      });
+    });
+
+    fit('should not log huge objects when x is configured or something?', (done) => {
+      Parse.Cloud.run('readImageToBase64')
+        .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+        .then((logs) => {
+          console.log(logs);
+          done();
+        })
+        .catch(done.fail);
+    });
+  });
+
   it('cloud function should obfuscate password', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
 
