@@ -1,8 +1,7 @@
-'use strict';
-var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-
+const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 const fs = require('fs');
+
 const loremFile = __dirname + '/support/lorem.txt';
 
 describe("Cloud Code Logger", () => {
@@ -227,21 +226,21 @@ describe("Cloud Code Logger", () => {
             })
             .then(null, e => done.fail(JSON.stringify(e)));
   }).pend('needs more work.....');
-});
 
-it('cloud function should obfuscate password', done => {
-  const logController = new LoggerController(new WinstonLoggerAdapter());
+  it('cloud function should obfuscate password', done => {
+    const logController = new LoggerController(new WinstonLoggerAdapter());
 
-  Parse.Cloud.define('testFunction', (req, res) => {
-    res.success(1002,'verify code success');
+    Parse.Cloud.define('testFunction', (req, res) => {
+      res.success(1002,'verify code success');
+    });
+
+    Parse.Cloud.run('testFunction', {username:'hawk',password:'123456'})
+            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+            .then((res) => {
+              const entry = res[0];
+              expect(entry.params.password).toMatch(/\*\*\*\*\*\*\*\*/);
+              done();
+            })
+            .then(null, e => done.fail(e));
   });
-
-  Parse.Cloud.run('testFunction', {username:'hawk',password:'123456'})
-          .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-          .then((res) => {
-            const entry = res[0];
-            expect(entry.params.password).toMatch(/\*\*\*\*\*\*\*\*/);
-            done();
-          })
-          .then(null, e => done.fail(e));
 });
