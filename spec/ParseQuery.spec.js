@@ -65,7 +65,6 @@ const fullTextHelper = () => {
 }
 
 describe('Parse.Query testing', () => {
-  /*
   it("basic query", function(done) {
     var baz = new TestObject({ foo: 'baz' });
     var qux = new TestObject({ foo: 'qux' });
@@ -2875,7 +2874,6 @@ describe('Parse.Query testing', () => {
       done();
     }, done.fail);
   });
-*/
 
   it('fullTextSearch: $search', (done) => {
     fullTextHelper().then(() => {
