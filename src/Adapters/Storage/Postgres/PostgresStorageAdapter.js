@@ -366,7 +366,7 @@ const buildWhereClause = ({ schema, query, index }) => {
       } else if (search.$diacriticSensitive === false) {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          `bad $text: $diacriticSensitive - false not supported, install Postgres Unaccent Extention`
+          `bad $text: $diacriticSensitive - false not supported, install Postgres Unaccent Extension`
         );
       }
       patterns.push(`to_tsvector($${index}, $${index + 1}:name) @@ to_tsquery($${index + 2}, $${index + 3})`);
