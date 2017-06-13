@@ -134,8 +134,15 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
   });
 }
 
+const classesWithMasterOnlyAccess = ['_PushStatus', '_Hooks', '_GlobalConfig', '_JobStatus', '_JobSchedule'];
 // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
+  if (classesWithMasterOnlyAccess.indexOf(className) > -1 && !auth.isMaster) {
+    const error = new Error();
+    error.status = 403;
+    error.message = "unauthorized: master key is required";
+    throw error;
+  }
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
       const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
