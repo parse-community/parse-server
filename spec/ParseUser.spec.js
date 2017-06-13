@@ -2277,8 +2277,50 @@ describe('Parse.User testing', () => {
             expect(error).toBe(null);
             var b = JSON.parse(body);
             expect(b.code).toEqual(209);
+            expect(b.error).toBe('invalid session token');
             done();
           });
+        });
+      });
+    });
+  });
+
+  it('cannot delete session if no sessionToken', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("test1", "test", { foo: "bar" });
+    }).then(() => {
+      return Parse.User.signUp("test2", "test", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions'
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var objId;
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          objId = b.results[0].objectId;
+        } catch(e) {
+          jfail(e);
+          done();
+          return;
+        }
+        request.del({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest'
+          },
+          url: 'http://localhost:8378/1/sessions/' + objId
+        }, (error,response,body) => {
+          var b = JSON.parse(body);
+          expect(b.code).toEqual(209);
+          expect(b.error).toBe('invalid session token');
+          done();
         });
       });
     });
