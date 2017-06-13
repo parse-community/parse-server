@@ -4,7 +4,10 @@
 // Some new tests are added.
 'use strict';
 
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const databaseURI = 'mongodb://localhost:27017/test';
 const Parse = require('parse/node');
+const rp = require('request-promise');
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -2848,5 +2851,236 @@ describe('Parse.Query testing', () => {
       expect(response.results.length).toBe(1);
       done();
     }, done.fail);
+  });
+
+  const fullTextHelper = () => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+    const subjects = [
+      'coffee',
+      'Coffee Shopping',
+      'Baking a cake',
+      'baking',
+      'Café Con Leche',
+      'Сырники',
+      'coffee and cream',
+      'Cafe con Leche',
+    ];
+    const requests = [];
+    for (const i in subjects) {
+      const request = {
+        method: "POST",
+        body: {
+          subject: subjects[i]
+        },
+        path: "/1/classes/TestObject"
+      };
+      requests.push(request);
+    }
+    return reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+      databaseAdapter: adapter
+    }).then(() => {
+      return adapter.createIndex('TestObject', {subject:'text'});
+    }).then(() => {
+      return rp.post({
+        url: 'http://localhost:8378/1/batch',
+        body: {
+          requests
+        },
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    });
+  }
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $search', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'coffee'
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(3);
+      done();
+    }, done.fail);
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $language', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'leche',
+          $language: 'es'
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $caseSensitive', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'Coffee',
+          $caseSensitive: true
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(1);
+      done();
+    }, done.fail);
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $diacriticSensitive', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'CAFÉ',
+          $diacriticSensitive: true
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(1);
+      done();
+    }, done.fail);
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $search, invalid input', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: true
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $language, invalid input', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'leche',
+          $language: true
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $caseSensitive, invalid input', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'Coffee',
+          $caseSensitive: 'string'
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('fullTextSearch: $diacriticSensitive, invalid input', (done) => {
+    fullTextHelper().then(() => {
+      const where = {
+        $text: {
+          $search: 'CAFÉ',
+          $diacriticSensitive: 'string'
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
+      done();
+    });
   });
 });
