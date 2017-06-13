@@ -142,6 +142,13 @@ function enforceRoleSecurity(method, className, auth) {
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
     }
   }
+
+  //all volatileClasses are masterKey only
+  const volatileClasses = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig'];
+  if(volatileClasses.includes(className) && !auth.isMaster){
+    const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
 }
 
 module.exports = {
