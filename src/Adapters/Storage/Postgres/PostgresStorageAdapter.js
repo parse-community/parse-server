@@ -353,16 +353,21 @@ const buildWhereClause = ({ schema, query, index }) => {
           `bad $text: $caseSensitive, should be boolean`
         );
       } else if (search.$caseSensitive) {
-        //Skip, Use Regex or LOWER()
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $caseSensitive not supported, please use $regex or create a separate lower case column.`
+        );
       }
       if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
           `bad $text: $diacriticSensitive, should be boolean`
         );
-      } else if (search.$diacriticSensitive) {
-        // Skip Use unaccent extention with text search config
-        // https://gist.github.com/rach/9289959
+      } else if (search.$diacriticSensitive === false) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive - false not supported, install Postgres Unaccent Extention`
+        );
       }
       patterns.push(`to_tsvector($${index}, $${index + 1}:name) @@ to_tsquery($${index + 2}, $${index + 3})`);
       values.push(language, fieldName, language, search.$term);
