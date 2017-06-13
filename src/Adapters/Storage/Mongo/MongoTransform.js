@@ -581,7 +581,6 @@ function transformConstraint(constraint, inArray) {
 
     case '$text': {
       const search = constraint[key].$search;
-      /* eslint-disable */
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
