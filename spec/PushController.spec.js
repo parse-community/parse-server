@@ -395,7 +395,6 @@ describe('PushController', () => {
   });
 
   it('properly creates _PushStatus', (done) => {
-
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
@@ -436,7 +435,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      return Parse.Object.saveAll(installations)
+      return Parse.Object.saveAll(installations);
     })
    .then(() => {
      return pushController.sendPush(payload, {}, config, auth);
@@ -472,8 +471,8 @@ describe('PushController', () => {
      // Try to get it without masterKey
      const query = new Parse.Query('_PushStatus');
      return query.find();
-   }).then((results) => {
-     expect(results.length).toBe(0);
+   }).catch((error) => {
+     expect(error.code).toBe(119);
      done();
    });
   });
