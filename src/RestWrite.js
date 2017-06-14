@@ -1104,7 +1104,7 @@ RestWrite.prototype.sanitizedData = function() {
 
 // Returns an updated copy of the object
 RestWrite.prototype.buildUpdatedObject = function (extraData) {
-  var updatedObject = triggers.inflate(extraData, this.originalData);
+  const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf(".") > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
