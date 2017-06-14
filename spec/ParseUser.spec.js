@@ -2191,7 +2191,8 @@ describe('Parse.User testing', () => {
         request.put({
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken()
+            'X-Parse-Session-Token': user.getSessionToken(),
+            'X-Parse-REST-API-Key': 'rest'
           },
           url: 'http://localhost:8378/1/sessions/' + b.objectId,
           body: JSON.stringify({ foo: 'bar' })
@@ -2199,6 +2200,50 @@ describe('Parse.User testing', () => {
           expect(error).toBe(null);
           JSON.parse(body);
           done();
+        });
+      });
+    });
+  });
+
+  it('cannot update session if invalid or no session token', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions/me',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        request.put({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Session-Token': 'foo',
+            'X-Parse-REST-API-Key': 'rest'
+          },
+          url: 'http://localhost:8378/1/sessions/' + b.objectId,
+          body: JSON.stringify({ foo: 'bar' })
+        }, (error, response, body) => {
+          expect(error).toBe(null);
+          var b = JSON.parse(body);
+          expect(b.error).toBe('invalid session token');
+          request.put({
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest'
+            },
+            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            body: JSON.stringify({ foo: 'bar' })
+          }, (error, response, body) => {
+            expect(error).toBe(null);
+            var b = JSON.parse(body);
+            expect(b.error).toBe('Session token required.');
+            done();
+          });
         });
       });
     });
