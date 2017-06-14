@@ -98,12 +98,12 @@ const defaultColumns = Object.freeze({
   _JobSchedule: {
     "jobName":      {type:'String'},
     "description":  {type:'String'},
-    "params":       {type:'Object'},
-    "startAfter":   {type:'Date'},
+    "params":       {type:'String'},
+    "startAfter":   {type:'String'},
     "daysOfWeek":   {type:'Array'},
     "timeOfDay":    {type:'String'},
     "lastRun":      {type:'Number'},
-    "repeatMinutes":{type:'String'}
+    "repeatMinutes":{type:'Number'}
   },
   _Hooks: {
     "functionName": {type:'String'},
