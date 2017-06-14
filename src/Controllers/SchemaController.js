@@ -95,6 +95,16 @@ const defaultColumns = Object.freeze({
     "params":     {type: 'Object'}, // params received when calling the job
     "finishedAt": {type: 'Date'}
   },
+  _JobSchedule: {
+    "jobName":      {type:'String'},
+    "description":  {type:'String'},
+    "params":       {type:'String'},
+    "startAfter":   {type:'String'},
+    "daysOfWeek":   {type:'Array'},
+    "timeOfDay":    {type:'String'},
+    "lastRun":      {type:'Number'},
+    "repeatMinutes":{type:'Number'}
+  },
   _Hooks: {
     "functionName": {type:'String'},
     "className":    {type:'String'},
@@ -112,9 +122,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus', '_JobSchedule']);
 
-const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -291,7 +301,12 @@ const _JobStatusSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
   fields: {},
   classLevelPermissions: {}
 }));
-const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _PushStatusSchema, _GlobalConfigSchema];
+const _JobScheduleSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+  className: "_JobSchedule",
+  fields: {},
+  classLevelPermissions: {}
+}));
+const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _JobScheduleSchema, _PushStatusSchema, _GlobalConfigSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;
