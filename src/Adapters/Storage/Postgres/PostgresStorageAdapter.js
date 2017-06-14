@@ -324,6 +324,56 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 1;
     }
 
+    if (fieldValue.$text) {
+      const search = fieldValue.$text.$search;
+      let language = 'english';
+      if (typeof search !== 'object') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $search, should be object`
+        );
+      }
+      if (!search.$term || typeof search.$term !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $term, should be string`
+        );
+      }
+      if (search.$language && typeof search.$language !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $language, should be string`
+        );
+      } else if (search.$language) {
+        language = search.$language;
+      }
+      if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $caseSensitive, should be boolean`
+        );
+      } else if (search.$caseSensitive) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $caseSensitive not supported, please use $regex or create a separate lower case column.`
+        );
+      }
+      if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive, should be boolean`
+        );
+      } else if (search.$diacriticSensitive === false) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive - false not supported, install Postgres Unaccent Extension`
+        );
+      }
+      patterns.push(`to_tsvector($${index}, $${index + 1}:name) @@ to_tsquery($${index + 2}, $${index + 3})`);
+      values.push(language, fieldName, language, search.$term);
+      index += 4;
+    }
+
     if (fieldValue.$nearSphere) {
       const point = fieldValue.$nearSphere;
       const distance = fieldValue.$maxDistance;
@@ -1084,6 +1134,9 @@ export class PostgresStorageAdapter {
         return key.length > 0;
       });
       columns = keys.map((key, index) => {
+        if (key === '$score') {
+          return `ts_rank_cd(to_tsvector($${2}, $${3}:name), to_tsquery($${4}, $${5}), 32) as score`;
+        }
         return `$${index + values.length + 1}:name`;
       }).join(',');
       values = values.concat(keys);

@@ -393,6 +393,11 @@ export class MongoStorageAdapter {
   performInitialization() {
     return Promise.resolve();
   }
+
+  createIndex(className, index) {
+    return this._adaptiveCollection(className)
+    .then(collection => collection._mongoCollection.createIndex(index));
+  }
 }
 
 export default MongoStorageAdapter;

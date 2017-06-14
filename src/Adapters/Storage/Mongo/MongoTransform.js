@@ -228,6 +228,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   // Handle query constraints
   const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
   if (transformedConstraint !== CannotTransform) {
+    if (transformedConstraint.$text) {
+      return {key: '$text', value: transformedConstraint.$text};
+    }
     return {key, value: transformedConstraint};
   }
 
@@ -576,6 +579,50 @@ function transformConstraint(constraint, inArray) {
       answer[key] = constraint[key];
       break;
 
+    case '$text': {
+      const search = constraint[key].$search;
+      if (typeof search !== 'object') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $search, should be object`
+        );
+      }
+      if (!search.$term || typeof search.$term !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $term, should be string`
+        );
+      } else {
+        answer[key] = {
+          '$search': search.$term
+        }
+      }
+      if (search.$language && typeof search.$language !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $language, should be string`
+        );
+      } else if (search.$language) {
+        answer[key].$language = search.$language;
+      }
+      if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $caseSensitive, should be boolean`
+        );
+      } else if (search.$caseSensitive) {
+        answer[key].$caseSensitive = search.$caseSensitive;
+      }
+      if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive, should be boolean`
+        );
+      } else if (search.$diacriticSensitive) {
+        answer[key].$diacriticSensitive = search.$diacriticSensitive;
+      }
+      break;
+    }
     case '$nearSphere':
       var point = constraint[key];
       answer[key] = [point.longitude, point.latitude];

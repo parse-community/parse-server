@@ -14,6 +14,11 @@ export default class MongoCollection {
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
   find(query, { skip, limit, sort, keys, maxTimeMS } = {}) {
+    // Support for Full Text Search - $text
+    if(keys && keys.$score) {
+      delete keys.$score;
+      keys.score = {$meta: 'textScore'};
+    }
     return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS })
       .catch(error => {
         // Check for "no geoindex" error
