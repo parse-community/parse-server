@@ -843,7 +843,9 @@ DatabaseController.prototype.find = function(className, query, {
             .then(objects => objects.map(object => {
               object = untransformObjectACL(object);
               return filterSensitiveData(isMaster, aclGroup, className, object)
-            }));
+            })).catch((error) => {
+              throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+            });
           }
         }
       });
