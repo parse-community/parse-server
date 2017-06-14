@@ -793,6 +793,7 @@ export default class SchemaController {
 
   // Validates an operation passes class-level-permissions set in the schema
   validatePermission(className, aclGroup, operation) {
+
     if (this.testBaseCLP(className, aclGroup, operation)) {
       return Promise.resolve();
     }

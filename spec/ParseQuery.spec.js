@@ -1926,6 +1926,39 @@ describe('Parse.Query testing', () => {
     })
   });
 
+  it("multiple dontSelect query", function(done) {
+    var RestaurantObject = Parse.Object.extend("Restaurant");
+    var PersonObject = Parse.Object.extend("Person");
+    var objects = [
+      new RestaurantObject({ ratings: 7, location: "Djibouti2" }),
+      new RestaurantObject({ ratings: 5, location: "Djibouti" }),
+      new RestaurantObject({ ratings: 3, location: "Ouagadougou" }),
+      new PersonObject({ name: "Bob2", hometown: "Djibouti2" }),
+      new PersonObject({ name: "Bob", hometown: "Djibouti" }),
+      new PersonObject({ name: "Tom", hometown: "Ouagadougou" }),
+    ];
+
+    Parse.Object.saveAll(objects, function() {
+      var query = new Parse.Query(RestaurantObject);
+      query.greaterThan("ratings", 6);
+      var query2 = new Parse.Query(RestaurantObject);
+      query2.lessThan("ratings", 4);
+      var subQuery = new Parse.Query(PersonObject);
+      subQuery.matchesKeyInQuery("hometown", "location", query);
+      var subQuery2 = new Parse.Query(PersonObject);
+      subQuery2.matchesKeyInQuery("hometown", "location", query2);
+      var mainQuery = new Parse.Query(PersonObject);
+      mainQuery.doesNotMatchKeyInQuery("objectId", "objectId", Parse.Query.or(subQuery, subQuery2));
+      mainQuery.find(expectSuccess({
+        success: function(results) {
+          equal(results.length, 1);
+          equal(results[0].get('name'), 'Bob');
+          done();
+        }
+      }));
+    });
+  });
+
   it("object with length", function(done) {
     var TestObject = Parse.Object.extend("TestObject");
     var obj = new TestObject();

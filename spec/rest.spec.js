@@ -426,6 +426,35 @@ describe('rest create', () => {
         done();
       })
   });
+
+  it("can create object in volatileClasses if masterKey", (done) =>{
+    rest.create(config, auth.master(config), '_PushStatus', {})
+      .then((r) => {
+        expect(r.response.objectId.length).toBe(10);
+      })
+      .then(() => {
+        rest.create(config, auth.master(config), '_JobStatus', {})
+          .then((r) => {
+            expect(r.response.objectId.length).toBe(10);
+            done();
+          })
+      })
+
+  });
+
+  it("cannot create object in volatileClasses if not masterKey", (done) =>{
+    Promise.resolve()
+      .then(() => {
+        rest.create(config, auth.nobody(config), '_PushStatus', {})
+      })
+      .then((r) => {
+        console.log(r);
+      })
+      .catch((error) => {
+        expect(error.code).toEqual(119);
+        done();
+      })
+  })
 });
 
 describe('rest update', () => {
