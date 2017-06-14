@@ -1204,29 +1204,30 @@ describe('Parse.User testing', () => {
         strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
 
-        Parse.User.logOut();
-        ok(provider.loggedOut);
-        provider.loggedOut = false;
+        Parse.User.logOut().then(() => {
+          ok(provider.loggedOut);
+          provider.loggedOut = false;
 
-        Parse.User._logInWith("facebook", {
-          success: function(innerModel) {
-            ok(innerModel instanceof Parse.User,
-               "Model should be a Parse.User");
-            ok(innerModel === Parse.User.current(),
-               "Returned model should be the current user");
-            ok(provider.authData.id === provider.synchronizedUserId);
-            ok(provider.authData.access_token === provider.synchronizedAuthToken);
-            ok(innerModel._isLinked("facebook"),
-               "User should be linked to facebook");
-            ok(innerModel.existed(), "User should not be newly-created");
-            done();
-          },
-          error: function(model, error) {
-            jfail(error);
-            ok(false, "LogIn should have worked");
-            done();
-          }
-        });
+          Parse.User._logInWith("facebook", {
+            success: function(innerModel) {
+              ok(innerModel instanceof Parse.User,
+                "Model should be a Parse.User");
+              ok(innerModel === Parse.User.current(),
+                "Returned model should be the current user");
+              ok(provider.authData.id === provider.synchronizedUserId);
+              ok(provider.authData.access_token === provider.synchronizedAuthToken);
+              ok(innerModel._isLinked("facebook"),
+                "User should be linked to facebook");
+              ok(innerModel.existed(), "User should not be newly-created");
+              done();
+            },
+            error: function(model, error) {
+              jfail(error);
+              ok(false, "LogIn should have worked");
+              done();
+            }
+          });
+        }, done.fail);
       },
       error: function(model, error) {
         jfail(error);
