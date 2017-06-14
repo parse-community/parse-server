@@ -1108,9 +1108,9 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf(".") > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
-      var splittedKey = key.split(".");
-      var parentProp = splittedKey[0];
-      var parentVal = updatedObject.get(parentProp);
+      const splittedKey = key.split(".");
+      const parentProp = splittedKey[0];
+      let parentVal = updatedObject.get(parentProp);
       if(typeof parentVal !== 'object') {
         parentVal = {};
       }
