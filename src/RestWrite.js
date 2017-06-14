@@ -23,14 +23,15 @@ import _         from 'lodash';
 // RestWrite will handle objectId, createdAt, and updatedAt for
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
-function RestWrite(config, auth, className, query, data, originalData, clientSDK) {
+function RestWrite(config, auth, className, query, data, originalData, clientSDK, options) {
   this.config = config;
   this.auth = auth;
   this.className = className;
   this.clientSDK = clientSDK;
   this.storage = {};
   this.runOptions = {};
-  if (!query && data.objectId) {
+  const allowObjectId = options && options.allowObjectId === true;
+  if (!query && data.objectId && !allowObjectId) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'objectId is an invalid field name.');
   }
 
