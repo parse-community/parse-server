@@ -59,6 +59,7 @@ describe('JobSchedule', () => {
   });
 
   it('should create a job schedule', (done) => {
+    Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         job_schedule: {
@@ -79,11 +80,26 @@ describe('JobSchedule', () => {
     .catch(done.fail);
   });
 
-  it('should update a job', (done) => {
+  it('should fail creating a job with an invalid name', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         job_schedule: {
           jobName: 'job'
+        }
+      }
+    });
+    rp.post(Parse.serverURL + '/cloud_code/jobs', options)
+    .then(done.fail)
+    .catch(done);
+  });
+
+  it('should update a job', (done) => {
+    Parse.Cloud.job('job1', () => {});
+    Parse.Cloud.job('job2', () => {});
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        job_schedule: {
+          jobName: 'job1'
         }
       }
     });
@@ -92,7 +108,7 @@ describe('JobSchedule', () => {
       return rp.put(Parse.serverURL + '/cloud_code/jobs/' + res.objectId, Object.assign(options, {
         body: {
           job_schedule: {
-            jobName: 'OtherJobName'
+            jobName: 'job2'
           }
         }
       }));
@@ -102,13 +118,37 @@ describe('JobSchedule', () => {
     })
     .then((res) => {
       expect(res.length).toBe(1);
-      expect(res[0].jobName).toBe('OtherJobName');
+      expect(res[0].jobName).toBe('job2');
     })
     .then(done)
     .catch(done.fail);
   });
 
+  it('should fail updating a job with an invalid name', (done) => {
+    Parse.Cloud.job('job1', () => {});
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        job_schedule: {
+          jobName: 'job1'
+        }
+      }
+    });
+    rp.post(Parse.serverURL + '/cloud_code/jobs', options).then((res) => {
+      expect(res.objectId).not.toBeUndefined();
+      return rp.put(Parse.serverURL + '/cloud_code/jobs/' + res.objectId, Object.assign(options, {
+        body: {
+          job_schedule: {
+            jobName: 'job2'
+          }
+        }
+      }));
+    })
+    .then(done.fail)
+    .catch(done);
+  });
+
   it('should destroy a job', (done) => {
+    Parse.Cloud.job('job', () => {});
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         job_schedule: {
@@ -125,6 +165,32 @@ describe('JobSchedule', () => {
     })
     .then((res) => {
       expect(res.length).toBe(0);
+    })
+    .then(done)
+    .catch(done.fail);
+  });
+
+  it('should properly return job data', (done) => {
+    Parse.Cloud.job('job1', () => {});
+    Parse.Cloud.job('job2', () => {});
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        job_schedule: {
+          jobName: 'job1'
+        }
+      }
+    });
+    rp.post(Parse.serverURL + '/cloud_code/jobs', options).then((res) => {
+      expect(res.objectId).not.toBeUndefined();
+    })
+    .then(() => {
+      return rp.get(Parse.serverURL + '/cloud_code/jobs/data', masterKeyOptions);
+    })
+    .then((res) => {
+      expect(res.in_use).toEqual(['job1']);
+      expect(res.jobs).toContain('job1');
+      expect(res.jobs).toContain('job2');
+      expect(res.jobs.length).toBe(2);
     })
     .then(done)
     .catch(done.fail);

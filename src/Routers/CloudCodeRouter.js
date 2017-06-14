@@ -1,7 +1,22 @@
 import PromiseRouter  from '../PromiseRouter';
+import Parse          from 'parse/node';
 import rest           from '../rest';
 const triggers        = require('../triggers');
 const middleware      = require('../middlewares');
+
+function formatJobSchedule(job_schedule) {
+  if (typeof job_schedule.startAfter === 'undefined') {
+    job_schedule.startAfter = new Date().toISOString();
+  }
+  return job_schedule;
+}
+
+function validateJobSchedule(config, job_schedule) {
+  const jobs = triggers.getJobs(config.applicationId) || {};
+  if (job_schedule.jobName && !jobs[job_schedule.jobName]) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Cannot Schedule a job that is not deployed');
+  }
+}
 
 export class CloudCodeRouter extends PromiseRouter {
   mountRoutes() {
@@ -35,19 +50,15 @@ export class CloudCodeRouter extends PromiseRouter {
 
   static createJob(req) {
     const { job_schedule } = req.body;
-    if (typeof job_schedule.startAfter === 'undefined') {
-      job_schedule.startAfter = new Date().toISOString();
-    }
-    return rest.create(req.config, req.auth, '_JobSchedule', job_schedule, req.client);
+    validateJobSchedule(req.config, job_schedule);
+    return rest.create(req.config, req.auth, '_JobSchedule', formatJobSchedule(job_schedule), req.client);
   }
 
   static editJob(req) {
     const { objectId } = req.params;
     const { job_schedule } = req.body;
-    if (typeof job_schedule.startAfter === 'undefined') {
-      job_schedule.startAfter = new Date().toISOString();
-    }
-    return rest.update(req.config, req.auth, '_JobSchedule', { objectId }, job_schedule).then((response) => {
+    validateJobSchedule(req.config, job_schedule);
+    return rest.update(req.config, req.auth, '_JobSchedule', { objectId }, formatJobSchedule(job_schedule)).then((response) => {
       return {
         response
       }
