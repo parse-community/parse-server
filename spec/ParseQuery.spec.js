@@ -343,6 +343,41 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containsAllStartingWith should match all strings that starts with string', (done) => {
+
+    var object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    var object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    var object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    var objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then(() => {
+      equal(objectList.length, 3);
+
+      new Parse.Query('Object')
+        .containsAllStartingWith('strings', ['the', 'fox', 'lazy'])
+        .find()
+        .then(function (results) {
+          equal(results.length, 1);
+          arrayContains(results, object);
+
+          return new Parse.Query('Object')
+            .containsAllStartingWith('strings', ['the', 'lazy'])
+            .find();
+        })
+        .then(function (results) {
+          equal(results.length, 2);
+          arrayContains(results, object);
+          arrayContains(results, object3);
+
+          done();
+        });
+    });
+  });
+
   var BoxedNumber = Parse.Object.extend({
     className: "BoxedNumber"
   });
