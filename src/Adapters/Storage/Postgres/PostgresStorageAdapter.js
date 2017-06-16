@@ -185,6 +185,12 @@ const buildWhereClause = ({ schema, query, index }) => {
     const initialPatternsLength = patterns.length;
     const fieldValue = query[fieldName];
 
+    if (schema.className === '_Session' && fieldName === 'sessionToken' && !fieldValue) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_SESSION_TOKEN,
+        'invalid session token'
+      );
+    }
     // nothingin the schema, it's gonna blow up
     if (!schema.fields[fieldName]) {
       // as it won't exist

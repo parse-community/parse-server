@@ -136,7 +136,8 @@ export function handleParseHeaders(req, res, next) {
     delete info.sessionToken;
   }
 
-  if (!info.sessionToken) {
+  //if empty sessionToken and it's not a delete operation on _Session class
+  if (!info.sessionToken && !(req.method === 'DELETE' && req.url.startsWith("/sessions"))) {
     req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: false });
     next();
     return;
