@@ -66,7 +66,10 @@ function del(config, auth, className, objectId) {
       .then((response) => {
         if (response && response.results && response.results.length) {
           response.results[0].className = className;
-
+          if(auth.sessionToken && (response.results[0].sessionToken !== auth.sessionToken)){
+            throw new Parse.Error(Parse.Error.SESSION_MISSING,
+                          'insufficient auth to delete session');
+          }
           var cacheAdapter = config.cacheController;
           cacheAdapter.user.del(response.results[0].sessionToken);
           inflatedObject = Parse.Object.fromJSON(response.results[0]);
