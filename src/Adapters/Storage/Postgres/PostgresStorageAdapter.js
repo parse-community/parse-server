@@ -673,7 +673,7 @@ export class PostgresStorageAdapter {
       const joins = results.reduce((list, schema) => {
         return list.concat(joinTablesForSchema(schema.schema));
       }, []);
-      const classes = ['_SCHEMA','_PushStatus','_JobStatus','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
+      const classes = ['_SCHEMA','_PushStatus','_JobStatus','_JobSchedule','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
       return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
     }, error => {
       if (error.code === PostgresRelationDoesNotExistError) {

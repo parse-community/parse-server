@@ -153,12 +153,11 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }
 
   let originalObject = null;
-  const updatedObject = triggers.inflate(extraData, this.originalData);
+  const updatedObject = this.buildUpdatedObject(extraData);
   if (this.query && this.query.objectId) {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
-  updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
@@ -1068,8 +1067,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
-  const updatedObject = triggers.inflate(extraData, this.originalData);
-  updatedObject.set(this.sanitizedData());
+  const updatedObject = this.buildUpdatedObject(extraData);
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   // Notifiy LiveQueryServer if possible
@@ -1103,6 +1101,29 @@ RestWrite.prototype.sanitizedData = function() {
   }, deepcopy(this.data));
   return Parse._decode(undefined, data);
 }
+
+// Returns an updated copy of the object
+RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  const updatedObject = triggers.inflate(extraData, this.originalData);
+  Object.keys(this.data).reduce(function (data, key) {
+    if (key.indexOf(".") > 0) {
+      // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
+      const splittedKey = key.split(".");
+      const parentProp = splittedKey[0];
+      let parentVal = updatedObject.get(parentProp);
+      if(typeof parentVal !== 'object') {
+        parentVal = {};
+      }
+      parentVal[splittedKey[1]] = data[key];
+      updatedObject.set(parentProp, parentVal);
+      delete data[key];
+    }
+    return data;
+  }, deepcopy(this.data));
+
+  updatedObject.set(this.sanitizedData());
+  return updatedObject;
+};
 
 RestWrite.prototype.cleanUserAuthData = function() {
   if (this.response && this.response.response && this.className === '_User') {

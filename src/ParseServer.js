@@ -181,9 +181,8 @@ class ParseServer {
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController();
-
-    const hasPushSupport = pushAdapter && push;
-    const hasPushScheduledSupport = pushAdapter && push && scheduledPush;
+    const hasPushSupport = !!(pushAdapter && push);
+    const hasPushScheduledSupport = hasPushSupport && (scheduledPush === true);
 
     const {
       disablePushWorker

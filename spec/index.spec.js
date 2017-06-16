@@ -164,6 +164,102 @@ describe('server', () => {
     })
   });
 
+  it('can properly sets the push support', done => {
+    // default config passes push options
+    const config = new Config('test');
+    expect(config.hasPushSupport).toEqual(true);
+    expect(config.hasPushScheduledSupport).toEqual(false);
+    request.get({
+      url: 'http://localhost:8378/1/serverInfo',
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key': 'test',
+      },
+      json: true,
+    }, (error, response, body) => {
+      expect(body.features.push.immediatePush).toEqual(true);
+      expect(body.features.push.scheduledPush).toEqual(false);
+      done();
+    })
+  });
+
+  it('can properly sets the push support when not configured', done => {
+    reconfigureServer({
+      push: undefined // force no config
+    }).then(() => {
+      const config = new Config('test');
+      expect(config.hasPushSupport).toEqual(false);
+      expect(config.hasPushScheduledSupport).toEqual(false);
+      request.get({
+        url: 'http://localhost:8378/1/serverInfo',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        json: true,
+      }, (error, response, body) => {
+        expect(body.features.push.immediatePush).toEqual(false);
+        expect(body.features.push.scheduledPush).toEqual(false);
+        done();
+      })
+    }).catch(done.fail);
+  });
+
+  it('can properly sets the push support ', done => {
+    reconfigureServer({
+      push: {
+        adapter: {
+          send() {},
+          getValidPushTypes() {}
+        }
+      }
+    }).then(() => {
+      const config = new Config('test');
+      expect(config.hasPushSupport).toEqual(true);
+      expect(config.hasPushScheduledSupport).toEqual(false);
+      request.get({
+        url: 'http://localhost:8378/1/serverInfo',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        json: true,
+      }, (error, response, body) => {
+        expect(body.features.push.immediatePush).toEqual(true);
+        expect(body.features.push.scheduledPush).toEqual(false);
+        done();
+      })
+    }).catch(done.fail);
+  });
+
+  it('can properly sets the push schedule support', done => {
+    reconfigureServer({
+      push: {
+        adapter: {
+          send() {},
+          getValidPushTypes() {}
+        }
+      },
+      scheduledPush: true,
+    }).then(() => {
+      const config = new Config('test');
+      expect(config.hasPushSupport).toEqual(true);
+      expect(config.hasPushScheduledSupport).toEqual(true);
+      request.get({
+        url: 'http://localhost:8378/1/serverInfo',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        json: true,
+      }, (error, response, body) => {
+        expect(body.features.push.immediatePush).toEqual(true);
+        expect(body.features.push.scheduledPush).toEqual(true);
+        done();
+      })
+    }).catch(done.fail);
+  });
+
   it('can respond 200 on path health', done => {
     request.get({
       url: 'http://localhost:8378/1/health',

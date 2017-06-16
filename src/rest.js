@@ -134,7 +134,8 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
   });
 }
 
-// Disallowing access to the _Role collection except by master key
+const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];
+  // Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
@@ -144,8 +145,7 @@ function enforceRoleSecurity(method, className, auth) {
   }
 
   //all volatileClasses are masterKey only
-  const volatileClasses = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig'];
-  if(volatileClasses.includes(className) && !auth.isMaster){
+  if(classesWithMasterOnlyAccess.includes(className) && !auth.isMaster){
     const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
