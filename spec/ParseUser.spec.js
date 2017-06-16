@@ -1960,10 +1960,8 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users doesn't get session tokens", (done) => {
-    Parse.Promise.as().then(function() {
-      return Parse.User.signUp("finn", "human", { foo: "bar" });
-
-    }).then(function() {
+    Parse.User.signUp("finn", "human", { foo: "bar" })
+    .then(function() {
       return Parse.User.logOut();
     }).then(() => {
       var user = new Parse.User();
@@ -1992,9 +1990,8 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users only gets the expected fields", (done) => {
-    Parse.Promise.as().then(() => {
-      return Parse.User.signUp("finn", "human", { foo: "bar" });
-    }).then(() => {
+    Parse.User.signUp("finn", "human", { foo: "bar" })
+    .then(() => {
       request.get({
         headers: {'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest'},

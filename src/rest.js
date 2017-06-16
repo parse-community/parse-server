@@ -67,8 +67,8 @@ function del(config, auth, className, objectId) {
         if (response && response.results && response.results.length) {
           const firstResult = response.results[0];
           firstResult.className = className;
-          if (className == '_Session' && !auth.isMaster) {
-            if (!auth.user || firstResult.user.objectId != auth.user.id) {
+          if (className === '_Session' && !auth.isMaster) {
+            if (!auth.user || firstResult.user.objectId !== auth.user.id) {
               throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
             }
           }
