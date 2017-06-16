@@ -65,11 +65,16 @@ function del(config, auth, className, objectId) {
       return find(config, Auth.master(config), className, {objectId: objectId})
       .then((response) => {
         if (response && response.results && response.results.length) {
-          response.results[0].className = className;
-
+          const firstResult = response.results[0];
+          firstResult.className = className;
+          if (className == '_Session' && !auth.isMaster) {
+            if (!auth.user || firstResult.user.objectId != auth.user.id) {
+              throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+            }
+          }
           var cacheAdapter = config.cacheController;
-          cacheAdapter.user.del(response.results[0].sessionToken);
-          inflatedObject = Parse.Object.fromJSON(response.results[0]);
+          cacheAdapter.user.del(firstResult.sessionToken);
+          inflatedObject = Parse.Object.fromJSON(firstResult);
           // Notify LiveQuery server if possible
           config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
           return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
