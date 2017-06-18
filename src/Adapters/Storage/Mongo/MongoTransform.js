@@ -101,7 +101,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
     return {key, value};
   }
 
-    // Handle update operators
+  // Handle update operators
   if (typeof restValue === 'object' && '__op' in restValue) {
     return {key, value: transformUpdateOperator(restValue, false)};
   }
@@ -562,7 +562,7 @@ function transformConstraint(constraint, inArray) {
       const arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
-                              'bad ' + key + ' value');
+          'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
       break;

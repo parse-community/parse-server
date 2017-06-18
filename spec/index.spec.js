@@ -11,18 +11,18 @@ const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageA
 describe('server', () => {
   it('requires a master key and app id', done => {
     reconfigureServer({ appId: undefined })
-    .catch(error => {
-      expect(error).toEqual('You must provide an appId!');
-      return reconfigureServer({ masterKey: undefined });
-    })
-    .catch(error => {
-      expect(error).toEqual('You must provide a masterKey!');
-      return reconfigureServer({ serverURL: undefined });
-    })
-    .catch(error => {
-      expect(error).toEqual('You must provide a serverURL!');
-      done();
-    });
+      .catch(error => {
+        expect(error).toEqual('You must provide an appId!');
+        return reconfigureServer({ masterKey: undefined });
+      })
+      .catch(error => {
+        expect(error).toEqual('You must provide a masterKey!');
+        return reconfigureServer({ serverURL: undefined });
+      })
+      .catch(error => {
+        expect(error).toEqual('You must provide a serverURL!');
+        done();
+      });
   });
 
   it('support http basic authentication with masterkey', done => {
@@ -55,23 +55,23 @@ describe('server', () => {
 
   it('fails if database is unreachable', done => {
     reconfigureServer({ databaseAdapter: new MongoStorageAdapter({ uri: 'mongodb://fake:fake@localhost:43605/drew3' }) })
-    .catch(() => {
+      .catch(() => {
       //Need to use rest api because saving via JS SDK results in fail() not getting called
-      request.post({
-        url: 'http://localhost:8378/1/classes/NewClass',
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        body: {},
-        json: true,
-      }, (error, response, body) => {
-        expect(response.statusCode).toEqual(500);
-        expect(body.code).toEqual(1);
-        expect(body.message).toEqual('Internal server error.');
-        reconfigureServer().then(done, done);
+        request.post({
+          url: 'http://localhost:8378/1/classes/NewClass',
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          body: {},
+          json: true,
+        }, (error, response, body) => {
+          expect(response.statusCode).toEqual(500);
+          expect(body.code).toEqual(1);
+          expect(body.message).toEqual('Internal server error.');
+          reconfigureServer().then(done, done);
+        });
       });
-    });
   });
 
   it('can load email adapter via object', done => {
@@ -126,10 +126,10 @@ describe('server', () => {
       emailAdapter: 'parse-server-simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
     })
-    .catch(error => {
-      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
-      done();
-    });
+      .catch(error => {
+        expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+        done();
+      });
   });
 
   it('throws if you initialize email adapter incorrecly', done => {
@@ -144,10 +144,10 @@ describe('server', () => {
       },
       publicServerURL: 'http://localhost:8378/1'
     })
-    .catch(error => {
-      expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
-      done();
-    });
+      .catch(error => {
+        expect(error).toEqual('SimpleMailgunAdapter requires an API Key, domain, and fromAddress.');
+        done();
+      });
   });
 
   it('can report the server version', done => {
@@ -277,25 +277,25 @@ describe('server', () => {
         serverURL: "http://localhost:12666/parse",
         __indexBuildCompletionCallbackForTests: promise => {
           promise
-        .then(() => {
-          expect(Parse.applicationId).toEqual("aTestApp");
-          var app = express();
-          app.use('/parse', parseServer.app);
+            .then(() => {
+              expect(Parse.applicationId).toEqual("aTestApp");
+              var app = express();
+              app.use('/parse', parseServer.app);
 
-          var server = app.listen(12666);
-          var obj  = new Parse.Object("AnObject");
-          var objId;
-          obj.save().then((obj) => {
-            objId = obj.id;
-            var q = new Parse.Query("AnObject");
-            return q.first();
-          }).then((obj) => {
-            expect(obj.id).toEqual(objId);
-            server.close(done);
-          }).fail(() => {
-            server.close(done);
-          })
-        });
+              var server = app.listen(12666);
+              var obj  = new Parse.Object("AnObject");
+              var objId;
+              obj.save().then((obj) => {
+                objId = obj.id;
+                var q = new Parse.Query("AnObject");
+                return q.first();
+              }).then((obj) => {
+                expect(obj.id).toEqual(objId);
+                server.close(done);
+              }).fail(() => {
+                server.close(done);
+              })
+            });
         }})
     );
   });
@@ -310,32 +310,32 @@ describe('server', () => {
         serverURL: "http://localhost:12667/parse",
         __indexBuildCompletionCallbackForTests: promise => {
           promise
-        .then(() => {
-          expect(Parse.applicationId).toEqual("anOtherTestApp");
-          const app = express();
-          app.use('/parse', parseServer);
+            .then(() => {
+              expect(Parse.applicationId).toEqual("anOtherTestApp");
+              const app = express();
+              app.use('/parse', parseServer);
 
-          server = app.listen(12667);
-          const obj = new Parse.Object("AnObject");
-          return obj.save()
-        })
-        .then(obj => {
-          objId = obj.id;
-          const q = new Parse.Query("AnObject");
-          return q.first();
-        })
-        .then(obj => {
-          expect(obj.id).toEqual(objId);
-          server.close(done);
-        })
-        .catch(error => {
-          fail(JSON.stringify(error))
-          if (server) {
-            server.close(done);
-          } else {
-            done();
-          }
-        });
+              server = app.listen(12667);
+              const obj = new Parse.Object("AnObject");
+              return obj.save()
+            })
+            .then(obj => {
+              objId = obj.id;
+              const q = new Parse.Query("AnObject");
+              return q.first();
+            })
+            .then(obj => {
+              expect(obj.id).toEqual(objId);
+              server.close(done);
+            })
+            .catch(error => {
+              fail(JSON.stringify(error))
+              if (server) {
+                server.close(done);
+              } else {
+                done();
+              }
+            });
         }}
     ));
   });
@@ -359,48 +359,48 @@ describe('server', () => {
 
   it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
-    .then(() => {
-      var config = new Config('test', 'http://localhost:8378/1');
-      expect(config.mount).toEqual('https://myserver.com/1');
-      done();
-    });
+      .then(() => {
+        var config = new Config('test', 'http://localhost:8378/1');
+        expect(config.mount).toEqual('https://myserver.com/1');
+        done();
+      });
   });
 
   it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
-    .then(() => {
-      var config = new Config('test', 'http://localhost:8378/1/');
-      expect(config.mount).toEqual('http://localhost:8378/1');
-      done();
-    });
+      .then(() => {
+        var config = new Config('test', 'http://localhost:8378/1/');
+        expect(config.mount).toEqual('http://localhost:8378/1');
+        done();
+      });
   });
 
   it('should throw when getting invalid mount', done => {
     reconfigureServer({ publicServerURL: 'blabla:/some' })
-    .catch(error => {
-      expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
-      done();
-    })
+      .catch(error => {
+        expect(error).toEqual('publicServerURL should be a valid HTTPS URL starting with https://')
+        done();
+      })
   });
 
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
-    .catch(error => {
-      expect(error).toEqual('Session length must be a valid number.');
-      done();
-    });
+      .catch(error => {
+        expect(error).toEqual('Session length must be a valid number.');
+        done();
+      });
   });
 
   it('fails if the session length is less than or equal to 0', done => {
     reconfigureServer({ sessionLength: '-33' })
-    .catch(error => {
-      expect(error).toEqual('Session length must be a value greater than 0.');
-      return reconfigureServer({ sessionLength: '0' })
-    })
-    .catch(error => {
-      expect(error).toEqual('Session length must be a value greater than 0.');
-      done();
-    });
+      .catch(error => {
+        expect(error).toEqual('Session length must be a value greater than 0.');
+        return reconfigureServer({ sessionLength: '0' })
+      })
+      .catch(error => {
+        expect(error).toEqual('Session length must be a value greater than 0.');
+        done();
+      });
   });
 
   it('ignores the session length when expireInactiveSessions set to false', (done) => {
@@ -408,15 +408,15 @@ describe('server', () => {
       sessionLength: '-33',
       expireInactiveSessions: false
     })
-    .then(() => reconfigureServer({
-      sessionLength: '0',
-      expireInactiveSessions: false
-    }))
-    .then(done);
+      .then(() => reconfigureServer({
+        sessionLength: '0',
+        expireInactiveSessions: false
+      }))
+      .then(done);
   })
 
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
-    .catch(done);
+      .catch(done);
   });
 });

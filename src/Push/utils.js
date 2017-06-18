@@ -24,7 +24,7 @@ export function validatePushType(where = {}, validPushTypes = []) {
     var deviceType = deviceTypes[i];
     if (validPushTypes.indexOf(deviceType) < 0) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            deviceType + ' is not supported push type.');
+        deviceType + ' is not supported push type.');
     }
   }
 }

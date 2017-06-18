@@ -352,16 +352,16 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: i });
     };
     Parse.Object.saveAll([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.equalTo('number', 3);
-                           query.find({
-                             success: function(results) {
-                               equal(results.length, 1);
-                               done();
-                             }
-                           });
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.equalTo('number', 3);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            done();
+          }
+        });
+      });
   });
 
   it("equalTo undefined", function(done) {
@@ -369,16 +369,16 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: i });
     };
     Parse.Object.saveAll([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.equalTo('number', undefined);
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 0);
-                               done();
-                             }
-                           }));
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.equalTo('number', undefined);
+        query.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 0);
+            done();
+          }
+        }));
+      });
   });
 
   it("lessThan queries", function(done) {
@@ -386,16 +386,16 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: i });
     };
     Parse.Object.saveAll([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.lessThan('number', 7);
-                           query.find({
-                             success: function(results) {
-                               equal(results.length, 7);
-                               done();
-                             }
-                           });
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.lessThan('number', 7);
+        query.find({
+          success: function(results) {
+            equal(results.length, 7);
+            done();
+          }
+        });
+      });
   });
 
   it("lessThanOrEqualTo queries", function(done) {
@@ -866,25 +866,25 @@ describe('Parse.Query testing', () => {
 
     const objects = [3, 1, 3, 2].map(makeBoxedNumber);
     Parse.Object.saveAll(objects)
-    .then(() => {
-      var query = new Parse.Query(BoxedNumber);
-      query.descending("number").addAscending("string");
-      return query.find();
-    }).then((results) => {
-      equal(results.length, 4);
-      equal(results[0].get("number"), 3);
-      equal(results[0].get("string"), "a");
-      equal(results[1].get("number"), 3);
-      equal(results[1].get("string"), "c");
-      equal(results[2].get("number"), 2);
-      equal(results[2].get("string"), "d");
-      equal(results[3].get("number"), 1);
-      equal(results[3].get("string"), "b");
-      done();
-    }, (err) => {
-      jfail(err);
-      done();
-    });
+      .then(() => {
+        var query = new Parse.Query(BoxedNumber);
+        query.descending("number").addAscending("string");
+        return query.find();
+      }).then((results) => {
+        equal(results.length, 4);
+        equal(results[0].get("number"), 3);
+        equal(results[0].get("string"), "a");
+        equal(results[1].get("number"), 3);
+        equal(results[1].get("string"), "c");
+        equal(results[2].get("number"), 2);
+        equal(results[2].get("string"), "d");
+        equal(results[3].get("number"), 1);
+        equal(results[3].get("string"), "b");
+        done();
+      }, (err) => {
+        jfail(err);
+        done();
+      });
   });
 
   it("order by descending number and string", function(done) {
@@ -893,24 +893,24 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.descending("number,string");
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 4);
-                               equal(results[0].get("number"), 3);
-                               equal(results[0].get("string"), "c");
-                               equal(results[1].get("number"), 3);
-                               equal(results[1].get("string"), "a");
-                               equal(results[2].get("number"), 2);
-                               equal(results[2].get("string"), "d");
-                               equal(results[3].get("number"), 1);
-                               equal(results[3].get("string"), "b");
-                               done();
-                             }
-                           }));
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.descending("number,string");
+        query.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 4);
+            equal(results[0].get("number"), 3);
+            equal(results[0].get("string"), "c");
+            equal(results[1].get("number"), 3);
+            equal(results[1].get("string"), "a");
+            equal(results[2].get("number"), 2);
+            equal(results[2].get("string"), "d");
+            equal(results[3].get("number"), 1);
+            equal(results[3].get("string"), "b");
+            done();
+          }
+        }));
+      });
   });
 
   it("order by descending number and string, with space", function(done) {
@@ -919,27 +919,27 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.descending("number, string");
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 4);
-                               equal(results[0].get("number"), 3);
-                               equal(results[0].get("string"), "c");
-                               equal(results[1].get("number"), 3);
-                               equal(results[1].get("string"), "a");
-                               equal(results[2].get("number"), 2);
-                               equal(results[2].get("string"), "d");
-                               equal(results[3].get("number"), 1);
-                               equal(results[3].get("string"), "b");
-                               done();
-                             }
-                           }));
-                         }, (err) => {
-      jfail(err);
-      done();
-    });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.descending("number, string");
+        query.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 4);
+            equal(results[0].get("number"), 3);
+            equal(results[0].get("string"), "c");
+            equal(results[1].get("number"), 3);
+            equal(results[1].get("string"), "a");
+            equal(results[2].get("number"), 2);
+            equal(results[2].get("string"), "d");
+            equal(results[3].get("number"), 1);
+            equal(results[3].get("string"), "b");
+            done();
+          }
+        }));
+      }, (err) => {
+        jfail(err);
+        done();
+      });
   });
 
   it("order by descending number and string, with array arg", function(done) {
@@ -948,24 +948,24 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.descending(["number", "string"]);
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 4);
-                               equal(results[0].get("number"), 3);
-                               equal(results[0].get("string"), "c");
-                               equal(results[1].get("number"), 3);
-                               equal(results[1].get("string"), "a");
-                               equal(results[2].get("number"), 2);
-                               equal(results[2].get("string"), "d");
-                               equal(results[3].get("number"), 1);
-                               equal(results[3].get("string"), "b");
-                               done();
-                             }
-                           }));
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.descending(["number", "string"]);
+        query.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 4);
+            equal(results[0].get("number"), 3);
+            equal(results[0].get("string"), "c");
+            equal(results[1].get("number"), 3);
+            equal(results[1].get("string"), "a");
+            equal(results[2].get("number"), 2);
+            equal(results[2].get("string"), "d");
+            equal(results[3].get("number"), 1);
+            equal(results[3].get("string"), "b");
+            done();
+          }
+        }));
+      });
   });
 
   it("order by descending number and string, with multiple args", function(done) {
@@ -974,24 +974,24 @@ describe('Parse.Query testing', () => {
       return new BoxedNumber({ number: num, string: strings[i] });
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-                         function() {
-                           var query = new Parse.Query(BoxedNumber);
-                           query.descending("number", "string");
-                           query.find(expectSuccess({
-                             success: function(results) {
-                               equal(results.length, 4);
-                               equal(results[0].get("number"), 3);
-                               equal(results[0].get("string"), "c");
-                               equal(results[1].get("number"), 3);
-                               equal(results[1].get("string"), "a");
-                               equal(results[2].get("number"), 2);
-                               equal(results[2].get("string"), "d");
-                               equal(results[3].get("number"), 1);
-                               equal(results[3].get("string"), "b");
-                               done();
-                             }
-                           }));
-                         });
+      function() {
+        var query = new Parse.Query(BoxedNumber);
+        query.descending("number", "string");
+        query.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 4);
+            equal(results[0].get("number"), 3);
+            equal(results[0].get("string"), "c");
+            equal(results[1].get("number"), 3);
+            equal(results[1].get("string"), "a");
+            equal(results[2].get("number"), 2);
+            equal(results[2].get("string"), "d");
+            equal(results[3].get("number"), 1);
+            equal(results[3].get("string"), "b");
+            done();
+          }
+        }));
+      });
   });
 
   it("can't order by password", function(done) {
@@ -2289,7 +2289,7 @@ describe('Parse.Query testing', () => {
       ok(!result.dirty(), "expected result not to be dirty");
       strictEqual(result.get('foo'), 'baz');
       strictEqual(result.get('bar'), undefined,
-                  "expected 'bar' field to be unset");
+        "expected 'bar' field to be unset");
       return result.fetch();
     }).then(function(result) {
       strictEqual(result.get('foo'), 'baz');
@@ -2303,9 +2303,9 @@ describe('Parse.Query testing', () => {
       ok(result.id, "expected object id to be set");
       ok(!result.dirty(), "expected result not to be dirty");
       strictEqual(result.get('foo'), undefined,
-                  "expected 'foo' field to be unset");
+        "expected 'foo' field to be unset");
       strictEqual(result.get('bar'), undefined,
-                  "expected 'bar' field to be unset");
+        "expected 'bar' field to be unset");
     }).then(function() {
       obj._clearServerData();
       var query = new Parse.Query(TestObject);
@@ -2348,7 +2348,7 @@ describe('Parse.Query testing', () => {
         ok(!result.dirty(), 'expected result not to be dirty');
         strictEqual(result.get('foo'), 'baz');
         strictEqual(result.get('bar'), undefined,
-                    'expected "bar" field to be unset');
+          'expected "bar" field to be unset');
       }).then(function() {
         done();
       }, function(err) {

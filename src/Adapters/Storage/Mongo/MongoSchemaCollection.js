@@ -110,7 +110,7 @@ class MongoSchemaCollection {
 
   _fetchAllSchemasFrom_SCHEMA() {
     return this._collection._rawFind({})
-    .then(schemas => schemas.map(mongoSchemaToParseSchema));
+      .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
   _fechOneSchemaFrom_SCHEMA(name: string) {
@@ -149,32 +149,32 @@ class MongoSchemaCollection {
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
     return this._fechOneSchemaFrom_SCHEMA(className)
-    .then(schema => {
+      .then(schema => {
       // The schema exists. Check for existing GeoPoints.
-      if (type.type === 'GeoPoint') {
+        if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
-        if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
-          throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.');
+          if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
+            throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.');
+          }
         }
-      }
-      return;
-    }, error => {
+        return;
+      }, error => {
       // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
       // If some other error, reject with it.
-      if (error === undefined) {
-        return;
-      }
-      throw error;
-    })
-    .then(() => {
+        if (error === undefined) {
+          return;
+        }
+        throw error;
+      })
+      .then(() => {
       // We use $exists and $set to avoid overwriting the field type if it
       // already exists. (it could have added inbetween the last query and the update)
-      return this.upsertSchema(
-        className,
-        { [fieldName]: { '$exists': false } },
-        { '$set' : { [fieldName]: parseFieldTypeToMongoFieldType(type) } }
-      );
-    });
+        return this.upsertSchema(
+          className,
+          { [fieldName]: { '$exists': false } },
+          { '$set' : { [fieldName]: parseFieldTypeToMongoFieldType(type) } }
+        );
+      });
   }
 }
 

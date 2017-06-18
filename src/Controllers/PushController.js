@@ -10,7 +10,7 @@ export class PushController {
   sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
     if (!config.hasPushSupport) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Missing push configuration');
+        'Missing push configuration');
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
@@ -82,12 +82,12 @@ export class PushController {
       expirationTime = new Date(expirationTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['expiration_time'] + ' is not valid time.');
+        body['expiration_time'] + ' is not valid time.');
     }
     // Check expirationTime is valid or not, if it is not valid, expirationTime is NaN
     if (!isFinite(expirationTime)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['expiration_time'] + ' is not valid time.');
+        body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
   }
@@ -110,12 +110,12 @@ export class PushController {
       pushTime = new Date(pushTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['push_time'] + ' is not valid time.');
+        body['push_time'] + ' is not valid time.');
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
     if (!isFinite(pushTime)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['push_time'] + ' is not valid time.');
+        body['push_time'] + ' is not valid time.');
     }
     return pushTime;
   }

@@ -18,14 +18,14 @@ describe('rest create', () => {
 
   it('handles _id', done => {
     rest.create(config, auth.nobody(config), 'Foo', {})
-    .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      var obj = results[0];
-      expect(typeof obj.objectId).toEqual('string');
-      expect(obj._id).toBeUndefined();
-      done();
-    });
+      .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        var obj = results[0];
+        expect(typeof obj.objectId).toEqual('string');
+        expect(obj._id).toBeUndefined();
+        done();
+      });
   });
 
   it('handles array, object, date', (done) => {
@@ -36,20 +36,20 @@ describe('rest create', () => {
       date: Parse._encode(now),
     };
     rest.create(config, auth.nobody(config), 'MyClass', obj)
-    .then(() => database.adapter.find('MyClass', { fields: {
-      array: { type: 'Array' },
-      object: { type: 'Object' },
-      date: { type: 'Date' },
-    } }, {}, {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      var mob = results[0];
-      expect(mob.array instanceof Array).toBe(true);
-      expect(typeof mob.object).toBe('object');
-      expect(mob.date.__type).toBe('Date');
-      expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
-      done();
-    });
+      .then(() => database.adapter.find('MyClass', { fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      } }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        var mob = results[0];
+        expect(mob.array instanceof Array).toBe(true);
+        expect(typeof mob.object).toBe('object');
+        expect(mob.date.__type).toBe('Date');
+        expect(new Date(mob.date.iso).getTime()).toBe(now.getTime());
+        done();
+      });
   });
 
   it('handles object and subdocument', done => {
@@ -61,31 +61,31 @@ describe('rest create', () => {
     });
 
     rest.create(config, auth.nobody(config), 'MyClass', obj)
-    .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(typeof mob.subdoc).toBe('object');
-      expect(mob.subdoc.foo).toBe('bar');
-      expect(mob.subdoc.wu).toBe('tan');
-      expect(typeof mob.objectId).toEqual('string');
-      const obj = { 'subdoc.wu': 'clan' };
-      return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj);
-    })
-    .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(typeof mob.subdoc).toBe('object');
-      expect(mob.subdoc.foo).toBe('bar');
-      expect(mob.subdoc.wu).toBe('clan');
-      done();
-    })
-    .catch(error => {
-      console.log(error);
-      fail();
-      done();
-    });
+      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('tan');
+        expect(typeof mob.objectId).toEqual('string');
+        const obj = { 'subdoc.wu': 'clan' };
+        return rest.update(config, auth.nobody(config), 'MyClass', { objectId: mob.objectId }, obj);
+      })
+      .then(() => database.adapter.find('MyClass', { fields: {} }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('clan');
+        done();
+      })
+      .catch(error => {
+        console.log(error);
+        fail();
+        done();
+      });
   });
 
   it('handles create on non-existent class when disabled client class creation', (done) => {
@@ -105,16 +105,16 @@ describe('rest create', () => {
   it('handles create on existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-    .then(actualSchema => {
-      expect(actualSchema.className).toEqual('ClientClassCreation');
-      return rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
-    })
-    .then(() => {
-      done();
-    }, () => {
-      fail('Should not throw error')
-    });
+      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+      .then(actualSchema => {
+        expect(actualSchema.className).toEqual('ClientClassCreation');
+        return rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+      })
+      .then(() => {
+        done();
+      }, () => {
+        fail('Should not throw error')
+      });
   });
 
   it('handles user signup', (done) => {
@@ -261,7 +261,7 @@ describe('rest create', () => {
         expect(typeof r.response.updatedAt).toEqual('string');
         expect(r.response.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         return rest.find(config, auth.master(config),
-                          '_Session', {sessionToken: r.response.sessionToken});
+          '_Session', {sessionToken: r.response.sessionToken});
       }).then((response) => {
         expect(response.results.length).toEqual(1);
         var output = response.results[0];
@@ -283,23 +283,23 @@ describe('rest create', () => {
       }
     };
     rest.create(config, auth.nobody(config), 'APointerDarkly', obj)
-    .then(() => database.adapter.find('APointerDarkly', { fields: {
-      foo: { type: 'String' },
-      aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
-    }}, {}, {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const output = results[0];
-      expect(typeof output.foo).toEqual('string');
-      expect(typeof output._p_aPointer).toEqual('undefined');
-      expect(output._p_aPointer).toBeUndefined();
-      expect(output.aPointer).toEqual({
-        __type: 'Pointer',
-        className: 'JustThePointer',
-        objectId: 'qwerty1234'
+      .then(() => database.adapter.find('APointerDarkly', { fields: {
+        foo: { type: 'String' },
+        aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
+      }}, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const output = results[0];
+        expect(typeof output.foo).toEqual('string');
+        expect(typeof output._p_aPointer).toEqual('undefined');
+        expect(output._p_aPointer).toBeUndefined();
+        expect(output.aPointer).toEqual({
+          __type: 'Pointer',
+          className: 'JustThePointer',
+          objectId: 'qwerty1234'
+        });
+        done();
       });
-      done();
-    });
   });
 
   it("cannot set objectId", (done) => {
@@ -338,7 +338,7 @@ describe('rest create', () => {
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.sessionToken).toEqual('string');
         return rest.find(config, auth.master(config),
-                          '_Session', {sessionToken: r.response.sessionToken});
+          '_Session', {sessionToken: r.response.sessionToken});
       })
       .then((r) => {
         expect(r.results.length).toEqual(1);
@@ -374,7 +374,7 @@ describe('rest create', () => {
         expect(typeof r.response.createdAt).toEqual('string');
         expect(typeof r.response.sessionToken).toEqual('string');
         return rest.find(config, auth.master(config),
-                          '_Session', {sessionToken: r.response.sessionToken});
+          '_Session', {sessionToken: r.response.sessionToken});
       })
       .then((r) => {
         expect(r.results.length).toEqual(1);

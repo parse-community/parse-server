@@ -46,12 +46,12 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
 function del(config, auth, className, objectId) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON,
-                          'bad objectId');
+      'bad objectId');
   }
 
   if (className === '_User' && !auth.couldUpdateUserId(objectId)) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'insufficient auth to delete user');
+      'insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -63,25 +63,25 @@ function del(config, auth, className, objectId) {
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery || className == '_Session') {
       return find(config, Auth.master(config), className, {objectId: objectId})
-      .then((response) => {
-        if (response && response.results && response.results.length) {
-          const firstResult = response.results[0];
-          firstResult.className = className;
-          if (className === '_Session' && !auth.isMaster) {
-            if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-              throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+        .then((response) => {
+          if (response && response.results && response.results.length) {
+            const firstResult = response.results[0];
+            firstResult.className = className;
+            if (className === '_Session' && !auth.isMaster) {
+              if (!auth.user || firstResult.user.objectId !== auth.user.id) {
+                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+              }
             }
+            var cacheAdapter = config.cacheController;
+            cacheAdapter.user.del(firstResult.sessionToken);
+            inflatedObject = Parse.Object.fromJSON(firstResult);
+            // Notify LiveQuery server if possible
+            config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
+            return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
           }
-          var cacheAdapter = config.cacheController;
-          cacheAdapter.user.del(firstResult.sessionToken);
-          inflatedObject = Parse.Object.fromJSON(firstResult);
-          // Notify LiveQuery server if possible
-          config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
-        }
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                              'Object not found for delete.');
-      });
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found for delete.');
+        });
     }
     return Promise.resolve({});
   }).then(() => {
@@ -140,7 +140,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
 }
 
 const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];
-  // Disallowing access to the _Role collection except by master key
+// Disallowing access to the _Role collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {

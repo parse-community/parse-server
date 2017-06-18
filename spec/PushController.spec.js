@@ -437,44 +437,44 @@ describe('PushController', () => {
     }).then(() => {
       return Parse.Object.saveAll(installations);
     })
-   .then(() => {
-     return pushController.sendPush(payload, {}, config, auth);
-   }).then(() => {
-     // it is enqueued so it can take time
-     return new Promise((resolve) => {
-       setTimeout(() => {
-         resolve();
-       }, 1000);
-     });
-   }).then(() => {
-     const query = new Parse.Query('_PushStatus');
-     return query.find({useMasterKey: true});
-   }).then((results) => {
-     expect(results.length).toBe(1);
-     const result = results[0];
-     expect(result.createdAt instanceof Date).toBe(true);
-     expect(result.updatedAt instanceof Date).toBe(true);
-     expect(result.id.length).toBe(10);
-     expect(result.get('source')).toEqual('rest');
-     expect(result.get('query')).toEqual(JSON.stringify({}));
-     expect(typeof result.get('payload')).toEqual("string");
-     expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
-     expect(result.get('status')).toEqual('succeeded');
-     expect(result.get('numSent')).toEqual(10);
-     expect(result.get('sentPerType')).toEqual({
-       'ios': 10 // 10 ios
-     });
-     expect(result.get('numFailed')).toEqual(5);
-     expect(result.get('failedPerType')).toEqual({
-       'android': 5 // android
-     });
-     // Try to get it without masterKey
-     const query = new Parse.Query('_PushStatus');
-     return query.find();
-   }).catch((error) => {
-     expect(error.code).toBe(119);
-     done();
-   });
+      .then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      }).then(() => {
+        // it is enqueued so it can take time
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      }).then(() => {
+        const query = new Parse.Query('_PushStatus');
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(1);
+        const result = results[0];
+        expect(result.createdAt instanceof Date).toBe(true);
+        expect(result.updatedAt instanceof Date).toBe(true);
+        expect(result.id.length).toBe(10);
+        expect(result.get('source')).toEqual('rest');
+        expect(result.get('query')).toEqual(JSON.stringify({}));
+        expect(typeof result.get('payload')).toEqual("string");
+        expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
+        expect(result.get('status')).toEqual('succeeded');
+        expect(result.get('numSent')).toEqual(10);
+        expect(result.get('sentPerType')).toEqual({
+          'ios': 10 // 10 ios
+        });
+        expect(result.get('numFailed')).toEqual(5);
+        expect(result.get('failedPerType')).toEqual({
+          'android': 5 // android
+        });
+        // Try to get it without masterKey
+        const query = new Parse.Query('_PushStatus');
+        return query.find();
+      }).catch((error) => {
+        expect(error.code).toBe(119);
+        done();
+      });
   });
 
   it('should properly report failures in _PushStatus', (done) => {

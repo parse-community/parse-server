@@ -338,45 +338,45 @@ class ParseLiveQueryServer {
         }
 
         this.sessionTokenCache.getUserId(subscriptionSessionToken)
-        .then((userId) => {
+          .then((userId) => {
 
             // Pass along a null if there is no user id
-          if (!userId) {
-            return Parse.Promise.as(null);
-          }
+            if (!userId) {
+              return Parse.Promise.as(null);
+            }
 
             // Prepare a user object to query for roles
             // To eliminate a query for the user, create one locally with the id
-          var user = new Parse.User();
-          user.id = userId;
-          return user;
+            var user = new Parse.User();
+            user.id = userId;
+            return user;
 
-        })
-        .then((user) => {
+          })
+          .then((user) => {
 
             // Pass along an empty array (of roles) if no user
-          if (!user) {
-            return Parse.Promise.as([]);
-          }
+            if (!user) {
+              return Parse.Promise.as([]);
+            }
 
             // Then get the user's roles
-          var rolesQuery = new Parse.Query(Parse.Role);
-          rolesQuery.equalTo("users", user);
-          return rolesQuery.find({useMasterKey:true});
-        }).
-        then((roles) => {
+            var rolesQuery = new Parse.Query(Parse.Role);
+            rolesQuery.equalTo("users", user);
+            return rolesQuery.find({useMasterKey:true});
+          }).
+          then((roles) => {
 
             // Finally, see if any of the user's roles allow them read access
-          for (const role of roles) {
-            if (acl.getRoleReadAccess(role)) {
-              return resolve(true);
+            for (const role of roles) {
+              if (acl.getRoleReadAccess(role)) {
+                return resolve(true);
+              }
             }
-          }
-          resolve(false);
-        })
-        .catch((error) => {
-          reject(error);
-        });
+            resolve(false);
+          })
+          .catch((error) => {
+            reject(error);
+          });
 
       });
     }).then((isRoleMatched) => {

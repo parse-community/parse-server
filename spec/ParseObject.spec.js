@@ -144,16 +144,16 @@ describe('Parse.Object testing', () => {
   });
 
   it("save adds no data keys (other than createdAt and updatedAt)",
-     function(done) {
-       var object = new TestObject();
-       object.save(null, {
-         success: function() {
-           var keys = Object.keys(object.attributes).sort();
-           equal(keys.length, 2);
-           done();
-         }
-       });
-     });
+    function(done) {
+      var object = new TestObject();
+      object.save(null, {
+        success: function() {
+          var keys = Object.keys(object.attributes).sort();
+          equal(keys.length, 2);
+          done();
+        }
+      });
+    });
 
   it("recursive save", function(done) {
     var item = new Item();
@@ -338,7 +338,7 @@ describe('Parse.Object testing', () => {
   it("invalid key name", function(done) {
     var item = new Parse.Object("Item");
     ok(!item.set({"foo^bar": "baz"}),
-       'Item should not be updated with invalid key.');
+      'Item should not be updated with invalid key.');
     item.save({ "foo^bar": "baz" }).then(fail, done);
   });
 
@@ -1398,7 +1398,7 @@ describe('Parse.Object testing', () => {
       return Parse.Object.fetchAll(items);
     }).then(function(fetchedItemsAgain) {
       equal(fetchedItemsAgain.length, numItems,
-            "Number of items fetched should not change");
+        "Number of items fetched should not change");
       fetchedItemsAgain.forEach(function(item, i) {
         equal(item.get("x"), i * 2);
       });
@@ -1465,7 +1465,7 @@ describe('Parse.Object testing', () => {
       return Parse.Object.fetchAll(items, {
         success: function(fetchedItemsAgain) {
           equal(fetchedItemsAgain.length, numItems,
-                "Number of items fetched should not change");
+            "Number of items fetched should not change");
           fetchedItemsAgain.forEach(function(item, i) {
             equal(item.get("x"), i * 2);
           });
@@ -1499,7 +1499,7 @@ describe('Parse.Object testing', () => {
   it("fetchAll error on unsaved object", function(done) {
     var unsavedObjectArray = [new TestObject()];
     Parse.Object.fetchAll(unsavedObjectArray,
-                          expectError(Parse.Error.MISSING_OBJECT_ID, done));
+      expectError(Parse.Error.MISSING_OBJECT_ID, done));
   });
 
   it("fetchAll error on deleted object", function(done) {
@@ -1588,7 +1588,7 @@ describe('Parse.Object testing', () => {
       return Parse.Object.fetchAllIfNeeded(items);
     }).then(function(fetchedItems) {
       equal(fetchedItems.length, numItems,
-            "Number of items should not change");
+        "Number of items should not change");
       fetchedItems.forEach(function(item, i) {
         equal(item.get("x"), i);
       });
@@ -1627,7 +1627,7 @@ describe('Parse.Object testing', () => {
       return Parse.Object.fetchAllIfNeeded(items, {
         success: function(fetchedItems) {
           equal(fetchedItems.length, numItems,
-                "Number of items should not change");
+            "Number of items should not change");
           fetchedItems.forEach(function(item, j) {
             equal(item.get("x"), j);
           });
@@ -1680,7 +1680,7 @@ describe('Parse.Object testing', () => {
     });
 
     equal(User1.className, "_User",
-          "className is rewritten by default");
+      "className is rewritten by default");
 
     Parse.User.allowCustomUserClass(true);
     equal(Parse.CoreManager.get('PERFORM_USER_REWRITE'), false);
@@ -1689,7 +1689,7 @@ describe('Parse.Object testing', () => {
     });
 
     equal(User2.className, "User",
-          "className is not rewritten when allowCustomUserClass(true)");
+      "className is not rewritten when allowCustomUserClass(true)");
 
     // Set back to default so as not to break other tests.
     Parse.User.allowCustomUserClass(false);
@@ -1729,7 +1729,7 @@ describe('Parse.Object testing', () => {
       return t3.fetch();
     }).then(function(t3) {
       equal(t3.get("test"), "test",
-            "Fetch should have grabbed server 'test' property.");
+        "Fetch should have grabbed server 'test' property.");
       done();
     }, function(error) {
       ok(false, error);

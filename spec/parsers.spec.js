@@ -1,7 +1,7 @@
 import {
-	numberParser,
-	numberOrBoolParser,
-	booleanParser,
+  numberParser,
+  numberOrBoolParser,
+  booleanParser,
 } from '../src/cli/utils/parsers';
 
 describe('parsers', () => {
