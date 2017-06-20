@@ -616,13 +616,14 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   }
 
   const promises = Object.keys(query).map((key) => {
+    const t = schema.getExpectedType(className, key);
+    if (!t || t.type !== 'Relation') {
+      return Promise.resolve(query);
+    }
+    let queries = null;
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
-      const t = schema.getExpectedType(className, key);
-      if (!t || t.type !== 'Relation') {
-        return Promise.resolve(query);
-      }
       // Build the list of queries
-      const queries = Object.keys(query[key]).map((constraintKey) => {
+      queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
         let isNegation = false;
         if (constraintKey === 'objectId') {
@@ -643,31 +644,32 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
           relatedIds
         }
       });
-
-      // remove the current queryKey as we don,t need it anymore
-      delete query[key];
-      // execute each query independnently to build the list of
-      // $in / $nin
-      const promises = queries.map((q) => {
-        if (!q) {
-          return Promise.resolve();
-        }
-        return this.owningIds(className, key, q.relatedIds).then((ids) => {
-          if (q.isNegation) {
-            this.addNotInObjectIdsIds(ids, query);
-          } else {
-            this.addInObjectIdsIds(ids, query);
-          }
-          return Promise.resolve();
-        });
-      });
-
-      return Promise.all(promises).then(() => {
-        return Promise.resolve();
-      })
-
+    } else {
+      queries = [{isNegation: false, relatedIds: []}];
     }
-    return Promise.resolve();
+
+    // remove the current queryKey as we don,t need it anymore
+    delete query[key];
+    // execute each query independnently to build the list of
+    // $in / $nin
+    const promises = queries.map((q) => {
+      if (!q) {
+        return Promise.resolve();
+      }
+      return this.owningIds(className, key, q.relatedIds).then((ids) => {
+        if (q.isNegation) {
+          this.addNotInObjectIdsIds(ids, query);
+        } else {
+          this.addInObjectIdsIds(ids, query);
+        }
+        return Promise.resolve();
+      });
+    });
+
+    return Promise.all(promises).then(() => {
+      return Promise.resolve();
+    })
+
   })
 
   return Promise.all(promises).then(() => {

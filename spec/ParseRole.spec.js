@@ -448,4 +448,83 @@ describe('Parse Role testing', () => {
     .catch(done.fail);
   });
 
+  it('should match when matching in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var query = new Parse.Query(Parse.Role);
+            query.equalTo('name', 'admin');
+            query.equalTo('users', user);
+            query.find().then(function (roles) {
+              expect(roles.length).toEqual(1);
+              done();
+            });
+          });
+      });
+  });
+
+  it('should not match any entry when not matching in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var otherUser = new Parse.User();
+            otherUser
+              .save({ username: 'otherUser', password: 'otherUser' })
+              .then((otherUser) => {
+                var query = new Parse.Query(Parse.Role);
+                query.equalTo('name', 'admin');
+                query.equalTo('users', otherUser);
+                query.find().then(function(roles) {
+                  expect(roles.length).toEqual(0);
+                  done();
+                });
+              });
+          });
+      });
+  });
+
+  it('should not match any entry when searching for null in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var query = new Parse.Query(Parse.Role);
+            query.equalTo('name', 'admin');
+            query.equalTo('users', null);
+            query.find().then(function (roles) {
+              expect(roles.length).toEqual(0);
+              done();
+            });
+          });
+      });
+  });
 });
