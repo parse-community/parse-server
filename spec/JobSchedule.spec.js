@@ -26,7 +26,7 @@ describe('JobSchedule', () => {
     jobSchedule.save(null,  {useMasterKey: true}).then(() => {
       done();
     })
-    .catch(done.fail);
+      .catch(done.fail);
   });
 
   it('should fail creating _JobSchedule without masterKey', (done) => {
@@ -35,7 +35,7 @@ describe('JobSchedule', () => {
       'jobName': 'SomeJob'
     });
     jobSchedule.save(null).then(done.fail)
-    .catch(done);
+      .catch(done);
   });
 
   it('should reject access when not using masterKey (/jobs)', (done) => {
@@ -70,14 +70,14 @@ describe('JobSchedule', () => {
     rp.post(Parse.serverURL + '/cloud_code/jobs', options).then((res) => {
       expect(res.objectId).not.toBeUndefined();
     })
-    .then(() => {
-      return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
-    })
-    .then((res) => {
-      expect(res.length).toBe(1);
-    })
-    .then(done)
-    .catch(done.fail);
+      .then(() => {
+        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+      })
+      .then((res) => {
+        expect(res.length).toBe(1);
+      })
+      .then(done)
+      .catch(done.fail);
   });
 
   it('should fail creating a job with an invalid name', (done) => {
@@ -89,8 +89,8 @@ describe('JobSchedule', () => {
       }
     });
     rp.post(Parse.serverURL + '/cloud_code/jobs', options)
-    .then(done.fail)
-    .catch(done);
+      .then(done.fail)
+      .catch(done);
   });
 
   it('should update a job', (done) => {
@@ -113,15 +113,15 @@ describe('JobSchedule', () => {
         }
       }));
     })
-    .then(() => {
-      return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
-    })
-    .then((res) => {
-      expect(res.length).toBe(1);
-      expect(res[0].jobName).toBe('job2');
-    })
-    .then(done)
-    .catch(done.fail);
+      .then(() => {
+        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+      })
+      .then((res) => {
+        expect(res.length).toBe(1);
+        expect(res[0].jobName).toBe('job2');
+      })
+      .then(done)
+      .catch(done.fail);
   });
 
   it('should fail updating a job with an invalid name', (done) => {
@@ -143,8 +143,8 @@ describe('JobSchedule', () => {
         }
       }));
     })
-    .then(done.fail)
-    .catch(done);
+      .then(done.fail)
+      .catch(done);
   });
 
   it('should destroy a job', (done) => {
@@ -160,14 +160,14 @@ describe('JobSchedule', () => {
       expect(res.objectId).not.toBeUndefined();
       return rp.del(Parse.serverURL + '/cloud_code/jobs/' + res.objectId, masterKeyOptions);
     })
-    .then(() => {
-      return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
-    })
-    .then((res) => {
-      expect(res.length).toBe(0);
-    })
-    .then(done)
-    .catch(done.fail);
+      .then(() => {
+        return rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions);
+      })
+      .then((res) => {
+        expect(res.length).toBe(0);
+      })
+      .then(done)
+      .catch(done.fail);
   });
 
   it('should properly return job data', (done) => {
@@ -183,16 +183,16 @@ describe('JobSchedule', () => {
     rp.post(Parse.serverURL + '/cloud_code/jobs', options).then((res) => {
       expect(res.objectId).not.toBeUndefined();
     })
-    .then(() => {
-      return rp.get(Parse.serverURL + '/cloud_code/jobs/data', masterKeyOptions);
-    })
-    .then((res) => {
-      expect(res.in_use).toEqual(['job1']);
-      expect(res.jobs).toContain('job1');
-      expect(res.jobs).toContain('job2');
-      expect(res.jobs.length).toBe(2);
-    })
-    .then(done)
-    .catch(done.fail);
+      .then(() => {
+        return rp.get(Parse.serverURL + '/cloud_code/jobs/data', masterKeyOptions);
+      })
+      .then((res) => {
+        expect(res.in_use).toEqual(['job1']);
+        expect(res.jobs).toContain('job1');
+        expect(res.jobs).toContain('job2');
+        expect(res.jobs.length).toBe(2);
+      })
+      .then(done)
+      .catch(done.fail);
   });
 });

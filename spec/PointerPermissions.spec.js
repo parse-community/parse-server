@@ -211,29 +211,29 @@ describe('Pointer Permissions', () => {
     });
     const obj = new Parse.Object('AnObject');
     Parse.Object.saveAll([user, user2])
-    .then(() => {
-      obj.set('owner', user);
-      obj.set('otherOwner', user2);
-      return obj.save();
-    })
-    .then(() => config.database.loadSchema())
-    .then(schema => schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']}))
-    .then(() => Parse.User.logIn('user1', 'password'))
-    .then(() => obj.save({hello: 'fromUser1'}))
-    .then(() => Parse.User.logIn('user2', 'password'))
-    .then(() => obj.save({hello: 'fromUser2'}))
-    .then(() => Parse.User.logOut())
-    .then(() => {
-      const q = new Parse.Query('AnObject');
-      return q.first();
-    })
-    .then(result => {
-      expect(result.get('hello')).toBe('fromUser2');
-      done();
-    }).catch(() => {
-      fail('should not fail');
-      done();
-    })
+      .then(() => {
+        obj.set('owner', user);
+        obj.set('otherOwner', user2);
+        return obj.save();
+      })
+      .then(() => config.database.loadSchema())
+      .then(schema => schema.updateClass('AnObject', {}, {find: {"*": true},writeUserFields: ['owner', 'otherOwner']}))
+      .then(() => Parse.User.logIn('user1', 'password'))
+      .then(() => obj.save({hello: 'fromUser1'}))
+      .then(() => Parse.User.logIn('user2', 'password'))
+      .then(() => obj.save({hello: 'fromUser2'}))
+      .then(() => Parse.User.logOut())
+      .then(() => {
+        const q = new Parse.Query('AnObject');
+        return q.first();
+      })
+      .then(result => {
+        expect(result.get('hello')).toBe('fromUser2');
+        done();
+      }).catch(() => {
+        fail('should not fail');
+        done();
+      })
   });
 
   it('should prevent creating pointer permission on missing field', (done) => {
@@ -671,7 +671,7 @@ describe('Pointer Permissions', () => {
   it('should fail with invalid pointer perms', (done) => {
     const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
-        // Lock the update, and let only owner write
+      // Lock the update, and let only owner write
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: 'owner'});
     }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);
@@ -682,7 +682,7 @@ describe('Pointer Permissions', () => {
   it('should fail with invalid pointer perms', (done) => {
     const config = new Config(Parse.applicationId);
     config.database.loadSchema().then((schema) => {
-        // Lock the update, and let only owner write
+      // Lock the update, and let only owner write
       return schema.addClassIfNotExists('AnObject', {owner: {type: 'Pointer', targetClass: '_User'}}, {delete: {}, writeUserFields: ['owner', 'invalid']});
     }).catch((err) => {
       expect(err.code).toBe(Parse.Error.INVALID_JSON);

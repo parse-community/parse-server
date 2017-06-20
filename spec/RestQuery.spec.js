@@ -31,10 +31,10 @@ describe('rest query', () => {
     rest.create(config, nobody, 'TestObject', {foo: 'baz'}
     ).then(() => {
       return rest.create(config, nobody,
-                         'TestObject', {foo: 'qux'});
+        'TestObject', {foo: 'qux'});
     }).then(() => {
       return rest.find(config, nobody,
-                       'TestObject', {}, {limit: 1});
+        'TestObject', {}, {limit: 1});
     }).then((response) => {
       expect(response.results.length).toEqual(1);
       expect(response.results[0].foo).toBeTruthy();
@@ -116,11 +116,11 @@ describe('rest query', () => {
       activity.photo.objectId = photo.objectId;
       activity.fromUser.objectId = user.objectId;
       return rest.create(config, nobody,
-                         'TestActivity', activity);
+        'TestActivity', activity);
     }).then(() => {
       queryWhere.photo.objectId = photo.objectId;
       return rest.find(config, nobody,
-                       'TestActivity', queryWhere, queryOptions);
+        'TestActivity', queryWhere, queryOptions);
     }).then((response) => {
       var results = response.results;
       expect(results.length).toEqual(1);
@@ -149,24 +149,24 @@ describe('rest query', () => {
   it('query existent class when disabled client class creation', (done) => {
     var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
-    .then(actualSchema => {
-      expect(actualSchema.className).toEqual('ClientClassCreation');
-      return rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
-    })
-    .then((result) => {
-      expect(result.results.length).toEqual(0);
-      done();
-    }, () => {
-      fail('Should not throw error')
-    });
+      .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
+      .then(actualSchema => {
+        expect(actualSchema.className).toEqual('ClientClassCreation');
+        return rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {});
+      })
+      .then((result) => {
+        expect(result.results.length).toEqual(0);
+        done();
+      }, () => {
+        fail('Should not throw error')
+      });
   });
 
   it('query with wrongly encoded parameter', (done) => {
     rest.create(config, nobody, 'TestParameterEncode', {foo: 'bar'}
     ).then(() => {
       return rest.create(config, nobody,
-                         'TestParameterEncode', {foo: 'baz'});
+        'TestParameterEncode', {foo: 'baz'});
     }).then(() => {
       var headers = {
         'X-Parse-Application-Id': 'test',
@@ -177,9 +177,9 @@ describe('rest query', () => {
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                           where: '{"foo":{"$ne": "baz"}}',
-                           limit: 1
-                         }).replace('=', '%3D'),
+            where: '{"foo":{"$ne": "baz"}}',
+            limit: 1
+          }).replace('=', '%3D'),
       }).then(fail, (response) => {
         const error = response.error;
         var b = JSON.parse(error);
@@ -190,8 +190,8 @@ describe('rest query', () => {
         headers: headers,
         url: 'http://localhost:8378/1/classes/TestParameterEncode?'
                          + querystring.stringify({
-                           limit: 1
-                         }).replace('=', '%3D'),
+            limit: 1
+          }).replace('=', '%3D'),
       }).then(fail, (response) => {
         const error = response.error;
         var b = JSON.parse(error);

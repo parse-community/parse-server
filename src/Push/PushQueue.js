@@ -34,10 +34,10 @@ export class PushQueue {
     }
     return Promise.resolve().then(() => {
       return rest.find(config,
-                       auth,
-                       '_Installation',
-                       where,
-                       {limit: 0, count: true});
+        auth,
+        '_Installation',
+        where,
+        {limit: 0, count: true});
     }).then(({results, count}) => {
       if (!results) {
         return Promise.reject({error: 'PushController: no results in query'})

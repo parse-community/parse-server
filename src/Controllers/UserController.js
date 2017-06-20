@@ -164,25 +164,25 @@ export class UserController extends AdaptableController {
     }
 
     return this.setPasswordResetToken(email)
-    .then(user => {
-      const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);
+      .then(user => {
+        const token = encodeURIComponent(user._perishable_token);
+        const username = encodeURIComponent(user.username);
 
-      const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
+        const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+        const options = {
+          appName: this.config.appName,
+          link: link,
+          user: inflate('_User', user),
+        };
 
-      if (this.adapter.sendPasswordResetEmail) {
-        this.adapter.sendPasswordResetEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultResetPasswordEmail(options));
-      }
+        if (this.adapter.sendPasswordResetEmail) {
+          this.adapter.sendPasswordResetEmail(options);
+        } else {
+          this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+        }
 
-      return Promise.resolve(user);
-    });
+        return Promise.resolve(user);
+      });
   }
 
   updatePassword(username, token, password) {

@@ -368,11 +368,11 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
     var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+        triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), auth, error);
+        triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
     // Force the current Parse app before the trigger

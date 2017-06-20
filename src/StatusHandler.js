@@ -159,7 +159,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const setRunning = function(count) {
     logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date(), count });
+      {status: "running", updatedAt: new Date(), count });
   }
 
   const trackSent = function(results) {
