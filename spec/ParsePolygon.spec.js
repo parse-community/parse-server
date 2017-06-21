@@ -32,4 +32,25 @@ describe('Parse.Polygon testing', () => {
       done();
     }, done.fail);
   });
+
+  it('polygon update', (done) => {
+    const oldCoords = [[0,0],[0,1],[1,0],[1,1]];
+    const oldPolygon = {__type: 'Polygon', coordinates: oldCoords};
+    const newCoords = [[0,0],[0,1],[1,0],[1,1]];
+    const newPolygon = {__type: 'Polygon', coordinates: newCoords};
+    const obj = new TestObject();
+    obj.set('polygon', oldPolygon);
+    return obj.save().then(() => {
+      obj.set('polygon', newPolygon);
+      return obj.save();
+    }).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const polygon = result.get('polygon');
+      equal(polygon.__type, 'Polygon');
+      equal(polygon.coordinates, newCoords);
+      done();
+    }, done.fail);
+  });
 });

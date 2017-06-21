@@ -67,8 +67,7 @@
   },
   "scripts": {
     "dev": "npm run build && node bin/dev",
-    "lint2": "eslint --cache ./",
-    "lint": "echo 'no-lint'",
+    "lint": "eslint --cache ./",
     "build": "babel src/ -d lib/ --copy-files",
     "pretest": "npm run lint",
     "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 $COVERAGE_OPTION jasmine",

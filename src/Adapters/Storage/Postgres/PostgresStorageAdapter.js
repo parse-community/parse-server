@@ -470,13 +470,9 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldValue.__type === 'Polygon') {
-      const polygon = fieldValue.coordinates;
-      const points = polygon.map((point) => {
-        return `(${point[1]}, ${point[0]})`;
-      }).join(', ');
-
+      const value = convertPolygonToSQL(fieldValue.coordinates);
       patterns.push(`$${index}:name ~= $${index + 1}::polygon`);
-      values.push(fieldName, `(${points})`);
+      values.push(fieldName, value);
       index += 2;
     }
 
@@ -842,11 +838,8 @@ export class PostgresStorageAdapter {
         valuesArray.push(object[fieldName].name);
         break;
       case 'Polygon': {
-        const coords = object[fieldName].coordinates;
-        const points = coords.map((point) => {
-          return `(${point[1]}, ${point[0]})`;
-        }).join(', ');
-        valuesArray.push(`(${points})`);
+        const value = convertPolygonToSQL(object[fieldName].coordinates);
+        valuesArray.push(value);
         break;
       }
       case 'GeoPoint':
@@ -1029,6 +1022,11 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
         values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
         index += 3;
+      } else if (fieldValue.__type === 'Polygon') {
+        const value = convertPolygonToSQL(fieldValue.coordinates);
+        updatePatterns.push(`$${index}:name = $${index + 1}::polygon`);
+        values.push(fieldName, value);
+        index += 2;
       } else if (fieldValue.__type === 'Relation') {
         // noop
       } else if (typeof fieldValue === 'number') {
@@ -1319,6 +1317,13 @@ export class PostgresStorageAdapter {
         console.error(error);
       });
   }
+}
+
+function convertPolygonToSQL(polygon) {
+  const points = polygon.map((point) => {
+    return `(${point[1]}, ${point[0]})`;
+  }).join(', ');
+  return `(${points})`;
 }
 
 function removeWhiteSpace(regex) {
