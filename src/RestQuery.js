@@ -88,6 +88,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       break;
     case 'skip':
     case 'limit':
+    case 'readPreference':
       this.findOptions[option] = restOptions[option];
       break;
     case 'order':
@@ -127,6 +128,9 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'redirectClassNameForKey':
       this.redirectKey = restOptions.redirectClassNameForKey;
       this.redirectClassName = null;
+      break;
+    case 'includeReadPreference':
+    case 'subqueryReadPreference':
       break;
     default:
       throw new Parse.Error(Parse.Error.INVALID_JSON,
@@ -260,6 +264,11 @@ RestQuery.prototype.replaceInQuery = function() {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey
   };
 
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
+
   var subquery = new RestQuery(
     this.config, this.auth, inQueryValue.className,
     inQueryValue.where, additionalOptions);
@@ -307,6 +316,11 @@ RestQuery.prototype.replaceNotInQuery = function() {
   const additionalOptions = {
     redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, notInQueryValue.className,
@@ -358,6 +372,11 @@ RestQuery.prototype.replaceSelect = function() {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey
   };
 
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
+
   var subquery = new RestQuery(
     this.config, this.auth, selectValue.query.className,
     selectValue.query.where, additionalOptions);
@@ -405,6 +424,11 @@ RestQuery.prototype.replaceDontSelect = function() {
   const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
@@ -603,6 +627,11 @@ function includePath(config, auth, response, path, restOptions = {}) {
     if (keySet.size > 0) {
       includeRestOptions.keys = Array.from(keySet).join(',');
     }
+  }
+
+  if (restOptions.includeReadPreference) {
+    includeRestOptions.readPreference = restOptions.includeReadPreference;
+    includeRestOptions.includeReadPreference = restOptions.includeReadPreference;
   }
 
   const queryPromises = Object.keys(pointersHash).map((className) => {
