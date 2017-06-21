@@ -915,15 +915,15 @@ describe('Parse.Query testing', () => {
 
   it("order by descending number and string, with space", function(done) {
     var strings = ["a", "b", "c", "d"];
-    var makeBoxedNumber = function(num, i) {
-      return new BoxedNumber({ number: num, string: strings[i] });
+    var makeBoxedNumber = function (num, i) {
+      return new BoxedNumber({number: num, string: strings[i]});
     };
     Parse.Object.saveAll([3, 1, 3, 2].map(makeBoxedNumber)).then(
-      function() {
+      function () {
         var query = new Parse.Query(BoxedNumber);
         query.descending("number, string");
         query.find(expectSuccess({
-          success: function(results) {
+          success: function (results) {
             equal(results.length, 4);
             equal(results[0].get("number"), 3);
             equal(results[0].get("string"), "c");
@@ -936,7 +936,8 @@ describe('Parse.Query testing', () => {
             done();
           }
         }));
-      }, (err) => {
+      },
+      (err) => {
         jfail(err);
         done();
       });

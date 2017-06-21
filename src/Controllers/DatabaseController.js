@@ -690,11 +690,12 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
     return this.relatedIds(
       relatedTo.object.className,
       relatedTo.key,
-      relatedTo.object.objectId).then((ids) => {
-      delete query['$relatedTo'];
-      this.addInObjectIdsIds(ids, query);
-      return this.reduceRelationKeys(className, query);
-    });
+      relatedTo.object.objectId)
+      .then((ids) => {
+        delete query['$relatedTo'];
+        this.addInObjectIdsIds(ids, query);
+        return this.reduceRelationKeys(className, query);
+      });
   }
 };
 
