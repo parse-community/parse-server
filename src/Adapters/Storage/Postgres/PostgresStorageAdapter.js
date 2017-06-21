@@ -1320,7 +1320,12 @@ export class PostgresStorageAdapter {
 }
 
 function convertPolygonToSQL(polygon) {
+  if (polygon[0][0] !== polygon[polygon.length - 1][0] ||
+    polygon[0][1] !== polygon[polygon.length - 1][1]) {
+    polygon.push(polygon[0]);
+  }
   const points = polygon.map((point) => {
+    Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
     return `(${point[1]}, ${point[0]})`;
   }).join(', ');
   return `(${points})`;

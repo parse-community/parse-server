@@ -157,7 +157,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('polygon', (done) => {
-    var input = {location: { type: 'Polygon', coordinates: [[180, -180],[180, -180]]}};
+    var input = {location: { type: 'Polygon', coordinates: [[[180, -180],[180, -180]]]}};
     var output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'Polygon' }},
     });
