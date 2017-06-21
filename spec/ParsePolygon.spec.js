@@ -17,7 +17,7 @@ describe('Parse.Polygon testing', () => {
   });
 
   it('polygon equalTo', (done) => {
-    const coords = [[0,0],[0,1],[1,0],[1,1]];
+    const coords = [[1,0],[1,1],[1,0],[0,0]];
     const polygon = {__type: 'Polygon', coordinates: coords};
     const obj = new TestObject();
     obj.set('polygon', polygon);
@@ -36,7 +36,7 @@ describe('Parse.Polygon testing', () => {
   it('polygon update', (done) => {
     const oldCoords = [[0,0],[0,1],[1,0],[1,1]];
     const oldPolygon = {__type: 'Polygon', coordinates: oldCoords};
-    const newCoords = [[0,0],[0,1],[1,0],[1,1]];
+    const newCoords = [[1,0],[1,1],[1,0],[0,0]];
     const newPolygon = {__type: 'Polygon', coordinates: newCoords};
     const obj = new TestObject();
     obj.set('polygon', oldPolygon);
