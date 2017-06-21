@@ -29,6 +29,7 @@ const parseTypeToPostgresType = type => {
   case 'Number': return 'double precision';
   case 'GeoPoint': return 'point';
   case 'Bytes': return 'jsonb';
+  case 'Polygon': return 'polygon';
   case 'Array':
     if (type.contents && type.contents.type === 'String') {
       return 'text[]';
@@ -468,6 +469,17 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 3;
     }
 
+    if (fieldValue.__type === 'Polygon') {
+      const polygon = fieldValue.coordinates;
+      const points = polygon.map((point) => {
+        return `(${point[1]}, ${point[0]})`;
+      }).join(', ');
+
+      patterns.push(`$${index}:name ~= $${index + 1}::polygon`);
+      values.push(fieldName, `(${points})`);
+      index += 2;
+    }
+
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
       if (fieldValue[cmp]) {
         const pgComparator = ParseToPosgresComparator[cmp];
@@ -829,6 +841,14 @@ export class PostgresStorageAdapter {
       case 'File':
         valuesArray.push(object[fieldName].name);
         break;
+      case 'Polygon': {
+        const coords = object[fieldName].coordinates;
+        const points = coords.map((point) => {
+          return `(${point[1]}, ${point[0]})`;
+        }).join(', ');
+        valuesArray.push(`(${points})`);
+        break;
+      }
       case 'GeoPoint':
         // pop the point and process later
         geoPoints[fieldName] = object[fieldName];
@@ -1168,6 +1188,20 @@ export class PostgresStorageAdapter {
               __type: "GeoPoint",
               latitude: object[fieldName].y,
               longitude: object[fieldName].x
+            }
+          }
+          if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
+            let coords = object[fieldName];
+            coords = coords.substr(2, coords.length - 4).split('),(');
+            coords = coords.map((point) => {
+              return [
+                parseFloat(point.split(',')[1]),
+                parseFloat(point.split(',')[0])
+              ];
+            });
+            object[fieldName] = {
+              __type: "Polygon",
+              coordinates: coords
             }
           }
           if (object[fieldName] && schema.fields[fieldName].type === 'File') {

@@ -495,6 +495,9 @@ function transformTopLevelAtom(atom) {
     if (GeoPointCoder.isValidJSON(atom)) {
       return GeoPointCoder.JSONToDatabase(atom);
     }
+    if (PolygonCoder.isValidJSON(atom)) {
+      return PolygonCoder.JSONToDatabase(atom);
+    }
     if (FileCoder.isValidJSON(atom)) {
       return FileCoder.JSONToDatabase(atom);
     }
@@ -940,6 +943,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
+          if (schema.fields[key] && schema.fields[key].type === 'Polygon' && PolygonCoder.isValidDatabaseObject(value)) {
+            restObject[key] = PolygonCoder.databaseToJSON(value);
+            break;
+          }
           if (schema.fields[key] && schema.fields[key].type === 'Bytes' && BytesCoder.isValidDatabaseObject(value)) {
             restObject[key] = BytesCoder.databaseToJSON(value);
             break;
@@ -1039,6 +1046,40 @@ var GeoPointCoder = {
     return (typeof value === 'object' &&
       value !== null &&
       value.__type === 'GeoPoint'
+    );
+  }
+};
+
+var PolygonCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'Polygon',
+      coordinates: object['coordinates']
+    }
+  },
+
+  isValidDatabaseObject(object) {
+    const coords = object.coordinates;
+    if (object.type !== 'Polygon' || !(coords instanceof Array)) {
+      return false;
+    }
+    for (let i = 0; i < coords.length; i++) {
+      const point = coords[i];
+      if (!GeoPointCoder.isValidDatabaseObject(point)) {
+        return false;
+      }
+    }
+    return true;
+  },
+
+  JSONToDatabase(json) {
+    return { type: 'Polygon', coordinates: json.coordinates };
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Polygon'
     );
   }
 };

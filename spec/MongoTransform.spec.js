@@ -156,6 +156,18 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
+  it('polygon', (done) => {
+    var input = {location: { type: 'Polygon', coordinates: [[180, -180],[180, -180]]}};
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields: { location: { type: 'Polygon' }},
+    });
+    expect(typeof output.location).toEqual('object');
+    expect(output.location).toEqual(
+      {__type: 'Polygon', coordinates: [[180, -180],[180, -180]]}
+    );
+    done();
+  });
+
   it('bytes', (done) => {
     var input = {binaryData: "aGVsbG8gd29ybGQ="};
     var output = transform.mongoObjectToParseObject(null, input, {
