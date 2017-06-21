@@ -23,6 +23,60 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("searching for null", function(done) {
+    var baz = new TestObject({ foo: null });
+    var qux = new TestObject({ foo: 'qux' });
+    var qux2 = new TestObject({ });
+    Parse.Object.saveAll([baz, qux, qux2], function() {
+      var query = new Parse.Query(TestObject);
+      query.equalTo('foo', null);
+      query.find({
+        success: function(results) {
+          equal(results.length, 2);
+          qux.set('foo', null);
+          qux.save({
+            success: function () {
+              query.find({
+                success: function (results) {
+                  equal(results.length, 3);
+                  done();
+                }
+              });
+            }
+          });
+        }
+      });
+    });
+  });
+
+  it("searching for not null", function(done) {
+    var baz = new TestObject({ foo: null });
+    var qux = new TestObject({ foo: 'qux' });
+    var qux2 = new TestObject({ });
+    Parse.Object.saveAll([baz, qux, qux2], function() {
+      var query = new Parse.Query(TestObject);
+      query.notEqualTo('foo', null);
+      query.find({
+        success: function(results) {
+          equal(results.length, 1);
+          qux.set('foo', null);
+          qux.save({
+            success: function () {
+              query.find({
+                success: function (results) {
+                  equal(results.length, 0);
+                  done();
+                }
+              });
+            },
+            error: function (error) { console.log(error); }
+          });
+        },
+        error: function (error) { console.log(error); }
+      });
+    });
+  });
+
   it("notEqualTo with Relation is working", function(done) {
     var user = new Parse.User();
     user.setPassword("asdf");
@@ -52,6 +106,7 @@ describe('Parse.Query testing', () => {
 
       var relDislike1 = cake1.relation("hater");
       relDislike1.add(user2);
+
       return cake1.save();
     }).then(function(){
       var rellike2 = cake2.relation("liker");
@@ -59,6 +114,9 @@ describe('Parse.Query testing', () => {
 
       var relDislike2 = cake2.relation("hater");
       relDislike2.add(user2);
+
+      var relSomething = cake2.relation("something");
+      relSomething.add(user);
 
       return cake2.save();
     }).then(function(){
@@ -139,6 +197,21 @@ describe('Parse.Query testing', () => {
       var query = new Parse.Query(Cake);
       query.equalTo("hater", user);
       query.equalTo("liker", user);
+      // user doesn't hate any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.equalTo("hater", null);
+      query.equalTo("liker", null);
+      // user doesn't hate any cake so this should be 0
+      return query.find().then(function(results){
+        equal(results.length, 0);
+      });
+    }).then(function(){
+      var query = new Parse.Query(Cake);
+      query.equalTo("something", null);
       // user doesn't hate any cake so this should be 0
       return query.find().then(function(results){
         equal(results.length, 0);
@@ -2479,6 +2552,24 @@ describe('Parse.Query testing', () => {
       return query.find();
     }).then((results) => {
       expect(results.length).toEqual(1);
+      done();
+    }, (error) => {
+      console.log(error);
+    });
+  });
+
+  it('query should not match on array when searching for null', (done) => {
+    var target = {__type: 'Pointer', className: 'TestObject', objectId: '123'};
+    var obj = new Parse.Object('TestObject');
+    obj.set('someKey', 'someValue');
+    obj.set('someObjs', [target]);
+    obj.save().then(() => {
+      var query = new Parse.Query('TestObject');
+      query.equalTo('someKey', 'someValue');
+      query.equalTo('someObjs', null);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toEqual(0);
       done();
     }, (error) => {
       console.log(error);
