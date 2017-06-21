@@ -175,28 +175,28 @@ describe('rest query', () => {
 
       const p0 = rp.get({
         headers: headers,
-        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
-                         + querystring.stringify({
-            where: '{"foo":{"$ne": "baz"}}',
-            limit: 1
-          }).replace('=', '%3D'),
-      }).then(fail, (response) => {
-        const error = response.error;
-        var b = JSON.parse(error);
-        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-      });
+        url: 'http://localhost:8378/1/classes/TestParameterEncode?' + querystring.stringify({
+          where: '{"foo":{"$ne": "baz"}}',
+          limit: 1
+        }).replace('=', '%3D'),
+      })
+        .then(fail, (response) => {
+          const error = response.error;
+          var b = JSON.parse(error);
+          expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
 
       const p1 = rp.get({
         headers: headers,
-        url: 'http://localhost:8378/1/classes/TestParameterEncode?'
-                         + querystring.stringify({
-            limit: 1
-          }).replace('=', '%3D'),
-      }).then(fail, (response) => {
-        const error = response.error;
-        var b = JSON.parse(error);
-        expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
-      });
+        url: 'http://localhost:8378/1/classes/TestParameterEncode?' + querystring.stringify({
+          limit: 1
+        }).replace('=', '%3D'),
+      })
+        .then(fail, (response) => {
+          const error = response.error;
+          var b = JSON.parse(error);
+          expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
+        });
       return Promise.all([p0, p1]);
     }).then(done).catch((err) => {
       jfail(err);

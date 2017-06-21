@@ -128,26 +128,29 @@ export class FunctionsRouter extends PromiseRouter {
         var response = FunctionsRouter.createResponseObject((result) => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(`Ran cloud function ${functionName} for user ${userString} `
-              + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
-              functionName,
-              params,
-              user: userString,
-            });
+            logger.info(
+              `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`,
+              {
+                functionName,
+                params,
+                user: userString,
+              }
+            );
             resolve(result);
           } catch (e) {
             reject(e);
           }
         }, (error) => {
           try {
-            logger.error(`Failed running cloud function ${functionName} for `
-              + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
-              + JSON.stringify(error), {
-              functionName,
-              error,
-              params,
-              user: userString
-            });
+            logger.error(
+              `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` + JSON.stringify(error),
+              {
+                functionName,
+                error,
+                params,
+                user: userString
+              }
+            );
             reject(error);
           } catch (e) {
             reject(e);

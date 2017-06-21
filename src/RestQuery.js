@@ -197,11 +197,11 @@ RestQuery.prototype.redirectClassNameForKey = function() {
   }
 
   // We need to change the class name based on the schema
-  return this.config.database.redirectClassNameForKey(
-    this.className, this.redirectKey).then((newClassName) => {
-    this.className = newClassName;
-    this.redirectClassName = newClassName;
-  });
+  return this.config.database.redirectClassNameForKey(this.className, this.redirectKey)
+    .then((newClassName) => {
+      this.className = newClassName;
+      this.redirectClassName = newClassName;
+    });
 };
 
 // Validates this operation against the allowClientClassCreation config.
@@ -491,24 +491,24 @@ RestQuery.prototype.runFind = function(options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  return this.config.database.find(
-    this.className, this.restWhere, findOptions).then((results) => {
-    if (this.className === '_User') {
-      for (var result of results) {
-        cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
-        cleanResultAuthData(result);
+  return this.config.database.find(this.className, this.restWhere, findOptions)
+    .then((results) => {
+      if (this.className === '_User') {
+        for (var result of results) {
+          cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
+          cleanResultAuthData(result);
+        }
       }
-    }
 
-    this.config.filesController.expandFilesInObject(this.config, results);
+      this.config.filesController.expandFilesInObject(this.config, results);
 
-    if (this.redirectClassName) {
-      for (var r of results) {
-        r.className = this.redirectClassName;
+      if (this.redirectClassName) {
+        for (var r of results) {
+          r.className = this.redirectClassName;
+        }
       }
-    }
-    this.response = {results: results};
-  });
+      this.response = {results: results};
+    });
 };
 
 // Returns a promise for whether it was successful.
@@ -520,10 +520,10 @@ RestQuery.prototype.runCount = function() {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database.find(
-    this.className, this.restWhere, this.findOptions).then((c) => {
-    this.response.count = c;
-  });
+  return this.config.database.find(this.className, this.restWhere, this.findOptions)
+    .then((c) => {
+      this.response.count = c;
+    });
 };
 
 // Augments this.response with data at the paths provided in this.include.
