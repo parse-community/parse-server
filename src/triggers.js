@@ -343,6 +343,18 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restOptions = restOptions || {};
       restOptions.keys = jsonQuery.keys;
     }
+    if (requestObject.readPreference) {
+      restOptions = restOptions || {};
+      restOptions.readPreference = requestObject.readPreference;
+    }
+    if (requestObject.includeReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.includeReadPreference = requestObject.includeReadPreference;
+    }
+    if (requestObject.subqueryReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
+    }
     return {
       restWhere,
       restOptions

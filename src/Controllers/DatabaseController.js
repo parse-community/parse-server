@@ -770,7 +770,8 @@ DatabaseController.prototype.find = function(className, query, {
   sort = {},
   count,
   keys,
-  op
+  op,
+  readPreference
 } = {}) {
   const isMaster = acl === undefined;
   const aclGroup = acl || [];
@@ -836,13 +837,13 @@ DatabaseController.prototype.find = function(className, query, {
                 if (!classExists) {
                   return 0;
                 } else {
-                  return this.adapter.count(className, schema, query);
+                  return this.adapter.count(className, schema, query, readPreference);
                 }
               } else {
                 if (!classExists) {
                   return [];
                 } else {
-                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys })
+                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference })
                     .then(objects => objects.map(object => {
                       object = untransformObjectACL(object);
                       return filterSensitiveData(isMaster, aclGroup, className, object)
