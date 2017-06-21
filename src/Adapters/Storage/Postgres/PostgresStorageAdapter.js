@@ -424,6 +424,20 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, `(${points})`);
       index += 2;
     }
+    if (fieldValue.$geoIntersects && fieldValue.$geoIntersects.$point) {
+      const point = fieldValue.$geoIntersects.$point;
+      if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoIntersect value; $point should be GeoPoint'
+        );
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      patterns.push(`$${index}:name::polygon @> $${index + 1}::point`);
+      values.push(fieldName, `(${point.longitude}, ${point.latitude})`);
+      index += 2;
+    }
 
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
@@ -1320,6 +1334,12 @@ export class PostgresStorageAdapter {
 }
 
 function convertPolygonToSQL(polygon) {
+  if (polygon.length < 3) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `Polygon must have at least 3 values`
+    );
+  }
   if (polygon[0][0] !== polygon[polygon.length - 1][0] ||
     polygon[0][1] !== polygon[polygon.length - 1][1]) {
     polygon.push(polygon[0]);

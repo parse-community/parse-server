@@ -88,6 +88,84 @@ describe('Parse.Polygon testing', () => {
       return query.get(obj.id);
     }).then(done.fail, done);
   });
+
+  it('polygonContain query', (done) => {
+    const points1 = [[0,0],[0,1],[1,1],[1,0]];
+    const points2 = [[0,0],[0,2],[2,2],[2,0]];
+    const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
+    const polygon1 = {__type: 'Polygon', coordinates: points1};
+    const polygon2 = {__type: 'Polygon', coordinates: points2};
+    const polygon3 = {__type: 'Polygon', coordinates: points3};
+    const obj1 = new TestObject({location: polygon1});
+    const obj2 = new TestObject({location: polygon2});
+    const obj3 = new TestObject({location: polygon3});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoIntersects: {
+            $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 }
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
+  it('polygonContain invalid input', (done) => {
+    const points = [[0,0],[0,1],[1,1],[1,0]];
+    const polygon = {__type: 'Polygon', coordinates: points};
+    const obj = new TestObject({location: polygon});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoIntersects: {
+            $point: { __type: 'GeoPoint', latitude: 181, longitude: 181 }
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then(done.fail, done);
+  });
+
+  it('polygonContain invalid geoPoint', (done) => {
+    const points = [[0,0],[0,1],[1,1],[1,0]];
+    const polygon = {__type: 'Polygon', coordinates: points};
+    const obj = new TestObject({location: polygon});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoIntersects: {
+            $point: []
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then(done.fail, done);
+  });
 });
 
 const buildIndexes = () => {
@@ -149,6 +227,40 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
       return obj.save();
     }).then(done.fail, done);
   });
+
+  it('polygonContain query with indexes', (done) => {
+    const points1 = [[0,0],[0,1],[1,1],[1,0]];
+    const points2 = [[0,0],[0,2],[2,2],[2,0]];
+    const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
+    const polygon1 = {__type: 'Polygon', coordinates: points1};
+    const polygon2 = {__type: 'Polygon', coordinates: points2};
+    const polygon3 = {__type: 'Polygon', coordinates: points3};
+    const obj1 = new TestObject({polygon: polygon1});
+    const obj2 = new TestObject({polygon: polygon2});
+    const obj3 = new TestObject({polygon: polygon3});
+    buildIndexes().then(() => {
+      return Parse.Object.saveAll([obj1, obj2, obj3]);
+    }).then(() => {
+      const where = {
+        polygon: {
+          $geoIntersects: {
+            $point: { __type: 'GeoPoint', latitude: 0.5, longitude: 0.5 }
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
 });
 
 describe_only_db('postgres')('[postgres] Parse.Polygon testing', () => {
@@ -156,6 +268,6 @@ describe_only_db('postgres')('[postgres] Parse.Polygon testing', () => {
     const coords = [[0,0],[0,1]];
     const obj = new TestObject();
     obj.set('polygon', {__type: 'Polygon', coordinates: coords});
-    obj.save().then(done, done.fail);
+    obj.save().then(done.fail, done);
   });
 });

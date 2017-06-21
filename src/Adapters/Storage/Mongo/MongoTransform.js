@@ -695,6 +695,24 @@ function transformConstraint(constraint, inArray) {
       };
       break;
     }
+    case '$geoIntersects': {
+      const point = constraint[key]['$point'];
+      if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoIntersect value; $point should be GeoPoint'
+        );
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      answer[key] = {
+        $geometry: {
+          type: 'Point',
+          coordinates: [point.longitude, point.latitude]
+        }
+      };
+      break;
+    }
     default:
       if (key.match(/^\$+/)) {
         throw new Parse.Error(
