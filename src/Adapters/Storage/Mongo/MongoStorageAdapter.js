@@ -17,6 +17,7 @@ import defaults              from '../../../defaults';
 
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
+const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
 
@@ -332,7 +333,7 @@ export class MongoStorageAdapter {
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
-  find(className, schema, query, { skip, limit, sort, keys }) {
+  find(className, schema, query, { skip, limit, sort, keys, readPreference }) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
@@ -340,6 +341,7 @@ export class MongoStorageAdapter {
       memo[transformKey(className, key, schema)] = 1;
       return memo;
     }, {});
+    readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection => collection.find(mongoWhere, {
         skip,
@@ -347,6 +349,7 @@ export class MongoStorageAdapter {
         sort: mongoSort,
         keys: mongoKeys,
         maxTimeMS: this._maxTimeMS,
+        readPreference,
       }))
       .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
@@ -382,12 +385,39 @@ export class MongoStorageAdapter {
   }
 
   // Executes a count.
-  count(className, schema, query) {
+  count(className, schema, query, readPreference) {
     schema = convertParseSchemaToMongoSchema(schema);
+    readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection => collection.count(transformWhere(className, query, schema), {
         maxTimeMS: this._maxTimeMS,
+        readPreference,
       }));
+  }
+
+  _parseReadPreference(readPreference) {
+    if (readPreference) {
+      switch (readPreference) {
+      case 'PRIMARY':
+        readPreference = ReadPreference.PRIMARY;
+        break;
+      case 'PRIMARY_PREFERRED':
+        readPreference = ReadPreference.PRIMARY_PREFERRED;
+        break;
+      case 'SECONDARY':
+        readPreference = ReadPreference.SECONDARY;
+        break;
+      case 'SECONDARY_PREFERRED':
+        readPreference = ReadPreference.SECONDARY_PREFERRED;
+        break;
+      case 'NEAREST':
+        readPreference = ReadPreference.NEAREST;
+        break;
+      default:
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
+      }
+    }
+    return readPreference;
   }
 
   performInitialization() {

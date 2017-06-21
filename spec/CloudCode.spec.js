@@ -1211,6 +1211,7 @@ describe('beforeFind hooks', () => {
       expect(jsonQuery.include).toEqual('otherKey,otherValue');
       expect(jsonQuery.limit).toEqual(100);
       expect(jsonQuery.skip).toBe(undefined);
+      expect(req.isGet).toEqual(false);
     });
 
     const query = new Parse.Query('MyObject');
@@ -1303,6 +1304,34 @@ describe('beforeFind hooks', () => {
     }, (err) =>  {
       fail(err);
       done();
+    });
+  });
+
+  it('should add beforeFind trigger using get API',(done) => {
+    const hook = {
+      method: function(req) {
+        expect(req.isGet).toEqual(true);
+        return Promise.resolve();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject');
+    obj.set('secretField', 'SSID');
+    obj.save().then(function() {
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/' + obj.id,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.secretField).toEqual('SSID');
+        expect(hook.method).toHaveBeenCalled();
+        done();
+      });
     });
   });
 });

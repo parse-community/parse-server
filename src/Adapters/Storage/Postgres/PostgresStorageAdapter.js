@@ -189,7 +189,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     // nothingin the schema, it's gonna blow up
     if (!schema.fields[fieldName]) {
       // as it won't exist
-      if (fieldValue.$exists === false) {
+      if (fieldValue && fieldValue.$exists === false) {
         continue;
       }
     }
@@ -203,7 +203,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       });
       let name = components.slice(0, components.length - 1).join('->');
       name += '->>' + components[components.length - 1];
-      patterns.push(`${name} = '${fieldValue}'`);
+      if (fieldValue === null) {
+        patterns.push(`${name} IS NULL`);
+      } else {
+        patterns.push(`${name} = '${fieldValue}'`);
+      }
+    } else if (fieldValue === null) {
+      patterns.push(`$${index}:name IS NULL`);
+      values.push(fieldName);
+      index += 1;
+      continue;
     } else if (typeof fieldValue === 'string') {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
@@ -232,13 +241,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(...clauseValues);
     }
 
-    if (fieldValue.$ne) {
+    if (fieldValue.$ne !== undefined) {
       if (isArrayField) {
         fieldValue.$ne = JSON.stringify([fieldValue.$ne]);
         patterns.push(`NOT array_contains($${index}:name, $${index + 1})`);
       } else {
         if (fieldValue.$ne === null) {
-          patterns.push(`$${index}:name <> $${index + 1}`);
+          patterns.push(`$${index}:name IS NOT NULL`);
+          values.push(fieldName);
+          index += 1;
+          continue;
         } else {
           // if not null, we need to manually exclude null
           patterns.push(`($${index}:name <> $${index + 1} OR $${index}:name IS NULL)`);
@@ -689,11 +701,11 @@ export class PostgresStorageAdapter {
         const joins = results.reduce((list, schema) => {
           return list.concat(joinTablesForSchema(schema.schema));
         }, []);
-        const classes = ['_SCHEMA','_PushStatus','_JobStatus','_JobSchedule','_Hooks','_GlobalConfig', ...results.map(result => result.className), ...joins];
-        return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', { className }))));
+        const classes = ['_SCHEMA', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_GlobalConfig', '_Audience', ...results.map(result => result.className), ...joins];
+        return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', {className}))));
       }, error => {
         if (error.code === PostgresRelationDoesNotExistError) {
-        // No _SCHEMA collection. Don't delete anything.
+          // No _SCHEMA collection. Don't delete anything.
           return;
         } else {
           throw error;
@@ -786,6 +798,9 @@ export class PostgresStorageAdapter {
     validateKeys(object);
 
     Object.keys(object).forEach(fieldName => {
+      if (object[fieldName] === null) {
+        return;
+      }
       var authDataMatch = fieldName.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
       if (authDataMatch) {
         var provider = authDataMatch[1];

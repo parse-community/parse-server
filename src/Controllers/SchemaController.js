@@ -114,6 +114,11 @@ const defaultColumns = Object.freeze({
   _GlobalConfig: {
     "objectId": {type: 'String'},
     "params": {type: 'Object'}
+  },
+  _Audience: {
+    "objectId": {type:'String'},
+    "name":   {type:'String'},
+    "query": {type:'String'} //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
   }
 });
 
@@ -122,9 +127,9 @@ const requiredColumns = Object.freeze({
   _Role: ["name", "ACL"]
 });
 
-const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus', '_JobSchedule']);
+const systemClasses = Object.freeze(['_User', '_Installation', '_Role', '_Session', '_Product', '_PushStatus', '_JobStatus', '_JobSchedule', '_Audience']);
 
-const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule']);
+const volatileClasses = Object.freeze(['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule', '_Audience']);
 
 // 10 alpha numberic chars + uppercase
 const userIdRegex = /^[a-zA-Z0-9]{10}$/;
@@ -307,7 +312,11 @@ const _JobScheduleSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
   fields: {},
   classLevelPermissions: {}
 }));
-const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _JobScheduleSchema, _PushStatusSchema, _GlobalConfigSchema];
+const _AudienceSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
+  className: "_Audience",
+  fields: defaultColumns._Audience
+}));
+const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _JobScheduleSchema, _PushStatusSchema, _GlobalConfigSchema, _AudienceSchema];
 
 const dbTypeMatchesObjectType = (dbType, objectType) => {
   if (dbType.type !== objectType.type) return false;

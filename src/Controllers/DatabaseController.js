@@ -616,13 +616,14 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
   }
 
   const promises = Object.keys(query).map((key) => {
+    const t = schema.getExpectedType(className, key);
+    if (!t || t.type !== 'Relation') {
+      return Promise.resolve(query);
+    }
+    let queries = null;
     if (query[key] && (query[key]['$in'] || query[key]['$ne'] || query[key]['$nin'] || query[key].__type == 'Pointer')) {
-      const t = schema.getExpectedType(className, key);
-      if (!t || t.type !== 'Relation') {
-        return Promise.resolve(query);
-      }
       // Build the list of queries
-      const queries = Object.keys(query[key]).map((constraintKey) => {
+      queries = Object.keys(query[key]).map((constraintKey) => {
         let relatedIds;
         let isNegation = false;
         if (constraintKey === 'objectId') {
@@ -643,31 +644,32 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
           relatedIds
         }
       });
-
-      // remove the current queryKey as we don,t need it anymore
-      delete query[key];
-      // execute each query independnently to build the list of
-      // $in / $nin
-      const promises = queries.map((q) => {
-        if (!q) {
-          return Promise.resolve();
-        }
-        return this.owningIds(className, key, q.relatedIds).then((ids) => {
-          if (q.isNegation) {
-            this.addNotInObjectIdsIds(ids, query);
-          } else {
-            this.addInObjectIdsIds(ids, query);
-          }
-          return Promise.resolve();
-        });
-      });
-
-      return Promise.all(promises).then(() => {
-        return Promise.resolve();
-      })
-
+    } else {
+      queries = [{isNegation: false, relatedIds: []}];
     }
-    return Promise.resolve();
+
+    // remove the current queryKey as we don,t need it anymore
+    delete query[key];
+    // execute each query independnently to build the list of
+    // $in / $nin
+    const promises = queries.map((q) => {
+      if (!q) {
+        return Promise.resolve();
+      }
+      return this.owningIds(className, key, q.relatedIds).then((ids) => {
+        if (q.isNegation) {
+          this.addNotInObjectIdsIds(ids, query);
+        } else {
+          this.addInObjectIdsIds(ids, query);
+        }
+        return Promise.resolve();
+      });
+    });
+
+    return Promise.all(promises).then(() => {
+      return Promise.resolve();
+    })
+
   })
 
   return Promise.all(promises).then(() => {
@@ -690,11 +692,12 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
     return this.relatedIds(
       relatedTo.object.className,
       relatedTo.key,
-      relatedTo.object.objectId).then((ids) => {
-      delete query['$relatedTo'];
-      this.addInObjectIdsIds(ids, query);
-      return this.reduceRelationKeys(className, query);
-    });
+      relatedTo.object.objectId)
+      .then((ids) => {
+        delete query['$relatedTo'];
+        this.addInObjectIdsIds(ids, query);
+        return this.reduceRelationKeys(className, query);
+      });
   }
 };
 
@@ -767,7 +770,8 @@ DatabaseController.prototype.find = function(className, query, {
   sort = {},
   count,
   keys,
-  op
+  op,
+  readPreference
 } = {}) {
   const isMaster = acl === undefined;
   const aclGroup = acl || [];
@@ -833,13 +837,13 @@ DatabaseController.prototype.find = function(className, query, {
                 if (!classExists) {
                   return 0;
                 } else {
-                  return this.adapter.count(className, schema, query);
+                  return this.adapter.count(className, schema, query, readPreference);
                 }
               } else {
                 if (!classExists) {
                   return [];
                 } else {
-                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys })
+                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference })
                     .then(objects => objects.map(object => {
                       object = untransformObjectACL(object);
                       return filterSensitiveData(isMaster, aclGroup, className, object)

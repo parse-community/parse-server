@@ -37,9 +37,14 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK) => {
+  var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
-  const query = new RestQuery(config, auth, className, { objectId }, restOptions, clientSDK);
-  return query.execute();
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth, true).then((result) => {
+    restWhere = result.restWhere || restWhere;
+    restOptions = result.restOptions || restOptions;
+    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+    return query.execute();
+  });
 }
 
 // Returns a promise that doesn't resolve to any useful value.
