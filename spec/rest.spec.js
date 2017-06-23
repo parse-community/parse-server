@@ -23,7 +23,21 @@ describe('rest create', () => {
         expect(results.length).toEqual(1);
         var obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
+        expect(obj.objectId.length).toEqual(10);
         expect(obj._id).toBeUndefined();
+        done();
+      });
+  });
+
+  it('can use custom _id size', done => {
+    config.objectIdSize = 20;
+    rest.create(config, auth.nobody(config), 'Foo', {})
+      .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        var obj = results[0];
+        expect(typeof obj.objectId).toEqual('string');
+        expect(obj.objectId.length).toEqual(20);
         done();
       });
   });
