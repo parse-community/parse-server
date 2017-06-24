@@ -98,6 +98,7 @@ export class MongoStorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    delete mongoOptions.maxTimeMS;
   }
 
   connect() {
