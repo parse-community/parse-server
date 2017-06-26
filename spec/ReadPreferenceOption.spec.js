@@ -689,31 +689,6 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should allow setting the read preference somewhere?', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
-
-    const obj0 = new Parse.Object('MyObject0');
-    obj0.set('boolKey', false);
-    obj0
-      .save()
-      .then(() => {
-        spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
-
-        const query0 = new Parse.Query('MyObject0');
-        return query0
-          .find({ readPreference: 'SECONDARY'})
-          .then(results => {
-            // console.log(results);
-            databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
-              if (call.args[0].indexOf('MyObject0') >= 0) {
-                console.log(call.args[2].readPreference.preference);
-              }
-            });
-            done()
-          })
-      })
-      .catch(done.fail);
-  });
 
   it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
