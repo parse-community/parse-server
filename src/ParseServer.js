@@ -142,6 +142,7 @@ class ParseServer {
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     enableSingleSchemaCache = false,
     __indexBuildCompletionCallbackForTests = () => {},
+    authenticatedFileRetrieval,
   }) {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -253,6 +254,7 @@ class ParseServer {
       liveQueryController: liveQueryController,
       sessionLength: Number(sessionLength),
       expireInactiveSessions: expireInactiveSessions,
+      authenticatedFileRetrieval: authenticatedFileRetrieval,
       jsonLogs,
       revokeSessionOnPasswordReset,
       databaseController,
