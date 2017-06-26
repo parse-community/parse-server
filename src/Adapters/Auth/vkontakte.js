@@ -23,14 +23,15 @@ function validateAuthData(authData, params) {
 }
 
 function vkOAuth2Request(params) {
-  var promise = new Parse.Promise();
-  return promise.then(function(){
+  return new Promise(function (resolve) {
     if (!params || !params.appIds || !params.appIds.length || !params.appSecret || !params.appSecret.length) {
       logger.error('Vk Auth', 'Vk auth is not configured. Missing appIds or appSecret.');
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Vk auth is not configured. Missing appIds or appSecret.');
     }
-    return request("oauth.vk.com", "access_token?client_id=" + params.appIds + "&client_secret=" + params.appSecret + "&v=5.59&grant_type=client_credentials")
-  })
+    resolve();
+  }).then(function () {
+    return request("oauth.vk.com", "access_token?client_id=" + params.appIds + "&client_secret=" + params.appSecret + "&v=5.59&grant_type=client_credentials");
+  });
 }
 
 // Returns a promise that fulfills iff this app id is valid.
