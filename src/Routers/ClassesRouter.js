@@ -4,7 +4,7 @@ import rest          from '../rest';
 import _             from 'lodash';
 import Parse         from 'parse/node';
 
-const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
+const ALLOWED_GET_QUERY_KEYS = ['keys', 'include', 'readPreference'];
 
 export class ClassesRouter extends PromiseRouter {
 
@@ -68,6 +68,10 @@ export class ClassesRouter extends PromiseRouter {
       if (ALLOWED_GET_QUERY_KEYS.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Improper encode of parameter');
       }
+    }
+
+    if (body.readPreference) {
+      options.readPreference = body.readPreference;
     }
 
     if (typeof body.keys == 'string') {
