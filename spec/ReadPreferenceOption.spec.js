@@ -689,7 +689,6 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-
   it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
 
