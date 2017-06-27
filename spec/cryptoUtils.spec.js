@@ -63,6 +63,10 @@ describe('newObjectId', () => {
     expect(cryptoUtils.newObjectId().length).toBeGreaterThan(9);
   });
 
+  it('returns result with required number of characters', () => {
+    expect(cryptoUtils.newObjectId(42).length).toBe(42);
+  });
+
   it('returns unique results', () => {
     expect(givesUniqueResults(() => cryptoUtils.newObjectId(), 100)).toBe(true);
   });
