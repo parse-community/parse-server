@@ -333,7 +333,7 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  fit('should change read preference for GET using API', (done) => {
+  it('should change read preference for GET using API through beforeFind trigger', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
@@ -344,9 +344,45 @@ describe_only_db('mongo')('Read preference option', () => {
     Parse.Object.saveAll([obj0, obj1]).then(() => {
       spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
-      // Parse.Cloud.beforeFind('MyObject', (req) => {
-      //   req.readPreference = 'SECONDARY';
-      // });
+      Parse.Cloud.beforeFind('MyObject', (req) => {
+        req.readPreference = 'SECONDARY';
+      });
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.boolKey).toBe(false);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
+
+        done();
+      });
+    });
+  });
+
+  it('should change read preference for GET directly from API', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
       rp({
         method: 'GET',
@@ -368,6 +404,165 @@ describe_only_db('mongo')('Read preference option', () => {
         });
 
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
+
+        done();
+      });
+    });
+  });
+
+  it('should change read preference for GET using API through the beforeFind overriding API option', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      Parse.Cloud.beforeFind('MyObject', (req) => {
+        req.readPreference = 'SECONDARY_PREFERRED';
+      });
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+        qs: { readPreference: 'SECONDARY'},
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.boolKey).toBe(false);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
+
+        done();
+      });
+    });
+  });
+
+  it('should change read preference for FIND using API through beforeFind trigger', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      Parse.Cloud.beforeFind('MyObject', (req) => {
+        req.readPreference = 'SECONDARY';
+      });
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.results.length).toEqual(2);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
+
+        done();
+      });
+    });
+  });
+
+  it('should change read preference for FIND directly from API', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/',
+        qs: { readPreference: 'SECONDARY'},
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.results.length).toEqual(2);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
+
+        done();
+      });
+    });
+  });
+
+  it('should change read preference for FIND using API through the beforeFind overriding API option', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      Parse.Cloud.beforeFind('MyObject', (req) => {
+        req.readPreference = 'SECONDARY_PREFERRED';
+      });
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject/',
+        qs: { readPreference: 'SECONDARY'},
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.results.length).toEqual(2);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
       });
