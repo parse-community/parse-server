@@ -256,5 +256,10 @@ export default {
   },
   "middleware": {
     help: "middleware for express server, can be string or function"
+  },
+  "objectIdSize": {
+    env: "PARSE_SERVER_OBJECT_ID_SIZE",
+    help: "Sets the number of characters in generated object id's, default 10",
+    action: numberParser("objectIdSize")
   }
 };

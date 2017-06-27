@@ -52,7 +52,7 @@ function statusHandler(className, database) {
 
 export function jobStatusHandler(config) {
   let jobStatus;
-  const objectId = newObjectId();
+  const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
   const setRunning = function(jobName, params) {
@@ -103,7 +103,7 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config, objectId = newObjectId()) {
+export function pushStatusHandler(config, objectId = newObjectId(config.objectIdSize)) {
 
   let pushStatus;
   const database = config.database;
