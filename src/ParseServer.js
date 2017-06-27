@@ -141,6 +141,7 @@ class ParseServer {
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
     enableSingleSchemaCache = false,
+    objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // Initialize the node client SDK automatically
@@ -262,7 +263,8 @@ class ParseServer {
       pushWorker,
       pushControllerQueue,
       hasPushSupport,
-      hasPushScheduledSupport
+      hasPushScheduledSupport,
+      objectIdSize
     });
 
     Config.validate(AppCache.get(appId));
