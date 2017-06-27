@@ -333,7 +333,7 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
-  it('should change read preference for GET using API', (done) => {
+  fit('should change read preference for GET using API', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
@@ -344,13 +344,14 @@ describe_only_db('mongo')('Read preference option', () => {
     Parse.Object.saveAll([obj0, obj1]).then(() => {
       spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
 
-      Parse.Cloud.beforeFind('MyObject', (req) => {
-        req.readPreference = 'SECONDARY';
-      });
+      // Parse.Cloud.beforeFind('MyObject', (req) => {
+      //   req.readPreference = 'SECONDARY';
+      // });
 
       rp({
         method: 'GET',
         uri: 'http://localhost:8378/1/classes/MyObject/' + obj0.id,
+        qs: { readPreference: 'SECONDARY'},
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest'
