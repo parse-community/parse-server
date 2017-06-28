@@ -4,7 +4,8 @@ import rest          from '../rest';
 import _             from 'lodash';
 import Parse         from 'parse/node';
 
-const ALLOWED_GET_QUERY_KEYS = ['keys', 'include', 'readPreference'];
+const ALLOWED_GET_QUERY_KEYS = ['keys', 'include', 'readPreference',
+  'includeReadPreference', 'subqueryReadPreference'];
 
 export class ClassesRouter extends PromiseRouter {
 
@@ -12,7 +13,8 @@ export class ClassesRouter extends PromiseRouter {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
     const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
-      'include', 'redirectClassNameForKey', 'where', 'readPreference'];
+      'include', 'redirectClassNameForKey', 'where', 'readPreference',
+      'includeReadPreference', 'subqueryReadPreference'];
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
@@ -49,6 +51,12 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
     }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
+    }
     return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
       .then((response) => {
         if (response && response.results) {
@@ -73,15 +81,20 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (typeof body.readPreference === 'string') {
-      options.readPreference = body.readPreference;
-    }
-
     if (typeof body.keys === 'string') {
       options.keys = body.keys;
     }
     if (body.include) {
       options.include = String(body.include);
+    }
+    if (typeof body.readPreference === 'string') {
+      options.readPreference = body.readPreference;
+    }
+    if (typeof body.includeReadPreference === 'string') {
+      options.includeReadPreference = body.includeReadPreference;
+    }
+    if (typeof body.subqueryReadPreference === 'string') {
+      options.subqueryReadPreference = body.subqueryReadPreference;
     }
 
     return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options, req.info.clientSDK)

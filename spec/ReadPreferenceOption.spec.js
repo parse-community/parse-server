@@ -750,6 +750,126 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
+  it('should change includes read preference when finding through API', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject0');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject1');
+    obj1.set('boolKey', true);
+    obj1.set('myObject0', obj0);
+    const obj2 = new Parse.Object('MyObject2');
+    obj2.set('boolKey', false);
+    obj2.set('myObject1', obj1);
+
+    Parse.Object.saveAll([obj0, obj1, obj2]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject2/' + obj2.id,
+        qs: {
+          include: JSON.stringify(['myObject1', 'myObject1.myObject0']),
+          readPreference: 'SECONDARY_PREFERRED',
+          includeReadPreference: 'SECONDARY'
+        },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        const firstResult = body;
+        expect(firstResult.boolKey).toBe(false);
+        expect(firstResult.myObject1.boolKey).toBe(true);
+        expect(firstResult.myObject1.myObject0.boolKey).toBe(false);
+
+
+        let myObjectReadPreference0 = null;
+        let myObjectReadPreference1 = null;
+        let myObjectReadPreference2 = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject0') >= 0) {
+            myObjectReadPreference0 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject1') >= 0) {
+            myObjectReadPreference1 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject2') >= 0) {
+            myObjectReadPreference2 = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
+
+        done();
+      }).catch(done.fail);
+    });
+  });
+
+  it('should change includes read preference when getting through API', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject0');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject1');
+    obj1.set('boolKey', true);
+    obj1.set('myObject0', obj0);
+    const obj2 = new Parse.Object('MyObject2');
+    obj2.set('boolKey', false);
+    obj2.set('myObject1', obj1);
+
+    Parse.Object.saveAll([obj0, obj1, obj2]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject2/',
+        qs: {
+          where: JSON.stringify({ boolKey: false }),
+          include: JSON.stringify(['myObject1', 'myObject1.myObject0']),
+          readPreference: 'SECONDARY_PREFERRED',
+          includeReadPreference: 'SECONDARY'
+        },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.results.length).toBe(1);
+        const firstResult = body.results[0];
+        expect(firstResult.boolKey).toBe(false);
+        expect(firstResult.myObject1.boolKey).toBe(true);
+        expect(firstResult.myObject1.myObject0.boolKey).toBe(false);
+
+
+        let myObjectReadPreference0 = null;
+        let myObjectReadPreference1 = null;
+        let myObjectReadPreference2 = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject0') >= 0) {
+            myObjectReadPreference0 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject1') >= 0) {
+            myObjectReadPreference1 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject2') >= 0) {
+            myObjectReadPreference2 = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
+
+        done();
+      }).catch(done.fail);
+    });
+  });
+
   it('should find subqueries in primary by default', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
 
@@ -953,6 +1073,79 @@ describe_only_db('mongo')('Read preference option', () => {
       query2.find().then((results) => {
         expect(results.length).toBe(1);
         expect(results[0].get('boolKey')).toBe(false);
+
+        let myObjectReadPreference0 = null;
+        let myObjectReadPreference1 = null;
+        let myObjectReadPreference2 = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject0') >= 0) {
+            myObjectReadPreference0 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject1') >= 0) {
+            myObjectReadPreference1 = call.args[2].readPreference.preference;
+          }
+          if (call.args[0].indexOf('MyObject2') >= 0) {
+            myObjectReadPreference2 = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference0).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference1).toEqual(ReadPreference.SECONDARY);
+        expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
+
+        done();
+      }).catch(done.fail);
+    });
+  });
+
+  it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery to find through API', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject0');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject1');
+    obj1.set('boolKey', true);
+    obj1.set('myObject0', obj0);
+    const obj2 = new Parse.Object('MyObject2');
+    obj2.set('boolKey', false);
+    obj2.set('myObject1', obj1);
+
+    Parse.Object.saveAll([obj0, obj1, obj2]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      rp({
+        method: 'GET',
+        uri: 'http://localhost:8378/1/classes/MyObject2/',
+        qs: {
+          where: JSON.stringify({
+            boolKey: {
+              $select: {
+                query: {
+                  className: 'MyObject0',
+                  where: { boolKey: false }
+                },
+                key: 'boolKey'
+              },
+              $dontSelect: {
+                query: {
+                  className: 'MyObject1',
+                  where: { boolKey: true }
+                },
+                key: 'boolKey'
+              }
+            }
+          }),
+          readPreference: 'SECONDARY_PREFERRED',
+          subqueryReadPreference: 'SECONDARY'
+        },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        json: true,
+      }).then(body => {
+        expect(body.results.length).toBe(1);
+        expect(body.results[0].boolKey).toBe(false);
 
         let myObjectReadPreference0 = null;
         let myObjectReadPreference1 = null;
