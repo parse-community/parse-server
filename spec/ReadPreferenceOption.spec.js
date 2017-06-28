@@ -74,6 +74,42 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
+  it('should check read preference as case insensitive', (done) => {
+    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    Parse.Object.saveAll([obj0, obj1]).then(() => {
+      spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+      Parse.Cloud.beforeFind('MyObject', (req) => {
+        req.readPreference = 'sEcOnDarY';
+      });
+
+      const query = new Parse.Query('MyObject');
+      query.equalTo('boolKey', false);
+
+      query.find().then((results) => {
+        expect(results.length).toBe(1);
+        expect(results[0].get('boolKey')).toBe(false);
+
+        let myObjectReadPreference = null;
+        databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+          if (call.args[0].indexOf('MyObject') >= 0) {
+            myObjectReadPreference = call.args[2].readPreference.preference;
+          }
+        });
+
+        expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
+
+        done();
+      }).catch(done.fail);
+    });
+  });
+
   it('should change read preference in the beforeFind trigger even changing query', (done) => {
     const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
 
