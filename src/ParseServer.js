@@ -145,7 +145,7 @@ class ParseServer {
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
     // verify parse-server is running on node >= 4.6
-    if (process.versions.node < '4.6') {
+    if (ParseServer.isSemanticVersionLessThanVersion(process.versions.node, '4.6')) {
       throw 'You must run parse-server on node >= 4.6. Your current node version is ' + process.versions.node + '.';
     }
 
@@ -314,6 +314,33 @@ class ParseServer {
         mongoOptions: databaseOptions,
       });
     }
+  }
+
+  static isSemanticVersionLessThanVersion(version1, version2) {
+    const versionParts1 = version1.split(".");
+    const versionParts2 = version2.split(".");
+
+    for(let x = 0; x < versionParts2.length; x++) {
+
+      if (x > versionParts1.length - 1) {
+        // version 1 is shorter than version 2, and thus less than
+        return true;
+      }
+
+      // get same parts from both versions to compare
+      const part1 = parseInt(versionParts1[x]);
+      const part2 = parseInt(versionParts2[x]);
+
+      if (part1 < part2) {
+        // version 1 less than version 2
+        return true;
+      } else if(part1 > part2) {
+        // version 1 greater than version 2
+        return false;
+      }
+    }
+    // greater than or equal to
+    return false;
   }
 
   get app() {
