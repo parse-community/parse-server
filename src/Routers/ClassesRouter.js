@@ -34,7 +34,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.count) {
       options.count = true;
     }
-    if (typeof body.keys == 'string') {
+    if (typeof body.keys === 'string') {
       options.keys = body.keys;
     }
     if (body.include) {
@@ -46,7 +46,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    if (typeof body.readPreference == 'string') {
+    if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
     }
     return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
@@ -73,11 +73,11 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
 
-    if (body.readPreference) {
+    if (typeof body.readPreference === 'string') {
       options.readPreference = body.readPreference;
     }
 
-    if (typeof body.keys == 'string') {
+    if (typeof body.keys === 'string') {
       options.keys = body.keys;
     }
     if (body.include) {
