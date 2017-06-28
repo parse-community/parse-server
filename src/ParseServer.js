@@ -144,6 +144,11 @@ class ParseServer {
     objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
+    // verify parse-server is running on node >= 4.6
+    if (process.versions.node < '4.6') {
+      throw 'You must run parse-server on node >= 4.6. Your current node version is ' + process.versions.node + '.';
+    }
+
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
