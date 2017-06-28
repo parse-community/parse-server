@@ -9,6 +9,10 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
 import _ from 'lodash';
+import { loadAdapter }          from '../Adapters/AdapterLoader';
+import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
+import { CacheController }      from '../Controllers/CacheController';
+import RedisCacheAdapter        from '../Adapters/Cache/RedisCacheAdapter';
 
 class ParseLiveQueryServer {
   clientId: number;
@@ -19,6 +23,7 @@ class ParseLiveQueryServer {
   keyPairs : any;
   // The subscriber we use to get object update from publisher
   subscriber: Object;
+  cacheController: any;
 
   constructor(server: any, config: any) {
     this.clientId = 0;
@@ -44,6 +49,11 @@ class ParseLiveQueryServer {
     const javascriptKey = Parse.javaScriptKey;
     const masterKey = config.masterKey || Parse.masterKey;
     Parse.initialize(appId, javascriptKey, masterKey);
+
+    // Initialize cache
+
+    const cacheControllerAdapter = loadAdapter(config.cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    this.cacheController = new CacheController(cacheControllerAdapter, appId);
 
     // Initialize websocket server
     this.parseWebSocketServer = new ParseWebSocketServer(
