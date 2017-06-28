@@ -34,7 +34,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -70,7 +70,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -107,7 +107,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -147,7 +147,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -187,7 +187,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -223,7 +223,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -259,7 +259,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -295,7 +295,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.NEAREST);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -329,7 +329,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -369,7 +369,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -406,7 +406,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -447,7 +447,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -487,7 +487,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -524,7 +524,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -565,7 +565,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -598,7 +598,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -653,7 +653,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -710,7 +710,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -766,7 +766,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -823,7 +823,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -880,7 +880,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 
@@ -938,7 +938,7 @@ describe_only_db('mongo')('Read preference option', () => {
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY_PREFERRED);
 
         done();
-      });
+      }).catch(done.fail);
     });
   });
 });
