@@ -372,7 +372,23 @@ class ParseLiveQueryServer {
             // Then get the user's roles
           var rolesQuery = new Parse.Query(Parse.Role);
           rolesQuery.equalTo("users", user);
-          return rolesQuery.find({useMasterKey:true});
+
+            // fallback to direct query
+          if (!this.cacheController) {
+            return rolesQuery.find({useMasterKey:true});
+          }
+
+            // use redis cache
+          return this.cacheController.role.get(user.id).then((roles) => {
+            if (roles != null) {
+              return roles.map(role => role.replace(/^role:/, ''));
+            }
+            return rolesQuery.find({useMasterKey:true}).then( roles => {
+              this.cacheController.role.put(user.id, roles.map(role => 'role:' + role.getName()));
+              return roles;
+            })
+          })
+
         }).
         then((roles) => {
 
