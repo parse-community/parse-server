@@ -377,12 +377,7 @@ class ParseLiveQueryServer {
         then((roles) => {
 
             // Finally, see if any of the user's roles allow them read access
-          for (const role of roles) {
-            if (acl.getRoleReadAccess(role)) {
-              return resolve(true);
-            }
-          }
-          resolve(false);
+          return resolve(!!~roles.findIndex(role => acl.getRoleReadAccess(role)));
         })
         .catch((error) => {
           reject(error);
