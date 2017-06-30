@@ -13,7 +13,7 @@ export class LRUCache {
   }
 
   get(key) {
-    return this.cache.get(key);
+    return this.cache.get(key) || null;
   }
 
   put(key, value, ttl = this.ttl) {
