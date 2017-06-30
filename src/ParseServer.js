@@ -140,6 +140,8 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    cacheTTL = defaults.cacheTTL, // cache for 5s
+    cacheMaxSize = defaults.cacheMaxSize, // 10000
     enableSingleSchemaCache = false,
     objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
@@ -204,7 +206,7 @@ class ParseServer {
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
