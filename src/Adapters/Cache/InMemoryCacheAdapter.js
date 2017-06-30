@@ -1,9 +1,9 @@
-import {InMemoryCache} from './InMemoryCache';
+import {LRUCache} from './LRUCache';
 
 export class InMemoryCacheAdapter {
 
   constructor(ctx) {
-    this.cache = new InMemoryCache(ctx)
+    this.cache = new LRUCache(ctx)
   }
 
   get(key) {
