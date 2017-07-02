@@ -29,6 +29,13 @@ const GameScore = Parse.Object.extend({
 });
 
 describe_only_db('postgres')('Postgres database init options', () => {
+  afterEach(() => {
+    defaultConfiguration.databaseAdapter = new PostgresStorageAdapter({
+      uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+      collectionPrefix: 'test_',
+    });
+  });
+
   it('should create server with public schema databaseOptions', (done) => {
     const config = new Config('test');
     // Close the current DB before continueing
@@ -38,12 +45,12 @@ describe_only_db('postgres')('Postgres database init options', () => {
         uri: postgresURI, collectionPrefix: 'test_',
         databaseOptions: databaseOptions1
       })
-    }).then(done, done.fail);
-  });
-
-  it("save new GameScore in public schema", function (done) {
-    var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
-    score.save().then(done, done.fail);
+    })
+      .then(() => {
+        var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
+        return score.save();
+      })
+      .then(done, done.fail);
   });
 
   it('should fail to create server if schema databaseOptions does not exist', (done) => {
