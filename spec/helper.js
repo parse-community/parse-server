@@ -94,14 +94,6 @@ var defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
-  push: {
-    'ios': {
-      cert: 'prodCert.pem',
-      key: 'prodKey.pem',
-      production: true,
-      bundleId: 'bundleId',
-    }
-  },
   auth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
