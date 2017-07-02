@@ -94,6 +94,12 @@ var defaultConfiguration = {
   fileKey: 'test',
   silent,
   logLevel,
+  push: {
+    android: {
+      senderId: 'yolo',
+      apiKey: 'yolo',
+    }
+  },
   auth: { // Override the facebook provider
     facebook: mockFacebook(),
     myoauth: {
