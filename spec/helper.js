@@ -95,11 +95,9 @@ var defaultConfiguration = {
   silent,
   logLevel,
   push: {
-    'ios': {
-      cert: 'prodCert.pem',
-      key: 'prodKey.pem',
-      production: true,
-      bundleId: 'bundleId',
+    android: {
+      senderId: 'yolo',
+      apiKey: 'yolo',
     }
   },
   auth: { // Override the facebook provider
