@@ -1,5 +1,21 @@
 ## Parse Server Changelog
 
+### 2.5.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.0...2.5.1)
+
+#### New Features:
+* Adds ability to set default objectId size (#3950), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements:
+* Uses LRU cache instead of InMemoryCache by default (#3979), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* iOS pushes are now using HTTP/2.0 instead of binary API  (#3983), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [parse@1.10.0](https://www.npmjs.com/package/parse)
+* [pg-promise@6.3.0](https://www.npmjs.com/package/pg-promise)
+* [parse-server-s3-adapter@1.1.0](https://www.npmjs.com/package/parse-server-s3-adapter)
+* [parse-server-push-adapter@2.0.0](https://www.npmjs.com/package/parse-server-push-adapter)
+
 ### 2.5.0
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.2...2.5.0)
 
