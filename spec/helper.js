@@ -191,12 +191,7 @@ beforeEach(done => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
       done();
-    }, () => {
-      Parse.initialize('test', 'test', 'test');
-      Parse.serverURL = 'http://localhost:' + port + '/1';
-      // fail(JSON.stringify(error));
-      done();
-    })
+    }).catch(done.fail);
 });
 
 afterEach(function(done) {
