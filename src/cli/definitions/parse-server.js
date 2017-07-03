@@ -227,12 +227,12 @@ export default {
   "cacheTTL": {
     env: "PARSE_SERVER_CACHE_TTL",
     help: "Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)",
-    action: numberParser,
+    action: numberParser("cacheTTL"),
   },
   "cacheMaxSize": {
     env: "PARSE_SERVER_CACHE_MAX_SIZE",
     help: "Sets the maximum size for the in memory cache, defaults to 10000",
-    action: numberParser
+    action: numberParser("cacheMaxSize")
   },
   "cluster": {
     env: "PARSE_SERVER_CLUSTER",
