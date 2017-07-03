@@ -20,7 +20,7 @@
   "dependencies": {
     "bcryptjs": "2.4.3",
     "body-parser": "1.17.2",
-    "commander": "2.10.0",
+    "commander": "2.11.0",
     "deepcopy": "0.6.3",
     "express": "4.15.3",
     "intersect": "1.0.1",
