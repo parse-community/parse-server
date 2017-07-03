@@ -1,5 +1,13 @@
 ## Parse Server Changelog
 
+### 2.5.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.1...2.5.2)
+
+#### Improvements:
+* Restores ability to run on node >= 4.6
+* Adds ability to configure cache from CLI
+* Removes runtime check for node >= 4.6
+
 ### 2.5.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.0...2.5.1)
 
