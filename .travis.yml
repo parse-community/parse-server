@@ -45,7 +45,7 @@ jobs:
   include:
     # release on github latest branch
     - stage: release
-      node_js: '6.10'
+      node_js: '4.6'
       env: 
       before_script: skip
       after_script: skip
