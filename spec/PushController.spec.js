@@ -172,12 +172,8 @@ describe('PushController', () => {
       send: function(body, installations) {
         var badge = body.data.badge;
         installations.forEach((installation) => {
-          if (installation.deviceType == "ios") {
-            expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge + 1).toEqual(installation.badge);
-          } else {
-            expect(installation.badge).toBeUndefined();
-          }
+          expect(installation.badge).toEqual(badge);
+          expect(installation.originalBadge + 1).toEqual(installation.badge);
         })
         return successfulTransmissions(body, installations);
       },
@@ -203,7 +199,9 @@ describe('PushController', () => {
     while(installations.length != 15) {
       const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_" + installations.length);
-      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("deviceToken","device_token_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
       installation.set("deviceType", "android");
       installations.push(installation);
     }
@@ -238,12 +236,7 @@ describe('PushController', () => {
       expect(results.length).toBe(15);
       for (var i = 0; i < 15; i++) {
         const installation = results[i];
-        if (installation.get('deviceType') == 'ios') {
-          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
-        } else {
-          expect(installation.get('badge')).toBe(undefined);
-          expect(installation.get('originalBadge')).toBe(undefined);
-        }
+        expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
       }
       done()
     }).catch((err) => {
