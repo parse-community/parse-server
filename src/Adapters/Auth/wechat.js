@@ -8,7 +8,7 @@ function validateAuthData(authData) {
     if (data.errcode == 0) {
       return;
     }
-    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'weixin auth is invalid for this user.');
   });
 }
 
