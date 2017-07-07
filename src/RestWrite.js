@@ -187,7 +187,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
 
       // Only assign new objectId if we are creating new object
       if (!this.data.objectId) {
-        this.data.objectId = cryptoUtils.newObjectId();
+        this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
       }
     }
   }

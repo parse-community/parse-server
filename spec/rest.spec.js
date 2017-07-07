@@ -23,7 +23,51 @@ describe('rest create', () => {
         expect(results.length).toEqual(1);
         var obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
+        expect(obj.objectId.length).toEqual(10);
         expect(obj._id).toBeUndefined();
+        done();
+      });
+  });
+
+  it('can use custom _id size', done => {
+    config.objectIdSize = 20;
+    rest.create(config, auth.nobody(config), 'Foo', {})
+      .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
+      .then((results) => {
+        expect(results.length).toEqual(1);
+        var obj = results[0];
+        expect(typeof obj.objectId).toEqual('string');
+        expect(obj.objectId.length).toEqual(20);
+        done();
+      });
+  });
+
+  it('is backwards compatible when _id size changes', done => {
+    rest.create(config, auth.nobody(config), 'Foo', {size: 10})
+      .then(() => {
+        config.objectIdSize = 20;
+        return rest.find(config, auth.nobody(config), 'Foo', {size: 10});
+      })
+      .then((response) => {
+        expect(response.results.length).toEqual(1);
+        expect(response.results[0].objectId.length).toEqual(10);
+        return rest.update(config, auth.nobody(config), 'Foo', {objectId: response.results[0].objectId}, {update: 20});
+      })
+      .then(() => {
+        return rest.find(config, auth.nobody(config), 'Foo', {size: 10});
+      }).then((response) => {
+        expect(response.results.length).toEqual(1);
+        expect(response.results[0].objectId.length).toEqual(10);
+        expect(response.results[0].update).toEqual(20);
+        return rest.create(config, auth.nobody(config), 'Foo', {size: 20});
+      })
+      .then(() => {
+        config.objectIdSize = 10;
+        return rest.find(config, auth.nobody(config), 'Foo', {size: 20});
+      })
+      .then((response) => {
+        expect(response.results.length).toEqual(1);
+        expect(response.results[0].objectId.length).toEqual(20);
         done();
       });
   });
