@@ -36,8 +36,7 @@ describe("Email Verification Token Expiration: ", () => {
           request.get(sendEmailOptions.link, {
             followRedirect: false,
           }, (error, response) => {
-            expect(response.statusCode).toEqual(302);
-            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test');
+            expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link');
             done();
           });
         }, 1000);
@@ -408,8 +407,7 @@ describe("Email Verification Token Expiration: ", () => {
         request.get(sendEmailOptions.link, {
           followRedirect: false,
         }, (error, response) => {
-          expect(response.statusCode).toEqual(302);
-          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link.html?username=testEmailVerifyTokenValidity&appId=test');
+          expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/invalid_verification_link');
           done();
         });
       })
