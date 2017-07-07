@@ -307,7 +307,15 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
-      patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      if (fieldValue.$all[0].$regex) {
+        for (let i = 0; i < fieldValue.$all.length; i += 1) {
+          const value = processRegexPattern(fieldValue.$all[i].$regex);
+          fieldValue.$all[i] = value.substring(1) + '%';
+        }
+        patterns.push(`array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`);
+      } else {
+        patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      }
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index += 2;
     }
@@ -1185,6 +1193,7 @@ export class PostgresStorageAdapter {
             t.none(sql.array.addUnique),
             t.none(sql.array.remove),
             t.none(sql.array.containsAll),
+            t.none(sql.array.containsAllRegex),
             t.none(sql.array.contains)
           ]);
         });

@@ -354,8 +354,8 @@ describe('Parse.Query testing', () => {
 
     var objectList = [object, object2, object3];
 
-    Parse.Object.saveAll(objectList).then(() => {
-      equal(objectList.length, 3);
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
 
       new Parse.Query('Object')
         .containsAllStartingWith('strings', ['the', 'fox', 'lazy'])
@@ -372,6 +372,13 @@ describe('Parse.Query testing', () => {
           equal(results.length, 2);
           arrayContains(results, object);
           arrayContains(results, object3);
+
+          return new Parse.Query('Object')
+            .containsAllStartingWith('strings', ['he', 'lazy'])
+            .find();
+        })
+        .then(function (results) {
+          equal(results.length, 0);
 
           done();
         });
