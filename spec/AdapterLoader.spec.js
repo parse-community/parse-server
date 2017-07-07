@@ -107,8 +107,9 @@ describe("AdapterLoader", ()=>{
 
   it("should load push adapter from options", (done) => {
     var options = {
-      ios: {
-        bundleId: 'bundle.id'
+      android: {
+        senderId: 'yolo',
+        apiKey: 'yolo'
       }
     }
     expect(() => {

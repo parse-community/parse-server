@@ -1,5 +1,73 @@
 ## Parse Server Changelog
 
+### 2.5.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
+
+#### New Features:
+* badge property on android installations will now be set as on iOS (#3970), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes:
+* Fixes incorrect number parser for cache options
+
+### 2.5.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.1...2.5.2)
+
+#### Improvements:
+* Restores ability to run on node >= 4.6
+* Adds ability to configure cache from CLI
+* Removes runtime check for node >= 4.6
+
+### 2.5.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.0...2.5.1)
+
+#### New Features:
+* Adds ability to set default objectId size (#3950), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements:
+* Uses LRU cache instead of InMemoryCache by default (#3979), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* iOS pushes are now using HTTP/2.0 instead of binary API  (#3983), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [parse@1.10.0](https://www.npmjs.com/package/parse)
+* [pg-promise@6.3.0](https://www.npmjs.com/package/pg-promise)
+* [parse-server-s3-adapter@1.1.0](https://www.npmjs.com/package/parse-server-s3-adapter)
+* [parse-server-push-adapter@2.0.0](https://www.npmjs.com/package/parse-server-push-adapter)
+
+### 2.5.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.2...2.5.0)
+
+#### New Features:
+* Adds ability to run full text search (#3904), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds ability to run `$withinPolygon` queries (#3889), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds ability to pass read preference per query with mongodb (#3865), thanks to [davimacedo](https://github.com/davimacedo)
+* beforeFind trigger now includes `isGet` for get queries (#3862), thanks to [davimacedo](https://github.com/davimacedo)
+* Adds endpoints for dashboard's audience API (#3861), thanks to [davimacedo](https://github.com/davimacedo)
+* Restores the job scheduling endpoints (#3927), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Removes unnecessary warning when using maxTimeMs with mongodb, thanks to [Tyler Brock](https://github.com/tbrock)
+* Improves access control on system classes (#3916), thanks to [Worathiti Manosroi](https://github.com/pungme)
+* Adds bytes support in postgres (#3894), thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Bug Fixes:
+* Fixes issue with vkontakte adapter that would hang the request, thanks to [Denis Trofimov](https://github.com/denistrofimov)
+* Fixes issue affecting null relational data (#3924), thanks to [davimacedo](https://github.com/davimacedo)
+* Fixes issue affecting session token deletion (#3937), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting the serverInfo endpoint (#3933), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting beforeSave with dot-noted sub-documents (#3912), thanks to [IlyaDiallo](https://github.com/IlyaDiallo)
+* Fixes issue affecting emails being sent when using a 3rd party auth (#3882), thanks to [davimacedo](https://github.com/davimacedo)
+
+#### Dependency Updates:
+* [commander@2.10.0](https://www.npmjs.com/package/commander)
+* [pg-promise@5.9.7](https://www.npmjs.com/package/pg-promise)
+* [lru-cache@4.1.0](https://www.npmjs.com/package/lru-cache)
+* [mongodb@2.2.28](https://www.npmjs.com/package/mongodb)
+
+##### Devevelopment dependencies
+* [babel-core@6.25.0](https://www.npmjs.com/package/babel-core)
+* [cross-env@5.0.1](https://www.npmjs.com/package/cross-env)
+* [nyc@11.0.2](https://www.npmjs.com/package/nyc)
+
 ### 2.4.2
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.1...2.4.2)
 

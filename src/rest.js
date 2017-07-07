@@ -155,7 +155,7 @@ function enforceRoleSecurity(method, className, auth) {
   }
 
   //all volatileClasses are masterKey only
-  if(classesWithMasterOnlyAccess.includes(className) && !auth.isMaster){
+  if(classesWithMasterOnlyAccess.indexOf(className) >= 0 && !auth.isMaster){
     const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }

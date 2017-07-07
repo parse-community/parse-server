@@ -140,9 +140,13 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    cacheTTL = defaults.cacheTTL, // cache for 5s
+    cacheMaxSize = defaults.cacheMaxSize, // 10000
     enableSingleSchemaCache = false,
+    objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
+
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -198,7 +202,7 @@ class ParseServer {
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
@@ -262,7 +266,8 @@ class ParseServer {
       pushWorker,
       pushControllerQueue,
       hasPushSupport,
-      hasPushScheduledSupport
+      hasPushScheduledSupport,
+      objectIdSize
     });
 
     Config.validate(AppCache.get(appId));
