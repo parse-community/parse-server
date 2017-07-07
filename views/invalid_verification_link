@@ -37,21 +37,16 @@
   </style>
   </head>
   <script type="text/javascript">
-    function getUrlParameter(name) {
-      name = name.replace(/[\[]/, '\\[').replace(/[\]]/, '\\]');
-      var regex = new RegExp('[\\?&]' + name + '=([^&#]*)');
-      var results = regex.exec(location.search);
-      return results === null ? '' : decodeURIComponent(results[1].replace(/\+/g, ' '));
-    };  
-
     window.onload = addDataToForm;
 
     function addDataToForm() {
-      var username = getUrlParameter("username");
+      // these values will be set in PublicAPIRouter
+      var base = PARSE_SERVER_URL;
+      var username = USERNAME;
+      var appId = APPID;
+      
       document.getElementById("usernameField").value = username;
-
-      var appId = getUrlParameter("appId");
-      document.getElementById("resendForm").action = '/apps/' + appId + '/resend_verification_email'
+      document.getElementById("resendForm").action = base + '/apps/' + appId + '/resend_verification_email'
     }
 
   </script>
