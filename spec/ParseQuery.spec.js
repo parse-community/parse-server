@@ -380,6 +380,50 @@ describe('Parse.Query testing', () => {
         .then(function (results) {
           equal(results.length, 0);
 
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qthe\\E'},
+                    {$regex: '\^\\Qlazy\\E'},
+                    {$regex: '\^\\Qfox\\E'},
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 1);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qthe\\E'},
+                    {$regex: '\^\\Qlazy\\E'},
+                    {$regex: '\^\\Qfox\\E'},
+                    {$unknown: /unknown/}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function () {
+        }, function () {
           done();
         });
     });
