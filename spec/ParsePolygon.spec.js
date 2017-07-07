@@ -252,4 +252,11 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
       done();
     }, done.fail);
   });
+
+  it('polygon loop is not valid', (done) => {
+    const coords = [[0,0],[0,1],[1,0],[1,1]];
+    const obj = new TestObject();
+    obj.set('polygon', {__type: 'Polygon', coordinates: coords});
+    obj.save().then(done.fail, done);
+  });
 });
