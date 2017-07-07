@@ -152,30 +152,30 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 
   invalidVerificationLink(req) {
-      const config = req.config;
-      if (!config.publicServerURL) {
-        return Promise.resolve({
-          status: 404,
-          text: 'Not found.'
-        });
-      }
+    const config = req.config;
+    if (!config.publicServerURL) {
+      return Promise.resolve({
+        status: 404,
+        text: 'Not found.'
+      });
+    }
 
-      if (req.query.username && req.params.appId) {
-        // Should we keep the file in memory or leave like that?
-        fs.readFile(path.resolve(views, "invalid_verification_link"), 'utf-8', (err, data) => {
-          if (err) {
-            return Promise.reject(err);
-          }
-          data = data.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
-          data = data.replace("USERNAME", `'${req.query.username}'`);
-          data = data.replace("APPID", `'${req.params.appId}'`);
-          return Promise.resolve({
-            text: data
-          })
-        });
-      } else {
-        return this.invalidLink(req);
-      }
+    if (req.query.username && req.params.appId) {
+      // Should we keep the file in memory or leave like that?
+      fs.readFile(path.resolve(views, "invalid_verification_link"), 'utf-8', (err, data) => {
+        if (err) {
+          return Promise.reject(err);
+        }
+        data = data.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
+        data = data.replace("USERNAME", `'${req.query.username}'`);
+        data = data.replace("APPID", `'${req.params.appId}'`);
+        return Promise.resolve({
+          text: data
+        })
+      });
+    } else {
+      return this.invalidLink(req);
+    }
   }
 
   missingPublicServerURL() {
