@@ -357,50 +357,27 @@ describe('Parse.Query testing', () => {
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
 
-      new Parse.Query('Object')
-        .containsAllStartingWith('strings', ['the', 'fox', 'lazy'])
-        .find()
-        .then(function (results) {
-          equal(results.length, 1);
-          arrayContains(results, object);
-
-          return new Parse.Query('Object')
-            .containsAllStartingWith('strings', ['the', 'lazy'])
-            .find();
-        })
-        .then(function (results) {
-          equal(results.length, 2);
-          arrayContains(results, object);
-          arrayContains(results, object3);
-
-          return new Parse.Query('Object')
-            .containsAllStartingWith('strings', ['he', 'lazy'])
-            .find();
-        })
-        .then(function (results) {
-          equal(results.length, 0);
-
-          return require('request-promise').get({
-            url: Parse.serverURL + "/classes/Object",
-            json: {
-              where: {
-                strings: {
-                  $all: [
-                    {$regex: '\^\\Qthe\\E'},
-                    {$regex: '\^\\Qlazy\\E'},
-                    {$regex: '\^\\Qfox\\E'},
-                  ]
-                }
-              }
-            },
-            headers: {
-              'X-Parse-Application-Id': Parse.applicationId,
-              'X-Parse-Javascript-Key': Parse.javaScriptKey
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$regex: '\^\\Qlazy\\E'}
+              ]
             }
-          });
-        })
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      })
         .then(function (results) {
           equal(results.results.length, 1);
+          arrayContains(results.results, object);
 
           return require('request-promise').get({
             url: Parse.serverURL + "/classes/Object",
@@ -409,9 +386,7 @@ describe('Parse.Query testing', () => {
                 strings: {
                   $all: [
                     {$regex: '\^\\Qthe\\E'},
-                    {$regex: '\^\\Qlazy\\E'},
-                    {$regex: '\^\\Qfox\\E'},
-                    {$unknown: /unknown/}
+                    {$regex: '\^\\Qlazy\\E'}
                   ]
                 }
               }
@@ -422,11 +397,68 @@ describe('Parse.Query testing', () => {
             }
           });
         })
-        .then(function () {
-        }, function () {
+        .then(function (results) {
+          equal(results.results.length, 2);
+          arrayContains(results.results, object);
+          arrayContains(results.results, object3);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qhe\\E'},
+                    {$regex: '\^\\Qlazy\\E'}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 0);
+
           done();
         });
     });
+  });
+
+  it('containsAllStartingWith values must be all of type starting with regex', (done) => {
+
+    var object = new Parse.Object('Object');
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qlazy\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$unknown: /unknown/}
+              ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function () {
+      }, function () {
+        done();
+      });
   });
 
   var BoxedNumber = Parse.Object.extend({
