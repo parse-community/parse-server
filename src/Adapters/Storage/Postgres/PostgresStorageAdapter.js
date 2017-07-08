@@ -1244,11 +1244,11 @@ function processRegexPattern(s) {
 }
 
 function isStartsWithRegex(value) {
-  if (!value || !(value instanceof RegExp)) {
+  if (!value || typeof value !== 'string' || !value.startsWith('^')) {
     return false;
   }
 
-  const matches = value.toString().match(/\^\\Q.*\\E/);
+  const matches = value.match(/\^\\Q.*\\E/);
   return !!matches;
 }
 
