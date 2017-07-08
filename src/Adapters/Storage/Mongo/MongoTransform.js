@@ -111,7 +111,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
-const isStartsWith = value => {
+const isStartsWithRegex = value => {
   if (!value || !(value instanceof RegExp)) {
     return false;
   }
@@ -125,9 +125,9 @@ const isAllValuesRegexOrNone = values => {
     return true;
   }
 
-  var startsWith = isStartsWith(values[0]);
+  var startsWith = isStartsWithRegex(values[0]);
   for (var i = 1, length = values.length; i < length; ++i) {
-    if (startsWith != isStartsWith(values[i])) {
+    if (startsWith != isStartsWithRegex(values[i])) {
       return false;
     }
   }
