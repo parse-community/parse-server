@@ -307,7 +307,12 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
-      if (fieldValue.$all[0].$regex) {
+      if (isAnyValueRegexStartsWith(fieldValue.$all)) {
+        if (!isAllValuesRegexOrNone(fieldValue.$all)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+            + fieldValue.$all);
+        }
+
         for (let i = 0; i < fieldValue.$all.length; i += 1) {
           const value = processRegexPattern(fieldValue.$all[i].$regex);
           fieldValue.$all[i] = value.substring(1) + '%';
@@ -1236,6 +1241,36 @@ function processRegexPattern(s) {
 
   // regex for contains
   return literalizeRegexPart(s);
+}
+
+function isStartsWithRegex(value) {
+  if (!value || !(value instanceof RegExp)) {
+    return false;
+  }
+
+  const matches = value.toString().match(/\/\^\\Q.*\\E\//);
+  return !!matches;
+}
+
+function isAllValuesRegexOrNone(values) {
+  if (values.length == 0) {
+    return true;
+  }
+
+  var startsWith = isStartsWithRegex(values[0]);
+  for (var i = 1, length = values.length; i < length; ++i) {
+    if (startsWith != isStartsWithRegex(values[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isAnyValueRegexStartsWith(values) {
+  return values.some(function (value) {
+    return isStartsWithRegex(value);
+  });
 }
 
 function createLiteralRegex(remaining) {
