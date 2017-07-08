@@ -111,6 +111,30 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
+const isStartsWith = value => {
+  if (!value || !(value instanceof RegExp)) {
+    return false;
+  }
+
+  const matches = value.toString().match(/\/\^\\Q.*\\E\//);
+  return !!matches;
+}
+
+const isAllValuesRegexOrNone = values => {
+  if (values.length == 0) {
+    return true;
+  }
+
+  var startsWith = isStartsWith(values[0]);
+  for (var i = 1, length = values.length; i < length; ++i) {
+    if (startsWith != isStartsWith(values[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
 const transformInteriorValue = restValue => {
   if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -564,6 +588,12 @@ function transformConstraint(constraint, inArray) {
                               'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
+
+      if (!isAllValuesRegexOrNone(answer[key])) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+          + answer[key]);
+      }
+
       break;
     }
     case '$regex':

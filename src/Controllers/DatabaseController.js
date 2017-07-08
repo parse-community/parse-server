@@ -44,30 +44,6 @@ const transformObjectACL = ({ ACL, ...result }) => {
 
 const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
-const isStartsWith = value => {
-  if (!value || typeof value !== 'object' || !value.$regex) {
-    return false;
-  }
-
-  const matches = value.$regex.match(/\^\\\\Q(.*)\\\\E/);
-  return !matches || matches.length == 3;
-}
-
-const isAllValuesRegexOrNone = values => {
-  if (!values || !(values instanceof Array) || values.length == 0) {
-    return true;
-  }
-
-  var startsWith = isStartsWith(values[0]);
-  for (var i = 1, length = values.length; i < length; ++i) {
-    if (startsWith != isStartsWith(values[i])) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
 }
@@ -128,16 +104,11 @@ const validateQuery = query => {
   }
 
   Object.keys(query).forEach(key => {
-    if (query && query[key]) {
-      if (query[key].$regex && typeof query[key].$options === 'string') {
+    if (query && query[key] && query[key].$regex) {
+      if (typeof query[key].$options === 'string') {
         if (!query[key].$options.match(/^[imxs]+$/)) {
           throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
         }
-      }
-
-      if (!isAllValuesRegexOrNone(query[key].$all)) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $all values. All values must be of the same type: '
-          + query[key].$all);
       }
     }
     if (!isSpecialQueryKey(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
