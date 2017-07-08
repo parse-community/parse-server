@@ -1248,7 +1248,7 @@ function isStartsWithRegex(value) {
     return false;
   }
 
-  const matches = value.toString().match(/\/\^\\Q.*\\E\//);
+  const matches = value.toString().match(/\^\\Q.*\\E/);
   return !!matches;
 }
 
@@ -1257,9 +1257,9 @@ function isAllValuesRegexOrNone(values) {
     return true;
   }
 
-  var startsWith = isStartsWithRegex(values[0]);
+  var startsWith = isStartsWithRegex(values[0].$regex);
   for (var i = 1, length = values.length; i < length; ++i) {
-    if (startsWith != isStartsWithRegex(values[i])) {
+    if (startsWith != isStartsWithRegex(values[i].$regex)) {
       return false;
     }
   }
