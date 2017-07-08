@@ -2941,4 +2941,27 @@ describe('Parse.Query testing', () => {
       done();
     }, done.fail);
   });
+
+  it('should not interfere with has when using select #3999', (done) => {
+    const obj1 = new Parse.Object('TestObject');
+    obj1.set('field', new Parse.Object('OtherObject'));
+    const obj = new Parse.Object('TestObject');
+    Parse.Object.saveAll([obj1, obj]).then(() => {
+      const query = new Parse.Query('TestObject');
+      query.include('field');
+      query.select('field');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(2);
+      results.forEach((result) => {
+        console.log(result.id);
+        if (result.id == obj.id) {
+          expect(result.has('field')).toBe(false);
+        } else {
+          expect(result.has('field')).toBe(true);
+        }
+      });
+      done();
+    }).catch(done.fail);
+  });
 });
