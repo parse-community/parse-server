@@ -9,6 +9,7 @@ module.exports = {
     addUnique: sql('array/add-unique.sql'),
     contains: sql('array/contains.sql'),
     containsAll: sql('array/contains-all.sql'),
+    containsAllRegex: sql('array/contains-all-regex.sql'),
     remove: sql('array/remove.sql')
   },
   misc: {
