@@ -1269,7 +1269,7 @@ function isAllValuesRegexOrNone(values) {
 
 function isAnyValueRegexStartsWith(values) {
   return values.some(function (value) {
-    return isStartsWithRegex(value);
+    return isStartsWithRegex(value.$regex);
   });
 }
 
