@@ -25,12 +25,12 @@ function checkLiveQuery(className, config) {
 }
 
 // Returns a promise for an object with optional keys 'results' and 'count'.
-function find(config, auth, className, restWhere, restOptions, clientSDK) {
+function find(config, auth, className, restWhere, restOptions, clientSDK, requestHeaders) {
   enforceRoleSecurity('find', className, auth);
-  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth).then((result) => {
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth, null, requestHeaders).then((result) => {
     restWhere = result.restWhere || restWhere;
     restOptions = result.restOptions || restOptions;
-    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK, requestHeaders);
     return query.execute();
   });
 }
@@ -48,7 +48,7 @@ const get = (config, auth, className, objectId, restOptions, clientSDK) => {
 }
 
 // Returns a promise that doesn't resolve to any useful value.
-function del(config, auth, className, objectId) {
+function del(config, auth, className, objectId, clientSDK, requestHeaders) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON,
       'bad objectId');
@@ -67,7 +67,7 @@ function del(config, auth, className, objectId) {
     const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery || className == '_Session') {
-      return find(config, Auth.master(config), className, {objectId: objectId})
+      return find(config, Auth.master(config), className, {objectId: objectId}, {}, clientSDK, requestHeaders)
         .then((response) => {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
@@ -82,7 +82,7 @@ function del(config, auth, className, objectId) {
             inflatedObject = Parse.Object.fromJSON(firstResult);
             // Notify LiveQuery server if possible
             config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-            return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
+            return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config, requestHeaders);
           }
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
             'Object not found for delete.');
@@ -109,28 +109,28 @@ function del(config, auth, className, objectId) {
       objectId: objectId
     }, options);
   }).then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config);
+    return triggers.maybeRunTrigger(triggers.Types.afterDelete, auth, inflatedObject, null, config, requestHeaders);
   });
 }
 
 // Returns a promise for a {response, status, location} object.
-function create(config, auth, className, restObject, clientSDK) {
+function create(config, auth, className, restObject, clientSDK, requestHeaders) {
   enforceRoleSecurity('create', className, auth);
-  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK);
+  var write = new RestWrite(config, auth, className, null, restObject, null, clientSDK, requestHeaders);
   return write.execute();
 }
 
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, restWhere, restObject, clientSDK) {
+function update(config, auth, className, restWhere, restObject, clientSDK, requestHeaders) {
   enforceRoleSecurity('update', className, auth);
 
   return Promise.resolve().then(() => {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery) {
-      return find(config, Auth.master(config), className, restWhere);
+      return find(config, Auth.master(config), className, restWhere, {}, clientSDK, requestHeaders);
     }
     return Promise.resolve({});
   }).then((response) => {
@@ -139,7 +139,7 @@ function update(config, auth, className, restWhere, restObject, clientSDK) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK);
+    var write = new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK, requestHeaders);
     return write.execute();
   });
 }

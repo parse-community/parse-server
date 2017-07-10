@@ -128,12 +128,13 @@ export function getValidator(functionName, applicationId) {
   return undefined;
 }
 
-export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config) {
+export function getRequestObject(triggerType, auth, parseObject, originalParseObject, config, requestHeaders) {
   var request = {
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController
+    log: config.loggerController,
+    headers: requestHeaders,
   };
 
   if (originalParseObject) {
@@ -155,7 +156,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, isGet, requestHeaders) {
   isGet = !!isGet;
 
   var request = {
@@ -164,7 +165,8 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
     master: false,
     count,
     log: config.loggerController,
-    isGet
+    isGet,
+    headers: requestHeaders,
   };
 
   if (!auth) {
@@ -253,13 +255,13 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   });
 }
 
-export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config) {
+export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config, requestHeaders) {
   return new Promise((resolve, reject) => {
     const trigger = getTrigger(className, triggerType, config.applicationId);
     if (!trigger) {
       return resolve();
     }
-    const request = getRequestObject(triggerType, auth, null, null, config);
+    const request = getRequestObject(triggerType, auth, null, null, config, requestHeaders);
     const response = getResponseObject(request,
       object => {
         resolve(object);
@@ -289,7 +291,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
   });
 }
 
-export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
+export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet, requestHeaders) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
@@ -315,7 +317,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     }
     count = !!restOptions.count;
   }
-  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config, isGet);
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config, isGet, requestHeaders);
   return Promise.resolve().then(() => {
     return trigger(requestObject);
   }).then((result) => {
@@ -373,14 +375,14 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
 // Resolves to an object, empty or containing an object key. A beforeSave
 // trigger will set the object key to the rest format object to save.
 // originalParseObject is optional, we only need that for before/afterSave functions
-export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config) {
+export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObject, config, requestHeaders) {
   if (!parseObject) {
     return Promise.resolve({});
   }
   return new Promise(function (resolve, reject) {
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
-    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
+    var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config, requestHeaders);
     var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
         triggerType, parseObject.className, parseObject.toJSON(), object, auth);
