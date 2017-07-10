@@ -23,12 +23,11 @@ import _         from 'lodash';
 // RestWrite will handle objectId, createdAt, and updatedAt for
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
-function RestWrite(config, auth, className, query, data, originalData, clientSDK, requestHeaders) {
+function RestWrite(config, auth, className, query, data, originalData, clientSDK) {
   this.config = config;
   this.auth = auth;
   this.className = className;
   this.clientSDK = clientSDK;
-  this.requestHeaders = requestHeaders;
   this.storage = {};
   this.runOptions = {};
   if (!query && data.objectId) {
@@ -161,7 +160,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }
 
   return Promise.resolve().then(() => {
-    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config, this.requestHeaders);
+    return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
     if (response && response.object) {
       this.storage.fieldsChangedByTrigger = _.reduce(response.object, (result, value, key) => {
@@ -1075,7 +1074,7 @@ RestWrite.prototype.runAfterTrigger = function() {
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
   // Run afterSave trigger
-  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config, this.requestHeaders);
+  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
 };
 
 // A helper to figure out what location this operation happens at.

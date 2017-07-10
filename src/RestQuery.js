@@ -14,7 +14,7 @@ const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt'];
 //   include
 //   keys
 //   redirectClassNameForKey
-function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, clientSDK, requestHeaders) {
+function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, clientSDK) {
 
   this.config = config;
   this.auth = auth;
@@ -22,7 +22,6 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.restWhere = restWhere;
   this.restOptions = restOptions;
   this.clientSDK = clientSDK;
-  this.requestHeaders = requestHeaders;
   this.response = null;
   this.findOptions = {};
   if (!this.auth.isMaster) {
@@ -584,7 +583,7 @@ RestQuery.prototype.runAfterFindTrigger = function() {
     return Promise.resolve();
   }
   // Run afterFind trigger and set the new results
-  return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className, this.response.results, this.config, this.requestHeaders).then((results) => {
+  return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className,this.response.results, this.config).then((results) => {
     this.response.results = results;
   });
 };

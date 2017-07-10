@@ -46,7 +46,7 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK, req.headers)
+    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
       .then((response) => {
         if (response && response.results) {
           for (const result of response.results) {
@@ -99,16 +99,16 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
-    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK, req.headers);
+    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK);
   }
 
   handleUpdate(req) {
     const where = { objectId: req.params.objectId }
-    return rest.update(req.config, req.auth, req.params.className, where, req.body, req.info.clientSDK, req.headers);
+    return rest.update(req.config, req.auth, req.params.className, where, req.body, req.info.clientSDK);
   }
 
   handleDelete(req) {
-    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK, req.headers)
+    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK)
       .then(() => {
         return {response: {}};
       });
