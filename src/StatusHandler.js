@@ -52,7 +52,7 @@ function statusHandler(className, database) {
 
 export function jobStatusHandler(config) {
   let jobStatus;
-  const objectId = newObjectId();
+  const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
   const setRunning = function(jobName, params) {
@@ -103,13 +103,25 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config, objectId = newObjectId()) {
+export function pushStatusHandler(config, objectId = newObjectId(config.objectIdSize)) {
 
   let pushStatus;
   const database = config.database;
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
+    let pushTime = new Date();
+    let status = 'pending';
+    if (body.hasOwnProperty('push_time')) {
+      if (config.hasPushScheduledSupport) {
+        pushTime = body.push_time;
+        status = 'scheduled';
+      } else {
+        logger.warn('Trying to schedule a push while server is not configured.');
+        logger.warn('Push will be sent immediately');
+      }
+    }
+
     const data =  body.data || {};
     const payloadString = JSON.stringify(data);
     let pushHash;
@@ -123,13 +135,13 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
     const object = {
       objectId,
       createdAt: now,
-      pushTime: now.toISOString(),
+      pushTime: pushTime.toISOString(),
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
-      status: "pending",
+      status: status,
       numSent: 0,
       pushHash,
       // lockdown!
@@ -147,7 +159,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const setRunning = function(count) {
     logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date(), count });
+      {status: "running", updatedAt: new Date(), count });
   }
 
   const trackSent = function(results) {

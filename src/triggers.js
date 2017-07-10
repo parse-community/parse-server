@@ -155,12 +155,16 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, config) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
+  isGet = !!isGet;
+
   var request = {
     triggerName: triggerType,
-    query: query,
+    query,
     master: false,
-    log: config.loggerController
+    count,
+    log: config.loggerController,
+    isGet
   };
 
   if (!auth) {
@@ -285,7 +289,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
   });
 }
 
-export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth) {
+export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
@@ -298,6 +302,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
   if (restWhere) {
     parseQuery._where = restWhere;
   }
+  let count = false;
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
@@ -308,8 +313,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (restOptions.limit) {
       parseQuery._limit = restOptions.limit;
     }
+    count = !!restOptions.count;
   }
-  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config, isGet);
   return Promise.resolve().then(() => {
     return trigger(requestObject);
   }).then((result) => {
@@ -336,6 +342,18 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (jsonQuery.keys) {
       restOptions = restOptions || {};
       restOptions.keys = jsonQuery.keys;
+    }
+    if (requestObject.readPreference) {
+      restOptions = restOptions || {};
+      restOptions.readPreference = requestObject.readPreference;
+    }
+    if (requestObject.includeReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.includeReadPreference = requestObject.includeReadPreference;
+    }
+    if (requestObject.subqueryReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
     }
     return {
       restWhere,
@@ -365,11 +383,11 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
     var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+        triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), auth, error);
+        triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
     // Force the current Parse app before the trigger

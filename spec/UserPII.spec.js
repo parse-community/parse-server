@@ -148,14 +148,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Javascript-Key': 'test'
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result.results[0];
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(undefined);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result.results[0];
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(undefined);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   it('should get PII via REST with self credentials', (done) => {
@@ -168,14 +168,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Session-Token': user.getSessionToken()
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result.results[0];
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(EMAIL);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result.results[0];
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(EMAIL);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   it('should get PII via REST using master key', (done) => {
@@ -187,14 +187,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Master-Key': 'test'
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result.results[0];
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(EMAIL);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result.results[0];
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(EMAIL);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   it('should not get PII via REST by ID', (done) => {
@@ -206,14 +206,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Javascript-Key': 'test'
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result;
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(undefined);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result;
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(undefined);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   it('should get PII via REST by ID  with self credentials', (done) => {
@@ -226,14 +226,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Session-Token': user.getSessionToken()
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result;
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(EMAIL);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result;
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(EMAIL);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   it('should get PII via REST by ID  with master key', (done) => {
@@ -246,14 +246,14 @@ describe('Personally Identifiable Information', () => {
         'X-Parse-Master-Key': 'test',
       }
     })
-    .then(
-      result => {
-        const fetchedUser = result;
-        expect(fetchedUser.zip).toBe(ZIP);
-        expect(fetchedUser.email).toBe(EMAIL);
-      },
-      e => console.error('error', e.message)
-    ).done(() => done());
+      .then(
+        result => {
+          const fetchedUser = result;
+          expect(fetchedUser.zip).toBe(ZIP);
+          expect(fetchedUser.email).toBe(EMAIL);
+        },
+        e => console.error('error', e.message)
+      ).done(() => done());
   });
 
   describe('with configured sensitive fields', () => {
@@ -389,15 +389,15 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Javascript-Key': 'test'
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result.results[0];
-          expect(fetchedUser.zip).toBe(undefined);
-          expect(fetchedUser.ssn).toBe(undefined);
-          expect(fetchedUser.email).toBe(undefined);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result.results[0];
+            expect(fetchedUser.zip).toBe(undefined);
+            expect(fetchedUser.ssn).toBe(undefined);
+            expect(fetchedUser.email).toBe(undefined);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
 
     it('should get PII via REST with self credentials', (done) => {
@@ -410,15 +410,15 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Session-Token': user.getSessionToken()
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result.results[0];
-          expect(fetchedUser.zip).toBe(ZIP);
-          expect(fetchedUser.email).toBe(EMAIL);
-          expect(fetchedUser.ssn).toBe(SSN);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result.results[0];
+            expect(fetchedUser.zip).toBe(ZIP);
+            expect(fetchedUser.email).toBe(EMAIL);
+            expect(fetchedUser.ssn).toBe(SSN);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
 
     it('should get PII via REST using master key', (done) => {
@@ -430,15 +430,15 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Master-Key': 'test'
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result.results[0];
-          expect(fetchedUser.zip).toBe(ZIP);
-          expect(fetchedUser.email).toBe(EMAIL);
-          expect(fetchedUser.ssn).toBe(SSN);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result.results[0];
+            expect(fetchedUser.zip).toBe(ZIP);
+            expect(fetchedUser.email).toBe(EMAIL);
+            expect(fetchedUser.ssn).toBe(SSN);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
 
     it('should not get PII via REST by ID', (done) => {
@@ -450,14 +450,14 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Javascript-Key': 'test'
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result;
-          expect(fetchedUser.zip).toBe(undefined);
-          expect(fetchedUser.email).toBe(undefined);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result;
+            expect(fetchedUser.zip).toBe(undefined);
+            expect(fetchedUser.email).toBe(undefined);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
 
     it('should get PII via REST by ID  with self credentials', (done) => {
@@ -470,14 +470,14 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Session-Token': user.getSessionToken()
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result;
-          expect(fetchedUser.zip).toBe(ZIP);
-          expect(fetchedUser.email).toBe(EMAIL);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result;
+            expect(fetchedUser.zip).toBe(ZIP);
+            expect(fetchedUser.email).toBe(EMAIL);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
 
     it('should get PII via REST by ID  with master key', (done) => {
@@ -490,14 +490,14 @@ describe('Personally Identifiable Information', () => {
           'X-Parse-Master-Key': 'test',
         }
       })
-      .then(
-        result => {
-          const fetchedUser = result;
-          expect(fetchedUser.zip).toBe(ZIP);
-          expect(fetchedUser.email).toBe(EMAIL);
-        },
-        e => console.error('error', e.message)
-      ).done(() => done());
+        .then(
+          result => {
+            const fetchedUser = result;
+            expect(fetchedUser.zip).toBe(ZIP);
+            expect(fetchedUser.email).toBe(EMAIL);
+          },
+          e => console.error('error', e.message)
+        ).done(() => done());
     });
   });
 });

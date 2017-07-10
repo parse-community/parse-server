@@ -41,13 +41,33 @@ export class LoggerController extends AdaptableController {
 
       // check the url
       if (e.url) {
-        e.url = this.maskSensitiveUrl(e.url);
+        // for strings
+        if (typeof e.url === 'string') {
+          e.url = this.maskSensitiveUrl(e.url);
+        } else if (Array.isArray(e.url)) { // for strings in array
+          e.url = e.url.map(item => {
+            if (typeof item === 'string') {
+              return this.maskSensitiveUrl(item);
+            }
+
+            return item;
+          });
+        }
       }
 
       if (e.body) {
         for (const key of Object.keys(e.body)) {
           if (key === 'password') {
             e.body[key] = '********';
+            break;
+          }
+        }
+      }
+
+      if (e.params) {
+        for (const key of Object.keys(e.params)) {
+          if (key === 'password') {
+            e.params[key] = '********';
             break;
           }
         }

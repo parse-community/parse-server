@@ -2,7 +2,6 @@
 // hungry/js/test/parse_acl_test.js
 var rest = require('../src/rest');
 var Config = require('../src/Config');
-var config = new Config('test');
 var auth = require('../src/Auth');
 
 describe('Parse.ACL', () => {
@@ -59,20 +58,20 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
             // Start making requests by the public, which should all fail.
             Parse.User.logOut()
-            .then(() => {
+              .then(() => {
               // Get
-              var query = new Parse.Query(TestObject);
-              query.get(object.id, {
-                success: function() {
-                  fail('Should not have retrieved the object.');
-                  done();
-                },
-                error: function(model, error) {
-                  equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
-                  done();
-                }
+                var query = new Parse.Query(TestObject);
+                query.get(object.id, {
+                  success: function() {
+                    fail('Should not have retrieved the object.');
+                    done();
+                  },
+                  error: function(model, error) {
+                    equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
+                    done();
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -99,16 +98,16 @@ describe('Parse.ACL', () => {
 
             // Start making requests by the public, which should all fail.
             Parse.User.logOut()
-            .then(() => {
+              .then(() => {
               // Find
-              var query = new Parse.Query(TestObject);
-              query.find({
-                success: function(results) {
-                  equal(results.length, 0);
-                  done();
-                }
+                var query = new Parse.Query(TestObject);
+                query.find({
+                  success: function(results) {
+                    equal(results.length, 0);
+                    done();
+                  }
+                });
               });
-            });
 
           }
         });
@@ -136,19 +135,19 @@ describe('Parse.ACL', () => {
 
             // Start making requests by the public, which should all fail.
             Parse.User.logOut()
-            .then(() => {
+              .then(() => {
               // Update
-              object.set("foo", "bar");
-              object.save(null, {
-                success: function() {
-                  fail('Should not have been able to update the object.');
-                  done();
-                }, error: function(model, err) {
-                  equal(err.code, Parse.Error.OBJECT_NOT_FOUND);
-                  done();
-                }
+                object.set("foo", "bar");
+                object.save(null, {
+                  success: function() {
+                    fail('Should not have been able to update the object.');
+                    done();
+                  }, error: function(model, err) {
+                    equal(err.code, Parse.Error.OBJECT_NOT_FOUND);
+                    done();
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -175,14 +174,14 @@ describe('Parse.ACL', () => {
 
             // Start making requests by the public, which should all fail.
             Parse.User.logOut()
-            .then(() => object.destroy())
-            .then(() => {
-              fail('destroy should fail');
-              done();
-            }, error => {
-              expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-              done();
-            });
+              .then(() => object.destroy())
+              .then(() => {
+                fail('destroy should fail');
+                done();
+              }, error => {
+                expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                done();
+              });
           }
         });
       }
@@ -208,26 +207,26 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             Parse.User.logOut()
-            .then(() => {
-              Parse.User.logIn("alice", "wonderland", {
-                success: function() {
+              .then(() => {
+                Parse.User.logIn("alice", "wonderland", {
+                  success: function() {
                   // Get
-                  var query = new Parse.Query(TestObject);
-                  query.get(object.id, {
-                    success: function(result) {
-                      ok(result);
-                      equal(result.id, object.id);
-                      equal(result.getACL().getReadAccess(user), true);
-                      equal(result.getACL().getWriteAccess(user), true);
-                      equal(result.getACL().getPublicReadAccess(), false);
-                      equal(result.getACL().getPublicWriteAccess(), false);
-                      ok(object.get("ACL"));
-                      done();
-                    }
-                  });
-                }
+                    var query = new Parse.Query(TestObject);
+                    query.get(object.id, {
+                      success: function(result) {
+                        ok(result);
+                        equal(result.id, object.id);
+                        equal(result.getACL().getReadAccess(user), true);
+                        equal(result.getACL().getWriteAccess(user), true);
+                        equal(result.getACL().getPublicReadAccess(), false);
+                        equal(result.getACL().getPublicWriteAccess(), false);
+                        ok(object.get("ACL"));
+                        done();
+                      }
+                    });
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -253,31 +252,31 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             Parse.User.logOut()
-            .then(() => {
-              Parse.User.logIn("alice", "wonderland", {
-                success: function() {
+              .then(() => {
+                Parse.User.logIn("alice", "wonderland", {
+                  success: function() {
                   // Find
-                  var query = new Parse.Query(TestObject);
-                  query.find({
-                    success: function(results) {
-                      equal(results.length, 1);
-                      var result = results[0];
-                      ok(result);
-                      if (!result) {
-                        return fail();
+                    var query = new Parse.Query(TestObject);
+                    query.find({
+                      success: function(results) {
+                        equal(results.length, 1);
+                        var result = results[0];
+                        ok(result);
+                        if (!result) {
+                          return fail();
+                        }
+                        equal(result.id, object.id);
+                        equal(result.getACL().getReadAccess(user), true);
+                        equal(result.getACL().getWriteAccess(user), true);
+                        equal(result.getACL().getPublicReadAccess(), false);
+                        equal(result.getACL().getPublicWriteAccess(), false);
+                        ok(object.get("ACL"));
+                        done();
                       }
-                      equal(result.id, object.id);
-                      equal(result.getACL().getReadAccess(user), true);
-                      equal(result.getACL().getWriteAccess(user), true);
-                      equal(result.getACL().getPublicReadAccess(), false);
-                      equal(result.getACL().getPublicWriteAccess(), false);
-                      ok(object.get("ACL"));
-                      done();
-                    }
-                  });
-                }
+                    });
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -303,19 +302,19 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             Parse.User.logOut()
-            .then(() => {
-              Parse.User.logIn("alice", "wonderland", {
-                success: function() {
+              .then(() => {
+                Parse.User.logIn("alice", "wonderland", {
+                  success: function() {
                   // Update
-                  object.set("foo", "bar");
-                  object.save(null, {
-                    success: function() {
-                      done();
-                    }
-                  });
-                }
+                    object.set("foo", "bar");
+                    object.save(null, {
+                      success: function() {
+                        done();
+                      }
+                    });
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -341,18 +340,18 @@ describe('Parse.ACL', () => {
             ok(object.get("ACL"));
 
             Parse.User.logOut()
-            .then(() => {
-              Parse.User.logIn("alice", "wonderland", {
-                success: function() {
+              .then(() => {
+                Parse.User.logIn("alice", "wonderland", {
+                  success: function() {
                   // Delete
-                  object.destroy({
-                    success: function() {
-                      done();
-                    }
-                  });
-                }
+                    object.destroy({
+                      success: function() {
+                        done();
+                      }
+                    });
+                  }
+                });
               });
-            });
           }
         });
       }
@@ -388,17 +387,17 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Get
-                  var query = new Parse.Query(TestObject);
-                  query.get(object.id, {
-                    success: function(result) {
-                      ok(result);
-                      equal(result.id, object.id);
-                      done();
-                    }
+                    var query = new Parse.Query(TestObject);
+                    query.get(object.id, {
+                      success: function(result) {
+                        ok(result);
+                        equal(result.id, object.id);
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -436,19 +435,19 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Find
-                  var query = new Parse.Query(TestObject);
-                  query.find({
-                    success: function(results) {
-                      equal(results.length, 1);
-                      var result = results[0];
-                      ok(result);
-                      equal(result.id, object.id);
-                      done();
-                    }
+                    var query = new Parse.Query(TestObject);
+                    query.find({
+                      success: function(results) {
+                        equal(results.length, 1);
+                        var result = results[0];
+                        ok(result);
+                        equal(result.id, object.id);
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -486,16 +485,16 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Update
-                  object.set("foo", "bar");
-                  object.save().then(() => {
-                    fail('the save should fail');
-                  }, error => {
-                    expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-                    done();
+                    object.set("foo", "bar");
+                    object.save().then(() => {
+                      fail('the save should fail');
+                    }, error => {
+                      expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                      done();
+                    });
                   });
-                });
               }
             });
           }
@@ -533,13 +532,13 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => object.destroy())
-                .then(() => {
-                  fail('expected failure');
-                }, error => {
-                  expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-                  done();
-                });
+                  .then(() => object.destroy())
+                  .then(() => {
+                    fail('expected failure');
+                  }, error => {
+                    expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                    done();
+                  });
               }
             });
           }
@@ -577,16 +576,16 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Get
-                  var query = new Parse.Query(TestObject);
-                  query.get(object.id, {
-                    error: function(model, error) {
-                      equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
-                      done();
-                    }
+                    var query = new Parse.Query(TestObject);
+                    query.get(object.id, {
+                      error: function(model, error) {
+                        equal(error.code, Parse.Error.OBJECT_NOT_FOUND);
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -624,16 +623,16 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Find
-                  var query = new Parse.Query(TestObject);
-                  query.find({
-                    success: function(results) {
-                      equal(results.length, 0);
-                      done();
-                    }
+                    var query = new Parse.Query(TestObject);
+                    query.find({
+                      success: function(results) {
+                        equal(results.length, 0);
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -671,15 +670,15 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Update
-                  object.set("foo", "bar");
-                  object.save(null, {
-                    success: function() {
-                      done();
-                    }
+                    object.set("foo", "bar");
+                    object.save(null, {
+                      success: function() {
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -717,14 +716,14 @@ describe('Parse.ACL', () => {
                 ok(object.get("ACL"));
 
                 Parse.User.logOut()
-                .then(() => {
+                  .then(() => {
                   // Delete
-                  object.destroy({
-                    success: function() {
-                      done();
-                    }
+                    object.destroy({
+                      success: function() {
+                        done();
+                      }
+                    });
                   });
-                });
               }
             });
           }
@@ -755,14 +754,12 @@ describe('Parse.ACL', () => {
       user2.set("password", "burger");
       return user2.signUp();
     }).then(() => {
-      console.log(user2.getSessionToken());
       return object.destroy({sessionToken: user2.getSessionToken() });
-    }).then((res) => {
-      console.log(res);
+    }).then(() => {
       fail('should not be able to destroy the object');
       done();
     }, (err) => {
-      console.error(err);
+      expect(err).not.toBeUndefined();
       done();
     });
   });
@@ -772,43 +769,43 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Sign in as Bob again.
-                  Parse.User.logIn("bob", "pass", {
-                    success: function() {
-                      var query = new Parse.Query(TestObject);
-                      query.get(object.id, {
-                        success: function(result) {
-                          ok(result);
-                          equal(result.id, object.id);
-                          done();
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
+                    // Sign in as Bob again.
+                    Parse.User.logIn("bob", "pass", {
+                      success: function() {
+                        var query = new Parse.Query(TestObject);
+                        query.get(object.id, {
+                          success: function(result) {
+                            ok(result);
+                            equal(result.id, object.id);
+                            done();
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -818,49 +815,49 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Sign in as Bob again.
-                  Parse.User.logIn("bob", "pass", {
-                    success: function() {
-                      var query = new Parse.Query(TestObject);
-                      query.find({
-                        success: function(results) {
-                          equal(results.length, 1);
-                          var result = results[0];
-                          ok(result);
-                          if (!result) {
-                            fail("should have result");
-                          } else {
-                            equal(result.id, object.id);
+                    // Sign in as Bob again.
+                    Parse.User.logIn("bob", "pass", {
+                      success: function() {
+                        var query = new Parse.Query(TestObject);
+                        query.find({
+                          success: function(results) {
+                            equal(results.length, 1);
+                            var result = results[0];
+                            ok(result);
+                            if (!result) {
+                              fail("should have result");
+                            } else {
+                              equal(result.id, object.id);
+                            }
+                            done();
                           }
-                          done();
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -870,41 +867,41 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Sign in as Bob again.
-                  Parse.User.logIn("bob", "pass", {
-                    success: function() {
-                      object.set("foo", "bar");
-                      object.save(null, {
-                        success: function() {
-                          done();
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
+                    // Sign in as Bob again.
+                    Parse.User.logIn("bob", "pass", {
+                      success: function() {
+                        object.set("foo", "bar");
+                        object.save(null, {
+                          success: function() {
+                            done();
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -914,41 +911,41 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Sign in as Bob again.
-                  Parse.User.logIn("bob", "pass", {
-                    success: function() {
-                      object.set("foo", "bar");
-                      object.destroy({
-                        success: function() {
-                          done();
-                        }
-                      });
-                    }
-                  });
-                }
-              });
-            }
+                    // Sign in as Bob again.
+                    Parse.User.logIn("bob", "pass", {
+                      success: function() {
+                        object.set("foo", "bar");
+                        object.destroy({
+                          success: function() {
+                            done();
+                          }
+                        });
+                      }
+                    });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -958,41 +955,41 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Start making requests by the public.
-                  Parse.User.logOut()
-                  .then(() => {
-                    var query = new Parse.Query(TestObject);
-                    query.get(object.id).then((result) => {
-                      fail(result);
-                    }, (error) => {
-                      expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-                      done();
-                    });
-                  });
-                }
-              });
-            }
+                    // Start making requests by the public.
+                    Parse.User.logOut()
+                      .then(() => {
+                        var query = new Parse.Query(TestObject);
+                        query.get(object.id).then((result) => {
+                          fail(result);
+                        }, (error) => {
+                          expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                          done();
+                        });
+                      });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -1002,41 +999,41 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Start making requests by the public.
-                  Parse.User.logOut()
-                  .then(() => {
-                    var query = new Parse.Query(TestObject);
-                    query.find({
-                      success: function(results) {
-                        equal(results.length, 0);
-                        done();
-                      }
-                    });
-                  });
-                }
-              });
-            }
+                    // Start making requests by the public.
+                    Parse.User.logOut()
+                      .then(() => {
+                        var query = new Parse.Query(TestObject);
+                        query.find({
+                          success: function(results) {
+                            equal(results.length, 0);
+                            done();
+                          }
+                        });
+                      });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -1046,41 +1043,41 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Start making requests by the public.
-                  Parse.User.logOut()
-                  .then(() => {
-                    object.set("foo", "bar");
-                    object.save().then(() => {
-                      fail('expected failure');
-                    }, (error) => {
-                      expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-                      done();
-                    });
-                  });
-                }
-              });
-            }
+                    // Start making requests by the public.
+                    Parse.User.logOut()
+                      .then(() => {
+                        object.set("foo", "bar");
+                        object.save().then(() => {
+                          fail('expected failure');
+                        }, (error) => {
+                          expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                          done();
+                        });
+                      });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -1090,39 +1087,39 @@ describe('Parse.ACL', () => {
     Parse.User.signUp("bob", "pass", null, {
       success: function(bob) {
         Parse.User.logOut()
-        .then(() => {
+          .then(() => {
           // Sign in as Alice.
-          Parse.User.signUp("alice", "wonderland", null, {
-            success: function(alice) {
+            Parse.User.signUp("alice", "wonderland", null, {
+              success: function(alice) {
               // Create an object shared by Bob and Alice.
-              var object = new TestObject();
-              var acl = new Parse.ACL(alice);
-              acl.setWriteAccess(bob, true);
-              acl.setReadAccess(bob, true);
-              object.setACL(acl);
-              object.save(null, {
-                success: function() {
-                  equal(object.getACL().getReadAccess(alice), true);
-                  equal(object.getACL().getWriteAccess(alice), true);
-                  equal(object.getACL().getReadAccess(bob), true);
-                  equal(object.getACL().getWriteAccess(bob), true);
-                  equal(object.getACL().getPublicReadAccess(), false);
-                  equal(object.getACL().getPublicWriteAccess(), false);
+                var object = new TestObject();
+                var acl = new Parse.ACL(alice);
+                acl.setWriteAccess(bob, true);
+                acl.setReadAccess(bob, true);
+                object.setACL(acl);
+                object.save(null, {
+                  success: function() {
+                    equal(object.getACL().getReadAccess(alice), true);
+                    equal(object.getACL().getWriteAccess(alice), true);
+                    equal(object.getACL().getReadAccess(bob), true);
+                    equal(object.getACL().getWriteAccess(bob), true);
+                    equal(object.getACL().getPublicReadAccess(), false);
+                    equal(object.getACL().getPublicWriteAccess(), false);
 
-                  // Start making requests by the public.
-                  Parse.User.logOut()
-                  .then(() => object.destroy())
-                  .then(() => {
-                    fail('expected failure');
-                  }, (error) => {
-                    expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
-                    done();
-                  });
-                }
-              });
-            }
+                    // Start making requests by the public.
+                    Parse.User.logOut()
+                      .then(() => object.destroy())
+                      .then(() => {
+                        fail('expected failure');
+                      }, (error) => {
+                        expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
+                        done();
+                      });
+                  }
+                });
+              }
+            });
           });
-        });
       }
     });
   });
@@ -1175,18 +1172,18 @@ describe('Parse.ACL', () => {
     }, {
       success: function() {
         Parse.User.logOut()
-        .then(() => {
-          Parse.User.logIn("tdurden", "mayhem", {
-            success: function(user) {
-              equal(user.get("foo"), "bar");
-              done();
-            },
-            error: function(user, error) {
-              ok(null, "Error " + error.id + ": " + error.message);
-              done();
-            }
+          .then(() => {
+            Parse.User.logIn("tdurden", "mayhem", {
+              success: function(user) {
+                equal(user.get("foo"), "bar");
+                done();
+              },
+              error: function(user, error) {
+                ok(null, "Error " + error.id + ": " + error.message);
+                done();
+              }
+            });
           });
-        });
       },
       error: function(user, error) {
         ok(null, "Error " + error.id + ": " + error.message);
@@ -1237,6 +1234,7 @@ describe('Parse.ACL', () => {
   });
 
   it('regression test #701', done => {
+    const config = new Config('test');
     var anonUser = {
       authData: {
         anonymous: {
@@ -1250,6 +1248,7 @@ describe('Parse.ACL', () => {
         var user = req.object;
         var acl = new Parse.ACL(user);
         user.setACL(acl);
+        console.log('IN AFTER SAVE!');
         user.save(null, {useMasterKey: true}).then(user => {
           new Parse.Query('_User').get(user.objectId).then(() => {
             fail('should not have fetched user without public read enabled');
@@ -1258,7 +1257,7 @@ describe('Parse.ACL', () => {
             expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
             done();
           });
-        });
+        }, done.fail);
       }
     });
 

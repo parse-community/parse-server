@@ -14,12 +14,12 @@ describe("public API", () => {
       appName: 'unused',
       publicServerURL: 'http://localhost:8378/1',
     })
-    .then(() => {
-      request('http://localhost:8378/1/apps/choose_password?id=test', (err, httpResponse) => {
-        expect(httpResponse.statusCode).toBe(200);
-        done();
-      });
-    })
+      .then(() => {
+        request('http://localhost:8378/1/apps/choose_password?id=test', (err, httpResponse) => {
+          expect(httpResponse.statusCode).toBe(200);
+          done();
+        });
+      })
   });
 
   it("should get verify_email_success.html", (done) => {
@@ -40,7 +40,7 @@ describe("public API", () => {
 describe("public API without publicServerURL", () => {
   beforeEach(done => {
     reconfigureServer({ appName: 'unused' })
-    .then(done, fail);
+      .then(done, fail);
   });
   it("should get 404 on verify_email", (done) => {
     request('http://localhost:8378/1/apps/test/verify_email', (err, httpResponse) => {

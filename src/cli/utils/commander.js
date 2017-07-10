@@ -38,7 +38,7 @@ Command.prototype.loadDefinitions = function(definitions) {
     return object;
   }, {});
 
-   /* istanbul ignore next */
+  /* istanbul ignore next */
   this.on('--help', function(){
     console.log('  Configure From Environment:');
     console.log('');

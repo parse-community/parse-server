@@ -219,6 +219,28 @@ describe("Password Policy: ", () => {
     })
   });
 
+  it('signup should fail if password is empty', (done) => {
+    const user = new Parse.User();
+    reconfigureServer({
+      appName: 'passwordPolicy',
+      passwordPolicy: {
+        validatorPattern: "^.{8,}"  // password should contain at least 8 char
+      },
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      user.setUsername("user1");
+      user.setPassword("");
+      user.set('email', 'user1@parse.com');
+      user.signUp().then(() => {
+        fail('Should have failed as password does not conform to the policy.');
+        done();
+      }).catch((error) => {
+        expect(error.message).toEqual('Cannot sign up user with an empty password.');
+        done();
+      });
+    })
+  });
+
   it('signup should succeed if password conforms to the policy enforced using validatorPattern', (done) => {
     const user = new Parse.User();
     reconfigureServer({

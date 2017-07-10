@@ -49,6 +49,7 @@ import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
+import { AudiencesRouter }          from './Routers/AudiencesRouter';
 
 import DatabaseController       from './Controllers/DatabaseController';
 import SchemaCache              from './Controllers/SchemaCache';
@@ -95,6 +96,7 @@ class ParseServer {
     analyticsAdapter,
     filesAdapter,
     push,
+    scheduledPush = false,
     loggerAdapter,
     jsonLogs = defaults.jsonLogs,
     logsFolder = defaults.logsFolder,
@@ -138,9 +140,13 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    cacheTTL = defaults.cacheTTL, // cache for 5s
+    cacheMaxSize = defaults.cacheMaxSize, // 10000
     enableSingleSchemaCache = false,
+    objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
+
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -180,8 +186,8 @@ class ParseServer {
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController();
-
-    const hasPushSupport = pushAdapter && push;
+    const hasPushSupport = !!(pushAdapter && push);
+    const hasPushScheduledSupport = hasPushSupport && (scheduledPush === true);
 
     const {
       disablePushWorker
@@ -196,7 +202,7 @@ class ParseServer {
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
@@ -259,7 +265,9 @@ class ParseServer {
       userSensitiveFields,
       pushWorker,
       pushControllerQueue,
-      hasPushSupport
+      hasPushSupport,
+      hasPushScheduledSupport,
+      objectIdSize
     });
 
     Config.validate(AppCache.get(appId));
@@ -308,6 +316,13 @@ class ParseServer {
 
   get app() {
     return ParseServer.app(this.config);
+  }
+
+  handleShutdown() {
+    const { adapter } = this.config.databaseController;
+    if (adapter && typeof adapter.handleShutdown === 'function') {
+      adapter.handleShutdown();
+    }
   }
 
   static app({maxUploadSize = '20mb', appId}) {
@@ -370,7 +385,8 @@ class ParseServer {
       new GlobalConfigRouter(),
       new PurgeRouter(),
       new HooksRouter(),
-      new CloudCodeRouter()
+      new CloudCodeRouter(),
+      new AudiencesRouter()
     ];
 
     const routes = routers.reduce((memo, router) => {

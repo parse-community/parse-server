@@ -1,10 +1,11 @@
 /* eslint-disable no-console */
 import express from 'express';
-import { ParseServer } from '../index';
+import ParseServer from '../index';
 import definitions from './definitions/parse-server';
 import cluster from 'cluster';
 import os from 'os';
 import runner from './utils/runner';
+const path = require("path");
 
 const help = function(){
   console.log('  Get Started guide:');
@@ -30,10 +31,21 @@ const help = function(){
 
 function startServer(options, callback) {
   const app = express();
-  const api = new ParseServer(options);
-  const sockets = {};
+  if (options.middleware) {
+    let middleware;
+    if (typeof options.middleware == 'function') {
+      middleware = options.middleware;
+    } if (typeof options.middleware == 'string') {
+      middleware = require(path.resolve(process.cwd(), options.middleware));
+    } else {
+      throw "middleware should be a string or a function";
+    }
+    app.use(middleware);
+  }
 
-  app.use(options.mountPath, api);
+  const parseServer = new ParseServer(options);
+  const sockets = {};
+  app.use(options.mountPath, parseServer.app);
 
   const server = app.listen(options.port, options.host, callback);
   server.on('connection', initializeConnections);
@@ -72,9 +84,8 @@ function startServer(options, callback) {
   const handleShutdown = function() {
     console.log('Termination signal received. Shutting down.');
     destroyAliveConnections();
-    server.close(function () {
-      process.exit(0);
-    });
+    server.close();
+    parseServer.handleShutdown();
   };
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);

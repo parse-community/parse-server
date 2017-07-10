@@ -61,6 +61,7 @@ export class Config {
     this.pushControllerQueue = cacheInfo.pushControllerQueue;
     this.pushWorker = cacheInfo.pushWorker;
     this.hasPushSupport = cacheInfo.hasPushSupport;
+    this.hasPushScheduledSupport = cacheInfo.hasPushScheduledSupport;
     this.loggerController = cacheInfo.loggerController;
     this.userController = cacheInfo.userController;
     this.authDataManager = cacheInfo.authDataManager;
@@ -72,6 +73,7 @@ export class Config {
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
     this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
     this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
+    this.objectIdSize = cacheInfo.objectIdSize;
   }
 
   static validate({
@@ -231,6 +233,18 @@ export class Config {
 
   get invalidLinkURL() {
     return this.customPages.invalidLink || `${this.publicServerURL}/apps/invalid_link.html`;
+  }
+
+  get invalidVerificationLinkURL() {
+    return this.customPages.invalidVerificationLink || `${this.publicServerURL}/apps/invalid_verification_link.html`;
+  }
+
+  get linkSendSuccessURL() {
+    return this.customPages.linkSendSuccess || `${this.publicServerURL}/apps/link_send_success.html`
+  }
+
+  get linkSendFailURL() {
+    return this.customPages.linkSendFail || `${this.publicServerURL}/apps/link_send_fail.html`
   }
 
   get verifyEmailSuccessURL() {

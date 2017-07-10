@@ -1,8 +1,7 @@
-'use strict';
-var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-
+const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 const fs = require('fs');
+
 const loremFile = __dirname + '/support/lorem.txt';
 
 describe("Cloud Code Logger", () => {
@@ -11,18 +10,18 @@ describe("Cloud Code Logger", () => {
   beforeEach(done => {
     Parse.User.enableUnsafeCurrentUser();
     return reconfigureServer({
-            // useful to flip to false for fine tuning :).
+      // useful to flip to false for fine tuning :).
       silent: true,
     }).then(() => {
       return Parse.User.signUp('tester', 'abc')
-                .then(loggedInUser => user = loggedInUser)
-                .then(() => Parse.User.logIn(user.get('username'), 'abc'))
-                .then(() => done())
+        .then(loggedInUser => user = loggedInUser)
+        .then(() => Parse.User.logIn(user.get('username'), 'abc'))
+        .then(() => done())
     });
   });
 
-    // Note that helpers takes care of logout.
-    // see helpers.js:afterEach
+  // Note that helpers takes care of logout.
+  // see helpers.js:afterEach
 
   it("should expose log to functions", done => {
     var logController = new LoggerController(new WinstonLoggerAdapter());
@@ -63,14 +62,14 @@ describe("Cloud Code Logger", () => {
     });
 
     Parse.User.signUp('tester123', 'abc')
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then((res) => {
-              const entry = res[0];
-              expect(entry.message).not.toMatch(/password":"abc/);
-              expect(entry.message).toMatch(/\*\*\*\*\*\*\*\*/);
-              done();
-            })
-            .then(null, e => done.fail(e));
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then((res) => {
+        const entry = res[0];
+        expect(entry.message).not.toMatch(/password":"abc/);
+        expect(entry.message).toMatch(/\*\*\*\*\*\*\*\*/);
+        done();
+      })
+      .then(null, e => done.fail(e));
   });
 
   it("should expose log to trigger", (done) => {
@@ -120,30 +119,30 @@ describe("Cloud Code Logger", () => {
     });
 
     Parse.Cloud.run('aFunction', { longString })
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(logs => {
-              const log = logs[0];
-              expect(log.level).toEqual('info');
-              expect(log.message).toMatch(
-                   /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m);
-              done();
-            })
-            .then(null, e => done.fail(e));
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(logs => {
+        const log = logs[0];
+        expect(log.level).toEqual('info');
+        expect(log.message).toMatch(
+          /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {.*?\(truncated\)$/m);
+        done();
+      })
+      .then(null, e => done.fail(e));
   });
 
   it('should log an afterSave', done => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
     Parse.Cloud.afterSave("MyObject", () => { });
     new Parse.Object('MyObject')
-            .save()
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then((logs) => {
-              const log = logs[0];
-              expect(log.triggerType).toEqual('afterSave');
-              done();
-            })
-            // catch errors - not that the error is actually useful :(
-            .then(null, e => done.fail(e));
+      .save()
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then((logs) => {
+        const log = logs[0];
+        expect(log.triggerType).toEqual('afterSave');
+        done();
+      })
+    // catch errors - not that the error is actually useful :(
+      .then(null, e => done.fail(e));
   });
 
   it('should log a denied beforeSave', done => {
@@ -153,18 +152,18 @@ describe("Cloud Code Logger", () => {
     });
 
     new Parse.Object('MyObject')
-            .save()
-            .then(
-                () => done.fail('this is not supposed to succeed'),
-                () => new Promise(resolve => setTimeout(resolve, 100))
-            )
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(logs => {
-              const log = logs[1]; // 0 is the 'uh oh!' from rejection...
-              expect(log.level).toEqual('error');
-              expect(log.error).toEqual({ code: 141, message: 'uh oh!' });
-              done()
-            });
+      .save()
+      .then(
+        () => done.fail('this is not supposed to succeed'),
+        () => new Promise(resolve => setTimeout(resolve, 100))
+      )
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(logs => {
+        const log = logs[1]; // 0 is the 'uh oh!' from rejection...
+        expect(log.level).toEqual('error');
+        expect(log.error).toEqual({ code: 141, message: 'uh oh!' });
+        done()
+      });
   });
 
   it('should log cloud function success', done => {
@@ -175,14 +174,14 @@ describe("Cloud Code Logger", () => {
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(logs => {
-              const log = logs[0];
-              expect(log.level).toEqual('info');
-              expect(log.message).toMatch(
-                    /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Result: "it worked!/);
-              done();
-            });
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(logs => {
+        const log = logs[0];
+        expect(log.level).toEqual('info');
+        expect(log.message).toMatch(
+          /Ran cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Result: "it worked!/);
+        done();
+      });
   });
 
   it('should log cloud function failure', done => {
@@ -193,14 +192,14 @@ describe("Cloud Code Logger", () => {
     });
 
     Parse.Cloud.run('aFunction', { foo: 'bar' })
-            .then(null, () => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(logs => {
-              const log = logs[2];
-              expect(log.level).toEqual('error');
-              expect(log.message).toMatch(
-                    /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error: {"code":141,"message":"it failed!"}/);
-              done();
-            });
+      .then(null, () => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(logs => {
+        const log = logs[2];
+        expect(log.level).toEqual('error');
+        expect(log.message).toMatch(
+          /Failed running cloud function aFunction for user [^ ]* with:\n {2}Input: {"foo":"bar"}\n {2}Error: {"code":141,"message":"it failed!"}/);
+        done();
+      });
   });
 
   xit('should log a changed beforeSave indicating a change', done => {
@@ -213,18 +212,35 @@ describe("Cloud Code Logger", () => {
     });
 
     new Parse.Object('MyObject')
-            .save()
-            .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
-            .then(() => {
-                // expect the log to indicate that it has changed
-                /*
+      .save()
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then(() => {
+        // expect the log to indicate that it has changed
+        /*
                     Here's what it looks like on parse.com...
 
                     Input: {"original":{"clientVersion":"1","createdAt":"2016-06-02T05:29:08.694Z","image":{"__type":"File","name":"tfss-xxxxxxxx.png","url":"http://files.parsetfss.com/xxxxxxxx.png"},"lastScanDate":{"__type":"Date","iso":"2016-06-02T05:28:58.135Z"},"localIdentifier":"XXXXX","objectId":"OFHMX7ZUcI","status":... (truncated)
                     Result: Update changed to {"object":{"__type":"Pointer","className":"Emoticode","objectId":"ksrq7z3Ehc"},"imageThumb":{"__type":"File","name":"tfss-xxxxxxx.png","url":"http://files.parsetfss.com/xxxxx.png"},"status":"success"}
                 */
-              done();
-            })
-            .then(null, e => done.fail(JSON.stringify(e)));
+        done();
+      })
+      .then(null, e => done.fail(JSON.stringify(e)));
   }).pend('needs more work.....');
+
+  it('cloud function should obfuscate password', done => {
+    const logController = new LoggerController(new WinstonLoggerAdapter());
+
+    Parse.Cloud.define('testFunction', (req, res) => {
+      res.success(1002,'verify code success');
+    });
+
+    Parse.Cloud.run('testFunction', {username:'hawk',password:'123456'})
+      .then(() => logController.getLogs({ from: Date.now() - 500, size: 1000 }))
+      .then((res) => {
+        const entry = res[0];
+        expect(entry.params.password).toMatch(/\*\*\*\*\*\*\*\*/);
+        done();
+      })
+      .then(null, e => done.fail(e));
+  });
 });

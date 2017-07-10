@@ -37,21 +37,26 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK) => {
+  var restWhere = { objectId };
   enforceRoleSecurity('get', className, auth);
-  const query = new RestQuery(config, auth, className, { objectId }, restOptions, clientSDK);
-  return query.execute();
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth, true).then((result) => {
+    restWhere = result.restWhere || restWhere;
+    restOptions = result.restOptions || restOptions;
+    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+    return query.execute();
+  });
 }
 
 // Returns a promise that doesn't resolve to any useful value.
 function del(config, auth, className, objectId) {
   if (typeof objectId !== 'string') {
     throw new Parse.Error(Parse.Error.INVALID_JSON,
-                          'bad objectId');
+      'bad objectId');
   }
 
   if (className === '_User' && !auth.couldUpdateUserId(objectId)) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-                          'insufficient auth to delete user');
+      'insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -63,20 +68,25 @@ function del(config, auth, className, objectId) {
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery || className == '_Session') {
       return find(config, Auth.master(config), className, {objectId: objectId})
-      .then((response) => {
-        if (response && response.results && response.results.length) {
-          response.results[0].className = className;
-
-          var cacheAdapter = config.cacheController;
-          cacheAdapter.user.del(response.results[0].sessionToken);
-          inflatedObject = Parse.Object.fromJSON(response.results[0]);
-          // Notify LiveQuery server if possible
-          config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
-          return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
-        }
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                              'Object not found for delete.');
-      });
+        .then((response) => {
+          if (response && response.results && response.results.length) {
+            const firstResult = response.results[0];
+            firstResult.className = className;
+            if (className === '_Session' && !auth.isMaster) {
+              if (!auth.user || firstResult.user.objectId !== auth.user.id) {
+                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+              }
+            }
+            var cacheAdapter = config.cacheController;
+            cacheAdapter.user.del(firstResult.sessionToken);
+            inflatedObject = Parse.Object.fromJSON(firstResult);
+            // Notify LiveQuery server if possible
+            config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
+            return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
+          }
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
+            'Object not found for delete.');
+        });
     }
     return Promise.resolve({});
   }).then(() => {
@@ -113,7 +123,7 @@ function create(config, auth, className, restObject, clientSDK) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, objectId, restObject, clientSDK) {
+function update(config, auth, className, restWhere, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
   const query = objectId ? { objectId } : restObject.query || {};
   const update = objectId ? restObject : restObject.update;
@@ -131,7 +141,7 @@ function update(config, auth, className, objectId, restObject, clientSDK) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(
+    return new RestWrite(
       config,
       auth,
       className,
@@ -139,13 +149,11 @@ function update(config, auth, className, objectId, restObject, clientSDK) {
       update,
       originalRestObject,
       clientSDK,
-      { many }
-    );
-
-    return write.execute();
+      { many }).execute();
   });
 }
 
+const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];
 // Disallowing access to the _Installation collection except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
@@ -153,6 +161,12 @@ function enforceRoleSecurity(method, className, auth) {
       const error = `Clients aren't allowed to perform the ${method} operation on the installation collection.`
       throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
     }
+  }
+
+  //all volatileClasses are masterKey only
+  if(classesWithMasterOnlyAccess.indexOf(className) >= 0 && !auth.isMaster){
+    const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
 }
 

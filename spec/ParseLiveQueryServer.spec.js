@@ -452,7 +452,7 @@ describe('ParseLiveQueryServer', function() {
       key: 'value',
       className: testClassName
     });
-   // Make mock message
+    // Make mock message
     var message = {
       currentParseObject: parseObject
     };

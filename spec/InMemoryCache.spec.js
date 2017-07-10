@@ -3,7 +3,7 @@ const InMemoryCache = require('../src/Adapters/Cache/InMemoryCache').default;
 
 describe('InMemoryCache', function() {
   var BASE_TTL = {
-    ttl: 10
+    ttl: 100
   };
   var NO_EXPIRE_TTL = {
     ttl: NaN
@@ -28,7 +28,7 @@ describe('InMemoryCache', function() {
     var value = cache.get(KEY);
     expect(value).toEqual(VALUE);
 
-    wait(BASE_TTL.ttl * 5).then(() => {
+    wait(BASE_TTL.ttl * 2).then(() => {
       value = cache.get(KEY)
       expect(value).toEqual(null);
       done();

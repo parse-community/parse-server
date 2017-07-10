@@ -10,8 +10,12 @@ describe('AuthenticationProviers', function() {
       var provider = require("../src/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
-      jequal(provider.validateAuthData({}, {}).constructor, Promise.prototype.constructor);
-      jequal(provider.validateAppId("app", "key", {}).constructor, Promise.prototype.constructor);
+      const authDataPromise = provider.validateAuthData({}, {});
+      const validateAppIdPromise = provider.validateAppId("app", "key", {});
+      jequal(authDataPromise.constructor, Promise.prototype.constructor);
+      jequal(validateAppIdPromise.constructor, Promise.prototype.constructor);
+      authDataPromise.then(()=>{}, ()=>{});
+      validateAppIdPromise.then(()=>{}, ()=>{});
       done();
     });
   });
@@ -147,38 +151,38 @@ describe('AuthenticationProviers', function() {
           success: function(model) {
 
             ok(!model._isLinked("myoauth"),
-               "User should not be linked to myoauth");
+              "User should not be linked to myoauth");
             ok(!provider.synchronizedUserId, "User id should be cleared");
             ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
             ok(!provider.synchronizedExpiration,
-               "Expiration should be cleared");
+              "Expiration should be cleared");
             // make sure the auth data is properly deleted
             var config = new Config(Parse.applicationId);
             config.database.adapter.find('_User', {
               fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
             }, { objectId: model.id }, {})
-            .then(res => {
-              expect(res.length).toBe(1);
-              expect(res[0]._auth_data_myoauth).toBeUndefined();
-              expect(res[0]._auth_data_myoauth).not.toBeNull();
+              .then(res => {
+                expect(res.length).toBe(1);
+                expect(res[0]._auth_data_myoauth).toBeUndefined();
+                expect(res[0]._auth_data_myoauth).not.toBeNull();
 
-              model._linkWith("myoauth", {
-                success: function(model) {
-                  ok(provider.synchronizedUserId, "User id should have a value");
-                  ok(provider.synchronizedAuthToken,
-                     "Auth token should have a value");
-                  ok(provider.synchronizedExpiration,
-                     "Expiration should have a value");
-                  ok(model._isLinked("myoauth"),
-                     "User should be linked to myoauth");
-                  done();
-                },
-                error: function() {
-                  ok(false, "linking again should succeed");
-                  done();
-                }
+                model._linkWith("myoauth", {
+                  success: function(model) {
+                    ok(provider.synchronizedUserId, "User id should have a value");
+                    ok(provider.synchronizedAuthToken,
+                      "Auth token should have a value");
+                    ok(provider.synchronizedExpiration,
+                      "Expiration should have a value");
+                    ok(model._isLinked("myoauth"),
+                      "User should be linked to myoauth");
+                    done();
+                  },
+                  error: function() {
+                    ok(false, "linking again should succeed");
+                    done();
+                  }
+                });
               });
-            });
           },
           error: function() {
             ok(false, "unlinking should succeed");

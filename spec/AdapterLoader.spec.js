@@ -3,6 +3,7 @@ var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
 var FilesAdapter = require("parse-server-fs-adapter").default;
 var S3Adapter = require("parse-server-s3-adapter").default;
 var ParsePushAdapter = require("parse-server-push-adapter").default;
+const Config = require('../src/Config');
 
 describe("AdapterLoader", ()=>{
 
@@ -106,8 +107,9 @@ describe("AdapterLoader", ()=>{
 
   it("should load push adapter from options", (done) => {
     var options = {
-      ios: {
-        bundleId: 'bundle.id'
+      android: {
+        senderId: 'yolo',
+        apiKey: 'yolo'
       }
     }
     expect(() => {
@@ -116,6 +118,30 @@ describe("AdapterLoader", ()=>{
       expect(adapter).not.toBe(undefined);
     }).not.toThrow();
     done();
+  });
+
+  it("should load custom push adapter from string (#3544)", (done) => {
+    var adapterPath = require('path').resolve("./spec/MockPushAdapter");
+    var options = {
+      ios: {
+        bundleId: 'bundle.id'
+      }
+    }
+    const pushAdapterOptions = {
+      adapter: adapterPath,
+      options
+    };
+    expect(() => {
+      reconfigureServer({
+        push: pushAdapterOptions,
+      }).then(() => {
+        const config = new Config(Parse.applicationId);
+        const pushAdapter = config.pushWorker.adapter;
+        expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
+        expect(pushAdapter.options).toEqual(pushAdapterOptions);
+        done();
+      });
+    }).not.toThrow();
   });
 
   it("should load S3Adapter from direct passing", (done) => {

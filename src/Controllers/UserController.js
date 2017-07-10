@@ -59,12 +59,13 @@ export class UserController extends AdaptableController {
 
       updateFields._email_verify_token_expires_at = {__op: 'Delete'};
     }
-
-    return this.config.database.update('_User', query, updateFields).then((document) => {
-      if (!document) {
-        throw undefined;
+    const masterAuth = Auth.master(this.config);
+    var checkIfAlreadyVerified = new RestQuery(this.config, Auth.master(this.config), '_User', {username: username, emailVerified: true});
+    return checkIfAlreadyVerified.execute().then(result => {
+      if (result.results.length) {
+        return Promise.resolve(result.results.length[0]);
       }
-      return Promise.resolve(document);
+      return rest.update(this.config, masterAuth, '_User', query, updateFields);
     });
   }
 
@@ -134,6 +135,18 @@ export class UserController extends AdaptableController {
     });
   }
 
+  resendVerificationEmail(username) {
+    return this.getUserIfNeeded({username: username}).then((aUser) => {
+      if (!aUser || aUser.emailVerified) {
+        throw undefined;
+      }
+      this.setEmailVerifyToken(aUser);
+      return this.config.database.update('_User', {username}, aUser).then(() => {
+        this.sendVerificationEmail(aUser);
+      });
+    });
+  }
+
   setPasswordResetToken(email) {
     const token = { _perishable_token: randomString(25) };
 
@@ -151,25 +164,25 @@ export class UserController extends AdaptableController {
     }
 
     return this.setPasswordResetToken(email)
-    .then(user => {
-      const token = encodeURIComponent(user._perishable_token);
-      const username = encodeURIComponent(user.username);
+      .then(user => {
+        const token = encodeURIComponent(user._perishable_token);
+        const username = encodeURIComponent(user.username);
 
-      const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
-      const options = {
-        appName: this.config.appName,
-        link: link,
-        user: inflate('_User', user),
-      };
+        const link = buildEmailLink(this.config.requestResetPasswordURL, username, token, this.config);
+        const options = {
+          appName: this.config.appName,
+          link: link,
+          user: inflate('_User', user),
+        };
 
-      if (this.adapter.sendPasswordResetEmail) {
-        this.adapter.sendPasswordResetEmail(options);
-      } else {
-        this.adapter.sendMail(this.defaultResetPasswordEmail(options));
-      }
+        if (this.adapter.sendPasswordResetEmail) {
+          this.adapter.sendPasswordResetEmail(options);
+        } else {
+          this.adapter.sendMail(this.defaultResetPasswordEmail(options));
+        }
 
-      return Promise.resolve(user);
-    });
+        return Promise.resolve(user);
+      });
   }
 
   updatePassword(username, token, password) {
@@ -200,7 +213,8 @@ export class UserController extends AdaptableController {
 
   defaultResetPasswordEmail({link, user, appName, }) {
     const text = "Hi,\n\n" +
-        "You requested to reset your password for " + appName + ".\n\n" +
+        "You requested to reset your password for " + appName +
+        (user.get('username') ? (" (your username is '" + user.get('username') + "')") : "") + ".\n\n" +
         "" +
         "Click here to reset it:\n" + link;
     const to = user.get("email") || user.get('username');
@@ -211,7 +225,7 @@ export class UserController extends AdaptableController {
 
 // Mark this private
 function updateUserPassword(userId, password, config) {
-  return rest.update(config, Auth.master(config), '_User', userId, {
+  return rest.update(config, Auth.master(config), '_User', { objectId: userId }, {
     password: password
   });
 }

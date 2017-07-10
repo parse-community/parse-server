@@ -2,7 +2,7 @@ import {nullParser} from './cli/utils/parsers';
 
 const logsFolder = (() => {
   let folder = './logs/';
-  if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
+  if (typeof process !== 'undefined' && process.env.TESTING === '1') {
     folder = './test_logs/'
   }
   if (process.env.PARSE_SERVER_LOGS_FOLDER) {
@@ -32,5 +32,8 @@ export default {
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
   schemaCacheTTL: 5000, // in ms
-  userSensitiveFields: ['email']
+  cacheTTL: 5000,
+  cacheMaxSize: 10000,
+  userSensitiveFields: ['email'],
+  objectIdSize: 10
 }
