@@ -183,7 +183,7 @@ export class MongoStorageAdapter {
   addFieldIfNotExists(className, fieldName, type) {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
-      .then(() => this.create2dsphereIndex(className, fieldName, type));
+      .then(() => this.createIndexesIfNeeded(className, fieldName, type));
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -431,10 +431,11 @@ export class MongoStorageAdapter {
       .then(collection => collection._mongoCollection.createIndex(index));
   }
 
-  create2dsphereIndex(className, fieldName, type) {
+  createIndexesIfNeeded(className, fieldName, type) {
     if (type && type.type === 'Polygon') {
-      const index = {}
-      index[fieldName] = '2dsphere';
+      const index = {
+        [fieldName]: '2dsphere'
+      };
       return this.createIndex(className, index);
     }
     return Promise.resolve();

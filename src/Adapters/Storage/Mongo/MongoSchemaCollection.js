@@ -25,7 +25,7 @@ function mongoFieldToParseSchemaField(type) {
   case 'geopoint': return {type: 'GeoPoint'};
   case 'file':     return {type: 'File'};
   case 'bytes':    return {type: 'Bytes'};
-  case 'polygon':    return {type: 'Polygon'};
+  case 'polygon':  return {type: 'Polygon'};
   }
 }
 
@@ -99,7 +99,7 @@ function parseFieldTypeToMongoFieldType({ type, targetClass }) {
   case 'GeoPoint': return 'geopoint';
   case 'File':     return 'file';
   case 'Bytes':    return 'bytes';
-  case 'Polygon':    return 'polygon';
+  case 'Polygon':  return 'polygon';
   }
 }
 
