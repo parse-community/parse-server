@@ -110,7 +110,7 @@ export function handleParseHeaders(req, res, next) {
   req.config = new Config(info.appId, mount);
   req.info = info;
 
-  var isMaster = (info.masterKey === req.config.masterKey);
+  var isMaster = (info.masterKey === req.config.masterKey); // check here for the ip address
 
   if (isMaster) {
     req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
