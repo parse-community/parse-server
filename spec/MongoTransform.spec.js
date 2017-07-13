@@ -145,13 +145,25 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('geopoint', (done) => {
-    var input = {location: [180, -180]};
+    var input = {location: [45, -45]};
     var output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'GeoPoint' }},
     });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'GeoPoint', longitude: 180, latitude: -180}
+      {__type: 'GeoPoint', longitude: 45, latitude: -45}
+    );
+    done();
+  });
+
+  it('polygon', (done) => {
+    var input = {location: { type: 'Polygon', coordinates: [[[45, -45],[45, -45]]]}};
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields: { location: { type: 'Polygon' }},
+    });
+    expect(typeof output.location).toEqual('object');
+    expect(output.location).toEqual(
+      {__type: 'Polygon', coordinates: [[45, -45],[45, -45]]}
     );
     done();
   });
