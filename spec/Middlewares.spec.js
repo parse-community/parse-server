@@ -134,7 +134,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should not succeed if the masterKey does not belongs to masterKeyIps list', () => {
+  it('should not succeed if the masterKey does not belong to masterKeyIps list', () => {
     //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
@@ -146,7 +146,7 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the masterKey does belongs to masterKeyIps list', (done) => {
+  it('should succeed if the masterKey does belong to masterKeyIps list', (done) => {
     //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
