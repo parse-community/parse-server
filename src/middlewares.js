@@ -108,6 +108,7 @@ export function handleParseHeaders(req, res, next) {
 
   info.app = AppCache.get(info.appId);
   req.config = new Config(info.appId, mount);
+  req.config.headers = req.headers || {};
   req.info = info;
 
   var isMaster = (info.masterKey === req.config.masterKey);
