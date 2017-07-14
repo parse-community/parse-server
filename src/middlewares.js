@@ -112,7 +112,7 @@ export function handleParseHeaders(req, res, next) {
 
   const ip = req.ip;
   var isMaster = (info.masterKey === req.config.masterKey);
-  if (req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(ip) > -1) {
+  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(ip) === -1) {
     return invalidRequest(req, res);
   }
 
