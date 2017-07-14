@@ -20,6 +20,7 @@ export default {
     required: true
   },
   "masterKeyIps": {
+    env: "PARSE_SERVER_MASTER_KEY_IPS",
     help: "Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)",
     default: []
   },

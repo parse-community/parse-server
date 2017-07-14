@@ -135,7 +135,6 @@ describe('middlewares', () => {
   });
 
   it('should not succeed if the masterKey does not belong to masterKeyIps list', () => {
-    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1','ip2']
@@ -147,7 +146,6 @@ describe('middlewares', () => {
   });
 
   it('should succeed if the masterKey does belong to masterKeyIps list', (done) => {
-    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1','ip2']
@@ -161,7 +159,6 @@ describe('middlewares', () => {
   });
 
   it('should allow any ip to use masterKey if masterKeyIps is empty', (done) => {
-    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: []
