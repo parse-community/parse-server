@@ -133,4 +133,22 @@ describe('middlewares', () => {
       });
     });
   });
+
+//  it('should not succeed if the masterKey is not match', (done) => {
+//    AppCache.put(fakeReq.body._ApplicationId, {
+//      clientKey: 'clientKey',
+//      masterKey: 'masterKey',
+//      restAPIKey: 'restAPIKey'
+//    });
+//    fakeReq.headers['x-parse-master-key'] = 'restAPIKey';
+//    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
+//      expect(fakeRes.status).toHaveBeenCalledWith(403);
+//      done();
+//    });
+//  });
+
+//  it('should not allow to use masterKey if not in the masterKeyIps list', (done) => {
+//    
+//  });
+
 });
