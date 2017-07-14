@@ -19,6 +19,10 @@ export default {
     help: "Your Parse Master Key",
     required: true
   },
+  "masterKeyIps": {
+    help: "Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)",
+    default: []
+  },
   "port": {
     env: "PORT",
     help: "The port to run the ParseServer. defaults to 1337.",
