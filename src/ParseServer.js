@@ -234,7 +234,7 @@ class ParseServer {
     AppCache.put(appId, {
       appId,
       masterKey: masterKey,
-      masterKeyIps,
+      masterKeyIps:masterKeyIps,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
       clientKey: clientKey,

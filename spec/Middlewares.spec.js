@@ -134,21 +134,44 @@ describe('middlewares', () => {
     });
   });
 
-//  it('should not succeed if the masterKey is not match', (done) => {
-//    AppCache.put(fakeReq.body._ApplicationId, {
-//      clientKey: 'clientKey',
-//      masterKey: 'masterKey',
-//      restAPIKey: 'restAPIKey'
-//    });
-//    fakeReq.headers['x-parse-master-key'] = 'restAPIKey';
-//    middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
-//      expect(fakeRes.status).toHaveBeenCalledWith(403);
-//      done();
-//    });
-//  });
+  it('should not succeed if the masterKey does not belongs to masterKeyIps list', () => {
+    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.ip = 'ip3';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
 
-//  it('should not allow to use masterKey if not in the masterKeyIps list', (done) => {
-//    
-//  });
+  it('should succeed if the masterKey does belongs to masterKeyIps list', (done) => {
+    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.ip = 'ip1';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should allow any ip to use masterKey if masterKeyIps is empty', (done) => {
+    //    reconfigureServer({ masterKeyIps: ['ip1','ip2'] });  
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: []
+    });
+    fakeReq.ip = 'ip1';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
 
 });
