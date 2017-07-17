@@ -110,7 +110,11 @@ export function handleParseHeaders(req, res, next) {
   req.config = new Config(info.appId, mount);
   req.info = info;
 
-  const ip = req.ip;
+  const ip = req.headers['x-forwarded-for'] ||
+    (req.connection && req.connection.remoteAddress) ||
+    (req.socket && req.socket.remoteAddress) ||
+    (req.connection && req.connection.socket && req.connection.socket.remoteAddress) ||
+    req.ip;
   if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(ip) === -1) {
     return invalidRequest(req, res);
   }
