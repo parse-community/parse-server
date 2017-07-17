@@ -110,7 +110,7 @@ export function handleParseHeaders(req, res, next) {
   req.config = new Config(info.appId, mount);
   req.info = info;
 
-  const ip = req.headers['x-forwarded-for'] ||
+  const ip = (req.headers['x-forwarded-for'] && req.headers['x-forwarded-for'].split(',')[0]) ||
     (req.connection && req.connection.remoteAddress) ||
     (req.socket && req.socket.remoteAddress) ||
     (req.connection && req.connection.socket && req.connection.socket.remoteAddress) ||

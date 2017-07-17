@@ -134,7 +134,7 @@ describe('middlewares', () => {
     });
   });
 
-  it('should not succeed if the masterKey does not belong to masterKeyIps list', () => {
+  it('should not succeed if the ip does not belong to masterKeyIps list', () => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1','ip2']
@@ -145,12 +145,84 @@ describe('middlewares', () => {
     expect(fakeRes.status).toHaveBeenCalledWith(403);
   });
 
-  it('should succeed if the masterKey does belong to masterKeyIps list', (done) => {
+  it('should succeed if the ip does belong to masterKeyIps list', (done) => {
     AppCache.put(fakeReq.body._ApplicationId, {
       masterKey: 'masterKey',
       masterKeyIps: ['ip1','ip2']
     });
     fakeReq.ip = 'ip1';
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should not succeed if the connection.remoteAddress does not belong to masterKeyIps list', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.connection = {remoteAddress : 'ip3'};
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
+
+  it('should succeed if the connection.remoteAddress does belong to masterKeyIps list', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.connection = {remoteAddress : 'ip1'};
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should not succeed if the socket.remoteAddress does not belong to masterKeyIps list', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.socket = {remoteAddress : 'ip3'};
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
+
+  it('should succeed if the socket.remoteAddress does belong to masterKeyIps list', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.socket = {remoteAddress : 'ip1'};
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should not succeed if the connection.socket.remoteAddress does not belong to masterKeyIps list', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.connection = { socket : {remoteAddress : 'ip3'}};
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
+
+  it('should succeed if the connection.socket.remoteAddress does belong to masterKeyIps list', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1','ip2']
+    });
+    fakeReq.connection = { socket : {remoteAddress : 'ip1'}};
     fakeReq.headers['x-parse-master-key'] = 'masterKey';
     middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
       expect(fakeRes.status).not.toHaveBeenCalled();
@@ -171,4 +243,51 @@ describe('middlewares', () => {
     });
   });
 
+  it('should succeed if xff header does belong to masterKeyIps', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1']
+    });
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    fakeReq.headers['x-forwarded-for'] = 'ip1, ip2, ip3';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should succeed if xff header with one ip does belong to masterKeyIps', (done) => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1']
+    });
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    fakeReq.headers['x-forwarded-for'] = 'ip1';
+    middlewares.handleParseHeaders(fakeReq, fakeRes,() => {
+      expect(fakeRes.status).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should not succeed if xff header does not belong to masterKeyIps', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip4']
+    });
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    fakeReq.headers['x-forwarded-for'] = 'ip1, ip2, ip3';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
+
+  it('should not succeed if xff header is empty and masterKeyIps is set', () => {
+    AppCache.put(fakeReq.body._ApplicationId, {
+      masterKey: 'masterKey',
+      masterKeyIps: ['ip1']
+    });
+    fakeReq.headers['x-parse-master-key'] = 'masterKey';
+    fakeReq.headers['x-forwarded-for'] = '';
+    middlewares.handleParseHeaders(fakeReq, fakeRes);
+    expect(fakeRes.status).toHaveBeenCalledWith(403);
+  });
 });
