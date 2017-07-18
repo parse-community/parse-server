@@ -5,6 +5,7 @@
 import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
+import net from 'net';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -87,7 +88,8 @@ export class Config {
     sessionLength,
     emailVerifyTokenValidityDuration,
     accountLockout,
-    passwordPolicy
+    passwordPolicy,
+    masterKeyIps
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -109,6 +111,8 @@ export class Config {
     }
 
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
+
+    this.validateMasterKeyIps(masterKeyIps);
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
@@ -181,6 +185,14 @@ export class Config {
         throw 'Email verify token validity duration must be a valid number.';
       } else if (emailVerifyTokenValidityDuration <= 0) {
         throw 'Email verify token validity duration must be a value greater than 0.'
+      }
+    }
+  }
+
+  static validateMasterKeyIps(masterKeyIps) {
+    for (const ip of masterKeyIps) {
+      if(!net.isIP(ip)){
+        throw `Invalid ip in masterKeyIps: ${ip}`;
       }
     }
   }
