@@ -183,7 +183,7 @@ function getClientIp(req){
     // no proxy, try getting from connection.remoteAddress
     return req.connection.remoteAddress;
   } else if (req.socket) {
-    // try to get it from req.socket 
+    // try to get it from req.socket
     return req.socket.remoteAddress;
   } else if (req.connection && req.connection.socket) {
     // try to get it form the connection.socket
