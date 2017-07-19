@@ -133,7 +133,8 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController
+    log: config.loggerController,
+    headers: config.headers,
   };
 
   if (originalParseObject) {
@@ -164,7 +165,8 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
     master: false,
     count,
     log: config.loggerController,
-    isGet
+    isGet,
+    headers: config.headers,
   };
 
   if (!auth) {
