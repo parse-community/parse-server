@@ -419,4 +419,18 @@ describe('server', () => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
       .catch(done);
   });
+
+  it('fails if you provides invalid ip in masterKeyIps', done => {
+    reconfigureServer({ masterKeyIps: ['invalidIp','1.2.3.4'] })
+      .catch(error => {
+        expect(error).toEqual('Invalid ip in masterKeyIps: invalidIp');
+        done();
+      })
+  });
+
+  it('should suceed if you provide valid ip in masterKeyIps', done => {
+    reconfigureServer({ masterKeyIps: ['1.2.3.4','2001:0db8:0000:0042:0000:8a2e:0370:7334'] })
+      .then(done)
+  });
+
 });

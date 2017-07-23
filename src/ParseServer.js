@@ -92,6 +92,7 @@ class ParseServer {
   constructor({
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
+    masterKeyIps = [],
     appName,
     analyticsAdapter,
     filesAdapter,
@@ -167,6 +168,11 @@ class ParseServer {
       userSensitiveFields
     )));
 
+    masterKeyIps = Array.from(new Set(masterKeyIps.concat(
+      defaults.masterKeyIps,
+      masterKeyIps
+    )));
+
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
     const loggerController = new LoggerController(loggerControllerAdapter, appId);
     logging.setLogger(loggerController);
@@ -228,6 +234,7 @@ class ParseServer {
     AppCache.put(appId, {
       appId,
       masterKey: masterKey,
+      masterKeyIps:masterKeyIps,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
       clientKey: clientKey,
