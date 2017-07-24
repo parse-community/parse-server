@@ -151,6 +151,33 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  var invalid_verification_link_page_template_file = null;
+  /**
+   * loading the template for invalid verification link page
+   * this method returns the template for the page stored in memory
+   * on first access it will load the template file from disk
+   */
+  loadInvalidVerificationLinkPageTemplate() {
+    if (invalid_verification_link_page_template_file) {
+      return invalid_verification_link_page_template_file;
+    } else {
+      invalid_verification_link_page_template_file = loadPageTemplateFile("invalid_verification_link");
+      if (invalid_verification_link_page_template_file) {
+        invalid_verification_link_page_template_file = invalid_verification_link_page_template_file.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
+      }
+      return invalid_verification_link_page_template_file;
+    }
+  }
+
+  loadPageTemplateFile(filename) {
+    fs.readFile(path.resolve(views, filename), 'utf-8', (err, data) => {
+      if (err) {
+        return null;
+      }
+      return data;
+    });
+  }
+
   invalidVerificationLink(req) {
     const config = req.config;
     if (!config.publicServerURL) {
@@ -161,18 +188,19 @@ export class PublicAPIRouter extends PromiseRouter {
     }
 
     if (req.query.username && req.params.appId) {
-      // Should we keep the file in memory or leave like that?
-      fs.readFile(path.resolve(views, "invalid_verification_link"), 'utf-8', (err, data) => {
-        if (err) {
-          return Promise.reject(err);
-        }
-        data = data.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
-        data = data.replace("USERNAME", `'${req.query.username}'`);
-        data = data.replace("APPID", `'${req.params.appId}'`);
+      // load page template from file or from memory
+      var invalid_verification_link_page = loadInvalidVerificationLinkPageTemplate();
+      if (invalid_verification_link_page) {
+        // replace dynamic template attributes
+        invalid_verification_link_page = invalid_verification_link_page.replace("USERNAME", `'${req.query.username}'`);
+        invalid_verification_link_page = invalid_verification_link_page.replace("APPID", `'${req.params.appId}'`);
+        // send page to the client
         return Promise.resolve({
-          text: data
-        })
-      });
+          text: invalid_verification_link_page
+        });
+      } else {
+        Promise.reject("Could not load invalid_verification_link template.");
+      }
     } else {
       return this.invalidLink(req);
     }
