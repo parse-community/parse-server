@@ -1178,17 +1178,19 @@ describe('Parse.User testing', () => {
       return user._linkWith('facebook', {});
     }).then(user => {
       expect(user._isLinked("facebook")).toBeTruthy();
-      return Parse.User._logInWith('facebook', {});
+      // We should logout here as session token is passed
+      // Probably need a fix in the JS SDK to handle those
+      // linking errors
+      return Parse.User.logOut().then(() => {
+        return Parse.User._logInWith('facebook', {});
+      });
     }).then(user => {
       const fileAgain = user.get('file');
       expect(fileAgain.name()).toMatch(/yolo.txt$/);
       expect(fileAgain.url()).toMatch(/yolo.txt$/);
     }).then(() => {
       done();
-    }, error => {
-      jfail(error);
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("log in with provider twice", (done) => {
