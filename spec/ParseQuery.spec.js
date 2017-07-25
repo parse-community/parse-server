@@ -239,6 +239,38 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("query with limit equal to maxlimit", function(done) {
+    var baz = new TestObject({ foo: 'baz' });
+    var qux = new TestObject({ foo: 'qux' });
+    reconfigureServer({ maxLimit: 1 })
+    Parse.Object.saveAll([baz, qux], function() {
+      var query = new Parse.Query(TestObject);
+      query.limit(1);
+      query.find({
+        success: function(results) {
+          equal(results.length, 1);
+          done();
+        }
+      });
+    });
+  });
+
+  it("query with limit exceeding maxlimit", function(done) {
+    var baz = new TestObject({ foo: 'baz' });
+    var qux = new TestObject({ foo: 'qux' });
+    reconfigureServer({ maxLimit: 1 })
+    Parse.Object.saveAll([baz, qux], function() {
+      var query = new Parse.Query(TestObject);
+      query.limit(2);
+      query.find({
+        success: function(results) {
+          equal(results.length, 1);
+          done();
+        }
+      });
+    });
+  });
+
   it("containedIn object array queries", function(done) {
     var messageList = [];
     for (var i = 0; i < 4; ++i) {

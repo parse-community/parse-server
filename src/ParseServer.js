@@ -86,6 +86,7 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 // "sessionLength": optional length in seconds for how long Sessions should be valid for
+// "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
 
 class ParseServer {
 
@@ -138,6 +139,7 @@ class ParseServer {
     },
     liveQuery = {},
     sessionLength = defaults.sessionLength, // 1 Year in seconds
+    maxLimit,
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
@@ -263,6 +265,7 @@ class ParseServer {
       maxUploadSize: maxUploadSize,
       liveQueryController: liveQueryController,
       sessionLength: Number(sessionLength),
+      maxLimit: Number(maxLimit),
       expireInactiveSessions: expireInactiveSessions,
       jsonLogs,
       revokeSessionOnPasswordReset,

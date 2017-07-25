@@ -71,6 +71,7 @@ export class Config {
     this.mount = removeTrailingSlash(mount);
     this.liveQueryController = cacheInfo.liveQueryController;
     this.sessionLength = cacheInfo.sessionLength;
+    this.maxLimit = cacheInfo.maxLimit;
     this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
     this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
@@ -86,6 +87,7 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    maxLimit,
     emailVerifyTokenValidityDuration,
     accountLockout,
     passwordPolicy,
@@ -113,6 +115,8 @@ export class Config {
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
 
     this.validateMasterKeyIps(masterKeyIps);
+
+    this.validateMaxLimit(maxLimit);
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
@@ -216,6 +220,14 @@ export class Config {
       }
       else if (sessionLength <= 0) {
         throw 'Session length must be a value greater than 0.'
+      }
+    }
+  }
+
+  static validateMaxLimit(maxLimit) {
+    if (maxLimit) {
+      if (maxLimit <= 0) {
+        throw 'Max limit must be a value greater than 0.'
       }
     }
   }

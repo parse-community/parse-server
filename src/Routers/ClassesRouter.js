@@ -13,7 +13,6 @@ export class ClassesRouter extends PromiseRouter {
     const options = {};
     const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
       'include', 'redirectClassNameForKey', 'where'];
-
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
@@ -23,8 +22,14 @@ export class ClassesRouter extends PromiseRouter {
     if (body.skip) {
       options.skip = Number(body.skip);
     }
+
     if (body.limit || body.limit === 0) {
-      options.limit = Number(body.limit);
+      if (req.config.maxLimit && (body.limit > req.config.maxLimit)) {
+        // Silently replace the limit on the query with the max configured
+        options.limit = Number(req.config.maxLimit);
+      } else {
+        options.limit = Number(body.limit);
+      }
     } else {
       options.limit = Number(100);
     }

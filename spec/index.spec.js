@@ -415,6 +415,14 @@ describe('server', () => {
       .then(done);
   })
 
+  it('fails if maxLimit is negative', (done) => {
+    reconfigureServer({ maxLimit: -100 })
+      .catch(error => {
+        expect(error).toEqual('Max limit must be a value greater than 0.');
+        done();
+      });
+  });
+
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
       .catch(done);
