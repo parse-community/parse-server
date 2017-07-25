@@ -71,6 +71,10 @@ describe('AuthenticationProviers', function() {
   });
 
   var createOAuthUser = function(callback) {
+    return createOAuthUserWithSessionToken(undefined, callback);
+  }
+
+  var createOAuthUserWithSessionToken = function(token, callback) {
     var jsonBody = {
       authData: {
         myoauth: getMockMyOauthProvider().authData
@@ -81,18 +85,27 @@ describe('AuthenticationProviers', function() {
       headers: {'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Installation-Id': 'yolo',
+        'X-Parse-Session-Token': token,
         'Content-Type': 'application/json' },
       url: 'http://localhost:8378/1/users',
-      body: JSON.stringify(jsonBody)
+      body: jsonBody,
+      json: true
     };
 
-    return request.post(options, callback);
+    return new Promise((resolve) => {
+      request.post(options, (err, res, body) => {
+        resolve({err, res, body});
+        if (callback) {
+          callback(err, res, body);
+        }
+      });
+    });
   }
 
   it("should create user with REST API", done => {
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
-      var b = JSON.parse(body);
+      var b = body;
       ok(b.sessionToken);
       expect(b.objectId).not.toBeNull();
       expect(b.objectId).not.toBeUndefined();
@@ -118,20 +131,36 @@ describe('AuthenticationProviers', function() {
     var objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
-      var b = JSON.parse(body);
+      var b = body
       expect(b.objectId).not.toBeNull();
       expect(b.objectId).not.toBeUndefined();
       objectId = b.objectId;
 
       createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
+        var b = body;
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
         expect(b.objectId).toBe(objectId);
         done();
       });
     });
+  });
+
+  it("should fail to link if session token don't match user", (done) => {
+    Parse.User.signUp('myUser', 'password').then((user) => {
+      return createOAuthUserWithSessionToken(user.getSessionToken());
+    }).then(() => {
+      return Parse.User.logOut();
+    }).then(() => {
+      return Parse.User.signUp('myUser2', 'password');
+    }).then((user) => {
+      return createOAuthUserWithSessionToken(user.getSessionToken());
+    }).then(({ body }) => {
+      expect(body.code).toBe(208);
+      expect(body.error).toBe('this auth is already used');
+      done();
+    }).catch(done.fail);
   });
 
   it("unlink and link with custom provider", (done) => {

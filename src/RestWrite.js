@@ -297,7 +297,13 @@ RestWrite.prototype.handleAuthData = function(authData) {
         }
       });
       const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
-      if (!this.query) {
+      let userId;
+      if (this.query && this.query.objectId) {
+        userId = this.query.objectId;
+      } else if (this.auth && this.auth.user && this.auth.user.id) {
+        userId = this.auth.user.id;
+      }
+      if (!userId) { // no user making the call
         // Login with auth data
         delete results[0].password;
 
@@ -328,10 +334,10 @@ RestWrite.prototype.handleAuthData = function(authData) {
           // Just update the authData part
           return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
         });
-      } else if (this.query && this.query.objectId) {
+      } else if (userId) {
         // Trying to update auth data but users
         // are different
-        if (userResult.objectId !== this.query.objectId) {
+        if (userResult.objectId !== userId) {
           throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
             'this auth is already used');
         }
