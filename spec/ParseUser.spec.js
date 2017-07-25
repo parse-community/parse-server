@@ -1181,9 +1181,7 @@ describe('Parse.User testing', () => {
       // We should logout here as session token is passed
       // Probably need a fix in the JS SDK to handle those
       // linking errors
-      return Parse.User.logOut().then(() => {
-        return Parse.User._logInWith('facebook', {});
-      });
+      return Parse.User._logInWith('facebook', {});
     }).then(user => {
       const fileAgain = user.get('file');
       expect(fileAgain.name()).toMatch(/yolo.txt$/);

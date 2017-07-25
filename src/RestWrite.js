@@ -303,7 +303,8 @@ RestWrite.prototype.handleAuthData = function(authData) {
       } else if (this.auth && this.auth.user && this.auth.user.id) {
         userId = this.auth.user.id;
       }
-      if (!userId) { // no user making the call
+      if (!userId || userId === userResult.objectId) { // no user making the call
+        // OR the user making the call is the right one
         // Login with auth data
         delete results[0].password;
 
