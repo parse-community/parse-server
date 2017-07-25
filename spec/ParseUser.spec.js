@@ -1178,9 +1178,6 @@ describe('Parse.User testing', () => {
       return user._linkWith('facebook', {});
     }).then(user => {
       expect(user._isLinked("facebook")).toBeTruthy();
-      // We should logout here as session token is passed
-      // Probably need a fix in the JS SDK to handle those
-      // linking errors
       return Parse.User._logInWith('facebook', {});
     }).then(user => {
       const fileAgain = user.get('file');
