@@ -225,10 +225,8 @@ export class Config {
   }
 
   static validateMaxLimit(maxLimit) {
-    if (maxLimit) {
-      if (maxLimit <= 0) {
-        throw 'Max limit must be a value greater than 0.'
-      }
+    if (maxLimit <= 0) {
+      throw 'Max limit must be a value greater than 0.'
     }
   }
 
