@@ -261,7 +261,8 @@ RestQuery.prototype.replaceInQuery = function() {
   }
 
   const additionalOptions = {
-    redirectClassNameForKey: inQueryValue.redirectClassNameForKey
+    redirectClassNameForKey: inQueryValue.redirectClassNameForKey,
+    keys: 'objectId'
   };
 
   if (this.restOptions.subqueryReadPreference) {
@@ -314,7 +315,8 @@ RestQuery.prototype.replaceNotInQuery = function() {
   }
 
   const additionalOptions = {
-    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
+    redirectClassNameForKey: notInQueryValue.redirectClassNameForKey,
+    keys: 'objectId'
   };
 
   if (this.restOptions.subqueryReadPreference) {
@@ -369,7 +371,8 @@ RestQuery.prototype.replaceSelect = function() {
   }
 
   const additionalOptions = {
-    redirectClassNameForKey: selectValue.query.redirectClassNameForKey
+    redirectClassNameForKey: selectValue.query.redirectClassNameForKey,
+    keys: selectValue.key
   };
 
   if (this.restOptions.subqueryReadPreference) {
@@ -422,7 +425,8 @@ RestQuery.prototype.replaceDontSelect = function() {
       'improper usage of $dontSelect');
   }
   const additionalOptions = {
-    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
+    redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey,
+    keys: dontSelectValue.key
   };
 
   if (this.restOptions.subqueryReadPreference) {
