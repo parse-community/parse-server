@@ -301,8 +301,10 @@ const buildWhereClause = ({ schema, query, index }) => {
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
-              values.push(listElem);
-              inPatterns.push(`$${index + 1 + listIndex}`);
+              if (listElem !== null) {
+                values.push(listElem);
+                inPatterns.push(`$${index + 1 + listIndex}`);
+              }
             });
             patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
             index = index + 1 + inPatterns.length;
