@@ -628,4 +628,46 @@ describe('Parse.GeoPoint testing', () => {
       done();
     });
   });
+
+  it('works with withinCenterSphereKilometers queries', (done) => {
+    makeSomeGeoPoints(function() {
+      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      var query = new Parse.Query(TestObject);
+      query.withinCenterSphereKilometers('location', sfo, 2000);
+      query.find({
+        success: function(results) {
+          equal(results.length, 2);
+          done();
+        }
+      });
+    });
+  });
+
+  it('works with withinCenterSphereMiles queries', (done) => {
+    makeSomeGeoPoints(function() {
+      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      var query = new Parse.Query(TestObject);
+      query.withinCenterSphereMiles('location', sfo, 1243);
+      query.find({
+        success: function(results) {
+          equal(results.length, 2);
+          done();
+        }
+      });
+    });
+  });
+
+  it('works with withinCenterSphereRadians queries', (done) => {
+    makeSomeGeoPoints(function() {
+      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
+      var query = new Parse.Query(TestObject);
+      query.withinCenterSphereRadians('location', sfo, 0.313922461);
+      query.find({
+        success: function(results) {
+          equal(results.length, 2);
+          done();
+        }
+      });
+    });
+  });
 });
