@@ -669,30 +669,62 @@ function transformConstraint(constraint, inArray) {
       break;
 
     case '$geoWithin': {
-      const polygon = constraint[key]['$polygon'];
-      if (!(polygon instanceof Array)) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-        );
-      }
-      if (polygon.length < 3) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-        );
-      }
-      const points = polygon.map((point) => {
-        if (!GeoPointCoder.isValidJSON(point)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
-        } else {
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
+      const query = Object.keys(constraint[key])[0];
+      const shape = constraint[key][query];
+      switch(query) {
+      case '$polygon': {
+        if (!(shape instanceof Array)) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          );
         }
-        return [point.longitude, point.latitude];
-      });
-      answer[key] = {
-        '$polygon': points
-      };
+        if (shape.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          );
+        }
+        const points = shape.map((point) => {
+          if (!GeoPointCoder.isValidJSON(point)) {
+            throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+          } else {
+            Parse.GeoPoint._validate(point.latitude, point.longitude);
+          }
+          return [point.longitude, point.latitude];
+        });
+        answer[key] = {
+          '$polygon': points
+        };
+        break;
+      }
+
+      case '$centerSphere': {
+        if (!(shape instanceof Array) || shape.length != 2) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $centerSphere malformatted'
+          );
+        }
+        let centerPoint = shape[0]
+        const radius = shape[1]
+        if (centerPoint instanceof Array && centerPoint.length == 2) {
+          centerPoint = new Parse.GeoPoint(centerPoint[0], centerPoint[1]).toJSON();
+        }
+        if (!GeoPointCoder.isValidJSON(centerPoint)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; centerPoint malformatted');
+        } else {
+          Parse.GeoPoint._validate(centerPoint.latitude, centerPoint.longitude)
+        }
+        answer[key] = {
+          '$centerSphere': [
+            [centerPoint.longitude, centerPoint.latitude],
+            radius
+          ]
+        };
+        break;
+      }
+      }
       break;
     }
     case '$geoIntersects': {
