@@ -706,8 +706,11 @@ function transformConstraint(constraint, inArray) {
             'bad $geoWithin value; $centerSphere malformatted'
           );
         }
-        const centerPoint = shape[0]
+        let centerPoint = shape[0]
         const radius = shape[1]
+        if (centerPoint instanceof Array && centerPoint.length == 2) {
+          centerPoint = new Parse.GeoPoint(centerPoint[0], centerPoint[1]).toJSON();
+        }
         if (!GeoPointCoder.isValidJSON(centerPoint)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; centerPoint malformatted');
         } else {
