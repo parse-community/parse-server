@@ -629,45 +629,138 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 
-  it('works with withinCenterSphereKilometers queries', (done) => {
-    makeSomeGeoPoints(function() {
-      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-      var query = new Parse.Query(TestObject);
-      query.withinCenterSphereKilometers('location', sfo, 2000);
-      query.find({
-        success: function(results) {
-          equal(results.length, 2);
-          done();
+  it('works with $centerSphere queries where centerPoint is Array', (done) => {
+    const CenterSphereTestObject = Parse.Object.extend('CenterSphereTestObject');
+    var odense = new CenterSphereTestObject();
+    odense.set('location', new Parse.GeoPoint(55.398167, 10.386916));
+    odense.set('name', 'Odense');
+
+    var slagelse = new CenterSphereTestObject();
+    slagelse.set('location', new Parse.GeoPoint(55.401286, 11.364699));
+    slagelse.set('name', 'Slagelse');
+
+    var copenhagen = new CenterSphereTestObject();
+    copenhagen.set('location', new Parse.GeoPoint(55.674820, 12.589675));
+    copenhagen.set('name', 'Copenhagen');
+
+    Parse.Object.saveAll([odense, slagelse, copenhagen]).then(() => {
+      // const center = new Parse.GeoPoint(55.461373, 11.891823);
+      const center = [55.461373, 11.891823];
+      const radius = 60 / 6371.0 // 60 km in radians
+      const where = {
+        location: {
+          $geoWithin: {
+            $centerSphere: [
+              center,
+              radius
+            ]
+          }
+        }
+      };
+
+      return rp.get({
+        uri: Parse.serverURL + '/classes/CenterSphereTestObject',
+        json: {
+          where
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
+    }).then(resp => {
+      const names = ['Slagelse', 'Copenhagen'];
+      equal(resp.results.length, 2);
+      expect(names).toContain(resp.results[0].name);
+      expect(names).toContain(resp.results[1].name);
+      done();
     });
   });
 
-  it('works with withinCenterSphereMiles queries', (done) => {
-    makeSomeGeoPoints(function() {
-      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-      var query = new Parse.Query(TestObject);
-      query.withinCenterSphereMiles('location', sfo, 1243);
-      query.find({
-        success: function(results) {
-          equal(results.length, 2);
-          done();
+  it('works with $centerSphere queries where centerPoint is Parse.GeoPoint', (done) => {
+    const CenterSphereTestObject = Parse.Object.extend('CenterSphereTestObject');
+    var odense = new CenterSphereTestObject();
+    odense.set('location', new Parse.GeoPoint(55.398167, 10.386916));
+    odense.set('name', 'Odense');
+
+    var slagelse = new CenterSphereTestObject();
+    slagelse.set('location', new Parse.GeoPoint(55.401286, 11.364699));
+    slagelse.set('name', 'Slagelse');
+
+    var copenhagen = new CenterSphereTestObject();
+    copenhagen.set('location', new Parse.GeoPoint(55.674820, 12.589675));
+    copenhagen.set('name', 'Copenhagen');
+
+    Parse.Object.saveAll([odense, slagelse, copenhagen]).then(() => {
+      const center = new Parse.GeoPoint(55.461373, 11.891823);
+      const radius = 60 / 6371.0 // 60 km in radians
+      const where = {
+        location: {
+          $geoWithin: {
+            $centerSphere: [
+              center,
+              radius
+            ]
+          }
+        }
+      };
+
+      return rp.get({
+        uri: Parse.serverURL + '/classes/CenterSphereTestObject',
+        json: {
+          where
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
+    }).then(resp => {
+      const names = ['Slagelse', 'Copenhagen'];
+      equal(resp.results.length, 2);
+      expect(names).toContain(resp.results[0].name);
+      expect(names).toContain(resp.results[1].name);
+      done();
     });
   });
 
-  it('works with withinCenterSphereRadians queries', (done) => {
-    makeSomeGeoPoints(function() {
-      var sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
-      var query = new Parse.Query(TestObject);
-      query.withinCenterSphereRadians('location', sfo, 0.313922461);
-      query.find({
-        success: function(results) {
-          equal(results.length, 2);
-          done();
+  it('should respond with error with invalid centerPoint in $centerSphere query', (done) => {
+    // const center = 'john';
+    const CenterSphereTestObject = Parse.Object.extend('CenterSphereTestObject');
+    var odense = new CenterSphereTestObject();
+    odense.set('location', new Parse.GeoPoint(55.398167, 10.386916));
+    odense.set('name', 'Odense');
+
+    odense.save().then(() => {
+      const centerPoint = 'foo';
+      const radius = 60 / 6371.0 // 60 km in radians
+      const where = {
+        location: {
+          $geoWithin: {
+            $centerSphere: [
+              centerPoint,
+              radius
+            ]
+          }
         }
-      });
+      };
+
+      return rp.get({
+        uri: Parse.serverURL + '/classes/CenterSphereTestObject',
+        json: {
+          where
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      })
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(107);
+      done();
     });
   });
 });
