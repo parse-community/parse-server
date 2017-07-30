@@ -683,6 +683,9 @@ function transformConstraint(constraint, inArray) {
         );
       }
       const points = polygon.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          return [point[1], point[0]];
+        }
         if (!GeoPointCoder.isValidJSON(point)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
         } else {
