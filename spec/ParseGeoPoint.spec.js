@@ -479,6 +479,40 @@ describe('Parse.GeoPoint testing', () => {
     }, done.fail);
   });
 
+  it('supports withinPolygon coordinate array', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', {location: inbound});
+    const obj2 = new Parse.Object('Polygon', {location: onbound});
+    const obj3 = new Parse.Object('Polygon', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: [
+              [0, 0],
+              [0, 10],
+              [10, 10],
+              [10, 0]
+            ]
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
   it('invalid input withinPolygon', (done) => {
     const point = new Parse.GeoPoint(1.5, 1.5);
     const obj = new Parse.Object('Polygon', {location: point});
