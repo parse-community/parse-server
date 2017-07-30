@@ -426,6 +426,9 @@ const buildWhereClause = ({ schema, query, index }) => {
         );
       }
       const points = polygon.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          return `(${point[1]}, ${point[0]})`;
+        }
         if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
         } else {
