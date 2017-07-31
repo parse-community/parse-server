@@ -1,8 +1,10 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_geo_point_test.js
 
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const rp = require('request-promise');
-var TestObject = Parse.Object.extend('TestObject');
+const TestObject = Parse.Object.extend('TestObject');
 
 describe('Parse.GeoPoint testing', () => {
 
@@ -69,17 +71,13 @@ describe('Parse.GeoPoint testing', () => {
   });
 
 
-  it('geo point exception two fields', (done) => {
+  it('geo point supports more than one field', (done) => {
     var point = new Parse.GeoPoint(20, 20);
     var obj = new TestObject();
     obj.set('locationOne', point);
     obj.set('locationTwo', point);
-    obj.save().then(() => {
-      fail('expected error');
-    }, (err) => {
-      equal(err.code, Parse.Error.INCORRECT_TYPE);
-      done();
-    });
+    obj.set('locationThree', point);
+    obj.save().then(done, done.fail);
   });
 
   it('geo line', (done) => {
@@ -629,3 +627,28 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 });
+
+describe_only_db('mongo')('Parse.GeoPoint testing', () => {
+  it('support 2d and 2dsphere on same field', (done) => {
+    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    return reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'rest',
+      publicServerURL: 'http://localhost:8378/1',
+      databaseAdapter
+    }).then(() => {
+      return databaseAdapter.createIndex('TestObject', {location: '2d'});
+    }).then(() => {
+      return databaseAdapter.createIndex('TestObject', {location: '2dsphere'});
+    }).then(() => {
+      return databaseAdapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      equal(indexes.length, 3);
+      equal(indexes[0].key, {_id: 1});
+      equal(indexes[1].key, {location: '2d'});
+      equal(indexes[2].key, {location: '2dsphere'});
+      done();
+    }, done.fail);
+  });
+});
+

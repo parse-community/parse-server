@@ -68,7 +68,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
     var out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
       fields: {location: {type: 'GeoPoint'}}
     });
-    expect(out.location).toEqual([180, -180]);
+    expect(out.location).toEqual({ type: 'Point', coordinates: [ 180, -180 ] });
     done();
   });
 

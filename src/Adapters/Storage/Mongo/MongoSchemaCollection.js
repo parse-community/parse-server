@@ -1,5 +1,4 @@
 import MongoCollection from './MongoCollection';
-import Parse           from 'parse/node';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -151,18 +150,7 @@ class MongoSchemaCollection {
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
     return this._fechOneSchemaFrom_SCHEMA(className)
-      .then(schema => {
-      // The schema exists. Check for existing GeoPoints.
-        if (type.type === 'GeoPoint') {
-        // Make sure there are not other geopoint fields
-          if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {
-            throw new Parse.Error(Parse.Error.INCORRECT_TYPE, 'MongoDB only supports one GeoPoint field in a class.');
-          }
-        }
-        return;
-      }, error => {
-      // If error is undefined, the schema doesn't exist, and we can create the schema with the field.
-      // If some other error, reject with it.
+      .catch((error) => {
         if (error === undefined) {
           return;
         }

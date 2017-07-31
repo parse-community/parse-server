@@ -432,7 +432,7 @@ export class MongoStorageAdapter {
   }
 
   createIndexesIfNeeded(className, fieldName, type) {
-    if (type && type.type === 'Polygon') {
+    if (type && (type.type === 'Polygon' || type.type === 'GeoPoint')) {
       const index = {
         [fieldName]: '2dsphere'
       };

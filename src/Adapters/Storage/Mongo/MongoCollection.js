@@ -19,24 +19,7 @@ export default class MongoCollection {
       delete keys.$score;
       keys.score = {$meta: 'textScore'};
     }
-    return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference })
-      .catch(error => {
-        // Check for "no geoindex" error
-        if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
-          throw error;
-        }
-        // Figure out what key needs an index
-        const key = error.message.match(/field=([A-Za-z_0-9]+) /)[1];
-        if (!key) {
-          throw error;
-        }
-
-        var index = {};
-        index[key] = '2d';
-        return this._mongoCollection.createIndex(index)
-          // Retry, but just once.
-          .then(() => this._rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference }));
-      });
+    return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference });
   }
 
   _rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
