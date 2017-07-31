@@ -518,6 +518,77 @@ describe('Parse.GeoPoint testing', () => {
     }, done.fail);
   });
 
+  it('invalid Polygon object withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    const polygon = {
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [10, 0],
+      ]
+    }
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: polygon
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(1);
+      done();
+    });
+  });
+
+  it('out of bounds Polygon object withinPolygon', (done) => {
+    const point = new Parse.GeoPoint(1.5, 1.5);
+    const obj = new Parse.Object('Polygon', {location: point});
+    const polygon = {
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [181, 0],
+        [0, 10]
+      ]
+    }
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: polygon
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      fail(`no request should succeed: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(1);
+      done();
+    });
+  });
+
   it('invalid input withinPolygon', (done) => {
     const point = new Parse.GeoPoint(1.5, 1.5);
     const obj = new Parse.Object('Polygon', {location: point});
@@ -672,14 +743,16 @@ describe('Parse.GeoPoint testing', () => {
     const polygon = {
       __type: 'Polygon',
       coordinates: [
-        [-111.9250, 33.5746],
-        [-112.0002, 33.4769],
-        [-111.8391, 33.4761]
+        [0, 0],
+        [10, 0],
+        [10, 10],
+        [0, 10],
+        [0, 0]
       ]
     }
     const obj = new Parse.Object('Polygon', { polygon });
     obj.save().then(() => {
-      const pointInsidePolygon = new Parse.GeoPoint(33.51421, -111.92674);
+      const pointInsidePolygon = new Parse.GeoPoint(5, 5);
       const where = {
         polygon: {
           $geoIntersects: {
@@ -697,7 +770,7 @@ describe('Parse.GeoPoint testing', () => {
       });
     }).then((resp) => {
       equal(resp.results.length, 1);
-      const pointOutsidePolygon = new Parse.GeoPoint(33.52537, -112.17359);
+      const pointOutsidePolygon = new Parse.GeoPoint(20, 20);
       const where = {
         polygon: {
           $geoIntersects: {
