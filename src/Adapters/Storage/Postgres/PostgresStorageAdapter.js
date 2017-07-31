@@ -413,19 +413,34 @@ const buildWhereClause = ({ schema, query, index }) => {
 
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
       const polygon = fieldValue.$geoWithin.$polygon;
-      if (!(polygon instanceof Array)) {
+      let points
+      if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
+        if (!polygon.coordinates && polygon.coordinates.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
+          );
+        }
+        points = polygon.coordinates;
+      } else if ((polygon instanceof Array)) {
+        if (polygon.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          );
+        }
+        points = polygon;
+      } else {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
         );
       }
-      if (polygon.length < 3) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-        );
-      }
-      const points = polygon.map((point) => {
+      points = points.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          Parse.GeoPoint._validate(point[1], point[0]);
+          return `(${point[0]}, ${point[1]})`;
+        }
         if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
         } else {
