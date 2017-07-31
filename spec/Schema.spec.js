@@ -665,19 +665,6 @@ describe('SchemaController', () => {
       });
   });
 
-  it('refuses to create two geopoints', done => {
-    config.database.loadSchema()
-      .then(schema => schema.addClassIfNotExists('NewClass', {
-        geo1: {type: 'GeoPoint'},
-        geo2: {type: 'GeoPoint'}
-      }))
-      .catch(error => {
-        expect(error.code).toEqual(Parse.Error.INCORRECT_TYPE);
-        expect(error.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding geo2 when geo1 already exists.');
-        done();
-      });
-  });
-
   it('can check if a class exists', done => {
     config.database.loadSchema()
       .then(schema => {
