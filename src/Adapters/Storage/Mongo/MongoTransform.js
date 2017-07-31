@@ -678,7 +678,7 @@ function transformConstraint(constraint, inArray) {
             'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
           );
         }
-        points = polygon.coordinates
+        points = polygon.coordinates;
       } else if (polygon instanceof Array) {
         if (polygon.length < 3) {
           throw new Parse.Error(
