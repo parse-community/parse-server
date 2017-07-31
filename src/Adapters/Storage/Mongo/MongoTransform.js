@@ -671,33 +671,40 @@ function transformConstraint(constraint, inArray) {
     case '$geoWithin': {
       const polygon = constraint[key]['$polygon'];
       let points
-      if (polygon.__type === 'Polygon') {
-        points = polygon.coordinates;
-      } else {
-        if (!(polygon instanceof Array)) {
+      if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
+        if (!polygon.coordinates && polygon.coordinates.length < 3) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+            'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
           );
         }
+        points = polygon.coordinates
+      } else if (polygon instanceof Array) {
         if (polygon.length < 3) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
             'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
           );
         }
-        points = polygon.map((point) => {
-          if (point instanceof Array && point.length === 2) {
-            return point;
-          }
-          if (!GeoPointCoder.isValidJSON(point)) {
-            throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
-          } else {
-            Parse.GeoPoint._validate(point.latitude, point.longitude);
-          }
-          return [point.longitude, point.latitude];
-        });
+        points = polygon;
+      } else {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
+        );
       }
+      points = points.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          Parse.GeoPoint._validate(point[1], point[0]);
+          return point;
+        }
+        if (!GeoPointCoder.isValidJSON(point)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+        } else {
+          Parse.GeoPoint._validate(point.latitude, point.longitude);
+        }
+        return [point.longitude, point.latitude];
+      });
       answer[key] = {
         '$polygon': points
       };
