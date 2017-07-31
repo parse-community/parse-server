@@ -479,6 +479,45 @@ describe('Parse.GeoPoint testing', () => {
     }, done.fail);
   });
 
+  it('supports withinPolygon Polygon object', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('Polygon', {location: inbound});
+    const obj2 = new Parse.Object('Polygon', {location: onbound});
+    const obj3 = new Parse.Object('Polygon', {location: outbound});
+    const polygon = {
+      __type: 'Polygon',
+      coordinates: [
+        [0, 0],
+        [10, 0],
+        [10, 10],
+        [0, 10],
+        [0, 0]
+      ]
+    }
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoWithin: {
+            $polygon: polygon
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
   it('invalid input withinPolygon', (done) => {
     const point = new Parse.GeoPoint(1.5, 1.5);
     const obj = new Parse.Object('Polygon', {location: point});
@@ -626,6 +665,60 @@ describe('Parse.GeoPoint testing', () => {
     }).catch((err) => {
       expect(err.error.code).toEqual(107);
       done();
+    });
+  });
+
+  it('support $geoIntersects queries', (done) => {
+    const polygon = {
+      __type: 'Polygon',
+      coordinates: [
+        [-111.9250, 33.5746],
+        [-112.0002, 33.4769],
+        [-111.8391, 33.4761]
+      ]
+    }
+    const obj = new Parse.Object('Polygon', { polygon });
+    obj.save().then(() => {
+      const pointInsidePolygon = new Parse.GeoPoint(33.51421, -111.92674);
+      const where = {
+        polygon: {
+          $geoIntersects: {
+            $point: pointInsidePolygon
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      equal(resp.results.length, 1);
+      const pointOutsidePolygon = new Parse.GeoPoint(33.52537, -112.17359);
+      const where = {
+        polygon: {
+          $geoIntersects: {
+            $point: pointOutsidePolygon
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/Polygon',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      equal(resp.results.length, 0);
+      done();
+    }).catch((err) => {
+      console.log(err)
+      fail(err);
     });
   });
 });
