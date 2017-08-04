@@ -343,8 +343,10 @@ export class MongoStorageAdapter {
       memo[transformKey(className, key, schema)] = 1;
       return memo;
     }, {});
+
     readPreference = this._parseReadPreference(readPreference);
-    return this._adaptiveCollection(className)
+    return this.createTextIndexIfNeeded(className, query)
+      .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
         limit,
@@ -437,6 +439,25 @@ export class MongoStorageAdapter {
         [fieldName]: '2dsphere'
       };
       return this.createIndex(className, index);
+    }
+    return Promise.resolve();
+  }
+
+  createTextIndexIfNeeded(className, query) {
+    for(const fieldName in query) {
+      if (!query[fieldName].$text) {
+        continue;
+      }
+      const index = {
+        [fieldName]: 'text'
+      };
+      return this.createIndex(className, index)
+        .catch((error) => {
+          if (error.code === 85) { // Ignore Duplicate Index
+            return;
+          }
+          throw error;
+        });
     }
     return Promise.resolve();
   }
