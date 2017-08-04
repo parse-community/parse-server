@@ -629,7 +629,10 @@ function transformConstraint(constraint, inArray) {
       const point = constraint[key];
       const maxDistance = constraint['$maxDistance'];
       answer[key] = {
-        $geometry : GeoPointCoder.JSONToDatabase(point)
+        $geometry : {
+          type: 'Point',
+          coordinates: [ point.longitude, point.latitude ]
+        }
       }
       if (maxDistance) {
         answer[key].$maxDistance = (maxDistance * 3959 * 1609.344)
