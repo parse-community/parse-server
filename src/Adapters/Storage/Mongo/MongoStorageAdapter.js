@@ -445,7 +445,7 @@ export class MongoStorageAdapter {
 
   createTextIndexIfNeeded(className, query) {
     for(const fieldName in query) {
-      if (!query[fieldName].$text) {
+      if (!query[fieldName] || !query[fieldName].$text) {
         continue;
       }
       const index = {
