@@ -244,11 +244,12 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
       equal(resp.polygon2, polygon);
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      equal(indexes.length, 4);
+      equal(indexes.length, 5);
       equal(indexes[0].key, {_id: 1});
       equal(indexes[1].key, {location: '2d'});
       equal(indexes[2].key, {polygon: '2dsphere'});
-      equal(indexes[3].key, {polygon2: '2dsphere'});
+      equal(indexes[3].key, {location: '2dsphere'});
+      equal(indexes[4].key, {polygon2: '2dsphere'});
       done();
     }, done.fail);
   });

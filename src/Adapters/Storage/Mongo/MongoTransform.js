@@ -1084,7 +1084,7 @@ var GeoPointCoder = {
   },
 
   JSONToDatabase(json) {
-    return { type: 'Point', coordinates: [ json.longitude, json.latitude ] };
+    return [ json.longitude, json.latitude ];
   },
 
   isValidJSON(value) {
