@@ -345,7 +345,7 @@ export class MongoStorageAdapter {
     }, {});
 
     readPreference = this._parseReadPreference(readPreference);
-    return this.createTextIndexIfNeeded(className, query)
+    return this.createTextIndexesIfNeeded(className, query)
       .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
@@ -443,7 +443,7 @@ export class MongoStorageAdapter {
     return Promise.resolve();
   }
 
-  createTextIndexIfNeeded(className, query) {
+  createTextIndexesIfNeeded(className, query) {
     for(const fieldName in query) {
       if (!query[fieldName] || !query[fieldName].$text) {
         continue;
