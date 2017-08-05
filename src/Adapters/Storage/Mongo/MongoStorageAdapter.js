@@ -453,8 +453,10 @@ export class MongoStorageAdapter {
       };
       return this.createIndex(className, index)
         .catch((error) => {
-          if (error.code === 85) { // Ignore Duplicate Index
-            return;
+          if (error.code === 85) {
+            throw new Parse.Error(
+              Parse.Error.INTERNAL_SERVER_ERROR,
+              'Only one text index is supported, please use compound indexes');
           }
           throw error;
         });

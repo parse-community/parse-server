@@ -280,6 +280,68 @@ describe('Parse.Query Full Text Search testing', () => {
 });
 
 describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
+  it('fullTextSearch: $search, only one text index', (done) => {
+    return reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+      databaseAdapter: new MongoStorageAdapter({ uri: mongoURI })
+    }).then(() => {
+      return rp.post({
+        url: 'http://localhost:8378/1/batch',
+        body: {
+          requests: [
+            {
+              method: "POST",
+              body: {
+                subject: "coffee is java"
+              },
+              path: "/1/classes/TestObject"
+            },
+            {
+              method: "POST",
+              body: {
+                subject: "java is coffee"
+              },
+              path: "/1/classes/TestObject"
+            }
+          ]
+        },
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then(() => {
+      return databaseAdapter.createIndex('TestObject', {random: 'text'});
+    }).then(() => {
+      const where = {
+        subject: {
+          $text: {
+            $search: {
+              $term: 'coffee'
+            }
+          }
+        }
+      };
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'test'
+        }
+      });
+    }).then((resp) => {
+      fail(`Should not be more than one text index: ${JSON.stringify(resp)}`);
+      done();
+    }).catch((err) => {
+      expect(err.error.code).toEqual(Parse.Error.INTERNAL_SERVER_ERROR);
+      done();
+    });
+  });
+
   it('fullTextSearch: $diacriticSensitive - false', (done) => {
     fullTextHelper().then(() => {
       const where = {
