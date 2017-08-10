@@ -1452,11 +1452,11 @@ function literalizeRegexPart(s) {
   // remove all instances of \Q and \E from the remaining text & escape single quotes
   return (
     s.replace(/([^\\])(\\E)/, '$1')
-    .replace(/([^\\])(\\Q)/, '$1')
-    .replace(/^\\E/, '')
-    .replace(/^\\Q/, '')
-    .replace(/([^'])'/, `$1''`)
-    .replace(/^'([^'])/, `''$1`)
+      .replace(/([^\\])(\\Q)/, '$1')
+      .replace(/^\\E/, '')
+      .replace(/^\\Q/, '')
+      .replace(/([^'])'/, `$1''`)
+      .replace(/^'([^'])/, `''$1`)
   );
 }
 
