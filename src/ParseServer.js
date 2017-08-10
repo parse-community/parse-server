@@ -92,6 +92,7 @@ class ParseServer {
   constructor({
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
+    masterKeyIps = [],
     appName,
     analyticsAdapter,
     filesAdapter,
@@ -140,14 +141,12 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    cacheTTL = defaults.cacheTTL, // cache for 5s
+    cacheMaxSize = defaults.cacheMaxSize, // 10000
     enableSingleSchemaCache = false,
     objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
-    // verify parse-server is running on node >= 4.6
-    if (process.versions.node < '4.6') {
-      throw 'You must run parse-server on node >= 4.6. Your current node version is ' + process.versions.node + '.';
-    }
 
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -167,6 +166,11 @@ class ParseServer {
     userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
       defaults.userSensitiveFields,
       userSensitiveFields
+    )));
+
+    masterKeyIps = Array.from(new Set(masterKeyIps.concat(
+      defaults.masterKeyIps,
+      masterKeyIps
     )));
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
@@ -204,7 +208,7 @@ class ParseServer {
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
@@ -230,6 +234,7 @@ class ParseServer {
     AppCache.put(appId, {
       appId,
       masterKey: masterKey,
+      masterKeyIps:masterKeyIps,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
       clientKey: clientKey,

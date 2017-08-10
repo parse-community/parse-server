@@ -524,6 +524,7 @@ describe('SchemaController', () => {
         aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
         aRelation: {type: 'Relation', targetClass: 'NewClass'},
         aBytes: {type: 'Bytes'},
+        aPolygon: {type: 'Polygon'},
       }))
       .then(actualSchema => {
         const expectedSchema = {
@@ -544,6 +545,7 @@ describe('SchemaController', () => {
             aPointer: { type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet' },
             aRelation: { type: 'Relation', targetClass: 'NewClass' },
             aBytes: {type: 'Bytes'},
+            aPolygon: {type: 'Polygon'},
           },
           classLevelPermissions: {
             find: { '*': true },

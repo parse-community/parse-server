@@ -36,7 +36,6 @@ export class PushController {
       const updateWhere = deepcopy(where);
 
       badgeUpdate = () => {
-        updateWhere.deviceType = 'ios';
         // Build a real RestQuery so we can use it in RestWrite
         const restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
         return restQuery.buildRestWhere().then(() => {

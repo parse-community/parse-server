@@ -95,11 +95,9 @@ var defaultConfiguration = {
   silent,
   logLevel,
   push: {
-    'ios': {
-      cert: 'prodCert.pem',
-      key: 'prodKey.pem',
-      production: true,
-      bundleId: 'bundleId',
+    android: {
+      senderId: 'yolo',
+      apiKey: 'yolo',
     }
   },
   auth: { // Override the facebook provider
@@ -191,12 +189,7 @@ beforeEach(done => {
       Parse.initialize('test', 'test', 'test');
       Parse.serverURL = 'http://localhost:' + port + '/1';
       done();
-    }, () => {
-      Parse.initialize('test', 'test', 'test');
-      Parse.serverURL = 'http://localhost:' + port + '/1';
-      // fail(JSON.stringify(error));
-      done();
-    })
+    }).catch(done.fail);
 });
 
 afterEach(function(done) {

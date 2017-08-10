@@ -1,7 +1,8 @@
 const Parse = require('parse/node').Parse;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
-const Config = require('../src/Config');
+const ParseServer = require("../src/index");
+const express = require('express');
 //public schema
 const databaseOptions1 = {
   initOptions: {
@@ -28,40 +29,54 @@ const GameScore = Parse.Object.extend({
   className: "GameScore"
 });
 
+function createParseServer(options) {
+  return new Promise((resolve, reject) => {
+    const parseServer = new ParseServer.default(Object.assign({},
+      defaultConfiguration, options, {
+        serverURL: "http://localhost:12666/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
+            .then(() => {
+              expect(Parse.applicationId).toEqual("test");
+              var app = express();
+              app.use('/parse', parseServer.app);
+
+              const server = app.listen(12666);
+              Parse.serverURL = "http://localhost:12666/parse";
+              resolve(server);
+            }, reject);
+        }}));
+  });
+}
+
 describe_only_db('postgres')('Postgres database init options', () => {
+  let server;
+
+  afterEach(() => {
+    if (server) {
+      server.close();
+    }
+  })
+
   it('should create server with public schema databaseOptions', (done) => {
-    const config = new Config('test');
-    // Close the current DB before continueing
-    config.database.adapter._pgp.end();
-    reconfigureServer({
-      databaseAdapter: new PostgresStorageAdapter({
-        uri: postgresURI, collectionPrefix: 'test_',
-        databaseOptions: databaseOptions1
-      })
+    const adapter = new PostgresStorageAdapter({
+      uri: postgresURI, collectionPrefix: 'test_',
+      databaseOptions: databaseOptions1
+    })
+
+    createParseServer({ databaseAdapter: adapter }).then((newServer) => {
+      server = newServer;
+      var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
+      return score.save();
     }).then(done, done.fail);
   });
 
-  it("save new GameScore in public schema", function (done) {
-    var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
-    score.save().then(done, done.fail);
-  });
-
   it('should fail to create server if schema databaseOptions does not exist', (done) => {
-    const config = new Config('test');
-    // Close the current DB before continueing
-    config.database.adapter._pgp.end();
-    reconfigureServer({
-      databaseAdapter: new PostgresStorageAdapter({
-        uri: postgresURI, collectionPrefix: 'test_',
-        databaseOptions: databaseOptions2
-      })
-    }).then(() => {
-      done.fail('Should not succeed');
-    }, error => {
-      // INVALID_SCHEMA error 3F000
-      // https://www.postgresql.org/docs/9.5/static/errcodes-appendix.html
-      expect(error.code).toEqual('3F000');
-      done();
-    });
+    const adapter = new PostgresStorageAdapter({
+      uri: postgresURI, collectionPrefix: 'test_',
+      databaseOptions: databaseOptions2
+    })
+
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, done);
   });
 });

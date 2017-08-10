@@ -8,7 +8,6 @@ import {
   nullParser
 } from '../utils/parsers';
 
-
 export default {
   "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
@@ -19,6 +18,11 @@ export default {
     env: "PARSE_SERVER_MASTER_KEY",
     help: "Your Parse Master Key",
     required: true
+  },
+  "masterKeyIps": {
+    env: "PARSE_SERVER_MASTER_KEY_IPS",
+    help: "Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)",
+    default: []
   },
   "port": {
     env: "PORT",
@@ -224,6 +228,16 @@ export default {
     env: "PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE",
     help: "Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request.",
     action: booleanParser
+  },
+  "cacheTTL": {
+    env: "PARSE_SERVER_CACHE_TTL",
+    help: "Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)",
+    action: numberParser("cacheTTL"),
+  },
+  "cacheMaxSize": {
+    env: "PARSE_SERVER_CACHE_MAX_SIZE",
+    help: "Sets the maximum size for the in memory cache, defaults to 10000",
+    action: numberParser("cacheMaxSize")
   },
   "cluster": {
     env: "PARSE_SERVER_CLUSTER",
