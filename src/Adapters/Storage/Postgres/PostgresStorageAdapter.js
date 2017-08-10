@@ -29,6 +29,7 @@ const parseTypeToPostgresType = type => {
   case 'Number': return 'double precision';
   case 'GeoPoint': return 'point';
   case 'Bytes': return 'jsonb';
+  case 'Polygon': return 'polygon';
   case 'Array':
     if (type.contents && type.contents.type === 'String') {
       return 'text[]';
@@ -300,8 +301,10 @@ const buildWhereClause = ({ schema, query, index }) => {
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
-              values.push(listElem);
-              inPatterns.push(`$${index + 1 + listIndex}`);
+              if (listElem !== null) {
+                values.push(listElem);
+                inPatterns.push(`$${index + 1 + listIndex}`);
+              }
             });
             patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
             index = index + 1 + inPatterns.length;
@@ -435,6 +438,20 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, `(${points})`);
       index += 2;
     }
+    if (fieldValue.$geoIntersects && fieldValue.$geoIntersects.$point) {
+      const point = fieldValue.$geoIntersects.$point;
+      if (typeof point !== 'object' || point.__type !== 'GeoPoint') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoIntersect value; $point should be GeoPoint'
+        );
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      patterns.push(`$${index}:name::polygon @> $${index + 1}::point`);
+      values.push(fieldName, `(${point.longitude}, ${point.latitude})`);
+      index += 2;
+    }
 
     if (fieldValue.$regex) {
       let regex = fieldValue.$regex;
@@ -478,6 +495,13 @@ const buildWhereClause = ({ schema, query, index }) => {
       patterns.push('$' + index + ':name ~= POINT($' + (index + 1) + ', $' + (index + 2) + ')');
       values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
       index += 3;
+    }
+
+    if (fieldValue.__type === 'Polygon') {
+      const value = convertPolygonToSQL(fieldValue.coordinates);
+      patterns.push(`$${index}:name ~= $${index + 1}::polygon`);
+      values.push(fieldName, value);
+      index += 2;
     }
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
@@ -844,6 +868,11 @@ export class PostgresStorageAdapter {
       case 'File':
         valuesArray.push(object[fieldName].name);
         break;
+      case 'Polygon': {
+        const value = convertPolygonToSQL(object[fieldName].coordinates);
+        valuesArray.push(value);
+        break;
+      }
       case 'GeoPoint':
         // pop the point and process later
         geoPoints[fieldName] = object[fieldName];
@@ -1024,6 +1053,11 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = POINT($${index + 1}, $${index + 2})`);
         values.push(fieldName, fieldValue.longitude, fieldValue.latitude);
         index += 3;
+      } else if (fieldValue.__type === 'Polygon') {
+        const value = convertPolygonToSQL(fieldValue.coordinates);
+        updatePatterns.push(`$${index}:name = $${index + 1}::polygon`);
+        values.push(fieldName, value);
+        index += 2;
       } else if (fieldValue.__type === 'Relation') {
         // noop
       } else if (typeof fieldValue === 'number') {
@@ -1186,6 +1220,20 @@ export class PostgresStorageAdapter {
               longitude: object[fieldName].x
             }
           }
+          if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
+            let coords = object[fieldName];
+            coords = coords.substr(2, coords.length - 4).split('),(');
+            coords = coords.map((point) => {
+              return [
+                parseFloat(point.split(',')[1]),
+                parseFloat(point.split(',')[0])
+              ];
+            });
+            object[fieldName] = {
+              __type: "Polygon",
+              coordinates: coords
+            }
+          }
           if (object[fieldName] && schema.fields[fieldName].type === 'File') {
             object[fieldName] = {
               __type: 'File',
@@ -1301,6 +1349,42 @@ export class PostgresStorageAdapter {
         console.error(error);
       });
   }
+}
+
+function convertPolygonToSQL(polygon) {
+  if (polygon.length < 3) {
+    throw new Parse.Error(
+      Parse.Error.INVALID_JSON,
+      `Polygon must have at least 3 values`
+    );
+  }
+  if (polygon[0][0] !== polygon[polygon.length - 1][0] ||
+    polygon[0][1] !== polygon[polygon.length - 1][1]) {
+    polygon.push(polygon[0]);
+  }
+  const unique = polygon.filter((item, index, ar) => {
+    let foundIndex = -1;
+    for (let i = 0; i < ar.length; i += 1) {
+      const pt = ar[i];
+      if (pt[0] === item[0] &&
+          pt[1] === item[1]) {
+        foundIndex = i;
+        break;
+      }
+    }
+    return foundIndex === index;
+  });
+  if (unique.length < 3) {
+    throw new Parse.Error(
+      Parse.Error.INTERNAL_SERVER_ERROR,
+      'GeoJSON: Loop must have at least 3 different vertices'
+    );
+  }
+  const points = polygon.map((point) => {
+    Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+    return `(${point[1]}, ${point[0]})`;
+  }).join(', ');
+  return `(${points})`;
 }
 
 function removeWhiteSpace(regex) {
