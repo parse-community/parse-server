@@ -1,5 +1,22 @@
 ## Parse Server Changelog
 
+### 2.5.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
+
+#### New Features:
+* badge property on android installations will now be set as on iOS (#3970), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes:
+* Fixes incorrect number parser for cache options
+
+### 2.5.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.1...2.5.2)
+
+#### Improvements:
+* Restores ability to run on node >= 4.6
+* Adds ability to configure cache from CLI
+* Removes runtime check for node >= 4.6
+
 ### 2.5.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.0...2.5.1)
 

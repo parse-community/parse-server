@@ -1185,10 +1185,7 @@ describe('Parse.User testing', () => {
       expect(fileAgain.url()).toMatch(/yolo.txt$/);
     }).then(() => {
       done();
-    }, error => {
-      jfail(error);
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("log in with provider twice", (done) => {
