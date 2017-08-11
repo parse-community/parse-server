@@ -274,6 +274,21 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containedIn null array', (done) => {
+    const emails = ['contact@xyz.com', 'contact@zyx.com', null];
+    const user = new Parse.User();
+    user.setUsername(emails[0]);
+    user.setPassword('asdf');
+    user.signUp().then(() => {
+      const query = new Parse.Query(Parse.User);
+      query.containedIn('username', emails);
+      return query.find({ useMasterKey: true });
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    }, done.fail);
+  });
+
   it("containsAll number array queries", function(done) {
     var NumberSet = Parse.Object.extend({ className: "NumberSet" });
 
