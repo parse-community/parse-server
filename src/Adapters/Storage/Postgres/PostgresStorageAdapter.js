@@ -636,10 +636,12 @@ export class PostgresStorageAdapter {
           throw error;
         }
       }).then(() => {
-      // Create the relation tables
-        return Promise.all(relations.map((fieldName) => {
-          return conn.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
-        }));
+        return conn.tx('create-relation-tables', t => {
+          const queries = relations.map((fieldName) => {
+            return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+          });
+          return t.batch(queries);
+        });
       });
   }
 
