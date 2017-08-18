@@ -262,10 +262,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     }
 
-    if (fieldValue.$eq) {
-      patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue.$eq);
-      index += 2;
+    if (fieldValue.$eq !== undefined) {
+      if (fieldValue.$eq === null){
+        patterns.push(`$${index}:name IS NULL`);
+        values.push(fieldName);
+        index += 1;
+      } else {
+        patterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.$eq);
+        index += 2;
+      }
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (Array.isArray(fieldValue.$in) &&
