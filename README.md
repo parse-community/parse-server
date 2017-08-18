@@ -309,7 +309,7 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mailgun-adapter-template](https://www.npmjs.com/package/parse-server-mailgun-adapter-template)
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
-
+- [parse-server-genericemail-adapter](https://www.npmjs.com/package/parse-server-genericemail-adapter)
 ### Using environment variables to configure Parse Server
 
 You may configure the Parse Server using environment variables:
