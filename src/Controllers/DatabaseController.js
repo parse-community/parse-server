@@ -650,7 +650,7 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
 
     // remove the current queryKey as we don,t need it anymore
     delete query[key];
-    // execute each query independnently to build the list of
+    // execute each query independently to build the list of
     // $in / $nin
     const promises = queries.map((q) => {
       if (!q) {
