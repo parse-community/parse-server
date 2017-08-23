@@ -203,7 +203,7 @@ export class MongoStorageAdapter {
       .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
   }
 
-  // Delete all data known to this adatper. Used for testing.
+  // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
     return storageAdapterAllCollections(this)
       .then(collections => Promise.all(collections.map(collection => collection.drop())));
@@ -220,7 +220,7 @@ export class MongoStorageAdapter {
   // Pointer field names are passed for legacy reasons: the original mongo
   // format stored pointer field names differently in the database, and therefore
   // needed to know the type of the field before it could delete it. Future database
-  // adatpers should ignore the pointerFieldNames argument. All the field names are in
+  // adapters should ignore the pointerFieldNames argument. All the field names are in
   // fieldNames, they show up additionally in the pointerFieldNames database for use
   // by the mongo adapter, which deals with the legacy mongo format.
 
@@ -265,12 +265,12 @@ export class MongoStorageAdapter {
   // undefined as the reason.
   getClass(className) {
     return this._schemaCollection()
-      .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className))
+      .then(schemasCollection => schemasCollection._fetchOneSchemaFrom_SCHEMA(className))
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
-  // the schem only for the legacy mongo format. We'll figure that out later.
+  // the schema only for the legacy mongo format. We'll figure that out later.
   createObject(className, schema, object) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);

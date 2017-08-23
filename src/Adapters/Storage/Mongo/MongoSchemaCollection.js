@@ -115,7 +115,7 @@ class MongoSchemaCollection {
       .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  _fechOneSchemaFrom_SCHEMA(name: string) {
+  _fetchOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
@@ -150,7 +150,7 @@ class MongoSchemaCollection {
 
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
-    return this._fechOneSchemaFrom_SCHEMA(className)
+    return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(schema => {
       // The schema exists. Check for existing GeoPoints.
         if (type.type === 'GeoPoint') {
