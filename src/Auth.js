@@ -128,10 +128,18 @@ Auth.prototype._loadRoles = function() {
     };
     // First get the role ids this user is directly a member of
     var query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-    return query.execute().then((response) => {
-      var results = response.results;
+    const p = Parse.Promise.when(
+      new Parse.Query(Parse.Role)
+        .equalTo('name', '_All_Role')
+        .first({ useMasterKey: true }),
+      query.execute()
+    );
+
+    // only using p for now so diff doesn't have a ton of whitespace changes.
+    return p.then((allRole, response) => {
+      var results = response.results.concat(allRole.results);
       if (!results.length) {
-        this.userRoles = [];
+        this.userRoles = ['_All_Role'];
         this.fetchedRoles = true;
         this.rolePromise = null;
 
@@ -143,6 +151,9 @@ Auth.prototype._loadRoles = function() {
         m.ids.push(r.objectId);
         return m;
       }, {ids: [], names: []});
+
+      rolesMap.ids.push(allRole.id);
+      rolesMap.names.push(allRole.name);
 
       // run the recursive finding
       return this._getAllRolesNamesForRoleIds(rolesMap.ids, rolesMap.names)

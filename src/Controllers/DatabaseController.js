@@ -8,6 +8,8 @@ import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
 import * as SchemaController  from './SchemaController';
 
+const ALL_ROLE_NAME = '_All_Role';
+
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
   //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
@@ -973,6 +975,27 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   }
 }
 
+DatabaseController.prototype.ensureAllRole = function() {
+  return new Parse.Query('_Role')
+    .equalTo('name', ALL_ROLE_NAME)
+    .first({ useMasterKey: true })
+    .then((result) => {
+      if (result) {
+        return result;
+      }
+
+      const acl = new Parse.ACL();
+      acl.setPublicReadAccess(true);
+      return new Parse.Role(ALL_ROLE_NAME, acl)
+        .save(null, { useMasterKey: true })
+    })
+    .then(allRole => {
+      // oy, how can expose this so anyone can get at it.
+      // this isn't working....
+      this.allRole = allRole
+    });
+}
+
 // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
 // have a Parse app without it having a _User collection.
 DatabaseController.prototype.performInitialization = function() {
@@ -1000,6 +1023,7 @@ DatabaseController.prototype.performInitialization = function() {
 
   const roleUniqueness = roleClassPromise
     .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
+    .then(() => this.ensureAllRole())
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;

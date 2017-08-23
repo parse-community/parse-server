@@ -527,4 +527,47 @@ describe('Parse Role testing', () => {
           });
       });
   });
+
+  it('should respect \'all user\' role for read.', function (done) {
+    let role;
+
+    const userP = new Parse.User()
+      .set('username', 'userA')
+      .set('password', 'password')
+      .save()
+      .then((user) => Parse.User.logIn(user.get('username'), 'password'));
+
+    const roleP = new Parse.Role('aRole', new Parse.ACL())
+      .save();
+
+    Parse.Promise.when(userP, roleP)
+      .then((user, newrole) => {
+        role = newrole;
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess(role, true);
+        return new Parse.Object('Foo')
+          .setACL(acl)
+          .save();
+      })
+      .then(() => new Parse.Query('Foo').first())
+      .then((obj) => {
+        expect(obj).not.toBeDefined();
+        return new Parse.Query(Parse.Role)
+          .equalTo('name', '_All_Role')
+          .first()
+      })
+      .then((allRole) => {
+        expect(allRole).toBeDefined();
+
+        const roles = role.relation('roles');
+        roles.add(allRole);
+        return role.save(null, { useMasterKey: true});
+      })
+      .then(() => new Parse.Query('Foo').first())
+      .then((obj) => {
+        expect(obj).toBeDefined();
+        done();
+      })
+      .catch(done.fail);
+  });
 });
