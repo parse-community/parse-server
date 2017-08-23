@@ -259,7 +259,7 @@ DatabaseController.prototype.update = function(className, query, update, {
           validateQuery(query);
           return schemaController.getOneSchema(className, true)
             .catch(error => {
-              // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+              // If the schema doesn't exist, pretend it exists with no fields. This behavior
               // will likely need revisiting.
               if (error === undefined) {
                 return { fields: {} };
@@ -449,7 +449,7 @@ DatabaseController.prototype.destroy = function(className, query, { acl } = {}) 
           validateQuery(query);
           return schemaController.getOneSchema(className)
             .catch(error => {
-              // If the schema doesn't exist, pretend it exists with no fields. This behaviour
+              // If the schema doesn't exist, pretend it exists with no fields. This behavior
               // will likely need revisiting.
               if (error === undefined) {
                 return { fields: {} };
@@ -783,11 +783,11 @@ DatabaseController.prototype.find = function(className, query, {
   return this.loadSchema()
     .then(schemaController => {
     //Allow volatile classes if querying with Master (for _PushStatus)
-    //TODO: Move volatile classes concept into mongo adatper, postgres adapter shouldn't care
+    //TODO: Move volatile classes concept into mongo adapter, postgres adapter shouldn't care
     //that api.parse.com breaks when _PushStatus exists in mongo.
       return schemaController.getOneSchema(className, isMaster)
         .catch(error => {
-          // Behaviour for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
+          // Behavior for non-existent classes is kinda weird on Parse.com. Probably doesn't matter too much.
           // For now, pretend the class exists but has no objects,
           if (error === undefined) {
             classExists = false;
@@ -797,7 +797,7 @@ DatabaseController.prototype.find = function(className, query, {
         })
         .then(schema => {
           // Parse.com treats queries on _created_at and _updated_at as if they were queries on createdAt and updatedAt,
-          // so duplicate that behaviour here. If both are specified, the corrent behaviour to match Parse.com is to
+          // so duplicate that behavior here. If both are specified, the correct behavior to match Parse.com is to
           // use the one that appears first in the sort list.
           if (sort._created_at) {
             sort.createdAt = sort._created_at;
@@ -925,7 +925,7 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   // the ACL should have exactly 1 user
   if (perms && perms[field] && perms[field].length > 0) {
     // No user set return undefined
-    // If the length is > 1, that means we didn't dedup users correctly
+    // If the length is > 1, that means we didn't de-dupe users correctly
     if (userACL.length != 1) {
       return;
     }
