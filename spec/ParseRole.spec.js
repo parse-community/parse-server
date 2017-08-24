@@ -24,7 +24,9 @@ describe('Parse Role testing', () => {
       return role.save({}, { useMasterKey: true });
     }).then(() => {
       var query = new Parse.Query('_Role');
-      return query.find({ useMasterKey: true });
+      return query
+        .equalTo('name', 'Foos')
+        .find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(1);
       var relation = x[0].relation('users').query();
@@ -120,16 +122,17 @@ describe('Parse Role testing', () => {
       getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
-    }).then ((roles) => {
-      expect(roles.length).toEqual(4);
+    }).then((roles) => {
+      expect(roles.length).toEqual(5); // +1 for the all role
 
       allRoles.forEach(function(name) {
         expect(roles.indexOf("role:" + name)).not.toBe(-1);
       });
 
+      // 1 Query for _All_Role
       // 1 Query for the initial setup
       // 1 query for the parent roles
-      expect(restExecute.calls.count()).toEqual(2);
+      expect(restExecute.calls.count()).toEqual(3);
 
       // 1 call for the 1st layer of roles
       // 1 call for the 2nd layer
@@ -163,15 +166,12 @@ describe('Parse Role testing', () => {
         return auth._loadRoles();
       })
     }).then((roles) => {
-      expect(roles.length).toEqual(3);
+      expect(roles.length).toEqual(4); // add one for _All_Role
       rolesNames.forEach((name) => {
         expect(roles.indexOf('role:' + name)).not.toBe(-1);
       });
       done();
-    }, function(){
-      fail("should succeed")
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("_Role object should not save without name.", (done) => {
@@ -329,7 +329,9 @@ describe('Parse Role testing', () => {
       customerACL.setRoleWriteAccess("Customer", true);
 
       var query = new Parse.Query('_Role');
-      return query.find({ useMasterKey: true });
+      return query
+        .notEqualTo('name', '_All_Role')
+        .find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(3);
 

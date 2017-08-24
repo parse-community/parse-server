@@ -975,10 +975,18 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   }
 }
 
-DatabaseController.prototype.ensureAllRole = function() {
-  return new Parse.Query('_Role')
-    .equalTo('name', ALL_ROLE_NAME)
-    .first({ useMasterKey: true })
+DatabaseController.prototype.ensureAllRole = function () {
+  // this is lame, but there's some race condition with
+  // spec/helper.reconfigureServer....
+  const delayP = process.env.TESTING
+    ? new Promise(resolve => setTimeout(resolve, 200))
+    : Parse.Promise.as();
+
+  return delayP
+    .then(() => new Parse.Query('_Role')
+      .equalTo('name', ALL_ROLE_NAME)
+      .first({ useMasterKey: true })
+    )
     .then((result) => {
       if (result) {
         return result;
