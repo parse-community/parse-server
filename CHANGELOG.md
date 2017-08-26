@@ -1,5 +1,11 @@
 ## Parse Server Changelog
 
+### 2.6.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.4...master)
+
+#### New Breaking Changes:
+* [parse-server-s3-adapter@1.2.0](https://www.npmjs.com/package/parse-server-s3-adapter): A new deprecation notice is introduced with parse-server-s3-adapter's version 1.2.0.  An upcoming release will remove passing key and password arguments.  AWS credentials should be set using AWS best practices.  See the [Deprecation Notice for AWS credentials]( https://github.com/parse-server-modules/parse-server-s3-adapter/blob/master/README.md#deprecation-notice----aws-credentials) section of the adapter's README.
+
 ### 2.5.3
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
 
@@ -129,7 +135,7 @@ If you experience issues with older versions, please [open a issue](https://gith
 * Fix issue affecting overloaded query constraints ([#3723](https://github.com/parse-community/parse-server/pull/3723), [#3678](https://github.com/parse-community/parse-server/pull/3678)), thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Properly catch unhandled rejections in _Installation updates ([#3795](https://github.com/parse-community/parse-server/pull/3795)), thanks to [kahoona77](https://github.com/kahoona77)
 
-#### Dependency Updates: 
+#### Dependency Updates:
 
 * [uws@0.14.5](https://www.npmjs.com/package/uws)
 * [mime@1.3.6](https://www.npmjs.com/package/mime)
