@@ -541,7 +541,7 @@ const transformAuthData = (className, object, schema) => {
 }
 
 // Inserts an object into the database.
-// Returns a promise that resolves successfully iff the object saved.
+// Returns a promise that resolves successfully if the object saved.
 DatabaseController.prototype.create = function(className, object, { acl } = {}) {
   // Make a copy of the object, so we don't mutate the incoming data.
   const originalObject = object;
@@ -976,31 +976,18 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 }
 
 DatabaseController.prototype.ensureAllRole = function () {
-  // this is lame, but there's some race condition with
-  // spec/helper.reconfigureServer....
-  const delayP = process.env.TESTING
-    ? new Promise(resolve => setTimeout(resolve, 200))
-    : Parse.Promise.as();
+  return this.loadSchema()
+    .then(schemaController => schemaController.getOneSchema('_Role'))
+    .then(schema => this.adapter.find('_Role', schema, { name: '_All_Role' }, { limit: 1 }))
+    .then(roles => {
+      if (roles.length < 1) {
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        const allRole = new Parse.Role(ALL_ROLE_NAME, acl)
+        return this.create('_Role', allRole.toJSON(), {})
 
-  return delayP
-    .then(() => new Parse.Query('_Role')
-      .equalTo('name', ALL_ROLE_NAME)
-      .first({ useMasterKey: true })
-    )
-    .then((result) => {
-      if (result) {
-        return result;
       }
-
-      const acl = new Parse.ACL();
-      acl.setPublicReadAccess(true);
-      return new Parse.Role(ALL_ROLE_NAME, acl)
-        .save(null, { useMasterKey: true })
-    })
-    .then(allRole => {
-      // oy, how can expose this so anyone can get at it.
-      // this isn't working....
-      this.allRole = allRole
+      return Promise.resolve(roles[0]);
     });
 }
 
@@ -1031,11 +1018,11 @@ DatabaseController.prototype.performInitialization = function() {
 
   const roleUniqueness = roleClassPromise
     .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
-    .then(() => this.ensureAllRole())
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
-    });
+    })
+    .then(() => this.ensureAllRole())
 
   // Create tables for volatile classes
   const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });

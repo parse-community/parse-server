@@ -278,7 +278,8 @@ export class MongoStorageAdapter {
       .then(collection => collection.insertOne(mongoObject))
       .catch(error => {
         if (error.code === 11000) { // Duplicate value
-          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE,
+            `A duplicate value for a field with unique values was provided for class: ${className}`);
           err.underlyingError = error;
           if (error.message) {
             const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);

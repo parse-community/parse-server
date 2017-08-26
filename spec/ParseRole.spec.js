@@ -530,6 +530,16 @@ describe('Parse Role testing', () => {
       });
   });
 
+  it('should be a an _All_User roll', function (done) {
+    new Parse.Query('_Role')
+      .find({ useMasterKey: true })
+      .then((results) => {
+        expect(results[0].get('name')).toBe('_All_Role');
+        done();
+      })
+      .catch(done.fail);
+  });
+
   it('should respect \'all user\' role for read.', function (done) {
     let role;
 
