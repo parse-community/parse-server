@@ -255,8 +255,8 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
         hostEnd = i;
         break;
       case 64: // '@'
-          // At this point, either we have an explicit point where the
-          // auth portion cannot go past, or the last @ char is the decider.
+        // At this point, either we have an explicit point where the
+        // auth portion cannot go past, or the last @ char is the decider.
         atSign = i;
         nonHost = -1;
         break;
