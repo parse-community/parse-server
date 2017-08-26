@@ -2,6 +2,7 @@
 // Parse database.
 
 import { Parse }              from 'parse/node';
+import { newObjectId }        from '../cryptoUtils';
 import _                      from 'lodash';
 import intersect              from 'intersect';
 import deepcopy               from 'deepcopy';
@@ -976,14 +977,17 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
 }
 
 DatabaseController.prototype.ensureAllRole = function () {
+  const name = ALL_ROLE_NAME;
   return this.loadSchema()
     .then(schemaController => schemaController.getOneSchema('_Role'))
-    .then(schema => this.adapter.find('_Role', schema, { name: '_All_Role' }, { limit: 1 }))
+    .then(schema => this.adapter.find('_Role', schema, { name }, { limit: 1 }))
     .then(roles => {
       if (roles.length < 1) {
         const acl = new Parse.ACL();
         acl.setPublicReadAccess(true);
-        const allRole = new Parse.Role(ALL_ROLE_NAME, acl)
+        const allRole = new Parse.Role(ALL_ROLE_NAME, acl);
+        const objectId = newObjectId(Parse.Config.current().objectIdSize);
+        allRole.set('objectId', objectId);
         return this.create('_Role', allRole.toJSON(), {})
 
       }
