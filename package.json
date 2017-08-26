@@ -58,7 +58,7 @@
     "eslint": "^4.4.1",
     "eslint-plugin-flowtype": "^2.25.0",
     "gaze": "1.1.2",
-    "jasmine": "2.7.0",
+    "jasmine": "2.8.0",
     "jasmine-spec-reporter": "^4.1.0",
     "mongodb-runner": "3.5.0",
     "nodemon": "1.11.0",
@@ -84,7 +84,7 @@
     "parse-server": "./bin/parse-server"
   },
   "optionalDependencies": {
-    "bcrypt": "1.0.2",
+    "bcrypt": "1.0.3",
     "uws": "^0.14.5"
   }
 }
