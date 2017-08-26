@@ -146,6 +146,25 @@ const handleDotFields = (object) => {
   return object;
 }
 
+const transformDotFieldToComponents = (fieldName) => {
+  return fieldName.split('.').map((cmpt, index) => {
+    if (index === 0) {
+      return `"${cmpt}"`;
+    }
+    return `'${cmpt}'`;
+  });
+}
+
+const transformDotField = (fieldName) => {
+  if (fieldName.indexOf('.') === -1) {
+    return `"${fieldName}"`;
+  }
+  const components = transformDotFieldToComponents(fieldName);
+  let name = components.slice(0, components.length - 1).join('->');
+  name += '->>' + components[components.length - 1];
+  return name;
+}
+
 const validateKeys = (object) => {
   if (typeof object == 'object') {
     for (const key in object) {
@@ -195,18 +214,26 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     if (fieldName.indexOf('.') >= 0) {
-      const components = fieldName.split('.').map((cmpt, index) => {
-        if (index === 0) {
-          return `"${cmpt}"`;
-        }
-        return `'${cmpt}'`;
-      });
-      let name = components.slice(0, components.length - 1).join('->');
-      name += '->>' + components[components.length - 1];
+      let name = transformDotField(fieldName);
       if (fieldValue === null) {
         patterns.push(`${name} IS NULL`);
       } else {
-        patterns.push(`${name} = '${fieldValue}'`);
+        if (fieldValue.$in) {
+          const inPatterns = [];
+          name = transformDotFieldToComponents(fieldName).join('->');
+          fieldValue.$in.forEach((listElem) => {
+            if (typeof listElem === 'string') {
+              inPatterns.push(`"${listElem}"`);
+            } else {
+              inPatterns.push(`${listElem}`);
+            }
+          });
+          patterns.push(`(${name})::jsonb @> '[${inPatterns.join(',')}]'::jsonb`);
+        } else if (fieldValue.$regex) {
+          // Handle later
+        } else {
+          patterns.push(`${name} = '${fieldValue}'`);
+        }
       }
     } else if (fieldValue === null) {
       patterns.push(`$${index}:name IS NULL`);
@@ -298,6 +325,10 @@ const buildWhereClause = ({ schema, query, index }) => {
             values.push(fieldName, JSON.stringify(baseArray));
             index += 2;
           } else {
+            // Handle Nested Dot Notation Above
+            if (fieldName.indexOf('.') >= 0) {
+              return;
+            }
             const inPatterns = [];
             values.push(fieldName);
             baseArray.forEach((listElem, listIndex) => {
@@ -466,10 +497,11 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       }
 
+      const name = transformDotField(fieldName);
       regex = processRegexPattern(regex);
 
-      patterns.push(`$${index}:name ${operator} '$${index + 1}:raw'`);
-      values.push(fieldName, regex);
+      patterns.push(`$${index}:raw ${operator} '$${index + 1}:raw'`);
+      values.push(name, regex);
       index += 2;
     }
 
@@ -636,10 +668,12 @@ export class PostgresStorageAdapter {
           throw error;
         }
       }).then(() => {
-      // Create the relation tables
-        return Promise.all(relations.map((fieldName) => {
-          return conn.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
-        }));
+        return conn.tx('create-relation-tables', t => {
+          const queries = relations.map((fieldName) => {
+            return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+          });
+          return t.batch(queries);
+        });
       });
   }
 
@@ -1452,11 +1486,11 @@ function literalizeRegexPart(s) {
   // remove all instances of \Q and \E from the remaining text & escape single quotes
   return (
     s.replace(/([^\\])(\\E)/, '$1')
-    .replace(/([^\\])(\\Q)/, '$1')
-    .replace(/^\\E/, '')
-    .replace(/^\\Q/, '')
-    .replace(/([^'])'/, `$1''`)
-    .replace(/^'([^'])/, `''$1`)
+      .replace(/([^\\])(\\Q)/, '$1')
+      .replace(/^\\E/, '')
+      .replace(/^\\Q/, '')
+      .replace(/([^'])'/, `$1''`)
+      .replace(/^'([^'])/, `''$1`)
   );
 }
 
