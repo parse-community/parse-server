@@ -989,9 +989,12 @@ DatabaseController.prototype.ensureAllRole = function () {
         const objectId = newObjectId(Parse.Config.current().objectIdSize);
         allRole.set('objectId', objectId);
         return this.create('_Role', allRole.toJSON(), {})
-
+          // duplicate errors occur sometimes during
+          // testing on travis.  They are safe to ignore.
+          .catch((e) => logger.warn('Failed to create _All_Role', e));
       }
-      return Promise.resolve(roles[0]);
+
+      return Promise.resolve();
     });
 }
 
