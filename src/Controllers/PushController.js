@@ -1,9 +1,9 @@
 import { Parse }              from 'parse/node';
-import deepcopy               from 'deepcopy';
 import RestQuery              from '../RestQuery';
 import RestWrite              from '../RestWrite';
 import { master }             from '../Auth';
 import { pushStatusHandler }  from '../StatusHandler';
+import { applyDeviceTokenExists } from '../Push/utils';
 
 export class PushController {
 
@@ -23,6 +23,7 @@ export class PushController {
     let badgeUpdate = () => {
       return Promise.resolve();
     }
+
     if (body.data && body.data.badge) {
       const badge = body.data.badge;
       let restUpdate = {};
@@ -33,8 +34,9 @@ export class PushController {
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
-      const updateWhere = deepcopy(where);
 
+      // Force filtering on only valid device tokens
+      const updateWhere = applyDeviceTokenExists(where);
       badgeUpdate = () => {
         // Build a real RestQuery so we can use it in RestWrite
         const restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);

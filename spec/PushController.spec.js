@@ -845,6 +845,72 @@ describe('PushController', () => {
       fail('should not fail');
       done();
     });
+  });
 
+  it('should mark the _PushStatus as succeeded when audience has no deviceToken', (done) => {
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        const promises = installations.map((device) => {
+          if (!device.deviceToken) {
+            // Simulate error when device token is not set
+            return Promise.reject();
+          }
+          return Promise.resolve({
+            transmitted: true,
+            device: device,
+          })
+        });
+
+        return Promise.all(promises);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime() / 1000
+    }
+
+    var installations = [];
+    while(installations.length != 5) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var config = new Config(Parse.applicationId);
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth)
+          .then(() => { done.fail('should not success') })
+          .catch(() => {})
+      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('numSent')).toBe(0);
+        expect(pushStatus.get('status')).toBe('failed');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
   });
 });
