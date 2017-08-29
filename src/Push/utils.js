@@ -1,4 +1,5 @@
-import Parse from 'parse/node';
+import Parse    from 'parse/node';
+import deepcopy from 'deepcopy';
 
 export function isPushIncrementing(body) {
   return body.data &&
@@ -27,4 +28,12 @@ export function validatePushType(where = {}, validPushTypes = []) {
         deviceType + ' is not supported push type.');
     }
   }
+}
+
+export function applyDeviceTokenExists(where) {
+  where = deepcopy(where);
+  if (!where.hasOwnProperty('deviceToken')) {
+    where['deviceToken'] = {'$exists': true};
+  }
+  return where;
 }
