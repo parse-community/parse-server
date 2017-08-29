@@ -894,7 +894,9 @@ describe('PushController', () => {
     }).then(() => {
       var config = new Config(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
-        return pushController.sendPush(payload, {}, config, auth);
+        return pushController.sendPush(payload, {}, config, auth)
+          .then(() => { done.fail('should not success') })
+          .catch(() => {})
       }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
@@ -902,7 +904,7 @@ describe('PushController', () => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
         expect(pushStatus.get('numSent')).toBe(0);
-        expect(pushStatus.get('status')).toBe('succeeded');
+        expect(pushStatus.get('status')).toBe('failed');
         done();
       });
     }).catch((err) => {
