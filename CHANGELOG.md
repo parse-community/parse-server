@@ -1,10 +1,42 @@
 ## Parse Server Changelog
 
 ### 2.6.0
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.4...master)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.3...2.6.0)
 
-#### New Breaking Changes:
+#### Breaking Changes:
 * [parse-server-s3-adapter@1.2.0](https://www.npmjs.com/package/parse-server-s3-adapter): A new deprecation notice is introduced with parse-server-s3-adapter's version 1.2.0.  An upcoming release will remove passing key and password arguments.  AWS credentials should be set using AWS best practices.  See the [Deprecation Notice for AWS credentials]( https://github.com/parse-server-modules/parse-server-s3-adapter/blob/master/README.md#deprecation-notice----aws-credentials) section of the adapter's README.
+
+#### New Features
+* Polygon is fully supported as a type, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Query supports PolygonContains, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements
+* Postgres: Adds support nested contains and containedIn, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Postgres: Adds support for `null` in containsAll queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Cloud Code: Request headers are passed to the cloud functions, thanks to [miguel-s](https://github.com/miguel-s)
+* Push: All push queries now filter only where deviceToken exists
+
+#### Bug Fixes:
+* Fixes issue affecting updates of _User objects when authData was passed.
+* Push: Pushing to an empty audience should now properly report a failed _PushStatus
+* Linking Users: Fixes issue affecting linking users with sessionToken only
+
+#### Dependency Updates:
+* [ws@3.1.0](https://www.npmjs.com/package/ws)
+* [mime@1.4.0](https://www.npmjs.com/package/mime)
+* [semver@5.4.0](https://www.npmjs.com/package/semver)
+* [uws@8.14.1](https://www.npmjs.com/package/uws)
+* [bcrypt@1.0.3](https://www.npmjs.com/package/bcrypt)
+* [mongodb@2.2.31](https://www.npmjs.com/package/mongodb)
+* [redis@2.8.0](https://www.npmjs.com/package/redis)
+* [pg-promise@6.3.1](https://www.npmjs.com/package/pg-promise)
+* [commander@2.11.0](https://www.npmjs.com/package/commander)
+
+##### Devevelopment Dependencies Updates:
+* [jasmine@2.8.0](https://www.npmjs.com/package/jasmine)
+* [babel-register@6.26.0](https://www.npmjs.com/package/babel-register)
+* [babel-core@6.26.0](https://www.npmjs.com/package/babel-core)
+* [cross-env@5.0.2](https://www.npmjs.com/package/cross-env)
 
 ### 2.5.3
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
