@@ -29,7 +29,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     if (this.className == '_Session') {
       if (!this.findOptions.acl) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-                              'This session token is invalid.');
+          'This session token is invalid.');
       }
       this.restWhere = {
         '$and': [this.restWhere, {
@@ -88,13 +88,16 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       break;
     case 'skip':
     case 'limit':
+    case 'readPreference':
       this.findOptions[option] = restOptions[option];
       break;
     case 'order':
       var fields = restOptions.order.split(',');
       this.findOptions.sort = fields.reduce((sortMap, field) => {
         field = field.trim();
-        if (field[0] == '-') {
+        if (field === '$score') {
+          sortMap.score = {$meta: 'textScore'};
+        } else if (field[0] == '-') {
           sortMap[field.slice(1)] = -1;
         } else {
           sortMap[field] = 1;
@@ -126,9 +129,12 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       this.redirectKey = restOptions.redirectClassNameForKey;
       this.redirectClassName = null;
       break;
+    case 'includeReadPreference':
+    case 'subqueryReadPreference':
+      break;
     default:
       throw new Parse.Error(Parse.Error.INVALID_JSON,
-                            'bad option: ' + option);
+        'bad option: ' + option);
     }
   }
 }
@@ -195,8 +201,8 @@ RestQuery.prototype.redirectClassNameForKey = function() {
   }
 
   // We need to change the class name based on the schema
-  return this.config.database.redirectClassNameForKey(
-    this.className, this.redirectKey).then((newClassName) => {
+  return this.config.database.redirectClassNameForKey(this.className, this.redirectKey)
+    .then((newClassName) => {
       this.className = newClassName;
       this.redirectClassName = newClassName;
     });
@@ -211,7 +217,7 @@ RestQuery.prototype.validateClientClassCreation = function() {
       .then(hasClass => {
         if (hasClass !== true) {
           throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                                'This user is not allowed to access ' +
+            'This user is not allowed to access ' +
                                 'non-existent class: ' + this.className);
         }
       });
@@ -251,12 +257,17 @@ RestQuery.prototype.replaceInQuery = function() {
   var inQueryValue = inQueryObject['$inQuery'];
   if (!inQueryValue.where || !inQueryValue.className) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'improper usage of $inQuery');
+      'improper usage of $inQuery');
   }
 
   const additionalOptions = {
     redirectClassNameForKey: inQueryValue.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, inQueryValue.className,
@@ -299,12 +310,17 @@ RestQuery.prototype.replaceNotInQuery = function() {
   var notInQueryValue = notInQueryObject['$notInQuery'];
   if (!notInQueryValue.where || !notInQueryValue.className) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'improper usage of $notInQuery');
+      'improper usage of $notInQuery');
   }
 
   const additionalOptions = {
     redirectClassNameForKey: notInQueryValue.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, notInQueryValue.className,
@@ -349,12 +365,17 @@ RestQuery.prototype.replaceSelect = function() {
       !selectValue.query.className ||
       Object.keys(selectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'improper usage of $select');
+      'improper usage of $select');
   }
 
   const additionalOptions = {
     redirectClassNameForKey: selectValue.query.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, selectValue.query.className,
@@ -398,11 +419,16 @@ RestQuery.prototype.replaceDontSelect = function() {
       !dontSelectValue.query.className ||
       Object.keys(dontSelectValue).length !== 2) {
     throw new Parse.Error(Parse.Error.INVALID_QUERY,
-                          'improper usage of $dontSelect');
+      'improper usage of $dontSelect');
   }
   const additionalOptions = {
     redirectClassNameForKey: dontSelectValue.query.redirectClassNameForKey
   };
+
+  if (this.restOptions.subqueryReadPreference) {
+    additionalOptions.readPreference = this.restOptions.subqueryReadPreference;
+    additionalOptions.subqueryReadPreference = this.restOptions.subqueryReadPreference;
+  }
 
   var subquery = new RestQuery(
     this.config, this.auth, dontSelectValue.query.className,
@@ -489,8 +515,8 @@ RestQuery.prototype.runFind = function(options = {}) {
   if (options.op) {
     findOptions.op = options.op;
   }
-  return this.config.database.find(
-    this.className, this.restWhere, findOptions).then((results) => {
+  return this.config.database.find(this.className, this.restWhere, findOptions)
+    .then((results) => {
       if (this.className === '_User') {
         for (var result of results) {
           cleanResultOfSensitiveUserInfo(result, this.auth, this.config);
@@ -518,8 +544,8 @@ RestQuery.prototype.runCount = function() {
   this.findOptions.count = true;
   delete this.findOptions.skip;
   delete this.findOptions.limit;
-  return this.config.database.find(
-    this.className, this.restWhere, this.findOptions).then((c) => {
+  return this.config.database.find(this.className, this.restWhere, this.findOptions)
+    .then((c) => {
       this.response.count = c;
     });
 };
@@ -531,7 +557,7 @@ RestQuery.prototype.handleInclude = function() {
   }
 
   var pathResponse = includePath(this.config, this.auth,
-                                 this.response, this.include[0], this.restOptions);
+    this.response, this.include[0], this.restOptions);
   if (pathResponse.then) {
     return pathResponse.then((newResponse) => {
       this.response = newResponse;
@@ -601,6 +627,11 @@ function includePath(config, auth, response, path, restOptions = {}) {
     if (keySet.size > 0) {
       includeRestOptions.keys = Array.from(keySet).join(',');
     }
+  }
+
+  if (restOptions.includeReadPreference) {
+    includeRestOptions.readPreference = restOptions.includeReadPreference;
+    includeRestOptions.includeReadPreference = restOptions.includeReadPreference;
   }
 
   const queryPromises = Object.keys(pointersHash).map((className) => {
@@ -679,7 +710,7 @@ function findPointers(object, path) {
 function replacePointers(object, path, replace) {
   if (object instanceof Array) {
     return object.map((obj) => replacePointers(obj, path, replace))
-             .filter((obj) => typeof obj !== 'undefined');
+      .filter((obj) => typeof obj !== 'undefined');
   }
 
   if (typeof object !== 'object' || !object) {

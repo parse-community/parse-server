@@ -55,7 +55,7 @@ describe('Parse.User testing', () => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
         Parse.User.logIn("non_existent_user", "asdf3",
-                         expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       },
       error: function(err) {
         jfail(err);
@@ -69,7 +69,7 @@ describe('Parse.User testing', () => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
         Parse.User.logIn("asdf", "asdfWrong",
-                         expectError(Parse.Error.OBJECT_NOT_FOUND, done));
+          expectError(Parse.Error.OBJECT_NOT_FOUND, done));
       }
     });
   });
@@ -730,7 +730,7 @@ describe('Parse.User testing', () => {
         ok(alice.id, "Alice should have an objectId");
         ok(alice.getSessionToken(), "Alice should have a session token");
         equal(alice.get("password"), undefined,
-              "Alice should not have a password");
+          "Alice should not have a password");
 
         // Simulate the environment getting reset.
         Parse.User._currentUser = null;
@@ -740,9 +740,9 @@ describe('Parse.User testing', () => {
         equal(aliceAgain.get("username"), "alice");
         equal(aliceAgain.id, alice.id, "currentUser should have objectId");
         ok(aliceAgain.getSessionToken(),
-           "currentUser should have a sessionToken");
+          "currentUser should have a sessionToken");
         equal(alice.get("password"), undefined,
-              "currentUser should not have password");
+          "currentUser should not have password");
         done();
       }
     });
@@ -763,10 +763,10 @@ describe('Parse.User testing', () => {
 
       var userFromDisk = Parse.User.current();
       equal(userFromDisk.get("password"), undefined,
-            "password should not be in attributes");
+        "password should not be in attributes");
       equal(userFromDisk.id, id, "id should be set");
       ok(userFromDisk.getSessionToken(),
-         "currentUser should have a sessionToken");
+        "currentUser should have a sessionToken");
       done();
     });
   });
@@ -790,19 +790,19 @@ describe('Parse.User testing', () => {
       var userInMemory = Parse.User.current();
 
       equal(userInMemory.getUsername(), "alice",
-            "saving user should not remove existing fields");
+        "saving user should not remove existing fields");
 
       equal(userInMemory.get('some_field'), 1,
-            "saving user should save specified field");
+        "saving user should save specified field");
 
       equal(userInMemory.get("password"), undefined,
-            "password should not be in attributes after saving user");
+        "password should not be in attributes after saving user");
 
       equal(userInMemory.get("objectId"), undefined,
-            "objectId should not be in attributes after saving user");
+        "objectId should not be in attributes after saving user");
 
       equal(userInMemory.get("_id"), undefined,
-            "_id should not be in attributes after saving user");
+        "_id should not be in attributes after saving user");
 
       equal(userInMemory.id, id, "id should be set");
 
@@ -811,7 +811,7 @@ describe('Parse.User testing', () => {
       ok(userInMemory.createdAt instanceof Date);
 
       ok(userInMemory.getSessionToken(),
-         "user should have a sessionToken after saving");
+        "user should have a sessionToken after saving");
 
       // Force the current user to read from localStorage, and check again
       delete Parse.User._currentUser;
@@ -819,19 +819,19 @@ describe('Parse.User testing', () => {
       var userFromDisk = Parse.User.current();
 
       equal(userFromDisk.getUsername(), "alice",
-            "userFromDisk should have previously existing fields");
+        "userFromDisk should have previously existing fields");
 
       equal(userFromDisk.get('some_field'), 1,
-            "userFromDisk should have saved field");
+        "userFromDisk should have saved field");
 
       equal(userFromDisk.get("password"), undefined,
-            "password should not be in attributes of userFromDisk");
+        "password should not be in attributes of userFromDisk");
 
       equal(userFromDisk.get("objectId"), undefined,
-            "objectId should not be in attributes of userFromDisk");
+        "objectId should not be in attributes of userFromDisk");
 
       equal(userFromDisk.get("_id"), undefined,
-            "_id should not be in attributes of userFromDisk");
+        "_id should not be in attributes of userFromDisk");
 
       equal(userFromDisk.id, id, "id should be set on userFromDisk");
 
@@ -840,7 +840,7 @@ describe('Parse.User testing', () => {
       ok(userFromDisk.createdAt instanceof Date);
 
       ok(userFromDisk.getSessionToken(),
-         "userFromDisk should have a sessionToken");
+        "userFromDisk should have a sessionToken");
 
       done();
     }, function(error) {
@@ -1159,11 +1159,11 @@ describe('Parse.User testing', () => {
       success: user => {
         const userQuery = new Parse.Query(Parse.User);
         userQuery.get(user.id)
-        .then(user => {
-          expect(user.get('authData')).not.toBeUndefined();
-          Parse.Object.disableSingleInstance();
-          done();
-        });
+          .then(user => {
+            expect(user.get('authData')).not.toBeUndefined();
+            Parse.Object.disableSingleInstance();
+            done();
+          });
       }
     });
   });
@@ -1185,10 +1185,7 @@ describe('Parse.User testing', () => {
       expect(fileAgain.url()).toMatch(/yolo.txt$/);
     }).then(() => {
       done();
-    }, error => {
-      jfail(error);
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("log in with provider twice", (done) => {
@@ -1204,29 +1201,30 @@ describe('Parse.User testing', () => {
         strictEqual(provider.authData.expiration_date, provider.synchronizedExpiration);
         ok(model._isLinked("facebook"), "User should be linked to facebook");
 
-        Parse.User.logOut();
-        ok(provider.loggedOut);
-        provider.loggedOut = false;
+        Parse.User.logOut().then(() => {
+          ok(provider.loggedOut);
+          provider.loggedOut = false;
 
-        Parse.User._logInWith("facebook", {
-          success: function(innerModel) {
-            ok(innerModel instanceof Parse.User,
-               "Model should be a Parse.User");
-            ok(innerModel === Parse.User.current(),
-               "Returned model should be the current user");
-            ok(provider.authData.id === provider.synchronizedUserId);
-            ok(provider.authData.access_token === provider.synchronizedAuthToken);
-            ok(innerModel._isLinked("facebook"),
-               "User should be linked to facebook");
-            ok(innerModel.existed(), "User should not be newly-created");
-            done();
-          },
-          error: function(model, error) {
-            jfail(error);
-            ok(false, "LogIn should have worked");
-            done();
-          }
-        });
+          Parse.User._logInWith("facebook", {
+            success: function(innerModel) {
+              ok(innerModel instanceof Parse.User,
+                "Model should be a Parse.User");
+              ok(innerModel === Parse.User.current(),
+                "Returned model should be the current user");
+              ok(provider.authData.id === provider.synchronizedUserId);
+              ok(provider.authData.access_token === provider.synchronizedAuthToken);
+              ok(innerModel._isLinked("facebook"),
+                "User should be linked to facebook");
+              ok(innerModel.existed(), "User should not be newly-created");
+              done();
+            },
+            error: function(model, error) {
+              jfail(error);
+              ok(false, "LogIn should have worked");
+              done();
+            }
+          });
+        }, done.fail);
       },
       error: function(model, error) {
         jfail(error);
@@ -1392,7 +1390,7 @@ describe('Parse.User testing', () => {
           error: function(model, error) {
             ok(error, "Linking should fail");
             ok(!model._isLinked("facebook"),
-               "User should not be linked to facebook");
+              "User should not be linked to facebook");
             done();
           }
         });
@@ -1421,7 +1419,7 @@ describe('Parse.User testing', () => {
           error: function(model, error) {
             ok(!error, "Linking should be cancelled");
             ok(!model._isLinked("facebook"),
-               "User should not be linked to facebook");
+              "User should not be linked to facebook");
             done();
           }
         });
@@ -1451,9 +1449,9 @@ describe('Parse.User testing', () => {
             ok(!model._isLinked("facebook"), "User should not be linked.");
             ok(!provider.synchronizedUserId, "User id should be cleared.");
             ok(!provider.synchronizedAuthToken,
-               "Auth token should be cleared.");
+              "Auth token should be cleared.");
             ok(!provider.synchronizedExpiration,
-               "Expiration should be cleared.");
+              "Expiration should be cleared.");
             done();
           },
           error: function() {
@@ -1485,21 +1483,21 @@ describe('Parse.User testing', () => {
         model._unlinkFrom("facebook", {
           success: function(model) {
             ok(!model._isLinked("facebook"),
-               "User should not be linked to facebook");
+              "User should not be linked to facebook");
             ok(!provider.synchronizedUserId, "User id should be cleared");
             ok(!provider.synchronizedAuthToken, "Auth token should be cleared");
             ok(!provider.synchronizedExpiration,
-               "Expiration should be cleared");
+              "Expiration should be cleared");
 
             model._linkWith("facebook", {
               success: function(model) {
                 ok(provider.synchronizedUserId, "User id should have a value");
                 ok(provider.synchronizedAuthToken,
-                   "Auth token should have a value");
+                  "Auth token should have a value");
                 ok(provider.synchronizedExpiration,
-                   "Expiration should have a value");
+                  "Expiration should have a value");
                 ok(model._isLinked("facebook"),
-                   "User should be linked to facebook");
+                  "User should be linked to facebook");
                 done();
               },
               error: function() {
@@ -1959,54 +1957,51 @@ describe('Parse.User testing', () => {
   });
 
   it("querying for users doesn't get session tokens", (done) => {
-    Parse.Promise.as().then(function() {
-      return Parse.User.signUp("finn", "human", { foo: "bar" });
+    Parse.User.signUp("finn", "human", { foo: "bar" })
+      .then(function() {
+        return Parse.User.logOut();
+      }).then(() => {
+        var user = new Parse.User();
+        user.set("username", "jake");
+        user.set("password", "dog");
+        user.set("foo", "baz");
+        return user.signUp();
 
-    }).then(function() {
-      return Parse.User.logOut();
-    }).then(() => {
-      var user = new Parse.User();
-      user.set("username", "jake");
-      user.set("password", "dog");
-      user.set("foo", "baz");
-      return user.signUp();
+      }).then(function() {
+        return Parse.User.logOut();
+      }).then(() => {
+        var query = new Parse.Query(Parse.User);
+        return query.find();
 
-    }).then(function() {
-      return Parse.User.logOut();
-    }).then(() => {
-      var query = new Parse.Query(Parse.User);
-      return query.find();
+      }).then(function(users) {
+        equal(users.length, 2);
+        for (var user of users) {
+          ok(!user.getSessionToken(), "user should not have a session token.");
+        }
 
-    }).then(function(users) {
-      equal(users.length, 2);
-      for (var user of users) {
-        ok(!user.getSessionToken(), "user should not have a session token.");
-      }
-
-      done();
-    }, function(error) {
-      ok(false, error);
-      done();
-    });
+        done();
+      }, function(error) {
+        ok(false, error);
+        done();
+      });
   });
 
   it("querying for users only gets the expected fields", (done) => {
-    Parse.Promise.as().then(() => {
-      return Parse.User.signUp("finn", "human", { foo: "bar" });
-    }).then(() => {
-      request.get({
-        headers: {'X-Parse-Application-Id': 'test',
-          'X-Parse-REST-API-Key': 'rest'},
-        url: 'http://localhost:8378/1/users',
-      }, (error, response, body) => {
-        expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(b.results.length).toEqual(1);
-        var user = b.results[0];
-        expect(Object.keys(user).length).toEqual(6);
-        done();
+    Parse.User.signUp("finn", "human", { foo: "bar" })
+      .then(() => {
+        request.get({
+          headers: {'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest'},
+          url: 'http://localhost:8378/1/users',
+        }, (error, response, body) => {
+          expect(error).toBe(null);
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          var user = b.results[0];
+          expect(Object.keys(user).length).toEqual(6);
+          done();
+        });
       });
-    });
   });
 
   it('retrieve user data from fetch, make sure the session token hasn\'t changed', (done) => {
@@ -2191,7 +2186,8 @@ describe('Parse.User testing', () => {
         request.put({
           headers: {
             'X-Parse-Application-Id': 'test',
-            'X-Parse-Session-Token': user.getSessionToken()
+            'X-Parse-Session-Token': user.getSessionToken(),
+            'X-Parse-REST-API-Key': 'rest'
           },
           url: 'http://localhost:8378/1/sessions/' + b.objectId,
           body: JSON.stringify({ foo: 'bar' })
@@ -2199,6 +2195,50 @@ describe('Parse.User testing', () => {
           expect(error).toBe(null);
           JSON.parse(body);
           done();
+        });
+      });
+    });
+  });
+
+  it('cannot update session if invalid or no session token', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("finn", "human", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions/me',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        request.put({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Session-Token': 'foo',
+            'X-Parse-REST-API-Key': 'rest'
+          },
+          url: 'http://localhost:8378/1/sessions/' + b.objectId,
+          body: JSON.stringify({ foo: 'bar' })
+        }, (error, response, body) => {
+          expect(error).toBe(null);
+          var b = JSON.parse(body);
+          expect(b.error).toBe('invalid session token');
+          request.put({
+            headers: {
+              'X-Parse-Application-Id': 'test',
+              'X-Parse-REST-API-Key': 'rest'
+            },
+            url: 'http://localhost:8378/1/sessions/' + b.objectId,
+            body: JSON.stringify({ foo: 'bar' })
+          }, (error, response, body) => {
+            expect(error).toBe(null);
+            var b = JSON.parse(body);
+            expect(b.error).toBe('Session token required.');
+            done();
+          });
         });
       });
     });
@@ -2277,8 +2317,50 @@ describe('Parse.User testing', () => {
             expect(error).toBe(null);
             var b = JSON.parse(body);
             expect(b.code).toEqual(209);
+            expect(b.error).toBe('invalid session token');
             done();
           });
+        });
+      });
+    });
+  });
+
+  it('cannot delete session if no sessionToken', (done) => {
+    Parse.Promise.as().then(() => {
+      return Parse.User.signUp("test1", "test", { foo: "bar" });
+    }).then(() => {
+      return Parse.User.signUp("test2", "test", { foo: "bar" });
+    }).then((user) => {
+      request.get({
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Session-Token': user.getSessionToken(),
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        url: 'http://localhost:8378/1/sessions'
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var objId;
+        try {
+          var b = JSON.parse(body);
+          expect(b.results.length).toEqual(1);
+          objId = b.results[0].objectId;
+        } catch(e) {
+          jfail(e);
+          done();
+          return;
+        }
+        request.del({
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-REST-API-Key': 'rest'
+          },
+          url: 'http://localhost:8378/1/sessions/' + objId
+        }, (error,response,body) => {
+          var b = JSON.parse(body);
+          expect(b.code).toEqual(209);
+          expect(b.error).toBe('invalid session token');
+          done();
         });
       });
     });
@@ -2287,13 +2369,13 @@ describe('Parse.User testing', () => {
   it('password format matches hosted parse', (done) => {
     var hashed = '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie';
     passwordCrypto.compare('test', hashed)
-    .then((pass) => {
-      expect(pass).toBe(true);
-      done();
-    }, () => {
-      fail('Password format did not match.');
-      done();
-    });
+      .then((pass) => {
+        expect(pass).toBe(true);
+        done();
+      }, () => {
+        fail('Password format did not match.');
+        done();
+      });
   });
 
   it('changing password clears sessions', (done) => {
@@ -2692,41 +2774,41 @@ describe('Parse.User testing', () => {
   it('should fail to become user with expired token', (done) => {
     let token;
     Parse.User.signUp("auser", "somepass", null)
-    .then(() => rp({
-      method: 'GET',
-      url: 'http://localhost:8378/1/classes/_Session',
-      json: true,
-      headers: {
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-Master-Key': 'test',
-      },
-    }))
-    .then(body => {
-      var id = body.results[0].objectId;
-      var expiresAt = new Date((new Date()).setYear(2015));
-      token = body.results[0].sessionToken;
-      return rp({
-        method: 'PUT',
-        url: "http://localhost:8378/1/classes/_Session/" + id,
+      .then(() => rp({
+        method: 'GET',
+        url: 'http://localhost:8378/1/classes/_Session',
         json: true,
         headers: {
           'X-Parse-Application-Id': 'test',
           'X-Parse-Master-Key': 'test',
         },
-        body: {
-          expiresAt: { __type: "Date", iso: expiresAt.toISOString() },
-        },
+      }))
+      .then(body => {
+        var id = body.results[0].objectId;
+        var expiresAt = new Date((new Date()).setYear(2015));
+        token = body.results[0].sessionToken;
+        return rp({
+          method: 'PUT',
+          url: "http://localhost:8378/1/classes/_Session/" + id,
+          json: true,
+          headers: {
+            'X-Parse-Application-Id': 'test',
+            'X-Parse-Master-Key': 'test',
+          },
+          body: {
+            expiresAt: { __type: "Date", iso: expiresAt.toISOString() },
+          },
+        })
       })
-    })
-    .then(() => Parse.User.become(token))
-    .then(() => {
-      fail("Should not have succeded")
-      done();
-    }, error => {
-      expect(error.code).toEqual(209);
-      expect(error.message).toEqual("Session token is expired.");
-      done();
-    })
+      .then(() => Parse.User.become(token))
+      .then(() => {
+        fail("Should not have succeded")
+        done();
+      }, error => {
+        expect(error.code).toEqual(209);
+        expect(error.message).toEqual("Session token is expired.");
+        done();
+      })
   });
 
   it('should not create extraneous session tokens', (done) => {
@@ -2762,29 +2844,29 @@ describe('Parse.User testing', () => {
     user.set("username", "testLinkWithProvider");
     user.set("password", "mypass");
     user.signUp()
-    .then(user => user._linkWith("facebook", {
-      success: user => {
-        expect(user.get('username')).toEqual('testLinkWithProvider');
-        expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
-        return user._unlinkFrom('facebook')
-        .then(() => user.fetch())
-        .then(user => {
+      .then(user => user._linkWith("facebook", {
+        success: user => {
           expect(user.get('username')).toEqual('testLinkWithProvider');
-          expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
+          expect(Parse.FacebookUtils.isLinked(user)).toBeTruthy();
+          return user._unlinkFrom('facebook')
+            .then(() => user.fetch())
+            .then(user => {
+              expect(user.get('username')).toEqual('testLinkWithProvider');
+              expect(Parse.FacebookUtils.isLinked(user)).toBeFalsy();
+              done();
+            });
+        },
+        error: error => {
+          fail('Unexpected failure testing linking');
+          fail(JSON.stringify(error));
           done();
-        });
-      },
-      error: error => {
-        fail('Unexpected failure testing linking');
-        fail(JSON.stringify(error));
+        }
+      }))
+      .catch(error => {
+        fail('Unexpected failure testing in unlink user test');
+        jfail(error);
         done();
-      }
-    }))
-    .catch(error => {
-      fail('Unexpected failure testing in unlink user test');
-      jfail(error);
-      done();
-    });
+      });
   });
 
   it('should revoke sessions when converting anonymous user to "normal" user', done => {
@@ -2797,60 +2879,60 @@ describe('Parse.User testing', () => {
       json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
     }, (err, res, body) => {
       Parse.User.become(body.sessionToken)
-      .then(user => {
-        const obj = new Parse.Object('TestObject');
-        obj.setACL(new Parse.ACL(user));
-        return obj.save()
-        .then(() => {
-          // Change password, revoking session
-          user.set('username', 'no longer anonymous');
-          user.set('password', 'password');
-          return user.save()
+        .then(user => {
+          const obj = new Parse.Object('TestObject');
+          obj.setACL(new Parse.ACL(user));
+          return obj.save()
+            .then(() => {
+              // Change password, revoking session
+              user.set('username', 'no longer anonymous');
+              user.set('password', 'password');
+              return user.save()
+            })
+            .then(() => {
+              // Session token should have been recycled
+              expect(body.sessionToken).not.toEqual(user.getSessionToken());
+            })
+            .then(() => obj.fetch())
+            .then(() => {
+              done();
+            })
+            .catch(() => {
+              fail('should not fail')
+              done();
+            });
         })
-        .then(() => {
-          // Session token should have been recycled
-          expect(body.sessionToken).not.toEqual(user.getSessionToken());
-        })
-        .then(() => obj.fetch())
-        .then(() => {
-          done();
-        })
-        .catch(() => {
-          fail('should not fail')
-          done();
-        });
-      })
     });
   });
 
   it('should not revoke session tokens if the server is configures to not revoke session tokens', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: false })
-    .then(() => {
-      request.post({
-        url: 'http://localhost:8378/1/classes/_User',
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-REST-API-Key': 'rest',
-        },
-        json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
-      }, (err, res, body) => {
-        Parse.User.become(body.sessionToken)
-        .then(user => {
-          const obj = new Parse.Object('TestObject');
-          obj.setACL(new Parse.ACL(user));
-          return obj.save()
-          .then(() => {
-            // Change password, revoking session
-            user.set('username', 'no longer anonymous');
-            user.set('password', 'password');
-            return user.save()
-          })
-          .then(() => obj.fetch())
-          // fetch should succeed as we still have our session token
-          .then(done, fail);
-        })
+      .then(() => {
+        request.post({
+          url: 'http://localhost:8378/1/classes/_User',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+        }, (err, res, body) => {
+          Parse.User.become(body.sessionToken)
+            .then(user => {
+              const obj = new Parse.Object('TestObject');
+              obj.setACL(new Parse.ACL(user));
+              return obj.save()
+                .then(() => {
+                  // Change password, revoking session
+                  user.set('username', 'no longer anonymous');
+                  user.set('password', 'password');
+                  return user.save()
+                })
+                .then(() => obj.fetch())
+              // fetch should succeed as we still have our session token
+                .then(done, fail);
+            })
+        });
       });
-    });
   });
 
   it('should not fail querying non existing relations', done => {
@@ -3033,5 +3115,59 @@ describe('Parse.User testing', () => {
         done();
       });
     });
+  });
+
+  it('should be able to update user with authData passed', (done) => {
+    let objectId;
+    let sessionToken;
+
+    function validate(block) {
+      return rp.get({
+        url: `http://localhost:8378/1/classes/_User/${objectId}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken
+        },
+        json: true,
+      }).then(block);
+    }
+
+    rp.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: { key: "value", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((body) => {
+      objectId = body.objectId;
+      sessionToken = body.sessionToken;
+      expect(sessionToken).toBeDefined();
+      expect(objectId).toBeDefined();
+      return validate((user) => { // validate that keys are set on creation
+        expect(user.key).toBe("value");
+      });
+    }).then(() => {
+      // update the user
+      const options = {
+        url: `http://localhost:8378/1/classes/_User/${objectId}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken
+        },
+        json: { key: "otherValue", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }
+      return rp.put(options);
+    }).then(() => {
+      return validate((user) => { // validate that keys are set on update
+        expect(user.key).toBe("otherValue");
+      });
+    }).then(() => {
+      done();
+    })
+      .then(done)
+      .catch(done.fail);
   });
 });

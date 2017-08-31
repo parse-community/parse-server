@@ -9,8 +9,8 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI })
-    .deleteAllClasses()
-    .then(done, fail);
+      .deleteAllClasses()
+      .then(done, fail);
   });
 
   it('auto-escapes symbols in auth information', () => {
@@ -50,14 +50,14 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
   it('stores objectId in _id', done => {
     const adapter = new MongoStorageAdapter({ uri: databaseURI });
     adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-    .then(() => adapter._rawFind('Foo', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      var obj = results[0];
-      expect(obj._id).toEqual('abcde');
-      expect(obj.objectId).toBeUndefined();
-      done();
-    });
+      .then(() => adapter._rawFind('Foo', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        var obj = results[0];
+        expect(obj._id).toEqual('abcde');
+        expect(obj.objectId).toBeUndefined();
+        done();
+      });
   });
 
   it('find succeeds when query is within maxTimeMS', (done) => {
@@ -67,13 +67,13 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       mongoOptions: { maxTimeMS },
     });
     adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-    .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS / 2})` }))
-    .then(
-      () => done(),
-      (err) => {
-        done.fail(`maxTimeMS should not affect fast queries ${err}`);
-      }
-    );
+      .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS / 2})` }))
+      .then(
+        () => done(),
+        (err) => {
+          done.fail(`maxTimeMS should not affect fast queries ${err}`);
+        }
+      );
   })
 
   it('find fails when query exceeds maxTimeMS', (done) => {
@@ -83,18 +83,18 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       mongoOptions: { maxTimeMS },
     });
     adapter.createObject('Foo', { fields: {} }, { objectId: 'abcde' })
-    .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS * 2})` }))
-    .then(
-      () => {
-        done.fail('Find succeeded despite taking too long!');
-      },
-      (err) => {
-        expect(err.name).toEqual('MongoError');
-        expect(err.code).toEqual(50);
-        expect(err.message).toEqual('operation exceeded time limit');
-        done();
-      }
-    );
+      .then(() => adapter._rawFind('Foo', { '$where': `sleep(${maxTimeMS * 2})` }))
+      .then(
+        () => {
+          done.fail('Find succeeded despite taking too long!');
+        },
+        (err) => {
+          expect(err.name).toEqual('MongoError');
+          expect(err.code).toEqual(50);
+          expect(err.message).toEqual('operation exceeded time limit');
+          done();
+        }
+      );
   });
 
   it('stores pointers with a _p_ prefix', (done) => {
@@ -111,16 +111,16 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       objectId: { type: 'String' },
       aPointer: { type: 'Pointer', targetClass: 'JustThePointer' },
     }}, obj)
-    .then(() => adapter._rawFind('APointerDarkly', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const output = results[0];
-      expect(typeof output._id).toEqual('string');
-      expect(typeof output._p_aPointer).toEqual('string');
-      expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
-      expect(output.aPointer).toBeUndefined();
-      done();
-    });
+      .then(() => adapter._rawFind('APointerDarkly', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const output = results[0];
+        expect(typeof output._id).toEqual('string');
+        expect(typeof output._p_aPointer).toEqual('string');
+        expect(output._p_aPointer).toEqual('JustThePointer$qwerty');
+        expect(output.aPointer).toBeUndefined();
+        done();
+      });
   });
 
   it('handles object and subdocument', done => {
@@ -128,25 +128,25 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     const schema = { fields : { subdoc: { type: 'Object' } } };
     const obj = { subdoc: {foo: 'bar', wu: 'tan'} };
     adapter.createObject('MyClass', schema, obj)
-    .then(() => adapter._rawFind('MyClass', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(typeof mob.subdoc).toBe('object');
-      expect(mob.subdoc.foo).toBe('bar');
-      expect(mob.subdoc.wu).toBe('tan');
-      const obj = { 'subdoc.wu': 'clan' };
-      return adapter.findOneAndUpdate('MyClass', schema, {}, obj);
-    })
-    .then(() => adapter._rawFind('MyClass', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(typeof mob.subdoc).toBe('object');
-      expect(mob.subdoc.foo).toBe('bar');
-      expect(mob.subdoc.wu).toBe('clan');
-      done();
-    });
+      .then(() => adapter._rawFind('MyClass', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('tan');
+        const obj = { 'subdoc.wu': 'clan' };
+        return adapter.findOneAndUpdate('MyClass', schema, {}, obj);
+      })
+      .then(() => adapter._rawFind('MyClass', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(typeof mob.subdoc).toBe('object');
+        expect(mob.subdoc.foo).toBe('bar');
+        expect(mob.subdoc.wu).toBe('clan');
+        done();
+      });
   });
 
   it('handles creating an array, object, date', (done) => {
@@ -165,29 +165,29 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       date: { type: 'Date' },
     } };
     adapter.createObject('MyClass', schema, obj)
-    .then(() => adapter._rawFind('MyClass', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(mob.array instanceof Array).toBe(true);
-      expect(typeof mob.object).toBe('object');
-      expect(mob.date instanceof Date).toBe(true);
-      return adapter.find('MyClass', schema, {}, {});
-    })
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(mob.array instanceof Array).toBe(true);
-      expect(typeof mob.object).toBe('object');
-      expect(mob.date.__type).toBe('Date');
-      expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
-      done();
-    })
-    .catch(error => {
-      console.log(error);
-      fail();
-      done();
-    });
+      .then(() => adapter._rawFind('MyClass', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(mob.array instanceof Array).toBe(true);
+        expect(typeof mob.object).toBe('object');
+        expect(mob.date instanceof Date).toBe(true);
+        return adapter.find('MyClass', schema, {}, {});
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(mob.array instanceof Array).toBe(true);
+        expect(typeof mob.object).toBe('object');
+        expect(mob.date.__type).toBe('Date');
+        expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
+        done();
+      })
+      .catch(error => {
+        console.log(error);
+        fail();
+        done();
+      });
   });
 
   it("handles updating a single object with array, object date", (done) => {
@@ -201,40 +201,40 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
 
 
     adapter.createObject('MyClass', schema, {})
-    .then(() => adapter._rawFind('MyClass', {}))
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const update = {
-        array: [1, 2, 3],
-        object: {foo: 'bar'},
-        date: {
-          __type: 'Date',
-          iso: '2016-05-26T20:55:01.154Z',
-        },
-      };
-      const query = {};
-      return adapter.findOneAndUpdate('MyClass', schema, query, update)
-    })
-    .then(results => {
-      const mob = results;
-      expect(mob.array instanceof Array).toBe(true);
-      expect(typeof mob.object).toBe('object');
-      expect(mob.date.__type).toBe('Date');
-      expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
-      return adapter._rawFind('MyClass', {});
-    })
-    .then(results => {
-      expect(results.length).toEqual(1);
-      const mob = results[0];
-      expect(mob.array instanceof Array).toBe(true);
-      expect(typeof mob.object).toBe('object');
-      expect(mob.date instanceof Date).toBe(true);
-      done();
-    })
-    .catch(error => {
-      console.log(error);
-      fail();
-      done();
-    });
+      .then(() => adapter._rawFind('MyClass', {}))
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const update = {
+          array: [1, 2, 3],
+          object: {foo: 'bar'},
+          date: {
+            __type: 'Date',
+            iso: '2016-05-26T20:55:01.154Z',
+          },
+        };
+        const query = {};
+        return adapter.findOneAndUpdate('MyClass', schema, query, update)
+      })
+      .then(results => {
+        const mob = results;
+        expect(mob.array instanceof Array).toBe(true);
+        expect(typeof mob.object).toBe('object');
+        expect(mob.date.__type).toBe('Date');
+        expect(mob.date.iso).toBe('2016-05-26T20:55:01.154Z');
+        return adapter._rawFind('MyClass', {});
+      })
+      .then(results => {
+        expect(results.length).toEqual(1);
+        const mob = results[0];
+        expect(mob.array instanceof Array).toBe(true);
+        expect(typeof mob.object).toBe('object');
+        expect(mob.date instanceof Date).toBe(true);
+        done();
+      })
+      .catch(error => {
+        console.log(error);
+        fail();
+        done();
+      });
   });
 });

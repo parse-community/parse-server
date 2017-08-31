@@ -101,7 +101,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
     return {key, value};
   }
 
-    // Handle update operators
+  // Handle update operators
   if (typeof restValue === 'object' && '__op' in restValue) {
     return {key, value: transformUpdateOperator(restValue, false)};
   }
@@ -228,6 +228,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   // Handle query constraints
   const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
   if (transformedConstraint !== CannotTransform) {
+    if (transformedConstraint.$text) {
+      return {key: '$text', value: transformedConstraint.$text};
+    }
     return {key, value: transformedConstraint};
   }
 
@@ -492,6 +495,9 @@ function transformTopLevelAtom(atom) {
     if (GeoPointCoder.isValidJSON(atom)) {
       return GeoPointCoder.JSONToDatabase(atom);
     }
+    if (PolygonCoder.isValidJSON(atom)) {
+      return PolygonCoder.JSONToDatabase(atom);
+    }
     if (FileCoder.isValidJSON(atom)) {
       return FileCoder.JSONToDatabase(atom);
     }
@@ -559,7 +565,7 @@ function transformConstraint(constraint, inArray) {
       const arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
-                              'bad ' + key + ' value');
+          'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
       break;
@@ -576,6 +582,50 @@ function transformConstraint(constraint, inArray) {
       answer[key] = constraint[key];
       break;
 
+    case '$text': {
+      const search = constraint[key].$search;
+      if (typeof search !== 'object') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $search, should be object`
+        );
+      }
+      if (!search.$term || typeof search.$term !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $term, should be string`
+        );
+      } else {
+        answer[key] = {
+          '$search': search.$term
+        }
+      }
+      if (search.$language && typeof search.$language !== 'string') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $language, should be string`
+        );
+      } else if (search.$language) {
+        answer[key].$language = search.$language;
+      }
+      if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $caseSensitive, should be boolean`
+        );
+      } else if (search.$caseSensitive) {
+        answer[key].$caseSensitive = search.$caseSensitive;
+      }
+      if (search.$diacriticSensitive && typeof search.$diacriticSensitive !== 'boolean') {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $text: $diacriticSensitive, should be boolean`
+        );
+      } else if (search.$diacriticSensitive) {
+        answer[key].$diacriticSensitive = search.$diacriticSensitive;
+      }
+      break;
+    }
     case '$nearSphere':
       var point = constraint[key];
       answer[key] = [point.longitude, point.latitude];
@@ -642,6 +692,24 @@ function transformConstraint(constraint, inArray) {
       });
       answer[key] = {
         '$polygon': points
+      };
+      break;
+    }
+    case '$geoIntersects': {
+      const point = constraint[key]['$point'];
+      if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoIntersect value; $point should be GeoPoint'
+        );
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      answer[key] = {
+        $geometry: {
+          type: 'Point',
+          coordinates: [point.longitude, point.latitude]
+        }
       };
       break;
     }
@@ -893,6 +961,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
+          if (schema.fields[key] && schema.fields[key].type === 'Polygon' && PolygonCoder.isValidDatabaseObject(value)) {
+            restObject[key] = PolygonCoder.databaseToJSON(value);
+            break;
+          }
           if (schema.fields[key] && schema.fields[key].type === 'Bytes' && BytesCoder.isValidDatabaseObject(value)) {
             restObject[key] = BytesCoder.databaseToJSON(value);
             break;
@@ -992,6 +1064,64 @@ var GeoPointCoder = {
     return (typeof value === 'object' &&
       value !== null &&
       value.__type === 'GeoPoint'
+    );
+  }
+};
+
+var PolygonCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'Polygon',
+      coordinates: object['coordinates'][0]
+    }
+  },
+
+  isValidDatabaseObject(object) {
+    const coords = object.coordinates[0];
+    if (object.type !== 'Polygon' || !(coords instanceof Array)) {
+      return false;
+    }
+    for (let i = 0; i < coords.length; i++) {
+      const point = coords[i];
+      if (!GeoPointCoder.isValidDatabaseObject(point)) {
+        return false;
+      }
+      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+    }
+    return true;
+  },
+
+  JSONToDatabase(json) {
+    const coords = json.coordinates;
+    if (coords[0][0] !== coords[coords.length - 1][0] ||
+        coords[0][1] !== coords[coords.length - 1][1]) {
+      coords.push(coords[0]);
+    }
+    const unique = coords.filter((item, index, ar) => {
+      let foundIndex = -1;
+      for (let i = 0; i < ar.length; i += 1) {
+        const pt = ar[i];
+        if (pt[0] === item[0] &&
+            pt[1] === item[1]) {
+          foundIndex = i;
+          break;
+        }
+      }
+      return foundIndex === index;
+    });
+    if (unique.length < 3) {
+      throw new Parse.Error(
+        Parse.Error.INTERNAL_SERVER_ERROR,
+        'GeoJSON: Loop must have at least 3 different vertices'
+      );
+    }
+    return { type: 'Polygon', coordinates: [coords] };
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Polygon'
     );
   }
 };

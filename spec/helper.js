@@ -95,11 +95,9 @@ var defaultConfiguration = {
   silent,
   logLevel,
   push: {
-    'ios': {
-      cert: 'prodCert.pem',
-      key: 'prodKey.pem',
-      production: true,
-      bundleId: 'bundleId',
+    android: {
+      senderId: 'yolo',
+      apiKey: 'yolo',
     }
   },
   auth: { // Override the facebook provider
@@ -177,26 +175,21 @@ beforeEach(done => {
     }
   }
   TestUtils.destroyAllDataPermanently()
-  .catch(error => {
+    .catch(error => {
     // For tests that connect to their own mongo, there won't be any data to delete.
-    if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
-      return;
-    } else {
-      fail(error);
-      return;
-    }
-  })
-  .then(reconfigureServer)
-  .then(() => {
-    Parse.initialize('test', 'test', 'test');
-    Parse.serverURL = 'http://localhost:' + port + '/1';
-    done();
-  }, () => {
-    Parse.initialize('test', 'test', 'test');
-    Parse.serverURL = 'http://localhost:' + port + '/1';
-    // fail(JSON.stringify(error));
-    done();
-  })
+      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
+        return;
+      } else {
+        fail(error);
+        return;
+      }
+    })
+    .then(reconfigureServer)
+    .then(() => {
+      Parse.initialize('test', 'test', 'test');
+      Parse.serverURL = 'http://localhost:' + port + '/1';
+      done();
+    }).catch(done.fail);
 });
 
 afterEach(function(done) {
@@ -210,22 +203,22 @@ afterEach(function(done) {
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
-  .then(allSchemas => {
-    allSchemas.forEach((schema) => {
-      var className = schema.className;
-      expect(className).toEqual({ asymmetricMatch: className => {
-        if (!className.startsWith('_')) {
-          return true;
-        } else {
+    .then(allSchemas => {
+      allSchemas.forEach((schema) => {
+        var className = schema.className;
+        expect(className).toEqual({ asymmetricMatch: className => {
+          if (!className.startsWith('_')) {
+            return true;
+          } else {
           // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
           // break it.
-          return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
-        }
-      }});
-    });
-  })
-  .then(() => Parse.User.logOut())
-  .then(afterLogOut, afterLogOut)
+            return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
+          }
+        }});
+      });
+    })
+    .then(() => Parse.User.logOut())
+    .then(afterLogOut, afterLogOut)
 });
 
 var TestObject = Parse.Object.extend({

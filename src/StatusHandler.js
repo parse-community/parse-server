@@ -52,7 +52,7 @@ function statusHandler(className, database) {
 
 export function jobStatusHandler(config) {
   let jobStatus;
-  const objectId = newObjectId();
+  const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
   const handler = statusHandler(JOB_STATUS_COLLECTION, database);
   const setRunning = function(jobName, params) {
@@ -103,7 +103,7 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config, objectId = newObjectId()) {
+export function pushStatusHandler(config, objectId = newObjectId(config.objectIdSize)) {
 
   let pushStatus;
   const database = config.database;
@@ -159,7 +159,7 @@ export function pushStatusHandler(config, objectId = newObjectId()) {
   const setRunning = function(count) {
     logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date(), count });
+      {status: "running", updatedAt: new Date(), count });
   }
 
   const trackSent = function(results) {

@@ -49,6 +49,7 @@ import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
+import { AudiencesRouter }          from './Routers/AudiencesRouter';
 
 import DatabaseController       from './Controllers/DatabaseController';
 import SchemaCache              from './Controllers/SchemaCache';
@@ -91,6 +92,7 @@ class ParseServer {
   constructor({
     appId = requiredParameter('You must provide an appId!'),
     masterKey = requiredParameter('You must provide a masterKey!'),
+    masterKeyIps = [],
     appName,
     analyticsAdapter,
     filesAdapter,
@@ -139,9 +141,13 @@ class ParseServer {
     expireInactiveSessions = defaults.expireInactiveSessions,
     revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
     schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+    cacheTTL = defaults.cacheTTL, // cache for 5s
+    cacheMaxSize = defaults.cacheMaxSize, // 10000
     enableSingleSchemaCache = false,
+    objectIdSize = defaults.objectIdSize,
     __indexBuildCompletionCallbackForTests = () => {},
   }) {
+
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -160,6 +166,11 @@ class ParseServer {
     userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
       defaults.userSensitiveFields,
       userSensitiveFields
+    )));
+
+    masterKeyIps = Array.from(new Set(masterKeyIps.concat(
+      defaults.masterKeyIps,
+      masterKeyIps
     )));
 
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
@@ -181,9 +192,8 @@ class ParseServer {
     // We pass the options and the base class for the adatper,
     // Note that passing an instance would work too
     const pushController = new PushController();
-
-    const hasPushSupport = pushAdapter && push;
-    const hasPushScheduledSupport = pushAdapter && push && scheduledPush;
+    const hasPushSupport = !!(pushAdapter && push);
+    const hasPushScheduledSupport = hasPushSupport && (scheduledPush === true);
 
     const {
       disablePushWorker
@@ -198,7 +208,7 @@ class ParseServer {
     const emailControllerAdapter = loadAdapter(emailAdapter);
     const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
+    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
     const cacheController = new CacheController(cacheControllerAdapter, appId);
 
     const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
@@ -224,6 +234,7 @@ class ParseServer {
     AppCache.put(appId, {
       appId,
       masterKey: masterKey,
+      masterKeyIps:masterKeyIps,
       serverURL: serverURL,
       collectionPrefix: collectionPrefix,
       clientKey: clientKey,
@@ -262,7 +273,8 @@ class ParseServer {
       pushWorker,
       pushControllerQueue,
       hasPushSupport,
-      hasPushScheduledSupport
+      hasPushScheduledSupport,
+      objectIdSize
     });
 
     Config.validate(AppCache.get(appId));
@@ -380,7 +392,8 @@ class ParseServer {
       new GlobalConfigRouter(),
       new PurgeRouter(),
       new HooksRouter(),
-      new CloudCodeRouter()
+      new CloudCodeRouter(),
+      new AudiencesRouter()
     ];
 
     const routes = routers.reduce((memo, router) => {

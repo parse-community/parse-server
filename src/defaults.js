@@ -32,5 +32,9 @@ export default {
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
   schemaCacheTTL: 5000, // in ms
-  userSensitiveFields: ['email']
+  cacheTTL: 5000,
+  cacheMaxSize: 10000,
+  userSensitiveFields: ['email'],
+  objectIdSize: 10,
+  masterKeyIps: []
 }

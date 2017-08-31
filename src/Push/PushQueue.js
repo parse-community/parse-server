@@ -1,7 +1,6 @@
-import { ParseMessageQueue }  from '../ParseMessageQueue';
-import rest                   from '../rest';
-import { isPushIncrementing } from './utils';
-import deepcopy               from 'deepcopy';
+import { ParseMessageQueue }      from '../ParseMessageQueue';
+import rest                       from '../rest';
+import { applyDeviceTokenExists } from './utils';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
@@ -25,21 +24,19 @@ export class PushQueue {
 
   enqueue(body, where, config, auth, pushStatus) {
     const limit = this.batchSize;
-    // Order by badge (because the payload is badge dependant)
-    // and createdAt to fix the order
-    const order = isPushIncrementing(body) ? 'badge,createdAt' : 'createdAt';
-    where = deepcopy(where);
-    if (!where.hasOwnProperty('deviceToken')) {
-      where['deviceToken'] = {'$exists': true};
-    }
+
+    where = applyDeviceTokenExists(where);
+
+    // Order by objectId so no impact on the DB
+    const order = 'objectId';
     return Promise.resolve().then(() => {
       return rest.find(config,
-                       auth,
-                       '_Installation',
-                       where,
-                       {limit: 0, count: true});
+        auth,
+        '_Installation',
+        where,
+        {limit: 0, count: true});
     }).then(({results, count}) => {
-      if (!results) {
+      if (!results || count == 0) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
       pushStatus.setRunning(count);

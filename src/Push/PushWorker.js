@@ -6,7 +6,7 @@ import Config                 from '../Config';
 import { PushAdapter }        from '../Adapters/Push/PushAdapter';
 import rest                   from '../rest';
 import { pushStatusHandler }  from '../StatusHandler';
-import { isPushIncrementing } from './utils';
+import * as utils             from './utils';
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import { PushQueue }          from './PushQueue';
 
@@ -14,10 +14,7 @@ const UNSUPPORTED_BADGE_KEY = "unsupported";
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
-    let badge = installation.badge + '';
-    if (installation.deviceType != "ios") {
-      badge = UNSUPPORTED_BADGE_KEY;
-    }
+    const badge = installation.badge + '';
     map[badge] = map[badge] || [];
     map[badge].push(installation);
     return map;
@@ -54,7 +51,7 @@ export class PushWorker {
   run({ body, query, pushStatus, applicationId }: any): Promise<*> {
     const config = new Config(applicationId);
     const auth = master(config);
-    const where  = query.where;
+    const where = utils.applyDeviceTokenExists(query.where);
     delete query.where;
     return rest.find(config, auth, '_Installation', where, query).then(({results}) => {
       if (results.length == 0) {
@@ -68,7 +65,7 @@ export class PushWorker {
 
   sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config): Promise<*> {
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
-    if (!isPushIncrementing(body)) {
+    if (!utils.isPushIncrementing(body)) {
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
         return pushStatus.trackSent(results);
       });

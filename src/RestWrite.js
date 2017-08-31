@@ -120,7 +120,7 @@ RestWrite.prototype.validateClientClassCreation = function() {
       .then(hasClass => {
         if (hasClass !== true) {
           throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-                                'This user is not allowed to access ' +
+            'This user is not allowed to access ' +
                                 'non-existent class: ' + this.className);
         }
       });
@@ -153,12 +153,11 @@ RestWrite.prototype.runBeforeTrigger = function() {
   }
 
   let originalObject = null;
-  const updatedObject = triggers.inflate(extraData, this.originalData);
+  const updatedObject = this.buildUpdatedObject(extraData);
   if (this.query && this.query.objectId) {
     // This is an update for existing object.
     originalObject = triggers.inflate(extraData, this.originalData);
   }
-  updatedObject.set(this.sanitizedData());
 
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
@@ -188,7 +187,7 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
 
       // Only assign new objectId if we are creating new object
       if (!this.data.objectId) {
-        this.data.objectId = cryptoUtils.newObjectId();
+        this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
       }
     }
   }
@@ -206,11 +205,11 @@ RestWrite.prototype.validateAuthData = function() {
   if (!this.query && !this.data.authData) {
     if (typeof this.data.username !== 'string' || _.isEmpty(this.data.username)) {
       throw new Parse.Error(Parse.Error.USERNAME_MISSING,
-                            'bad or missing username');
+        'bad or missing username');
     }
     if (typeof this.data.password !== 'string' || _.isEmpty(this.data.password)) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING,
-                            'password is required');
+        'password is required');
     }
   }
 
@@ -231,7 +230,7 @@ RestWrite.prototype.validateAuthData = function() {
     }
   }
   throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
-                          'This authentication method is unsupported.');
+    'This authentication method is unsupported.');
 };
 
 RestWrite.prototype.handleAuthDataValidation = function(authData) {
@@ -242,7 +241,7 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
     const validateAuthData = this.config.authDataManager.getValidatorForProvider(provider);
     if (!validateAuthData) {
       throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
-                            'This authentication method is unsupported.');
+        'This authentication method is unsupported.');
     }
     return validateAuthData(authData[provider]);
   });
@@ -267,8 +266,8 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
   let findPromise = Promise.resolve([]);
   if (query.length > 0) {
     findPromise = this.config.database.find(
-        this.className,
-        {'$or': query}, {})
+      this.className,
+      {'$or': query}, {})
   }
 
   return findPromise;
@@ -282,7 +281,7 @@ RestWrite.prototype.handleAuthData = function(authData) {
     if (results.length > 1) {
       // More than 1 user with the passed id's
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                              'this auth is already used');
+        'this auth is already used');
     }
 
     this.storage['authProvider'] = Object.keys(authData).join(',');
@@ -298,20 +297,26 @@ RestWrite.prototype.handleAuthData = function(authData) {
         }
       });
       const hasMutatedAuthData = Object.keys(mutatedAuthData).length !== 0;
-      if (!this.query) {
+      let userId;
+      if (this.query && this.query.objectId) {
+        userId = this.query.objectId;
+      } else if (this.auth && this.auth.user && this.auth.user.id) {
+        userId = this.auth.user.id;
+      }
+      if (!userId || userId === userResult.objectId) { // no user making the call
+        // OR the user making the call is the right one
         // Login with auth data
         delete results[0].password;
 
         // need to set the objectId first otherwise location has trailing undefined
         this.data.objectId = userResult.objectId;
 
-        // Determine if authData was updated
-
-        this.response = {
-          response: userResult,
-          location: this.location()
-        };
-
+        if (!this.query || !this.query.objectId) { // this a login call, no userId passed
+          this.response = {
+            response: userResult,
+            location: this.location()
+          };
+        }
         // If we didn't change the auth data, just keep going
         if (!hasMutatedAuthData) {
           return;
@@ -321,20 +326,27 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // We should update the token and let the user in
         // We should only check the mutated keys
         return this.handleAuthDataValidation(mutatedAuthData).then(() => {
-          // Assign the new authData in the response
-          Object.keys(mutatedAuthData).forEach((provider) => {
-            this.response.response.authData[provider] = mutatedAuthData[provider];
-          });
-          // Run the DB update directly, as 'master'
-          // Just update the authData part
-          return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
+          // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
+          // we need to set it up there.
+          // We are supposed to have a response only on LOGIN with authData, so we skip those
+          // If we're not logging in, but just updating the current user, we can safely skip that part
+          if (this.response) {
+            // Assign the new authData in the response
+            Object.keys(mutatedAuthData).forEach((provider) => {
+              this.response.response.authData[provider] = mutatedAuthData[provider];
+            });
+            // Run the DB update directly, as 'master'
+            // Just update the authData part
+            // Then we're good for the user, early exit of sorts
+            return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
+          }
         });
-      } else if (this.query && this.query.objectId) {
+      } else if (userId) {
         // Trying to update auth data but users
         // are different
-        if (userResult.objectId !== this.query.objectId) {
+        if (userResult.objectId !== userId) {
           throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,
-                              'this auth is already used');
+            'this auth is already used');
         }
         // No auth data was mutated, just keep going
         if (!hasMutatedAuthData) {
@@ -583,13 +595,13 @@ RestWrite.prototype.handleFollowup = function() {
     };
     delete this.storage['clearSessions'];
     return this.config.database.destroy('_Session', sessionQuery)
-    .then(this.handleFollowup.bind(this));
+      .then(this.handleFollowup.bind(this));
   }
 
   if (this.storage && this.storage['generateNewSession']) {
     delete this.storage['generateNewSession'];
     return this.createSessionToken()
-    .then(this.handleFollowup.bind(this));
+      .then(this.handleFollowup.bind(this));
   }
 
   if (this.storage && this.storage['sendVerificationEmail']) {
@@ -609,7 +621,7 @@ RestWrite.prototype.handleSession = function() {
 
   if (!this.auth.user && !this.auth.isMaster) {
     throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-                          'Session token required.');
+      'Session token required.');
   }
 
   // TODO: Verify proper error to throw
@@ -644,7 +656,7 @@ RestWrite.prototype.handleSession = function() {
     return create.execute().then((results) => {
       if (!results.response) {
         throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR,
-                              'Error creating session.');
+          'Error creating session.');
       }
       sessionData['objectId'] = results.response['objectId'];
       this.response = {
@@ -668,7 +680,7 @@ RestWrite.prototype.handleInstallation = function() {
 
   if (!this.query && !this.data.deviceToken && !this.data.installationId && !this.auth.installationId) {
     throw new Parse.Error(135,
-                          'at least one ID field (deviceToken, installationId) ' +
+      'at least one ID field (deviceToken, installationId) ' +
                           'must be specified in this operation');
   }
 
@@ -748,25 +760,25 @@ RestWrite.prototype.handleInstallation = function() {
     if (this.query && this.query.objectId) {
       if (!objectIdMatch) {
         throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
-                                'Object not found for update.');
+          'Object not found for update.');
       }
       if (this.data.installationId && objectIdMatch.installationId &&
           this.data.installationId !== objectIdMatch.installationId) {
         throw new Parse.Error(136,
-                                'installationId may not be changed in this ' +
+          'installationId may not be changed in this ' +
                                 'operation');
       }
       if (this.data.deviceToken && objectIdMatch.deviceToken &&
           this.data.deviceToken !== objectIdMatch.deviceToken &&
           !this.data.installationId && !objectIdMatch.installationId) {
         throw new Parse.Error(136,
-                                'deviceToken may not be changed in this ' +
+          'deviceToken may not be changed in this ' +
                                 'operation');
       }
       if (this.data.deviceType && this.data.deviceType &&
           this.data.deviceType !== objectIdMatch.deviceType) {
         throw new Parse.Error(136,
-                                'deviceType may not be changed in this ' +
+          'deviceType may not be changed in this ' +
                                 'operation');
       }
     }
@@ -781,7 +793,7 @@ RestWrite.prototype.handleInstallation = function() {
     // need to specify deviceType only if it's new
     if (!this.query && !this.data.deviceType && !idMatch) {
       throw new Parse.Error(135,
-                            'deviceType must be specified in this operation');
+        'deviceType must be specified in this operation');
     }
 
   }).then(() => {
@@ -797,7 +809,7 @@ RestWrite.prototype.handleInstallation = function() {
         return deviceTokenMatches[0]['objectId'];
       } else if (!this.data.installationId) {
         throw new Parse.Error(132,
-                              'Must specify installationId when deviceToken ' +
+          'Must specify installationId when deviceToken ' +
                               'matches multiple Installation objects');
       } else {
         // Multiple device token matches and we specified an installation ID,
@@ -969,11 +981,11 @@ RestWrite.prototype.runDatabaseOperation = function() {
     return defer.then(() => {
       // Run an update
       return this.config.database.update(this.className, this.query, this.data, this.runOptions)
-      .then(response => {
-        response.updatedAt = this.updatedAt;
-        this._updateResponseWithData(response, this.data);
-        this.response = { response };
-      });
+        .then(response => {
+          response.updatedAt = this.updatedAt;
+          this._updateResponseWithData(response, this.data);
+          this.response = { response };
+        });
     });
   } else {
     // Set the default ACL and password timestamp for the new _User
@@ -995,50 +1007,50 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
     // Run a create
     return this.config.database.create(this.className, this.data, this.runOptions)
-    .catch(error => {
-      if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
-        throw error;
-      }
-      // If this was a failed user creation due to username or email already taken, we need to
-      // check whether it was username or email and return the appropriate error.
-
-      // TODO: See if we can later do this without additional queries by using named indexes.
-      return this.config.database.find(
-        this.className,
-        { username: this.data.username, objectId: {'$ne': this.objectId()} },
-        { limit: 1 }
-      )
-      .then(results => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+      .catch(error => {
+        if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
+          throw error;
         }
+        // If this was a failed user creation due to username or email already taken, we need to
+        // check whether it was username or email and return the appropriate error.
+
+        // TODO: See if we can later do this without additional queries by using named indexes.
         return this.config.database.find(
           this.className,
-          { email: this.data.email, objectId: {'$ne': this.objectId()} },
+          { username: this.data.username, objectId: {'$ne': this.objectId()} },
           { limit: 1 }
-        );
+        )
+          .then(results => {
+            if (results.length > 0) {
+              throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+            }
+            return this.config.database.find(
+              this.className,
+              { email: this.data.email, objectId: {'$ne': this.objectId()} },
+              { limit: 1 }
+            );
+          })
+          .then(results => {
+            if (results.length > 0) {
+              throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+            }
+            throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          });
       })
-      .then(results => {
-        if (results.length > 0) {
-          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
-        }
-        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
-      });
-    })
-    .then(response => {
-      response.objectId = this.data.objectId;
-      response.createdAt = this.data.createdAt;
+      .then(response => {
+        response.objectId = this.data.objectId;
+        response.createdAt = this.data.createdAt;
 
-      if (this.responseShouldHaveUsername) {
-        response.username = this.data.username;
-      }
-      this._updateResponseWithData(response, this.data);
-      this.response = {
-        status: 201,
-        response,
-        location: this.location()
-      };
-    });
+        if (this.responseShouldHaveUsername) {
+          response.username = this.data.username;
+        }
+        this._updateResponseWithData(response, this.data);
+        this.response = {
+          status: 201,
+          response,
+          location: this.location()
+        };
+      });
   }
 };
 
@@ -1068,8 +1080,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 
   // Build the inflated object, different from beforeSave, originalData is not empty
   // since developers can change data in the beforeSave.
-  const updatedObject = triggers.inflate(extraData, this.originalData);
-  updatedObject.set(this.sanitizedData());
+  const updatedObject = this.buildUpdatedObject(extraData);
   updatedObject._handleSaveResponse(this.response.response, this.response.status || 200);
 
   // Notifiy LiveQueryServer if possible
@@ -1082,7 +1093,7 @@ RestWrite.prototype.runAfterTrigger = function() {
 // A helper to figure out what location this operation happens at.
 RestWrite.prototype.location = function() {
   var middle = (this.className === '_User' ? '/users/' :
-                '/classes/' + this.className + '/');
+    '/classes/' + this.className + '/');
   return this.config.mount + middle + this.data.objectId;
 };
 
@@ -1103,6 +1114,29 @@ RestWrite.prototype.sanitizedData = function() {
   }, deepcopy(this.data));
   return Parse._decode(undefined, data);
 }
+
+// Returns an updated copy of the object
+RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  const updatedObject = triggers.inflate(extraData, this.originalData);
+  Object.keys(this.data).reduce(function (data, key) {
+    if (key.indexOf(".") > 0) {
+      // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
+      const splittedKey = key.split(".");
+      const parentProp = splittedKey[0];
+      let parentVal = updatedObject.get(parentProp);
+      if(typeof parentVal !== 'object') {
+        parentVal = {};
+      }
+      parentVal[splittedKey[1]] = data[key];
+      updatedObject.set(parentProp, parentVal);
+      delete data[key];
+    }
+    return data;
+  }, deepcopy(this.data));
+
+  updatedObject.set(this.sanitizedData());
+  return updatedObject;
+};
 
 RestWrite.prototype.cleanUserAuthData = function() {
   if (this.response && this.response.response && this.className === '_User') {

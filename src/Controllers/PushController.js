@@ -1,16 +1,16 @@
 import { Parse }              from 'parse/node';
-import deepcopy               from 'deepcopy';
 import RestQuery              from '../RestQuery';
 import RestWrite              from '../RestWrite';
 import { master }             from '../Auth';
 import { pushStatusHandler }  from '../StatusHandler';
+import { applyDeviceTokenExists } from '../Push/utils';
 
 export class PushController {
 
   sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
     if (!config.hasPushSupport) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            'Missing push configuration');
+        'Missing push configuration');
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
@@ -23,6 +23,7 @@ export class PushController {
     let badgeUpdate = () => {
       return Promise.resolve();
     }
+
     if (body.data && body.data.badge) {
       const badge = body.data.badge;
       let restUpdate = {};
@@ -33,10 +34,10 @@ export class PushController {
       } else {
         throw "Invalid value for badge, expected number or 'Increment'";
       }
-      const updateWhere = deepcopy(where);
 
+      // Force filtering on only valid device tokens
+      const updateWhere = applyDeviceTokenExists(where);
       badgeUpdate = () => {
-        updateWhere.deviceType = 'ios';
         // Build a real RestQuery so we can use it in RestWrite
         const restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
         return restQuery.buildRestWhere().then(() => {
@@ -82,12 +83,12 @@ export class PushController {
       expirationTime = new Date(expirationTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['expiration_time'] + ' is not valid time.');
+        body['expiration_time'] + ' is not valid time.');
     }
     // Check expirationTime is valid or not, if it is not valid, expirationTime is NaN
     if (!isFinite(expirationTime)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['expiration_time'] + ' is not valid time.');
+        body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
   }
@@ -110,12 +111,12 @@ export class PushController {
       pushTime = new Date(pushTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['push_time'] + ' is not valid time.');
+        body['push_time'] + ' is not valid time.');
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
     if (!isFinite(pushTime)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
-                            body['push_time'] + ' is not valid time.');
+        body['push_time'] + ' is not valid time.');
     }
     return pushTime;
   }

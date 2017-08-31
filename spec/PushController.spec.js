@@ -172,12 +172,8 @@ describe('PushController', () => {
       send: function(body, installations) {
         var badge = body.data.badge;
         installations.forEach((installation) => {
-          if (installation.deviceType == "ios") {
-            expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge + 1).toEqual(installation.badge);
-          } else {
-            expect(installation.badge).toBeUndefined();
-          }
+          expect(installation.badge).toEqual(badge);
+          expect(installation.originalBadge + 1).toEqual(installation.badge);
         })
         return successfulTransmissions(body, installations);
       },
@@ -203,7 +199,9 @@ describe('PushController', () => {
     while(installations.length != 15) {
       const installation = new Parse.Object("_Installation");
       installation.set("installationId", "installation_" + installations.length);
-      installation.set("deviceToken","device_token_" + installations.length)
+      installation.set("deviceToken","device_token_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
       installation.set("deviceType", "android");
       installations.push(installation);
     }
@@ -238,12 +236,7 @@ describe('PushController', () => {
       expect(results.length).toBe(15);
       for (var i = 0; i < 15; i++) {
         const installation = results[i];
-        if (installation.get('deviceType') == 'ios') {
-          expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
-        } else {
-          expect(installation.get('badge')).toBe(undefined);
-          expect(installation.get('originalBadge')).toBe(undefined);
-        }
+        expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
       }
       done()
     }).catch((err) => {
@@ -395,7 +388,6 @@ describe('PushController', () => {
   });
 
   it('properly creates _PushStatus', (done) => {
-
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
@@ -436,46 +428,46 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      return Parse.Object.saveAll(installations)
+      return Parse.Object.saveAll(installations);
     })
-   .then(() => {
-     return pushController.sendPush(payload, {}, config, auth);
-   }).then(() => {
-     // it is enqueued so it can take time
-     return new Promise((resolve) => {
-       setTimeout(() => {
-         resolve();
-       }, 1000);
-     });
-   }).then(() => {
-     const query = new Parse.Query('_PushStatus');
-     return query.find({useMasterKey: true});
-   }).then((results) => {
-     expect(results.length).toBe(1);
-     const result = results[0];
-     expect(result.createdAt instanceof Date).toBe(true);
-     expect(result.updatedAt instanceof Date).toBe(true);
-     expect(result.id.length).toBe(10);
-     expect(result.get('source')).toEqual('rest');
-     expect(result.get('query')).toEqual(JSON.stringify({}));
-     expect(typeof result.get('payload')).toEqual("string");
-     expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
-     expect(result.get('status')).toEqual('succeeded');
-     expect(result.get('numSent')).toEqual(10);
-     expect(result.get('sentPerType')).toEqual({
-       'ios': 10 // 10 ios
-     });
-     expect(result.get('numFailed')).toEqual(5);
-     expect(result.get('failedPerType')).toEqual({
-       'android': 5 // android
-     });
-     // Try to get it without masterKey
-     const query = new Parse.Query('_PushStatus');
-     return query.find();
-   }).then((results) => {
-     expect(results.length).toBe(0);
-     done();
-   });
+      .then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      }).then(() => {
+        // it is enqueued so it can take time
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      }).then(() => {
+        const query = new Parse.Query('_PushStatus');
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(1);
+        const result = results[0];
+        expect(result.createdAt instanceof Date).toBe(true);
+        expect(result.updatedAt instanceof Date).toBe(true);
+        expect(result.id.length).toBe(10);
+        expect(result.get('source')).toEqual('rest');
+        expect(result.get('query')).toEqual(JSON.stringify({}));
+        expect(typeof result.get('payload')).toEqual("string");
+        expect(JSON.parse(result.get('payload'))).toEqual(payload.data);
+        expect(result.get('status')).toEqual('succeeded');
+        expect(result.get('numSent')).toEqual(10);
+        expect(result.get('sentPerType')).toEqual({
+          'ios': 10 // 10 ios
+        });
+        expect(result.get('numFailed')).toEqual(5);
+        expect(result.get('failedPerType')).toEqual({
+          'android': 5 // android
+        });
+        // Try to get it without masterKey
+        const query = new Parse.Query('_PushStatus');
+        return query.find();
+      }).catch((error) => {
+        expect(error.code).toBe(119);
+        done();
+      });
   });
 
   it('should properly report failures in _PushStatus', (done) => {
@@ -853,6 +845,72 @@ describe('PushController', () => {
       fail('should not fail');
       done();
     });
+  });
 
+  it('should mark the _PushStatus as succeeded when audience has no deviceToken', (done) => {
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        const promises = installations.map((device) => {
+          if (!device.deviceToken) {
+            // Simulate error when device token is not set
+            return Promise.reject();
+          }
+          return Promise.resolve({
+            transmitted: true,
+            device: device,
+          })
+        });
+
+        return Promise.all(promises);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime() / 1000
+    }
+
+    var installations = [];
+    while(installations.length != 5) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var config = new Config(Parse.applicationId);
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth)
+          .then(() => { done.fail('should not success') })
+          .catch(() => {})
+      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('numSent')).toBe(0);
+        expect(pushStatus.get('status')).toBe('failed');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
   });
 });

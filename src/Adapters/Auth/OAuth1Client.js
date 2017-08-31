@@ -129,11 +129,11 @@ OAuth.nonce = function(){
 }
 
 OAuth.buildParameterString = function(obj){
-	// Sort keys and encode values
+  // Sort keys and encode values
   if (obj) {
     var keys = Object.keys(obj).sort();
 
-		// Map key=value, join them by &
+    // Map key=value, join them by &
     return keys.map(function(key){
       return key + "=" + OAuth.encode(obj[key]);
     }).join("&");
@@ -161,7 +161,7 @@ OAuth.signature = function(text, key){
 OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_token_secret){
   oauth_parameters = oauth_parameters || {};
 
-	// Set default values
+  // Set default values
   if (!oauth_parameters.oauth_nonce) {
     oauth_parameters.oauth_nonce = OAuth.nonce();
   }
@@ -178,12 +178,12 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
   if(!auth_token_secret){
     auth_token_secret = "";
   }
-	// Force GET method if unset
+  // Force GET method if unset
   if (!request.method) {
     request.method = "GET"
   }
 
-	// Collect  all the parameters in one signatureParameters object
+  // Collect  all the parameters in one signatureParameters object
   var signatureParams = {};
   var parametersToMerge = [request.params, request.body, oauth_parameters];
   for(var i in parametersToMerge) {
@@ -193,25 +193,25 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
     }
   }
 
-	// Create a string based on the parameters
+  // Create a string based on the parameters
   var parameterString = OAuth.buildParameterString(signatureParams);
 
-	// Build the signature string
+  // Build the signature string
   var url = "https://" + request.host + "" + request.path;
 
   var signatureString = OAuth.buildSignatureString(request.method, url, parameterString);
-	// Hash the signature string
+  // Hash the signature string
   var signatureKey = [OAuth.encode(consumer_secret), OAuth.encode(auth_token_secret)].join("&");
 
   var signature = OAuth.signature(signatureString, signatureKey);
 
-	// Set the signature in the params
+  // Set the signature in the params
   oauth_parameters.oauth_signature = signature;
   if(!request.headers){
     request.headers = {};
   }
 
-	// Set the authorization header
+  // Set the authorization header
   var authHeader = Object.keys(oauth_parameters).sort().map(function(key){
     var value = oauth_parameters[key];
     return key + '="' + value + '"';
@@ -219,7 +219,7 @@ OAuth.signRequest = function(request, oauth_parameters, consumer_secret, auth_to
 
   request.headers.Authorization = 'OAuth ' + authHeader;
 
-	// Set the content type header
+  // Set the content type header
   request.headers["Content-Type"] = "application/x-www-form-urlencoded";
   return request;
 

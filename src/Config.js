@@ -5,6 +5,7 @@
 import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
+import net from 'net';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -26,6 +27,7 @@ export class Config {
     this.applicationId = applicationId;
     this.jsonLogs = cacheInfo.jsonLogs;
     this.masterKey = cacheInfo.masterKey;
+    this.masterKeyIps = cacheInfo.masterKeyIps;
     this.clientKey = cacheInfo.clientKey;
     this.javascriptKey = cacheInfo.javascriptKey;
     this.dotNetKey = cacheInfo.dotNetKey;
@@ -73,6 +75,7 @@ export class Config {
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
     this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
     this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
+    this.objectIdSize = cacheInfo.objectIdSize;
   }
 
   static validate({
@@ -85,7 +88,8 @@ export class Config {
     sessionLength,
     emailVerifyTokenValidityDuration,
     accountLockout,
-    passwordPolicy
+    passwordPolicy,
+    masterKeyIps
   }) {
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
@@ -107,6 +111,8 @@ export class Config {
     }
 
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
+
+    this.validateMasterKeyIps(masterKeyIps);
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
@@ -179,6 +185,14 @@ export class Config {
         throw 'Email verify token validity duration must be a valid number.';
       } else if (emailVerifyTokenValidityDuration <= 0) {
         throw 'Email verify token validity duration must be a value greater than 0.'
+      }
+    }
+  }
+
+  static validateMasterKeyIps(masterKeyIps) {
+    for (const ip of masterKeyIps) {
+      if(!net.isIP(ip)){
+        throw `Invalid ip in masterKeyIps: ${ip}`;
       }
     }
   }

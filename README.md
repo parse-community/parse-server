@@ -12,6 +12,8 @@ Parse Server works with the Express web application framework. It can be added t
 
 # Getting Started
 
+[![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
+
 
 April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
 
@@ -170,6 +172,8 @@ Logs are also be viewable in Parse Dashboard.
 
 **Want logs to be in placed in other folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
+**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
+
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
 # Documentation
@@ -212,6 +216,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
 * `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
+* `logLevel` - Set the specific level you want to log. Defaults to `info`. The default logger uses the npm log levels as defined by the underlying winston logger. Check [Winston logging levels](https://github.com/winstonjs/winston#logging-levels) for details on values to specify.
 * `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
