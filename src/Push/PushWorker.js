@@ -12,17 +12,13 @@ import { PushQueue }          from './PushQueue';
 
 const UNSUPPORTED_BADGE_KEY = "unsupported";
 
-function groupBy(key, objects) {
-  return objects.reduce((map, object) => {
-    const value = object[key] + '';
-    map[value] = map[value] || [];
-    map[value].push(object);
+function groupByBadge(installations) {
+  return installations.reduce((map, installation) => {
+    const badge = installation.badge + '';
+    map[badge] = map[badge] || [];
+    map[badge].push(installation);
     return map;
   }, {});
-}
-
-function groupByBadge(installations) {
-  return groupBy('badge', installations);
 }
 
 export class PushWorker {

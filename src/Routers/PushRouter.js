@@ -28,9 +28,7 @@ export class PushRouter extends PromiseRouter {
           result: true
         }
       });
-    }).catch((err) => {
-      req.config.loggerController.error(err);
-    });
+    }).catch(req.config.loggerController.error);
     return promise;
   }
 

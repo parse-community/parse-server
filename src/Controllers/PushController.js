@@ -61,7 +61,7 @@ export class PushController {
     }).catch((err) => {
       return pushStatus.fail(err).then(() => {
         throw err;
-      })
+      });
     });
   }
 
