@@ -148,5 +148,12 @@ describe('PushWorker', () => {
         }
       });
     });
+
+    it('should properly handle defaut cases', () => {
+      expect(PushUtils.transformPushBodyForLocale({})).toEqual({});
+      expect(PushUtils.stripLocalesFromBody({})).toEqual({});
+      expect(PushUtils.bodiesPerLocales({where: {}})).toEqual({default: {where: {}}});
+      expect(PushUtils.groupByLocaleIdentifier([])).toEqual({default: []});
+    });
   });
 });
