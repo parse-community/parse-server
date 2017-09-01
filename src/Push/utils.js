@@ -70,7 +70,7 @@ export function groupByLocaleIdentifier(installations, locales = []) {
       if (added) {
         return;
       }
-      if (installation.localeIdentifier && installation.localeIdentifier.indexOf(locale) == 0) {
+      if (installation.localeIdentifier && installation.localeIdentifier.indexOf(locale) === 0) {
         added = true;
         map[locale] = map[locale] || [];
         map[locale].push(installation);

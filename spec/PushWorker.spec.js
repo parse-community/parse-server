@@ -149,7 +149,7 @@ describe('PushWorker', () => {
       });
     });
 
-    it('should properly handle defaut cases', () => {
+    it('should properly handle default cases', () => {
       expect(PushUtils.transformPushBodyForLocale({})).toEqual({});
       expect(PushUtils.stripLocalesFromBody({})).toEqual({});
       expect(PushUtils.bodiesPerLocales({where: {}})).toEqual({default: {where: {}}});
