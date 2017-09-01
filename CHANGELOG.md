@@ -1,5 +1,11 @@
 ## Parse Server Changelog
 
+### master
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...master)
+
+#### New Features
+* Adds ability to send localized pushes according to the _Installation localeIdentifier 
+
 ### 2.6.0
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.3...2.6.0)
 
