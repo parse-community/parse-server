@@ -12,13 +12,17 @@ import { PushQueue }          from './PushQueue';
 
 const UNSUPPORTED_BADGE_KEY = "unsupported";
 
-function groupByBadge(installations) {
-  return installations.reduce((map, installation) => {
-    const badge = installation.badge + '';
-    map[badge] = map[badge] || [];
-    map[badge].push(installation);
+function groupBy(key, objects) {
+  return objects.reduce((map, object) => {
+    const value = object[key] + '';
+    map[value] = map[value] || [];
+    map[value].push(object);
     return map;
   }, {});
+}
+
+function groupByBadge(installations) {
+  return groupBy('badge', installations);
 }
 
 export class PushWorker {
@@ -65,6 +69,22 @@ export class PushWorker {
 
   sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config): Promise<*> {
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
+    // Check if we have locales in the push body
+    const locales = utils.getLocalesFromPush(body);
+    if (locales.length > 0) {
+      // Get all tranformed bodies for each locale
+      const bodiesPerLocales = utils.bodiesPerLocales(body, locales);
+
+      // Group installations on the specified locales (en, fr, default etc...)
+      const grouppedInstallations = utils.groupByLocaleIdentifier(installations, locales);
+      const promises = Object.keys(grouppedInstallations).map((locale) => {
+        const installations = grouppedInstallations[locale];
+        const body = bodiesPerLocales[locale];
+        return this.sendToAdapter(body, installations, pushStatus, config);
+      });
+      return Promise.all(promises);
+    }
+
     if (!utils.isPushIncrementing(body)) {
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
         return pushStatus.trackSent(results);
