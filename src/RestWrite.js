@@ -1011,31 +1011,16 @@ RestWrite.prototype.runDatabaseOperation = function() {
         if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
           throw error;
         }
-        // If this was a failed user creation due to username or email already taken, we need to
-        // check whether it was username or email and return the appropriate error.
 
-        // TODO: See if we can later do this without additional queries by using named indexes.
-        return this.config.database.find(
-          this.className,
-          { username: this.data.username, objectId: {'$ne': this.objectId()} },
-          { limit: 1 }
-        )
-          .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
-            }
-            return this.config.database.find(
-              this.className,
-              { email: this.data.email, objectId: {'$ne': this.objectId()} },
-              { limit: 1 }
-            );
-          })
-          .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
-            }
-            throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
-          });
+        if (error && error.userInfo && error.userInfo.duplicated_field == 'username') {
+          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+        }
+
+        if (error && error.userInfo && error.userInfo.duplicated_field == 'email') {
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+        }
+
+        throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
       })
       .then(response => {
         response.objectId = this.data.objectId;

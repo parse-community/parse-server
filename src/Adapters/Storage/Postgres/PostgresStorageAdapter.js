@@ -945,7 +945,15 @@ export class PostgresStorageAdapter {
       .then(() => ({ ops: [object] }))
       .catch(error => {
         if (error.code === PostgresUniqueIndexViolationError) {
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          err.underlyingError = error;
+          if (error.constraint) {
+            const matches = error.constraint.match(/unique_([a-zA-Z]+)/);
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+          }
+          throw err;
         } else {
           throw error;
         }
