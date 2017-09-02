@@ -129,7 +129,7 @@ function getRange(req) {
 // handleFileStream is licenced under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 // Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
 function handleFileStream(stream, req, res, contentType) {
-  const buffer_size = 5 // 1024 * 1024; //1024Kb
+  const buffer_size = 1024 * 1024; //1024Kb
   // Range request, partiall stream the file
   let {
     start, end
