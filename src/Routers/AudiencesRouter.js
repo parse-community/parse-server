@@ -3,6 +3,11 @@ import rest from '../rest';
 import * as middleware from '../middlewares';
 
 export class AudiencesRouter extends ClassesRouter {
+
+  className() {
+    return '_Audience';
+  }
+
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
@@ -19,28 +24,12 @@ export class AudiencesRouter extends ClassesRouter {
   }
 
   handleGet(req) {
-    req.params.className = '_Audience';
     return super.handleGet(req)
       .then((data) => {
         data.response.query = JSON.parse(data.response.query);
 
         return data;
       });
-  }
-
-  handleCreate(req) {
-    req.params.className = '_Audience';
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_Audience';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_Audience';
-    return super.handleDelete(req);
   }
 
   mountRoutes() {

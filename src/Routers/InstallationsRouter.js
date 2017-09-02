@@ -4,6 +4,10 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 
 export class InstallationsRouter extends ClassesRouter {
+  className() {
+    return '_Installation';
+  }
+
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
@@ -12,26 +16,6 @@ export class InstallationsRouter extends ClassesRouter {
       .then((response) => {
         return {response: response};
       });
-  }
-
-  handleGet(req) {
-    req.params.className = '_Installation';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    req.params.className = '_Installation';
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_Installation';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_Installation';
-    return super.handleDelete(req);
   }
 
   mountRoutes() {
