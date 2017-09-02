@@ -147,10 +147,6 @@ function handleFileStream(stream, req, res, contentType) {
     chunksize = (end - start) + 1;
   }
 
-  if (start == 0 && end == 2) {
-    chunksize = 1;
-  }
-
   res.writeHead(206, {
     'Content-Range': 'bytes ' + start + '-' + end + '/' + stream.length,
     'Accept-Ranges': 'bytes',
@@ -188,7 +184,6 @@ function handleFileStream(stream, req, res, contentType) {
         }
       }
       if (totalbyteswritten >= totalbyteswanted) {
-        //totalbytes = 0;
         stream.close();
         res.end();
         this.destroy();
