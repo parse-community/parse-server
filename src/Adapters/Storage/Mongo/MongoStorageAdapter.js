@@ -456,7 +456,7 @@ export class MongoStorageAdapter {
           if (error.code === 85) {
             throw new Parse.Error(
               Parse.Error.INTERNAL_SERVER_ERROR,
-              'Only one text index is supported, please use compound indexes');
+              'Only one text index is supported, please delete all text indexes to use new field.');
           }
           throw error;
         });
