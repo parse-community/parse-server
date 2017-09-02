@@ -108,17 +108,7 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController){
-  if (req.get('Range')) {
-    if (!(typeof filesController.adapter.getFileStream === 'function')) {
-      return false;
-    }
-    if (typeof filesController.adapter.constructor.name !== 'undefined') {
-      if (filesController.adapter.constructor.name == 'GridStoreAdapter') {
-        return true;
-      }
-    }
-  }
-  return false;
+  return  req.get('Range') && typeof filesController.adapter.getFileStream === 'function';
 }
 
 function getRange(req) {

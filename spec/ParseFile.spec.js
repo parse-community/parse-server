@@ -668,7 +668,7 @@ describe('Parse.File testing', () => {
     });
   });
 
-  describe_only_db('mongo')('Range tests', () => {
+  describe_only_db('mongo')('Gridstore Range tests', () => {
     it('supports range requests', done => {
       var headers = {
         'Content-Type': 'application/octet-stream',
@@ -848,6 +848,36 @@ describe('Parse.File testing', () => {
         expect(response.statusCode).toBe(404);
         expect(body).toEqual('File not found.');
         done();
+      });
+    });
+  });
+
+  // Because GridStore is not loaded on PG, those are perfect
+  // for fallback tests
+  describe_only_db('postgres')('Default Range tests', () => {
+    it('fallback to regular request', done => {
+      var headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/files/file.txt',
+        body: 'argle bargle',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        request.get({ url: b.url, headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-5'
+        } }, (error, response, body) => {
+          expect(error).toBe(null);
+          expect(body).toEqual('argle bargle');
+          done();
+        });
       });
     });
   });
