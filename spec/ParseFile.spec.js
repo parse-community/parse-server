@@ -596,6 +596,78 @@ describe('Parse.File testing', () => {
     });
   });
 
+  it('fails to upload an empty file', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+      body: '',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(response.statusCode).toBe(400);
+      expect(body).toEqual('{"code":130,"error":"Invalid file upload."}');
+      done();
+    });
+  });
+
+  it('fails to upload without a file name', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/',
+      body: 'yolo',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(response.statusCode).toBe(400);
+      expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
+      done();
+    });
+  });
+
+  it('fails to upload without a file name', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/',
+      body: 'yolo',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(response.statusCode).toBe(400);
+      expect(body).toEqual('{"code":122,"error":"Filename not provided."}');
+      done();
+    });
+  });
+
+  it('fails to delete an unkown file', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'X-Parse-Master-Key': 'test'
+    };
+    request.delete({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(response.statusCode).toBe(400);
+      expect(body).toEqual('{"code":153,"error":"Could not delete file."}');
+      done();
+    });
+  });
+
   it('supports range requests', done => {
     var headers = {
       'Content-Type': 'application/octet-stream',
@@ -681,6 +753,20 @@ describe('Parse.File testing', () => {
         expect(body.indexOf('rgle barglea')).toBe(0);
         done();
       });
+    });
+  });
+
+  it('fails to stream unknown file', done => {
+    request.get({ url: 'http://localhost:8378/1/files/test/file.txt', headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest',
+      'Range': 'bytes=13-240'
+    } }, (error, response, body) => {
+      expect(error).toBe(null);
+      expect(response.statusCode).toBe(404);
+      expect(body).toEqual('File not found.');
+      done();
     });
   });
 });
