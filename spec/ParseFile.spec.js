@@ -720,6 +720,86 @@ describe('Parse.File testing', () => {
     });
   });
 
+  // See specs https://www.greenbytes.de/tech/webdav/draft-ietf-httpbis-p5-range-latest.html#byte.ranges
+  it('supports getting one byte', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+      body: 'argle bargle',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      request.get({ url: b.url, headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Range': 'bytes=2-2'
+      } }, (error, response, body) => {
+        expect(error).toBe(null);
+        expect(body).toEqual('g');
+        done();
+      });
+    });
+  });
+
+  it('supports getting last n bytes', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+      body: 'something different',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      request.get({ url: b.url, headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Range': 'bytes=-4'
+      } }, (error, response, body) => {
+        expect(error).toBe(null);
+        expect(body.length).toBe(4);
+        expect(body).toEqual('rent');
+        done();
+      });
+    });
+  });
+
+  it('supports getting first n bytes', done => {
+    var headers = {
+      'Content-Type': 'application/octet-stream',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/file.txt',
+      body: 'something different',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      request.get({ url: b.url, headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'Range': 'bytes=10-'
+      } }, (error, response, body) => {
+        expect(error).toBe(null);
+        expect(body).toEqual('different');
+        done();
+      });
+    });
+  });
+
   function repeat(string, count) {
     var s = string;
     while (count > 0) {

@@ -124,19 +124,20 @@ function isFileStreamable(req, filesController){
 // handleFileStream is licenced under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 // Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
 function handleFileStream(stream, req, res, contentType) {
-  var buffer_size = 1024 * 1024;//1024Kb
+  const buffer_size = 1024 * 1024;//1024Kb
   // Range request, partiall stream the file
-  var parts = req.get('Range').replace(/bytes=/, "").split("-");
-  var partialstart = parts[0];
-  var partialend = parts[1];
-  var start = partialstart ? parseInt(partialstart, 10) : 0;
-  var end = partialend ? parseInt(partialend, 10) : stream.length - 1;
-  var chunksize = (end - start) + 1;
+  const parts = req.get('Range').replace(/bytes=/, "").split("-");
+  const partialstart = parts[0];
+  const partialend = parts[1];
+  let end = partialend ? parseInt(partialend, 10) : stream.length - 1;
+  const start = partialstart ? parseInt(partialstart, 10) : (() => {
+    // No start defined
+    const start = stream.length - end;
+    end = stream.length - 1;
+    return start;
+  })();
+  let chunksize = (end - start) + 1;
 
-  if (chunksize == 1) {
-    start = 0;
-    partialend = false;
-  }
 
   if (!partialend) {
     if (((stream.length - 1) - start) < (buffer_size)) {
@@ -156,11 +157,11 @@ function handleFileStream(stream, req, res, contentType) {
 
   stream.seek(start, function () {
     // get gridFile stream
-    var gridFileStream = stream.stream(true);
-    var bufferAvail = 0;
-    var range = (end - start) + 1;
-    var totalbyteswanted = (end - start) + 1;
-    var totalbyteswritten = 0;
+    const gridFileStream = stream.stream(true);
+    let bufferAvail = 0;
+    let range = (end - start) + 1;
+    let totalbyteswritten = 0;
+    const totalbyteswanted = (end - start) + 1;
     // write to response
     gridFileStream.on('data', function (buff) {
       bufferAvail += buff.length;
