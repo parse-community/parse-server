@@ -10,36 +10,7 @@ export class ClassesRouter extends PromiseRouter {
 
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    const options = {};
-    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
-      'include', 'redirectClassNameForKey', 'where'];
-
-    for (const key of Object.keys(body)) {
-      if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
-      }
-    }
-
-    if (body.skip) {
-      options.skip = Number(body.skip);
-    }
-    if (body.limit || body.limit === 0) {
-      options.limit = Number(body.limit);
-    } else {
-      options.limit = Number(100);
-    }
-    if (body.order) {
-      options.order = String(body.order);
-    }
-    if (body.count) {
-      options.count = true;
-    }
-    if (typeof body.keys == 'string') {
-      options.keys = body.keys;
-    }
-    if (body.include) {
-      options.include = String(body.include);
-    }
+    const options = ClassesRouter.optionsFromBody(body);
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
@@ -124,6 +95,39 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
     return json
+  }
+
+  static optionsFromBody(body) {
+    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
+      'include', 'redirectClassNameForKey', 'where'];
+
+    for (const key of Object.keys(body)) {
+      if (allowConstraints.indexOf(key) === -1) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+      }
+    }
+    const options = {};
+    if (body.skip) {
+      options.skip = Number(body.skip);
+    }
+    if (body.limit || body.limit === 0) {
+      options.limit = Number(body.limit);
+    } else {
+      options.limit = Number(100);
+    }
+    if (body.order) {
+      options.order = String(body.order);
+    }
+    if (body.count) {
+      options.count = true;
+    }
+    if (typeof body.keys == 'string') {
+      options.keys = body.keys;
+    }
+    if (body.include) {
+      options.include = String(body.include);
+    }
+    return options;
   }
 
   mountRoutes() {

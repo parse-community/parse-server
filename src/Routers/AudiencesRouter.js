@@ -5,23 +5,7 @@ import * as middleware from '../middlewares';
 export class AudiencesRouter extends ClassesRouter {
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    var options = {};
-
-    if (body.skip) {
-      options.skip = Number(body.skip);
-    }
-    if (body.limit || body.limit === 0) {
-      options.limit = Number(body.limit);
-    }
-    if (body.order) {
-      options.order = String(body.order);
-    }
-    if (body.count) {
-      options.count = true;
-    }
-    if (body.include) {
-      options.include = String(body.include);
-    }
+    const options = ClassesRouter.optionsFromBody(body);
 
     return rest.find(req.config, req.auth, '_Audience', body.where, options, req.info.clientSDK)
       .then((response) => {
