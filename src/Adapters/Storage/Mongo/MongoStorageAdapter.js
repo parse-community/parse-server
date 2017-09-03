@@ -382,9 +382,8 @@ export class MongoStorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
-        } else {
-          throw error;
         }
+        throw error;
       });
   }
 
