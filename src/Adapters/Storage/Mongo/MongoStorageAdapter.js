@@ -281,7 +281,7 @@ export class MongoStorageAdapter {
           const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
           err.underlyingError = error;
           if (error.message) {
-            const matches = error.message.match(/index: ([a-zA-Z_-]+)_1/);
+            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
             if (matches && Array.isArray(matches)) {
               err.userInfo = { duplicated_field: matches[1] };
             }
