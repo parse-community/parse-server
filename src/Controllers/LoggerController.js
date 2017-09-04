@@ -37,10 +37,7 @@ export class LoggerController extends AdaptableController {
     if (options.logLevel) {
       level = options.logLevel;
     }
-    let index = logLevels.indexOf(level); // info by default
-    if (options.silent) {
-      index = -1;
-    }
+    const index = logLevels.indexOf(level); // info by default
     logLevels.forEach((level, levelIndex) => {
       if (levelIndex > index) { // silence the levels that are > maxIndex
         this[level] = () => {};
