@@ -17,7 +17,36 @@ export const LogOrder = {
   ASCENDING: 'asc'
 }
 
+const logLevels = [
+  'error',
+  'warning',
+  'info',
+  'debug',
+  'verbose',
+  'silly',
+]
+
 export class LoggerController extends AdaptableController {
+
+  constructor(adapter, appId, options = {logLevel: 'info'}) {
+    super(adapter, appId, options);
+    let level = 'info';
+    if (options.verbose) {
+      level = 'verbose';
+    }
+    if (options.logLevel) {
+      level = options.logLevel;
+    }
+    let index = logLevels.indexOf(level); // info by default
+    if (options.silent) {
+      index = -1;
+    }
+    logLevels.forEach((level, levelIndex) => {
+      if (levelIndex > index) { // silence the levels that are > maxIndex
+        this[level] = () => {};
+      }
+    });
+  }
 
   maskSensitiveUrl(urlString) {
     const password = url.parse(urlString, true).query.password;
