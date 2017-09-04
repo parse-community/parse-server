@@ -8,7 +8,7 @@ export class InMemoryCacheAdapter {
 
   get(key) {
     const record = this.cache.get(key);
-    if (record == null) {
+    if (record === null) {
       return Promise.resolve(null);
     }
     return Promise.resolve(record);
