@@ -102,7 +102,7 @@ describe('LoggerController', () => {
     const adapter = new WinstonLoggerAdapter({ logLevel: 'error' });
     const logger = new LoggerController(adapter, null, { logLevel: 'error' });
     spyOn(adapter, "log");
-    logger.warning('yo!');
+    logger.warn('yo!');
     logger.info('yo!');
     logger.debug('yo!');
     logger.verbose('yo!');
@@ -110,21 +110,6 @@ describe('LoggerController', () => {
     expect(adapter.log).not.toHaveBeenCalled();
     logger.error('error');
     expect(adapter.log).toHaveBeenCalled();
-    done();
-  });
-
-  it('should replace implementations with silent', (done) => {
-    const adapter = new WinstonLoggerAdapter({ silent: true });
-    const logger = new LoggerController(adapter, null, { silent: true });
-    spyOn(adapter, "log");
-    // Makes sure nothing gets called
-    logger.error('yo!');
-    logger.warning('yo!');
-    logger.info('yo!');
-    logger.debug('yo!');
-    logger.verbose('yo!');
-    logger.silly('yo!');
-    expect(adapter.log).not.toHaveBeenCalled();
     done();
   });
 });

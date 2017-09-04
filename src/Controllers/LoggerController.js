@@ -19,7 +19,7 @@ export const LogOrder = {
 
 const logLevels = [
   'error',
-  'warning',
+  'warn',
   'info',
   'debug',
   'verbose',
