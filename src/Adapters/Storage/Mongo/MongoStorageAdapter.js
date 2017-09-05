@@ -278,8 +278,15 @@ export class MongoStorageAdapter {
       .then(collection => collection.insertOne(mongoObject))
       .catch(error => {
         if (error.code === 11000) { // Duplicate value
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided');
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          err.underlyingError = error;
+          if (error.message) {
+            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+          }
+          throw err;
         }
         throw error;
       });
@@ -375,9 +382,8 @@ export class MongoStorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
-        } else {
-          throw error;
         }
+        throw error;
       });
   }
 

@@ -1011,9 +1011,19 @@ RestWrite.prototype.runDatabaseOperation = function() {
         if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
           throw error;
         }
+
+        // Quick check, if we were able to infer the duplicated field name
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
+          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+        }
+
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+        }
+
         // If this was a failed user creation due to username or email already taken, we need to
         // check whether it was username or email and return the appropriate error.
-
+        // Fallback to the original method
         // TODO: See if we can later do this without additional queries by using named indexes.
         return this.config.database.find(
           this.className,
