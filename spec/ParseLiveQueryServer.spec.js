@@ -12,7 +12,7 @@ describe('ParseLiveQueryServer', function() {
     var mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
     jasmine.mockLibrary('../src/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer', mockParseWebSocketServer);
     // Mock Client
-    var mockClient = function() {
+    var mockClient = function(id, socket, hasMasterKey) {
       this.pushConnect = jasmine.createSpy('pushConnect');
       this.pushSubscribe = jasmine.createSpy('pushSubscribe');
       this.pushUnsubscribe = jasmine.createSpy('pushUnsubscribe');
@@ -24,7 +24,7 @@ describe('ParseLiveQueryServer', function() {
       this.addSubscriptionInfo = jasmine.createSpy('addSubscriptionInfo');
       this.getSubscriptionInfo = jasmine.createSpy('getSubscriptionInfo');
       this.deleteSubscriptionInfo = jasmine.createSpy('deleteSubscriptionInfo');
-      this.hasMasterKey = jasmine.createSpy('hasMasterKey');
+      this.hasMasterKey = hasMasterKey;
     }
     mockClient.pushError = jasmine.createSpy('pushError');
     jasmine.mockLibrary('../src/LiveQuery/Client', 'Client', mockClient);
