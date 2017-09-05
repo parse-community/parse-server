@@ -90,8 +90,8 @@ describe('LoggerController', () => {
   });
 
   it('should replace implementations with verbose', (done) => {
-    const adapter = new WinstonLoggerAdapter({ verbose: true});
-    const logger = new LoggerController(adapter, null, {verbose: true});
+    const adapter = new WinstonLoggerAdapter();
+    const logger = new LoggerController(adapter, null, {verbose: true });
     spyOn(adapter, "log");
     logger.silly('yo!');
     expect(adapter.log).not.toHaveBeenCalled();
@@ -99,7 +99,7 @@ describe('LoggerController', () => {
   });
 
   it('should replace implementations with logLevel', (done) => {
-    const adapter = new WinstonLoggerAdapter({ logLevel: 'error' });
+    const adapter = new WinstonLoggerAdapter();
     const logger = new LoggerController(adapter, null, { logLevel: 'error' });
     spyOn(adapter, "log");
     logger.warn('yo!');
