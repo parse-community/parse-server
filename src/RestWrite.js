@@ -1013,11 +1013,11 @@ RestWrite.prototype.runDatabaseOperation = function() {
         }
 
         // Quick check, if we were able to infer the duplicated field name
-        if (error && error.userInfo && error.userInfo.duplicated_field == 'username') {
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
           throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
         }
 
-        if (error && error.userInfo && error.userInfo.duplicated_field == 'email') {
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
           throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
         }
 

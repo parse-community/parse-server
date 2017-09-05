@@ -131,7 +131,7 @@ function handleFileStream(stream, req, res, contentType) {
   if (notEnded) {
     end = stream.length - 1;
   }
-  // No start profided, we're reading backwards
+  // No start provided, we're reading backwards
   if (notStarted) {
     start = stream.length - end;
     end = start + end - 1;
