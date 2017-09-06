@@ -10,8 +10,6 @@ import * as utils             from './utils';
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import { PushQueue }          from './PushQueue';
 
-const UNSUPPORTED_BADGE_KEY = "unsupported";
-
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
     const badge = installation.badge + '';
@@ -93,11 +91,7 @@ export class PushWorker {
     // Map the on the badges count and return the send result
     const promises = Object.keys(badgeInstallationsMap).map((badge) => {
       const payload = deepcopy(body);
-      if (badge == UNSUPPORTED_BADGE_KEY) {
-        delete payload.data.badge;
-      } else {
-        payload.data.badge = parseInt(badge);
-      }
+      payload.data.badge = parseInt(badge);
       const installations = badgeInstallationsMap[badge];
       return this.sendToAdapter(payload, installations, pushStatus, config);
     });
