@@ -138,8 +138,8 @@ describe('PushController', () => {
       'push_time': timeStr
     }
 
-    var time = PushController.getPushTime(body);
-    expect(time).toEqual(new Date(timeStr));
+    var { date } = PushController.getPushTime(body);
+    expect(date).toEqual(new Date(timeStr));
     done();
   });
 
@@ -150,8 +150,8 @@ describe('PushController', () => {
       'push_time': timeNumber
     }
 
-    var time = PushController.getPushTime(body).valueOf();
-    expect(time).toEqual(timeNumber * 1000);
+    var { date } = PushController.getPushTime(body);
+    expect(date.valueOf()).toEqual(timeNumber * 1000);
     done();
   });
 
@@ -640,16 +640,36 @@ describe('PushController', () => {
     expect(PushController.getPushTime()).toBe(undefined);
     expect(PushController.getPushTime({
       'push_time': 1000
-    })).toEqual(new Date(1000 * 1000));
+    }).date).toEqual(new Date(1000 * 1000));
     expect(PushController.getPushTime({
       'push_time': '2017-01-01'
-    })).toEqual(new Date('2017-01-01'));
+    }).date).toEqual(new Date('2017-01-01'));
+
     expect(() => {PushController.getPushTime({
       'push_time': 'gibberish-time'
     })}).toThrow();
     expect(() => {PushController.getPushTime({
       'push_time': Number.NaN
     })}).toThrow();
+
+    expect(PushController.getPushTime({
+      push_time: '2017-09-06T13:42:48.369Z'
+    })).toEqual({
+      date: new Date('2017-09-06T13:42:48.369Z'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30-02:00',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30-02:00'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30'),
+      isLocalTime: true,
+    });
   });
 
   it('should not schedule push when not configured', (done) => {

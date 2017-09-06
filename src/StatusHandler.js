@@ -103,6 +103,15 @@ export function jobStatusHandler(config) {
   });
 }
 
+export function formatPushTime({ date, isLocalTime }) {
+  if (isLocalTime) { // Strip 'Z'
+    const isoString = date.toISOString();
+    return isoString.substring(0, isoString.indexOf('Z'));
+  }
+
+  return date.toISOString();
+}
+
 export function pushStatusHandler(config, objectId = newObjectId(config.objectIdSize)) {
 
   let pushStatus;
@@ -110,11 +119,12 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
-    let pushTime = new Date();
+
     let status = 'pending';
-    if (body.hasOwnProperty('push_time')) {
+    let formattedPushTime = (new Date()).toISOString();
+    if (body.hasOwnProperty('validatedPushTime')) {
       if (config.hasPushScheduledSupport) {
-        pushTime = body.push_time;
+        formattedPushTime = formatPushTime(body.validatedPushTime);
         status = 'scheduled';
       } else {
         logger.warn('Trying to schedule a push while server is not configured.');
@@ -135,7 +145,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
     const object = {
       objectId,
       createdAt: now,
-      pushTime: pushTime.toISOString(),
+      pushTime: formattedPushTime,
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,

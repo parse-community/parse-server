@@ -14,10 +14,8 @@ export class PushController {
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
-    const push_time = PushController.getPushTime(body);
-    if (typeof push_time !== 'undefined') {
-      body['push_time'] = push_time;
-    }
+    body['validatedPushTime'] = PushController.getPushTime(body);
+
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
     let badgeUpdate = () => {
@@ -104,21 +102,35 @@ export class PushController {
       return;
     }
     var pushTimeParam = body['push_time'];
-    var pushTime;
+    var date;
+    var isLocalTime = true;
+
     if (typeof pushTimeParam === 'number') {
-      pushTime = new Date(pushTimeParam * 1000);
+      date = new Date(pushTimeParam * 1000);
     } else if (typeof pushTimeParam === 'string') {
-      pushTime = new Date(pushTimeParam);
+      isLocalTime = !PushController.pushTimeHasTimezoneComponent(pushTimeParam);
+      date = new Date(pushTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.');
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
-    if (!isFinite(pushTime)) {
+    if (!isFinite(date)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.');
     }
-    return pushTime;
+
+    return {
+      date,
+      isLocalTime,
+    };
+  }
+
+  static pushTimeHasTimezoneComponent(pushTimeParam) {
+    if (pushTimeParam.indexOf('Z') !== -1) { // 2007-04-05T12:30Z
+      return true;
+    }
+    return pushTimeParam.length === 22; // 2007-04-05T12:30-02:00
   }
 }
 
