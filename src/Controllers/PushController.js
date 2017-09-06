@@ -14,7 +14,10 @@ export class PushController {
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
-    body['validatedPushTime'] = PushController.getPushTime(body);
+    const pushTime = PushController.getPushTime(body);
+    if (pushTime && pushTime.date !== 'undefined') {
+      body['push_time'] = PushController.formatPushTime(pushTime);
+    }
 
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
@@ -131,6 +134,14 @@ export class PushController {
       return true;
     }
     return pushTimeParam.length === 22; // 2007-04-05T12:30-02:00
+  }
+
+  static formatPushTime({ date, isLocalTime }) {
+    if (isLocalTime) { // Strip 'Z'
+      const isoString = date.toISOString();
+      return isoString.substring(0, isoString.indexOf('Z'));
+    }
+    return date.toISOString();
   }
 }
 

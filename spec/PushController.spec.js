@@ -999,4 +999,40 @@ describe('PushController', () => {
       done();
     }).catch(done.fail);
   });
+
+  describe('pushTimeHasTimezoneComponent', () => {
+    it('should be accurate', () => {
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z'))
+        .toBe(true, 'UTC time');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00'))
+        .toBe(true, 'Timezone offset');
+
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048'))
+        .toBe(false, 'No timezone');
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06'))
+        .toBe(false, 'YY-MM-DD');
+    });
+  });
+
+  describe('formatPushTime', () => {
+    it('should format as ISO string', () => {
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048Z'),
+        isLocalTime: false,
+      })).toBe('2017-09-06T17:14:01.048Z', 'UTC time');
+      expect(PushController.formatPushTime({
+        date: new Date('2007-04-05T12:30-02:00'),
+        isLocalTime: false
+      })).toBe('2007-04-05T14:30:00.000Z', 'Timezone offset');
+
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048'),
+        isLocalTime: true,
+      })).toBe('2017-09-06T17:14:01.048', 'No timezone');
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06'),
+        isLocalTime: true
+      })).toBe('2017-09-06T00:00:00.000', 'YY-MM-DD');
+    });
+  });
 });
