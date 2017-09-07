@@ -129,13 +129,25 @@ export class PushController {
     };
   }
 
-  static pushTimeHasTimezoneComponent(pushTimeParam) {
+  /**
+   * Checks if a ISO8601 formatted date contains a timezone component
+   * It does not validate `pushTimeParam`
+   * @param pushTimeParam {string}
+   * @returns {boolean}
+   */
+  static pushTimeHasTimezoneComponent(pushTimeParam: string): boolean {
     const offsetPattern = /(.+)([+-])\d\d:\d\d$/;
     return pushTimeParam.indexOf('Z') === pushTimeParam.length - 1 // 2007-04-05T12:30Z
       || offsetPattern.test(pushTimeParam); // 2007-04-05T12:30.000+02:00, 2007-04-05T12:30.000-02:00
   }
 
-  static formatPushTime({ date, isLocalTime }) {
+  /**
+   * Converts a date to ISO format in UTC time and strips the timezone if `isLocalTime` is true
+   * @param date {Date}
+   * @param isLocalTime {boolean}
+   * @returns {string}
+   */
+  static formatPushTime({ date, isLocalTime }: { date: Date, isLocalTime: boolean }) {
     if (isLocalTime) { // Strip 'Z'
       const isoString = date.toISOString();
       return isoString.substring(0, isoString.indexOf('Z'));
