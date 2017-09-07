@@ -131,7 +131,7 @@ export class PushController {
 
   static pushTimeHasTimezoneComponent(pushTimeParam) {
     const offsetPattern = /(.+)([+-])\d\d:\d\d$/;
-    return pushTimeParam.endsWith('Z') // 2007-04-05T12:30Z
+    return pushTimeParam.indexOf('Z') === pushTimeParam.length - 1 // 2007-04-05T12:30Z
       || offsetPattern.test(pushTimeParam); // 2007-04-05T12:30.000+02:00, 2007-04-05T12:30.000-02:00
   }
 
