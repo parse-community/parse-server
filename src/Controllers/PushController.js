@@ -130,10 +130,9 @@ export class PushController {
   }
 
   static pushTimeHasTimezoneComponent(pushTimeParam) {
-    if (pushTimeParam.indexOf('Z') !== -1) { // 2007-04-05T12:30Z
-      return true;
-    }
-    return pushTimeParam.length === 22; // 2007-04-05T12:30-02:00
+    const offsetPattern = /(.+)([+-])\d\d:\d\d$/;
+    return pushTimeParam.endsWith('Z') // 2007-04-05T12:30Z
+      || offsetPattern.test(pushTimeParam); // 2007-04-05T12:30.000+02:00, 2007-04-05T12:30.000-02:00
   }
 
   static formatPushTime({ date, isLocalTime }) {

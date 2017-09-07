@@ -1006,6 +1006,8 @@ describe('PushController', () => {
         .toBe(true, 'UTC time');
       expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00'))
         .toBe(true, 'Timezone offset');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30:00.000Z-02:00'))
+        .toBe(true, 'Seconds + Milliseconds + Timezone offset');
 
       expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048'))
         .toBe(false, 'No timezone');
