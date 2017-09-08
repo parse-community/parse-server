@@ -1037,4 +1037,48 @@ describe('PushController', () => {
       })).toBe('2017-09-06T00:00:00.000', 'YY-MM-DD');
     });
   });
+
+  describe('Scheduling pushes in local time', () => {
+    it('should preserve the push time', (done) => {
+      const auth = {isMaster: true};
+      const pushAdapter = {
+        send(body, installations) {
+          return successfulTransmissions(body, installations);
+        },
+        getValidPushTypes() {
+          return ["ios"];
+        }
+      };
+
+      const pushTime = '2017-09-06T17:14:01.048';
+
+      reconfigureServer({
+        push: {adapter: pushAdapter},
+        scheduledPush: true
+      })
+        .then(() => {
+          const config = new Config(Parse.applicationId);
+          return new Promise((resolve, reject) => {
+            const pushController = new PushController();
+            pushController.sendPush({
+              data: {
+                alert: "Hello World!",
+                badge: "Increment",
+              },
+              push_time: pushTime
+            }, {}, config, auth, resolve)
+              .catch(reject);
+          })
+        })
+        .then((pushStatusId) => {
+          const q = new Parse.Query('_PushStatus');
+          return q.get(pushStatusId, {useMasterKey: true});
+        })
+        .then((pushStatus) => {
+          expect(pushStatus.get('status')).toBe('scheduled');
+          expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
+        })
+        .then(done, done.fail);
+    });
+  });
 });

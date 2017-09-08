@@ -131,7 +131,6 @@ export class PushController {
 
   /**
    * Checks if a ISO8601 formatted date contains a timezone component
-   * It does not validate `pushTimeParam`
    * @param pushTimeParam {string}
    * @returns {boolean}
    */
