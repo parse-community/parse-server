@@ -114,7 +114,7 @@ class MongoSchemaCollection {
       .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  _fechOneSchemaFrom_SCHEMA(name: string) {
+  _fetchOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);

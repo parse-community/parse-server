@@ -311,13 +311,12 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // need to set the objectId first otherwise location has trailing undefined
         this.data.objectId = userResult.objectId;
 
-        // Determine if authData was updated
-
-        this.response = {
-          response: userResult,
-          location: this.location()
-        };
-
+        if (!this.query || !this.query.objectId) { // this a login call, no userId passed
+          this.response = {
+            response: userResult,
+            location: this.location()
+          };
+        }
         // If we didn't change the auth data, just keep going
         if (!hasMutatedAuthData) {
           return;
@@ -327,13 +326,20 @@ RestWrite.prototype.handleAuthData = function(authData) {
         // We should update the token and let the user in
         // We should only check the mutated keys
         return this.handleAuthDataValidation(mutatedAuthData).then(() => {
-          // Assign the new authData in the response
-          Object.keys(mutatedAuthData).forEach((provider) => {
-            this.response.response.authData[provider] = mutatedAuthData[provider];
-          });
-          // Run the DB update directly, as 'master'
-          // Just update the authData part
-          return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
+          // IF we have a response, we'll skip the database operation / beforeSave / afterSave etc...
+          // we need to set it up there.
+          // We are supposed to have a response only on LOGIN with authData, so we skip those
+          // If we're not logging in, but just updating the current user, we can safely skip that part
+          if (this.response) {
+            // Assign the new authData in the response
+            Object.keys(mutatedAuthData).forEach((provider) => {
+              this.response.response.authData[provider] = mutatedAuthData[provider];
+            });
+            // Run the DB update directly, as 'master'
+            // Just update the authData part
+            // Then we're good for the user, early exit of sorts
+            return this.config.database.update(this.className, {objectId: this.data.objectId}, {authData: mutatedAuthData}, {});
+          }
         });
       } else if (userId) {
         // Trying to update auth data but users
@@ -1005,9 +1011,19 @@ RestWrite.prototype.runDatabaseOperation = function() {
         if (this.className !== '_User' || error.code !== Parse.Error.DUPLICATE_VALUE) {
           throw error;
         }
+
+        // Quick check, if we were able to infer the duplicated field name
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'username') {
+          throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+        }
+
+        if (error && error.userInfo && error.userInfo.duplicated_field === 'email') {
+          throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+        }
+
         // If this was a failed user creation due to username or email already taken, we need to
         // check whether it was username or email and return the appropriate error.
-
+        // Fallback to the original method
         // TODO: See if we can later do this without additional queries by using named indexes.
         return this.config.database.find(
           this.className,
