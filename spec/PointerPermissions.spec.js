@@ -171,6 +171,47 @@ describe('Pointer Permissions', () => {
     })
   });
 
+  it('should query on pointer permission enabled column', (done) => {
+    const config = new Config(Parse.applicationId);
+    const user = new Parse.User();
+    const user2 = new Parse.User();
+    user.set({
+      username: 'user1',
+      password: 'password'
+    });
+    user2.set({
+      username: 'user2',
+      password: 'password'
+    });
+    const obj = new Parse.Object('AnObject');
+    const obj2 = new Parse.Object('AnObject');
+    user.signUp().then(() => {
+      return user2.signUp()
+    }).then(() => {
+      Parse.User.logOut();
+    }).then(() => {
+      obj.set('owner', user);
+      return Parse.Object.saveAll([obj, obj2]);
+    }).then(() => {
+      return config.database.loadSchema().then((schema) => {
+        return schema.updateClass('AnObject', {}, {find: {}, get:{}, readUserFields: ['owner']})
+      });
+    }).then(() => {
+      return Parse.User.logIn('user1', 'password');
+    }).then(() => {
+      const q = new Parse.Query('AnObject');
+      q.equalTo('owner', user2);
+      return q.find();
+    }).then((res) => {
+      expect(res.length).toBe(0);
+      done();
+    }).catch((err) => {
+      jfail(err);
+      fail('should not fail');
+      done();
+    })
+  });
+
   it('should not allow creating objects', (done) => {
     const config = new Config(Parse.applicationId);
     const user = new Parse.User();
