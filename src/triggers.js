@@ -54,23 +54,9 @@ export function removeFunction(functionName, applicationId) {
   delete _triggerStore[applicationId].Functions[functionName]
 }
 
-export function removeJob(jobName, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Jobs[jobName]
-}
-
 export function removeTrigger(type, className, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   delete _triggerStore[applicationId].Triggers[type][className]
-}
-
-export function _unregister(appId,category,className,type) {
-  if (type) {
-    removeTrigger(className,type,appId);
-    delete _triggerStore[appId][category][className][type];
-  } else {
-    delete _triggerStore[appId][category][className];
-  }
 }
 
 export function _unregisterAll() {

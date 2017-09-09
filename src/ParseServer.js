@@ -175,8 +175,9 @@ class ParseServer {
       masterKeyIps
     )));
 
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
-    const loggerController = new LoggerController(loggerControllerAdapter, appId);
+    const loggerOptions = { jsonLogs, logsFolder, verbose, logLevel, silent };
+    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);
+    const loggerController = new LoggerController(loggerControllerAdapter, appId, loggerOptions);
     logging.setLogger(loggerController);
 
     const filesControllerAdapter = loadAdapter(filesAdapter, () => {

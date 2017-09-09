@@ -107,7 +107,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle normal objects by recursing
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
 
@@ -132,7 +132,7 @@ const transformInteriorValue = restValue => {
   }
 
   // Handle normal objects by recursing
-  return _.mapValues(restValue, transformInteriorValue);
+  return mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -332,7 +332,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key: restKey, value};
 }
 
@@ -789,6 +789,13 @@ function transformUpdateOperator({
     throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${__op} operator is not supported yet.`);
   }
 }
+function mapValues(object, iterator) {
+  const result = {};
+  Object.keys(object).forEach((key) => {
+    result[key] = iterator(object[key]);
+  });
+  return result;
+}
 
 const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
@@ -829,7 +836,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       return mongoObject;
     }
 
-    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
+    return mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
   default:
     throw 'unknown js type';
   }
