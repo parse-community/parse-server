@@ -111,8 +111,7 @@ export function handleParseHeaders(req, res, next) {
   req.config.headers = req.headers || {};
   req.info = info;
 
-  const ip = getClientIp(req);
-  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(ip) === -1) {
+  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(getClientIp(req)) === -1) {
     return invalidRequest(req, res);
   }
 
