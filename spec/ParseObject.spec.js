@@ -344,7 +344,7 @@ describe('Parse.Object testing', () => {
 
   it("invalid __type", function(done) {
     var item = new Parse.Object("Item");
-    var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes'];
+    var types = ['Pointer', 'File', 'Date', 'GeoPoint', 'Bytes', 'Polygon'];
     var tests = types.map(type => {
       var test = new Parse.Object("Item");
       test.set('foo', {

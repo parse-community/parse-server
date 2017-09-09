@@ -274,6 +274,55 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containedIn null array', (done) => {
+    const emails = ['contact@xyz.com', 'contact@zyx.com', null];
+    const user = new Parse.User();
+    user.setUsername(emails[0]);
+    user.setPassword('asdf');
+    user.signUp().then(() => {
+      const query = new Parse.Query(Parse.User);
+      query.containedIn('username', emails);
+      return query.find({ useMasterKey: true });
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    }, done.fail);
+  });
+
+  it('nested containedIn string', (done) => {
+    const sender1 = { group: ['A', 'B'] };
+    const sender2 = { group: ['A', 'C'] };
+    const sender3 = { group: ['B', 'C'] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.containedIn('sender.group', ['A']);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    }, done.fail);
+  });
+
+  it('nested containedIn number', (done) => {
+    const sender1 = { group: [1, 2] };
+    const sender2 = { group: [1, 3] };
+    const sender3 = { group: [2, 3] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.containedIn('sender.group', [1]);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    }, done.fail);
+  });
+
   it("containsAll number array queries", function(done) {
     var NumberSet = Parse.Object.extend({ className: "NumberSet" });
 
@@ -1362,6 +1411,23 @@ describe('Parse.Query testing', () => {
         }
       });
     });
+  });
+
+  it('nested contains', (done) => {
+    const sender1 = { group: ['A', 'B'] };
+    const sender2 = { group: ['A', 'C'] };
+    const sender3 = { group: ['B', 'C'] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.contains('sender.group', 'A');
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    }, done.fail);
   });
 
   it("startsWith", function(done) {

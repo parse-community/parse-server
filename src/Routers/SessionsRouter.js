@@ -7,29 +7,9 @@ import RestWrite     from '../RestWrite';
 import { newToken }  from '../cryptoUtils';
 
 export class SessionsRouter extends ClassesRouter {
-  handleFind(req) {
-    req.params.className = '_Session';
-    return super.handleFind(req);
-  }
 
-  handleGet(req) {
-    req.params.className = '_Session';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    req.params.className = '_Session';
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_Session';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_Session';
-    return super.handleDelete(req);
+  className() {
+    return '_Session';
   }
 
   handleMe(req) {

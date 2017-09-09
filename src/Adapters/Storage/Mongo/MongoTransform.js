@@ -107,7 +107,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle normal objects by recursing
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
 
@@ -132,7 +132,7 @@ const transformInteriorValue = restValue => {
   }
 
   // Handle normal objects by recursing
-  return _.mapValues(restValue, transformInteriorValue);
+  return mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -332,7 +332,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key: restKey, value};
 }
 
@@ -494,6 +494,9 @@ function transformTopLevelAtom(atom) {
     }
     if (GeoPointCoder.isValidJSON(atom)) {
       return GeoPointCoder.JSONToDatabase(atom);
+    }
+    if (PolygonCoder.isValidJSON(atom)) {
+      return PolygonCoder.JSONToDatabase(atom);
     }
     if (FileCoder.isValidJSON(atom)) {
       return FileCoder.JSONToDatabase(atom);
@@ -692,6 +695,24 @@ function transformConstraint(constraint, inArray) {
       };
       break;
     }
+    case '$geoIntersects': {
+      const point = constraint[key]['$point'];
+      if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          'bad $geoIntersect value; $point should be GeoPoint'
+        );
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      answer[key] = {
+        $geometry: {
+          type: 'Point',
+          coordinates: [point.longitude, point.latitude]
+        }
+      };
+      break;
+    }
     default:
       if (key.match(/^\$+/)) {
         throw new Parse.Error(
@@ -768,6 +789,13 @@ function transformUpdateOperator({
     throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${__op} operator is not supported yet.`);
   }
 }
+function mapValues(object, iterator) {
+  const result = {};
+  Object.keys(object).forEach((key) => {
+    result[key] = iterator(object[key]);
+  });
+  return result;
+}
 
 const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
@@ -808,7 +836,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       return mongoObject;
     }
 
-    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
+    return mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
   default:
     throw 'unknown js type';
   }
@@ -940,6 +968,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
             restObject[key] = GeoPointCoder.databaseToJSON(value);
             break;
           }
+          if (schema.fields[key] && schema.fields[key].type === 'Polygon' && PolygonCoder.isValidDatabaseObject(value)) {
+            restObject[key] = PolygonCoder.databaseToJSON(value);
+            break;
+          }
           if (schema.fields[key] && schema.fields[key].type === 'Bytes' && BytesCoder.isValidDatabaseObject(value)) {
             restObject[key] = BytesCoder.databaseToJSON(value);
             break;
@@ -1039,6 +1071,64 @@ var GeoPointCoder = {
     return (typeof value === 'object' &&
       value !== null &&
       value.__type === 'GeoPoint'
+    );
+  }
+};
+
+var PolygonCoder = {
+  databaseToJSON(object) {
+    return {
+      __type: 'Polygon',
+      coordinates: object['coordinates'][0]
+    }
+  },
+
+  isValidDatabaseObject(object) {
+    const coords = object.coordinates[0];
+    if (object.type !== 'Polygon' || !(coords instanceof Array)) {
+      return false;
+    }
+    for (let i = 0; i < coords.length; i++) {
+      const point = coords[i];
+      if (!GeoPointCoder.isValidDatabaseObject(point)) {
+        return false;
+      }
+      Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
+    }
+    return true;
+  },
+
+  JSONToDatabase(json) {
+    const coords = json.coordinates;
+    if (coords[0][0] !== coords[coords.length - 1][0] ||
+        coords[0][1] !== coords[coords.length - 1][1]) {
+      coords.push(coords[0]);
+    }
+    const unique = coords.filter((item, index, ar) => {
+      let foundIndex = -1;
+      for (let i = 0; i < ar.length; i += 1) {
+        const pt = ar[i];
+        if (pt[0] === item[0] &&
+            pt[1] === item[1]) {
+          foundIndex = i;
+          break;
+        }
+      }
+      return foundIndex === index;
+    });
+    if (unique.length < 3) {
+      throw new Parse.Error(
+        Parse.Error.INTERNAL_SERVER_ERROR,
+        'GeoJSON: Loop must have at least 3 different vertices'
+      );
+    }
+    return { type: 'Polygon', coordinates: [coords] };
+  },
+
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'Polygon'
     );
   }
 };

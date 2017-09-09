@@ -1200,6 +1200,61 @@ describe('Cloud Code', () => {
   });
 });
 
+describe('beforeSave hooks', () => {
+  it('should have request headers', (done) => {
+    Parse.Cloud.beforeSave('MyObject', (req, res) => {
+      expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save().then(() => done());
+  });
+});
+
+describe('afterSave hooks', () => {
+  it('should have request headers', (done) => {
+    Parse.Cloud.afterSave('MyObject', (req) => {
+      expect(req.headers).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then(() => done());
+  });
+});
+
+describe('beforeDelete hooks', () => {
+  it('should have request headers', (done) => {
+    Parse.Cloud.beforeDelete('MyObject', (req, res) => {
+      expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then(myObj => myObj.destroy())
+      .then(() => done());
+  });
+});
+
+describe('afterDelete hooks', () => {
+  it('should have request headers', (done) => {
+    Parse.Cloud.afterDelete('MyObject', (req) => {
+      expect(req.headers).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then(myObj => myObj.destroy())
+      .then(() => done());
+  });
+});
+
 describe('beforeFind hooks', () => {
   it('should add beforeFind trigger', (done) => {
     Parse.Cloud.beforeFind('MyObject', (req) => {
@@ -1333,6 +1388,26 @@ describe('beforeFind hooks', () => {
         done();
       });
     });
+  });
+
+  it('should have request headers', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      expect(req.headers).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then((myObj) => {
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
+        return Promise.all([
+          query.get(myObj.id),
+          query.first(),
+          query.find(),
+        ]);
+      })
+      .then(() => done());
   });
 });
 
@@ -1530,5 +1605,26 @@ describe('afterFind hooks', () => {
       expect(hook.method).toHaveBeenCalled();
       done();
     });
+  });
+
+  it('should have request headers', (done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then((myObj) => {
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
+        return Promise.all([
+          query.get(myObj.id),
+          query.first(),
+          query.find(),
+        ]);
+      })
+      .then(() => done());
   });
 });

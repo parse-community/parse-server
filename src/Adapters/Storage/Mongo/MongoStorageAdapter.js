@@ -182,7 +182,8 @@ export class MongoStorageAdapter {
 
   addFieldIfNotExists(className, fieldName, type) {
     return this._schemaCollection()
-      .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type));
+      .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
+      .then(() => this.createIndexesIfNeeded(className, fieldName, type));
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -202,7 +203,7 @@ export class MongoStorageAdapter {
       .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
   }
 
-  // Delete all data known to this adatper. Used for testing.
+  // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
     return storageAdapterAllCollections(this)
       .then(collections => Promise.all(collections.map(collection => collection.drop())));
@@ -219,7 +220,7 @@ export class MongoStorageAdapter {
   // Pointer field names are passed for legacy reasons: the original mongo
   // format stored pointer field names differently in the database, and therefore
   // needed to know the type of the field before it could delete it. Future database
-  // adatpers should ignore the pointerFieldNames argument. All the field names are in
+  // adapters should ignore the pointerFieldNames argument. All the field names are in
   // fieldNames, they show up additionally in the pointerFieldNames database for use
   // by the mongo adapter, which deals with the legacy mongo format.
 
@@ -264,12 +265,12 @@ export class MongoStorageAdapter {
   // undefined as the reason.
   getClass(className) {
     return this._schemaCollection()
-      .then(schemasCollection => schemasCollection._fechOneSchemaFrom_SCHEMA(className))
+      .then(schemasCollection => schemasCollection._fetchOneSchemaFrom_SCHEMA(className))
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
   // and should infer from the type. Or maybe does need the schema for validations. Or maybe needs
-  // the schem only for the legacy mongo format. We'll figure that out later.
+  // the schema only for the legacy mongo format. We'll figure that out later.
   createObject(className, schema, object) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = parseObjectToMongoObjectForCreate(className, object, schema);
@@ -277,8 +278,15 @@ export class MongoStorageAdapter {
       .then(collection => collection.insertOne(mongoObject))
       .catch(error => {
         if (error.code === 11000) { // Duplicate value
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE,
-            'A duplicate value for a field with unique values was provided');
+          const err = new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+          err.underlyingError = error;
+          if (error.message) {
+            const matches = error.message.match(/index:[\sa-zA-Z0-9_\-\.]+\$?([a-zA-Z_-]+)_1/);
+            if (matches && Array.isArray(matches)) {
+              err.userInfo = { duplicated_field: matches[1] };
+            }
+          }
+          throw err;
         }
         throw error;
       });
@@ -342,8 +350,10 @@ export class MongoStorageAdapter {
       memo[transformKey(className, key, schema)] = 1;
       return memo;
     }, {});
+
     readPreference = this._parseReadPreference(readPreference);
-    return this._adaptiveCollection(className)
+    return this.createTextIndexesIfNeeded(className, query)
+      .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
         limit,
@@ -372,9 +382,8 @@ export class MongoStorageAdapter {
       .catch(error => {
         if (error.code === 11000) {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
-        } else {
-          throw error;
         }
+        throw error;
       });
   }
 
@@ -428,6 +437,42 @@ export class MongoStorageAdapter {
   createIndex(className, index) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.createIndex(index));
+  }
+
+  createIndexesIfNeeded(className, fieldName, type) {
+    if (type && type.type === 'Polygon') {
+      const index = {
+        [fieldName]: '2dsphere'
+      };
+      return this.createIndex(className, index);
+    }
+    return Promise.resolve();
+  }
+
+  createTextIndexesIfNeeded(className, query) {
+    for(const fieldName in query) {
+      if (!query[fieldName] || !query[fieldName].$text) {
+        continue;
+      }
+      const index = {
+        [fieldName]: 'text'
+      };
+      return this.createIndex(className, index)
+        .catch((error) => {
+          if (error.code === 85) {
+            throw new Parse.Error(
+              Parse.Error.INTERNAL_SERVER_ERROR,
+              'Only one text index is supported, please delete all text indexes to use new field.');
+          }
+          throw error;
+        });
+    }
+    return Promise.resolve();
+  }
+
+  getIndexes(className) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.indexes());
   }
 }
 

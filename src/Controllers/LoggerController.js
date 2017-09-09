@@ -17,7 +17,33 @@ export const LogOrder = {
   ASCENDING: 'asc'
 }
 
+const logLevels = [
+  'error',
+  'warn',
+  'info',
+  'debug',
+  'verbose',
+  'silly',
+]
+
 export class LoggerController extends AdaptableController {
+
+  constructor(adapter, appId, options = {logLevel: 'info'}) {
+    super(adapter, appId, options);
+    let level = 'info';
+    if (options.verbose) {
+      level = 'verbose';
+    }
+    if (options.logLevel) {
+      level = options.logLevel;
+    }
+    const index = logLevels.indexOf(level); // info by default
+    logLevels.forEach((level, levelIndex) => {
+      if (levelIndex > index) { // silence the levels that are > maxIndex
+        this[level] = () => {};
+      }
+    });
+  }
 
   maskSensitiveUrl(urlString) {
     const password = url.parse(urlString, true).query.password;
@@ -80,7 +106,10 @@ export class LoggerController extends AdaptableController {
   log(level, args) {
     // make the passed in arguments object an array with the spread operator
     args = this.maskSensitive([...args]);
-    args = [].concat(level, args);
+    args = [].concat(level, args.map((arg) => {
+      if (typeof arg === 'function') { return arg(); }
+      return arg;
+    }));
     this.adapter.log.apply(this.adapter, args);
   }
 
@@ -106,6 +135,36 @@ export class LoggerController extends AdaptableController {
 
   silly() {
     return this.log('silly', arguments);
+  }
+
+  logRequest({
+    method,
+    url,
+    headers,
+    body
+  }) {
+    this.verbose(() => {
+      const stringifiedBody = JSON.stringify(body, null, 2);
+      return `REQUEST for [${method}] ${url}: ${stringifiedBody}`;
+    }, {
+      method,
+      url,
+      headers,
+      body
+    });
+  }
+
+  logResponse({
+    method,
+    url,
+    result
+  }) {
+    this.verbose(
+      () => { const stringifiedResponse = JSON.stringify(result, null, 2);
+        return `RESPONSE from [${method}] ${url}: ${stringifiedResponse}`;
+      },
+      {result: result}
+    );
   }
   // check that date input is valid
   static validDateTime(date) {

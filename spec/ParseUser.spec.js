@@ -1185,10 +1185,7 @@ describe('Parse.User testing', () => {
       expect(fileAgain.url()).toMatch(/yolo.txt$/);
     }).then(() => {
       done();
-    }, error => {
-      jfail(error);
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("log in with provider twice", (done) => {
@@ -3118,5 +3115,59 @@ describe('Parse.User testing', () => {
         done();
       });
     });
+  });
+
+  it('should be able to update user with authData passed', (done) => {
+    let objectId;
+    let sessionToken;
+
+    function validate(block) {
+      return rp.get({
+        url: `http://localhost:8378/1/classes/_User/${objectId}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken
+        },
+        json: true,
+      }).then(block);
+    }
+
+    rp.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: { key: "value", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((body) => {
+      objectId = body.objectId;
+      sessionToken = body.sessionToken;
+      expect(sessionToken).toBeDefined();
+      expect(objectId).toBeDefined();
+      return validate((user) => { // validate that keys are set on creation
+        expect(user.key).toBe("value");
+      });
+    }).then(() => {
+      // update the user
+      const options = {
+        url: `http://localhost:8378/1/classes/_User/${objectId}`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken
+        },
+        json: { key: "otherValue", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }
+      return rp.put(options);
+    }).then(() => {
+      return validate((user) => { // validate that keys are set on update
+        expect(user.key).toBe("otherValue");
+      });
+    }).then(() => {
+      done();
+    })
+      .then(done)
+      .catch(done.fail);
   });
 });

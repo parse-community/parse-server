@@ -845,6 +845,138 @@ describe('PushController', () => {
       fail('should not fail');
       done();
     });
+  });
 
+  it('should mark the _PushStatus as failed when audience has no deviceToken', (done) => {
+    var auth = {
+      isMaster: true
+    }
+    var pushAdapter = {
+      send: function(body, installations) {
+        const promises = installations.map((device) => {
+          if (!device.deviceToken) {
+            // Simulate error when device token is not set
+            return Promise.reject();
+          }
+          return Promise.resolve({
+            transmitted: true,
+            device: device,
+          })
+        });
+
+        return Promise.all(promises);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var pushController = new PushController();
+    const payload = {
+      data: {
+        alert: 'hello',
+      },
+      push_time: new Date().getTime() / 1000
+    }
+
+    var installations = [];
+    while(installations.length != 5) {
+      const installation = new Parse.Object("_Installation");
+      installation.set("installationId", "installation_" + installations.length);
+      installation.set("badge", installations.length);
+      installation.set("originalBadge", installations.length);
+      installation.set("deviceType", "ios");
+      installations.push(installation);
+    }
+
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var config = new Config(Parse.applicationId);
+      return Parse.Object.saveAll(installations).then(() => {
+        return pushController.sendPush(payload, {}, config, auth)
+          .then(() => { done.fail('should not success') })
+          .catch(() => {})
+      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      return query.find({useMasterKey: true}).then((results) => {
+        expect(results.length).toBe(1);
+        const pushStatus = results[0];
+        expect(pushStatus.get('numSent')).toBe(0);
+        expect(pushStatus.get('status')).toBe('failed');
+        done();
+      });
+    }).catch((err) => {
+      console.error(err);
+      fail('should not fail');
+      done();
+    });
+  });
+
+  it('should support localized payload data', (done) => {
+    var payload = {data: {
+      alert: 'Hello!',
+      'alert-fr': 'Bonjour',
+      'alert-es': 'Ola'
+    }}
+
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    const where = {
+      'deviceType': 'ios'
+    }
+    spyOn(pushAdapter, 'send').and.callThrough();
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken", "device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      installations[0].set('localeIdentifier', 'fr-CA');
+      installations[1].set('localeIdentifier', 'fr-FR');
+      installations[2].set('localeIdentifier', 'en-US');
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
+      return pushController.sendPush(payload, where, config, auth)
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      expect(pushAdapter.send.calls.count()).toBe(2);
+      const firstCall = pushAdapter.send.calls.first();
+      expect(firstCall.args[0].data).toEqual({
+        alert: 'Hello!'
+      });
+      expect(firstCall.args[1].length).toBe(3); // 3 installations
+
+      const lastCall = pushAdapter.send.calls.mostRecent();
+      expect(lastCall.args[0].data).toEqual({
+        alert: 'Bonjour'
+      });
+      expect(lastCall.args[1].length).toBe(2); // 2 installations
+      // No installation is in es so only 1 call for fr, and another for default
+      done();
+    }).catch(done.fail);
   });
 });
