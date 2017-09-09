@@ -635,7 +635,13 @@ function includePath(config, auth, response, path, restOptions = {}) {
   }
 
   const queryPromises = Object.keys(pointersHash).map((className) => {
-    const where = {'objectId': {'$in': Array.from(pointersHash[className])}};
+    const objectIds = Array.from(pointersHash[className]);
+    let where;
+    if (objectIds.length === 1) {
+      where = {'objectId': objectIds[0]};
+    } else {
+      where = {'objectId': {'$in': objectIds}};
+    }
     var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute({op: 'get'}).then((results) => {
       results.className = className;
