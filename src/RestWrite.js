@@ -102,8 +102,7 @@ RestWrite.prototype.getUserAndRoleACL = function() {
 
   if (this.auth.user) {
     return this.auth.getUserRoles().then((roles) => {
-      roles.push(this.auth.user.id);
-      this.runOptions.acl = this.runOptions.acl.concat(roles);
+      this.runOptions.acl = this.runOptions.acl.concat(roles, [this.auth.user.id]);
       return;
     });
   } else {
