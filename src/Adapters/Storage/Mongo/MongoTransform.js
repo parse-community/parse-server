@@ -924,6 +924,10 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
         break;
       default:
+        if (className === '_Audience' && (key === '_last_used' || key === 'times_used')) {
+          // Ignore these parse.com legacy fields
+          break;
+        }
         // Check other auth data keys
         var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
         if (authDataMatch) {

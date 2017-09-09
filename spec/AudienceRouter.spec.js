@@ -284,4 +284,40 @@ describe('AudiencesRouter', () => {
         }
       );
   });
+
+  it_exclude_dbs(['postgres'])('should not log error with legacy parse.com times_used and _last_used fields', (done) => {
+    const database = (new Config(Parse.applicationId)).database.adapter.database;
+    const now  = new Date();
+    Parse._request('POST', 'push_audiences', { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' })}, { useMasterKey: true })
+      .then((audience) => {
+        database.collection('test__Audience').updateOne(
+          { _id: audience.objectId },
+          {
+            $set: {
+              times_used: 1,
+              _last_used: now
+            }
+          },
+          {},
+          (error) => {
+            expect(error).toEqual(null)
+            database.collection('test__Audience').find({ _id: audience.objectId}).toArray(
+              (error, rows) => {
+                expect(error).toEqual(null)
+                expect(rows[0]['times_used']).toEqual(1);
+                expect(rows[0]['_last_used']).toEqual(now);
+                Parse._request('GET', 'push_audiences', {}, {useMasterKey: true})
+                  .then((results) => {
+                    expect(results.results.length).toEqual(1);
+                    expect(results.results[0].name).toEqual('My Audience');
+                    expect(results.results[0].query.deviceType).toEqual('ios');
+                    expect(results.results[0].times_used).toEqual(undefined);
+                    expect(results.results[0]._last_used).toEqual(undefined);
+                    done();
+                  })
+                  .catch((error) => { done.fail(error); })
+              });
+          });
+      });
+  });
 });
