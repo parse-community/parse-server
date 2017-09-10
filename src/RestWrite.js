@@ -548,6 +548,11 @@ RestWrite.prototype.createSessionTokenIfNeeded = function() {
   if (this.query) {
     return;
   }
+  if (!this.storage['authProvider'] // signup call, with
+      && this.config.preventLoginWithUnverifiedEmail // no login without verification
+      && this.config.verifyUserEmails) { // verification is on
+    return; // do not create the session token in that case!
+  }
   return this.createSessionToken();
 }
 
