@@ -1168,6 +1168,30 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('only creates a single session for an installation / user pair (#2885)', done => {
+    Parse.Object.disableSingleInstance();
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User.logInWith('facebook', {
+      success: () => {
+        return Parse.User.logInWith('facebook', {
+          success: () => {
+            return Parse.User.logInWith('facebook', {
+              success: () => {
+                const query = new Parse.Query('_Session');
+                return query.find({ useMasterKey: true })
+                  .then((results) => {
+                    expect(results.length).toBe(1);
+                    done();
+                  }).catch(done.fail);
+              }
+            });
+          }
+        });
+      }
+    });
+  });
+
   it('log in with provider with files', done => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
