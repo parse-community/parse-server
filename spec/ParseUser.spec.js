@@ -1177,11 +1177,17 @@ describe('Parse.User testing', () => {
         return Parse.User.logInWith('facebook', {
           success: () => {
             return Parse.User.logInWith('facebook', {
-              success: () => {
+              success: (user) => {
+                const sessionToken = user.getSessionToken();
                 const query = new Parse.Query('_Session');
                 return query.find({ useMasterKey: true })
                   .then((results) => {
                     expect(results.length).toBe(1);
+                    expect(results[0].get('sessionToken')).toBe(sessionToken);
+                    expect(results[0].get('createdWith')).toEqual({
+                      action: 'login',
+                      authProvider: 'facebook'
+                    });
                     done();
                   }).catch(done.fail);
               }
