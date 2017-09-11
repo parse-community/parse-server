@@ -568,7 +568,7 @@ RestWrite.prototype.createSessionToken = function() {
       objectId: this.objectId()
     },
     createdWith: {
-      'action': 'signup',
+      'action': this.storage['authProvider'] ? 'login' : 'signup',
       'authProvider': this.storage['authProvider'] || 'password'
     },
     restricted: false,
@@ -578,8 +578,18 @@ RestWrite.prototype.createSessionToken = function() {
   if (this.response && this.response.response) {
     this.response.response.sessionToken = token;
   }
-  var create = new RestWrite(this.config, Auth.master(this.config), '_Session', null, sessionData);
-  return create.execute();
+
+  // Destroy the sessions in 'Background'
+  this.config.database.destroy('_Session', {
+    user: {
+      __type: 'Pointer',
+      className: '_User',
+      objectId: this.objectId()
+    },
+    installationId: this.auth.installationId,
+    sessionToken: { '$ne': token },
+  });
+  return new RestWrite(this.config, Auth.master(this.config), '_Session', null, sessionData).execute();
 }
 
 // Handles any followup logic
