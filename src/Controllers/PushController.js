@@ -14,10 +14,11 @@ export class PushController {
     }
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
-    const push_time = PushController.getPushTime(body);
-    if (typeof push_time !== 'undefined') {
-      body['push_time'] = push_time;
+    const pushTime = PushController.getPushTime(body);
+    if (pushTime && pushTime.date !== 'undefined') {
+      body['push_time'] = PushController.formatPushTime(pushTime);
     }
+
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
     let badgeUpdate = () => {
@@ -104,21 +105,53 @@ export class PushController {
       return;
     }
     var pushTimeParam = body['push_time'];
-    var pushTime;
+    var date;
+    var isLocalTime = true;
+
     if (typeof pushTimeParam === 'number') {
-      pushTime = new Date(pushTimeParam * 1000);
+      date = new Date(pushTimeParam * 1000);
     } else if (typeof pushTimeParam === 'string') {
-      pushTime = new Date(pushTimeParam);
+      isLocalTime = !PushController.pushTimeHasTimezoneComponent(pushTimeParam);
+      date = new Date(pushTimeParam);
     } else {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.');
     }
     // Check pushTime is valid or not, if it is not valid, pushTime is NaN
-    if (!isFinite(pushTime)) {
+    if (!isFinite(date)) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         body['push_time'] + ' is not valid time.');
     }
-    return pushTime;
+
+    return {
+      date,
+      isLocalTime,
+    };
+  }
+
+  /**
+   * Checks if a ISO8601 formatted date contains a timezone component
+   * @param pushTimeParam {string}
+   * @returns {boolean}
+   */
+  static pushTimeHasTimezoneComponent(pushTimeParam: string): boolean {
+    const offsetPattern = /(.+)([+-])\d\d:\d\d$/;
+    return pushTimeParam.indexOf('Z') === pushTimeParam.length - 1 // 2007-04-05T12:30Z
+      || offsetPattern.test(pushTimeParam); // 2007-04-05T12:30.000+02:00, 2007-04-05T12:30.000-02:00
+  }
+
+  /**
+   * Converts a date to ISO format in UTC time and strips the timezone if `isLocalTime` is true
+   * @param date {Date}
+   * @param isLocalTime {boolean}
+   * @returns {string}
+   */
+  static formatPushTime({ date, isLocalTime }: { date: Date, isLocalTime: boolean }) {
+    if (isLocalTime) { // Strip 'Z'
+      const isoString = date.toISOString();
+      return isoString.substring(0, isoString.indexOf('Z'));
+    }
+    return date.toISOString();
   }
 }
 

@@ -138,8 +138,8 @@ describe('PushController', () => {
       'push_time': timeStr
     }
 
-    var time = PushController.getPushTime(body);
-    expect(time).toEqual(new Date(timeStr));
+    var { date } = PushController.getPushTime(body);
+    expect(date).toEqual(new Date(timeStr));
     done();
   });
 
@@ -150,8 +150,8 @@ describe('PushController', () => {
       'push_time': timeNumber
     }
 
-    var time = PushController.getPushTime(body).valueOf();
-    expect(time).toEqual(timeNumber * 1000);
+    var { date } = PushController.getPushTime(body);
+    expect(date.valueOf()).toEqual(timeNumber * 1000);
     done();
   });
 
@@ -640,16 +640,36 @@ describe('PushController', () => {
     expect(PushController.getPushTime()).toBe(undefined);
     expect(PushController.getPushTime({
       'push_time': 1000
-    })).toEqual(new Date(1000 * 1000));
+    }).date).toEqual(new Date(1000 * 1000));
     expect(PushController.getPushTime({
       'push_time': '2017-01-01'
-    })).toEqual(new Date('2017-01-01'));
+    }).date).toEqual(new Date('2017-01-01'));
+
     expect(() => {PushController.getPushTime({
       'push_time': 'gibberish-time'
     })}).toThrow();
     expect(() => {PushController.getPushTime({
       'push_time': Number.NaN
     })}).toThrow();
+
+    expect(PushController.getPushTime({
+      push_time: '2017-09-06T13:42:48.369Z'
+    })).toEqual({
+      date: new Date('2017-09-06T13:42:48.369Z'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30-02:00',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30-02:00'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30'),
+      isLocalTime: true,
+    });
   });
 
   it('should not schedule push when not configured', (done) => {
@@ -978,5 +998,87 @@ describe('PushController', () => {
       // No installation is in es so only 1 call for fr, and another for default
       done();
     }).catch(done.fail);
+  });
+
+  describe('pushTimeHasTimezoneComponent', () => {
+    it('should be accurate', () => {
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z'))
+        .toBe(true, 'UTC time');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00'))
+        .toBe(true, 'Timezone offset');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30:00.000Z-02:00'))
+        .toBe(true, 'Seconds + Milliseconds + Timezone offset');
+
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048'))
+        .toBe(false, 'No timezone');
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06'))
+        .toBe(false, 'YY-MM-DD');
+    });
+  });
+
+  describe('formatPushTime', () => {
+    it('should format as ISO string', () => {
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048Z'),
+        isLocalTime: false,
+      })).toBe('2017-09-06T17:14:01.048Z', 'UTC time');
+      expect(PushController.formatPushTime({
+        date: new Date('2007-04-05T12:30-02:00'),
+        isLocalTime: false
+      })).toBe('2007-04-05T14:30:00.000Z', 'Timezone offset');
+
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048'),
+        isLocalTime: true,
+      })).toBe('2017-09-06T17:14:01.048', 'No timezone');
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06'),
+        isLocalTime: true
+      })).toBe('2017-09-06T00:00:00.000', 'YY-MM-DD');
+    });
+  });
+
+  describe('Scheduling pushes in local time', () => {
+    it('should preserve the push time', (done) => {
+      const auth = {isMaster: true};
+      const pushAdapter = {
+        send(body, installations) {
+          return successfulTransmissions(body, installations);
+        },
+        getValidPushTypes() {
+          return ["ios"];
+        }
+      };
+
+      const pushTime = '2017-09-06T17:14:01.048';
+
+      reconfigureServer({
+        push: {adapter: pushAdapter},
+        scheduledPush: true
+      })
+        .then(() => {
+          const config = new Config(Parse.applicationId);
+          return new Promise((resolve, reject) => {
+            const pushController = new PushController();
+            pushController.sendPush({
+              data: {
+                alert: "Hello World!",
+                badge: "Increment",
+              },
+              push_time: pushTime
+            }, {}, config, auth, resolve)
+              .catch(reject);
+          })
+        })
+        .then((pushStatusId) => {
+          const q = new Parse.Query('_PushStatus');
+          return q.get(pushStatusId, {useMasterKey: true});
+        })
+        .then((pushStatus) => {
+          expect(pushStatus.get('status')).toBe('scheduled');
+          expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
+        })
+        .then(done, done.fail);
+    });
   });
 });
