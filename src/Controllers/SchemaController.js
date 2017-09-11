@@ -113,12 +113,14 @@ const defaultColumns = Object.freeze({
   },
   _GlobalConfig: {
     "objectId": {type: 'String'},
-    "params": {type: 'Object'}
+    "params":   {type: 'Object'}
   },
   _Audience: {
-    "objectId": {type:'String'},
-    "name":   {type:'String'},
-    "query": {type:'String'} //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
+    "objectId":  {type:'String'},
+    "name":      {type:'String'},
+    "query":     {type:'String'}, //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
+    "lastUsed":  {type:'Date'},
+    "timesUsed": {type:'Number'}
   }
 });
 

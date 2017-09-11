@@ -1000,6 +1000,95 @@ describe('PushController', () => {
     }).catch(done.fail);
   });
 
+  it('should update audiences', (done) => {
+    var payload = {data: {
+      alert: 'hello'
+    }}
+
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    var audienceId = null;
+    var now = new Date();
+    var timesUsed = 0;
+
+    const where = {
+      'deviceType': 'ios'
+    }
+    spyOn(pushAdapter, 'send').and.callThrough();
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken","device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
+      // Create an audience
+      const query = new Parse.Query("_Audience");
+      query.descending("createdAt");
+      query.equalTo("query", JSON.stringify(where));
+      const parseResults = (results) => {
+        if (results.length > 0) {
+          audienceId = results[0].id;
+          timesUsed = results[0].get('timesUsed');
+          if (!isFinite(timesUsed)) {
+            timesUsed = 0;
+          }
+        }
+      }
+      const audience = new Parse.Object("_Audience");
+      audience.set("name", "testAudience")
+      audience.set("query", JSON.stringify(where));
+      return Parse.Object.saveAll(audience).then(() => {
+        return query.find({ useMasterKey: true }).then(parseResults);
+      });
+    }).then(() => {
+      return pushController.sendPush(payload, where, config, auth)
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      expect(pushAdapter.send.calls.count()).toBe(1);
+      const firstCall = pushAdapter.send.calls.first();
+      expect(firstCall.args[0].data).toEqual({
+        alert: 'hello'
+      });
+      expect(firstCall.args[1].length).toBe(5);
+    }).then(() => {
+      // Get the audience we used above.
+      const query = new Parse.Query("_Audience");
+      query.equalTo("objectId", audienceId);
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      const audience = results[0];
+      expect(audience.get('query')).toBe(JSON.stringify(where));
+      expect(audience.get('timesUsed')).toBe(timesUsed + 1);
+      expect(audience.get('lastUsed')).not.toBeLessThan(now);
+    }).then(() => {
+      done();
+    }).catch(done.fail);
+  });
+
   describe('pushTimeHasTimezoneComponent', () => {
     it('should be accurate', () => {
       expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z'))
