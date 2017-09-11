@@ -22,6 +22,7 @@
 * Fixes an issue that would duplicate Session objects per userId-installationId pair.
 * Fixes an issue affecting pointer permissions introduced in this release.
 * Fixes an issue that would prevent displaying audiences correctly in dashboard.
+* Fixes an issue affecting preventLoginWithUnverifiedEmail upon signups.
 
 #### Dependency Updates:
 * [pg-promise@6.3.2](https://www.npmjs.com/package/pg-promise)
