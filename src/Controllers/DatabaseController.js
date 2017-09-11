@@ -941,7 +941,14 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
       const q = {
         [key]: userPointer
       };
-      return {'$and': [q, query]};
+      // if we already have a constraint on the key, use the $and
+      if (query.hasOwnProperty(key)) {
+        return {'$and': [q, query]};
+      }
+      // otherwise just add the constaint
+      return Object.assign({}, query, {
+        [`${key}`]: userPointer,
+      })
     });
     if (ors.length > 1) {
       return {'$or': ors};
