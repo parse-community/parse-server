@@ -1,10 +1,36 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...master)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...master)
 
-#### New Features
-* Adds ability to send localized pushes according to the _Installation localeIdentifier 
+### 2.6.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...2.6.1)
+
+#### Improvements:
+* Improves overall performance of the server, more particularly with large query results.
+* Improves performance of InMemoryCacheAdapter by removing serialization.
+* Improves logging performance by skipping necessary log calls.
+* Refactors object routers to simplify logic.
+* Adds automatic indexing on $text indexes, thanks to [Diamon Lewis](https://github.com/dplewis)
+
+#### New Features:
+* Push: Adds ability to send localized pushes according to the _Installation localeIdentifier
+* Push: proper support for scheduling push in user's locale time, thanks to [Marvel Mathew](https://github.com/marvelm)
+* LiveQuery: Adds ability to use LiveQuery with a masterKey, thanks to [Jeremy May](https://github.com/kenishi)
+
+#### Bug Fixes:
+* Fixes an issue that would duplicate Session objects per userId-installationId pair.
+* Fixes an issue affecting pointer permissions introduced in this release.
+* Fixes an issue that would prevent displaying audiences correctly in dashboard.
+* Fixes an issue affecting preventLoginWithUnverifiedEmail upon signups.
+
+#### Dependency Updates:
+* [pg-promise@6.3.2](https://www.npmjs.com/package/pg-promise)
+* [body-parser@1.18.0](https://www.npmjs.com/package/body-parser)
+* [nodemon@1.11.1](https://www.npmjs.com/package/nodemon)
+
+##### Devevelopment Dependencies Updates:
+* [babel-cli@6.26.0](https://www.npmjs.com/package/babel-cli)
 
 ### 2.6.0
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.3...2.6.0)
