@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "bcryptjs": "2.4.3",
-    "body-parser": "1.17.2",
+    "body-parser": "1.18.0",
     "commander": "2.11.0",
     "deepcopy": "0.6.3",
     "express": "4.15.3",
@@ -34,7 +34,7 @@
     "parse-server-push-adapter": "2.0.0",
     "parse-server-s3-adapter": "1.2.0",
     "parse-server-simple-mailgun-adapter": "1.0.0",
-    "pg-promise": "6.3.1",
+    "pg-promise": "6.3.2",
     "redis": "2.8.0",
     "request": "2.81.0",
     "semver": "5.4.0",
@@ -44,7 +44,7 @@
     "ws": "3.1.0"
   },
   "devDependencies": {
-    "babel-cli": "6.24.1",
+    "babel-cli": "6.26.0",
     "babel-core": "6.26.0",
     "babel-eslint": "^7.1.1",
     "babel-plugin-syntax-flow": "6.18.0",
