@@ -56,16 +56,18 @@ export class PushController {
       return badgeUpdate();
     }).then(() => {
       // Update audience lastUsed and timesUsed
-      var updateAudience = {
-        lastUsed: { __type: "Date", iso: new Date().toISOString() },
-        timesUsed: { __op: "Increment", "amount": 1 }
-      };
-      const audienceRestQuery = new RestQuery(config, master(config), '_Audience', {query: JSON.stringify(where)});
-      return audienceRestQuery.buildRestWhere().then(() => {
-        const write = new RestWrite(config, master(config), '_Audience', audienceRestQuery.restWhere, updateAudience);
-        write.runOptions.many = true;
-        return write.execute();
-      });
+      if (body.audience_id) {
+        const audienceId = body.audience_id;
+
+        var updateAudience = {
+          lastUsed: { __type: "Date", iso: new Date().toISOString() },
+          timesUsed: { __op: "Increment", "amount": 1 }
+        };
+        const write = new RestWrite(config, master(config), '_Audience', {objectId: audienceId}, updateAudience);
+        write.execute();
+      }
+      // Don't wait for the audience update promise to resolve.
+      return Promise.resolve();
     }).then(() => {
       if (body.hasOwnProperty('push_time') && config.hasPushScheduledSupport) {
         return Promise.resolve();

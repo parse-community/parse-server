@@ -1001,10 +1001,6 @@ describe('PushController', () => {
   });
 
   it('should update audiences', (done) => {
-    var payload = {data: {
-      alert: 'hello'
-    }}
-
     var pushAdapter = {
       send: function(body, installations) {
         return successfulTransmissions(body, installations);
@@ -1063,7 +1059,11 @@ describe('PushController', () => {
         return query.find({ useMasterKey: true }).then(parseResults);
       });
     }).then(() => {
-      return pushController.sendPush(payload, where, config, auth)
+      var body = {
+        data: { alert: 'hello' },
+        audience_id: audienceId
+      }
+      return pushController.sendPush(body, where, config, auth)
     }).then(() => {
       // Wait so the push is completed.
       return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
