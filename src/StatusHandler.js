@@ -162,7 +162,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       {status: "running", updatedAt: new Date(), count });
   }
 
-  const trackSent = function(results) {
+  const trackSent = function(results, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
     const update = {
       updatedAt: new Date(),
       numSent: 0,
@@ -214,7 +214,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       }
     });
 
-    if (devicesToRemove.length > 0 && process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+    if (devicesToRemove.length > 0 && cleanupInstallations) {
       logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
       database.update('_Installation', { deviceToken: { '$in': devicesToRemove }}, { deviceToken: {"__op": "Delete"} }, {
         acl: undefined,
