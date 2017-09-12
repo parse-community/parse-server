@@ -110,7 +110,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
   const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
-    let pushTime = new Date();
+    let pushTime = now.toISOString();
     let status = 'pending';
     if (body.hasOwnProperty('push_time')) {
       if (config.hasPushScheduledSupport) {
@@ -135,7 +135,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
     const object = {
       objectId,
       createdAt: now,
-      pushTime: pushTime.toISOString(),
+      pushTime,
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,

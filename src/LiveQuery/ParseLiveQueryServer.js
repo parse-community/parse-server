@@ -310,8 +310,8 @@ class ParseLiveQueryServer {
   }
 
   _matchesACL(acl: any, client: any, requestId: number): any {
-    // If ACL is undefined or null, or ACL has public read access, return true directly
-    if (!acl || acl.getPublicReadAccess()) {
+    // Return true directly if ACL isn't present, ACL is public read, or client has master key
+    if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
       return Parse.Promise.as(true);
     }
     // Check subscription sessionToken matches ACL first
@@ -403,12 +403,24 @@ class ParseLiveQueryServer {
       logger.error('Key in request is not valid');
       return;
     }
-    const client = new Client(this.clientId, parseWebsocket);
+    const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
+    const client = new Client(this.clientId, parseWebsocket, hasMasterKey);
     parseWebsocket.clientId = this.clientId;
     this.clientId += 1;
     this.clients.set(parseWebsocket.clientId, client);
     logger.info('Create new client: %d', parseWebsocket.clientId);
     client.pushConnect();
+  }
+
+  _hasMasterKey(request: any, validKeyPairs: any): boolean {
+    if(!validKeyPairs || validKeyPairs.size == 0 ||
+      !validKeyPairs.has("masterKey")) {
+      return false;
+    }
+    if(!request || !request.hasOwnProperty("masterKey")) {
+      return false;
+    }
+    return request.masterKey === validKeyPairs.get("masterKey");
   }
 
   _validateKeys(request: any, validKeyPairs: any): boolean {

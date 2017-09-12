@@ -1,5 +1,75 @@
 ## Parse Server Changelog
 
+### master
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...master)
+
+### 2.6.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...2.6.1)
+
+#### Improvements:
+* Improves overall performance of the server, more particularly with large query results.
+* Improves performance of InMemoryCacheAdapter by removing serialization.
+* Improves logging performance by skipping necessary log calls.
+* Refactors object routers to simplify logic.
+* Adds automatic indexing on $text indexes, thanks to [Diamon Lewis](https://github.com/dplewis)
+
+#### New Features:
+* Push: Adds ability to send localized pushes according to the _Installation localeIdentifier
+* Push: proper support for scheduling push in user's locale time, thanks to [Marvel Mathew](https://github.com/marvelm)
+* LiveQuery: Adds ability to use LiveQuery with a masterKey, thanks to [Jeremy May](https://github.com/kenishi)
+
+#### Bug Fixes:
+* Fixes an issue that would duplicate Session objects per userId-installationId pair.
+* Fixes an issue affecting pointer permissions introduced in this release.
+* Fixes an issue that would prevent displaying audiences correctly in dashboard.
+* Fixes an issue affecting preventLoginWithUnverifiedEmail upon signups.
+
+#### Dependency Updates:
+* [pg-promise@6.3.2](https://www.npmjs.com/package/pg-promise)
+* [body-parser@1.18.0](https://www.npmjs.com/package/body-parser)
+* [nodemon@1.11.1](https://www.npmjs.com/package/nodemon)
+
+##### Devevelopment Dependencies Updates:
+* [babel-cli@6.26.0](https://www.npmjs.com/package/babel-cli)
+
+### 2.6.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.3...2.6.0)
+
+#### Breaking Changes:
+* [parse-server-s3-adapter@1.2.0](https://www.npmjs.com/package/parse-server-s3-adapter): A new deprecation notice is introduced with parse-server-s3-adapter's version 1.2.0.  An upcoming release will remove passing key and password arguments.  AWS credentials should be set using AWS best practices.  See the [Deprecation Notice for AWS credentials]( https://github.com/parse-server-modules/parse-server-s3-adapter/blob/master/README.md#deprecation-notice----aws-credentials) section of the adapter's README.
+
+#### New Features
+* Polygon is fully supported as a type, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Query supports PolygonContains, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements
+* Postgres: Adds support nested contains and containedIn, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Postgres: Adds support for `null` in containsAll queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Cloud Code: Request headers are passed to the cloud functions, thanks to [miguel-s](https://github.com/miguel-s)
+* Push: All push queries now filter only where deviceToken exists
+
+#### Bug Fixes:
+* Fixes issue affecting updates of _User objects when authData was passed.
+* Push: Pushing to an empty audience should now properly report a failed _PushStatus
+* Linking Users: Fixes issue affecting linking users with sessionToken only
+
+#### Dependency Updates:
+* [ws@3.1.0](https://www.npmjs.com/package/ws)
+* [mime@1.4.0](https://www.npmjs.com/package/mime)
+* [semver@5.4.0](https://www.npmjs.com/package/semver)
+* [uws@8.14.1](https://www.npmjs.com/package/uws)
+* [bcrypt@1.0.3](https://www.npmjs.com/package/bcrypt)
+* [mongodb@2.2.31](https://www.npmjs.com/package/mongodb)
+* [redis@2.8.0](https://www.npmjs.com/package/redis)
+* [pg-promise@6.3.1](https://www.npmjs.com/package/pg-promise)
+* [commander@2.11.0](https://www.npmjs.com/package/commander)
+
+##### Devevelopment Dependencies Updates:
+* [jasmine@2.8.0](https://www.npmjs.com/package/jasmine)
+* [babel-register@6.26.0](https://www.npmjs.com/package/babel-register)
+* [babel-core@6.26.0](https://www.npmjs.com/package/babel-core)
+* [cross-env@5.0.2](https://www.npmjs.com/package/cross-env)
+
 ### 2.5.3
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
 
@@ -129,7 +199,7 @@ If you experience issues with older versions, please [open a issue](https://gith
 * Fix issue affecting overloaded query constraints ([#3723](https://github.com/parse-community/parse-server/pull/3723), [#3678](https://github.com/parse-community/parse-server/pull/3678)), thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Properly catch unhandled rejections in _Installation updates ([#3795](https://github.com/parse-community/parse-server/pull/3795)), thanks to [kahoona77](https://github.com/kahoona77)
 
-#### Dependency Updates: 
+#### Dependency Updates:
 
 * [uws@0.14.5](https://www.npmjs.com/package/uws)
 * [mime@1.3.6](https://www.npmjs.com/package/mime)
