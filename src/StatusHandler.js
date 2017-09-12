@@ -168,6 +168,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       numSent: 0,
       numFailed: 0
     };
+    const devicesToRemove = [];
     if (Array.isArray(results)) {
       results = flatten(results);
       results.reduce((memo, result) => {
@@ -181,6 +182,18 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
         if (result.transmitted) {
           memo.numSent++;
         } else {
+          if (result && result.response && result.response.error && result.device && result.device.deviceToken) {
+            const token = result.device.deviceToken;
+            const error = result.response.error;
+            // GCM errors
+            if (error === 'NotRegistered' || error === 'InvalidRegistration') {
+              devicesToRemove.push(token);
+            }
+            // APNS errors
+            if (error === 'Unregistered') {
+              devicesToRemove.push(token);
+            }
+          }
           memo.numFailed++;
         }
         return memo;
@@ -189,7 +202,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
     }
 
     logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
-
+    logger.verbose(`_PushStatus ${objectId}: needs cleanup`, { devicesToRemove });
     ['numSent', 'numFailed'].forEach((key) => {
       if (update[key] > 0) {
         update[key] = {
