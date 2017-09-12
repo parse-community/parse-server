@@ -5,6 +5,7 @@ var Config = require('../src/Config');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
 var request = require('request');
+var rp = require('request-promise');
 
 let config;
 let database;
@@ -498,7 +499,73 @@ describe('rest create', () => {
         expect(error.code).toEqual(119);
         done();
       })
-  })
+  });
+
+  it ('locks down session', (done) => {
+    let currentUser;
+    Parse.User.signUp('foo', 'bar').then((user) => {
+      currentUser = user;
+      const sessionToken = user.getSessionToken();
+      var headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      };
+      let sessionId;
+      return rp.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/sessions/me',
+        json: true,
+      }).then(body => {
+        console.log('1');
+        sessionId = body.objectId;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            installationId: 'yolo'
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            sessionToken: 'yolo'
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        return Parse.User.signUp('other', 'user');
+      }).then((otherUser) => {
+        const user = new Parse.User();
+        user.id = otherUser.id;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            user: Parse._encode(user)
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        const user = new Parse.User();
+        user.id = currentUser.id;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            user: Parse._encode(user)
+          }
+        })
+      }).then(done).catch(done.fail);
+    }).catch(done.fail);
+  });
 });
 
 describe('rest update', () => {
