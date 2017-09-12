@@ -9,6 +9,7 @@ import { pushStatusHandler }  from '../StatusHandler';
 import * as utils             from './utils';
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import { PushQueue }          from './PushQueue';
+import logger                 from '../logger';
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
@@ -80,6 +81,7 @@ export class PushWorker {
     }
 
     if (!utils.isPushIncrementing(body)) {
+      logger.verbose(`Sending push to ${installations.length}`);
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
         return pushStatus.trackSent(results);
       });
