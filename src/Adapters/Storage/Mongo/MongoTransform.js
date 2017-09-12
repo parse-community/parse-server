@@ -10,6 +10,8 @@ const transformKey = (className, fieldName, schema) => {
   case 'createdAt': return '_created_at';
   case 'updatedAt': return '_updated_at';
   case 'sessionToken': return '_session_token';
+  case 'lastUsed': return '_last_used';
+  case 'timesUsed': return 'times_used';
   }
 
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
@@ -77,6 +79,16 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
+  case 'lastUsed':
+  case '_last_used':
+    key = '_last_used';
+    timeField = true;
+    break;
+  case 'timesUsed':
+  case 'times_used':
+    key = 'times_used';
+    timeField = true;
+    break;
   }
 
   if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
@@ -200,6 +212,14 @@ function transformQueryKeyValue(className, key, value, schema) {
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case 'lastUsed':
+    if (valueAsDate(value)) {
+      return {key: '_last_used', value: valueAsDate(value)}
+    }
+    key = '_last_used';
+    break;
+  case 'timesUsed':
+    return {key: 'times_used', value: value};
   default: {
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -923,11 +943,15 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       case '_expiresAt':
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
         break;
+      case 'lastUsed':
+      case '_last_used':
+        restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'timesUsed':
+      case 'times_used':
+        restObject['timesUsed'] = mongoObject[key];
+        break;
       default:
-        if (className === '_Audience' && (key === '_last_used' || key === 'times_used')) {
-          // Ignore these parse.com legacy fields
-          break;
-        }
         // Check other auth data keys
         var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
         if (authDataMatch) {
