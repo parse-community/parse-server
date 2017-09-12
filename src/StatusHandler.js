@@ -214,6 +214,14 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       }
     });
 
+    if (devicesToRemove.length > 0 && process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
+      database.update('_Installation', { deviceToken: { '$in': devicesToRemove }}, { deviceToken: {"__op": "Delete"} }, {
+        acl: undefined,
+        many: true
+      });
+    }
+
     return handler.update({ objectId }, update).then((res) => {
       if (res && res.count === 0) {
         return this.complete();
