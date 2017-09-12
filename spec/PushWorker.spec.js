@@ -219,6 +219,14 @@ describe('PushWorker', () => {
             deviceType: 'ios',
           },
           response: { error: 'InvalidRegistration' }
+        },
+        { // should not be deleted
+          transmitted: false,
+          device: {
+            deviceToken: 101,
+            deviceType: 'ios',
+          },
+          response: { error: 'invalid error...' }
         }
       ], true);
       expect(spy).toHaveBeenCalled();
