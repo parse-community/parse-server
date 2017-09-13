@@ -162,7 +162,7 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       {status: "running", updatedAt: new Date(), count });
   }
 
-  const trackSent = function(results, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+  const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
     const update = {
       updatedAt: new Date(),
       numSent: 0,
@@ -179,6 +179,10 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
         const deviceType = result.device.deviceType;
         const key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
         memo[key] = incrementOp(memo, key);
+        if (typeof UTCOffset !== 'undefined') {
+          const offsetKey = result.transmitted ? `sentPerUTCOffset.${UTCOffset}` : `failedPerUTCOffset.${UTCOffset}`;
+          memo[offsetKey] = incrementOp(memo, offsetKey);
+        }
         if (result.transmitted) {
           memo.numSent++;
         } else {

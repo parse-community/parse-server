@@ -47,7 +47,7 @@ export class PushWorker {
     }
   }
 
-  run({ body, query, pushStatus, applicationId }: any): Promise<*> {
+  run({ body, query, pushStatus, applicationId, UTCOffset }: any): Promise<*> {
     const config = new Config(applicationId);
     const auth = master(config);
     const where = utils.applyDeviceTokenExists(query.where);
@@ -59,6 +59,8 @@ export class PushWorker {
       return this.sendToAdapter(body, results, pushStatus, config);
     }, err => {
       throw err;
+    }).then((results) => {
+      return pushStatus.trackSent(results, UTCOffset);
     });
   }
 
@@ -82,9 +84,7 @@ export class PushWorker {
 
     if (!utils.isPushIncrementing(body)) {
       logger.verbose(`Sending push to ${installations.length}`);
-      return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
-        return pushStatus.trackSent(results);
-      });
+      return this.adapter.send(body, installations, pushStatus.objectId);
     }
 
     // Collect the badges to reduce the # of calls
