@@ -56,15 +56,13 @@ export class PushWorker {
       if (results.length == 0) {
         return;
       }
-      return this.sendToAdapter(body, results, pushStatus, config);
+      return this.sendToAdapter(body, results, pushStatus, config, UTCOffset);
     }, err => {
       throw err;
-    }).then((results) => {
-      return pushStatus.trackSent(results, UTCOffset);
     });
   }
 
-  sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config): Promise<*> {
+  sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config, UTCOffset: ?any): Promise<*> {
     pushStatus = pushStatusHandler(config, pushStatus.objectId);
     // Check if we have locales in the push body
     const locales = utils.getLocalesFromPush(body);
@@ -77,14 +75,16 @@ export class PushWorker {
       const promises = Object.keys(grouppedInstallations).map((locale) => {
         const installations = grouppedInstallations[locale];
         const body = bodiesPerLocales[locale];
-        return this.sendToAdapter(body, installations, pushStatus, config);
+        return this.sendToAdapter(body, installations, pushStatus, config, UTCOffset);
       });
       return Promise.all(promises);
     }
 
     if (!utils.isPushIncrementing(body)) {
       logger.verbose(`Sending push to ${installations.length}`);
-      return this.adapter.send(body, installations, pushStatus.objectId);
+      return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
+        return pushStatus.trackSent(results, UTCOffset).then(() => results);
+      });
     }
 
     // Collect the badges to reduce the # of calls
@@ -95,7 +95,7 @@ export class PushWorker {
       const payload = deepcopy(body);
       payload.data.badge = parseInt(badge);
       const installations = badgeInstallationsMap[badge];
-      return this.sendToAdapter(payload, installations, pushStatus, config);
+      return this.sendToAdapter(payload, installations, pushStatus, config, UTCOffset);
     });
     return Promise.all(promises);
   }
