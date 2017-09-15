@@ -61,7 +61,7 @@
     "gaze": "1.1.2",
     "jasmine": "2.8.0",
     "jasmine-spec-reporter": "^4.1.0",
-    "mongodb-runner": "3.5.0",
+    "mongodb-runner": "3.6.0",
     "nodemon": "1.11.1",
     "nyc": "^11.0.2",
     "request-promise": "4.2.1"
