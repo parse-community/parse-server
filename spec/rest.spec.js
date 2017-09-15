@@ -585,8 +585,6 @@ describe('rest create', () => {
         })
       })
       .then((body) => {
-        console.log(currentUser.id)
-        console.log(body.user.objectId)
         if (body.user.objectId === currentUser.id) {
           return done();
         } else {
