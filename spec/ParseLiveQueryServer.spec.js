@@ -400,7 +400,7 @@ describe('ParseLiveQueryServer', function() {
     const cloudCodeHandler = {
       handler: () => {}
     }
-    const spy = spyOn(cloudCodeHandler, "handler").and.callThrough();
+    const spy = spyOn(cloudCodeHandler, 'handler').and.callThrough();
     Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     var EventEmitter = require('events');
