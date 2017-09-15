@@ -360,7 +360,16 @@ describe('matchesQuery', function() {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(40, 40)
     };
+    var ptUndefined = {
+      id: new Id('Checkin', 'C1')
+    };
+    var ptNull = {
+      id: new Id('Checkin', 'C1'),
+      location: null
+    };
     expect(matchesQuery(pt, q)).toBe(true);
+    expect(matchesQuery(ptUndefined, q)).toBe(false);
+    expect(matchesQuery(ptNull, q)).toBe(false);
 
     q = new Parse.Query('Checkin');
     pt.location = new Parse.GeoPoint(40, 40);
@@ -384,6 +393,17 @@ describe('matchesQuery', function() {
       name: 'Santa Clara'
     };
 
+    var noLocation = {
+      id: new Id('Checkin', 'C2'),
+      name: 'Santa Clara'
+    };
+
+    var nullLocation = {
+      id: new Id('Checkin', 'C2'),
+      location: null,
+      name: 'Santa Clara'
+    };
+
     var q = new Parse.Query('Checkin').withinGeoBox(
       'location',
       new Parse.GeoPoint(37.708813, -122.526398),
@@ -392,7 +412,8 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(true);
     expect(matchesQuery(santaClara, q)).toBe(false);
-
+    expect(matchesQuery(noLocation, q)).toBe(false);
+    expect(matchesQuery(nullLocation, q)).toBe(false);
     // Invalid rectangles
     q = new Parse.Query('Checkin').withinGeoBox(
       'location',
