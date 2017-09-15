@@ -15,6 +15,7 @@ const baseStore = function() {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
+  const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -24,7 +25,8 @@ const baseStore = function() {
     Functions,
     Jobs,
     Validators,
-    Triggers
+    Triggers,
+    LiveQuery,
   });
 };
 
@@ -47,6 +49,12 @@ export function addTrigger(type, className, handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
+}
+
+export function addLiveQueryEventHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -410,4 +418,9 @@ export function inflate(data, restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);
+}
+
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
+  _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }

@@ -396,6 +396,28 @@ describe('ParseLiveQueryServer', function() {
     parseWebSocket.emit('disconnect');
   });
 
+  it('can forward event to cloud code', function() {
+    const cloudCodeHandler = {
+      handler: () => {}
+    }
+    const spy = spyOn(cloudCodeHandler, "handler").and.callThrough();
+    Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+    parseWebSocket.clientId = 1;
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Make sure we do not crash
+    // Trigger disconnect event
+    parseWebSocket.emit('disconnect');
+    expect(spy).toHaveBeenCalled();
+    // call for ws_connect, another for ws_disconnect 
+    expect(spy.calls.length).toBe(2);
+  });
+
+
   // TODO: Test server can set disconnect command message handler for a parseWebSocket
 
   it('has no subscription and can handle object delete command', function() {
