@@ -671,7 +671,7 @@ RestWrite.prototype.handleSession = function() {
       expiresAt: Parse._encode(expiresAt)
     };
     for (var key in this.data) {
-      if (key == 'objectId') {
+      if (key === 'objectId' || key === 'user') {
         continue;
       }
       sessionData[key] = this.data[key];
