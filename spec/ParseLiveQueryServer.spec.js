@@ -81,7 +81,7 @@ describe('ParseLiveQueryServer', function() {
     var httpServer = {};
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, httpServer);
 
-    expect(parseLiveQueryServer.clientId).toBe(0);
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
@@ -94,9 +94,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine.createSpy('validateKeys').and.returnValue(true);
     parseLiveQueryServer._handleConnect(parseWebSocket);
 
-    expect(parseLiveQueryServer.clientId).toBe(1);
-    expect(parseWebSocket.clientId).toBe(0);
-    var client = parseLiveQueryServer.clients.get(0);
+    const clientKeys = parseLiveQueryServer.clients.keys();
+    expect(parseLiveQueryServer.clients.size).toBe(1);
+    const firstKey = clientKeys.next().value;
+    expect(parseWebSocket.clientId).toBe(firstKey);
+    var client = parseLiveQueryServer.clients.get(firstKey);
     expect(client).not.toBeNull();
     // Make sure we send connect response to the client
     expect(client.pushConnect).toHaveBeenCalled();

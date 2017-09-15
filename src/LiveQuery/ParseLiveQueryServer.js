@@ -9,10 +9,10 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
 import _ from 'lodash';
+import uuid from 'uuid';
 
 class ParseLiveQueryServer {
-  clientId: number;
-  clients: Object;
+  clients: Map;
   // className -> (queryHash -> subscription)
   subscriptions: Object;
   parseWebSocketServer: Object;
@@ -21,7 +21,7 @@ class ParseLiveQueryServer {
   subscriber: Object;
 
   constructor(server: any, config: any) {
-    this.clientId = 0;
+    super();
     this.clients = new Map();
     this.subscriptions = new Map();
 
@@ -404,9 +404,9 @@ class ParseLiveQueryServer {
       return;
     }
     const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
-    const client = new Client(this.clientId, parseWebsocket, hasMasterKey);
-    parseWebsocket.clientId = this.clientId;
-    this.clientId += 1;
+    const clientId = uuid();
+    const client = new Client(clientId, parseWebsocket, hasMasterKey);
+    parseWebsocket.clientId = clientId;
     this.clients.set(parseWebsocket.clientId, client);
     logger.info('Create new client: %d', parseWebsocket.clientId);
     client.pushConnect();
