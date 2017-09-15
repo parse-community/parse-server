@@ -55,6 +55,10 @@ ParseCloud.afterFind = function(parseClass, handler) {
   triggers.addTrigger(triggers.Types.afterFind, className, handler, Parse.applicationId);
 };
 
+ParseCloud.onLiveQueryEvent = function(handler) {
+  triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
+};
+
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
 }

@@ -81,7 +81,7 @@ describe('ParseLiveQueryServer', function() {
     var httpServer = {};
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, httpServer);
 
-    expect(parseLiveQueryServer.clientId).toBe(0);
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
@@ -94,9 +94,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine.createSpy('validateKeys').and.returnValue(true);
     parseLiveQueryServer._handleConnect(parseWebSocket);
 
-    expect(parseLiveQueryServer.clientId).toBe(1);
-    expect(parseWebSocket.clientId).toBe(0);
-    var client = parseLiveQueryServer.clients.get(0);
+    const clientKeys = parseLiveQueryServer.clients.keys();
+    expect(parseLiveQueryServer.clients.size).toBe(1);
+    const firstKey = clientKeys.next().value;
+    expect(parseWebSocket.clientId).toBe(firstKey);
+    var client = parseLiveQueryServer.clients.get(firstKey);
     expect(client).not.toBeNull();
     // Make sure we send connect response to the client
     expect(client.pushConnect).toHaveBeenCalled();
@@ -393,6 +395,28 @@ describe('ParseLiveQueryServer', function() {
     // Trigger disconnect event
     parseWebSocket.emit('disconnect');
   });
+
+  it('can forward event to cloud code', function() {
+    const cloudCodeHandler = {
+      handler: () => {}
+    }
+    const spy = spyOn(cloudCodeHandler, 'handler').and.callThrough();
+    Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+    parseWebSocket.clientId = 1;
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Make sure we do not crash
+    // Trigger disconnect event
+    parseWebSocket.emit('disconnect');
+    expect(spy).toHaveBeenCalled();
+    // call for ws_connect, another for ws_disconnect 
+    expect(spy.calls.count()).toBe(2);
+  });
+
 
   // TODO: Test server can set disconnect command message handler for a parseWebSocket
 
