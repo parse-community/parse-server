@@ -518,7 +518,6 @@ describe('rest create', () => {
         url: 'http://localhost:8378/1/sessions/me',
         json: true,
       }).then(body => {
-        console.log('1');
         sessionId = body.objectId;
         return rp.put({
           headers,
@@ -566,6 +565,36 @@ describe('rest create', () => {
       }).then(done).catch(done.fail);
     }).catch(done.fail);
   });
+
+  it ('sets current user in new sessions', (done) => {
+    let currentUser;
+    Parse.User.signUp('foo', 'bar')
+      .then((user) => {
+        currentUser = user;
+        const sessionToken = user.getSessionToken();
+        const headers = {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        };
+        return rp.post({
+          headers,
+          url: 'http://localhost:8378/1/sessions',
+          json: true,
+          body: { 'user': { '__type': 'Pointer', 'className':'_User', 'objectId': 'fakeId' } },
+        })
+      })
+      .then((body) => {
+        console.log(currentUser.id)
+        console.log(body.user.objectId)
+        if (body.user.objectId === currentUser.id) {
+          return done();
+        } else {
+          return done.fail();
+        }
+      })
+      .catch(done.fail);
+  })
 });
 
 describe('rest update', () => {
