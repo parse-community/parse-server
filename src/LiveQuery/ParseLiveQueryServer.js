@@ -21,7 +21,6 @@ class ParseLiveQueryServer {
   subscriber: Object;
 
   constructor(server: any, config: any) {
-    super();
     this.clients = new Map();
     this.subscriptions = new Map();
 
