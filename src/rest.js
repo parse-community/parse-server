@@ -123,12 +123,19 @@ function create(config, auth, className, restObject, clientSDK) {
 // Returns a promise that contains the fields of the update that the
 // REST API is supposed to return.
 // Usually, this is just updatedAt.
-function update(config, auth, className, { objectId }, restObject, clientSDK) {
+function update(config, auth, className, restWhere, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
-  const query = objectId ? { objectId } : restObject.query || {};
-  const update = objectId ? restObject : restObject.update;
-  const many = objectId ? false : restObject.many;
+  let query = restWhere;
+  let update = restObject;
+  let many  = false;
 
+  if (!restWhere) {
+    query = restObject.query;
+    update = restObject.update;
+    many = restObject.many || false;
+  }
+
+  const { objectId } = query;
   return Promise.resolve().then(() => {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
