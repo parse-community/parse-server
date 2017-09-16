@@ -388,6 +388,11 @@ describe('PushController', () => {
   });
 
   it('properly creates _PushStatus', (done) => {
+    const pushStatusAfterSave = {
+      handler: function() {}
+    };
+    const spy = spyOn(pushStatusAfterSave, 'handler').and.callThrough();
+    Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
@@ -466,8 +471,36 @@ describe('PushController', () => {
         return query.find();
       }).catch((error) => {
         expect(error.code).toBe(119);
-        done();
-      });
+      })
+      .then(() => {
+        function getPushStatus(callIndex) {
+          return spy.calls.all()[callIndex].args[0].object;
+        }
+        expect(spy).toHaveBeenCalled();
+        expect(spy.calls.count()).toBe(4);
+        const allCalls = spy.calls.all();
+        allCalls.forEach((call) => {
+          expect(call.args.length).toBe(2);
+          const object = call.args[0].object;
+          expect(object instanceof Parse.Object).toBe(true);
+        });
+        expect(getPushStatus(0).get('status')).toBe('pending');
+        expect(getPushStatus(1).get('status')).toBe('running');
+        expect(getPushStatus(1).get('numSent')).toBe(0);
+        expect(getPushStatus(2).get('status')).toBe('running');
+        expect(getPushStatus(2).get('numSent')).toBe(10);
+        expect(getPushStatus(2).get('numFailed')).toBe(5);
+        // Those are updated from a nested . operation, this would
+        // not render correctly before
+        expect(getPushStatus(2).get('failedPerType')).toEqual({
+          android: 5
+        });
+        expect(getPushStatus(2).get('sentPerType')).toEqual({
+          ios: 10
+        });
+        expect(getPushStatus(3).get('status')).toBe('succeeded');
+      })
+      .then(done).catch(done.fail);
   });
 
   it('should properly report failures in _PushStatus', (done) => {
