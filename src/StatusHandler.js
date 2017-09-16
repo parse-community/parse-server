@@ -247,7 +247,6 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       status: 'failed',
       updatedAt: new Date()
     }
-    logger.warn(`_PushStatus ${objectId}: error while sending push`, err);
     return handler.update({ objectId }, update);
   }
 
