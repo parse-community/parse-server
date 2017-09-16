@@ -710,7 +710,7 @@ describe('PushController', () => {
     }).then(() => {
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      });
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
@@ -776,20 +776,15 @@ describe('PushController', () => {
       var config = new Config(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
         expect(pushStatus.get('status')).toBe('scheduled');
-        done();
       });
-    }).catch((err) => {
-      console.error(err);
-      fail('should not fail');
-      done();
-    });
+    }).then(done).catch(done.err);
   });
 
   it('should not enqueue push when device token is not set', (done) => {
