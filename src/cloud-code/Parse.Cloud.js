@@ -1,19 +1,11 @@
 import { Parse }     from 'parse/node';
 import * as triggers from '../triggers';
 
-function validateClassNameForTriggers(className) {
-  const restrictedClassNames = [ '_Session' ];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
-  return className;
-}
-
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
-    return validateClassNameForTriggers(parseClass.className);
+    return parseClass.className;
   }
-  return validateClassNameForTriggers(parseClass);
+  return parseClass;
 }
 
 var ParseCloud = {};
