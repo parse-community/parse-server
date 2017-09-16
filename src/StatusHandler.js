@@ -100,6 +100,7 @@ export function jobStatusHandler(config) {
   const setRunning = function(jobName, params) {
     const now = new Date();
     jobStatus = {
+      objectId,
       jobName,
       params,
       status: 'running',
