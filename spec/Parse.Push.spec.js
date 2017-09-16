@@ -127,6 +127,7 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true}))
+      .then(() => delayPromise(500))
       .then(() => {
         request.get({
           url: 'http://localhost:8378/1/classes/_PushStatus',
@@ -155,7 +156,7 @@ describe('Parse.Push', () => {
           alert: 'Hello world!'
         }
       }, {useMasterKey: true}))
-      .then(() => new Promise((resolve) => setTimeout(resolve, 500))) // put a delay as we keep writing
+      .then(() => delayPromise(500)) // put a delay as we keep writing
       .then(() => {
         request.get({
           url: 'http://localhost:8378/1/classes/_PushStatus',
