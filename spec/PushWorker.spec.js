@@ -228,7 +228,7 @@ describe('PushWorker', () => {
           },
           response: { error: 'invalid error...' }
         }
-      ], true);
+      ], undefined, true);
       expect(spy).toHaveBeenCalled();
       expect(spy.calls.count()).toBe(1);
       const lastCall = spy.calls.mostRecent();
@@ -240,6 +240,138 @@ describe('PushWorker', () => {
         deviceToken: { '__op': "Delete" }
       });
       done();
+    });
+
+    it('tracks push status per UTC offsets', (done) => {
+      const config = new Config('test');
+      const handler = pushStatusHandler(config, 'ABCDEF1234');
+      const spy = spyOn(config.database, "update").and.callThrough();
+      const UTCOffset = 1;
+      handler.setInitial().then(() => {
+        return handler.trackSent([
+          {
+            transmitted: false,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+          },
+          {
+            transmitted: true,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            }
+          },
+        ], UTCOffset)
+      }).then(() => {
+        expect(spy).toHaveBeenCalled();
+        expect(spy.calls.count()).toBe(1);
+        const lastCall = spy.calls.mostRecent();
+        expect(lastCall.args[0]).toBe('_PushStatus');
+        const updatePayload = lastCall.args[2];
+        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
+        // remove the updatedAt as not testable
+        delete updatePayload.updatedAt;
+
+        expect(lastCall.args[2]).toEqual({
+          numSent: { __op: 'Increment', amount: 1 },
+          numFailed: { __op: 'Increment', amount: 1 },
+          'sentPerType.ios': { __op: 'Increment', amount: 1 },
+          'failedPerType.ios': { __op: 'Increment', amount: 1 },
+          [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
+          [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
+          count: { __op: 'Increment', amount: -2 },
+        });
+        const query = new Parse.Query('_PushStatus');
+        return query.get('ABCDEF1234', { useMasterKey: true });
+      }).then((pushStatus) => {
+        const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
+        expect(sentPerUTCOffset['1']).toBe(1);
+        const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
+        expect(failedPerUTCOffset['1']).toBe(1);
+        return handler.trackSent([
+          {
+            transmitted: false,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+          },
+          {
+            transmitted: true,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            }
+          },
+          {
+            transmitted: true,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            }
+          },
+        ], UTCOffset)
+      }).then(() => {
+        const query = new Parse.Query('_PushStatus');
+        return query.get('ABCDEF1234', { useMasterKey: true });
+      }).then((pushStatus) => {
+        const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
+        expect(sentPerUTCOffset['1']).toBe(3);
+        const failedPerUTCOffset = pushStatus.get('failedPerUTCOffset');
+        expect(failedPerUTCOffset['1']).toBe(2);
+      }).then(done).catch(done.fail);
+    });
+
+    it('tracks push status per UTC offsets with negative offsets', (done) => {
+      const config = new Config('test');
+      const handler = pushStatusHandler(config);
+      spyOn(config.database, "create").and.callFake(() => {
+        return Promise.resolve();
+      });
+      const spy = spyOn(config.database, "update").and.callFake(() => {
+        return Promise.resolve();
+      });
+      const UTCOffset = -6;
+      handler.trackSent([
+        {
+          transmitted: false,
+          device: {
+            deviceToken: 1,
+            deviceType: 'ios',
+          },
+          response: { error: 'Unregistered' }
+        },
+        {
+          transmitted: true,
+          device: {
+            deviceToken: 1,
+            deviceType: 'ios',
+          },
+          response: { error: 'Unregistered' }
+        },
+      ], UTCOffset).then(() => {
+        expect(spy).toHaveBeenCalled();
+        expect(spy.calls.count()).toBe(1);
+        const lastCall = spy.calls.mostRecent();
+        expect(lastCall.args[0]).toBe('_PushStatus');
+        const updatePayload = lastCall.args[2];
+        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
+        // remove the updatedAt as not testable
+        delete updatePayload.updatedAt;
+
+        expect(lastCall.args[2]).toEqual({
+          numSent: { __op: 'Increment', amount: 1 },
+          numFailed: { __op: 'Increment', amount: 1 },
+          'sentPerType.ios': { __op: 'Increment', amount: 1 },
+          'failedPerType.ios': { __op: 'Increment', amount: 1 },
+          [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
+          [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
+          count: { __op: 'Increment', amount: -2 },
+        });
+        done();
+      });
     });
   });
 });
