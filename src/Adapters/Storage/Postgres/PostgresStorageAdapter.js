@@ -981,6 +981,12 @@ export class PostgresStorageAdapter {
         } else {
           return count;
         }
+      }).catch((error) => {
+        if (error.code === PostgresRelationDoesNotExistError) {
+          // Don't delete anything if doesn't exist
+        } else {
+          throw error;
+        }
       });
   }
   // Return value not currently well specified.
