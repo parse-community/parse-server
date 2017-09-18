@@ -165,7 +165,7 @@ describe('PushWorker', () => {
       const spy = spyOn(config.database, "update").and.callFake(() => {
         return Promise.resolve();
       });
-      handler.trackSent([
+      const toAwait = handler.trackSent([
         {
           transmitted: false,
           device: {
@@ -239,13 +239,13 @@ describe('PushWorker', () => {
       expect(lastCall.args[2]).toEqual({
         deviceToken: { '__op': "Delete" }
       });
-      done();
+      toAwait.then(done).catch(done);
     });
 
     it('tracks push status per UTC offsets', (done) => {
       const config = new Config('test');
-      const handler = pushStatusHandler(config, 'ABCDEF1234');
-      const spy = spyOn(config.database, "update").and.callThrough();
+      const handler = pushStatusHandler(config);
+      const spy = spyOn(Parse, "_request").and.callThrough();
       const UTCOffset = 1;
       handler.setInitial().then(() => {
         return handler.trackSent([
@@ -266,14 +266,9 @@ describe('PushWorker', () => {
         ], UTCOffset)
       }).then(() => {
         expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(1);
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[0]).toBe('_PushStatus');
-        const updatePayload = lastCall.args[2];
-        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
-        // remove the updatedAt as not testable
-        delete updatePayload.updatedAt;
-
+        expect(lastCall.args[0]).toBe('PUT');
+        expect(lastCall.args[1]).toBe(`classes/_PushStatus/${handler.objectId}`);
         expect(lastCall.args[2]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },
@@ -284,7 +279,7 @@ describe('PushWorker', () => {
           count: { __op: 'Increment', amount: -2 },
         });
         const query = new Parse.Query('_PushStatus');
-        return query.get('ABCDEF1234', { useMasterKey: true });
+        return query.get(handler.objectId, { useMasterKey: true });
       }).then((pushStatus) => {
         const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
         expect(sentPerUTCOffset['1']).toBe(1);
@@ -315,7 +310,7 @@ describe('PushWorker', () => {
         ], UTCOffset)
       }).then(() => {
         const query = new Parse.Query('_PushStatus');
-        return query.get('ABCDEF1234', { useMasterKey: true });
+        return query.get(handler.objectId, { useMasterKey: true });
       }).then((pushStatus) => {
         const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
         expect(sentPerUTCOffset['1']).toBe(3);
@@ -330,7 +325,7 @@ describe('PushWorker', () => {
       spyOn(config.database, "create").and.callFake(() => {
         return Promise.resolve();
       });
-      const spy = spyOn(config.database, "update").and.callFake(() => {
+      const spy = spyOn(Parse, "_request").and.callFake(() => {
         return Promise.resolve();
       });
       const UTCOffset = -6;
@@ -353,14 +348,8 @@ describe('PushWorker', () => {
         },
       ], UTCOffset).then(() => {
         expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(1);
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[0]).toBe('_PushStatus');
-        const updatePayload = lastCall.args[2];
-        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
-        // remove the updatedAt as not testable
-        delete updatePayload.updatedAt;
-
+        expect(lastCall.args[1]).toBe(`classes/_PushStatus/${handler.objectId}`);
         expect(lastCall.args[2]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },

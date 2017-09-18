@@ -52,6 +52,7 @@ export class PushWorker {
     const auth = master(config);
     const where = utils.applyDeviceTokenExists(query.where);
     delete query.where;
+    pushStatus = pushStatusHandler(config, pushStatus.objectId);
     return rest.find(config, auth, '_Installation', where, query).then(({results}) => {
       if (results.length == 0) {
         return;
@@ -63,7 +64,6 @@ export class PushWorker {
   }
 
   sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config, UTCOffset: ?any): Promise<*> {
-    pushStatus = pushStatusHandler(config, pushStatus.objectId);
     // Check if we have locales in the push body
     const locales = utils.getLocalesFromPush(body);
     if (locales.length > 0) {

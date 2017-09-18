@@ -1,19 +1,11 @@
 import { Parse }     from 'parse/node';
 import * as triggers from '../triggers';
 
-function validateClassNameForTriggers(className) {
-  const restrictedClassNames = [ '_Session' ];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
-  return className;
-}
-
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
-    return validateClassNameForTriggers(parseClass.className);
+    return parseClass.className;
   }
-  return validateClassNameForTriggers(parseClass);
+  return parseClass;
 }
 
 var ParseCloud = {};
@@ -53,6 +45,10 @@ ParseCloud.beforeFind = function(parseClass, handler) {
 ParseCloud.afterFind = function(parseClass, handler) {
   const className = getClassName(parseClass);
   triggers.addTrigger(triggers.Types.afterFind, className, handler, Parse.applicationId);
+};
+
+ParseCloud.onLiveQueryEvent = function(handler) {
+  triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
 
 ParseCloud._removeAllHooks = () => {

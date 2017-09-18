@@ -1,7 +1,31 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...master)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.2...master)
+
+### 2.6.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...2.6.2)
+
+#### Improvements:
+* PushWorker/PushQueue channels are properly prefixed with the Parse applicationId, thanks to [Marvel Mathew](https://github.com/marvelm)
+* You can use Parse.Cloud.afterSave hooks on _PushStatus
+* You can use Parse.Cloud.onLiveQueryEvent to track the number of clients and subscriptions
+* Adds support for more fields from the Audience class.
+
+#### New Features:
+* Push: Adds ability to track sentPerUTC offset if your push scheduler supports it.
+* Push: Adds support for cleaning up invalid deviceTokens from _Installation (PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS=1).
+
+#### Dependency Updates:
+* [ws@3.2.0](https://www.npmjs.com/package/ws)
+* [pg-promise@6.5.3](https://www.npmjs.com/package/pg-promise)
+* [winston-daily-rotate-file@1.5.0](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [body-parser@1.18.1](https://www.npmjs.com/package/body-parser)
+
+##### Devevelopment Dependencies Updates:
+* [nodemon@1.12.1](https://www.npmjs.com/package/nodemon)
+* [mongodb-runner@3.6.0](https://www.npmjs.com/package/mongodb-runner)
+* [babel-eslint@8.0.0](https://www.npmjs.com/package/babel-eslint)
 
 ### 2.6.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...2.6.1)
