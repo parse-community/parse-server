@@ -285,7 +285,7 @@ describe('AudiencesRouter', () => {
       );
   });
 
-  it_exclude_dbs(['postgres'])('should not log error with legacy parse.com times_used and _last_used fields', (done) => {
+  it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', (done) => {
     const database = (new Config(Parse.applicationId)).database.adapter.database;
     const now  = new Date();
     Parse._request('POST', 'push_audiences', { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' })}, { useMasterKey: true })
@@ -306,18 +306,32 @@ describe('AudiencesRouter', () => {
                 expect(error).toEqual(null)
                 expect(rows[0]['times_used']).toEqual(1);
                 expect(rows[0]['_last_used']).toEqual(now);
-                Parse._request('GET', 'push_audiences', {}, {useMasterKey: true})
-                  .then((results) => {
-                    expect(results.results.length).toEqual(1);
-                    expect(results.results[0].name).toEqual('My Audience');
-                    expect(results.results[0].query.deviceType).toEqual('ios');
-                    expect(results.results[0].times_used).toEqual(undefined);
-                    expect(results.results[0]._last_used).toEqual(undefined);
+                Parse._request('GET', 'push_audiences/' + audience.objectId, {}, {useMasterKey: true})
+                  .then((audience) => {
+                    expect(audience.name).toEqual('My Audience');
+                    expect(audience.query.deviceType).toEqual('ios');
+                    expect(audience.timesUsed).toEqual(1);
+                    expect(audience.lastUsed).toEqual(now.toISOString());
                     done();
                   })
                   .catch((error) => { done.fail(error); })
               });
           });
       });
+  });
+
+  it('should be able to search on audiences', (done) => {
+    Parse._request('POST', 'push_audiences', { name: 'neverUsed', query: JSON.stringify({ deviceType: 'ios' })}, { useMasterKey: true })
+      .then(() => {
+        const query = {"timesUsed": {"$exists": false}, "lastUsed": {"$exists": false}};
+        Parse._request('GET', 'push_audiences?order=-createdAt&limit=1', {where: query}, {useMasterKey: true})
+          .then((results) => {
+            expect(results.results.length).toEqual(1);
+            const audience = results.results[0];
+            expect(audience.name).toEqual("neverUsed");
+            done();
+          })
+          .catch((error) => { done.fail(error); })
+      })
   });
 });

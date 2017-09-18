@@ -138,8 +138,8 @@ describe('PushController', () => {
       'push_time': timeStr
     }
 
-    var time = PushController.getPushTime(body);
-    expect(time).toEqual(new Date(timeStr));
+    var { date } = PushController.getPushTime(body);
+    expect(date).toEqual(new Date(timeStr));
     done();
   });
 
@@ -150,8 +150,8 @@ describe('PushController', () => {
       'push_time': timeNumber
     }
 
-    var time = PushController.getPushTime(body).valueOf();
-    expect(time).toEqual(timeNumber * 1000);
+    var { date } = PushController.getPushTime(body);
+    expect(date.valueOf()).toEqual(timeNumber * 1000);
     done();
   });
 
@@ -388,6 +388,11 @@ describe('PushController', () => {
   });
 
   it('properly creates _PushStatus', (done) => {
+    const pushStatusAfterSave = {
+      handler: function() {}
+    };
+    const spy = spyOn(pushStatusAfterSave, 'handler').and.callThrough();
+    Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
@@ -466,8 +471,36 @@ describe('PushController', () => {
         return query.find();
       }).catch((error) => {
         expect(error.code).toBe(119);
-        done();
-      });
+      })
+      .then(() => {
+        function getPushStatus(callIndex) {
+          return spy.calls.all()[callIndex].args[0].object;
+        }
+        expect(spy).toHaveBeenCalled();
+        expect(spy.calls.count()).toBe(4);
+        const allCalls = spy.calls.all();
+        allCalls.forEach((call) => {
+          expect(call.args.length).toBe(2);
+          const object = call.args[0].object;
+          expect(object instanceof Parse.Object).toBe(true);
+        });
+        expect(getPushStatus(0).get('status')).toBe('pending');
+        expect(getPushStatus(1).get('status')).toBe('running');
+        expect(getPushStatus(1).get('numSent')).toBe(0);
+        expect(getPushStatus(2).get('status')).toBe('running');
+        expect(getPushStatus(2).get('numSent')).toBe(10);
+        expect(getPushStatus(2).get('numFailed')).toBe(5);
+        // Those are updated from a nested . operation, this would
+        // not render correctly before
+        expect(getPushStatus(2).get('failedPerType')).toEqual({
+          android: 5
+        });
+        expect(getPushStatus(2).get('sentPerType')).toEqual({
+          ios: 10
+        });
+        expect(getPushStatus(3).get('status')).toBe('succeeded');
+      })
+      .then(done).catch(done.fail);
   });
 
   it('should properly report failures in _PushStatus', (done) => {
@@ -640,16 +673,36 @@ describe('PushController', () => {
     expect(PushController.getPushTime()).toBe(undefined);
     expect(PushController.getPushTime({
       'push_time': 1000
-    })).toEqual(new Date(1000 * 1000));
+    }).date).toEqual(new Date(1000 * 1000));
     expect(PushController.getPushTime({
       'push_time': '2017-01-01'
-    })).toEqual(new Date('2017-01-01'));
+    }).date).toEqual(new Date('2017-01-01'));
+
     expect(() => {PushController.getPushTime({
       'push_time': 'gibberish-time'
     })}).toThrow();
     expect(() => {PushController.getPushTime({
       'push_time': Number.NaN
     })}).toThrow();
+
+    expect(PushController.getPushTime({
+      push_time: '2017-09-06T13:42:48.369Z'
+    })).toEqual({
+      date: new Date('2017-09-06T13:42:48.369Z'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30-02:00',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30-02:00'),
+      isLocalTime: false,
+    });
+    expect(PushController.getPushTime({
+      push_time: '2007-04-05T12:30',
+    })).toEqual({
+      date: new Date('2007-04-05T12:30'),
+      isLocalTime: true,
+    });
   });
 
   it('should not schedule push when not configured', (done) => {
@@ -690,7 +743,7 @@ describe('PushController', () => {
     }).then(() => {
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      });
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
@@ -756,20 +809,15 @@ describe('PushController', () => {
       var config = new Config(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
         expect(pushStatus.get('status')).toBe('scheduled');
-        done();
       });
-    }).catch((err) => {
-      console.error(err);
-      fail('should not fail');
-      done();
-    });
+    }).then(done).catch(done.err);
   });
 
   it('should not enqueue push when device token is not set', (done) => {
@@ -978,5 +1026,176 @@ describe('PushController', () => {
       // No installation is in es so only 1 call for fr, and another for default
       done();
     }).catch(done.fail);
+  });
+
+  it('should update audiences', (done) => {
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    var audienceId = null;
+    var now = new Date();
+    var timesUsed = 0;
+
+    const where = {
+      'deviceType': 'ios'
+    }
+    spyOn(pushAdapter, 'send').and.callThrough();
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken","device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
+      // Create an audience
+      const query = new Parse.Query("_Audience");
+      query.descending("createdAt");
+      query.equalTo("query", JSON.stringify(where));
+      const parseResults = (results) => {
+        if (results.length > 0) {
+          audienceId = results[0].id;
+          timesUsed = results[0].get('timesUsed');
+          if (!isFinite(timesUsed)) {
+            timesUsed = 0;
+          }
+        }
+      }
+      const audience = new Parse.Object("_Audience");
+      audience.set("name", "testAudience")
+      audience.set("query", JSON.stringify(where));
+      return Parse.Object.saveAll(audience).then(() => {
+        return query.find({ useMasterKey: true }).then(parseResults);
+      });
+    }).then(() => {
+      var body = {
+        data: { alert: 'hello' },
+        audience_id: audienceId
+      }
+      return pushController.sendPush(body, where, config, auth)
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      expect(pushAdapter.send.calls.count()).toBe(1);
+      const firstCall = pushAdapter.send.calls.first();
+      expect(firstCall.args[0].data).toEqual({
+        alert: 'hello'
+      });
+      expect(firstCall.args[1].length).toBe(5);
+    }).then(() => {
+      // Get the audience we used above.
+      const query = new Parse.Query("_Audience");
+      query.equalTo("objectId", audienceId);
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      const audience = results[0];
+      expect(audience.get('query')).toBe(JSON.stringify(where));
+      expect(audience.get('timesUsed')).toBe(timesUsed + 1);
+      expect(audience.get('lastUsed')).not.toBeLessThan(now);
+    }).then(() => {
+      done();
+    }).catch(done.fail);
+  });
+
+  describe('pushTimeHasTimezoneComponent', () => {
+    it('should be accurate', () => {
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048Z'))
+        .toBe(true, 'UTC time');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30-02:00'))
+        .toBe(true, 'Timezone offset');
+      expect(PushController.pushTimeHasTimezoneComponent('2007-04-05T12:30:00.000Z-02:00'))
+        .toBe(true, 'Seconds + Milliseconds + Timezone offset');
+
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06T17:14:01.048'))
+        .toBe(false, 'No timezone');
+      expect(PushController.pushTimeHasTimezoneComponent('2017-09-06'))
+        .toBe(false, 'YY-MM-DD');
+    });
+  });
+
+  describe('formatPushTime', () => {
+    it('should format as ISO string', () => {
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048Z'),
+        isLocalTime: false,
+      })).toBe('2017-09-06T17:14:01.048Z', 'UTC time');
+      expect(PushController.formatPushTime({
+        date: new Date('2007-04-05T12:30-02:00'),
+        isLocalTime: false
+      })).toBe('2007-04-05T14:30:00.000Z', 'Timezone offset');
+
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06T17:14:01.048'),
+        isLocalTime: true,
+      })).toBe('2017-09-06T17:14:01.048', 'No timezone');
+      expect(PushController.formatPushTime({
+        date: new Date('2017-09-06'),
+        isLocalTime: true
+      })).toBe('2017-09-06T00:00:00.000', 'YY-MM-DD');
+    });
+  });
+
+  describe('Scheduling pushes in local time', () => {
+    it('should preserve the push time', (done) => {
+      const auth = {isMaster: true};
+      const pushAdapter = {
+        send(body, installations) {
+          return successfulTransmissions(body, installations);
+        },
+        getValidPushTypes() {
+          return ["ios"];
+        }
+      };
+
+      const pushTime = '2017-09-06T17:14:01.048';
+
+      reconfigureServer({
+        push: {adapter: pushAdapter},
+        scheduledPush: true
+      })
+        .then(() => {
+          const config = new Config(Parse.applicationId);
+          return new Promise((resolve, reject) => {
+            const pushController = new PushController();
+            pushController.sendPush({
+              data: {
+                alert: "Hello World!",
+                badge: "Increment",
+              },
+              push_time: pushTime
+            }, {}, config, auth, resolve)
+              .catch(reject);
+          })
+        })
+        .then((pushStatusId) => {
+          const q = new Parse.Query('_PushStatus');
+          return q.get(pushStatusId, {useMasterKey: true});
+        })
+        .then((pushStatus) => {
+          expect(pushStatus.get('status')).toBe('scheduled');
+          expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
+        })
+        .then(done, done.fail);
+    });
   });
 });
