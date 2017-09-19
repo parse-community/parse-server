@@ -3,9 +3,14 @@
 
 const rp = require('request-promise');
 const TestObject = Parse.Object.extend('TestObject');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const defaultHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Rest-API-Key': 'rest'
+}
 
 describe('Parse.GeoPoint testing', () => {
-
   it('geo point roundtrip', (done) => {
     var point = new Parse.GeoPoint(44.0, -11.0);
     var obj = new TestObject();
@@ -70,12 +75,23 @@ describe('Parse.GeoPoint testing', () => {
 
 
   it('geo point supports more than one field', (done) => {
-    var point = new Parse.GeoPoint(20, 20);
-    var obj = new TestObject();
-    obj.set('locationOne', point);
-    obj.set('locationTwo', point);
-    obj.set('locationThree', point);
-    obj.save().then(done, done.fail);
+    const point1 = new Parse.GeoPoint(44, -11);
+    const point2 = new Parse.GeoPoint(24, 19);
+    const obj = new TestObject();
+    obj.set('location1', point1);
+    obj.set('location2', point2);
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const location1 = result.get('location1');
+      const location2 = result.get('location2');
+      equal(location1.latitude, point1.latitude);
+      equal(location1.longitude, point1.longitude);
+      equal(location2.latitude, point2.latitude);
+      equal(location2.longitude, point2.longitude);
+      done();
+    }, done.fail);
   });
 
   it('geo line', (done) => {
@@ -625,3 +641,43 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 });
+
+describe_only_db('mongo')('Parse.GeoPoint testing', () => {
+  it('support legacy geopoints with 2dsphere', (done) => {
+    const location = {__type: 'GeoPoint', latitude:10, longitude:10};
+    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
+    return reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'rest',
+      publicServerURL: 'http://localhost:8378/1',
+      databaseAdapter
+    }).then(() => {
+      return databaseAdapter.createIndex('TestObject', {location: '2d'});
+    }).then(() => {
+      return rp.post({
+        url: 'http://localhost:8378/1/classes/TestObject',
+        json: {
+          '_method': 'POST',
+          location
+        },
+        headers: defaultHeaders
+      });
+    }).then((resp) => {
+      return rp.post({
+        url: `http://localhost:8378/1/classes/TestObject/${resp.objectId}`,
+        json: {'_method': 'GET'},
+        headers: defaultHeaders
+      });
+    }).then((resp) => {
+      equal(resp.location, location);
+      return databaseAdapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      equal(indexes.length, 3);
+      equal(indexes[0].key, {_id: 1});
+      equal(indexes[1].key, {location: '2d'});
+      equal(indexes[2].key, {location: '2dsphere'});
+      done();
+    }, done.fail);
+  });
+});
+
