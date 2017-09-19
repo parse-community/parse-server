@@ -2802,6 +2802,27 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containedIn with pointers should work with string array', done => {
+    const obj = new Parse.Object('MyClass');
+    const child = new Parse.Object('Child');
+    child.save().then(() => {
+      obj.set('child', child);
+      return obj.save();
+    }).then(() => {
+      const objs = [];
+      for(let i = 0; i < 10; i++) {
+        objs.push(new Parse.Object('MyClass'));
+      }
+      return Parse.Object.saveAll(objs);
+    }).then(() => {
+      const query = new Parse.Query('MyClass');
+      query.containedIn('child', [child.id]);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+    }).then(done).catch(done.fail);
+  });
+
   it('include for specific object', function(done){
     var child = new Parse.Object('Child');
     var parent = new Parse.Object('Parent');
