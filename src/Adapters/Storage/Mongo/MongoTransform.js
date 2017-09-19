@@ -241,12 +241,13 @@ function transformQueryKeyValue(className, key, value, schema) {
     schema.fields[key] &&
     schema.fields[key].type === 'Pointer';
 
+  const field = schema && schema.fields[key];
   if (expectedTypeIsPointer || !schema && value && value.__type === 'Pointer') {
     key = '_p_' + key;
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
+  const transformedConstraint = transformConstraint(value, field);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
@@ -454,7 +455,7 @@ const addLegacyACL = restObject => {
 // cannot perform a transformation
 function CannotTransform() {}
 
-const transformInteriorAtom = atom => {
+const transformInteriorAtom = (atom) => {
   // TODO: check validity harder for the __type-defined types
   if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
     return {
@@ -480,13 +481,16 @@ const transformInteriorAtom = atom => {
 // or arrays with generic stuff inside.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom
-function transformTopLevelAtom(atom) {
+function transformTopLevelAtom(atom, field) {
   switch(typeof atom) {
-  case 'string':
   case 'number':
   case 'boolean':
-    return atom;
   case 'undefined':
+    return atom;
+  case 'string':
+    if (field.type === 'Pointer') {
+      return `${field.targetClass}$${atom}`;
+    }
     return atom;
   case 'symbol':
   case 'function':
@@ -534,13 +538,14 @@ function transformTopLevelAtom(atom) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, inArray) {
+function transformConstraint(constraint, field) {
+  const inArray = field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
   const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = (atom) => {
-    const result = transformFunction(atom);
+    const result = transformFunction(atom, field);
     if (result === CannotTransform) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
     }
