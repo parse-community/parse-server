@@ -235,7 +235,7 @@ const buildWhereClause = ({ schema, query, index }) => {
           patterns.push(`${name} = '${fieldValue}'`);
         }
       }
-    } else if (fieldValue === null) {
+    } else if (fieldValue === null || fieldValue === undefined) {
       patterns.push(`$${index}:name IS NULL`);
       values.push(fieldName);
       index += 1;
