@@ -539,7 +539,7 @@ function transformTopLevelAtom(atom, field) {
 // else, return CannotTransform.
 // inArray is whether this is an array field.
 function transformConstraint(constraint, field) {
-  const inArray = field.type && field.type === 'Array';
+  const inArray = field && field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
