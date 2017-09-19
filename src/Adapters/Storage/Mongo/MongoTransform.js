@@ -488,7 +488,7 @@ function transformTopLevelAtom(atom, field) {
   case 'undefined':
     return atom;
   case 'string':
-    if (field.type === 'Pointer') {
+    if (field && field.type === 'Pointer') {
       return `${field.targetClass}$${atom}`;
     }
     return atom;
