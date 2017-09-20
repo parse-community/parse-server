@@ -14,14 +14,10 @@ describe('Parse.Push', () => {
 
     var pushAdapter = {
       send: function(body, installations) {
-        var badge = body.data.badge;
         const promises = installations.map((installation) => {
           sendToInstallationSpy(installation);
 
-          if (installation.deviceType == "ios") {
-            expect(installation.badge).toEqual(badge);
-            expect(installation.originalBadge + 1).toEqual(installation.badge);
-          } else {
+          if (installation.deviceType != "ios") {
             expect(installation.badge).toBeUndefined();
           }
           return Promise.resolve({
@@ -88,7 +84,15 @@ describe('Parse.Push', () => {
           expect(sendToInstallationSpy.calls.count()).toEqual(10);
         })
     }).then(() => {
-      done();
+      // Check that the installations were actually updated.
+      const query = new Parse.Query('_Installation');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      for (var i in results) {
+        const installation = results[i];
+        expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
+      }
+      done()
     }).catch((err) => {
       jfail(err);
       done();
@@ -109,7 +113,15 @@ describe('Parse.Push', () => {
     }).then(() => {
       return delayPromise(500);
     }).then(() => {
-      done();
+      // Check that the installations were actually updated.
+      const query = new Parse.Query('_Installation');
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      for (var i in results) {
+        const installation = results[i];
+        expect(installation.get('badge')).toBe(parseInt(installation.get('originalBadge')) + 1);
+      }
+      done()
     }).catch((err) => {
       jfail(err);
       done();

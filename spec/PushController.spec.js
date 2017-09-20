@@ -172,8 +172,7 @@ describe('PushController', () => {
       send: function(body, installations) {
         var badge = body.data.badge;
         installations.forEach((installation) => {
-          expect(installation.badge).toEqual(badge);
-          expect(installation.originalBadge + 1).toEqual(installation.badge);
+          expect(installation.originalBadge + 1).toEqual(badge);
         })
         return successfulTransmissions(body, installations);
       },
@@ -249,11 +248,7 @@ describe('PushController', () => {
 
     var pushAdapter = {
       send: function(body, installations) {
-        var badge = body.data.badge;
-        installations.forEach((installation) => {
-          expect(installation.badge).toEqual(badge);
-          expect(1).toEqual(installation.badge);
-        })
+        expect(1).toEqual(body.data.badge);
         return successfulTransmissions(body, installations);
       },
       getValidPushTypes: function() {
@@ -338,11 +333,7 @@ describe('PushController', () => {
     var pushAdapter = {
       send: function(body, installations) {
         matchedInstallationsCount += installations.length;
-        var badge = body.data.badge;
-        installations.forEach((installation) => {
-          expect(installation.badge).toEqual(badge);
-          expect(1).toEqual(installation.badge);
-        })
+        expect(1).toEqual(body.data.badge);
         return successfulTransmissions(body, installations);
       },
       getValidPushTypes: function() {
@@ -371,7 +362,7 @@ describe('PushController', () => {
       return pushController.sendPush(payload, where, config, auth);
     }).then(() => {
       return new Promise((res) => {
-        setTimeout(res, 300);
+        setTimeout(res, 1000);
       });
     }).then(() => {
       expect(matchedInstallationsCount).toBe(5);
@@ -381,8 +372,148 @@ describe('PushController', () => {
     }).then((installations) => {
       expect(installations.length).toBe(5);
       done();
-    }).catch(() => {
-      fail("should not fail");
+    }).catch((error) => {
+      fail(error);
+      done();
+    });
+  });
+
+  it('should support lt operator when incrementing badges #3855', (done) => {
+    var pushAdapter = {
+      send: function (body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function () {
+        return ["ios"];
+      }
+    }
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    const where = { 'badge': { '$lt': 2 } }
+
+    const payloadNoIncrement = {
+      data: {
+        alert: 'Hello World!'
+      }
+    }
+
+    const payloadIncrement = {
+      data: {
+        alert: 'Hello World!',
+        badge: 'Increment'
+      }
+    }
+    const now = new Date();
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      // Installations have badge counts [0,1,2,3,4]
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken", "device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
+      return pushController.sendPush(payloadNoIncrement, where, config, auth);
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      return pushController.sendPush(payloadIncrement, where, config, auth);
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      query.greaterThanOrEqualTo("createdAt", now);
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      // There should be 2 pushes.
+      expect(results.length).toBe(2);
+
+      // Each of the pushes should have pushed to 2 devices.
+      expect(results[0].get('numSent')).toBe(2);
+      expect(results[1].get('numSent')).toBe(2);
+      done();
+    }).catch((err) => {
+      jfail(err);
+      done();
+    });
+  });
+
+  it('should properly set badge value and send pushes.', (done) => {
+    var pushAdapter = {
+      send: function (body, installations) {
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes: function () {
+        return ["ios"];
+      }
+    }
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+
+    const where = { 'badge': { '$ne': 2 } }
+
+    const payload = {
+      data: {
+        alert: 'Hello World!',
+        badge: 2
+      }
+    }
+    const now = new Date();
+    var pushController = new PushController();
+    reconfigureServer({
+      push: { adapter: pushAdapter }
+    }).then(() => {
+      // Installations have badge counts [0,1,2,3,4]
+      var installations = [];
+      while (installations.length != 5) {
+        const installation = new Parse.Object("_Installation");
+        installation.set("installationId", "installation_" + installations.length);
+        installation.set("deviceToken", "device_token_" + installations.length)
+        installation.set("badge", installations.length);
+        installation.set("originalBadge", installations.length);
+        installation.set("deviceType", "ios");
+        installations.push(installation);
+      }
+      return Parse.Object.saveAll(installations);
+    }).then(() => {
+      return pushController.sendPush(payload, where, config, auth);
+    }).then(() => {
+      // Wait so the push is completed.
+      return new Promise((resolve) => { setTimeout(() => { resolve(); }, 1000); });
+    }).then(() => {
+      const query = new Parse.Query('_PushStatus');
+      query.greaterThanOrEqualTo("createdAt", now);
+      return query.find({ useMasterKey: true })
+    }).then((results) => {
+      // There should be 1 push.
+      expect(results.length).toBe(1);
+
+      // Should have pushed to 4 devices.
+      expect(results[0].get('numSent')).toBe(4);
+    }).then(() => {
+      const query = new Parse.Query(Parse.Installation);
+      query.equalTo('badge', 2);
+      return query.find({useMasterKey: true});
+    }).then((installations) => {
+      expect(installations.length).toBe(5);
+      done();
+    }).catch((err) => {
+      jfail(err);
       done();
     });
   });
