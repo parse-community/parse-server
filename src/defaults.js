@@ -35,5 +35,6 @@ export default {
   cacheTTL: 5000,
   cacheMaxSize: 10000,
   userSensitiveFields: ['email'],
-  objectIdSize: 10
+  objectIdSize: 10,
+  masterKeyIps: []
 }

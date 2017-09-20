@@ -1,8 +1,5 @@
 language: node_js
 dist: trusty
-node_js:
-- '6.10'
-- '7.10'
 services:
   - mongodb
   - postgresql
@@ -27,11 +24,16 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
+  - NODE_VERSION=6.10 
   matrix:
   - MONGODB_VERSION=3.2.13
   - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
+  - NODE_VERSION=8.1.3
+before_install:
+- nvm install $NODE_VERSION
+- nvm use $NODE_VERSION
 before_script:
 - node -e 'require("./lib/index.js")'
 - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres

@@ -1,6 +1,5 @@
 // These methods handle the User-related routes.
 
-import deepcopy       from 'deepcopy';
 import Parse          from 'parse/node';
 import Config         from '../Config';
 import AccountLockout from '../AccountLockout';
@@ -12,32 +11,9 @@ import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
-  handleFind(req) {
-    req.params.className = '_User';
-    return super.handleFind(req);
-  }
 
-  handleGet(req) {
-    req.params.className = '_User';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    const data = deepcopy(req.body);
-    req.body = data;
-    req.params.className = '_User';
-
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_User';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_User';
-    return super.handleDelete(req);
+  className() {
+    return '_User';
   }
 
   handleMe(req) {

@@ -157,6 +157,12 @@ describe('definitions', () => {
       }
     }
   });
+
+  it('should throw when using deprecated facebookAppIds', () => {
+    expect(() => {
+      definitions.facebookAppIds.action()
+    }).toThrow();
+  });
 });
 
 describe('LiveQuery definitions', () => {

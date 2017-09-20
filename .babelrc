@@ -4,6 +4,11 @@
     ],
     "presets": [
         "es2015",
-        "stage-0"
+        "stage-3",
+        ["env", {
+            "targets": {
+                "node": "4.6"
+            }
+        }]
     ]
 }
