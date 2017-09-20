@@ -1,13 +1,12 @@
 'use strict';
 
 var request = require('request');
-var Parse = require('parse/node').Parse;
-let Config = require('../src/Config');
+const Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
   beforeEach(done => {
-    let config = new Config('test');
-    let query = on_db('mongo', () => {
+    const config = new Config('test');
+    const query = on_db('mongo', () => {
       // Legacy is with an int...
       return { objectId: 1 };
     }, () => {
@@ -18,7 +17,7 @@ describe('a GlobalConfig', () => {
       { fields: { objectId: { type: 'Number' }, params: {type: 'Object'}} },
       query,
       { params: { companies: ['US', 'DK'] } }
-    ).then(done, (err) => {
+    ).then(done, (err) => {
       jfail(err);
       done();
     });
@@ -54,6 +53,49 @@ describe('a GlobalConfig', () => {
       expect(response.statusCode).toEqual(200);
       expect(body.result).toEqual(true);
       done();
+    });
+  });
+
+  it('can add and retrive files', (done) => {
+    request.put({
+      url    : 'http://localhost:8378/1/config',
+      json   : true,
+      body   : { params: { file: { __type: 'File', name: 'name', url: 'http://url' } } },
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key'    : 'test'
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      expect(body.result).toEqual(true);
+      Parse.Config.get().then((res) => {
+        const file = res.get('file');
+        expect(file.name()).toBe('name');
+        expect(file.url()).toBe('http://url');
+        done();
+      });
+    });
+  });
+
+  it('can add and retrive Geopoints', (done) => {
+    const geopoint = new Parse.GeoPoint(10,-20);
+    request.put({
+      url    : 'http://localhost:8378/1/config',
+      json   : true,
+      body   : { params: { point: geopoint.toJSON() } },
+      headers: {
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-Master-Key'    : 'test'
+      }
+    }, (error, response, body) => {
+      expect(response.statusCode).toEqual(200);
+      expect(body.result).toEqual(true);
+      Parse.Config.get().then((res) => {
+        const point = res.get('point');
+        expect(point.latitude).toBe(10);
+        expect(point.longitude).toBe(-20);
+        done();
+      });
     });
   });
 
@@ -105,7 +147,7 @@ describe('a GlobalConfig', () => {
   });
 
   it('failed getting config when it is missing', (done) => {
-    let config = new Config('test');
+    const config = new Config('test');
     config.database.adapter.deleteObjectsByQuery(
       '_GlobalConfig',
       { fields: { params: { __type: 'String' } } },
@@ -123,7 +165,7 @@ describe('a GlobalConfig', () => {
         expect(body.params).toEqual({});
         done();
       });
-    }).catch((e) => {
+    }).catch((e) => {
       jfail(e);
       done();
     });

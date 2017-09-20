@@ -1,20 +1,19 @@
 import PromiseRouter from '../PromiseRouter';
-import UserController from '../Controllers/UserController';
 import Config from '../Config';
 import express from 'express';
 import path from 'path';
 import fs from 'fs';
 import qs from 'querystring';
 
-let public_html = path.resolve(__dirname, "../../public_html");
-let views = path.resolve(__dirname, '../../views');
+const public_html = path.resolve(__dirname, "../../public_html");
+const views = path.resolve(__dirname, '../../views');
 
 export class PublicAPIRouter extends PromiseRouter {
 
   verifyEmail(req) {
-    let { token, username }= req.query;
-    let appId = req.params.appId;
-    let config = new Config(appId);
+    const { token, username } = req.query;
+    const appId = req.params.appId;
+    const config = new Config(appId);
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -24,21 +23,49 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
 
-    let userController = config.userController;
-    return userController.verifyEmail(username, token).then( () => {
-      let params = qs.stringify({username});
+    const userController = config.userController;
+    return userController.verifyEmail(username, token).then(() => {
+      const params = qs.stringify({username});
       return Promise.resolve({
         status: 302,
         location: `${config.verifyEmailSuccessURL}?${params}`
       });
     }, ()=> {
+      return this.invalidVerificationLink(req);
+    })
+  }
+
+  resendVerificationEmail(req) {
+    const username = req.body.username;
+    const appId = req.params.appId;
+    const config = new Config(appId);
+
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+
+    if (!username) {
       return this.invalidLink(req);
+    }
+
+    const userController = config.userController;
+
+    return userController.resendVerificationEmail(username).then(() => {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendSuccessURL}`
+      });
+    }, ()=> {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendFailURL}`
+      });
     })
   }
 
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      let config = new Config(req.query.id);
+      const config = new Config(req.query.id);
       if (!config.publicServerURL) {
         return resolve({
           status: 404,
@@ -46,7 +73,7 @@ export class PublicAPIRouter extends PromiseRouter {
         });
       }
       // Should we keep the file in memory or leave like that?
-      fs.readFile(path.resolve(views, "choose_password"), 'utf-8', (err, data) => {
+      fs.readFile(path.resolve(views, "choose_password"), 'utf-8', (err, data) => {
         if (err) {
           return reject(err);
         }
@@ -60,20 +87,20 @@ export class PublicAPIRouter extends PromiseRouter {
 
   requestResetPassword(req) {
 
-    let config = req.config;
+    const config = req.config;
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
-    let { username, token } = req.query;
+    const { username, token } = req.query;
 
     if (!username || !token) {
       return this.invalidLink(req);
     }
 
-    return config.userController.checkResetTokenValidity(username, token).then( (user) => {
-      let params = qs.stringify({token, id: config.applicationId, username, app: config.appName, });
+    return config.userController.checkResetTokenValidity(username, token).then(() => {
+      const params = qs.stringify({token, id: config.applicationId, username, app: config.appName, });
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?${params}`
@@ -85,13 +112,13 @@ export class PublicAPIRouter extends PromiseRouter {
 
   resetPassword(req) {
 
-    let config = req.config;
+    const config = req.config;
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
-    let {
+    const {
       username,
       token,
       new_password
@@ -101,13 +128,14 @@ export class PublicAPIRouter extends PromiseRouter {
       return this.invalidLink(req);
     }
 
-    return config.userController.updatePassword(username, token, new_password).then((result) => {
+    return config.userController.updatePassword(username, token, new_password).then(() => {
+      const params = qs.stringify({username: username});
       return Promise.resolve({
         status: 302,
-        location: config.passwordResetSuccessURL
+        location: `${config.passwordResetSuccessURL}?${params}`
       });
     }, (err) => {
-      let params = qs.stringify({username: username, token: token, id: config.applicationId, error:err, app:config.appName})
+      const params = qs.stringify({username: username, token: token, id: config.applicationId, error:err, app:config.appName})
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?${params}`
@@ -118,9 +146,22 @@ export class PublicAPIRouter extends PromiseRouter {
 
   invalidLink(req) {
     return Promise.resolve({
-        status: 302,
-        location: req.config.invalidLinkURL
+      status: 302,
+      location: req.config.invalidLinkURL
     });
+  }
+
+  invalidVerificationLink(req) {
+    const config = req.config;
+    if (req.query.username && req.params.appId) {
+      const params = qs.stringify({username: req.query.username, appId: req.params.appId});
+      return Promise.resolve({
+        status: 302,
+        location: `${config.invalidVerificationLinkURL}?${params}`
+      });
+    } else {
+      return this.invalidLink(req);
+    }
   }
 
   missingPublicServerURL() {
@@ -140,6 +181,10 @@ export class PublicAPIRouter extends PromiseRouter {
       req => { this.setConfig(req) },
       req => { return this.verifyEmail(req); });
 
+    this.route('POST', '/apps/:appId/resend_verification_email',
+      req => { this.setConfig(req); },
+      req => { return this.resendVerificationEmail(req); });
+
     this.route('GET','/apps/choose_password',
       req => { return this.changePassword(req); });
 
@@ -153,7 +198,7 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 
   expressRouter() {
-    let router = express.Router();
+    const router = express.Router();
     router.use("/apps", express.static(public_html));
     router.use("/", super.expressRouter());
     return router;

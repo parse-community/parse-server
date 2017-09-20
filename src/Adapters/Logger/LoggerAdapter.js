@@ -1,3 +1,4 @@
+/*eslint no-unused-vars: "off"*/
 // Logger Adapter
 //
 // Allows you to change the logger mechanism

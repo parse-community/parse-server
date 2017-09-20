@@ -1,26 +1,37 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
+import Parse                    from 'parse/node';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
 
+const incrementOp = function(object = {}, key, amount = 1) {
+  if (!object[key]) {
+    object[key] = {__op: 'Increment', amount: amount}
+  } else {
+    object[key].amount += amount;
+  }
+  return object[key];
+}
+
 export function flatten(array) {
-  return array.reduce((memo, element) => {
-    if (Array.isArray(element)) {
-      memo = memo.concat(flatten(element));
+  var flattened = [];
+  for(var i = 0; i < array.length; i++) {
+    if(Array.isArray(array[i])) {
+      flattened = flattened.concat(flatten(array[i]));
     } else {
-      memo = memo.concat(element);
+      flattened.push(array[i]);
     }
-    return memo;
-  }, []);
+  }
+  return flattened;
 }
 
 function statusHandler(className, database) {
   let lastPromise = Promise.resolve();
 
   function create(object) {
-    lastPromise = lastPromise.then(() => {
-      return database.create(className, object).then(() => {
+    lastPromise = lastPromise.then(() => {
+      return database.create(className, object).then(() => {
         return Promise.resolve(object);
       });
     });
@@ -28,8 +39,49 @@ function statusHandler(className, database) {
   }
 
   function update(where, object) {
-    lastPromise = lastPromise.then(() => {
+    lastPromise = lastPromise.then(() => {
       return database.update(className, where, object);
+    });
+    return lastPromise;
+  }
+
+  return Object.freeze({
+    create,
+    update
+  })
+}
+
+function restStatusHandler(className) {
+  let lastPromise = Promise.resolve();
+
+  function create(object) {
+    lastPromise = lastPromise.then(() => {
+      return Parse._request(
+        'POST',
+        `classes/${className}`,
+        object,
+        { useMasterKey: true }
+      ).then((result) => {
+        // merge the objects
+        const response = Object.assign({}, object, result);
+        return Promise.resolve(response);
+      });
+    });
+    return lastPromise;
+  }
+
+  function update(where, object) {
+    // TODO: when we have updateWhere, use that for proper interfacing
+    lastPromise = lastPromise.then(() => {
+      return Parse._request(
+        'PUT',
+        `classes/${className}/${where.objectId}`,
+        object,
+        { useMasterKey: true }).then((result) => {
+        // merge the objects
+        const response = Object.assign({}, object, result);
+        return Promise.resolve(response);
+      });
     });
     return lastPromise;
   }
@@ -42,12 +94,11 @@ function statusHandler(className, database) {
 
 export function jobStatusHandler(config) {
   let jobStatus;
-  let objectId = newObjectId();
-  let database = config.database;
-  let lastPromise = Promise.resolve();
-  let handler = statusHandler(JOB_STATUS_COLLECTION, database);
-  let setRunning = function(jobName, params) {
-    let now = new Date();
+  const objectId = newObjectId(config.objectIdSize);
+  const database = config.database;
+  const handler = statusHandler(JOB_STATUS_COLLECTION, database);
+  const setRunning = function(jobName, params) {
+    const now = new Date();
     jobStatus = {
       objectId,
       jobName,
@@ -62,24 +113,24 @@ export function jobStatusHandler(config) {
     return handler.create(jobStatus);
   }
 
-  let setMessage = function(message) {
+  const setMessage = function(message) {
     if (!message || typeof message !== 'string') {
       return Promise.resolve();
     }
     return handler.update({ objectId }, { message });
   }
 
-  let setSucceeded = function(message) {
+  const setSucceeded = function(message) {
     return setFinalStatus('succeeded', message);
   }
 
-  let setFailed = function(message) {
+  const setFailed = function(message) {
     return setFinalStatus('failed', message);
   }
 
-  let setFinalStatus = function(status, message = undefined) {
-    let finishedAt = new Date();
-    let update = { status, finishedAt };
+  const setFinalStatus = function(status, message = undefined) {
+    const finishedAt = new Date();
+    const update = { status, finishedAt };
     if (message && typeof message === 'string') {
       update.message = message;
     }
@@ -94,16 +145,28 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config) {
+export function pushStatusHandler(config, existingObjectId) {
 
   let pushStatus;
-  let objectId = newObjectId();
-  let database = config.database;
-  let handler = statusHandler(PUSH_STATUS_COLLECTION, database);
-  let setInitial = function(body = {}, where, options = {source: 'rest'}) {
-    let now = new Date();
-    let data =  body.data || {};
-    let payloadString = JSON.stringify(data);
+  const database = config.database;
+  const handler = restStatusHandler(PUSH_STATUS_COLLECTION);
+  let objectId = existingObjectId;
+  const setInitial = function(body = {}, where, options = {source: 'rest'}) {
+    const now = new Date();
+    let pushTime = now.toISOString();
+    let status = 'pending';
+    if (body.hasOwnProperty('push_time')) {
+      if (config.hasPushScheduledSupport) {
+        pushTime = body.push_time;
+        status = 'scheduled';
+      } else {
+        logger.warn('Trying to schedule a push while server is not configured.');
+        logger.warn('Push will be sent immediately');
+      }
+    }
+
+    const data =  body.data || {};
+    const payloadString = JSON.stringify(data);
     let pushHash;
     if (typeof data.alert === 'string') {
       pushHash = md5Hash(data.alert);
@@ -112,23 +175,22 @@ export function pushStatusHandler(config) {
     } else {
       pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
     }
-    let object = {
-      objectId,
-      createdAt: now,
-      pushTime: now.toISOString(),
+    const object = {
+      pushTime,
       query: JSON.stringify(where),
       payload: payloadString,
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
-      status: "pending",
+      status: status,
       numSent: 0,
       pushHash,
       // lockdown!
       ACL: {}
     }
 
-    return handler.create(object).then(() => {
+    return handler.create(object).then((result) => {
+      objectId = result.objectId;
       pushStatus = {
         objectId
       };
@@ -136,61 +198,112 @@ export function pushStatusHandler(config) {
     });
   }
 
-  let setRunning = function(installations) {
-    logger.verbose('sending push to %d installations', installations.length);
-     return handler.update({status:"pending", objectId: objectId},
-        {status: "running", updatedAt: new Date() });
+  const setRunning = function(count) {
+    logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
+    return handler.update({status:"pending", objectId: objectId},
+      {status: "running", count });
   }
 
-  let complete = function(results) {
-    let update = {
-      status: 'succeeded',
-      updatedAt: new Date(),
+  const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+    const update = {
       numSent: 0,
-      numFailed: 0,
+      numFailed: 0
     };
+    const devicesToRemove = [];
     if (Array.isArray(results)) {
       results = flatten(results);
-      results.reduce((memo, result) => {
+      results.reduce((memo, result) => {
         // Cannot handle that
         if (!result || !result.device || !result.device.deviceType) {
           return memo;
         }
-        let deviceType = result.device.deviceType;
-        if (result.transmitted)
-        {
+        const deviceType = result.device.deviceType;
+        const key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
+        memo[key] = incrementOp(memo, key);
+        if (typeof UTCOffset !== 'undefined') {
+          const offsetKey = result.transmitted ? `sentPerUTCOffset.${UTCOffset}` : `failedPerUTCOffset.${UTCOffset}`;
+          memo[offsetKey] = incrementOp(memo, offsetKey);
+        }
+        if (result.transmitted) {
           memo.numSent++;
-          memo.sentPerType = memo.sentPerType || {};
-          memo.sentPerType[deviceType] = memo.sentPerType[deviceType] || 0;
-          memo.sentPerType[deviceType]++;
         } else {
+          if (result && result.response && result.response.error && result.device && result.device.deviceToken) {
+            const token = result.device.deviceToken;
+            const error = result.response.error;
+            // GCM errors
+            if (error === 'NotRegistered' || error === 'InvalidRegistration') {
+              devicesToRemove.push(token);
+            }
+            // APNS errors
+            if (error === 'Unregistered') {
+              devicesToRemove.push(token);
+            }
+          }
           memo.numFailed++;
-          memo.failedPerType = memo.failedPerType || {};
-          memo.failedPerType[deviceType] = memo.failedPerType[deviceType] || 0;
-          memo.failedPerType[deviceType]++;
         }
         return memo;
       }, update);
+      incrementOp(update, 'count', -results.length);
     }
-    logger.verbose('sent push! %d success, %d failures', update.numSent, update.numFailed);
-    return handler.update({status:"running", objectId }, update);
+
+    logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
+    logger.verbose(`_PushStatus ${objectId}: needs cleanup`, { devicesToRemove });
+    ['numSent', 'numFailed'].forEach((key) => {
+      if (update[key] > 0) {
+        update[key] = {
+          __op: 'Increment',
+          amount: update[key]
+        };
+      } else {
+        delete update[key];
+      }
+    });
+
+    if (devicesToRemove.length > 0 && cleanupInstallations) {
+      logger.info(`Removing device tokens on ${devicesToRemove.length} _Installations`);
+      database.update('_Installation', { deviceToken: { '$in': devicesToRemove }}, { deviceToken: {"__op": "Delete"} }, {
+        acl: undefined,
+        many: true
+      });
+    }
+
+    return handler.update({ objectId }, update).then((res) => {
+      if (res && res.count === 0) {
+        return this.complete();
+      }
+    })
   }
 
-  let fail = function(err) {
-    let update = {
-      errorMessage: JSON.stringify(err),
-      status: 'failed',
-      updatedAt: new Date()
+  const complete = function() {
+    return handler.update({ objectId }, {
+      status: 'succeeded',
+      count: {__op: 'Delete'}
+    });
+  }
+
+  const fail = function(err) {
+    if (typeof err === 'string') {
+      err = { message: err };
     }
-    logger.info('warning: error while sending push', err);
+    const update = {
+      errorMessage: err,
+      status: 'failed'
+    }
     return handler.update({ objectId }, update);
   }
 
-  return Object.freeze({
-    objectId,
+  const rval = {
     setInitial,
     setRunning,
+    trackSent,
     complete,
     fail
-  })
+  };
+
+  // define objectId to be dynamic
+  Object.defineProperty(rval, "objectId", {
+    get: () => objectId
+  });
+
+  return Object.freeze(rval);
 }

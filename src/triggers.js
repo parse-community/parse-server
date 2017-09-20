@@ -1,6 +1,5 @@
 // triggers.js
 import Parse    from 'parse/node';
-import AppCache from './cache';
 import { logger } from './logger';
 
 export const Types = {
@@ -8,14 +7,16 @@ export const Types = {
   afterSave: 'afterSave',
   beforeDelete: 'beforeDelete',
   afterDelete: 'afterDelete',
-  beforeFind: 'beforeFind'
+  beforeFind: 'beforeFind',
+  afterFind: 'afterFind'
 };
 
 const baseStore = function() {
-  let Validators = {};
-  let Functions = {};
-  let Jobs = {};
-  let Triggers = Object.keys(Types).reduce(function(base, key){
+  const Validators = {};
+  const Functions = {};
+  const Jobs = {};
+  const LiveQuery = [];
+  const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
   }, {});
@@ -24,9 +25,24 @@ const baseStore = function() {
     Functions,
     Jobs,
     Validators,
-    Triggers
+    Triggers,
+    LiveQuery,
   });
 };
+
+function validateClassNameForTriggers(className, type) {
+  const restrictedClassNames = [ '_Session' ];
+  if (restrictedClassNames.indexOf(className) != -1) {
+    throw `Triggers are not supported for ${className} class.`;
+  }
+  if (type == Types.beforeSave && className === '_PushStatus') {
+    // _PushStatus uses undocumented nested key increment ops
+    // allowing beforeSave would mess up the objects big time
+    // TODO: Allow proper documented way of using nested increment ops
+    throw 'Only afterSave is allowed on _PushStatus';
+  }
+  return className;
+}
 
 const _triggerStore = {};
 
@@ -44,33 +60,26 @@ export function addJob(jobName, handler, applicationId) {
 }
 
 export function addTrigger(type, className, handler, applicationId) {
+  validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
 }
 
-export function removeFunction(functionName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Functions[functionName]
+export function addLiveQueryEventHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
-export function removeJob(jobName, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Jobs[jobName]
+export function removeFunction(functionName, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Functions[functionName]
 }
 
 export function removeTrigger(type, className, applicationId) {
-   applicationId = applicationId || Parse.applicationId;
-   delete _triggerStore[applicationId].Triggers[type][className]
-}
-
-export function _unregister(appId,category,className,type) {
-  if (type) {
-    removeTrigger(className,type,appId);
-    delete _triggerStore[appId][category][className][type];
-  } else {
-    delete _triggerStore[appId][category][className];
-  }
+  applicationId = applicationId || Parse.applicationId;
+  delete _triggerStore[applicationId].Triggers[type][className]
 }
 
 export function _unregisterAll() {
@@ -89,7 +98,7 @@ export function getTrigger(className, triggerType, applicationId) {
     return manager.Triggers[triggerType][className];
   }
   return undefined;
-};
+}
 
 export function triggerExists(className: string, type: string, applicationId: string): boolean {
   return (getTrigger(className, type, applicationId) != undefined);
@@ -99,7 +108,7 @@ export function getFunction(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Functions) {
     return manager.Functions[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -107,7 +116,7 @@ export function getJob(jobName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs[jobName];
-  };
+  }
   return undefined;
 }
 
@@ -115,7 +124,7 @@ export function getJobs(applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Jobs) {
     return manager.Jobs;
-  };
+  }
   return undefined;
 }
 
@@ -124,7 +133,7 @@ export function getValidator(functionName, applicationId) {
   var manager = _triggerStore[applicationId];
   if (manager && manager.Validators) {
     return manager.Validators[functionName];
-  };
+  }
   return undefined;
 }
 
@@ -133,7 +142,8 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController
+    log: config.loggerController,
+    headers: config.headers,
   };
 
   if (originalParseObject) {
@@ -155,12 +165,17 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, config) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
+  isGet = !!isGet;
+
   var request = {
     triggerName: triggerType,
-    query: query,
+    query,
     master: false,
-    log: config.loggerController
+    count,
+    log: config.loggerController,
+    isGet,
+    headers: config.headers,
   };
 
   if (!auth) {
@@ -185,6 +200,15 @@ export function getRequestQueryObject(triggerType, auth, query, config) {
 export function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
+      if (request.triggerName === Types.afterFind) {
+        if(!response){
+          response = request.objects;
+        }
+        response = response.map(object => {
+          return object.toJSON();
+        });
+        return resolve(response);
+      }
       // Use the JSON response
       if (response && !request.object.equals(response)
           && request.triggerName === Types.beforeSave) {
@@ -205,7 +229,7 @@ export function getResponseObject(request, resolve, reject) {
       return reject(scriptError);
     }
   }
-};
+}
 
 function userIdForLog(auth) {
   return (auth && auth.user) ? auth.user.id : undefined;
@@ -240,8 +264,44 @@ function logTriggerErrorBeforeHook(triggerType, className, input, auth, error) {
   });
 }
 
-export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth) {
-  let trigger = getTrigger(className, triggerType, config.applicationId);
+export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, config) {
+  return new Promise((resolve, reject) => {
+    const trigger = getTrigger(className, triggerType, config.applicationId);
+    if (!trigger) {
+      return resolve();
+    }
+    const request = getRequestObject(triggerType, auth, null, null, config);
+    const response = getResponseObject(request,
+      object => {
+        resolve(object);
+      },
+      error => {
+        reject(error);
+      });
+    logTriggerSuccessBeforeHook(triggerType, className, 'AfterFind', JSON.stringify(objects), auth);
+    request.objects = objects.map(object => {
+      //setting the class name to transform into parse object
+      object.className = className;
+      return Parse.Object.fromJSON(object);
+    });
+    const triggerPromise = trigger(request, response);
+    if (triggerPromise && typeof triggerPromise.then === "function") {
+      return triggerPromise.then(promiseResults => {
+        if(promiseResults) {
+          resolve(promiseResults);
+        }else{
+          return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
+        }
+      });
+    }
+  }).then((results) => {
+    logTriggerAfterHook(triggerType, className, JSON.stringify(results), auth);
+    return results;
+  });
+}
+
+export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
+  const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
       restWhere,
@@ -249,30 +309,32 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     });
   }
 
-  let parseQuery = new Parse.Query(className);
+  const parseQuery = new Parse.Query(className);
   if (restWhere) {
-      parseQuery._where = restWhere;
+    parseQuery._where = restWhere;
   }
+  let count = false;
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
     }
     if (restOptions.skip) {
-        parseQuery._skip = restOptions.skip;
+      parseQuery._skip = restOptions.skip;
     }
     if (restOptions.limit) {
-        parseQuery._limit = restOptions.limit;
+      parseQuery._limit = restOptions.limit;
     }
+    count = !!restOptions.count;
   }
-  let requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
-  return Promise.resolve().then(() => {
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config, isGet);
+  return Promise.resolve().then(() => {
     return trigger(requestObject);
-  }).then((result) => {
+  }).then((result) => {
     let queryResult = parseQuery;
     if (result && result instanceof Parse.Query) {
       queryResult = result;
     }
-    let jsonQuery = queryResult.toJSON();
+    const jsonQuery = queryResult.toJSON();
     if (jsonQuery.where) {
       restWhere = jsonQuery.where;
     }
@@ -288,11 +350,27 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
       restOptions = restOptions || {};
       restOptions.include = jsonQuery.include;
     }
+    if (jsonQuery.keys) {
+      restOptions = restOptions || {};
+      restOptions.keys = jsonQuery.keys;
+    }
+    if (requestObject.readPreference) {
+      restOptions = restOptions || {};
+      restOptions.readPreference = requestObject.readPreference;
+    }
+    if (requestObject.includeReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.includeReadPreference = requestObject.includeReadPreference;
+    }
+    if (requestObject.subqueryReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
+    }
     return {
       restWhere,
       restOptions
     };
-  }, (err) => {
+  }, (err) => {
     if (typeof err === 'string') {
       throw new Parse.Error(1, err);
     } else {
@@ -314,13 +392,13 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var trigger = getTrigger(parseObject.className, triggerType, config.applicationId);
     if (!trigger) return resolve();
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
-    var response = getResponseObject(request, (object) => {
+    var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+        triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
-    }, (error) => {
+    }, (error) => {
       logTriggerErrorBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), auth, error);
+        triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
     // Force the current Parse app before the trigger
@@ -336,16 +414,16 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var triggerPromise = trigger(request, response);
     if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
     {
-        logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-        if(triggerPromise && typeof triggerPromise.then === "function") {
-            return triggerPromise.then(resolve, resolve);
-        }
-        else {
-            return resolve();
-        }
+      logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
+      if(triggerPromise && typeof triggerPromise.then === "function") {
+        return triggerPromise.then(resolve, resolve);
+      }
+      else {
+        return resolve();
+      }
     }
   });
-};
+}
 
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
@@ -355,4 +433,9 @@ export function inflate(data, restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);
+}
+
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
+  _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }

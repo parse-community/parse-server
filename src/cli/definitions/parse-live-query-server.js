@@ -1,11 +1,5 @@
 import {
-  numberParser,
-  numberOrBoolParser,
-  objectParser,
-  arrayParser,
-  moduleOrObjectParser,
-  booleanParser,
-  nullParser
+  numberParser
 } from '../utils/parsers';
 
 
@@ -40,9 +34,9 @@ export default {
     help: "Optional. This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO.",
   },
   "port": {
-     env: "PORT",
-     help: "The port to run the ParseServer. defaults to 1337.",
-     default: 1337,
-     action: numberParser("port")
+    env: "PORT",
+    help: "The port to run the ParseServer. defaults to 1337.",
+    default: 1337,
+    action: numberParser("port")
   },
 };

@@ -4,23 +4,24 @@ import FileSystemAdapter    from 'parse-server-fs-adapter'
 import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter'
 import NullCacheAdapter     from './Adapters/Cache/NullCacheAdapter'
 import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
-import TestUtils            from './TestUtils';
+import * as TestUtils       from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
+import { PushWorker }       from './Push/PushWorker';
 
 // Factory function
-let _ParseServer = function(options) {
-  let server = new ParseServer(options);
+const _ParseServer = function(options) {
+  const server = new ParseServer(options);
   return server.app;
 }
 // Mount the create liveQueryServer
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
 
-let GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
+const GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
 
 Object.defineProperty(module.exports, 'logger', {
   get: getLogger
 });
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, NullCacheAdapter, RedisCacheAdapter, TestUtils, _ParseServer as ParseServer };
+export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, NullCacheAdapter, RedisCacheAdapter, TestUtils, PushWorker, _ParseServer as ParseServer };

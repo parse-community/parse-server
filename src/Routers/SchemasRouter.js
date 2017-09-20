@@ -1,7 +1,6 @@
 // schemas.js
 
-var express = require('express'),
-  Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
@@ -16,22 +15,22 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 
 function getAllSchemas(req) {
   return req.config.database.loadSchema({ clearCache: true})
-  .then(schemaController => schemaController.getAllClasses(true))
-  .then(schemas => ({ response: { results: schemas } }));
+    .then(schemaController => schemaController.getAllClasses(true))
+    .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
   return req.config.database.loadSchema({ clearCache: true})
-  .then(schemaController => schemaController.getOneSchema(className, true))
-  .then(schema => ({ response: schema }))
-  .catch(error => {
-    if (error === undefined) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-    } else {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
-    }
-  });
+    .then(schemaController => schemaController.getOneSchema(className, true))
+    .then(schema => ({ response: schema }))
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      }
+    });
 }
 
 function createSchema(req) {
@@ -56,12 +55,12 @@ function modifySchema(req) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  let submittedFields = req.body.fields || {};
-  let className = req.params.className;
+  const submittedFields = req.body.fields || {};
+  const className = req.params.className;
 
   return req.config.database.loadSchema({ clearCache: true})
-  .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
-  .then(result => ({response: result}));
+    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
+    .then(result => ({response: result}));
 }
 
 const deleteSchema = req => {
@@ -69,7 +68,7 @@ const deleteSchema = req => {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
   return req.config.database.deleteSchema(req.params.className)
-  .then(() => ({ response: {} }));
+    .then(() => ({ response: {} }));
 }
 
 export class SchemasRouter extends PromiseRouter {

@@ -1,50 +1,28 @@
-Please read the following instructions carefully.
+We use GitHub Issues for bugs.
 
-Check out https://github.com/ParsePlatform/parse-server/issues/1271 for an ideal bug report. 
-The closer your issue report is to that one, the more likely we are to be able to help, and the more likely we will be to fix the issue quickly!
+If you have a non-bug question, ask on Stack Overflow or Server Fault: 
+- https://stackoverflow.com/questions/tagged/parse.com 
+- https://serverfault.com/tags/parse
 
-Many members of the community use Stack Overflow and Server Fault to ask questions. 
-Read through the existing questions or ask your own!
-- Stack Overflow: http://stackoverflow.com/questions/tagged/parse.com 
-- Server Fault: https://serverfault.com/tags/parse
+You may also search through existing issues before opening a new one: https://github.com/ParsePlatform/Parse-Server/issues?utf8=%E2%9C%93&q=is%3Aissue 
 
-For database migration help, please file a bug report at https://parse.com/help#report
-
-Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
-
-- [ ] You've met the prerequisites: https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#prerequisites.
-
-- [ ] You're running the latest version of Parse Server: https://github.com/ParsePlatform/parse-server/releases
-
-- [ ] You've searched through existing issues: https://github.com/ParsePlatform/Parse-Server/issues?utf8=%E2%9C%93&q=is%3Aissue Chances are that your issue has been reported or resolved before.
-
-- [ ] You have filled out every section below. Issues without sufficient information are more likely to be closed.
-
---
+--- Please use this template. If you don't use this template, your issue may be closed without comment. ---
 
 ### Issue Description
 
-[DELETE EVERYTHING ABOVE THIS LINE BEFORE SUBMITTING YOUR ISSUE]
-
 Describe your issue in as much detail as possible.
-
-[FILL THIS OUT]
 
 ### Steps to reproduce
 
 Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable.
 
-1. [FILL THIS OUT]
-2. [FILL THIS OUT]
-3. [FILL THIS OUT]
-
 #### Expected Results
 
-[FILL THIS OUT]
+What you expected to happen.
 
 #### Actual Outcome
 
-[FILL THIS OUT]
+What is happening instead.
 
 ### Environment Setup
 
@@ -62,6 +40,4 @@ Please include a detailed list of steps that reproduce the issue. Include curl c
 
 ### Logs/Trace
 
-You can turn on additional logging by configuring VERBOSE=1 in your environment.
-
-[FILL THIS OUT]
+Include all relevant logs. You can turn on additional logging by configuring VERBOSE=1 in your environment.

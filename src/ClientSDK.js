@@ -9,8 +9,8 @@ function compatible(compatibleSDK) {
     if (!clientSDK) {
       return true;
     }
-    let clientVersion = clientSDK.version;
-    let compatiblityVersion = compatibleSDK[clientSDK.sdk];
+    const clientVersion = clientSDK.version;
+    const compatiblityVersion = compatibleSDK[clientSDK.sdk];
     return semver.satisfies(clientVersion, compatiblityVersion);
   }
 }
@@ -22,8 +22,8 @@ function supportsForwardDelete(clientSDK) {
 }
 
 function fromString(version) {
-  let versionRE = /([-a-zA-Z]+)([0-9\.]+)/;
-  let match = version.toLowerCase().match(versionRE);
+  const versionRE = /([-a-zA-Z]+)([0-9\.]+)/;
+  const match = version.toLowerCase().match(versionRE);
   if (match && match.length === 3) {
     return {
       sdk: match[1],

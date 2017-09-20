@@ -70,7 +70,7 @@ describe('PushRouter', () => {
 
   it('sends a push through REST', (done) => {
     request.post({
-      url: Parse.serverURL+"/push",
+      url: Parse.serverURL + "/push",
       json: true,
       body: {
         'channels': {

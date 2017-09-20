@@ -1,35 +1,15 @@
 
 import ClassesRouter from './ClassesRouter';
-import PromiseRouter from '../PromiseRouter';
+import Parse         from 'parse/node';
 import rest          from '../rest';
 import Auth          from '../Auth';
 import RestWrite     from '../RestWrite';
 import { newToken }  from '../cryptoUtils';
 
 export class SessionsRouter extends ClassesRouter {
-  handleFind(req) {
-    req.params.className = '_Session';
-    return super.handleFind(req);
-  }
 
-  handleGet(req) {
-    req.params.className = '_Session';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    req.params.className = '_Session';
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_Session';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_Session';
-    return super.handleDelete(req);
+  className() {
+    return '_Session';
   }
 
   handleMe(req) {
@@ -75,14 +55,14 @@ export class SessionsRouter extends ClassesRouter {
       expiresAt: Parse._encode(expiresAt)
     };
     const create = new RestWrite(config, masterAuth, '_Session', null, sessionData);
-    return create.execute().then(() => {
+    return create.execute().then(() => {
       // delete the session token, use the db to skip beforeSave
       return config.database.update('_User', {
         objectId: user.id
       }, {
         sessionToken: {__op: 'Delete'}
       });
-    }).then((res) => {
+    }).then(() => {
       return Promise.resolve({ response: sessionData });
     });
   }
@@ -94,7 +74,7 @@ export class SessionsRouter extends ClassesRouter {
     this.route('POST', '/sessions', req => { return this.handleCreate(req); });
     this.route('PUT', '/sessions/:objectId', req => { return this.handleUpdate(req); });
     this.route('DELETE', '/sessions/:objectId', req => { return this.handleDelete(req); });
-    this.route('POST', '/upgradeToRevocableSession', req => { return this.handleUpdateToRevocableSession(req); })
+    this.route('POST', '/upgradeToRevocableSession', req => { return this.handleUpdateToRevocableSession(req); })
   }
 }
 

@@ -12,7 +12,7 @@ describe('ParseLiveQueryServer', function() {
     var mockParseWebSocketServer = jasmine.createSpy('ParseWebSocketServer');
     jasmine.mockLibrary('../src/LiveQuery/ParseWebSocketServer', 'ParseWebSocketServer', mockParseWebSocketServer);
     // Mock Client
-    var mockClient = function() {
+    var mockClient = function(id, socket, hasMasterKey) {
       this.pushConnect = jasmine.createSpy('pushConnect');
       this.pushSubscribe = jasmine.createSpy('pushSubscribe');
       this.pushUnsubscribe = jasmine.createSpy('pushUnsubscribe');
@@ -24,6 +24,7 @@ describe('ParseLiveQueryServer', function() {
       this.addSubscriptionInfo = jasmine.createSpy('addSubscriptionInfo');
       this.getSubscriptionInfo = jasmine.createSpy('getSubscriptionInfo');
       this.deleteSubscriptionInfo = jasmine.createSpy('deleteSubscriptionInfo');
+      this.hasMasterKey = hasMasterKey;
     }
     mockClient.pushError = jasmine.createSpy('pushError');
     jasmine.mockLibrary('../src/LiveQuery/Client', 'Client', mockClient);
@@ -80,7 +81,7 @@ describe('ParseLiveQueryServer', function() {
     var httpServer = {};
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, httpServer);
 
-    expect(parseLiveQueryServer.clientId).toBe(0);
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
@@ -93,9 +94,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._validateKeys = jasmine.createSpy('validateKeys').and.returnValue(true);
     parseLiveQueryServer._handleConnect(parseWebSocket);
 
-    expect(parseLiveQueryServer.clientId).toBe(1);
-    expect(parseWebSocket.clientId).toBe(0);
-    var client = parseLiveQueryServer.clients.get(0);
+    const clientKeys = parseLiveQueryServer.clients.keys();
+    expect(parseLiveQueryServer.clients.size).toBe(1);
+    const firstKey = clientKeys.next().value;
+    expect(parseWebSocket.clientId).toBe(firstKey);
+    var client = parseLiveQueryServer.clients.get(firstKey);
     expect(client).not.toBeNull();
     // Make sure we send connect response to the client
     expect(client.pushConnect).toHaveBeenCalled();
@@ -159,7 +162,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add two mock clients
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     var clientIdAgain = 2;
     var clientAgain = addMockClient(parseLiveQueryServer, clientIdAgain);
     // Add subscription for mock client 1
@@ -232,7 +235,7 @@ describe('ParseLiveQueryServer', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Add mock client
     var clientId = 1;
-    var client = addMockClient(parseLiveQueryServer, clientId);
+    addMockClient(parseLiveQueryServer, clientId);
     // Handle unsubscribe command
     var parseWebSocket = {
       clientId: 1
@@ -274,7 +277,7 @@ describe('ParseLiveQueryServer', function() {
     expect(subscriptions.size).toBe(0);
   });
 
- it('can set connect command message handler for a parseWebSocket', function() {
+  it('can set connect command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Register mock connect/subscribe/unsubscribe handler for the server
     parseLiveQueryServer._handleConnect = jasmine.createSpy('_handleSubscribe');
@@ -335,6 +338,35 @@ describe('ParseLiveQueryServer', function() {
     expect(JSON.stringify(args[1])).toBe(unsubscribeRequest);
   });
 
+  it('can set update command message handler for a parseWebSocket', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    // Register mock connect/subscribe/unsubscribe handler for the server
+    spyOn(parseLiveQueryServer, '_handleUpdateSubscription').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleUnsubscribe').and.callThrough();
+    spyOn(parseLiveQueryServer, '_handleSubscribe').and.callThrough();
+
+    // Make mock parseWebsocket
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Check updateRequest request
+    var updateRequest = '{"op":"update"}';
+    // Trigger message event
+    parseWebSocket.emit('message', updateRequest);
+    // Make sure _handleUnsubscribe is called
+    var args = parseLiveQueryServer._handleUpdateSubscription.calls.mostRecent().args;
+    expect(args[0]).toBe(parseWebSocket);
+    expect(JSON.stringify(args[1])).toBe(updateRequest);
+    expect(parseLiveQueryServer._handleUnsubscribe).toHaveBeenCalled();
+    const unsubArgs = parseLiveQueryServer._handleUnsubscribe.calls.mostRecent().args;
+    expect(unsubArgs.length).toBe(3);
+    expect(unsubArgs[2]).toBe(false);
+    expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
+  });
+
   it('can set unknown command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Make mock parseWebsocket
@@ -363,6 +395,28 @@ describe('ParseLiveQueryServer', function() {
     // Trigger disconnect event
     parseWebSocket.emit('disconnect');
   });
+
+  it('can forward event to cloud code', function() {
+    const cloudCodeHandler = {
+      handler: () => {}
+    }
+    const spy = spyOn(cloudCodeHandler, 'handler').and.callThrough();
+    Parse.Cloud.onLiveQueryEvent(cloudCodeHandler.handler);
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+    parseWebSocket.clientId = 1;
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Make sure we do not crash
+    // Trigger disconnect event
+    parseWebSocket.emit('disconnect');
+    expect(spy).toHaveBeenCalled();
+    // call for ws_connect, another for ws_disconnect 
+    expect(spy.calls.count()).toBe(2);
+  });
+
 
   // TODO: Test server can set disconnect command message handler for a parseWebSocket
 
@@ -423,7 +477,7 @@ describe('ParseLiveQueryServer', function() {
       key: 'value',
       className: testClassName
     });
-   // Make mock message
+    // Make mock message
     var message = {
       currentParseObject: parseObject
     };
@@ -504,7 +558,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a enter, we need original match return false
     // and the current match return true
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -538,7 +592,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -574,7 +628,7 @@ describe('ParseLiveQueryServer', function() {
     // In order to mimic a leave, we need original match return true
     // and the current match return false
     var counter = 0;
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -608,7 +662,7 @@ describe('ParseLiveQueryServer', function() {
     var requestId = 2;
     addMockSubscription(parseLiveQueryServer, clientId, requestId);
     // Mock _matchesSubscription to return matching
-    parseLiveQueryServer._matchesSubscription = function(parseObject, subscription){
+    parseLiveQueryServer._matchesSubscription = function(parseObject){
       if (!parseObject) {
         return false;
       }
@@ -717,7 +771,6 @@ describe('ParseLiveQueryServer', function() {
     };
     var requestId = 0;
 
-    var isChecked = false;
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
       expect(isMatched).toBe(false);
       done();
@@ -887,7 +940,7 @@ describe('ParseLiveQueryServer', function() {
 
     spyOn(Parse, "Query").and.callFake(function(){
       return {
-        equalTo(relation, value) {
+        equalTo() {
           // Nothing to do here
         },
         find() {
@@ -900,7 +953,7 @@ describe('ParseLiveQueryServer', function() {
         }
       }
     });
-      
+
     parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
       expect(isMatched).toBe(false);
       done();
@@ -923,7 +976,7 @@ describe('ParseLiveQueryServer', function() {
 
     spyOn(Parse, "Query").and.callFake(function(){
       return {
-        equalTo(relation, value) {
+        equalTo() {
           // Nothing to do here
         },
         find() {
@@ -988,6 +1041,89 @@ describe('ParseLiveQueryServer', function() {
     }
 
     expect(parseLiveQueryServer._validateKeys(request, parseLiveQueryServer.keyPairs)).toBeTruthy();
+  });
+
+  it('can validate client has master key when valid', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer({}, {
+      keyPairs: {
+        masterKey: 'test'
+      }
+    });
+    var request = {
+      masterKey: 'test'
+    };
+
+    expect(parseLiveQueryServer._hasMasterKey(request, parseLiveQueryServer.keyPairs)).toBeTruthy();
+  });
+
+  it('can validate client doesn\'t have master key when invalid', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer({}, {
+      keyPairs: {
+        masterKey: 'test'
+      }
+    });
+    var request = {
+      masterKey: 'notValid'
+    };
+
+    expect(parseLiveQueryServer._hasMasterKey(request, parseLiveQueryServer.keyPairs)).not.toBeTruthy();
+  });
+
+  it('can validate client doesn\'t have master key when not provided', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer({}, {
+      keyPairs: {
+        masterKey: 'test'
+      }
+    });
+
+    expect(parseLiveQueryServer._hasMasterKey({}, parseLiveQueryServer.keyPairs)).not.toBeTruthy();
+  });
+
+  it('can validate client doesn\'t have master key when validKeyPairs is empty', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer({}, {});
+    var request = {
+      masterKey: 'test'
+    };
+
+    expect(parseLiveQueryServer._hasMasterKey(request, parseLiveQueryServer.keyPairs)).not.toBeTruthy();
+  });
+
+  it('will match non-public ACL when client has master key', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+      }),
+      hasMasterKey: true
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(true);
+      done();
+    });
+
+  });
+
+  it('won\'t match non-public ACL when client has no master key', function(done){
+
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    var acl = new Parse.ACL();
+    acl.setPublicReadAccess(false);
+    var client = {
+      getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+      }),
+      hasMasterKey: false
+    };
+    var requestId = 0;
+
+    parseLiveQueryServer._matchesACL(acl, client, requestId).then(function(isMatched) {
+      expect(isMatched).toBe(false);
+      done();
+    });
+
   });
 
   afterEach(function(){

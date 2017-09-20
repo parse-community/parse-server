@@ -2,18 +2,16 @@
 // It would probably be better to refactor them into different files.
 'use strict';
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 var request = require('request');
 const rp = require('request-promise');
 const Parse = require("parse/node");
-let Config = require('../src/Config');
+const Config = require('../src/Config');
 const SchemaController = require('../src/Controllers/SchemaController');
 var TestUtils = require('../src/TestUtils');
-const deepcopy = require('deepcopy');
 
 const userSchema = SchemaController.convertSchemaToAdapterSchema({ className: '_User', fields: Object.assign({}, SchemaController.defaultColumns._Default, SchemaController.defaultColumns._User) });
 
-describe_only_db('mongo')('miscellaneous', () => {
+describe_only_db('mongo')('miscellaneous', () => {
   it('test rest_create_app', function(done) {
     var appId;
     Parse._request('POST', 'rest_create_app').then((res) => {
@@ -25,7 +23,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      let config = new Config(appId);
+      const config = new Config(appId);
       return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
@@ -85,43 +83,43 @@ describe('miscellaneous', function() {
   it('fail to create a duplicate username', done => {
     let numCreated = 0;
     let numFailed = 0;
-    let p1 = createTestUser();
-    p1.then(user => {
+    const p1 = createTestUser();
+    p1.then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
     })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-    });
-    let p2 = createTestUser();
-    p2.then(user => {
+      .catch(error => {
+        numFailed++;
+        expect(numFailed).toEqual(1);
+        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      });
+    const p2 = createTestUser();
+    p2.then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
     })
-    .catch(error => {
-      numFailed++;
-      expect(numFailed).toEqual(1);
-      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-    });
+      .catch(error => {
+        numFailed++;
+        expect(numFailed).toEqual(1);
+        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+      });
     Parse.Promise.when([p1, p2])
-    .then(() => {
-      fail('one of the users should not have been created');
-      done();
-    })
-    .catch(done);
+      .then(() => {
+        fail('one of the users should not have been created');
+        done();
+      })
+      .catch(done);
   });
 
   it('ensure that email is uniquely indexed', done => {
     let numFailed = 0;
     let numCreated = 0;
-    let user1 = new Parse.User();
+    const user1 = new Parse.User();
     user1.setPassword('asdf');
     user1.setUsername('u1');
     user1.setEmail('dupe@dupe.dupe');
-    let p1 = user1.signUp();
-    p1.then(user => {
+    const p1 = user1.signUp();
+    p1.then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
     }, error => {
@@ -130,12 +128,12 @@ describe('miscellaneous', function() {
       expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
     });
 
-    let user2 = new Parse.User();
+    const user2 = new Parse.User();
     user2.setPassword('asdf');
     user2.setUsername('u2');
     user2.setEmail('dupe@dupe.dupe');
-    let p2 = user2.signUp();
-    p2.then(user => {
+    const p2 = user2.signUp();
+    p2.then(() => {
       numCreated++;
       expect(numCreated).toEqual(1);
     }, error => {
@@ -145,97 +143,97 @@ describe('miscellaneous', function() {
     });
 
     Parse.Promise.when([p1, p2])
-    .then(() => {
-      fail('one of the users should not have been created');
-      done();
-    })
-    .catch(done);
+      .then(() => {
+        fail('one of the users should not have been created');
+        done();
+      })
+      .catch(done);
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    let config = new Config('test');
+    const config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
-    .then(() => config.database.adapter.createClass('_User', userSchema))
-    .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'x', username: 'u' }).catch(fail))
-    .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'y', username: 'u' }).catch(fail))
+      .then(() => config.database.adapter.createClass('_User', userSchema))
+      .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'x', username: 'u' }).catch(fail))
+      .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'y', username: 'u' }).catch(fail))
     // Create a new server to try to recreate the unique indexes
-    .then(reconfigureServer)
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('zxcv');
-      return user.signUp().catch(fail);
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('u');
-      return user.signUp()
-    })
-    .then(result => {
-      fail('should not have been able to sign up');
-      done();
-    })
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
-      done();
-    })
+      .then(reconfigureServer)
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('zxcv');
+        return user.signUp().catch(fail);
+      })
+      .then(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('u');
+        return user.signUp()
+      })
+      .then(() => {
+        fail('should not have been able to sign up');
+        done();
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.USERNAME_TAKEN);
+        done();
+      })
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    let config = new Config('test');
+    const config = new Config('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
-    .then(() => config.database.adapter.createClass('_User', userSchema))
-    .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'x', email: 'a@b.c' }))
-    .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'y', email: 'a@b.c' }))
-    .then(reconfigureServer)
-    .catch(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('qqq');
-      user.setEmail('unique@unique.unique');
-      return user.signUp().catch(fail);
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('www');
-      user.setEmail('a@b.c');
-      return user.signUp()
-    })
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
-      done();
-    });
+      .then(() => config.database.adapter.createClass('_User', userSchema))
+      .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'x', email: 'a@b.c' }))
+      .then(() => config.database.adapter.createObject('_User', userSchema, { objectId: 'y', email: 'a@b.c' }))
+      .then(reconfigureServer)
+      .catch(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('qqq');
+        user.setEmail('unique@unique.unique');
+        return user.signUp().catch(fail);
+      })
+      .then(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('www');
+        user.setEmail('a@b.c');
+        return user.signUp()
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.EMAIL_TAKEN);
+        done();
+      });
   });
 
-it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
-    let config = new Config('test');
+  it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
+    const config = new Config('test');
     config.database.adapter.addFieldIfNotExists('_User', 'randomField', { type: 'String' })
-    .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('1');
-      user.setEmail('1@b.c');
-      user.set('randomField', 'a');
-      return user.signUp()
-    })
-    .then(() => {
-      let user = new Parse.User();
-      user.setPassword('asdf');
-      user.setUsername('2');
-      user.setEmail('2@b.c');
-      user.set('randomField', 'a');
-      return user.signUp()
-    })
-    .catch(error => {
-      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
-      done();
-    });
+      .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
+      .then(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('1');
+        user.setEmail('1@b.c');
+        user.set('randomField', 'a');
+        return user.signUp()
+      })
+      .then(() => {
+        const user = new Parse.User();
+        user.setPassword('asdf');
+        user.setUsername('2');
+        user.setEmail('2@b.c');
+        user.set('randomField', 'a');
+        return user.signUp()
+      })
+      .catch(error => {
+        expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+        done();
+      });
   });
 
   it('succeed in logging in', function(done) {
@@ -267,15 +265,15 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       user.increment('foo');
       return user.save();
     }).then(() => Parse.User.logOut())
-    .then(() => Parse.User.logIn('test', 'moon-y'))
-    .then((user) => {
-      expect(user.get('foo')).toEqual(2);
-      Parse.User.logOut()
-      .then(done);
-    }, (error) => {
-      fail(JSON.stringify(error));
-      done();
-    });
+      .then(() => Parse.User.logIn('test', 'moon-y'))
+      .then((user) => {
+        expect(user.get('foo')).toEqual(2);
+        Parse.User.logOut()
+          .then(done);
+      }, (error) => {
+        fail(JSON.stringify(error));
+        done();
+      });
   });
 
   it('save various data types', function(done) {
@@ -376,7 +374,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
-      let object = req.object;
+      const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
       if (triggerTime == 0) {
@@ -399,7 +397,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       res.success();
     });
 
-    let obj = new Parse.Object('GameScore');
+    const obj = new Parse.Object('GameScore');
     obj.set('foo', 'bar');
     obj.set('fooAgain', 'barAgain');
     obj.save().then(() => {
@@ -419,13 +417,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
-      let object = req.object;
+      const object = req.object;
       object.set('foo', 'bar');
       triggerTime++;
       res.success(object);
     });
 
-    let obj = new Parse.Object('GameScore');
+    const obj = new Parse.Object('GameScore');
     obj.set('foo', 'baz');
     obj.save().then(() => {
       expect(triggerTime).toBe(1);
@@ -441,10 +439,10 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', (req, res) => {
-      let object = req.object;
+      const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
       expect(object.get('fooAgain')).toEqual('barAgain');
-      let originalObject = req.original;
+      const originalObject = req.original;
       if (triggerTime == 0) {
         // No id/createdAt/updatedAt
         expect(object.id).toBeUndefined();
@@ -474,7 +472,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       res.success();
     });
 
-    let obj = new Parse.Object('GameScore');
+    const obj = new Parse.Object('GameScore');
     obj.set('foo', 'bar');
     obj.set('fooAgain', 'barAgain');
     obj.save().then(() => {
@@ -492,13 +490,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('pointer mutation properly saves object', done => {
-    let className = 'GameScore';
+    const className = 'GameScore';
 
     Parse.Cloud.beforeSave(className, (req, res) => {
-      let object = req.object;
+      const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
 
-      let child = object.get('child');
+      const child = object.get('child');
       expect(child instanceof Parse.Object).toBeTruthy();
       child.set('a', 'b');
       child.save().then(() => {
@@ -506,20 +504,20 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       });
     });
 
-    let obj = new Parse.Object(className);
+    const obj = new Parse.Object(className);
     obj.set('foo', 'bar');
 
-    let child = new Parse.Object('Child');
+    const child = new Parse.Object('Child');
     child.save().then(() => {
       obj.set('child', child);
       return obj.save();
     }).then(() => {
-      let query = new Parse.Query(className);
+      const query = new Parse.Query(className);
       query.include('child');
       return query.get(obj.id).then(objAgain => {
         expect(objAgain.get('foo')).toEqual('bar');
 
-        let childAgain = objAgain.get('child');
+        const childAgain = objAgain.get('child');
         expect(childAgain instanceof Parse.Object).toBeTruthy();
         expect(childAgain.get('a')).toEqual('b');
 
@@ -533,25 +531,25 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
-  it('pointer reassign is working properly (#1288)', (done) => {
-    Parse.Cloud.beforeSave('GameScore', (req, res) => {
+  it('pointer reassign is working properly (#1288)', (done) => {
+    Parse.Cloud.beforeSave('GameScore', (req, res) => {
 
       var obj = req.object;
       if (obj.get('point')) {
         return res.success();
       }
-       var TestObject1 = Parse.Object.extend('TestObject1');
-       var newObj = new TestObject1({'key1': 1});
+      var TestObject1 = Parse.Object.extend('TestObject1');
+      var newObj = new TestObject1({'key1': 1});
 
-       return newObj.save().then((newObj) => {
-         obj.set('point' , newObj);
-         res.success();
-       });
+      return newObj.save().then((newObj) => {
+        obj.set('point' , newObj);
+        res.success();
+      });
     });
     var pointId;
     var obj = new Parse.Object('GameScore');
     obj.set('foo', 'bar');
-    obj.save().then(() => {
+    obj.save().then(() => {
       expect(obj.get('point')).not.toBeUndefined();
       pointId = obj.get('point').id;
       expect(pointId).not.toBeUndefined();
@@ -705,9 +703,9 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     var triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
-      let object = req.object;
+      const object = req.object;
       expect(object instanceof Parse.Object).toBeTruthy();
-      let originalObject = req.original;
+      const originalObject = req.original;
       if (triggerTime == 0) {
         // Create
         expect(object.get('yolo')).toEqual(1);
@@ -742,13 +740,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.beforeSave('GameScore', function(req, res) {
-      let object = req.object;
+      const object = req.object;
       if (triggerTime == 0) {
-        let acl = object.getACL();
+        const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeTruthy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else if (triggerTime == 1) {
-        let acl = object.getACL();
+        const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else {
@@ -758,8 +756,8 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       res.success();
     });
 
-    let obj = new Parse.Object('GameScore');
-    let acl = new Parse.ACL();
+    const obj = new Parse.Object('GameScore');
+    const acl = new Parse.ACL();
     acl.setPublicReadAccess(true);
     acl.setPublicWriteAccess(true);
     obj.setACL(acl);
@@ -781,13 +779,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     let triggerTime = 0;
     // Register a mock beforeSave hook
     Parse.Cloud.afterSave('GameScore', function(req, res) {
-      let object = req.object;
+      const object = req.object;
       if (triggerTime == 0) {
-        let acl = object.getACL();
+        const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeTruthy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else if (triggerTime == 1) {
-        let acl = object.getACL();
+        const acl = object.getACL();
         expect(acl.getPublicReadAccess()).toBeFalsy();
         expect(acl.getPublicWriteAccess()).toBeTruthy();
       } else {
@@ -797,8 +795,8 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       res.success();
     });
 
-    let obj = new Parse.Object('GameScore');
-    let acl = new Parse.ACL();
+    const obj = new Parse.Object('GameScore');
+    const acl = new Parse.ACL();
     acl.setPublicReadAccess(true);
     acl.setPublicWriteAccess(true);
     obj.setACL(acl);
@@ -816,9 +814,9 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
-  it('should return the updated fields on PUT', done => {
-    let obj = new Parse.Object('GameScore');
-    obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(( ) => {
+  it('should return the updated fields on PUT', done => {
+    const obj = new Parse.Object('GameScore');
+    obj.save({a:'hello', c: 1, d: ['1'], e:['1'], f:['1','2']}).then(() => {
       var headers = {
         'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
@@ -827,7 +825,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       };
       request.put({
         headers: headers,
-        url: 'http://localhost:8378/1/classes/GameScore/'+obj.id,
+        url: 'http://localhost:8378/1/classes/GameScore/' + obj.id,
         body: JSON.stringify({
           a: 'b',
           c: {"__op":"Increment","amount":2},
@@ -842,13 +840,13 @@ it('ensure that if you try to sign up a user with a unique username and email, b
           expect(body.a).toBeUndefined();
           expect(body.c).toEqual(3); // 2+1
           expect(body.d.length).toBe(2);
-          expect(body.d.indexOf('1') > -1).toBe(true);
-          expect(body.d.indexOf('2') > -1).toBe(true);
+          expect(body.d.indexOf('1') > -1).toBe(true);
+          expect(body.d.indexOf('2') > -1).toBe(true);
           expect(body.e.length).toBe(2);
-          expect(body.e.indexOf('1') > -1).toBe(true);
-          expect(body.e.indexOf('2') > -1).toBe(true);
+          expect(body.e.indexOf('1') > -1).toBe(true);
+          expect(body.e.indexOf('2') > -1).toBe(true);
           expect(body.f.length).toBe(1);
-          expect(body.f.indexOf('1') > -1).toBe(true);
+          expect(body.f.indexOf('1') > -1).toBe(true);
           // return nothing on other self
           expect(body.selfThing).toBeUndefined();
           // updatedAt is always set
@@ -858,7 +856,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
         }
         done();
       });
-    }).fail((err) => {
+    }).fail(() => {
       fail('Should not fail');
       done();
     })
@@ -869,7 +867,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     Parse.Cloud.define('willFail', (req, res) => {
       res.error('noway');
     });
-    Parse.Cloud.run('willFail').then((s) => {
+    Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
       done();
     }, (e) => {
@@ -884,7 +882,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     Parse.Cloud.define('willFail', (req, res) => {
       res.error(999, 'noway');
     });
-    Parse.Cloud.run('willFail').then((s) => {
+    Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
       done();
     }, (e) => {
@@ -899,7 +897,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     Parse.Cloud.define('willFail', (req, res) => {
       res.error('noway');
     });
-    Parse.Cloud.run('willFail').then((s) => {
+    Parse.Cloud.run('willFail').then(() => {
       fail('Should not have succeeded.');
       done();
     }, (e) => {
@@ -933,7 +931,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       headers: headers,
       url: 'http://localhost:8378/1/classes/GameScore',
       body: JSON.stringify({ a: 'b' })
-    }, (error, response, body) => {
+    }, (error) => {
       expect(error).toBe(null);
       expect(triggerTime).toEqual(2);
       done();
@@ -969,7 +967,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       request.del({
         headers: headers,
         url: 'http://localhost:8378/1/classes/GameScore/' + JSON.parse(body).objectId
-      }, (error, response, body) => {
+      }, (error) => {
         expect(error).toBe(null);
         expect(triggerTime).toEqual(2);
         done();
@@ -1013,7 +1011,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       return request.params.success === 100;
     });
 
-    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then((s) => {
+    Parse.Cloud.run('functionWithParameterValidationFailure', {"success":500}).then(() => {
       fail('Validation should not have succeeded');
       done();
     }, (e) => {
@@ -1030,16 +1028,16 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
 
     Parse.Cloud.run('func', {nullParam: null})
-    .then(() => {
-      done()
-    }, e => {
-      fail('cloud code call failed');
-      done();
-    });
+      .then(() => {
+        done()
+      }, () => {
+        fail('cloud code call failed');
+        done();
+      });
   });
 
   it('can handle date params in cloud functions (#2214)', done => {
-    let date = new Date();
+    const date = new Date();
     Parse.Cloud.define('dateFunc', (request, response) => {
       expect(request.params.date.__type).toEqual('Date');
       expect(request.params.date.iso).toEqual(date.toISOString());
@@ -1047,12 +1045,12 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
 
     Parse.Cloud.run('dateFunc', {date: date})
-    .then(() => {
-      done()
-    }, e => {
-      fail('cloud code call failed');
-      done();
-    });
+      .then(() => {
+        done()
+      }, () => {
+        fail('cloud code call failed');
+        done();
+      });
   });
 
   it('fails on invalid client key', done => {
@@ -1124,38 +1122,38 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('fails on invalid function', done => {
-    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then((s) => {
+    Parse.Cloud.run('somethingThatDoesDefinitelyNotExist').then(() => {
       fail('This should have never suceeded');
       done();
     }, (e) => {
       expect(e.code).toEqual(Parse.Error.SCRIPT_FAILED);
-      expect(e.message).toEqual('Invalid function.');
+      expect(e.message).toEqual('Invalid function: "somethingThatDoesDefinitelyNotExist"');
       done();
     });
   });
 
   it('dedupes an installation properly and returns updatedAt', (done) => {
-    let headers = {
+    const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
     };
-    let data = {
+    const data = {
       'installationId': 'lkjsahdfkjhsdfkjhsdfkjhsdf',
       'deviceType': 'embedded'
     };
-    let requestOptions = {
+    const requestOptions = {
       headers: headers,
       url: 'http://localhost:8378/1/installations',
       body: JSON.stringify(data)
     };
     request.post(requestOptions, (error, response, body) => {
       expect(error).toBe(null);
-      let b = JSON.parse(body);
+      const b = JSON.parse(body);
       expect(typeof b.objectId).toEqual('string');
       request.post(requestOptions, (error, response, body) => {
         expect(error).toBe(null);
-        let b = JSON.parse(body);
+        const b = JSON.parse(body);
         expect(typeof b.updatedAt).toEqual('string');
         done();
       });
@@ -1163,27 +1161,27 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('android login providing empty authData block works', (done) => {
-    let headers = {
+    const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
     };
-    let data = {
+    const data = {
       username: 'pulse1989',
       password: 'password1234',
       authData: {}
     };
-    let requestOptions = {
+    const requestOptions = {
       headers: headers,
       url: 'http://localhost:8378/1/users',
       body: JSON.stringify(data)
     };
-    request.post(requestOptions, (error, response, body) => {
+    request.post(requestOptions, (error) => {
       expect(error).toBe(null);
       requestOptions.url = 'http://localhost:8378/1/login';
       request.get(requestOptions, (error, response, body) => {
         expect(error).toBe(null);
-        let b = JSON.parse(body);
+        const b = JSON.parse(body);
         expect(typeof b['sessionToken']).toEqual('string');
         done();
       });
@@ -1191,84 +1189,84 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('gets relation fields', (done) => {
-    let object = new Parse.Object('AnObject');
-    let relatedObject = new Parse.Object('RelatedObject');
-    Parse.Object.saveAll([object, relatedObject]).then(() => {
+    const object = new Parse.Object('AnObject');
+    const relatedObject = new Parse.Object('RelatedObject');
+    Parse.Object.saveAll([object, relatedObject]).then(() => {
       object.relation('related').add(relatedObject);
       return object.save();
-    }).then(() => {
-      let headers = {
+    }).then(() => {
+      const headers = {
         'Content-Type': 'application/json',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
       };
-      let requestOptions = {
+      const requestOptions = {
         headers: headers,
         url: 'http://localhost:8378/1/classes/AnObject',
         json: true
       };
       request.get(requestOptions, (err, res, body) => {
         expect(body.results.length).toBe(1);
-        let result = body.results[0];
+        const result = body.results[0];
         expect(result.related).toEqual({
           __type: "Relation",
           className: 'RelatedObject'
         })
         done();
       });
-    }).catch((err) => {
+    }).catch((err) => {
       jfail(err);
       done();
     })
   });
 
-  it('properly returns incremented values (#1554)', (done) => {
-      let headers = {
-        'Content-Type': 'application/json',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-REST-API-Key': 'rest'
-      };
-      let requestOptions = {
-        headers: headers,
-        url: 'http://localhost:8378/1/classes/AnObject',
-        json: true
-      };
-     let object = new Parse.Object('AnObject');;
+  it('properly returns incremented values (#1554)', (done) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    const requestOptions = {
+      headers: headers,
+      url: 'http://localhost:8378/1/classes/AnObject',
+      json: true
+    };
+    const object = new Parse.Object('AnObject');
 
-     function runIncrement(amount) {
-       let options = Object.assign({}, requestOptions, {
-         body: {
-           "key": {
+    function runIncrement(amount) {
+      const options = Object.assign({}, requestOptions, {
+        body: {
+          "key": {
             __op: 'Increment',
             amount: amount
-           }
-          },
-         url: 'http://localhost:8378/1/classes/AnObject/'+object.id
-       })
-       return new Promise((resolve, reject) => {
-         request.put(options, (err, res, body)  => {
-           if (err) {
-             reject(err);
-           } else {
-             resolve(body);
-           }
-         });
-       })
-     }
+          }
+        },
+        url: 'http://localhost:8378/1/classes/AnObject/' + object.id
+      })
+      return new Promise((resolve, reject) => {
+        request.put(options, (err, res, body)  => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(body);
+          }
+        });
+      })
+    }
 
-     object.save().then(() => {
-       return runIncrement(1);
-     }).then((res) => {
-       expect(res.key).toBe(1);
-       return runIncrement(-1);
-     }).then((res) => {
-       expect(res.key).toBe(0);
-       done();
-     })
+    object.save().then(() => {
+      return runIncrement(1);
+    }).then((res) => {
+      expect(res.key).toBe(1);
+      return runIncrement(-1);
+    }).then((res) => {
+      expect(res.key).toBe(0);
+      done();
+    })
   })
 
   it('ignores _RevocableSession "header" send by JS SDK', (done) => {
-    let object = new Parse.Object('AnObject');
+    const object = new Parse.Object('AnObject');
     object.set('a', 'b');
     object.save().then(() => {
       request.post({
@@ -1287,7 +1285,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
         expect(body.error).toBeUndefined();
         expect(body.results).not.toBeUndefined();
         expect(body.results.length).toBe(1);
-        let result = body.results[0];
+        const result = body.results[0];
         expect(result.a).toBe('b');
         done();
       })
@@ -1295,132 +1293,132 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('doesnt convert interior keys of objects that use special names', done => {
-    let obj = new Parse.Object('Obj');
+    const obj = new Parse.Object('Obj');
     obj.set('val', { createdAt: 'a', updatedAt: 1 });
     obj.save()
-    .then(obj => new Parse.Query('Obj').get(obj.id))
-    .then(obj => {
-      expect(obj.get('val').createdAt).toEqual('a');
-      expect(obj.get('val').updatedAt).toEqual(1);
-      done();
-    });
+      .then(obj => new Parse.Query('Obj').get(obj.id))
+      .then(obj => {
+        expect(obj.get('val').createdAt).toEqual('a');
+        expect(obj.get('val').updatedAt).toEqual(1);
+        done();
+      });
   });
 
-  it_exclude_dbs(['postgres'])('bans interior keys containing . or $', done => {
+  it('bans interior keys containing . or $', done => {
     new Parse.Object('Obj').save({innerObj: {'key with a $': 'fails'}})
-    .then(() => {
-      fail('should not succeed')
-    }, error => {
-      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
-      return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
-    })
-    .then(() => {
-      fail('should not succeed')
-    }, error => {
-      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
-      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
-    })
-    .then(() => {
-      fail('should not succeed')
-    }, error => {
-      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
-      return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
-    })
-    .then(() => {
-      fail('should not succeed')
-      done();
-    }, error => {
-      expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
-      done();
-    });
+      .then(() => {
+        fail('should not succeed')
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+        return new Parse.Object('Obj').save({innerObj: {'key with a .': 'fails'}});
+      })
+      .then(() => {
+        fail('should not succeed')
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+        return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with $': 'fails'}}});
+      })
+      .then(() => {
+        fail('should not succeed')
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+        return new Parse.Object('Obj').save({innerObj: {innerInnerObj: {'key with .': 'fails'}}});
+      })
+      .then(() => {
+        fail('should not succeed')
+        done();
+      }, error => {
+        expect(error.code).toEqual(Parse.Error.INVALID_NESTED_KEY);
+        done();
+      });
   });
 
   it('does not change inner object keys named _auth_data_something', done => {
     new Parse.Object('O').save({ innerObj: {_auth_data_facebook: 7}})
-    .then(object => new Parse.Query('O').get(object.id))
-    .then(object => {
-      expect(object.get('innerObj')).toEqual({_auth_data_facebook: 7});
-      done();
-    });
+      .then(object => new Parse.Query('O').get(object.id))
+      .then(object => {
+        expect(object.get('innerObj')).toEqual({_auth_data_facebook: 7});
+        done();
+      });
   });
 
   it('does not change inner object key names _p_somethign', done => {
     new Parse.Object('O').save({ innerObj: {_p_data: 7}})
-    .then(object => new Parse.Query('O').get(object.id))
-    .then(object => {
-      expect(object.get('innerObj')).toEqual({_p_data: 7});
-      done();
-    });
+      .then(object => new Parse.Query('O').get(object.id))
+      .then(object => {
+        expect(object.get('innerObj')).toEqual({_p_data: 7});
+        done();
+      });
   });
 
   it('does not change inner object key names _rperm, _wperm', done => {
     new Parse.Object('O').save({ innerObj: {_rperm: 7, _wperm: 8}})
-    .then(object => new Parse.Query('O').get(object.id))
-    .then(object => {
-      expect(object.get('innerObj')).toEqual({_rperm: 7, _wperm: 8});
-      done();
-    });
+      .then(object => new Parse.Query('O').get(object.id))
+      .then(object => {
+        expect(object.get('innerObj')).toEqual({_rperm: 7, _wperm: 8});
+        done();
+      });
   });
 
   it('does not change inner objects if the key has the same name as a geopoint field on the class, and the value is an array of length 2, or if the key has the same name as a file field on the class, and the value is a string', done => {
-    let file = new Parse.File('myfile.txt', { base64: 'eAo=' });
+    const file = new Parse.File('myfile.txt', { base64: 'eAo=' });
     file.save()
-    .then(f => {
-      let obj = new Parse.Object('O');
-      obj.set('fileField', f);
-      obj.set('geoField', new Parse.GeoPoint(0, 0));
-      obj.set('innerObj', {
-        fileField: "data",
-        geoField: [1,2],
+      .then(f => {
+        const obj = new Parse.Object('O');
+        obj.set('fileField', f);
+        obj.set('geoField', new Parse.GeoPoint(0, 0));
+        obj.set('innerObj', {
+          fileField: "data",
+          geoField: [1,2],
+        });
+        return obj.save();
+      })
+      .then(object => object.fetch())
+      .then(object => {
+        expect(object.get('innerObj')).toEqual({
+          fileField: "data",
+          geoField: [1,2],
+        });
+        done();
+      }).catch((e) => {
+        jfail(e);
+        done();
       });
-      return obj.save();
-    })
-    .then(object => object.fetch())
-    .then(object => {
-      expect(object.get('innerObj')).toEqual({
-        fileField: "data",
-        geoField: [1,2],
-      });
-      done();
-    }).catch((e) => {
-      jfail(e);
-      done();
-    });
   });
 
   it('purge all objects in class', (done) => {
-    let object = new Parse.Object('TestObject');
+    const object = new Parse.Object('TestObject');
     object.set('foo', 'bar');
-    let object2 = new Parse.Object('TestObject');
+    const object2 = new Parse.Object('TestObject');
     object2.set('alice', 'wonderland');
     Parse.Object.saveAll([object, object2])
-    .then(() => {
-      let query = new Parse.Query(TestObject);
-      return query.count()
-    }).then((count) => {
-      expect(count).toBe(2);
-      let headers = {
-        'Content-Type': 'application/json',
-        'X-Parse-Application-Id': 'test',
-        'X-Parse-Master-Key': 'test'
-      };
-      request.del({
-        headers: headers,
-        url: 'http://localhost:8378/1/purge/TestObject',
-        json: true
-      }, (err, res, body) => {
-        expect(err).toBe(null);
-        let query = new Parse.Query(TestObject);
-        return query.count().then((count) => {
-          expect(count).toBe(0);
-          done();
+      .then(() => {
+        const query = new Parse.Query(TestObject);
+        return query.count()
+      }).then((count) => {
+        expect(count).toBe(2);
+        const headers = {
+          'Content-Type': 'application/json',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test'
+        };
+        request.del({
+          headers: headers,
+          url: 'http://localhost:8378/1/purge/TestObject',
+          json: true
+        }, (err) => {
+          expect(err).toBe(null);
+          const query = new Parse.Query(TestObject);
+          return query.count().then((count) => {
+            expect(count).toBe(0);
+            done();
+          });
         });
       });
-    });
   });
 
   it('fail on purge all objects in class without master key', (done) => {
-    let headers = {
+    const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
@@ -1430,7 +1428,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
       headers: headers,
       uri: 'http://localhost:8378/1/purge/TestObject',
       json: true
-    }).then(body => {
+    }).then(() => {
       fail('Should not succeed');
     }).catch(err => {
       expect(err.error.error).toEqual('unauthorized: master key is required');
@@ -1439,7 +1437,7 @@ it('ensure that if you try to sign up a user with a unique username and email, b
   });
 
   it('purge all objects in _Role also purge cache', (done) => {
-    let headers = {
+    const headers = {
       'Content-Type': 'application/json',
       'X-Parse-Application-Id': 'test',
       'X-Parse-Master-Key': 'test'
@@ -1447,34 +1445,34 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     var user, object;
     createTestUser().then((x) => {
       user = x;
-      let acl = new Parse.ACL();
+      const acl = new Parse.ACL();
       acl.setPublicReadAccess(true);
       acl.setPublicWriteAccess(false);
-      let role = new Parse.Object('_Role');
+      const role = new Parse.Object('_Role');
       role.set('name', 'TestRole');
       role.setACL(acl);
-      let users = role.relation('users');
+      const users = role.relation('users');
       users.add(user);
       return role.save({}, { useMasterKey: true });
-    }).then((x) => {
-      let query = new Parse.Query('_Role');
+    }).then(() => {
+      const query = new Parse.Query('_Role');
       return query.find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(1);
-      let relation = x[0].relation('users').query();
+      const relation = x[0].relation('users').query();
       return relation.first({ useMasterKey: true });
     }).then((x) => {
       expect(x.id).toEqual(user.id);
       object = new Parse.Object('TestObject');
-      let acl = new Parse.ACL();
+      const acl = new Parse.ACL();
       acl.setPublicReadAccess(false);
       acl.setPublicWriteAccess(false);
       acl.setRoleReadAccess('TestRole', true);
       acl.setRoleWriteAccess('TestRole', true);
       object.setACL(acl);
       return object.save();
-    }).then((x) => {
-      let query = new Parse.Query('TestObject');
+    }).then(() => {
+      const query = new Parse.Query('TestObject');
       return query.find({ sessionToken: user.getSessionToken() });
     }).then((x) => {
       expect(x.length).toEqual(1);
@@ -1484,10 +1482,10 @@ it('ensure that if you try to sign up a user with a unique username and email, b
         uri: 'http://localhost:8378/1/purge/_Role',
         json: true
       });
-    }).then((x) => {
-      let query = new Parse.Query('TestObject');
+    }).then(() => {
+      const query = new Parse.Query('TestObject');
       return query.get(object.id, { sessionToken: user.getSessionToken() });
-    }).then((x) => {
+    }).then(() => {
       fail('Should not succeed');
     }, (e) => {
       expect(e.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
@@ -1495,23 +1493,23 @@ it('ensure that if you try to sign up a user with a unique username and email, b
     });
   });
 
-  it('should not update schema beforeSave #2672', (done) => {
+  it('should not update schema beforeSave #2672', (done) => {
     Parse.Cloud.beforeSave('MyObject', (request, response) => {
       if (request.object.get('secret')) {
-         response.error('cannot set secret here');
-         return;
+        response.error('cannot set secret here');
+        return;
       }
       response.success();
     });
 
-    let object = new Parse.Object('MyObject');
+    const object = new Parse.Object('MyObject');
     object.set('key', 'value');
-    object.save().then(() => {
+    object.save().then(() => {
       return object.save({'secret': 'should not update schema'});
-    }).then(() => {
+    }).then(() => {
       fail();
       done();
-    }, () => {
+    }, () => {
       return rp({
         method: 'GET',
         headers: {
@@ -1521,11 +1519,11 @@ it('ensure that if you try to sign up a user with a unique username and email, b
         uri: 'http://localhost:8378/1/schemas/MyObject',
         json: true
       });
-    }).then((res) => {
-      let fields = res.fields;
+    }).then((res) => {
+      const fields = res.fields;
       expect(fields.secret).toBeUndefined();
       done();
-    }, (err) => {
+    }, (err) => {
       jfail(err);
       done();
     });
@@ -1533,36 +1531,36 @@ it('ensure that if you try to sign up a user with a unique username and email, b
 });
 
 describe_only_db('mongo')('legacy _acl', () => {
-  it('should have _acl when locking down (regression for #2465)', (done) =>  {
-    let headers = {
+  it('should have _acl when locking down (regression for #2465)', (done) =>  {
+    const headers = {
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
     }
     rp({
-        method: 'POST',
-        headers: headers,
-        uri: 'http://localhost:8378/1/classes/Report',
-        body: {
-          ACL: {},
-          name: 'My Report'
-        },
-        json: true
-      }).then(() => {
-        let config = new Config('test');
-        let adapter = config.database.adapter;
-        return adapter._adaptiveCollection("Report")
-          .then(collection => collection.find({}))
-      }).then((results) => {
-        expect(results.length).toBe(1);
-        let result = results[0];
-        expect(result.name).toEqual('My Report');
-        expect(result._wperm).toEqual([]);
-        expect(result._rperm).toEqual([]);
-        expect(result._acl).toEqual({});
-        done();
-      }).catch((err) => {
-        fail(JSON.stringify(err));
-        done();
-      });
+      method: 'POST',
+      headers: headers,
+      uri: 'http://localhost:8378/1/classes/Report',
+      body: {
+        ACL: {},
+        name: 'My Report'
+      },
+      json: true
+    }).then(() => {
+      const config = new Config('test');
+      const adapter = config.database.adapter;
+      return adapter._adaptiveCollection("Report")
+        .then(collection => collection.find({}))
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      const result = results[0];
+      expect(result.name).toEqual('My Report');
+      expect(result._wperm).toEqual([]);
+      expect(result._rperm).toEqual([]);
+      expect(result._acl).toEqual({});
+      done();
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
   });
 });

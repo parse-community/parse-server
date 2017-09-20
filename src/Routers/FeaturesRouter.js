@@ -13,10 +13,10 @@ export class FeaturesRouter extends PromiseRouter {
           delete: true,
         },
         hooks: {
-          create: false,
-          read: false,
-          update: false,
-          delete: false,
+          create: true,
+          read: true,
+          update: true,
+          delete: true,
         },
         cloudCode: {
           jobs: true,
@@ -29,10 +29,11 @@ export class FeaturesRouter extends PromiseRouter {
           from: true,
         },
         push: {
-          immediatePush: req.config.pushController.pushIsAvailable,
-          scheduledPush: false,
-          storedPushData: req.config.pushController.pushIsAvailable,
-          pushAudiences: false,
+          immediatePush: req.config.hasPushSupport,
+          scheduledPush: req.config.hasPushScheduledSupport,
+          storedPushData: req.config.hasPushSupport,
+          pushAudiences: true,
+          localization: true,
         },
         schemas: {
           addField: true,
@@ -47,9 +48,9 @@ export class FeaturesRouter extends PromiseRouter {
       };
 
       return { response: {
-				features: features,
-				parseServerVersion: version,
-			} };
+        features: features,
+        parseServerVersion: version,
+      } };
     });
   }
 }

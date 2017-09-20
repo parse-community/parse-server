@@ -1,19 +1,18 @@
 export class NullCacheAdapter {
 
-  constructor(ctx) {
-  }
+  constructor() {}
 
-  get(key) {
-    return new Promise((resolve, _) => {
+  get() {
+    return new Promise((resolve) => {
       return resolve(null);
     })
   }
 
-  put(key, value, ttl) {
+  put() {
     return Promise.resolve();
   }
 
-  del(key) {
+  del() {
     return Promise.resolve();
   }
 

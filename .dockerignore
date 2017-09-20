@@ -1,0 +1,21 @@
+node_modules
+npm-debug.log
+*.md
+PATENTS
+LICENSE
+Dockerfile
+.dockerignore
+.gitignore
+.travis.yml
+.istanbul.yml
+.git
+.github
+
+# Build folder
+lib/
+
+# Tests
+spec/
+
+# IDEs
+.idea/

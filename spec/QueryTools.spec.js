@@ -226,6 +226,23 @@ describe('matchesQuery', function() {
 
     img.owner.objectId = 'U3';
     expect(matchesQuery(img, q)).toBe(false);
+
+    // pointers in arrays
+    q = new Parse.Query('Image');
+    q.equalTo('owners', u);
+
+    img = {
+      className: 'Image',
+      objectId: 'I1',
+      owners: [{
+        className: '_User',
+        objectId: 'U2'
+      }]
+    };
+    expect(matchesQuery(img, q)).toBe(true);
+
+    img.owners[0].objectId = 'U3';
+    expect(matchesQuery(img, q)).toBe(false);
   });
 
   it('matches on inequalities', function() {
@@ -343,7 +360,16 @@ describe('matchesQuery', function() {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(40, 40)
     };
+    var ptUndefined = {
+      id: new Id('Checkin', 'C1')
+    };
+    var ptNull = {
+      id: new Id('Checkin', 'C1'),
+      location: null
+    };
     expect(matchesQuery(pt, q)).toBe(true);
+    expect(matchesQuery(ptUndefined, q)).toBe(false);
+    expect(matchesQuery(ptNull, q)).toBe(false);
 
     q = new Parse.Query('Checkin');
     pt.location = new Parse.GeoPoint(40, 40);
@@ -367,6 +393,17 @@ describe('matchesQuery', function() {
       name: 'Santa Clara'
     };
 
+    var noLocation = {
+      id: new Id('Checkin', 'C2'),
+      name: 'Santa Clara'
+    };
+
+    var nullLocation = {
+      id: new Id('Checkin', 'C2'),
+      location: null,
+      name: 'Santa Clara'
+    };
+
     var q = new Parse.Query('Checkin').withinGeoBox(
       'location',
       new Parse.GeoPoint(37.708813, -122.526398),
@@ -375,7 +412,8 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(true);
     expect(matchesQuery(santaClara, q)).toBe(false);
-
+    expect(matchesQuery(noLocation, q)).toBe(false);
+    expect(matchesQuery(nullLocation, q)).toBe(false);
     // Invalid rectangles
     q = new Parse.Query('Checkin').withinGeoBox(
       'location',
@@ -394,5 +432,67 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(false);
     expect(matchesQuery(santaClara, q)).toBe(false);
+  });
+
+  it('matches on subobjects with dot notation', function() {
+    var message = {
+      id: new Id('Message', 'O1'),
+      text: "content",
+      status: {x: "read", y: "delivered"}
+    };
+
+    var q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "read");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.z", "read");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.notEqualTo("status.x", "delivered");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.x");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.exists("status.z");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.exists("nonexistent.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.x");
+    expect(matchesQuery(message, q)).toBe(false);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("status.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.doesNotExist("nonexistent.z");
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.equalTo("status.x", "read");
+    q.doesNotExist("status.y");
+    expect(matchesQuery(message, q)).toBe(false);
+
   });
 });

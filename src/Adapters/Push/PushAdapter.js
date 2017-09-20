@@ -1,3 +1,5 @@
+// @flow
+/*eslint no-unused-vars: "off"*/
 // Push Adapter
 //
 // Allows you to change the push notification mechanism.
@@ -10,13 +12,15 @@
 // android push and APNS for ios push.
 
 export class PushAdapter {
-  send(devices, installations, pushStatus) { }
+  send(body: any, installations: any[], pushStatus: any): ?Promise<*> {}
 
   /**
    * Get an array of valid push types.
    * @returns {Array} An array of valid push types
    */
-  getValidPushTypes() {}
+  getValidPushTypes(): string[] {
+    return []
+  }
 }
 
 export default PushAdapter;

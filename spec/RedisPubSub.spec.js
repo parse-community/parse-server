@@ -1,4 +1,4 @@
-var RedisPubSub = require('../src/LiveQuery/RedisPubSub').RedisPubSub;
+var RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
 
 describe('RedisPubSub', function() {
 
@@ -10,14 +10,14 @@ describe('RedisPubSub', function() {
   });
 
   it('can create publisher', function() {
-    var publisher = RedisPubSub.createPublisher('redisAddress');
+    RedisPubSub.createPublisher({redisURL: 'redisAddress'});
 
     var redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', { no_ready_check: true });
   });
 
   it('can create subscriber', function() {
-    var subscriber = RedisPubSub.createSubscriber('redisAddress');
+    RedisPubSub.createSubscriber({redisURL: 'redisAddress'});
 
     var redis = require('redis');
     expect(redis.createClient).toHaveBeenCalledWith('redisAddress', { no_ready_check: true });

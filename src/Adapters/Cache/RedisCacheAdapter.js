@@ -1,21 +1,24 @@
 import redis from 'redis';
 import logger from '../../logger';
 
-function debug() {
+const DEFAULT_REDIS_TTL = 30 * 1000; // 30 seconds in milliseconds
+
+function debug() {
   logger.debug.apply(logger, ['RedisCacheAdapter', ...arguments]);
 }
 
 export class RedisCacheAdapter {
 
-  constructor(ctx) {
-    this.client = redis.createClient(ctx);
+  constructor(redisCtx, ttl = DEFAULT_REDIS_TTL) {
+    this.client = redis.createClient(redisCtx);
     this.p = Promise.resolve();
+    this.ttl = ttl;
   }
 
   get(key) {
     debug('get', key);
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
         this.client.get(key, function(err, res) {
           debug('-> get', key, res);
           if(!res) {
@@ -28,14 +31,26 @@ export class RedisCacheAdapter {
     return this.p;
   }
 
-  put(key, value, ttl) {
+  put(key, value, ttl = this.ttl) {
     value = JSON.stringify(value);
     debug('put', key, value, ttl);
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
-        this.client.set(key, value, function(err, res) {
-          resolve();
-        });
+    if (ttl === 0) {
+      return this.p; // ttl of zero is a logical no-op, but redis cannot set expire time of zero
+    }
+    if (ttl < 0 || isNaN(ttl)) {
+      ttl = DEFAULT_REDIS_TTL;
+    }
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
+        if (ttl === Infinity) {
+          this.client.set(key, value, function() {
+            resolve();
+          });
+        } else {
+          this.client.psetex(key, ttl, value, function() {
+            resolve();
+          });
+        }
       });
     });
     return this.p;
@@ -43,9 +58,9 @@ export class RedisCacheAdapter {
 
   del(key) {
     debug('del', key);
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
-        this.client.del(key, function(err, res) {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
+        this.client.del(key, function() {
           resolve();
         });
       });
@@ -55,9 +70,9 @@ export class RedisCacheAdapter {
 
   clear() {
     debug('clear');
-    this.p = this.p.then(() => {
-      return new Promise((resolve, _) => {
-        this.client.flushall(function(err, res) {
+    this.p = this.p.then(() => {
+      return new Promise((resolve) => {
+        this.client.flushdb(function() {
           resolve();
         });
       });

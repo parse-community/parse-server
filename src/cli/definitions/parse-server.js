@@ -8,7 +8,6 @@ import {
   nullParser
 } from '../utils/parsers';
 
-
 export default {
   "appId": {
     env: "PARSE_SERVER_APPLICATION_ID",
@@ -20,11 +19,21 @@ export default {
     help: "Your Parse Master Key",
     required: true
   },
+  "masterKeyIps": {
+    env: "PARSE_SERVER_MASTER_KEY_IPS",
+    help: "Restrict masterKey to be used by only these ips. defaults to [] (allow all ips)",
+    default: []
+  },
   "port": {
-     env: "PORT",
-     help: "The port to run the ParseServer. defaults to 1337.",
-     default: 1337,
-     action: numberParser("port")
+    env: "PORT",
+    help: "The port to run the ParseServer. defaults to 1337.",
+    default: 1337,
+    action: numberParser("port")
+  },
+  "host": {
+    env: "PARSE_SERVER_HOST",
+    help: "The host to serve ParseServer on. defaults to 0.0.0.0",
+    default: '0.0.0.0',
   },
   "databaseURI": {
     env: "PARSE_SERVER_DATABASE_URI",
@@ -76,9 +85,19 @@ export default {
     help: "Configuration for push, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Push",
     action: objectParser
   },
+  "scheduledPush": {
+    env: "PARSE_SERVER_SCHEDULED_PUSH",
+    help: "Configuration for push scheduling. Defaults to false.",
+    action: booleanParser
+  },
   "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
-    help: "Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    action: objectParser
+  },
+  "auth": {
+    env: "PARSE_SERVER_AUTH_PROVIDERS",
+    help: "Configuration for your authentication providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
     action: objectParser
   },
   "fileKey": {
@@ -87,9 +106,15 @@ export default {
   },
   "facebookAppIds": {
     env: "PARSE_SERVER_FACEBOOK_APP_IDS",
-    help: "Comma separated list for your facebook app Ids",
-    type: "list",
-    action: arrayParser
+    help: "[DEPRECATED (use auth option)]",
+    action: function() {
+      throw 'facebookAppIds is deprecated, please use { auth: \
+         {facebook: \
+           { appIds: [] } \
+          }\
+        }\
+      }';
+    }
   },
   "enableAnonymousUsers": {
     env: "PARSE_SERVER_ENABLE_ANON_USERS",
@@ -136,6 +161,11 @@ export default {
     help: "account lockout policy for failed login attempts",
     action: objectParser
   },
+  "passwordPolicy": {
+    env: "PARSE_SERVER_PASSWORD_POLICY",
+    help: "Password policy for enforcing password related rules",
+    action: objectParser
+  },
   "appName": {
     env: "PARSE_SERVER_APP_NAME",
     help: "Sets the app name"
@@ -144,11 +174,6 @@ export default {
     env: "PARSE_SERVER_LOGGER_ADAPTER",
     help: "Adapter module for the logging sub-system",
     action: moduleOrObjectParser
-  },
-  "liveQuery": {
-    env: "PARSE_SERVER_LIVE_QUERY_OPTIONS",
-    help: "liveQuery options",
-    action: objectParser
   },
   "customPages": {
     env: "PARSE_SERVER_CUSTOM_PAGES",
@@ -159,6 +184,10 @@ export default {
     env: "PARSE_SERVER_MAX_UPLOAD_SIZE",
     help: "Max file size for uploads.",
     default: "20mb"
+  },
+  "userSensitiveFields": {
+    help: "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
+    default: ["email"]
   },
   "sessionLength": {
     env: "PARSE_SERVER_SESSION_LENGTH",
@@ -195,11 +224,28 @@ export default {
     help: "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0; disabled.",
     action: numberParser("schemaCacheTTL"),
   },
+  "enableSingleSchemaCache": {
+    env: "PARSE_SERVER_ENABLE_SINGLE_SCHEMA_CACHE",
+    help: "Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request.",
+    action: booleanParser
+  },
+  "cacheTTL": {
+    env: "PARSE_SERVER_CACHE_TTL",
+    help: "Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds)",
+    action: numberParser("cacheTTL"),
+  },
+  "cacheMaxSize": {
+    env: "PARSE_SERVER_CACHE_MAX_SIZE",
+    help: "Sets the maximum size for the in memory cache, defaults to 10000",
+    action: numberParser("cacheMaxSize")
+  },
   "cluster": {
+    env: "PARSE_SERVER_CLUSTER",
     help: "Run with cluster, optionally set the number of processes default to os.cpus().length",
     action: numberOrBoolParser("cluster")
   },
-   "liveQuery": {
+  "liveQuery": {
+    env: "PARSE_SERVER_LIVE_QUERY_OPTIONS",
     help: "parse-server's LiveQuery configuration object",
     action: objectParser
   },
@@ -222,4 +268,12 @@ export default {
     help: "Live query server configuration options (will start the liveQuery server)",
     action: objectParser
   },
+  "middleware": {
+    help: "middleware for express server, can be string or function"
+  },
+  "objectIdSize": {
+    env: "PARSE_SERVER_OBJECT_ID_SIZE",
+    help: "Sets the number of characters in generated object id's, default 10",
+    action: numberParser("objectIdSize")
+  }
 };

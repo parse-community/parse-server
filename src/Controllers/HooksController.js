@@ -9,6 +9,8 @@ const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
   _applicationId:string;
+  _webhookKey:string;
+  database: any;
 
   constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
@@ -51,8 +53,7 @@ export class HooksController {
     return this._removeHooks({ className: className, triggerName: triggerName });
   }
 
-  _getHooks(query = {}, limit) {
-    let options = limit ? { limit: limit } : undefined;
+  _getHooks(query = {}) {
     return this.database.find(DefaultHooksCollectionName, query).then((results) => {
       return results.map((result) => {
         delete result.objectId;
@@ -113,7 +114,7 @@ export class HooksController {
     }
 
     return this.addHook(hook);
-  };
+  }
 
   createHook(aHook) {
     if (aHook.functionName) {
@@ -134,7 +135,7 @@ export class HooksController {
     }
 
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 
   updateHook(aHook) {
     if (aHook.functionName) {
@@ -153,12 +154,12 @@ export class HooksController {
       });
     }
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 }
 
 function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
-    let jsonBody = {};
+    const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
     }
@@ -170,7 +171,7 @@ function wrapToHTTPRequest(hook, key) {
       jsonBody.original = req.original.toJSON();
       jsonBody.original.className = req.original.className;
     }
-    let jsonRequest = {
+    const jsonRequest: any = {
       headers: {
         'Content-Type': 'application/json'
       },
@@ -190,7 +191,11 @@ function wrapToHTTPRequest(hook, key) {
           try {
             body = JSON.parse(body);
           } catch (e) {
-            err = { error: "Malformed response", code: -1 };
+            err = {
+              error: "Malformed response",
+              code: -1,
+              partialResponse: body.substring(0, 100)
+            };
           }
         }
         if (!err) {
