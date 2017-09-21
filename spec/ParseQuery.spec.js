@@ -3056,4 +3056,19 @@ describe('Parse.Query testing', () => {
       done();
     }).catch(done.fail);
   });
+
+  it('distinct empty when class does not exist', (done) => {
+    const distinct = 'unknown';
+    rp.post({
+      url: Parse.serverURL + "/classes/UnknownDistinct",
+      json: { distinct, "_method": "GET" },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Javascript-Key': Parse.javaScriptKey
+      }
+    }).then((response) => {
+      expect(response.results.length).toBe(0);
+      done();
+    }).catch(done.fail);
+  });
 });
