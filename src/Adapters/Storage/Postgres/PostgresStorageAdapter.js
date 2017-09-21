@@ -732,8 +732,6 @@ export class PostgresStorageAdapter {
   deleteAllClasses() {
     const now = new Date().getTime();
     debug('deleteAllClasses');
-    /* eslint-disable */
-    // return;
     return this._client.any('SELECT * FROM "_SCHEMA"')
       .then(results => {
         const joins = results.reduce((list, schema) => {
