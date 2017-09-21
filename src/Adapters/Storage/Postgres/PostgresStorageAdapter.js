@@ -1366,6 +1366,23 @@ export class PostgresStorageAdapter {
     });
   }
 
+  // Finds unique values.
+  distinct(className, schema, query, fieldName) {
+    debug('count', className, query);
+    const values = [fieldName, className];
+    const where = buildWhereClause({ schema, query, index: 3 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    const qs = `SELECT DISTINCT $1:name FROM $2:name ${wherePattern}`;
+    return this._client.any(qs, values).catch((err) => {
+      if (err.code === PostgresRelationDoesNotExistError) {
+        return [];
+      }
+      throw err;
+    }).then((results) => results.map(object => object[fieldName]));
+  }
+
   performInitialization({ VolatileClassesSchemas }) {
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map((schema) => {

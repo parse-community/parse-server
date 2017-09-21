@@ -86,6 +86,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'count':
       this.doCount = true;
       break;
+    case 'distinct':
     case 'skip':
     case 'limit':
     case 'readPreference':

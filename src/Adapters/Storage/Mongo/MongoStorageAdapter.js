@@ -405,6 +405,13 @@ export class MongoStorageAdapter {
       }));
   }
 
+  // Finds unique values.
+  distinct(className, schema, query, fieldName) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)));
+  }
+
   _parseReadPreference(readPreference) {
     if (readPreference) {
       switch (readPreference) {

@@ -5,6 +5,7 @@
 'use strict';
 
 const Parse = require('parse/node');
+const rp = require('request-promise');
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -3006,5 +3007,28 @@ describe('Parse.Query testing', () => {
       expect(response.results.length).toBe(1);
       done();
     }, done.fail);
+  });
+
+  it('distinct support', function(done) {
+    const score1 = new TestObject({score: 10});
+    const score2 = new TestObject({score: 10});
+    const score3 = new TestObject({score: 10});
+    const score4 = new TestObject({score: 20});
+    Parse.Object.saveAll([score1, score2, score3, score4]).then(() => {
+      const distinct = 'score';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(2);
+      expect(response.results.indexOf(10) > -1).toBe(true);
+      expect(response.results.indexOf(20) > -1).toBe(true);
+      done();
+    }).catch(done.fail);
   });
 });
