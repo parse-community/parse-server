@@ -3057,7 +3057,7 @@ describe('Parse.Query testing', () => {
     }).catch(done.fail);
   });
 
-  it('distinct empty when class does not exist', (done) => {
+  it('distinct class does not exist return empty', (done) => {
     const distinct = 'unknown';
     rp.post({
       url: Parse.serverURL + "/classes/UnknownDistinct",
@@ -3066,6 +3066,24 @@ describe('Parse.Query testing', () => {
         'X-Parse-Application-Id': Parse.applicationId,
         'X-Parse-Javascript-Key': Parse.javaScriptKey
       }
+    }).then((response) => {
+      expect(response.results.length).toBe(0);
+      done();
+    }).catch(done.fail);
+  });
+
+  it('distinct field does not exist return empty', function(done) {
+    const score = new TestObject({score: 10});
+    score.save().then(() => {
+      const distinct = 'unknown';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
     }).then((response) => {
       expect(response.results.length).toBe(0);
       done();

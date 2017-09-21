@@ -1382,18 +1382,15 @@ export class PostgresStorageAdapter {
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
     debug(qs, values);
-    return this._client.any(qs, values).catch((err) => {
-      if (err.code === PostgresRelationDoesNotExistError) {
-        return [];
-      }
-      throw err;
-    }).then((results) => {
-      if (fieldName.indexOf('.') === -1) {
-        return results.map(object => object[field]);
-      }
-      const child = fieldName.split('.')[1];
-      return results.map(object => object[column][child]);
-    });
+    return this._client.any(qs, values)
+      .catch(() => [])
+      .then((results) => {
+        if (fieldName.indexOf('.') === -1) {
+          return results.map(object => object[field]);
+        }
+        const child = fieldName.split('.')[1];
+        return results.map(object => object[column][child]);
+      });
   }
 
   performInitialization({ VolatileClassesSchemas }) {
