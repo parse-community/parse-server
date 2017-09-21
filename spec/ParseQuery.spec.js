@@ -3031,4 +3031,29 @@ describe('Parse.Query testing', () => {
       done();
     }).catch(done.fail);
   });
+
+  it('nested distinct', (done) => {
+    const sender1 = { group: 'A' };
+    const sender2 = { group: 'A' };
+    const sender3 = { group: 'B' };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const distinct = 'sender.group';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(2);
+      expect(response.results.indexOf('A') > -1).toBe(true);
+      expect(response.results.indexOf('B') > -1).toBe(true);
+      done();
+    }).catch(done.fail);
+  });
 });

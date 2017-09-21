@@ -732,6 +732,8 @@ export class PostgresStorageAdapter {
   deleteAllClasses() {
     const now = new Date().getTime();
     debug('deleteAllClasses');
+    /* eslint-disable */
+    // return;
     return this._client.any('SELECT * FROM "_SCHEMA"')
       .then(results => {
         const joins = results.reduce((list, schema) => {
@@ -1368,19 +1370,32 @@ export class PostgresStorageAdapter {
 
   // Finds unique values.
   distinct(className, schema, query, fieldName) {
-    debug('count', className, query);
-    const values = [fieldName, className];
-    const where = buildWhereClause({ schema, query, index: 3 });
+    debug('distinct', className, query);
+    let field = fieldName;
+    let column = fieldName;
+    if (fieldName.indexOf('.') >= 0) {
+      field = transformDotFieldToComponents(fieldName).join('->');
+      column = fieldName.split('.')[0];
+    }
+    const values = [field, column, className];
+    const where = buildWhereClause({ schema, query, index: 4 });
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `SELECT DISTINCT $1:name FROM $2:name ${wherePattern}`;
+    const qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    debug(qs, values);
     return this._client.any(qs, values).catch((err) => {
       if (err.code === PostgresRelationDoesNotExistError) {
         return [];
       }
       throw err;
-    }).then((results) => results.map(object => object[fieldName]));
+    }).then((results) => {
+      if (fieldName.indexOf('.') === -1) {
+        return results.map(object => object[field]);
+      }
+      const child = fieldName.split('.')[1];
+      return results.map(object => object[column][child]);
+    });
   }
 
   performInitialization({ VolatileClassesSchemas }) {
