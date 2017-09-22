@@ -60,8 +60,6 @@ function restStatusHandler(className, config) {
       return rest.create(config, auth, className, object)
         .then(({ response }) => {
           // merge the objects
-          /* eslint-disable */
-          console.log(response);
           return Promise.resolve(Object.assign({}, object, response));
         });
     });
@@ -71,11 +69,9 @@ function restStatusHandler(className, config) {
   function update(where, object) {
     // TODO: when we have updateWhere, use that for proper interfacing
     lastPromise = lastPromise.then(() => {
-      console.log('UPDATE!', where, object);
       return rest.update(config, auth, className, { objectId: where.objectId }, object)
         .then(({ response }) => {
           // merge the objects
-          console.log(response);
           return Promise.resolve(Object.assign({}, object, response));
         });
     });
@@ -184,13 +180,11 @@ export function pushStatusHandler(config, existingObjectId) {
       // lockdown!
       ACL: {}
     }
-    console.log('CREATE!');
     return handler.create(object).then((result) => {
       objectId = result.objectId;
       pushStatus = {
         objectId
       };
-      console.log(pushStatus);
       return Promise.resolve(pushStatus);
     });
   }

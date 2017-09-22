@@ -2,6 +2,7 @@ var PushWorker = require('../src').PushWorker;
 var PushUtils = require('../src/Push/utils');
 var Config = require('../src/Config');
 var { pushStatusHandler } = require('../src/StatusHandler');
+var rest = require('../src/rest');
 
 describe('PushWorker', () => {
   it('should run with small batch', (done) => {
@@ -245,7 +246,7 @@ describe('PushWorker', () => {
     it('tracks push status per UTC offsets', (done) => {
       const config = new Config('test');
       const handler = pushStatusHandler(config);
-      const spy = spyOn(Parse, "_request").and.callThrough();
+      const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = 1;
       handler.setInitial().then(() => {
         return handler.trackSent([
@@ -267,9 +268,8 @@ describe('PushWorker', () => {
       }).then(() => {
         expect(spy).toHaveBeenCalled();
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[0]).toBe('PUT');
-        expect(lastCall.args[1]).toBe(`classes/_PushStatus/${handler.objectId}`);
-        expect(lastCall.args[2]).toEqual({
+        expect(lastCall.args[2]).toBe(`_PushStatus`);
+        expect(lastCall.args[4]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },
           'sentPerType.ios': { __op: 'Increment', amount: 1 },
@@ -322,35 +322,32 @@ describe('PushWorker', () => {
     it('tracks push status per UTC offsets with negative offsets', (done) => {
       const config = new Config('test');
       const handler = pushStatusHandler(config);
-      spyOn(config.database, "create").and.callFake(() => {
-        return Promise.resolve();
-      });
-      const spy = spyOn(Parse, "_request").and.callFake(() => {
-        return Promise.resolve();
-      });
+      const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = -6;
-      handler.trackSent([
-        {
-          transmitted: false,
-          device: {
-            deviceToken: 1,
-            deviceType: 'ios',
+      handler.setInitial().then(() => {
+        return handler.trackSent([
+          {
+            transmitted: false,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+            response: { error: 'Unregistered' }
           },
-          response: { error: 'Unregistered' }
-        },
-        {
-          transmitted: true,
-          device: {
-            deviceToken: 1,
-            deviceType: 'ios',
+          {
+            transmitted: true,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+            response: { error: 'Unregistered' }
           },
-          response: { error: 'Unregistered' }
-        },
-      ], UTCOffset).then(() => {
+        ], UTCOffset);
+      }).then(() => {
         expect(spy).toHaveBeenCalled();
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[1]).toBe(`classes/_PushStatus/${handler.objectId}`);
-        expect(lastCall.args[2]).toEqual({
+        expect(lastCall.args[2]).toBe('_PushStatus');
+        expect(lastCall.args[4]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },
           'sentPerType.ios': { __op: 'Increment', amount: 1 },
