@@ -7,7 +7,7 @@ import { applyDeviceTokenExists } from '../Push/utils';
 
 export class PushController {
 
-  sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
+  sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}, now = new Date()) {
     if (!config.hasPushSupport) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Missing push configuration');
@@ -16,11 +16,15 @@ export class PushController {
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
     body.expiration_interval = PushController.getExpirationInterval(body);
-
     if (body.expiration_time && body.expiration_interval) {
       throw new Parse.Error(
         Parse.Error.PUSH_MISCONFIGURED,
         'Both expiration_time and expiration_interval cannot be set');
+    }
+
+    // Immediate push
+    if (body.expiration_interval && !body.hasOwnProperty('push_time')) {
+      body.expiration_time = new Date(now.valueOf() + body.expiration_interval);
     }
 
     const pushTime = PushController.getPushTime(body);
