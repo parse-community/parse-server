@@ -1375,12 +1375,18 @@ export class PostgresStorageAdapter {
       field = transformDotFieldToComponents(fieldName).join('->');
       column = fieldName.split('.')[0];
     }
+    const isArrayField = schema.fields
+          && schema.fields[fieldName]
+          && schema.fields[fieldName].type === 'Array';
     const values = [field, column, className];
     const where = buildWhereClause({ schema, query, index: 4 });
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    let qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    if (isArrayField) {
+      qs = `SELECT distinct jsonb_array_elements($1:raw) as $2:raw FROM $3:name ${wherePattern}`;
+    }
     debug(qs, values);
     return this._client.any(qs, values)
       .catch(() => [])
