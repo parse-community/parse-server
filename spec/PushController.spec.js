@@ -503,6 +503,62 @@ describe('PushController', () => {
       .then(done).catch(done.fail);
   });
 
+  it('properly creates _PushStatus without serverURL', (done) => {
+    const pushStatusAfterSave = {
+      handler: function() {}
+    };
+    Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
+    const installation = new Parse.Object("_Installation");
+    installation.set("installationId", "installation");
+    installation.set("deviceToken","device_token")
+    installation.set("badge", 0);
+    installation.set("originalBadge", 0);
+    installation.set("deviceType", "ios");
+
+    var payload = {data: {
+      alert: "Hello World!",
+      badge: 1,
+    }}
+
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulIOS(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = new Config(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+    var pushController = new PushController();
+    return installation.save().then(() => {
+      return reconfigureServer({
+        serverURL: 'http://localhost:8378/', // server with borked URL
+        push: { adapter: pushAdapter }
+      })
+    })
+      .then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      }).then(() => {
+        // it is enqueued so it can take time
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      }).then(() => {
+        Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
+        const query = new Parse.Query('_PushStatus');
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(done).catch(done.fail);
+  });
+
   it('should properly report failures in _PushStatus', (done) => {
     var pushAdapter = {
       send: function(body, installations) {
