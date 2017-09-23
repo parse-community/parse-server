@@ -65,6 +65,37 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       });
   });
 
+  it('does not send verification email if email verification is not enabled (#4062)', done => {
+    var emailAdapter = {
+      sendVerificationEmail: () => Promise.resolve(),
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: false,
+      emailVerifyTokenValidityDuration: 2 * 60 * 60, // in seconds (2 hours = 7200 seconds)
+      preventLoginWithUnverifiedEmail: false,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    })
+      .then(() => {
+        spyOn(emailAdapter, 'sendVerificationEmail');
+        var user = new Parse.User();
+        user.setPassword("asdf");
+        user.setUsername("zxcv");
+        user.setEmail('testIfEnabled@parse.com');
+        return user.signUp();
+      }).then((user) => {
+        expect(emailAdapter.sendVerificationEmail).not.toHaveBeenCalled();
+        user.fetch()
+          .then(() => {
+            expect(user.get('emailVerified')).toEqual(undefined);
+            done();
+          });
+      }).catch(done.fail);
+  });
+
   it('does not send verification email when verification is enabled and email is not set', done => {
     var emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
