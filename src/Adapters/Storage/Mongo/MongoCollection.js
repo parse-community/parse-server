@@ -54,6 +54,10 @@ export default class MongoCollection {
     return findOperation.toArray();
   }
 
+  distinct(field, query) {
+    return this._mongoCollection.distinct(field, query);
+  }
+
   count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
     const countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS, readPreference });
 

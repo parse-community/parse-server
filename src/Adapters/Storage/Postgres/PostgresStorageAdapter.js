@@ -1366,6 +1366,39 @@ export class PostgresStorageAdapter {
     });
   }
 
+  // Finds unique values.
+  distinct(className, schema, query, fieldName) {
+    debug('distinct', className, query);
+    let field = fieldName;
+    let column = fieldName;
+    if (fieldName.indexOf('.') >= 0) {
+      field = transformDotFieldToComponents(fieldName).join('->');
+      column = fieldName.split('.')[0];
+    }
+    const isArrayField = schema.fields
+          && schema.fields[fieldName]
+          && schema.fields[fieldName].type === 'Array';
+    const values = [field, column, className];
+    const where = buildWhereClause({ schema, query, index: 4 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    let qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    if (isArrayField) {
+      qs = `SELECT distinct jsonb_array_elements($1:raw) as $2:raw FROM $3:name ${wherePattern}`;
+    }
+    debug(qs, values);
+    return this._client.any(qs, values)
+      .catch(() => [])
+      .then((results) => {
+        if (fieldName.indexOf('.') === -1) {
+          return results.map(object => object[field]);
+        }
+        const child = fieldName.split('.')[1];
+        return results.map(object => object[column][child]);
+      });
+  }
+
   performInitialization({ VolatileClassesSchemas }) {
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map((schema) => {

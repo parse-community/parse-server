@@ -5,6 +5,7 @@
 'use strict';
 
 const Parse = require('parse/node');
+const rp = require('request-promise');
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -3006,5 +3007,110 @@ describe('Parse.Query testing', () => {
       expect(response.results.length).toBe(1);
       done();
     }, done.fail);
+  });
+
+  it('distinct query', function(done) {
+    const score1 = new TestObject({score: 10});
+    const score2 = new TestObject({score: 10});
+    const score3 = new TestObject({score: 10});
+    const score4 = new TestObject({score: 20});
+    Parse.Object.saveAll([score1, score2, score3, score4]).then(() => {
+      const distinct = 'score';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(2);
+      expect(response.results.indexOf(10) > -1).toBe(true);
+      expect(response.results.indexOf(20) > -1).toBe(true);
+      done();
+    }).catch(done.fail);
+  });
+
+  it('distinct nested', (done) => {
+    const sender1 = { group: 'A' };
+    const sender2 = { group: 'A' };
+    const sender3 = { group: 'B' };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const distinct = 'sender.group';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(2);
+      expect(response.results.indexOf('A') > -1).toBe(true);
+      expect(response.results.indexOf('B') > -1).toBe(true);
+      done();
+    }).catch(done.fail);
+  });
+
+  it('distinct class does not exist return empty', (done) => {
+    const distinct = 'unknown';
+    rp.post({
+      url: Parse.serverURL + "/classes/UnknownDistinct",
+      json: { distinct, "_method": "GET" },
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Javascript-Key': Parse.javaScriptKey
+      }
+    }).then((response) => {
+      expect(response.results.length).toBe(0);
+      done();
+    }).catch(done.fail);
+  });
+
+  it('distinct field does not exist return empty', function(done) {
+    const score = new TestObject({score: 10});
+    score.save().then(() => {
+      const distinct = 'unknown';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(0);
+      done();
+    }).catch(done.fail);
+  });
+
+  it('distinct array', function(done) {
+    const size1 = new TestObject({size: ['S', 'M']});
+    const size2 = new TestObject({size: ['M', 'L']});
+    const size3 = new TestObject({size: ['S']});
+    const size4 = new TestObject({size: ['S']});
+    Parse.Object.saveAll([size1, size2, size3, size4]).then(() => {
+      const distinct = 'size';
+      return rp.post({
+        url: Parse.serverURL + "/classes/TestObject",
+        json: { distinct, "_method": "GET" },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((response) => {
+      expect(response.results.length).toBe(3);
+      expect(response.results.indexOf('S') > -1).toBe(true);
+      expect(response.results.indexOf('M') > -1).toBe(true);
+      expect(response.results.indexOf('L') > -1).toBe(true);
+      done();
+    }).catch(done.fail);
   });
 });

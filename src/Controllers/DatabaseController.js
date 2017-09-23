@@ -782,6 +782,7 @@ DatabaseController.prototype.find = function(className, query, {
   limit,
   acl,
   sort = {},
+  distinct,
   count,
   keys,
   op,
@@ -852,6 +853,12 @@ DatabaseController.prototype.find = function(className, query, {
                   return 0;
                 } else {
                   return this.adapter.count(className, schema, query, readPreference);
+                }
+              } else if (distinct) {
+                if (!classExists) {
+                  return [];
+                } else {
+                  return this.adapter.distinct(className, schema, query, distinct);
                 }
               } else {
                 if (!classExists) {
