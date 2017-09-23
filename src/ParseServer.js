@@ -373,6 +373,7 @@ class ParseServer {
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
+    this.verifyServerUrl(_ref2.publicServerURL);
     return api;
   }
 
@@ -409,6 +410,18 @@ class ParseServer {
 
   static createLiveQueryServer(httpServer, config) {
     return new ParseLiveQueryServer(httpServer, config);
+  }
+
+  static verifyServerUrl(serverUrl) {
+    // perform a health check on the provided serverURL
+    if(serverUrl) {
+      const request = require('request');
+      request(serverUrl.replace(/\/$/, "") + "/health", function (error, response, body) {
+        if (error || response.statusCode !== 200 || body !== "OK") {
+          console.error("\nWARNING, Unable to connect to publicServerURL '" + serverUrl + "'. Cloud code and push notifications may be unavailable!\n");
+        }
+      });
+    }
   }
 }
 
