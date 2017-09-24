@@ -6,8 +6,8 @@ import Parse         from 'parse/node';
 const ALLOWED_KEYS = [
   'where',
   'distinct',
-  'match',
   'project',
+  'match',
   'redact',
   'limit',
   'skip',
@@ -17,8 +17,16 @@ const ALLOWED_KEYS = [
   'sort',
   'geoNear',
   'lookup',
-  'indexStats',
   'out',
+  'indexStats',
+  'facet',
+  'bucket',
+  'bucketAuto',
+  'sortByCount',
+  'addFields',
+  'replaceRoot',
+  'count',
+  'graphLookup',
 ];
 
 export class AggregateRouter extends ClassesRouter {
@@ -28,18 +36,11 @@ export class AggregateRouter extends ClassesRouter {
     const options = {};
     const pipeline = [];
 
-    for (const key of Object.keys(body)) {
+    for (const key in body) {
       if (ALLOWED_KEYS.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
-      const specialKey = `$${key}`;
-      // Handle $out at the last stage of pipeline
-      if (key !== 'out') {
-        pipeline.push({ [specialKey]: body[key] });
-      }
-    }
-    if (body.out) {
-      pipeline.push({ $out: body.out });
+      pipeline.push({ [`$${key}`]: body[key] });
     }
     if (body.distinct) {
       options.distinct = String(body.distinct);

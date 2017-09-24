@@ -38,6 +38,19 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it('invalid query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        unknown: {},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .catch((error) => {
+        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+        done();
+      });
+  });
+
   it('group by field', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -254,6 +267,20 @@ describe('Parse.Query Aggregate testing', () => {
         where: {
           name: 'bar'
         }
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results[0]).toBe(10);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('distint query with where string', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        distinct: 'score',
+        where: JSON.stringify({name:'bar'}),
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
