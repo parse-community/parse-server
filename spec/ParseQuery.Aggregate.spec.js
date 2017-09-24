@@ -38,6 +38,19 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it('group by field', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { _id: '$name' },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(3);
+        done();
+      }).catch(done.fail);
+  });
+
   it('group sum query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -47,6 +60,19 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results[0].total).toBe(50);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('group count query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { _id: null, total: { $sum: 1 } },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results[0].total).toBe(4);
         done();
       }).catch(done.fail);
   });
@@ -103,7 +129,7 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
-  it('sort query', (done) => {
+  it('sort ascending query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         sort: { name: 1 },
@@ -116,6 +142,23 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results[1].name).toBe('dpl');
         expect(resp.results[2].name).toBe('foo');
         expect(resp.results[3].name).toBe('foo');
+        done();
+      }).catch(done.fail);
+  });
+
+  it('sort decending query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        sort: { name: -1 },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(4);
+        expect(resp.results[0].name).toBe('foo');
+        expect(resp.results[1].name).toBe('foo');
+        expect(resp.results[2].name).toBe('dpl');
+        expect(resp.results[3].name).toBe('bar');
         done();
       }).catch(done.fail);
   });
@@ -142,7 +185,51 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results.length).toBe(1);
-        expect(resp.results[0].name).toBe('dpl');
+        expect(resp.results[0].score).toBe(20);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('project query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        project: { name: 1 },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        resp.results.forEach((result) => {
+          expect(result.name !== undefined).toBe(true);
+          expect(result.sender).toBe(undefined);
+          expect(result.size).toBe(undefined);
+          expect(result.score).toBe(undefined);
+        });
+        done();
+      }).catch(done.fail);
+  });
+
+  it('class does not exist return empty', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { _id: null, total: { $sum: '$score' } },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(0);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('field does not exist return empty', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { _id: null, total: { $sum: '$unknownfield' } },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(0);
         done();
       }).catch(done.fail);
   });
@@ -154,8 +241,24 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results.length).toBe(2);
-        expect(resp.results.indexOf(10) > -1).toBe(true);
-        expect(resp.results.indexOf(20) > -1).toBe(true);
+        expect(resp.results.includes(10)).toBe(true);
+        expect(resp.results.includes(20)).toBe(true);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('distint query with where', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        distinct: 'score',
+        where: {
+          name: 'bar'
+        }
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results[0]).toBe(10);
         done();
       }).catch(done.fail);
   });
@@ -167,8 +270,8 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results.length).toBe(2);
-        expect(resp.results.indexOf('A') > -1).toBe(true);
-        expect(resp.results.indexOf('B') > -1).toBe(true);
+        expect(resp.results.includes('A')).toBe(true);
+        expect(resp.results.includes('B')).toBe(true);
         done();
       }).catch(done.fail);
   });
@@ -204,9 +307,9 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results.length).toBe(3);
-        expect(resp.results.indexOf('S') > -1).toBe(true);
-        expect(resp.results.indexOf('M') > -1).toBe(true);
-        expect(resp.results.indexOf('L') > -1).toBe(true);
+        expect(resp.results.includes('S')).toBe(true);
+        expect(resp.results.includes('M')).toBe(true);
+        expect(resp.results.includes('L')).toBe(true);
         done();
       }).catch(done.fail);
   });

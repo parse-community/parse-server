@@ -1406,7 +1406,8 @@ export class PostgresStorageAdapter {
   aggregate(className, pipeline) {
     debug('aggregate', className, pipeline);
     const values = [className];
-    const columns = [];
+    let columns = [];
+    let countField = null;
     let wherePattern = '';
     let limitPattern = '';
     let skipPattern = '';
@@ -1417,18 +1418,19 @@ export class PostgresStorageAdapter {
       if (stage.$group) {
         for (const field in stage.$group) {
           const value = stage.$group[field];
-          if (value === null) {
+          if (value === null || value === undefined) {
             continue;
           }
           if (field === '_id') {
-            columns.push('objectId AS _id');
-            groupPattern = `GROUP BY ${className}.${transformAggregateField(value)}`;
+            columns.push(`${transformAggregateField(value)} AS "_id"`);
+            groupPattern = `GROUP BY ${transformAggregateField(value)}`;
             continue;
           }
           if (value.$sum) {
             if (typeof value.$sum === 'string') {
               columns.push(`SUM(${transformAggregateField(value.$sum)}) AS "${field}"`);
             } else {
+              countField = field;
               columns.push(`COUNT(*) AS "${field}"`);
             }
           }
@@ -1445,6 +1447,21 @@ export class PostgresStorageAdapter {
         columns.join(',');
       } else {
         columns.push('*');
+      }
+      if (stage.$project) {
+        if (columns.includes('*')) {
+          columns = [];
+        }
+        for (const field in stage.$project) {
+          const value = stage.$project[field];
+          const toInclude = (value === 1 || value === true);
+          if (columns.includes(field) && toInclude) {
+            continue;
+          }
+          if (toInclude) {
+            columns.push(field);
+          }
+        }
       }
       if (stage.$match) {
         const patterns = [];
@@ -1479,9 +1496,12 @@ export class PostgresStorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
     debug(qs, values);
-    return this._client.any(qs, values)
-      .catch(() => [])
-      .then(results => results);
+    return this._client.any(qs, values).then(results => {
+      if (countField) {
+        results[0][countField] = parseInt(results[0][countField], 10);
+      }
+      return results;
+    });
   }
 
   performInitialization({ VolatileClassesSchemas }) {
