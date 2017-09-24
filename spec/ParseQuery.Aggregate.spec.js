@@ -38,7 +38,7 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
-  it('invalid query', (done) => {
+  it('invalid query invalid key', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         unknown: {},
@@ -51,10 +51,36 @@ describe('Parse.Query Aggregate testing', () => {
       });
   });
 
+  it('invalid query group _id', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: { _id: null },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .catch((error) => {
+        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+        done();
+      });
+  });
+
+  it('invalid query group objectId required', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        group: {},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .catch((error) => {
+        expect(error.error.code).toEqual(Parse.Error.INVALID_QUERY);
+        done();
+      });
+  });
+
   it('group by field', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: '$name' },
+        group: { objectId: '$name' },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -67,7 +93,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group sum query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, total: { $sum: '$score' } },
+        group: { objectId: null, total: { $sum: '$score' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -80,7 +106,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group count query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, total: { $sum: 1 } },
+        group: { objectId: null, total: { $sum: 1 } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -93,7 +119,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group min query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, minScore: { $min: '$score' } },
+        group: { objectId: null, minScore: { $min: '$score' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -106,7 +132,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group max query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, maxScore: { $max: '$score' } },
+        group: { objectId: null, maxScore: { $max: '$score' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -119,7 +145,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('group avg query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, avgScore: { $avg: '$score' } },
+        group: { objectId: null, avgScore: { $avg: '$score' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
@@ -224,7 +250,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('class does not exist return empty', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, total: { $sum: '$score' } },
+        group: { objectId: null, total: { $sum: '$score' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)
@@ -237,7 +263,7 @@ describe('Parse.Query Aggregate testing', () => {
   it('field does not exist return empty', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
-        group: { _id: null, total: { $sum: '$unknownfield' } },
+        group: { objectId: null, total: { $sum: '$unknownfield' } },
       }
     });
     rp.get(Parse.serverURL + '/aggregate/UnknownClass', options)

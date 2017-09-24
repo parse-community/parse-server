@@ -414,7 +414,16 @@ export class MongoStorageAdapter {
   aggregate(className, pipeline, readPreference) {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
-      .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }));
+      .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
+      .then(results => {
+        results.forEach(result => {
+          if (result.hasOwnProperty('_id')) {
+            result.objectId = result._id;
+            delete result._id;
+          }
+        });
+        return results;
+      });
   }
 
   _parseReadPreference(readPreference) {

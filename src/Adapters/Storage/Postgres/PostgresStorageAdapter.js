@@ -1402,7 +1402,6 @@ export class PostgresStorageAdapter {
       });
   }
 
-  // TODO: aggregate transform to SQL
   aggregate(className, pipeline) {
     debug('aggregate', className, pipeline);
     const values = [className];

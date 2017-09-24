@@ -40,6 +40,22 @@ export class AggregateRouter extends ClassesRouter {
       if (ALLOWED_KEYS.indexOf(key) === -1) {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
       }
+      if (key === 'group') {
+        if (body[key].hasOwnProperty('_id')) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            `Invalid parameter for query: group. Please use objectId instead of _id`
+          );
+        }
+        if (!body[key].hasOwnProperty('objectId')) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_QUERY,
+            `Invalid parameter for query: group. objectId is required`
+          );
+        }
+        body[key]._id = body[key].objectId;
+        delete body[key].objectId;
+      }
       pipeline.push({ [`$${key}`]: body[key] });
     }
     if (body.distinct) {
