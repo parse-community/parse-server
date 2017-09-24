@@ -1421,7 +1421,7 @@ export class PostgresStorageAdapter {
             continue;
           }
           if (field === '_id') {
-            columns.push(`${transformAggregateField(value)} AS "_id"`);
+            columns.push(`${transformAggregateField(value)} AS "objectId"`);
             groupPattern = `GROUP BY ${transformAggregateField(value)}`;
             continue;
           }
@@ -1453,11 +1453,7 @@ export class PostgresStorageAdapter {
         }
         for (const field in stage.$project) {
           const value = stage.$project[field];
-          const toInclude = (value === 1 || value === true);
-          if (columns.includes(field) && toInclude) {
-            continue;
-          }
-          if (toInclude) {
+          if ((value === 1 || value === true)) {
             columns.push(field);
           }
         }
@@ -1500,10 +1496,7 @@ export class PostgresStorageAdapter {
         results[0][countField] = parseInt(results[0][countField], 10);
       }
       results.forEach(result => {
-        if (result.hasOwnProperty('_id')) {
-          result.objectId = result._id;
-          delete result._id;
-        } else {
+        if (!result.hasOwnProperty('objectId')) {
           result.objectId = null;
         }
       });

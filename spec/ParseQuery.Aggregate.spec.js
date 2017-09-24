@@ -263,6 +263,33 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('project with group query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        project: { score: 1 },
+        group: { objectId: '$score', score: { $sum: '$score' } },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(2);
+        resp.results.forEach((result) => {
+          expect(result.hasOwnProperty('objectId')).toBe(true);
+          expect(result.name).toBe(undefined);
+          expect(result.sender).toBe(undefined);
+          expect(result.size).toBe(undefined);
+          expect(result.score).not.toBe(undefined);
+          if (result.objectId === 10) {
+            expect(result.score).toBe(30);
+          }
+          if (result.objectId === 20) {
+            expect(result.score).toBe(20);
+          }
+        });
+        done();
+      }).catch(done.fail);
+  });
+
   it('class does not exist return empty', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
