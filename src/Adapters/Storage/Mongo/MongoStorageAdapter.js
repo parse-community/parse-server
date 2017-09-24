@@ -405,6 +405,18 @@ export class MongoStorageAdapter {
       }));
   }
 
+  distinct(className, schema, query, fieldName) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)));
+  }
+
+  aggregate(className, pipeline, readPreference) {
+    readPreference = this._parseReadPreference(readPreference);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }));
+  }
+
   _parseReadPreference(readPreference) {
     if (readPreference) {
       switch (readPreference) {

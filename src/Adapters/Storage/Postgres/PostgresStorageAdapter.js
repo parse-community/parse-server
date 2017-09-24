@@ -165,6 +165,10 @@ const transformDotField = (fieldName) => {
   return name;
 }
 
+const transformAggregateField = (fieldName) => {
+  return fieldName.substr(1);
+}
+
 const validateKeys = (object) => {
   if (typeof object == 'object') {
     for (const key in object) {
@@ -1364,6 +1368,120 @@ export class PostgresStorageAdapter {
       }
       throw err;
     });
+  }
+
+  distinct(className, schema, query, fieldName) {
+    debug('distinct', className, query);
+    let field = fieldName;
+    let column = fieldName;
+    if (fieldName.indexOf('.') >= 0) {
+      field = transformDotFieldToComponents(fieldName).join('->');
+      column = fieldName.split('.')[0];
+    }
+    const isArrayField = schema.fields
+          && schema.fields[fieldName]
+          && schema.fields[fieldName].type === 'Array';
+    const values = [field, column, className];
+    const where = buildWhereClause({ schema, query, index: 4 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    let qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    if (isArrayField) {
+      qs = `SELECT distinct jsonb_array_elements($1:raw) as $2:raw FROM $3:name ${wherePattern}`;
+    }
+    debug(qs, values);
+    return this._client.any(qs, values)
+      .catch(() => [])
+      .then((results) => {
+        if (fieldName.indexOf('.') === -1) {
+          return results.map(object => object[field]);
+        }
+        const child = fieldName.split('.')[1];
+        return results.map(object => object[column][child]);
+      });
+  }
+
+  // TODO: aggregate transform to SQL
+  aggregate(className, pipeline) {
+    debug('aggregate', className, pipeline);
+    const values = [className];
+    const columns = [];
+    let wherePattern = '';
+    let limitPattern = '';
+    let skipPattern = '';
+    let sortPattern = '';
+    let groupPattern = '';
+    for (let i = 0; i < pipeline.length; i += 1) {
+      const stage = pipeline[i];
+      if (stage.$group) {
+        for (const field in stage.$group) {
+          const value = stage.$group[field];
+          if (value === null) {
+            continue;
+          }
+          if (field === '_id') {
+            columns.push('objectId AS _id');
+            groupPattern = `GROUP BY ${className}.${transformAggregateField(value)}`;
+            continue;
+          }
+          if (value.$sum) {
+            if (typeof value.$sum === 'string') {
+              columns.push(`SUM(${transformAggregateField(value.$sum)}) AS "${field}"`);
+            } else {
+              columns.push(`COUNT(*) AS "${field}"`);
+            }
+          }
+          if (value.$max) {
+            columns.push(`MAX(${transformAggregateField(value.$max)}) AS "${field}"`);
+          }
+          if (value.$min) {
+            columns.push(`MIN(${transformAggregateField(value.$min)}) AS "${field}"`);
+          }
+          if (value.$avg) {
+            columns.push(`AVG(${transformAggregateField(value.$avg)}) AS "${field}"`);
+          }
+        }
+        columns.join(',');
+      } else {
+        columns.push('*');
+      }
+      if (stage.$match) {
+        const patterns = [];
+        for (const field in stage.$match) {
+          const value = stage.$match[field];
+          Object.keys(ParseToPosgresComparator).forEach(cmp => {
+            if (value[cmp]) {
+              const pgComparator = ParseToPosgresComparator[cmp];
+              patterns.push(`${field} ${pgComparator} ${value[cmp]}`);
+            }
+          });
+        }
+        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(' ')}` : '';
+      }
+      if (stage.$limit) {
+        limitPattern = `LIMIT ${stage.$limit}`;
+      }
+      if (stage.$skip) {
+        skipPattern = `OFFSET ${stage.$skip}`;
+      }
+      if (stage.$sort) {
+        const sort = stage.$sort;
+        const sorting = Object.keys(sort).map((key) => {
+          if (sort[key] === 1) {
+            return `"${key}" ASC`;
+          }
+          return `"${key}" DESC`;
+        }).join(',');
+        sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+      }
+    }
+
+    const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    debug(qs, values);
+    return this._client.any(qs, values)
+      .catch(() => [])
+      .then(results => results);
   }
 
   performInitialization({ VolatileClassesSchemas }) {
