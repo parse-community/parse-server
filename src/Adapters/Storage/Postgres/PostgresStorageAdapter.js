@@ -1499,6 +1499,14 @@ export class PostgresStorageAdapter {
       if (countField) {
         results[0][countField] = parseInt(results[0][countField], 10);
       }
+      results.forEach(result => {
+        if (result.hasOwnProperty('_id')) {
+          result.objectId = result._id;
+          delete result._id;
+        } else {
+          result.objectId = null;
+        }
+      });
       return results;
     });
   }

@@ -86,6 +86,12 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         expect(resp.results.length).toBe(3);
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[1].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[2].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).not.toBe(undefined);
+        expect(resp.results[1].objectId).not.toBe(undefined);
+        expect(resp.results[2].objectId).not.toBe(undefined);
         done();
       }).catch(done.fail);
   });
@@ -98,6 +104,8 @@ describe('Parse.Query Aggregate testing', () => {
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(50);
         done();
       }).catch(done.fail);
@@ -111,6 +119,8 @@ describe('Parse.Query Aggregate testing', () => {
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].total).toBe(4);
         done();
       }).catch(done.fail);
@@ -124,6 +134,8 @@ describe('Parse.Query Aggregate testing', () => {
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].minScore).toBe(10);
         done();
       }).catch(done.fail);
@@ -137,6 +149,8 @@ describe('Parse.Query Aggregate testing', () => {
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].maxScore).toBe(20);
         done();
       }).catch(done.fail);
@@ -150,6 +164,8 @@ describe('Parse.Query Aggregate testing', () => {
     });
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
+        expect(resp.results[0].hasOwnProperty('objectId')).toBe(true);
+        expect(resp.results[0].objectId).toBe(null);
         expect(resp.results[0].avgScore).toBe(12.5);
         done();
       }).catch(done.fail);
