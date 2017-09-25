@@ -22,7 +22,7 @@
     "body-parser": "1.18.2",
     "commander": "2.11.0",
     "deepcopy": "0.6.3",
-    "express": "4.15.3",
+    "express": "5.0.0-alpha.6",
     "intersect": "1.0.1",
     "lodash": "4.17.4",
     "lru-cache": "4.1.1",
