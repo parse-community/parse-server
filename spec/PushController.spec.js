@@ -1319,6 +1319,9 @@ describe('PushController', () => {
             expect(pushStatus.get('expiry')).toBeDefined('expiry must be set');
             expect(pushStatus.get('expiry'))
               .toEqual(new Date('2017-09-25T13:50:10.452Z').valueOf());
+
+            expect(pushStatus.get('expiration_interval')).toBeDefined('expiration_interval must be defined');
+            expect(pushStatus.get('expiration_interval')).toBe(20 * 60);
           })
           .then(done, done.fail);
       });
