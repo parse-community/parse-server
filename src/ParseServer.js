@@ -373,7 +373,11 @@ class ParseServer {
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
-    this.verifyServerUrl(_ref2.publicServerURL);
+
+    const AppCache = require('./cache');
+    var serverUrl = AppCache.AppCache.cache[appId]['value']['publicServerURL'];
+    this.verifyServerUrl(serverUrl);
+
     return api;
   }
 
@@ -412,16 +416,26 @@ class ParseServer {
     return new ParseLiveQueryServer(httpServer, config);
   }
 
-  static verifyServerUrl(serverUrl) {
-    // perform a health check on the provided serverURL
-    if(serverUrl) {
-      const request = require('request');
-      request(serverUrl.replace(/\/$/, "") + "/health", function (error, response, body) {
-        if (error || response.statusCode !== 200 || body !== "OK") {
-          console.error("\nWARNING, Unable to connect to publicServerURL '" + serverUrl + "'. Cloud code and push notifications may be unavailable!\n");
-        }
-      });
-    }
+  static verifyServerUrl(serverUrl, callback) {
+    // perform a health check on the publicServerURL value, with 2.5 second delay
+    setTimeout(function() {
+      if(serverUrl) {
+        const request = require('request');
+        request(serverUrl.replace(/\/$/, "") + "/health", function (error, response, body) {
+          if (error || response.statusCode !== 200 || body !== "OK") {
+            // eslint-disable-next-line
+            console.warn("\nWARNING, Unable to connect to publicServerURL '" + serverUrl + "'. Cloud code and push notifications may be unavailable!\n");
+            if(callback) {
+              callback(false);
+            }
+          } else {
+            if(callback) {
+              callback(true);
+            }
+          }
+        });
+      }
+    }, 2500);
   }
 }
 
