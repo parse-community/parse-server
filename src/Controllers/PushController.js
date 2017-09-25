@@ -24,7 +24,8 @@ export class PushController {
 
     // Immediate push
     if (body.expiration_interval && !body.hasOwnProperty('push_time')) {
-      body.expiration_time = new Date(now.valueOf() + body.expiration_interval);
+      const ttlMs = body.expiration_interval * 1000;
+      body.expiration_time = (new Date(now.valueOf() + ttlMs)).valueOf();
     }
 
     const pushTime = PushController.getPushTime(body);
@@ -132,6 +133,7 @@ export class PushController {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         `expiration_interval must be a number greater than 0`);
     }
+    return expirationIntervalParam;
   }
 
   /**

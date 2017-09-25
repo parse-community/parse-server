@@ -1254,4 +1254,74 @@ describe('PushController', () => {
         .then(done, done.fail);
     });
   });
+
+  describe('With expiration defined', () => {
+    const auth = {isMaster: true};
+    const pushController = new PushController();
+
+    const config = new Config(Parse.applicationId);
+
+    const pushes = [];
+    const pushAdapter = {
+      send(body, installations) {
+        pushes.push(body);
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes() {
+        return ["ios"];
+      }
+    };
+
+    beforeEach((done) => {
+      reconfigureServer({
+        push: {adapter: pushAdapter},
+      }).then(done, done.fail);
+    });
+
+    it('should throw if both expiration_time and expiration_interval are set', () => {
+      expect(() => pushController.sendPush({
+        expiration_time: '2017-09-25T13:21:20.841Z',
+        expiration_interval: 1000,
+      }, {}, config, auth)).toThrow()
+    });
+
+    it('should throw on invalid expiration_interval', () => {
+      expect(() => pushController.sendPush({
+        expiration_interval: -1
+      })).toThrow();
+      expect(() => pushController.sendPush({
+        expiration_interval: '',
+      })).toThrow();
+    });
+
+    describe('For immediate pushes',() => {
+      it('should transform the expiration_interval into an absolute time', (done) => {
+        const now = new Date('2017-09-25T13:30:10.452Z');
+
+        reconfigureServer({
+          push: {adapter: pushAdapter},
+        })
+          .then(() =>
+            new Promise((resolve) => {
+              pushController.sendPush({
+                data: {
+                  alert: 'immediate push',
+                },
+                expiration_interval: 20 * 60, // twenty minutes
+              }, {}, new Config(Parse.applicationId), auth, resolve, now)
+            }))
+          .then((pushStatusId) => {
+            const p = new Parse.Object('_PushStatus');
+            p.id = pushStatusId;
+            return p.fetch({useMasterKey: true});
+          })
+          .then((pushStatus) => {
+            expect(pushStatus.get('expiry')).toBeDefined('expiry must be set');
+            expect(pushStatus.get('expiry'))
+              .toEqual(new Date('2017-09-25T13:50:10.452Z').valueOf());
+          })
+          .then(done, done.fail);
+      });
+    });
+  });
 });
