@@ -347,3 +347,49 @@ describe('transformUpdate', () => {
     done();
   });
 });
+
+describe('naturalTimeToDate', () => {
+  const now = new Date('2017-09-26T13:28:16.617Z');
+
+  describe('In the future', () => {
+    it('should parse valid natural time', () => {
+      const text = 'in 12 days 10 hours 24 minutes';
+      const { result, status, info } = transform.naturalTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-10-08T23:52:16.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('future');
+    });
+  });
+
+  describe('In the past', () => {
+    it('should parse valid natural time', () => {
+      const text = '2 days 12 hours 1 minute ago';
+      const { result, status, info } = transform.naturalTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-09-24T01:27:16.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('past');
+    });
+  });
+
+  describe('Error cases', () => {
+    it('should error if string contains neither `ago` nor `in`', () => {
+      expect(transform.naturalTimeToDate('12 hours 1 minute')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
+    it('should error if there are missing units or numbers', () => {
+      expect(transform.naturalTimeToDate('in 12 hours 1')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+
+      expect(transform.naturalTimeToDate('12 hours minute ago')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+    });
+  });
+});
+

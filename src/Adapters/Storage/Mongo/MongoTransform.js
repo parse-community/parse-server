@@ -533,6 +533,86 @@ function transformTopLevelAtom(atom, field) {
   }
 }
 
+function naturalTimeToDate(text, now = new Date()) {
+  let parts = text.split(' ');
+  if (!parts.length) {
+    return { status: 'invalid', info: 'Not a time string' };
+  }
+
+  // Filter out whitespace
+  parts = parts.filter((part) => part !== '');
+
+  const future = parts[0] === 'in';
+  const past = parts[parts.length - 1] === 'ago';
+
+  if (!future && !past) {
+    return { status: 'error', info: "Time should either start with 'in' or end with 'ago'" };
+  }
+
+  // strip the 'ago' or 'in'
+  if (future) {
+    parts = parts.slice(1);
+  } else if (past) {
+    parts = parts.slice(0, parts.length - 1);
+  }
+
+  if (parts.length % 2 !== 0) {
+    return {
+      status: 'error',
+      info: 'Invalid time string. Dangling unit or number.',
+    };
+  }
+
+  const pairs = [];
+  while(parts.length) {
+    pairs.push([ parts.shift(), parts.shift() ]);
+  }
+
+  const seconds = pairs.reduce((sum, [num, interval]) => {
+    const val = parseInt(num, 10);
+
+    switch(interval) {
+    case 'day':
+    case 'days':
+      sum += val * 24 * 60 * 60;
+      break;
+
+    case 'hour':
+    case 'hours':
+      sum += val * 60 * 60;
+      break;
+
+    case 'minute':
+    case 'minutes':
+      sum += val * 60;
+      break;
+
+    case 'second':
+    case 'seconds':
+      sum += val;
+      break;
+    }
+
+    return sum;
+  }, 0);
+
+  const milliseconds = seconds * 1000;
+  if (future) {
+    return {
+      status: 'success',
+      info: 'future',
+      result: new Date(now.valueOf() + milliseconds)
+    };
+  }
+  if (past) {
+    return {
+      status: 'success',
+      info: 'past',
+      result: new Date(now.valueOf() - milliseconds)
+    };
+  }
+}
+
 // Transforms a query constraint from REST API format to Mongo format.
 // A constraint is something with fields like $lt.
 // If it is not a valid constraint but it could be a valid something
@@ -565,9 +645,20 @@ function transformConstraint(constraint, field) {
     case '$gte':
     case '$exists':
     case '$ne':
-    case '$eq':
+    case '$eq': {
+      const text = constraint[key];
+      if (typeof text === 'string') {
+        const parserResult = naturalTimeToDate(text);
+
+        if (parserResult.status === 'success') {
+          answer[key] = parserResult.result;
+          break;
+        }
+      }
+
       answer[key] = transformer(constraint[key]);
       break;
+    }
 
     case '$in':
     case '$nin': {
@@ -1196,4 +1287,5 @@ module.exports = {
   transformUpdate,
   transformWhere,
   mongoObjectToParseObject,
+  naturalTimeToDate,
 };
