@@ -373,11 +373,7 @@ class ParseServer {
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
       Parse.CoreManager.setRESTController(ParseServerRESTController(appId, appRouter));
     }
-
-    const AppCache = require('./cache');
-    var serverUrl = AppCache.AppCache.cache[appId]['value']['publicServerURL'];
-    this.verifyServerUrl(serverUrl);
-
+    this.verifyServerUrl();
     return api;
   }
 
@@ -416,15 +412,16 @@ class ParseServer {
     return new ParseLiveQueryServer(httpServer, config);
   }
 
-  static verifyServerUrl(serverUrl, callback) {
+  static verifyServerUrl(callback) {
     // perform a health check on the publicServerURL value, with 2.5 second delay
     setTimeout(function() {
-      if(serverUrl) {
+      if(Parse.serverURL) {
         const request = require('request');
-        request(serverUrl.replace(/\/$/, "") + "/health", function (error, response, body) {
+        request(Parse.serverURL.replace(/\/$/, "") + "/health", function (error, response, body) {
           if (error || response.statusCode !== 200 || body !== "OK") {
-            // eslint-disable-next-line
-            console.warn("\nWARNING, Unable to connect to publicServerURL '" + serverUrl + "'. Cloud code and push notifications may be unavailable!\n");
+            /* eslint-disable no-console */
+            console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+              ` Cloud code and push notifications may be unavailable!\n`);
             if(callback) {
               callback(false);
             }
