@@ -10,11 +10,11 @@ describe('Server Url Checks', () => {
   app.get('/health', function(req, res){
     res.send('OK');
   });
-  app.listen(12345);
+  app.listen(13376);
 
   it('validate good server url', (done) => {
     reconfigureServer({
-      serverURL: 'http://localhost:12345'
+      serverURL: 'http://localhost:13376'
     }).then(function() {
       ParseServer.verifyServerUrl(function(result) {
         if(!result) {
