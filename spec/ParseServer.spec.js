@@ -1,12 +1,12 @@
 'use strict';
 /* Tests for ParseServer.js */
-var express = require('express');
+const express = require('express');
 
 import ParseServer from '../src/ParseServer';
 
 describe('Server Url Checks', () => {
 
-  var app = express();
+  const app = express();
   app.get('/health', function(req, res){
     res.send('OK');
   });
