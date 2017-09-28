@@ -541,8 +541,8 @@ describe('Parse Role testing', () => {
         .catch(done.fail);
     });
 
-    it('should respect for read.', function (done) {
-      let role;
+    fit('should respect for read.', function (done) {
+      let role, user;
 
       const userP = new Parse.User()
         .set('username', 'userA')
@@ -554,7 +554,8 @@ describe('Parse Role testing', () => {
         .save();
 
       Parse.Promise.when(userP, roleP)
-        .then((user, newrole) => {
+        .then((newUser, newrole) => {
+          user = newUser;
           role = newrole;
           const acl = new Parse.ACL();
           acl.setRoleReadAccess(role, true);
@@ -579,6 +580,16 @@ describe('Parse Role testing', () => {
         .then(() => new Parse.Query('Foo').first())
         .then((obj) => {
           expect(obj).toBeDefined();
+          const acl = obj.getACL();
+          acl.setReadAccess(user.id, false);
+          console.log(acl);
+          const valid = obj.setACL(acl);
+          expect(valid).toBe(true);
+          return obj.save();
+        })
+        .then(() => new Parse.Query('Foo').first())
+        .then((obj) => {
+          expect(obj).not.toBeDefined();
           done();
         })
         .catch(done.fail);
