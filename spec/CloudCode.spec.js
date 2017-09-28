@@ -1627,4 +1627,19 @@ describe('afterFind hooks', () => {
       })
       .then(() => done());
   });
+
+  it('should validate triggers correctly', () => {
+    expect(() => {
+      Parse.Cloud.beforeSave('_Session', () => {});
+    }).toThrow('Triggers are not supported for _Session class.');
+    expect(() => {
+      Parse.Cloud.afterSave('_Session', () => {});
+    }).toThrow('Triggers are not supported for _Session class.');
+    expect(() => {
+      Parse.Cloud.beforeSave('_PushStatus', () => {});
+    }).toThrow('Only afterSave is allowed on _PushStatus');
+    expect(() => {
+      Parse.Cloud.afterSave('_PushStatus', () => {});
+    }).not.toThrow();
+  });
 });

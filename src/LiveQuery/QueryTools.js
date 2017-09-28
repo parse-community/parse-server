@@ -262,10 +262,16 @@ function matchesKeyConstraints(object, key, constraints) {
       }
       break;
     case '$nearSphere':
+      if (!compareTo || !object[key]) {
+        return false;
+      }
       var distance = compareTo.radiansTo(object[key]);
       var max = constraints.$maxDistance || Infinity;
       return distance <= max;
     case '$within':
+      if (!compareTo || !object[key]) {
+        return false;
+      }
       var southWest = compareTo.$box[0];
       var northEast = compareTo.$box[1];
       if (southWest.latitude > northEast.latitude ||

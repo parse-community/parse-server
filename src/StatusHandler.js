@@ -1,5 +1,7 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
+import rest                     from './rest';
+import Auth                     from './Auth';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
@@ -40,6 +42,38 @@ function statusHandler(className, database) {
   function update(where, object) {
     lastPromise = lastPromise.then(() => {
       return database.update(className, where, object);
+    });
+    return lastPromise;
+  }
+
+  return Object.freeze({
+    create,
+    update
+  })
+}
+
+function restStatusHandler(className, config) {
+  let lastPromise = Promise.resolve();
+  const auth = Auth.master(config);
+  function create(object) {
+    lastPromise = lastPromise.then(() => {
+      return rest.create(config, auth, className, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
+    });
+    return lastPromise;
+  }
+
+  function update(where, object) {
+    // TODO: when we have updateWhere, use that for proper interfacing
+    lastPromise = lastPromise.then(() => {
+      return rest.update(config, auth, className, { objectId: where.objectId }, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
     });
     return lastPromise;
   }
@@ -103,11 +137,12 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config, objectId = newObjectId(config.objectIdSize)) {
+export function pushStatusHandler(config, existingObjectId) {
 
   let pushStatus;
   const database = config.database;
-  const handler = statusHandler(PUSH_STATUS_COLLECTION, database);
+  const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
+  let objectId = existingObjectId;
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
     let pushTime = now.toISOString();
@@ -133,8 +168,6 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       pushHash = 'd41d8cd98f00b204e9800998ecf8427e';
     }
     const object = {
-      objectId,
-      createdAt: now,
       pushTime,
       query: JSON.stringify(where),
       payload: payloadString,
@@ -147,8 +180,8 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
       // lockdown!
       ACL: {}
     }
-
-    return handler.create(object).then(() => {
+    return handler.create(object).then((result) => {
+      objectId = result.objectId;
       pushStatus = {
         objectId
       };
@@ -159,12 +192,11 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
   const setRunning = function(count) {
     logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
     return handler.update({status:"pending", objectId: objectId},
-      {status: "running", updatedAt: new Date(), count });
+      {status: "running", count });
   }
 
-  const trackSent = function(results, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
+  const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
     const update = {
-      updatedAt: new Date(),
       numSent: 0,
       numFailed: 0
     };
@@ -179,6 +211,10 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
         const deviceType = result.device.deviceType;
         const key = result.transmitted ? `sentPerType.${deviceType}` : `failedPerType.${deviceType}`;
         memo[key] = incrementOp(memo, key);
+        if (typeof UTCOffset !== 'undefined') {
+          const offsetKey = result.transmitted ? `sentPerUTCOffset.${UTCOffset}` : `failedPerUTCOffset.${UTCOffset}`;
+          memo[offsetKey] = incrementOp(memo, offsetKey);
+        }
         if (result.transmitted) {
           memo.numSent++;
         } else {
@@ -232,27 +268,33 @@ export function pushStatusHandler(config, objectId = newObjectId(config.objectId
   const complete = function() {
     return handler.update({ objectId }, {
       status: 'succeeded',
-      count: {__op: 'Delete'},
-      updatedAt: new Date()
+      count: {__op: 'Delete'}
     });
   }
 
   const fail = function(err) {
-    const update = {
-      errorMessage: JSON.stringify(err),
-      status: 'failed',
-      updatedAt: new Date()
+    if (typeof err === 'string') {
+      err = { message: err };
     }
-    logger.warn(`_PushStatus ${objectId}: error while sending push`, err);
+    const update = {
+      errorMessage: err,
+      status: 'failed'
+    }
     return handler.update({ objectId }, update);
   }
 
-  return Object.freeze({
-    objectId,
+  const rval = {
     setInitial,
     setRunning,
     trackSent,
     complete,
     fail
-  })
+  };
+
+  // define objectId to be dynamic
+  Object.defineProperty(rval, "objectId", {
+    get: () => objectId
+  });
+
+  return Object.freeze(rval);
 }

@@ -4,6 +4,7 @@ import FileSystemAdapter    from 'parse-server-fs-adapter'
 import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter'
 import NullCacheAdapter     from './Adapters/Cache/NullCacheAdapter'
 import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
+import LRUCacheAdapter      from './Adapters/Cache/LRUCache.js'
 import * as TestUtils       from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
@@ -24,4 +25,15 @@ Object.defineProperty(module.exports, 'logger', {
 });
 
 export default ParseServer;
-export { S3Adapter, GCSAdapter, FileSystemAdapter, InMemoryCacheAdapter, NullCacheAdapter, RedisCacheAdapter, TestUtils, PushWorker, _ParseServer as ParseServer };
+export {
+  S3Adapter,
+  GCSAdapter,
+  FileSystemAdapter,
+  InMemoryCacheAdapter,
+  NullCacheAdapter,
+  RedisCacheAdapter,
+  LRUCacheAdapter,
+  TestUtils,
+  PushWorker,
+  _ParseServer as ParseServer
+};

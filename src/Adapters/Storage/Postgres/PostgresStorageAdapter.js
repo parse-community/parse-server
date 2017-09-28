@@ -235,7 +235,7 @@ const buildWhereClause = ({ schema, query, index }) => {
           patterns.push(`${name} = '${fieldValue}'`);
         }
       }
-    } else if (fieldValue === null) {
+    } else if (fieldValue === null || fieldValue === undefined) {
       patterns.push(`$${index}:name IS NULL`);
       values.push(fieldName);
       index += 1;
@@ -980,6 +980,12 @@ export class PostgresStorageAdapter {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         } else {
           return count;
+        }
+      }).catch((error) => {
+        if (error.code === PostgresRelationDoesNotExistError) {
+          // Don't delete anything if doesn't exist
+        } else {
+          throw error;
         }
       });
   }
