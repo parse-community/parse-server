@@ -226,7 +226,7 @@ export function pushStatusHandler(config, existingObjectId) {
               devicesToRemove.push(token);
             }
             // APNS errors
-            if (error === 'Unregistered') {
+            if (error === 'Unregistered' || error === 'BadDeviceToken') {
               devicesToRemove.push(token);
             }
           }
