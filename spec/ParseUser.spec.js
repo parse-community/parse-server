@@ -140,55 +140,6 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should respect ACL without locking user out', (done) => {
-    const user = new Parse.User();
-    const ACL = new Parse.ACL();
-    ACL.setPublicReadAccess(false);
-    ACL.setPublicWriteAccess(false);
-    user.setUsername('asdf');
-    user.setPassword('zxcv');
-    user.setACL(ACL);
-    user.signUp().then(() => {
-      return Parse.User.logIn("asdf", "zxcv");
-    }).then((user) => {
-      equal(user.get("username"), "asdf");
-      const ACL = user.getACL();
-      expect(ACL.getReadAccess(user)).toBe(true);
-      expect(ACL.getWriteAccess(user)).toBe(true);
-      expect(ACL.getPublicReadAccess()).toBe(false);
-      expect(ACL.getPublicWriteAccess()).toBe(false);
-      const perms = ACL.permissionsById;
-      expect(Object.keys(perms).length).toBe(1);
-      expect(perms[user.id].read).toBe(true);
-      expect(perms[user.id].write).toBe(true);
-      expect(perms['*']).toBeUndefined();
-      // Try to lock out user
-      const newACL = new Parse.ACL();
-      newACL.setReadAccess(user.id, false);
-      newACL.setWriteAccess(user.id, false);
-      user.setACL(newACL);
-      return user.save();
-    }).then(() => {
-      return Parse.User.logIn("asdf", "zxcv");
-    }).then((user) => {
-      equal(user.get("username"), "asdf");
-      const ACL = user.getACL();
-      expect(ACL.getReadAccess(user)).toBe(true);
-      expect(ACL.getWriteAccess(user)).toBe(true);
-      expect(ACL.getPublicReadAccess()).toBe(false);
-      expect(ACL.getPublicWriteAccess()).toBe(false);
-      const perms = ACL.permissionsById;
-      expect(Object.keys(perms).length).toBe(1);
-      expect(perms[user.id].read).toBe(true);
-      expect(perms[user.id].write).toBe(true);
-      expect(perms['*']).toBeUndefined();
-      done();
-    }).catch(() => {
-      fail("Should not fail");
-      done();
-    })
-  });
-
   it("user login with files", (done) => {
     const file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
@@ -767,84 +718,6 @@ describe('Parse.User testing', () => {
       equal(userFromDisk.id, id, "id should be set");
       ok(userFromDisk.getSessionToken(),
         "currentUser should have a sessionToken");
-      done();
-    });
-  });
-
-  it("saving user after browser refresh", (done) => {
-    var id;
-
-    Parse.User.signUp("alice", "password", null).then(function(alice) {
-      id = alice.id;
-      return Parse.User.logOut();
-    }).then(() => {
-      return Parse.User.logIn("alice", "password");
-    }).then(function() {
-      // Simulate browser refresh by force-reloading user from localStorage
-      Parse.User._clearCache();
-
-      // Test that this save works correctly
-      return Parse.User.current().save({some_field: 1});
-    }).then(function() {
-      // Check the user in memory just after save operation
-      var userInMemory = Parse.User.current();
-
-      equal(userInMemory.getUsername(), "alice",
-        "saving user should not remove existing fields");
-
-      equal(userInMemory.get('some_field'), 1,
-        "saving user should save specified field");
-
-      equal(userInMemory.get("password"), undefined,
-        "password should not be in attributes after saving user");
-
-      equal(userInMemory.get("objectId"), undefined,
-        "objectId should not be in attributes after saving user");
-
-      equal(userInMemory.get("_id"), undefined,
-        "_id should not be in attributes after saving user");
-
-      equal(userInMemory.id, id, "id should be set");
-
-      expect(userInMemory.updatedAt instanceof Date).toBe(true);
-
-      ok(userInMemory.createdAt instanceof Date);
-
-      ok(userInMemory.getSessionToken(),
-        "user should have a sessionToken after saving");
-
-      // Force the current user to read from localStorage, and check again
-      delete Parse.User._currentUser;
-      delete Parse.User._currentUserMatchesDisk;
-      var userFromDisk = Parse.User.current();
-
-      equal(userFromDisk.getUsername(), "alice",
-        "userFromDisk should have previously existing fields");
-
-      equal(userFromDisk.get('some_field'), 1,
-        "userFromDisk should have saved field");
-
-      equal(userFromDisk.get("password"), undefined,
-        "password should not be in attributes of userFromDisk");
-
-      equal(userFromDisk.get("objectId"), undefined,
-        "objectId should not be in attributes of userFromDisk");
-
-      equal(userFromDisk.get("_id"), undefined,
-        "_id should not be in attributes of userFromDisk");
-
-      equal(userFromDisk.id, id, "id should be set on userFromDisk");
-
-      ok(userFromDisk.updatedAt instanceof Date);
-
-      ok(userFromDisk.createdAt instanceof Date);
-
-      ok(userFromDisk.getSessionToken(),
-        "userFromDisk should have a sessionToken");
-
-      done();
-    }, function(error) {
-      ok(false, error);
       done();
     });
   });
@@ -2171,34 +2044,6 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('user get session from token on login', (done) => {
-    Parse.Promise.as().then(() => {
-      return Parse.User.signUp("finn", "human", { foo: "bar" });
-    }).then(() => {
-      return Parse.User.logOut().then(() => {
-        return Parse.User.logIn("finn", "human");
-      })
-    }).then((user) => {
-      request.get({
-        headers: {
-          'X-Parse-Application-Id': 'test',
-          'X-Parse-Session-Token': user.getSessionToken(),
-          'X-Parse-REST-API-Key': 'rest'
-        },
-        url: 'http://localhost:8378/1/sessions/me',
-      }, (error, response, body) => {
-        expect(error).toBe(null);
-        var b = JSON.parse(body);
-        expect(typeof b.sessionToken).toEqual('string');
-        expect(typeof b.createdWith).toEqual('object');
-        expect(b.createdWith.action).toEqual('login');
-        expect(typeof b.user).toEqual('object');
-        expect(b.user.objectId).toEqual(user.id);
-        done();
-      });
-    });
-  });
-
   it('user update session with other field', (done) => {
     Parse.Promise.as().then(() => {
       return Parse.User.signUp("finn", "human", { foo: "bar" });
@@ -2520,40 +2365,6 @@ describe('Parse.User testing', () => {
         })
       }
     });
-  });
-
-  it_exclude_dbs(['postgres'])('should cleanup null authData keys (regression test for #935)', (done) => {
-    const database = new Config(Parse.applicationId).database;
-    database.create('_User', {
-      username: 'user',
-      _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
-      _auth_data_facebook: null
-    }, {}).then(() => {
-      return new Promise((resolve, reject) => {
-        request.get({
-          url: 'http://localhost:8378/1/login?username=user&password=test',
-          headers: {
-            'X-Parse-Application-Id': 'test',
-            'X-Parse-Master-Key': 'test',
-          },
-          json: true
-        }, (err, res, body) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(body);
-          }
-        })
-      })
-    }).then((user) => {
-      const authData = user.authData;
-      expect(user.username).toEqual('user');
-      expect(authData).toBeUndefined();
-      done();
-    }).catch(() => {
-      fail('this should not fail');
-      done();
-    })
   });
 
   it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {

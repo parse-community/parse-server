@@ -72,38 +72,6 @@ describe("Cloud Code Logger", () => {
       .then(null, e => done.fail(e));
   });
 
-  it("should expose log to trigger", (done) => {
-    var logController = new LoggerController(new WinstonLoggerAdapter());
-
-    Parse.Cloud.beforeSave("MyObject", (req, res) => {
-      req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });
-      req.log.error('beforeSave MyObject', 'error log', { error: 'there was an error' });
-      res.success({});
-    });
-
-    const obj = new Parse.Object('MyObject');
-    obj.save().then(() => {
-      return logController.getLogs({ from: Date.now() - 500, size: 1000 })
-    }).then((res) => {
-      expect(res.length).not.toBe(0);
-      const lastLogs = res.slice(0, 3);
-      const cloudTriggerMessage = lastLogs[0];
-      const errorMessage = lastLogs[1];
-      const infoMessage = lastLogs[2];
-      expect(cloudTriggerMessage.level).toBe('info');
-      expect(cloudTriggerMessage.triggerType).toEqual('beforeSave');
-      expect(cloudTriggerMessage.message).toMatch(/beforeSave triggered for MyObject for user [^ ]*\n {2}Input: {}\n {2}Result: {}/);
-      expect(cloudTriggerMessage.user).toBe(user.id);
-      expect(errorMessage.level).toBe('error');
-      expect(errorMessage.error).toBe('there was an error');
-      expect(errorMessage.message).toBe('beforeSave MyObject error log');
-      expect(infoMessage.level).toBe('info');
-      expect(infoMessage.info).toBe('some log');
-      expect(infoMessage.message).toBe('beforeSave MyObject info log');
-      done();
-    });
-  });
-
   it('should truncate really long lines when asked to', () => {
     const logController = new LoggerController(new WinstonLoggerAdapter());
     const longString = fs.readFileSync(loremFile, 'utf8');

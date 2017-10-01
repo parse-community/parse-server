@@ -236,46 +236,6 @@ describe('miscellaneous', function() {
       });
   });
 
-  it('succeed in logging in', function(done) {
-    createTestUser(function(u) {
-      expect(typeof u.id).toEqual('string');
-
-      Parse.User.logIn('test', 'moon-y', {
-        success: function(user) {
-          expect(typeof user.id).toEqual('string');
-          expect(user.get('password')).toBeUndefined();
-          expect(user.getSessionToken()).not.toBeUndefined();
-          Parse.User.logOut().then(done);
-        }, error: error => {
-          fail(JSON.stringify(error));
-          done();
-        }
-      });
-    }, fail);
-  });
-
-  it('increment with a user object', function(done) {
-    createTestUser().then((user) => {
-      user.increment('foo');
-      return user.save();
-    }).then(() => {
-      return Parse.User.logIn('test', 'moon-y');
-    }).then((user) => {
-      expect(user.get('foo')).toEqual(1);
-      user.increment('foo');
-      return user.save();
-    }).then(() => Parse.User.logOut())
-      .then(() => Parse.User.logIn('test', 'moon-y'))
-      .then((user) => {
-        expect(user.get('foo')).toEqual(2);
-        Parse.User.logOut()
-          .then(done);
-      }, (error) => {
-        fail(JSON.stringify(error));
-        done();
-      });
-  });
-
   it('save various data types', function(done) {
     var obj = new TestObject();
     obj.set('date', new Date());
@@ -1155,34 +1115,6 @@ describe('miscellaneous', function() {
         expect(error).toBe(null);
         const b = JSON.parse(body);
         expect(typeof b.updatedAt).toEqual('string');
-        done();
-      });
-    });
-  });
-
-  it('android login providing empty authData block works', (done) => {
-    const headers = {
-      'Content-Type': 'application/json',
-      'X-Parse-Application-Id': 'test',
-      'X-Parse-REST-API-Key': 'rest'
-    };
-    const data = {
-      username: 'pulse1989',
-      password: 'password1234',
-      authData: {}
-    };
-    const requestOptions = {
-      headers: headers,
-      url: 'http://localhost:8378/1/users',
-      body: JSON.stringify(data)
-    };
-    request.post(requestOptions, (error) => {
-      expect(error).toBe(null);
-      requestOptions.url = 'http://localhost:8378/1/login';
-      request.get(requestOptions, (error, response, body) => {
-        expect(error).toBe(null);
-        const b = JSON.parse(body);
-        expect(typeof b['sessionToken']).toEqual('string');
         done();
       });
     });
