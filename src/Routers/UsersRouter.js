@@ -155,8 +155,16 @@ export class UsersRouter extends ClassesRouter {
         const create = new RestWrite(req.config, Auth.master(req.config), '_Session', null, sessionData);
         return create.execute();
       }).then(() => {
-        return { response: user };
-      });
+        //return { response: user };
+		const options = {};
+		return rest.get(req.config, req.auth, '_User', user.objectId, options, req.info.clientSDK)
+		  .then((response) => {
+			if (!response.results || response.results.length == 0) {
+			  throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
+			}
+			return { response: response.results[0] };
+		  });
+	  });
   }
 
   handleLogOut(req) {
