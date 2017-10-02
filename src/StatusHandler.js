@@ -1,6 +1,7 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
-import Parse                    from 'parse/node';
+import rest                     from './rest';
+import Auth                     from './Auth';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
@@ -51,21 +52,16 @@ function statusHandler(className, database) {
   })
 }
 
-function restStatusHandler(className) {
+function restStatusHandler(className, config) {
   let lastPromise = Promise.resolve();
-
+  const auth = Auth.master(config);
   function create(object) {
     lastPromise = lastPromise.then(() => {
-      return Parse._request(
-        'POST',
-        `classes/${className}`,
-        object,
-        { useMasterKey: true }
-      ).then((result) => {
-        // merge the objects
-        const response = Object.assign({}, object, result);
-        return Promise.resolve(response);
-      });
+      return rest.create(config, auth, className, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
     });
     return lastPromise;
   }
@@ -73,15 +69,11 @@ function restStatusHandler(className) {
   function update(where, object) {
     // TODO: when we have updateWhere, use that for proper interfacing
     lastPromise = lastPromise.then(() => {
-      return Parse._request(
-        'PUT',
-        `classes/${className}/${where.objectId}`,
-        object,
-        { useMasterKey: true }).then((result) => {
-        // merge the objects
-        const response = Object.assign({}, object, result);
-        return Promise.resolve(response);
-      });
+      return rest.update(config, auth, className, { objectId: where.objectId }, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
     });
     return lastPromise;
   }
@@ -149,7 +141,7 @@ export function pushStatusHandler(config, existingObjectId) {
 
   let pushStatus;
   const database = config.database;
-  const handler = restStatusHandler(PUSH_STATUS_COLLECTION);
+  const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
   let objectId = existingObjectId;
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
@@ -188,7 +180,6 @@ export function pushStatusHandler(config, existingObjectId) {
       // lockdown!
       ACL: {}
     }
-
     return handler.create(object).then((result) => {
       objectId = result.objectId;
       pushStatus = {
@@ -235,7 +226,7 @@ export function pushStatusHandler(config, existingObjectId) {
               devicesToRemove.push(token);
             }
             // APNS errors
-            if (error === 'Unregistered') {
+            if (error === 'Unregistered' || error === 'BadDeviceToken') {
               devicesToRemove.push(token);
             }
           }
