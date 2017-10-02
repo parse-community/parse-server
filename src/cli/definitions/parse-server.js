@@ -194,6 +194,11 @@ export default {
     help: "Session duration, defaults to 1 year",
     action: numberParser("sessionLength")
   },
+  "maxLimit": {
+    env: "PARSE_SERVER_MAX_LIMIT",
+    help: "Max value for limit option on queries, defaults to unlimited",
+    action: numberParser("maxLimit")
+  },
   "verbose": {
     env: "VERBOSE",
     help: "Set the logging to verbose"
