@@ -7,8 +7,8 @@
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.2...2.6.3)
 
 #### Improvements:
-* Queries on Pointer fields with $in and $nin now supports list of objectId's, thanks to [Florent Vilmart](https://github.com/flovilmart)
-* LiveQueries on $in and $nin for pointer fields work as expected thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Queries on Pointer fields with `$in` and `$nin` now supports list of objectId's, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* LiveQueries on `$in` and `$nin` for pointer fields work as expected thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Also remove device token when APNS error is BadDeviceToken, thanks to [Mauricio Tollin](https://github.com/)
 * LRU cache is not available on the ParseServer object, thanks to [Tyler Brock](https://github.com/tbrock)
 * Error messages are more expressive, thanks to [Tyler Brock](https://github.com/tbrock)
@@ -19,7 +19,7 @@
 * Adds ability to set a maxLimit on server configuration for queries, thanks to [Chris Norris](https://github.com/)
 
 #### Bug fixes:
-* Fixes issue affecting reporting _PushStatus with misconfigured serverURL, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting reporting `_PushStatus` with misconfigured serverURL, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Fixes issue affecting deletion of class that doesn't exist, thanks to [Diamond Lewis](https://github.com/dlewis)
 
 #### Dependency Updates:
