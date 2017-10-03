@@ -90,26 +90,28 @@ function queryHash(query) {
 }
 
 /**
- * contains -- Determines wether a constaint in for form of a list
+ * contains -- Determines whether a constraint in the form of a list
  * contains a particular object.
- * This also supports, pointer comparion and strings as lightweight pointers
+ * If the compared to object is a pointer it will match either full pointers
+ * or string (objectId)
+ * Otherwise it will use a simple indexOf.
  */
-function contains(compareTo: Array, object: any): boolean {
-  if (object.__type && object.__type === 'Pointer') {
-    for (const i in compareTo) {
-      const ptr = compareTo[i];
-      if (typeof ptr == 'string' && ptr === object.objectId) {
+function contains(haystack: Array, needle: any): boolean {
+  if (needle.__type && needle.__type === 'Pointer') {
+    for (const i in haystack) {
+      const ptr = haystack[i];
+      if (typeof ptr === 'string' && ptr === needle.objectId) {
         return true;
       }
       if (typeof object !== 'undefined' &&
-          ptr.className === object.className &&
-          ptr.objectId === object.objectId) {
+          ptr.className === needle.className &&
+          ptr.objectId === needle.objectId) {
         return true;
       }
     }
     return false;
   }
-  return compareTo.indexOf(object) > -1;
+  return haystack.indexOf(needle) > -1;
 }
 /**
  * matchesQuery -- Determines if an object would be returned by a Parse Query

@@ -497,7 +497,7 @@ describe('matchesQuery', function() {
   });
 
   function pointer(className, objectId) {
-    return {__type: 'Pointer', className, objectId };
+    return { __type: 'Pointer', className, objectId };
   }
 
   it('should support containedIn with pointers', () => {
