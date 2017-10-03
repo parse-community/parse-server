@@ -495,4 +495,79 @@ describe('matchesQuery', function() {
     expect(matchesQuery(message, q)).toBe(false);
 
   });
+
+  function pointer(className, objectId) {
+    return {__type: 'Pointer', className, objectId };
+  }
+
+  it('should support containedIn with pointers', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'abc' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn with pointers', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'def')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support containedIn queries with [objectId]', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn queries with [objectId]', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    var q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def', 'ghi']);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
 });
