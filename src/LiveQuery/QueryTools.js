@@ -97,7 +97,7 @@ function queryHash(query) {
  * Otherwise it will use a simple indexOf.
  */
 function contains(haystack: Array, needle: any): boolean {
-  if (needle.__type && needle.__type === 'Pointer') {
+  if (needle && needle.__type && needle.__type === 'Pointer') {
     for (const i in haystack) {
       const ptr = haystack[i];
       if (typeof ptr === 'string' && ptr === needle.objectId) {
