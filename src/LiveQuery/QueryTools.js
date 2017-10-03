@@ -90,11 +90,7 @@ function queryHash(query) {
 }
 
 /**
- * contains -- Determines whether a constraint in the form of a list
- * contains a particular object.
- * If the compared to object is a pointer it will match either full pointers
- * or string (objectId)
- * Otherwise it will use a simple indexOf.
+ * contains -- Determines if an object is contained in a list with special handling for Parse pointers.
  */
 function contains(haystack: Array, needle: any): boolean {
   if (needle && needle.__type && needle.__type === 'Pointer') {
