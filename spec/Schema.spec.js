@@ -274,7 +274,7 @@ describe('SchemaController', () => {
             fooSixteen: {type: 'String'},
             fooEighteen: {type: 'String'},
             fooNineteen: {type: 'String'},
-          }, levelPermissions, config.database))
+          }, levelPermissions, {}, config.database))
           .then(actualSchema => {
             const expectedSchema = {
               className: 'NewClass',
