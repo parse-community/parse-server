@@ -1784,7 +1784,10 @@ describe('schemas', () => {
           name2: { field2: 1},
         },
       });
-      done();
+      config.database.adapter.getIndexes('NewClass').then((indexes) => {
+        expect(indexes.length).toBe(3);
+        done();
+      });
     });
   });
 
@@ -1860,7 +1863,7 @@ describe('schemas', () => {
           indexes: {
             name1: { field1: 1 },
             name2: { field2: 1 },
-            name3: { field3: 1 },
+            name3: { field3: 1, field4: 1 },
           }
         }
       }, (error, response, body) => {
@@ -1876,7 +1879,7 @@ describe('schemas', () => {
           indexes: {
             name1: { field1: 1 },
             name2: { field2: 1 },
-            name3: { field3: 1 },
+            name3: { field3: 1, field4: 1 },
           }
         })).toEqual(undefined);
         request.get({
@@ -1896,7 +1899,7 @@ describe('schemas', () => {
             indexes: {
               name1: { field1: 1 },
               name2: { field2: 1 },
-              name3: { field3: 1 },
+              name3: { field3: 1, field4: 1 },
             },
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
@@ -2098,6 +2101,65 @@ describe('schemas', () => {
             expect(indexes.length).toEqual(3);
             done();
           });
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('cannot delete index that does not exist', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            unknownIndex: { __op: 'Delete' }
+          }
+        }
+      }, (error, response, body) => {
+        expect(body.code).toBe(Parse.Error.INVALID_QUERY);
+        expect(body.error).toBe('Index unknownIndex does not exist, cannot delete.');
+        done();
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('cannot update index that exist', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 }
+          }
+        }
+      }, () => {
+        request.put({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            indexes: {
+              name1: { field2: 1 }
+            }
+          }
+        }, (error, response, body) => {
+          expect(body.code).toBe(Parse.Error.INVALID_QUERY);
+          expect(body.error).toBe('Index name1 exists, cannot update.');
+          done();
         });
       });
     })

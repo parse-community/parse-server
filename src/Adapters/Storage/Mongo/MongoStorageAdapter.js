@@ -179,16 +179,23 @@ export class MongoStorageAdapter {
     }
     const deletePromises = [];
     const insertedIndexes = [];
-    Object.keys(submittedIndexes).forEach(indexName => {
-      if (submittedIndexes[indexName].__op === 'Delete') {
-        const promise = this.dropIndex(className, indexName);
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
+      }
+      if (field.__op === 'Delete') {
+        const promise = this.dropIndex(className, name);
         deletePromises.push(promise);
-        delete existingIndexes[indexName];
+        delete existingIndexes[name];
       } else {
-        existingIndexes[indexName] = submittedIndexes[indexName];
+        existingIndexes[name] = field;
         insertedIndexes.push({
-          key: submittedIndexes[indexName],
-          name: indexName,
+          key: field,
+          name,
         });
       }
     });
@@ -208,7 +215,8 @@ export class MongoStorageAdapter {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
-    return this._schemaCollection()
+    return this.setIndexes(className, schema.indexes, {}, schema)
+      .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
       .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
       .catch(error => {
