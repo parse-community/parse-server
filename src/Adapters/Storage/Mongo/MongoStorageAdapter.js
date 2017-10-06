@@ -401,7 +401,7 @@ export class MongoStorageAdapter {
     }, {});
 
     readPreference = this._parseReadPreference(readPreference);
-    return this.createTextIndexesIfNeeded(className, query)
+    return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
@@ -503,20 +503,27 @@ export class MongoStorageAdapter {
     return Promise.resolve();
   }
 
-  createTextIndexesIfNeeded(className, query) {
+  createTextIndexesIfNeeded(className, query, schema) {
     for(const fieldName in query) {
       if (!query[fieldName] || !query[fieldName].$text) {
         continue;
       }
-      const index = {
-        [fieldName]: 'text'
+      const existingIndexes = schema.indexes;
+      for (const key in existingIndexes) {
+        const index = existingIndexes[key];
+        if (index.hasOwnProperty(fieldName)) {
+          return Promise.resolve();
+        }
+      }
+      const indexName = `${fieldName}_text`;
+      const textIndex = {
+        [indexName]: { [fieldName]: 'text' }
       };
-      return this.createIndex(className, index)
+      return this.setIndexes(className, textIndex, existingIndexes, schema.fields)
         .catch((error) => {
-          if (error.code === 85) {
-            throw new Parse.Error(
-              Parse.Error.INTERNAL_SERVER_ERROR,
-              'Only one text index is supported, please delete all text indexes to use new field.');
+          if (error.code === 85) { // Index exist with different options
+            return this.getIndexes(className)
+              .then((indexes) => this.setIndexes(className, {}, indexes, schema.fields));
           }
           throw error;
         });
@@ -532,6 +539,11 @@ export class MongoStorageAdapter {
   dropIndex(className, index) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.dropIndex(index));
+  }
+
+  dropAllIndexes(className) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndexes());
   }
 }
 

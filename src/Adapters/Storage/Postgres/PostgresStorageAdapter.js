@@ -1457,29 +1457,23 @@ export class PostgresStorageAdapter {
     return conn.tx(t => {
       const batch = [];
       indexes.forEach((index) => {
-        const pattern = Object.keys(index.key).map((key) => `"${key}"`);
-        const qs = t.none(`CREATE INDEX ${index.name} ON "${className}" (${pattern.join(',')})`);
+        const fieldNames = Object.keys(index.key);
+        const pattern = fieldNames.map((key, index) => `$${index + 3}:name`);
+        const qs = t.none(`CREATE INDEX $1:name ON $2:name (${pattern.join(',')})`, [index.name, className, ...fieldNames]);
         batch.push(qs);
       });
       return t.batch(batch);
-    })
+    });
   }
 
   dropIndexes(className, indexes, conn) {
     conn = conn || this._client;
-    return conn.tx(t => {
-      const batch = [];
-      indexes.forEach((index) => {
-        const qs = t.none(`DROP INDEX ${index}`);
-        batch.push(qs);
-      });
-      return t.batch(batch);
-    })
+    return conn.tx(t => t.batch(indexes.map(i => t.none('DROP INDEX $1:name', i))));
   }
 
   getIndexes(className) {
-    const qs = `SELECT * FROM pg_indexes WHERE tablename = '${className}'`;
-    return this._client.any(qs, []);
+    const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
+    return this._client.any(qs, {className});
   }
 }
 
