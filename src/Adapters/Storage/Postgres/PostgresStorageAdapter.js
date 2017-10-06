@@ -98,10 +98,15 @@ const toParseSchema = (schema) => {
   if (schema.classLevelPermissions) {
     clps = {...emptyCLPS, ...schema.classLevelPermissions};
   }
+  let indexes = {};
+  if (schema.classLevelPermissions) {
+    indexes = {...schema.indexes};
+  }
   return {
     className: schema.className,
     fields: schema.fields,
     classLevelPermissions: clps,
+    indexes,
   };
 }
 
@@ -593,6 +598,16 @@ export class PostgresStorageAdapter {
   setClassLevelPermissions(className, CLPs) {
     return this._ensureSchemaCollectionExists().then(() => {
       const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)]
+      return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+    });
+  }
+
+  setIndexes(className, submittedIndexes, existingIndexes = {}) {
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    return this._ensureSchemaCollectionExists().then(() => {
+      const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
       return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
     });
   }

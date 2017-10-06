@@ -53,7 +53,7 @@ const convertParseSchemaToMongoSchema = ({...schema}) => {
 
 // Returns { code, error } if invalid, or { result }, an object
 // suitable for inserting into _SCHEMA collection, otherwise.
-const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions) => {
+const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions, indexes) => {
   const mongoObject = {
     _id: className,
     objectId: 'string',
@@ -71,6 +71,15 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
       delete mongoObject._metadata.class_permissions;
     } else {
       mongoObject._metadata.class_permissions = classLevelPermissions;
+    }
+  }
+
+  if (typeof indexes !== 'undefined') {
+    mongoObject._metadata = mongoObject._metadata || {};
+    if (!indexes) {
+      delete mongoObject._metadata.indexes;
+    } else {
+      mongoObject._metadata.indexes = indexes;
     }
   }
 
@@ -164,9 +173,40 @@ export class MongoStorageAdapter {
       }));
   }
 
+  setIndexes(className, submittedIndexes, existingIndexes = {}) {
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    const deletePromises = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(indexName => {
+      if (submittedIndexes[indexName].__op === 'Delete') {
+        const promise = this.dropIndex(className, indexName);
+        deletePromises.push(promise);
+        delete existingIndexes[indexName];
+      } else {
+        existingIndexes[indexName] = submittedIndexes[indexName];
+        insertedIndexes.push({
+          key: submittedIndexes[indexName],
+          name: indexName,
+        });
+      }
+    });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes);
+    }
+    return Promise.all(deletePromises)
+      .then(() => insertPromise)
+      .then(() => this._schemaCollection())
+      .then(schemaCollection => schemaCollection.updateSchema(className, {
+        $set: { _metadata: { indexes: existingIndexes } }
+      }));
+  }
+
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
-    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);
+    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
@@ -439,6 +479,11 @@ export class MongoStorageAdapter {
       .then(collection => collection._mongoCollection.createIndex(index));
   }
 
+  createIndexes(className, indexes) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.createIndexes(indexes));
+  }
+
   createIndexesIfNeeded(className, fieldName, type) {
     if (type && type.type === 'Polygon') {
       const index = {
@@ -473,6 +518,11 @@ export class MongoStorageAdapter {
   getIndexes(className) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.indexes());
+  }
+
+  dropIndex(className, index) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndex(index));
   }
 }
 

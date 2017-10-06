@@ -1756,4 +1756,350 @@ describe('schemas', () => {
       done();
     });
   });
+
+  it_exclude_dbs(['postgres'])('allows add indexes when you create a class', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {
+        className: "NewClass",
+        indexes: {
+          name1: { field1: 1},
+          name2: { field2: 1},
+        }
+      }
+    }, (error, response, body) => {
+      expect(body).toEqual({
+        className: 'NewClass',
+        fields: {
+          ACL: {type: 'ACL'},
+          createdAt: {type: 'Date'},
+          updatedAt: {type: 'Date'},
+          objectId: {type: 'String'},
+        },
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: {
+          name1: { field1: 1},
+          name2: { field2: 1},
+        },
+      });
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('lets you add indexes', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 }
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            name1: { field1: 1 },
+          }
+        })).toEqual(undefined);
+        request.get({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              name1: { field1: 1 },
+            }
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes.length).toEqual(2);
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('lets you add multiple indexes', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        })).toEqual(undefined);
+        request.get({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              name1: { field1: 1 },
+              name2: { field2: 1 },
+              name3: { field3: 1 },
+            },
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes.length).toEqual(4);
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('lets you delete indexes', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 }
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            name1: { field1: 1 },
+          }
+        })).toEqual(undefined);
+        request.put({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            indexes: {
+              name1: { __op: 'Delete' }
+            }
+          }
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes.length).toEqual(1);
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('lets you delete multiple indexes', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        })).toEqual(undefined);
+        request.put({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            indexes: {
+              name1: { __op: 'Delete' },
+              name2: { __op: 'Delete' },
+            }
+          }
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              name3: { field3: 1 },
+            }
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes.length).toEqual(2);
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['postgres'])('lets you add and delete indexes', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            name1: { field1: 1 },
+            name2: { field2: 1 },
+            name3: { field3: 1 },
+          }
+        })).toEqual(undefined);
+        request.put({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+          body: {
+            indexes: {
+              name1: { __op: 'Delete' },
+              name2: { __op: 'Delete' },
+              name4: { field4: 1 },
+            }
+          }
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              name3: { field3: 1 },
+              name4: { field4: 1 },
+            }
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes.length).toEqual(3);
+            done();
+          });
+        });
+      });
+    })
+  });
 });
