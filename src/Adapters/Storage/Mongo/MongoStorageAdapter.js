@@ -74,13 +74,9 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
     }
   }
 
-  if (typeof indexes !== 'undefined') {
+  if (indexes && typeof indexes === 'object' && Object.keys(indexes).length > 0) {
     mongoObject._metadata = mongoObject._metadata || {};
-    if (!indexes) {
-      delete mongoObject._metadata.indexes;
-    } else {
-      mongoObject._metadata.indexes = indexes;
-    }
+    mongoObject._metadata.indexes = indexes;
   }
 
   return mongoObject;
@@ -173,7 +169,7 @@ export class MongoStorageAdapter {
       }));
   }
 
-  setIndexes(className, submittedIndexes, existingIndexes = {}) {
+  setIndexes(className, submittedIndexes, existingIndexes = {}, fields) {
     if (submittedIndexes === undefined) {
       return Promise.resolve();
     }
@@ -192,6 +188,11 @@ export class MongoStorageAdapter {
         deletePromises.push(promise);
         delete existingIndexes[name];
       } else {
+        Object.keys(field).forEach(key => {
+          if (!fields.hasOwnProperty(key)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
+          }
+        });
         existingIndexes[name] = field;
         insertedIndexes.push({
           key: field,
@@ -215,7 +216,7 @@ export class MongoStorageAdapter {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
-    return this.setIndexes(className, schema.indexes, {}, schema)
+    return this.setIndexes(className, schema.indexes, {}, schema.fields)
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
       .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))

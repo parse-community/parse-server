@@ -99,7 +99,7 @@ const toParseSchema = (schema) => {
     clps = {...emptyCLPS, ...schema.classLevelPermissions};
   }
   let indexes = {};
-  if (schema.classLevelPermissions) {
+  if (schema.indexes) {
     indexes = {...schema.indexes};
   }
   return {
@@ -602,22 +602,61 @@ export class PostgresStorageAdapter {
     });
   }
 
-  setIndexes(className, submittedIndexes, existingIndexes = {}) {
+  setIndexes(className, submittedIndexes, existingIndexes = {}, fields, conn) {
+    conn = conn || this._client;
     if (submittedIndexes === undefined) {
       return Promise.resolve();
     }
-    return this._ensureSchemaCollectionExists().then(() => {
-      const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
-      return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+    const deletedIndexes = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
+      }
+      if (field.__op === 'Delete') {
+        deletedIndexes.push(name);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (!fields.hasOwnProperty(key)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
     });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes, conn);
+    }
+    let deletePromise = Promise.resolve();
+    if (deletedIndexes.length > 0) {
+      deletePromise = this.dropIndexes(className, deletedIndexes, conn);
+    }
+    return deletePromise
+      .then(() => insertPromise)
+      .then(() => this._ensureSchemaCollectionExists())
+      .then(() => {
+        const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
+        return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+      });
   }
 
   createClass(className, schema) {
     return this._client.tx(t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+      const q3 = this.setIndexes(className, schema.indexes, {}, schema.fields, t);
 
-      return t.batch([q1, q2]);
+      return t.batch([q1, q2, q3]);
     })
       .then(() => {
         return toParseSchema(schema)
@@ -1411,6 +1450,36 @@ export class PostgresStorageAdapter {
         /* eslint-disable no-console */
         console.error(error);
       });
+  }
+
+  createIndexes(className, indexes, conn) {
+    conn = conn || this._client;
+    return conn.tx(t => {
+      const batch = [];
+      indexes.forEach((index) => {
+        const pattern = Object.keys(index.key).map((key) => `"${key}"`);
+        const qs = t.none(`CREATE INDEX ${index.name} ON "${className}" (${pattern.join(',')})`);
+        batch.push(qs);
+      });
+      return t.batch(batch);
+    })
+  }
+
+  dropIndexes(className, indexes, conn) {
+    conn = conn || this._client;
+    return conn.tx(t => {
+      const batch = [];
+      indexes.forEach((index) => {
+        const qs = t.none(`DROP INDEX ${index}`);
+        batch.push(qs);
+      });
+      return t.batch(batch);
+    })
+  }
+
+  getIndexes(className) {
+    const qs = `SELECT * FROM pg_indexes WHERE tablename = '${className}'`;
+    return this._client.any(qs, []);
   }
 }
 
