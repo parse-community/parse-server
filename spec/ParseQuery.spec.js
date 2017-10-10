@@ -3086,4 +3086,27 @@ describe('Parse.Query testing', () => {
       done();
     }, done.fail);
   });
+
+  it('should not interfere with has when using select on field with undefined value #3999', (done) => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('OtherObject');
+    obj2.set('otherField', 'ok');
+    obj1.set('testPointerField', obj2);
+    obj1.set('shouldBe', true);
+    const obj3 = new Parse.Object('TestObject');
+    obj3.set('shouldBe', false);
+    Parse.Object.saveAll([obj1, obj3]).then(() => {
+      const query = new Parse.Query('TestObject');
+      query.include('testPointerField');
+      query.select(['testPointerField', 'testPointerField.otherField', 'shouldBe']);
+      return query.find();
+    }).then(results => {
+      results.forEach(result => {
+        console.log('result: ' + JSON.stringify(result));
+        equal(result.has('testPointerField'), result.get('shouldBe'));
+      });
+      done();
+    }
+    ).catch(done.fail);
+  });
 });
