@@ -1096,11 +1096,6 @@ var GeoPointCoder = {
         latitude: object[1],
         longitude: object[0]
       }
-    } else {
-      throw new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
-        'GeoPoint: invalid database object'
-      );
     }
   },
 

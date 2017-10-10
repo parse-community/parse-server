@@ -2,6 +2,8 @@
 // hungry/js/test/parse_geo_point_test.js
 
 const rp = require('request-promise');
+const Config = require('../src/Config');
+
 const TestObject = Parse.Object.extend('TestObject');
 const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
@@ -643,6 +645,26 @@ describe('Parse.GeoPoint testing', () => {
 });
 
 describe_only_db('mongo')('Parse.GeoPoint testing', () => {
+  it('converts geoJSON to geoPoint', (done) => {
+    const config = new Config('test');
+    const database = config.database.adapter.database;
+    const geoJSON = {type: 'Point', coordinates:[10, 20]};
+    config.database.loadSchema()
+      .then(schema => schema.addClassIfNotExists('test_TestObject', {
+        point: {type: 'GeoPoint'},
+      }))
+      .then(actualSchema => {
+        equal(actualSchema.fields.point.type, 'GeoPoint');
+        database.collection('test_TestObject').insertOne({ point: geoJSON }, {}, (error, records) => {
+          const objectId = records.ops[0]._id;
+          config.database.adapter.find('TestObject', actualSchema, { objectId }, {}).then((results) => {
+            equal(results[0].point.__type, 'GeoPoint');
+            done();
+          });
+        });
+      });
+  });
+
   it('support legacy geopoints with 2dsphere', (done) => {
     const location = {__type: 'GeoPoint', latitude:10, longitude:10};
     const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
