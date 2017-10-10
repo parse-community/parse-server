@@ -3090,7 +3090,7 @@ describe('Parse.Query testing', () => {
   it('should not interfere with has when using select on field with undefined value #3999', (done) => {
     const obj1 = new Parse.Object('TestObject');
     const obj2 = new Parse.Object('OtherObject');
-    obj2.set('otherField', 'ok');
+    obj2.set('otherField', 1);
     obj1.set('testPointerField', obj2);
     obj1.set('shouldBe', true);
     const obj3 = new Parse.Object('TestObject');
@@ -3102,7 +3102,6 @@ describe('Parse.Query testing', () => {
       return query.find();
     }).then(results => {
       results.forEach(result => {
-        console.log('result: ' + JSON.stringify(result));
         equal(result.has('testPointerField'), result.get('shouldBe'));
       });
       done();
