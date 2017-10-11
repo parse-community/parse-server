@@ -661,7 +661,7 @@ function transformConstraint(constraint, field) {
       if (typeof text === 'string') {
         const parserResult = naturalTimeToDate(text);
         if (parserResult.status === 'success') {
-          answer[key] = new Date(parserResult.result);
+          answer[key] = parserResult.result;
           break;
         }
       }
