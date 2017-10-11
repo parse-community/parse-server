@@ -3105,7 +3105,46 @@ describe('Parse.Query testing', () => {
         equal(result.has('testPointerField'), result.get('shouldBe'));
       });
       done();
-    }
-    ).catch(done.fail);
+    }).catch(done.fail);
+  });
+
+  it('should handle relative times correctly', function(done) {
+    const now = Date.now();
+    const obj1 = new Parse.Object('MyCustomObject', {
+      name: 'obj1',
+      ttl: new Date(now + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    });
+    const obj2 = new Parse.Object('MyCustomObject', {
+      name: 'obj2',
+      ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    });
+
+    dropDatabase()
+      .then(() => Parse.Object.saveAll([obj1, obj2]))
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', 'in 1 day');
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', '1 day ago');
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.lessThan('ttl', '5 days ago');
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(0);
+      })
+      .then(done, done.fail);
   });
 });

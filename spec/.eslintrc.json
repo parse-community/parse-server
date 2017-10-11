@@ -24,7 +24,8 @@
       "expectError": true,
       "jequal": true,
       "create": true,
-      "arrayContains": true
+      "arrayContains": true,
+      "dropDatabase": true
     },
     "rules": {
       "no-console": [0]
