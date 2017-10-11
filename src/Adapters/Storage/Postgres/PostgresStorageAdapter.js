@@ -646,7 +646,7 @@ export class PostgresStorageAdapter {
       .then(() => this._ensureSchemaCollectionExists())
       .then(() => {
         const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
-        return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+        return conn.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
       });
   }
 
@@ -1453,22 +1453,13 @@ export class PostgresStorageAdapter {
   }
 
   createIndexes(className, indexes, conn) {
-    conn = conn || this._client;
-    return conn.tx(t => {
-      const batch = [];
-      indexes.forEach((index) => {
-        const fieldNames = Object.keys(index.key);
-        const pattern = fieldNames.map((key, index) => `$${index + 3}:name`);
-        const qs = t.none(`CREATE INDEX $1:name ON $2:name (${pattern.join(',')})`, [index.name, className, ...fieldNames]);
-        batch.push(qs);
-      });
-      return t.batch(batch);
-    });
+    return (conn || this._client).tx(t => t.batch(indexes.map(i => {
+      return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [i.name, className, i.key]);
+    })));
   }
 
   dropIndexes(className, indexes, conn) {
-    conn = conn || this._client;
-    return conn.tx(t => t.batch(indexes.map(i => t.none('DROP INDEX $1:name', i))));
+    return (conn || this._client).tx(t => t.batch(indexes.map(i => t.none('DROP INDEX $1:name', i))));
   }
 
   getIndexes(className) {
