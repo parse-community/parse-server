@@ -390,6 +390,20 @@ describe('naturalTimeToDate', () => {
         info: 'Invalid time string. Dangling unit or number.',
       });
     });
+
+    it('should error if numbers are invalid', () => {
+      expect(transform.naturalTimeToDate('12 hours 123a minute ago')).toEqual({
+        status: 'error',
+        info: "'123a' is not an integer.",
+      });
+    });
+
+    it('should error on invalid interval units', () => {
+      expect(transform.naturalTimeToDate('4 score 7 years ago')).toEqual({
+        status: 'error',
+        info: "Invalid interval: 'score'",
+      });
+    });
   });
 });
 

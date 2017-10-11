@@ -568,33 +568,44 @@ function naturalTimeToDate(text, now = new Date()) {
     pairs.push([ parts.shift(), parts.shift() ]);
   }
 
-  const seconds = pairs.reduce((sum, [num, interval]) => {
-    const val = parseInt(num, 10);
+  let seconds = 0;
+  for (const [num, interval] of pairs) {
+    const val = Number(num);
+    if (!Number.isInteger(val)) {
+      return {
+        status: 'error',
+        info: `'${num}' is not an integer.`,
+      };
+    }
 
     switch(interval) {
     case 'day':
     case 'days':
-      sum += val * 24 * 60 * 60;
+      seconds += val * 24 * 60 * 60;
       break;
 
     case 'hour':
     case 'hours':
-      sum += val * 60 * 60;
+      seconds += val * 60 * 60;
       break;
 
     case 'minute':
     case 'minutes':
-      sum += val * 60;
+      seconds += val * 60;
       break;
 
     case 'second':
     case 'seconds':
-      sum += val;
+      seconds += val;
       break;
-    }
 
-    return sum;
-  }, 0);
+    default:
+      return {
+        status: 'error',
+        info: `Invalid interval: '${interval}'`,
+      };
+    }
+  }
 
   const milliseconds = seconds * 1000;
   if (future) {
