@@ -404,6 +404,13 @@ describe('naturalTimeToDate', () => {
         info: "Invalid interval: 'score'",
       });
     });
+
+    it("should error when string contains 'ago' and 'in'", () => {
+      expect(transform.naturalTimeToDate('in 1 day 2 minutes ago')).toEqual({
+        status: 'error',
+        info: "Time cannot have both 'in' and 'ago'",
+      });
+    });
   });
 });
 

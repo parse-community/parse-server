@@ -549,6 +549,13 @@ function naturalTimeToDate(text, now = new Date()) {
     return { status: 'error', info: "Time should either start with 'in' or end with 'ago'" };
   }
 
+  if (future && past) {
+    return {
+      status: 'error',
+      info: "Time cannot have both 'in' and 'ago'",
+    };
+  }
+
   // strip the 'ago' or 'in'
   if (future) {
     parts = parts.slice(1);
@@ -663,6 +670,10 @@ function transformConstraint(constraint, field) {
         if (parserResult.status === 'success') {
           answer[key] = parserResult.result;
           break;
+        }
+
+        if (parserResult.status === 'error') {
+          log.info('Error while parsing relative date', parserResult);
         }
       }
 
