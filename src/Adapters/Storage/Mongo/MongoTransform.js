@@ -533,7 +533,7 @@ function transformTopLevelAtom(atom, field) {
   }
 }
 
-function naturalTimeToDate(text, now = new Date()) {
+function relativeTimeToDate(text, now = new Date()) {
   let parts = text.split(' ');
   if (!parts.length) {
     return { status: 'invalid', info: 'Not a time string' };
@@ -666,7 +666,7 @@ function transformConstraint(constraint, field) {
     case '$eq': {
       const text = constraint[key];
       if (typeof text === 'string') {
-        const parserResult = naturalTimeToDate(text);
+        const parserResult = relativeTimeToDate(text);
         if (parserResult.status === 'success') {
           answer[key] = parserResult.result;
           break;
@@ -1308,5 +1308,5 @@ module.exports = {
   transformUpdate,
   transformWhere,
   mongoObjectToParseObject,
-  naturalTimeToDate,
+  relativeTimeToDate,
 };
