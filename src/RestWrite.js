@@ -1196,9 +1196,7 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
 
-    if(response.hasOwnProperty(fieldName)) {
-      response[fieldName] = response[fieldName];
-    } else {
+    if(!response.hasOwnProperty(fieldName)) {
       response[fieldName] = dataValue;
     }
 
