@@ -1197,7 +1197,11 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
     const dataValue = data[fieldName];
     const responseValue = response[fieldName];
 
-    response[fieldName] = responseValue || dataValue;
+    if(responseValue || responseValue === 0) {
+      response[fieldName] = responseValue;
+    } else {
+      response[fieldName] = dataValue;
+    }
 
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {
