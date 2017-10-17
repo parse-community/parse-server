@@ -360,8 +360,9 @@ class ParseServer {
 
     api.use(middlewares.handleParseErrors);
 
-    //This causes tests to spew some useless warnings, so disable in test
+    // run the following when not testing
     if (!process.env.TESTING) {
+      //This causes tests to spew some useless warnings, so disable in test
       process.on('uncaughtException', (err) => {
         if (err.code === "EADDRINUSE") { // user-friendly message for this common error
           /* eslint-disable no-console */
@@ -371,6 +372,10 @@ class ParseServer {
         } else {
           throw err;
         }
+      });
+      // verify the server url after a 'mount' event is received
+      api.on('mount', function() {
+        ParseServer.verifyServerUrl();
       });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
@@ -412,6 +417,27 @@ class ParseServer {
 
   static createLiveQueryServer(httpServer, config) {
     return new ParseLiveQueryServer(httpServer, config);
+  }
+
+  static verifyServerUrl(callback) {
+    // perform a health check on the serverURL value
+    if(Parse.serverURL) {
+      const request = require('request');
+      request(Parse.serverURL.replace(/\/$/, "") + "/health", function (error, response, body) {
+        if (error || response.statusCode !== 200 || body !== "OK") {
+          /* eslint-disable no-console */
+          console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+            ` Cloud code and push notifications may be unavailable!\n`);
+          if(callback) {
+            callback(false);
+          }
+        } else {
+          if(callback) {
+            callback(true);
+          }
+        }
+      });
+    }
   }
 }
 
