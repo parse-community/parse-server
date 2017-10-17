@@ -11,7 +11,7 @@ const help = function(){
   console.log('  Get Started guide:');
   console.log('');
   console.log('    Please have a look at the get started guide!');
-  console.log('    https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide');
+  console.log('    http://docs.parseplatform.org/parse-server/guide/');
   console.log('');
   console.log('');
   console.log('  Usage with npm start');

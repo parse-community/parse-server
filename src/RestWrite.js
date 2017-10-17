@@ -1195,9 +1195,10 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
-    const responseValue = response[fieldName];
 
-    response[fieldName] = responseValue || dataValue;
+    if(!response.hasOwnProperty(fieldName)) {
+      response[fieldName] = dataValue;
+    }
 
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {

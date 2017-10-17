@@ -1037,6 +1037,45 @@ describe('Cloud Code', () => {
     })
   });
 
+  /**
+   * Checks that incrementing a value to a zero in a beforeSave hook
+   * does not result in that key being omitted from the response.
+   */
+  it('before save increment does not return undefined', (done) => {
+    Parse.Cloud.define("cloudIncrementClassFunction", function (req, res) {
+      const CloudIncrementClass = Parse.Object.extend("CloudIncrementClass");
+      const obj = new CloudIncrementClass();
+      obj.id = req.params.objectId;
+      obj.save().then(
+        function (savedObj) {
+          res.success(savedObj);
+        });
+    });
+
+    Parse.Cloud.beforeSave("CloudIncrementClass", function (req, res) {
+      const obj = req.object;
+      if(!req.master) {
+        obj.increment('points', -10);
+        obj.increment('num', -9);
+      }
+      res.success();
+    });
+
+    const CloudIncrementClass = Parse.Object.extend('CloudIncrementClass');
+    const obj = new CloudIncrementClass();
+    obj.set('points', 10);
+    obj.set('num', 10);
+    obj.save(null, {useMasterKey: true})
+      .then(function() {
+        Parse.Cloud.run('cloudIncrementClassFunction', { objectId: obj.id })
+          .then(function(savedObj) {
+            expect(savedObj.get('num')).toEqual(1);
+            expect(savedObj.get('points')).toEqual(0);
+            done();
+          });
+      });
+  });
+
   describe('cloud jobs', () => {
     it('should define a job', (done) => {
       expect(() => {
