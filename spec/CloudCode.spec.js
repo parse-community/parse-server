@@ -1242,7 +1242,6 @@ describe('Cloud Code', () => {
 describe('cloud functions', () => {
   it('Should have request ip', (done) => {
     Parse.Cloud.define('myFunction', (req, res) => {
-      console.log('kör gör!');
       expect(req.ip).toBeDefined();
       res.success("success");
     });
