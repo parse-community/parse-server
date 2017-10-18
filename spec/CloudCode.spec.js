@@ -1239,10 +1239,33 @@ describe('Cloud Code', () => {
   });
 });
 
+describe('cloud functions', () => {
+  it('Should have request ip', (done) => {
+    Parse.Cloud.define('myFunction', (req, res) => {
+      console.log('kör gör!');
+      expect(req.ip).toBeDefined();
+      res.success("success");
+    });
+
+    Parse.Cloud.run('myFunction', {}).then(() => done(), (a) => console.log('s', a));
+  });
+});
+
 describe('beforeSave hooks', () => {
   it('should have request headers', (done) => {
     Parse.Cloud.beforeSave('MyObject', (req, res) => {
       expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save().then(() => done());
+  });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.beforeSave('MyObject', (req, res) => {
+      expect(req.ip).toBeDefined();
       res.success();
     });
 
@@ -1263,6 +1286,17 @@ describe('afterSave hooks', () => {
     myObject.save()
       .then(() => done());
   });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.afterSave('MyObject', (req, res) => {
+      expect(req.ip).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save().then(() => done());
+  });
 });
 
 describe('beforeDelete hooks', () => {
@@ -1278,12 +1312,37 @@ describe('beforeDelete hooks', () => {
       .then(myObj => myObj.destroy())
       .then(() => done());
   });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.beforeDelete('MyObject', (req, res) => {
+      expect(req.ip).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then(myObj => myObj.destroy())
+      .then(() => done());
+  });
 });
 
 describe('afterDelete hooks', () => {
   it('should have request headers', (done) => {
     Parse.Cloud.afterDelete('MyObject', (req) => {
       expect(req.headers).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then(myObj => myObj.destroy())
+      .then(() => done());
+  });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.afterDelete('MyObject', (req) => {
+      expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
@@ -1432,6 +1491,26 @@ describe('beforeFind hooks', () => {
   it('should have request headers', (done) => {
     Parse.Cloud.beforeFind('MyObject', (req) => {
       expect(req.headers).toBeDefined();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then((myObj) => {
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
+        return Promise.all([
+          query.get(myObj.id),
+          query.first(),
+          query.find(),
+        ]);
+      })
+      .then(() => done());
+  });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      expect(req.ip).toBeDefined();
     });
 
     const MyObject = Parse.Object.extend('MyObject');
@@ -1649,6 +1728,27 @@ describe('afterFind hooks', () => {
   it('should have request headers', (done) => {
     Parse.Cloud.afterFind('MyObject', (req, res) => {
       expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save()
+      .then((myObj) => {
+        const query = new Parse.Query('MyObject');
+        query.equalTo('objectId', myObj.id);
+        return Promise.all([
+          query.get(myObj.id),
+          query.first(),
+          query.find(),
+        ]);
+      })
+      .then(() => done());
+  });
+
+  it('should have request ip', (done) => {
+    Parse.Cloud.afterFind('MyObject', (req, res) => {
+      expect(req.ip).toBeDefined();
       res.success();
     });
 
