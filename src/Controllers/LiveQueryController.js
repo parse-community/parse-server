@@ -1,10 +1,10 @@
 import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
-
+import { LiveQueryConfiguration } from '../Configuration'
 export class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;
 
-  constructor(config: any) {
+  constructor(config: ?LiveQueryConfiguration) {
     // If config is empty, we just assume no classs needs to be registered as LiveQuery
     if (!config || !config.classNames) {
       this.classNames = new Set();

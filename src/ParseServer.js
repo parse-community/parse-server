@@ -10,6 +10,8 @@ var batch = require('./batch'),
   authDataManager = require('./Adapters/Auth');
 
 import defaults                 from './defaults';
+import { Configuration,
+  LiveQueryServerOptions }       from './Configuration';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
@@ -90,66 +92,69 @@ addParseCloud();
 
 class ParseServer {
 
-  constructor({
-    appId = requiredParameter('You must provide an appId!'),
-    masterKey = requiredParameter('You must provide a masterKey!'),
-    masterKeyIps = [],
-    appName,
-    analyticsAdapter,
-    filesAdapter,
-    push,
-    scheduledPush = false,
-    loggerAdapter,
-    jsonLogs = defaults.jsonLogs,
-    logsFolder = defaults.logsFolder,
-    verbose = defaults.verbose,
-    logLevel = defaults.level,
-    silent = defaults.silent,
-    databaseURI = defaults.DefaultMongoURI,
-    databaseOptions,
-    databaseAdapter,
-    cloud,
-    collectionPrefix = '',
-    clientKey,
-    javascriptKey,
-    dotNetKey,
-    restAPIKey,
-    webhookKey,
-    fileKey,
-    userSensitiveFields = [],
-    enableAnonymousUsers = defaults.enableAnonymousUsers,
-    allowClientClassCreation = defaults.allowClientClassCreation,
-    oauth = {},
-    auth = {},
-    serverURL = requiredParameter('You must provide a serverURL!'),
-    maxUploadSize = defaults.maxUploadSize,
-    verifyUserEmails = defaults.verifyUserEmails,
-    preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
-    emailVerifyTokenValidityDuration,
-    accountLockout,
-    passwordPolicy,
-    cacheAdapter,
-    emailAdapter,
-    publicServerURL,
-    customPages = {
-      invalidLink: undefined,
-      verifyEmailSuccess: undefined,
-      choosePassword: undefined,
-      passwordResetSuccess: undefined
-    },
-    liveQuery = {},
-    sessionLength = defaults.sessionLength, // 1 Year in seconds
-    maxLimit,
-    expireInactiveSessions = defaults.expireInactiveSessions,
-    revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
-    schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
-    cacheTTL = defaults.cacheTTL, // cache for 5s
-    cacheMaxSize = defaults.cacheMaxSize, // 10000
-    enableSingleSchemaCache = false,
-    objectIdSize = defaults.objectIdSize,
-    __indexBuildCompletionCallbackForTests = () => {},
-  }) {
+  constructor(configuration: Configuration) {
+    const {
+      appId = requiredParameter('You must provide an appId!'),
+      masterKey = requiredParameter('You must provide a masterKey!'),
+      appName,
+      analyticsAdapter,
+      filesAdapter,
+      push,
+      scheduledPush = false,
+      loggerAdapter,
+      jsonLogs = defaults.jsonLogs,
+      logsFolder = defaults.logsFolder,
+      verbose = defaults.verbose,
+      logLevel = defaults.level,
+      silent = defaults.silent,
+      databaseURI = defaults.DefaultMongoURI,
+      databaseOptions,
+      cloud,
+      collectionPrefix = '',
+      clientKey,
+      javascriptKey,
+      dotNetKey,
+      restAPIKey,
+      webhookKey,
+      fileKey,
+      enableAnonymousUsers = defaults.enableAnonymousUsers,
+      allowClientClassCreation = defaults.allowClientClassCreation,
+      oauth = {},
+      serverURL = requiredParameter('You must provide a serverURL!'),
+      maxUploadSize = defaults.maxUploadSize,
+      verifyUserEmails = defaults.verifyUserEmails,
+      preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
+      emailVerifyTokenValidityDuration,
+      accountLockout,
+      passwordPolicy,
+      cacheAdapter,
+      emailAdapter,
+      publicServerURL,
+      customPages = {
+        invalidLink: undefined,
+        verifyEmailSuccess: undefined,
+        choosePassword: undefined,
+        passwordResetSuccess: undefined
+      },
+      liveQuery,
+      sessionLength = defaults.sessionLength, // 1 Year in seconds
+      maxLimit,
+      expireInactiveSessions = defaults.expireInactiveSessions,
+      revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
+      schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
+      cacheTTL = defaults.cacheTTL, // cache for 5s
+      cacheMaxSize = defaults.cacheMaxSize, // 10000
+      enableSingleSchemaCache = false,
+      objectIdSize = defaults.objectIdSize,
+      __indexBuildCompletionCallbackForTests = () => {},
+    } = configuration;
 
+    let {
+      databaseAdapter,
+      masterKeyIps = [],
+      userSensitiveFields = [],
+      auth = {},
+    } = configuration;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
@@ -415,7 +420,7 @@ class ParseServer {
     return appRouter;
   }
 
-  static createLiveQueryServer(httpServer, config) {
+  static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
     return new ParseLiveQueryServer(httpServer, config);
   }
 
