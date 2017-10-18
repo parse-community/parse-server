@@ -1246,7 +1246,7 @@ describe('cloud functions', () => {
       res.success("success");
     });
 
-    Parse.Cloud.run('myFunction', {}).then(() => done(), (a) => console.log('s', a));
+    Parse.Cloud.run('myFunction', {}).then(() => done());
   });
 });
 
