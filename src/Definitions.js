@@ -142,11 +142,6 @@ module.exports.ParseServerOptions = {
     "help": "Enable (or disable) client class creation, defaults to true",
     "action": parsers.booleanParser
   },
-  "oauth": {
-    "env": "PARSE_SERVER_OAUTH_PROVIDERS",
-    "help": "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication",
-    "action": parsers.objectParser
-  },
   "auth": {
     "env": "PARSE_SERVER_AUTH_PROVIDERS",
     "help": "Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication",
@@ -320,7 +315,7 @@ module.exports.LiveQueryOptions = {
 module.exports.LiveQueryServerOptions = {
   "appId": {
     "env": "undefinedAPP_ID",
-    "help": "Required. This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId."
+    "help": "This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId."
   },
   "masterKey": {
     "env": "undefinedMASTER_KEY",

@@ -12,7 +12,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
   /* Restrict masterKey to be used by only these ips. defaults to [] (allow all ips) */
-  masterKeyIps: ?[string];
+  masterKeyIps: ?string[];
   /* Sets the app name */
   appName: ?string;
   /* Adapter module for the analytics */
@@ -62,16 +62,13 @@ export interface ParseServerOptions {
   /* Key for your files */
   fileKey: ?string;
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. */
-  userSensitiveFields: ?[string];
+  userSensitiveFields: ?string[];
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS */
   enableAnonymousUsers: ?boolean;
   /* Enable (or disable) client class creation, defaults to true
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION */
   allowClientClassCreation: ?boolean;
-  /* [DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
-  :ENV: PARSE_SERVER_OAUTH_PROVIDERS */
-  oauth: ?any;
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?any;
@@ -123,9 +120,9 @@ export interface ParseServerOptions {
   /* Mount path for the server, defaults to /parse */
   mountPath: ?string;
   /* Run with cluster, optionally set the number of processes default to os.cpus().length */
-  cluster: ?(NumberOrBoolean);
+  cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
-  middleware: ?(()=>void|string);
+  middleware: ?((()=>void)|string);
   /* Starts the liveQuery server */
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
@@ -148,7 +145,7 @@ export interface CustomPagesOptions {
 export interface LiveQueryOptions {
   /* parse-server's LiveQuery classNames
   :ENV: PARSE_SERVER_LIVEQUERY_CLASSNAMES */
-  classNames: ?[string],
+  classNames: ?string[],
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,
   /* LiveQuery pubsub adapter */
@@ -156,7 +153,7 @@ export interface LiveQueryOptions {
 }
 
 export interface LiveQueryServerOptions {
-  /* Required. This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId.*/
+  /* This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId.*/
   appId: ?string,
   /* This string should match the masterKey in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same masterKey.*/
   masterKey: ?string,

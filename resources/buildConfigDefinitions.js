@@ -80,24 +80,16 @@ function mapperFor(elt, t) {
   const wrap = function(identifier) {
     return t.memberExpression(p, identifier);
   }
-  if (elt.type == 'StringTypeAnnotation') {
-    return; // do not map strings
-  }
-  if (elt.type == 'NumberTypeAnnotation') {
+
+  if (t.isNumberTypeAnnotation(elt)) {
     return t.callExpression(wrap(t.identifier('numberParser')), [t.stringLiteral(elt.name)]);
-  }
-  if (elt.type == 'TupleTypeAnnotation') {
+  } else if (t.isArrayTypeAnnotation(elt)) {
     return wrap(t.identifier('arrayParser'));
-  }
-
-  if (elt.type == 'AnyTypeAnnotation') {
+  } else if (t.isAnyTypeAnnotation(elt)) {
     return wrap(t.identifier('objectParser'));
-  }
-
-  if (elt.type == 'BooleanTypeAnnotation') {
+  } else if (t.isBooleanTypeAnnotation(elt)) {
     return wrap(t.identifier('booleanParser'));
-  }
-  if (elt.type == 'GenericTypeAnnotation') {
+  } else if (t.isGenericTypeAnnotation(elt)) {
     const type = elt.typeAnnotation.id.name;
     if (type == 'Adapter') {
       return wrap(t.identifier('moduleOrObjectParser'));
@@ -106,10 +98,6 @@ function mapperFor(elt, t) {
       return wrap(t.identifier('numberOrBooleanParser'));
     }
     return wrap(t.identifier('objectParser'));
-  }
-
-  if (elt.type == 'FunctionTypeAnnotation') {
-    return;
   }
 }
 
@@ -144,10 +132,12 @@ const plugin = function (babel) {
   return {
     visitor: {
       Program: function(path) {
+        // Inject the parsers loader
         path.pushContainer("body", t.importDeclaration([t.importNamespaceSpecifier(t.identifier('parsers'))],
           t.stringLiteral('./cli/utils/parsers')));
       },
       ExportDeclaration: function(path) {
+        // Export declaration on an interface
         if (path.node && path.node.declaration && path.node.declaration.type == 'InterfaceDeclaration') {
           const l = inject(t, doInterface(path.node.declaration));
           const id = path.node.declaration.id.name;
