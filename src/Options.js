@@ -15,6 +15,7 @@ export interface ParseServerOptions {
   masterKeyIps: ?[string];
   /* Sets the app name */
   appName: ?string;
+  /* Adapter module for the analytics */
   analyticsAdapter: ?Adapter;
   /* Adapter module for the files sub-system */
   filesAdapter: ?Adapter;
@@ -42,6 +43,7 @@ export interface ParseServerOptions {
   databaseURI: string;
   /* Options to pass to the mongodb client */
   databaseOptions: ?any;
+  /* Adapter module for the database */
   databaseAdapter: ?Adapter;
   /* Full path to your cloud code main.js */
   cloud: ?any;
@@ -100,6 +102,7 @@ export interface ParseServerOptions {
   sessionLength: ?number; // 1 Year in seconds
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
+  /* Sets wether we should expire the inactive sessions */
   expireInactiveSessions: ?boolean;
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions. */
   revokeSessionOnPasswordReset: ?boolean;
@@ -113,10 +116,6 @@ export interface ParseServerOptions {
   enableSingleSchemaCache: ?boolean;
   /* Sets the number of characters in generated object id's, default 10 */
   objectIdSize: ?number;
-  __indexBuildCompletionCallbackForTests: ?()=>void;
-}
-
-export interface ParseServerCLIOptions extends ParseServerOptions {
   /* The port to run the ParseServer. defaults to 1337. */
   port: ?number;
   /* The host to serve ParseServer on. defaults to 0.0.0.0 */
@@ -131,12 +130,18 @@ export interface ParseServerCLIOptions extends ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+
+  __indexBuildCompletionCallbackForTests: ?()=>void;
 }
 
 export interface CustomPagesOptions {
+  /* invalid link page path */
   invalidLink: ?string;
+  /* verify email success page path */
   verifyEmailSuccess: ?string;
+  /* choose password page path */
   choosePassword: ?string;
+  /* password reset success page path */
   passwordResetSuccess: ?string;
 }
 

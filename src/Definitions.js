@@ -32,6 +32,8 @@ module.exports.ParseServerOptions = {
     "help": "Sets the app name"
   },
   "analyticsAdapter": {
+    "env": "PARSE_SERVER_ANALYTICS_ADAPTER",
+    "help": "Adapter module for the analytics",
     "action": parsers.moduleOrObjectParser
   },
   "filesAdapter": {
@@ -88,6 +90,8 @@ module.exports.ParseServerOptions = {
     "action": parsers.objectParser
   },
   "databaseAdapter": {
+    "env": "PARSE_SERVER_DATABASE_ADAPTER",
+    "help": "Adapter module for the database",
     "action": parsers.moduleOrObjectParser
   },
   "cloud": {
@@ -212,6 +216,8 @@ module.exports.ParseServerOptions = {
     "action": parsers.numberParser("maxLimit")
   },
   "expireInactiveSessions": {
+    "env": "PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS",
+    "help": "Sets wether we should expire the inactive sessions",
     "action": parsers.booleanParser
   },
   "revokeSessionOnPasswordReset": {
@@ -244,9 +250,6 @@ module.exports.ParseServerOptions = {
     "help": "Sets the number of characters in generated object id's, default 10",
     "action": parsers.numberParser("objectIdSize")
   },
-  "__indexBuildCompletionCallbackForTests": {}
-};
-module.exports.ParseServerCLIOptions = {
   "port": {
     "env": "PARSE_SERVER_PORT",
     "help": "The port to run the ParseServer. defaults to 1337.",
@@ -281,10 +284,22 @@ module.exports.ParseServerCLIOptions = {
   }
 };
 module.exports.CustomPagesOptions = {
-  "invalidLink": {},
-  "verifyEmailSuccess": {},
-  "choosePassword": {},
-  "passwordResetSuccess": {}
+  "invalidLink": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_INVALID_LINK",
+    "help": "invalid link page path"
+  },
+  "verifyEmailSuccess": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_VERIFY_EMAIL_SUCCESS",
+    "help": "verify email success page path"
+  },
+  "choosePassword": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_CHOOSE_PASSWORD",
+    "help": "choose password page path"
+  },
+  "passwordResetSuccess": {
+    "env": "PARSE_SERVER_CUSTOM_PAGES_PASSWORD_RESET_SUCCESS",
+    "help": "password reset success page path"
+  }
 };
 module.exports.LiveQueryOptions = {
   "classNames": {

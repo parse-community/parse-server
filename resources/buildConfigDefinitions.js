@@ -40,18 +40,17 @@ function getENVPrefix(iface) {
 
 function processProperty(property, iface) {
   const firstComment = getCommentValue(last(property.leadingComments || []));
-  let env;
-  let help;
   const name = property.key.name;
   const prefix = getENVPrefix(iface);
 
-  if (firstComment) {
-    const components = firstComment.split(':ENV:').map((elt) => {
-      return elt.trim();
-    });
-    help = components[0];
-    env = components[1] || (prefix + toENV(name));
+  if (!firstComment) {
+    return;
   }
+  const components = firstComment.split(':ENV:').map((elt) => {
+    return elt.trim();
+  });
+  const help = components[0];
+  const env = components[1] || (prefix + toENV(name));
   let type = property.value.type;
   let isRequired = true;
   if (type == 'NullableTypeAnnotation') {
@@ -73,7 +72,7 @@ function processProperty(property, iface) {
 function doInterface(iface) {
   return iface.body.properties.map((prop) => {
     return processProperty(prop, iface);
-  });
+  }).filter((e) => e !== undefined);
 }
 
 function mapperFor(elt, t) {
