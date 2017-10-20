@@ -541,7 +541,7 @@ describe('Parse Role testing', () => {
         .catch(done.fail);
     });
 
-    fit('should respect for read.', function (done) {
+    it('should respect for read.', function (done) {
       let role, user;
 
       const userP = new Parse.User()
@@ -582,17 +582,15 @@ describe('Parse Role testing', () => {
           expect(obj).toBeDefined();
           const acl = obj.getACL();
           acl.setReadAccess(user.id, false);
-          console.log(acl);
-          const valid = obj.setACL(acl);
-          expect(valid).toBe(true);
+          obj.setACL(acl);
           return obj.save();
         })
         .then(() => new Parse.Query('Foo').first())
-        .then((obj) => {
-          expect(obj).not.toBeDefined();
+        .then(() => done.fail('query should fail with not found'))
+        .catch((e) => {
+          expect(e).toEqual(new Parse.Error(101, 'Object not found.'));
           done();
-        })
-        .catch(done.fail);
+        });
     });
   });
 });
