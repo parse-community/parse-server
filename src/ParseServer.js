@@ -10,9 +10,9 @@ var batch = require('./batch'),
   authDataManager = require('./Adapters/Auth');
 
 import { ParseServerOptions,
-  LiveQueryServerOptions,
-  mergeWithDefaults,
-  DefaultMongoURI }           from './Options';
+  LiveQueryServerOptions }      from './Options';
+import defaults                 from './defaults';
+import { DefaultMongoURI }      from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
@@ -442,6 +442,22 @@ function addParseCloud() {
   const ParseCloud = require("./cloud-code/Parse.Cloud");
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
+}
+
+function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
+  options = Object.assign({}, defaults, options);
+
+  options.userSensitiveFields = Array.from(new Set(options.userSensitiveFields.concat(
+    defaults.userSensitiveFields,
+    options.userSensitiveFields
+  )));
+
+  options.masterKeyIps = Array.from(new Set(options.masterKeyIps.concat(
+    defaults.masterKeyIps,
+    options.masterKeyIps
+  )));
+
+  return options;
 }
 
 export default ParseServer;
