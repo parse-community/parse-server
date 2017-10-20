@@ -9,9 +9,10 @@ var batch = require('./batch'),
   url = require('url'),
   authDataManager = require('./Adapters/Auth');
 
-import defaults                 from './defaults';
-import { Configuration,
-  LiveQueryServerOptions }       from './Configuration';
+import { ParseServerOptions,
+  LiveQueryServerOptions,
+  mergeWithDefaults,
+  DefaultMongoURI }           from './Options';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
@@ -92,7 +93,8 @@ addParseCloud();
 
 class ParseServer {
 
-  constructor(configuration: Configuration) {
+  constructor(configuration: ParseServerOptions) {
+    configuration = mergeWithDefaults(configuration);
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
@@ -102,12 +104,12 @@ class ParseServer {
       push,
       scheduledPush = false,
       loggerAdapter,
-      jsonLogs = defaults.jsonLogs,
-      logsFolder = defaults.logsFolder,
-      verbose = defaults.verbose,
-      logLevel = defaults.level,
-      silent = defaults.silent,
-      databaseURI = defaults.DefaultMongoURI,
+      jsonLogs,
+      logsFolder,
+      verbose,
+      logLevel,
+      silent,
+      databaseURI,
       databaseOptions,
       cloud,
       collectionPrefix = '',
@@ -117,13 +119,13 @@ class ParseServer {
       restAPIKey,
       webhookKey,
       fileKey,
-      enableAnonymousUsers = defaults.enableAnonymousUsers,
-      allowClientClassCreation = defaults.allowClientClassCreation,
+      enableAnonymousUsers,
+      allowClientClassCreation,
       oauth = {},
       serverURL = requiredParameter('You must provide a serverURL!'),
-      maxUploadSize = defaults.maxUploadSize,
-      verifyUserEmails = defaults.verifyUserEmails,
-      preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
+      maxUploadSize,
+      verifyUserEmails,
+      preventLoginWithUnverifiedEmail,
       emailVerifyTokenValidityDuration,
       accountLockout,
       passwordPolicy,
@@ -137,28 +139,28 @@ class ParseServer {
         passwordResetSuccess: undefined
       },
       liveQuery,
-      sessionLength = defaults.sessionLength, // 1 Year in seconds
+      sessionLength, // 1 Year in seconds
       maxLimit,
-      expireInactiveSessions = defaults.expireInactiveSessions,
-      revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
-      schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
-      cacheTTL = defaults.cacheTTL, // cache for 5s
-      cacheMaxSize = defaults.cacheMaxSize, // 10000
-      enableSingleSchemaCache = false,
-      objectIdSize = defaults.objectIdSize,
+      expireInactiveSessions,
+      revokeSessionOnPasswordReset,
+      schemaCacheTTL, // cache for 5s
+      cacheTTL, // cache for 5s
+      cacheMaxSize, // 10000
+      enableSingleSchemaCache,
+      objectIdSize,
+      masterKeyIps,
+      userSensitiveFields,
       __indexBuildCompletionCallbackForTests = () => {},
     } = configuration;
 
     let {
       databaseAdapter,
-      masterKeyIps = [],
-      userSensitiveFields = [],
       auth = {},
     } = configuration;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
+    if ((databaseOptions || (databaseURI && databaseURI != DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
       throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
     } else if (!databaseAdapter) {
       databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions)
@@ -169,16 +171,6 @@ class ParseServer {
     if (!filesAdapter && !databaseURI) {
       throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
     }
-
-    userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
-      defaults.userSensitiveFields,
-      userSensitiveFields
-    )));
-
-    masterKeyIps = Array.from(new Set(masterKeyIps.concat(
-      defaults.masterKeyIps,
-      masterKeyIps
-    )));
 
     const loggerOptions = { jsonLogs, logsFolder, verbose, logLevel, silent };
     const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);

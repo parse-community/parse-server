@@ -9,10 +9,10 @@ import * as TestUtils       from './TestUtils';
 import { useExternal }      from './deprecated';
 import { getLogger }        from './logger';
 import { PushWorker }       from './Push/PushWorker';
-import { Configuration }    from './Configuration';
+import { ParseServerOptions }    from './Options';
 
 // Factory function
-const _ParseServer = function(options: Configuration) {
+const _ParseServer = function(options: ParseServerOptions) {
   const server = new ParseServer(options);
   return server.app;
 }

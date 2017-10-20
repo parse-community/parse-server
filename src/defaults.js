@@ -1,5 +1,4 @@
 import {nullParser} from './cli/utils/parsers';
-
 const logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.TESTING === '1') {
@@ -16,8 +15,10 @@ const { verbose, level } = (() => {
   return { verbose, level: verbose ? 'verbose' : undefined }
 })();
 
+export const DefaultMongoURI = 'mongodb://localhost:27017/parse';
+
 export default {
-  DefaultMongoURI: 'mongodb://localhost:27017/parse',
+  databaseURI: DefaultMongoURI,
   jsonLogs: process.env.JSON_LOGS || false,
   logsFolder,
   verbose,
@@ -36,5 +37,6 @@ export default {
   cacheMaxSize: 10000,
   userSensitiveFields: ['email'],
   objectIdSize: 10,
+  enableSingleSchemaCache: false,
   masterKeyIps: []
-}
+};

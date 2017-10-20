@@ -1,5 +1,8 @@
 // @flow
-export interface Configuration {
+import defaults from './defaults';
+import { DefaultMongoURI } from './defaults';
+
+export interface ParseServerOptions {
   appId: string;
   masterKey: string;
   serverURL: string;
@@ -40,8 +43,8 @@ export interface Configuration {
   cacheAdapter: ?any;
   emailAdapter: ?any;
   publicServerURL: ?string;
-  customPages: ?CustomPagesConfig;
-  liveQuery: ?LiveQueryConfiguration;
+  customPages: ?CustomPagesOptions;
+  liveQuery: ?LiveQueryOptions;
   sessionLength: ?number; // 1 Year in seconds
   maxLimit: ?number;
   expireInactiveSessions: ?boolean;
@@ -54,7 +57,7 @@ export interface Configuration {
   __indexBuildCompletionCallbackForTests: ?()=>void;
 }
 
-export interface CustomPagesConfig {
+export interface CustomPagesOptions {
   invalidLink: ?string;
   verifyEmailSuccess: ?string;
   choosePassword: ?string;
@@ -66,7 +69,7 @@ export interface PubSubOptions {
   pubSubAdapter: ?any,
 }
 
-export interface LiveQueryConfiguration extends PubSubOptions {
+export interface LiveQueryOptions extends PubSubOptions {
   classNames: ?[string],
 }
 
@@ -80,3 +83,21 @@ export interface LiveQueryServerOptions extends PubSubOptions {
   logLevel: ?string,
   port: ?number
 }
+
+export function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
+  options = Object.assign({}, defaults, options);
+
+  options.userSensitiveFields = Array.from(new Set(options.userSensitiveFields.concat(
+    defaults.userSensitiveFields,
+    options.userSensitiveFields
+  )));
+
+  options.masterKeyIps = Array.from(new Set(options.masterKeyIps.concat(
+    defaults.masterKeyIps,
+    options.masterKeyIps
+  )));
+
+  return options;
+}
+
+export { DefaultMongoURI };
