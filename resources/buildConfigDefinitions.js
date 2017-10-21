@@ -119,7 +119,11 @@ function mapperFor(elt, t) {
 function parseDefaultValue(elt, value, t) {
   let litteralValue;
   if (t.isStringTypeAnnotation(elt)) {
-    litteralValue = t.stringLiteral(value);
+    if (value == '""' || value == "''") {
+      litteralValue = t.stringLiteral('');
+    } else {
+      litteralValue = t.stringLiteral(value);
+    }
   } else if (t.isNumberTypeAnnotation(elt)) {
     litteralValue = t.numericLiteral(parsers.numberOrBoolParser('')(value));
   } else if (t.isArrayTypeAnnotation(elt)) {

@@ -106,7 +106,7 @@ module.exports.ParseServerOptions = {
   "collectionPrefix": {
     "env": "PARSE_SERVER_COLLECTION_PREFIX",
     "help": "A collection prefix for the classes",
-    "default": "''"
+    "default": ""
   },
   "clientKey": {
     "env": "PARSE_SERVER_CLIENT_KEY",
@@ -231,7 +231,8 @@ module.exports.ParseServerOptions = {
   "revokeSessionOnPasswordReset": {
     "env": "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     "help": "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
-    "action": parsers.booleanParser
+    "action": parsers.booleanParser,
+    "default": false
   },
   "schemaCacheTTL": {
     "env": "PARSE_SERVER_SCHEMA_CACHE_TTL",

@@ -12,7 +12,6 @@ var batch = require('./batch'),
 import { ParseServerOptions,
   LiveQueryServerOptions }      from './Options';
 import defaults                 from './defaults';
-import { DefaultMongoURI }      from './defaults';
 import * as logging             from './logger';
 import AppCache                 from './cache';
 import Config                   from './Config';
@@ -154,7 +153,7 @@ class ParseServer {
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || (databaseURI && databaseURI != DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
+    if ((databaseOptions || (databaseURI && databaseURI !== defaults.databaseURI) || collectionPrefix !== defaults.collectionPrefix) && databaseAdapter) {
       throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
     } else if (!databaseAdapter) {
       databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions)

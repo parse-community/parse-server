@@ -65,6 +65,7 @@ function nullParser(opt) {
 }
 
 module.exports = {
+  numberParser,
   numberOrBoolParser,
   nullParser,
   booleanParser,
