@@ -32,11 +32,20 @@ export default {
   sessionLength: 31536000,
   expireInactiveSessions: true,
   revokeSessionOnPasswordReset: true,
+  scheduledPush: false,
   schemaCacheTTL: 5000, // in ms
   cacheTTL: 5000,
   cacheMaxSize: 10000,
   userSensitiveFields: ['email'],
   objectIdSize: 10,
   enableSingleSchemaCache: false,
-  masterKeyIps: []
+  masterKeyIps: [],
+  collectionPrefix: '',
+  auth: {},
+  customPages: {
+    invalidLink: undefined,
+    verifyEmailSuccess: undefined,
+    choosePassword: undefined,
+    passwordResetSuccess: undefined
+  },
 };

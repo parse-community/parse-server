@@ -102,7 +102,7 @@ class ParseServer {
       analyticsAdapter,
       filesAdapter,
       push,
-      scheduledPush = false,
+      scheduledPush,
       loggerAdapter,
       jsonLogs,
       logsFolder,
@@ -112,7 +112,7 @@ class ParseServer {
       databaseURI,
       databaseOptions,
       cloud,
-      collectionPrefix = '',
+      collectionPrefix,
       clientKey,
       javascriptKey,
       dotNetKey,
@@ -121,7 +121,7 @@ class ParseServer {
       fileKey,
       enableAnonymousUsers,
       allowClientClassCreation,
-      oauth = {},
+      auth,
       serverURL = requiredParameter('You must provide a serverURL!'),
       maxUploadSize,
       verifyUserEmails,
@@ -132,12 +132,7 @@ class ParseServer {
       cacheAdapter,
       emailAdapter,
       publicServerURL,
-      customPages = {
-        invalidLink: undefined,
-        verifyEmailSuccess: undefined,
-        choosePassword: undefined,
-        passwordResetSuccess: undefined
-      },
+      customPages,
       liveQuery,
       sessionLength, // 1 Year in seconds
       maxLimit,
@@ -155,7 +150,6 @@ class ParseServer {
 
     let {
       databaseAdapter,
-      auth = {},
     } = configuration;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
@@ -219,17 +213,6 @@ class ParseServer {
     const hooksController = new HooksController(appId, databaseController, webhookKey);
 
     const dbInitPromise = databaseController.performInitialization();
-
-    if (Object.keys(oauth).length > 0) {
-      /* eslint-disable no-console */
-      console.warn('oauth option is deprecated and will be removed in a future release, please use auth option instead');
-      if (Object.keys(auth).length > 0) {
-        console.warn('You should use only the auth option.');
-      }
-      /* eslint-enable */
-    }
-
-    auth = Object.assign({}, oauth, auth);
 
     AppCache.put(appId, {
       appId,
