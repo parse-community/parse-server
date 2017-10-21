@@ -138,8 +138,8 @@ const plugin = function (babel) {
   return {
     visitor: {
       Program: function(path) {
-        // Inject the parsers loader
-        path.pushContainer("body", t.importDeclaration([t.importNamespaceSpecifier(t.identifier('parsers'))],
+        // Inject the parser's loader
+        path.pushContainer('body', t.importDeclaration([t.importNamespaceSpecifier(t.identifier('parsers'))],
           t.stringLiteral('./parsers')));
       },
       ExportDeclaration: function(path) {
