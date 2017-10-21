@@ -1,2 +1,2 @@
-const LiveQueryServerOptions = require('../../Definitions').LiveQueryServerOptions;
+const LiveQueryServerOptions = require('../../Options/Definitions').LiveQueryServerOptions;
 export default LiveQueryServerOptions;

@@ -1,4 +1,4 @@
-import {nullParser} from './cli/utils/parsers';
+import {nullParser} from './Options/parsers';
 const logsFolder = (() => {
   let folder = './logs/';
   if (typeof process !== 'undefined' && process.env.TESTING === '1') {

@@ -134,7 +134,7 @@ const plugin = function (babel) {
       Program: function(path) {
         // Inject the parsers loader
         path.pushContainer("body", t.importDeclaration([t.importNamespaceSpecifier(t.identifier('parsers'))],
-          t.stringLiteral('./cli/utils/parsers')));
+          t.stringLiteral('./parsers')));
       },
       ExportDeclaration: function(path) {
         // Export declaration on an interface
@@ -152,5 +152,5 @@ const plugin = function (babel) {
 };
 
 const babel = require("babel-core");
-const res = babel.transformFileSync('./src/Options.js', { plugins: [ plugin ], auxiliaryCommentBefore: 'GENERATED CODE'});
-require('fs').writeFileSync('./src/Definitions.js', res.code + '\n');
+const res = babel.transformFileSync('./src/Options/index.js', { plugins: [ plugin ], auxiliaryCommentBefore: 'GENERATED CODE'});
+require('fs').writeFileSync('./src/Options/Definitions.js', res.code + '\n');

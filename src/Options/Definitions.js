@@ -1,6 +1,6 @@
 /*GENERATED CODE*/"use strict";
 
-var _parsers = require("./cli/utils/parsers");
+var _parsers = require("./parsers");
 
 var parsers = _interopRequireWildcard(_parsers);
 
