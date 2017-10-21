@@ -1,7 +1,6 @@
 /* eslint-disable no-console */
 import { Command } from 'commander';
 import path from 'path';
-import defaults from '../../defaults';
 let _definitions;
 let _reverseDefinitions;
 let _defaults;
@@ -32,14 +31,12 @@ Command.prototype.loadDefinitions = function(definitions) {
     return object;
   }, {});
 
-  const definitionDefaults = Object.keys(definitions).reduce((defs, opt) => {
+  _defaults = Object.keys(definitions).reduce((defs, opt) => {
     if(_definitions[opt].default) {
       defs[opt] = _definitions[opt].default;
     }
     return defs;
   }, {});
-
-  _defaults = Object.assign({}, defaults, definitionDefaults);
 
   /* istanbul ignore next */
   this.on('--help', function(){

@@ -12,7 +12,7 @@ export interface ParseServerOptions {
   :ENV: PARSE_SERVER_URL */
   serverURL: string;
   /* Restrict masterKey to be used by only these ips. defaults to [] (allow all ips) */
-  masterKeyIps: ?string[];
+  masterKeyIps: ?string[]; // = []
   /* Sets the app name */
   appName: ?string;
   /* Adapter module for the analytics */
@@ -22,7 +22,7 @@ export interface ParseServerOptions {
   /* Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications */
   push: ?any;
   /* Configuration for push scheduling. Defaults to false. */
-  scheduledPush: ?boolean;
+  scheduledPush: ?boolean; // = false
   /* Adapter module for the logging sub-system */
   loggerAdapter: ?Adapter;
   /* Log as structured JSON objects
@@ -30,7 +30,7 @@ export interface ParseServerOptions {
   jsonLogs: ?boolean;
   /* Folder for the logs (defaults to './logs'); set to null to disable file based logging
   :ENV: PARSE_SERVER_LOGS_FOLDER */
-  logsFolder: ?string;
+  logsFolder: ?string; // = ./logs
   /* Set the logging to verbose
   :ENV: VERBOSE */
   verbose: ?boolean;
@@ -40,7 +40,7 @@ export interface ParseServerOptions {
   :ENV: SILENT */
   silent: ?boolean;
   /* The full URI to your mongodb database */
-  databaseURI: string;
+  databaseURI: string; // = mongodb://localhost:27017/parse
   /* Options to pass to the mongodb client */
   databaseOptions: ?any;
   /* Adapter module for the database */
@@ -48,7 +48,7 @@ export interface ParseServerOptions {
   /* Full path to your cloud code main.js */
   cloud: ?any;
   /* A collection prefix for the classes */
-  collectionPrefix: ?string;
+  collectionPrefix: ?string; // = ''
   /* Key for iOS, MacOS, tvOS clients */
   clientKey: ?string;
   /* Key for the Javascript SDK */
@@ -62,22 +62,22 @@ export interface ParseServerOptions {
   /* Key for your files */
   fileKey: ?string;
   /* Personally identifiable information fields in the user table the should be removed for non-authorized users. */
-  userSensitiveFields: ?string[];
+  userSensitiveFields: ?string[]; // = ["email"]
   /* Enable (or disable) anon users, defaults to true
   :ENV: PARSE_SERVER_ENABLE_ANON_USERS */
-  enableAnonymousUsers: ?boolean;
+  enableAnonymousUsers: ?boolean; // = true
   /* Enable (or disable) client class creation, defaults to true
   :ENV: PARSE_SERVER_ALLOW_CLIENT_CLASS_CREATION */
-  allowClientClassCreation: ?boolean;
+  allowClientClassCreation: ?boolean; // = true
   /* Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication
   :ENV: PARSE_SERVER_AUTH_PROVIDERS */
   auth: ?any;
-  /* Max file size for uploads. */
-  maxUploadSize: ?string;
+  /* Max file size for uploads. defaults to 20mb */
+  maxUploadSize: ?string; // = 20mb
   /* Enable (or disable) user email validation, defaults to false */
-  verifyUserEmails: ?boolean;
+  verifyUserEmails: ?boolean; // = false
   /* Prevent user from login if email is not verified and PARSE_SERVER_VERIFY_USER_EMAILS is true, defaults to false */
-  preventLoginWithUnverifiedEmail: ?boolean;
+  preventLoginWithUnverifiedEmail: ?boolean; // = false
   /* Email verification token validity duration */
   emailVerifyTokenValidityDuration: ?number;
   /* account lockout policy for failed login attempts */
@@ -92,11 +92,11 @@ export interface ParseServerOptions {
   :ENV: PARSE_PUBLIC_SERVER_URL */
   publicServerURL: ?string;
   /* custom pages for password validation and reset */
-  customPages: ?CustomPagesOptions;
+  customPages: ?CustomPagesOptions; // = {}
   /* parse-server's LiveQuery configuration object */
   liveQuery: ?LiveQueryOptions;
-  /* Session duration, defaults to 1 year */
-  sessionLength: ?number; // 1 Year in seconds
+  /* Session duration, in seconds, defaults to 1 year */
+  sessionLength: ?number; // = 31536000
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
   /* Sets wether we should expire the inactive sessions */
@@ -104,21 +104,21 @@ export interface ParseServerOptions {
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions. */
   revokeSessionOnPasswordReset: ?boolean;
   /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0;disabled. */
-  schemaCacheTTL: ?number;
+  schemaCacheTTL: ?number; // = 0
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds) */
-  cacheTTL: ?number;
+  cacheTTL: ?number; // = 5000
   /* Sets the maximum size for the in memory cache, defaults to 10000 */
-  cacheMaxSize : ?number;
+  cacheMaxSize : ?number; // = 10000
   /* Use a single schema cache shared across requests. Reduces number of queries made to _SCHEMA. Defaults to false, i.e. unique schema cache per request. */
-  enableSingleSchemaCache: ?boolean;
+  enableSingleSchemaCache: ?boolean; // = false
   /* Sets the number of characters in generated object id's, default 10 */
-  objectIdSize: ?number;
+  objectIdSize: ?number; // = 10
   /* The port to run the ParseServer. defaults to 1337. */
-  port: ?number;
+  port: ?number; // = 1337
   /* The host to serve ParseServer on. defaults to 0.0.0.0 */
-  host: ?string;
+  host: ?string; // = 0.0.0.0
   /* Mount path for the server, defaults to /parse */
-  mountPath: ?string;
+  mountPath: ?string; // = /parse
   /* Run with cluster, optionally set the number of processes default to os.cpus().length */
   cluster: ?NumberOrBoolean;
   /* middleware for express server, can be string or function */
@@ -168,7 +168,7 @@ export interface LiveQueryServerOptions {
   /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO.*/
   logLevel: ?string,
   /* The port to run the ParseServer. defaults to 1337.*/
-  port: ?number,
+  port: ?number, // = 1337
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,
   /* LiveQuery pubsub adapter */
