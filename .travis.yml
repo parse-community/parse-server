@@ -57,8 +57,10 @@ jobs:
         - provider: script
           skip_cleanup: true
           script: ./resources/npm-git.sh
-          on:
-           branch: master
+          # on: Commented out just for testing
+          #  branch:
+          #   - master
+          #   - 3.x
         - provider: npm
           skip_cleanup: true
           email:
