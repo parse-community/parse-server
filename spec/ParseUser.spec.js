@@ -3200,4 +3200,103 @@ describe('Parse.User testing', () => {
       .then(done)
       .catch(done.fail);
   });
+
+  it('can login with email', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { email: "yo@lo.com", password: 'yolopass'}
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it('can login with email through query string', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it('can to login when both email and username are passed', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it('fails to login when username dont match email', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo2&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('Invalid username/password.');
+      done();
+    });
+  });
+
+  it('fails to login when email dont match username', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo2.com&username=yolo&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('Invalid username/password.');
+      done();
+    });
+  });
 });
