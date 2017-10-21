@@ -23,60 +23,20 @@ export class Config {
     if (!cacheInfo) {
       return;
     }
-
     this.applicationId = applicationId;
-    this.jsonLogs = cacheInfo.jsonLogs;
-    this.masterKey = cacheInfo.masterKey;
-    this.masterKeyIps = cacheInfo.masterKeyIps;
-    this.clientKey = cacheInfo.clientKey;
-    this.javascriptKey = cacheInfo.javascriptKey;
-    this.dotNetKey = cacheInfo.dotNetKey;
-    this.restAPIKey = cacheInfo.restAPIKey;
-    this.webhookKey = cacheInfo.webhookKey;
-    this.fileKey = cacheInfo.fileKey;
-    this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.userSensitiveFields = cacheInfo.userSensitiveFields;
-
-    // Create a new DatabaseController per request
-    if (cacheInfo.databaseController) {
-      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL, cacheInfo.enableSingleSchemaCache);
-      this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
-    }
-
-    this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
-    this.enableSingleSchemaCache = cacheInfo.enableSingleSchemaCache;
-
-    this.serverURL = cacheInfo.serverURL;
-    this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
-    this.verifyUserEmails = cacheInfo.verifyUserEmails;
-    this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
-    this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
-    this.accountLockout = cacheInfo.accountLockout;
-    this.passwordPolicy = cacheInfo.passwordPolicy;
-    this.appName = cacheInfo.appName;
-
-    this.analyticsController = cacheInfo.analyticsController;
-    this.cacheController = cacheInfo.cacheController;
-    this.hooksController = cacheInfo.hooksController;
-    this.filesController = cacheInfo.filesController;
-    this.pushController = cacheInfo.pushController;
-    this.pushControllerQueue = cacheInfo.pushControllerQueue;
-    this.pushWorker = cacheInfo.pushWorker;
-    this.hasPushSupport = cacheInfo.hasPushSupport;
-    this.hasPushScheduledSupport = cacheInfo.hasPushScheduledSupport;
-    this.loggerController = cacheInfo.loggerController;
-    this.userController = cacheInfo.userController;
-    this.authDataManager = cacheInfo.authDataManager;
-    this.customPages = cacheInfo.customPages || {};
+    Object.keys(cacheInfo).forEach((key) => {
+      if (key == 'databaseController') {
+        const schemaCache = new SchemaCache(cacheInfo.cacheController,
+          cacheInfo.schemaCacheTTL,
+          cacheInfo.enableSingleSchemaCache);
+        this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+      } else {
+        this[key] = cacheInfo[key];
+      }
+    });
     this.mount = removeTrailingSlash(mount);
-    this.liveQueryController = cacheInfo.liveQueryController;
-    this.sessionLength = cacheInfo.sessionLength;
-    this.maxLimit = cacheInfo.maxLimit;
-    this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
     this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
     this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
-    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
-    this.objectIdSize = cacheInfo.objectIdSize;
   }
 
   static validate({
