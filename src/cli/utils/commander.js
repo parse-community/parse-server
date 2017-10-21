@@ -3,7 +3,7 @@ import { Command } from 'commander';
 import path from 'path';
 let _definitions;
 let _reverseDefinitions;
-let _defaults;
+import defaults from '../../defaults';
 
 Command.prototype.loadDefinitions = function(definitions) {
   _definitions = definitions;
@@ -19,13 +19,6 @@ Command.prototype.loadDefinitions = function(definitions) {
     }
     return program.option(`--${opt} [${opt}]`);
   }, this);
-
-  _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if(_definitions[opt].default) {
-      defs[opt] = _definitions[opt].default;
-    }
-    return defs;
-  }, {});
 
   _reverseDefinitions = Object.keys(definitions).reduce((object, key) => {
     let value = definitions[key];
@@ -112,7 +105,7 @@ Command.prototype.parse = function(args, env) {
   // Load from file to override
   this.setValuesIfNeeded(fromFile);
   // Last set the defaults
-  this.setValuesIfNeeded(_defaults);
+  this.setValuesIfNeeded(defaults);
 };
 
 Command.prototype.getOptions = function() {
