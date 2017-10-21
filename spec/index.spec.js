@@ -385,6 +385,7 @@ describe('server', () => {
 
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a valid number.');
         done();
@@ -393,6 +394,7 @@ describe('server', () => {
 
   it('fails if the session length is less than or equal to 0', done => {
     reconfigureServer({ sessionLength: '-33' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a value greater than 0.');
         return reconfigureServer({ sessionLength: '0' })

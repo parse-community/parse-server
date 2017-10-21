@@ -92,8 +92,8 @@ addParseCloud();
 
 class ParseServer {
 
-  constructor(configuration: ParseServerOptions) {
-    configuration = mergeWithDefaults(configuration);
+  constructor(options: ParseServerOptions) {
+    options = mergeWithDefaults(options);
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
@@ -145,11 +145,11 @@ class ParseServer {
       masterKeyIps,
       userSensitiveFields,
       __indexBuildCompletionCallbackForTests = () => {},
-    } = configuration;
+    } = options;
 
     let {
       databaseAdapter,
-    } = configuration;
+    } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;

@@ -99,12 +99,12 @@ export interface ParseServerOptions {
   sessionLength: ?number; // = 31536000
   /* Max value for limit option on queries, defaults to unlimited */
   maxLimit: ?number;
-  /* Sets wether we should expire the inactive sessions */
-  expireInactiveSessions: ?boolean;
+  /* Sets wether we should expire the inactive sessions, defaults to true */
+  expireInactiveSessions: ?boolean; // = true
   /* When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions. */
-  revokeSessionOnPasswordReset: ?boolean; // = false
-  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0;disabled. */
-  schemaCacheTTL: ?number; // = 0
+  revokeSessionOnPasswordReset: ?boolean; // = true
+  /* The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable. */
+  schemaCacheTTL: ?number; // = 5000
   /* Sets the TTL for the in memory cache (in ms), defaults to 5000 (5 seconds) */
   cacheTTL: ?number; // = 5000
   /* Sets the maximum size for the in memory cache, defaults to 10000 */

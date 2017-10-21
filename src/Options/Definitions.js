@@ -225,20 +225,21 @@ module.exports.ParseServerOptions = {
   },
   "expireInactiveSessions": {
     "env": "PARSE_SERVER_EXPIRE_INACTIVE_SESSIONS",
-    "help": "Sets wether we should expire the inactive sessions",
-    "action": parsers.booleanParser
+    "help": "Sets wether we should expire the inactive sessions, defaults to true",
+    "action": parsers.booleanParser,
+    "default": true
   },
   "revokeSessionOnPasswordReset": {
     "env": "PARSE_SERVER_REVOKE_SESSION_ON_PASSWORD_RESET",
     "help": "When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.",
     "action": parsers.booleanParser,
-    "default": false
+    "default": true
   },
   "schemaCacheTTL": {
     "env": "PARSE_SERVER_SCHEMA_CACHE_TTL",
-    "help": "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 0;disabled.",
+    "help": "The TTL for caching the schema for optimizing read/write operations. You should put a long TTL when your DB is in production. default to 5000; set 0 to disable.",
     "action": parsers.numberParser("schemaCacheTTL"),
-    "default": 0
+    "default": 5000
   },
   "cacheTTL": {
     "env": "PARSE_SERVER_CACHE_TTL",
