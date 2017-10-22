@@ -97,7 +97,9 @@ describe('ParseLiveQueryServer', function() {
   });
 
   it('can be initialized from ParseServer without httpServer', function(done) {
-    var parseLiveQueryServer = ParseServer.createLiveQueryServer(undefined, {});
+    var parseLiveQueryServer = ParseServer.createLiveQueryServer(undefined, {
+      port: 22345
+    });
 
     expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
