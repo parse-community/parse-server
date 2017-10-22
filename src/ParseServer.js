@@ -70,7 +70,7 @@ addParseCloud();
 class ParseServer {
 
   constructor(options: ParseServerOptions) {
-    options = mergeWithDefaults(options);
+    injectDefaults(options);
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
@@ -275,8 +275,16 @@ function addParseCloud() {
   global.Parse = Parse;
 }
 
-function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
-  options = Object.assign({}, defaults, options);
+function injectDefaults(options: ParseServerOptions) {
+  Object.keys(defaults).forEach((key) => {
+    if (!options.hasOwnProperty(key)) {
+      options[key] = defaults[key];
+    }
+  });
+
+  if (!options.hasOwnProperty('serverURL')) {
+    options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+  }
 
   options.userSensitiveFields = Array.from(new Set(options.userSensitiveFields.concat(
     defaults.userSensitiveFields,
@@ -287,8 +295,6 @@ function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
     defaults.masterKeyIps,
     options.masterKeyIps
   )));
-
-  return options;
 }
 
 // Those can't be tested as it requires a subprocess

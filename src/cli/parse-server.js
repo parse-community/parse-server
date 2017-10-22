@@ -32,11 +32,7 @@ runner({
   help,
   usage: '[options] <path/to/configuration.json>',
   start: function(program, options, logOptions) {
-    if (!options.serverURL) {
-      options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
-    }
-
-    if (!options.appId || !options.masterKey || !options.serverURL) {
+    if (!options.appId || !options.masterKey) {
       program.outputHelp();
       console.error("");
       console.error('\u001b[31mERROR: appId and masterKey are required\u001b[0m');
