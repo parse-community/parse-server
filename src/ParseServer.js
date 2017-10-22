@@ -345,11 +345,10 @@ class ParseServer {
     // run the following when not testing
     if (!process.env.TESTING) {
       //This causes tests to spew some useless warnings, so disable in test
+      /* istanbul ignore next */
       process.on('uncaughtException', (err) => {
         if (err.code === "EADDRINUSE") { // user-friendly message for this common error
-          /* eslint-disable no-console */
-          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
-          /* eslint-enable no-console */
+          process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
           throw err;
@@ -423,6 +422,7 @@ class ParseServer {
       ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
       this.liveQueryServer = liveQueryServer;
     }
+    /* istanbul ignore next */
     if (!process.env.TESTING) {
       configureListeners(this);
     }
@@ -488,6 +488,8 @@ function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
   return options;
 }
 
+// Those can't be tested as it requires a subprocess
+/* istanbul ignore next */
 function configureListeners(parseServer) {
   const server = parseServer.server;
   const sockets = {};

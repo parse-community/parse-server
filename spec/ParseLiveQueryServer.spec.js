@@ -1,5 +1,6 @@
 var Parse = require('parse/node');
 var ParseLiveQueryServer = require('../src/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
+var ParseServer = require('../src/ParseServer').default;
 
 // Global mock info
 var queryHashValue = 'hash';
@@ -84,6 +85,24 @@ describe('ParseLiveQueryServer', function() {
     expect(parseLiveQueryServer.clientId).toBeUndefined();
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
+  it('can be initialized from ParseServer', function() {
+    var httpServer = {};
+    var parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {});
+
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
+    expect(parseLiveQueryServer.clients.size).toBe(0);
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
+  it('can be initialized from ParseServer without httpServer', function(done) {
+    var parseLiveQueryServer = ParseServer.createLiveQueryServer(undefined, {});
+
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
+    expect(parseLiveQueryServer.clients.size).toBe(0);
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+    parseLiveQueryServer.server.close(done);
   });
 
   it('can handle connect command', function() {
