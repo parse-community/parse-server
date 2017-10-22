@@ -413,17 +413,7 @@ class ParseServer {
     this.server = server;
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
-      let liveQueryServer = server;
-      let port;
-      if (options.liveQueryServerOptions && options.liveQueryServerOptions.port) {
-        port = options.liveQueryServerOptions.port;
-      }
-      if (port) {
-        liveQueryServer = express().listen(port, () => {
-          process.stdout.write('ParseLiveQuery listening on ' + port);
-        });
-      }
-      this.liveQueryServer = ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
+      this.liveQueryServer = ParseServer.createLiveQueryServer(server, options.liveQueryServerOptions);
     }
     /* istanbul ignore next */
     if (!process.env.TESTING) {
@@ -439,7 +429,7 @@ class ParseServer {
   }
 
   static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
-    if (!httpServer) {
+    if (!httpServer || config.port) {
       var app = express();
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);
