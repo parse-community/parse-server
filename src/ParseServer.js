@@ -355,6 +355,7 @@ class ParseServer {
         }
       });
       // verify the server url after a 'mount' event is received
+      /* istanbul ignore next */
       api.on('mount', function() {
         ParseServer.verifyServerUrl();
       });
