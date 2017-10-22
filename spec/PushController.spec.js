@@ -205,7 +205,7 @@ describe('PushController', () => {
       installation.set("deviceType", "android");
       installations.push(installation);
     }
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -276,7 +276,7 @@ describe('PushController', () => {
       installations.push(installation);
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -350,7 +350,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -425,7 +425,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -529,7 +529,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -579,7 +579,7 @@ describe('PushController', () => {
       alert: "Hello World!",
       badge: 1,
     }}
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -616,7 +616,7 @@ describe('PushController', () => {
         return ["ios"];
       }
     }
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -677,7 +677,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -762,7 +762,7 @@ describe('PushController', () => {
   });
 
   it('should not schedule push when not configured', (done) => {
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -862,7 +862,7 @@ describe('PushController', () => {
       push: { adapter: pushAdapter },
       scheduledPush: true
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
       }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
@@ -931,7 +931,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
       }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
@@ -996,7 +996,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth)
           .then(() => { done.fail('should not success') })
@@ -1034,7 +1034,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -1094,7 +1094,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -1230,7 +1230,7 @@ describe('PushController', () => {
         scheduledPush: true
       })
         .then(() => {
-          const config = new Config(Parse.applicationId);
+          const config = Config.get(Parse.applicationId);
           return new Promise((resolve, reject) => {
             const pushController = new PushController();
             pushController.sendPush({

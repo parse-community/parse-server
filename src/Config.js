@@ -18,25 +18,34 @@ function removeTrailingSlash(str) {
 }
 
 export class Config {
-  constructor(applicationId: string, mount: string) {
+  static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
-    this.applicationId = applicationId;
+    const config = new Config();
+    config.applicationId = applicationId;
     Object.keys(cacheInfo).forEach((key) => {
       if (key == 'databaseController') {
         const schemaCache = new SchemaCache(cacheInfo.cacheController,
           cacheInfo.schemaCacheTTL,
           cacheInfo.enableSingleSchemaCache);
-        this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
       } else {
-        this[key] = cacheInfo[key];
+        config[key] = cacheInfo[key];
       }
     });
-    this.mount = removeTrailingSlash(mount);
-    this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
-    this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
+    config.mount = removeTrailingSlash(mount);
+    config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
+    config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(config);
+    return config;
+  }
+
+  static put(serverConfiguration) {
+    Config.validate(serverConfiguration);
+    AppCache.put(serverConfiguration.applicationId, serverConfiguration);
+    Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
+    return serverConfiguration;
   }
 
   static validate({

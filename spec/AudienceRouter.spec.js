@@ -5,7 +5,7 @@ var AudiencesRouter = require('../src/Routers/AudiencesRouter').AudiencesRouter;
 
 describe('AudiencesRouter', () => {
   it('uses find condition from request.body', (done) => {
-    var config = new Config('test');
+    var config = Config.get('test');
     var androidAudienceRequest = {
       'name': 'Android Users',
       'query': '{ "test": "android" }'
@@ -46,7 +46,7 @@ describe('AudiencesRouter', () => {
   });
 
   it('uses find condition from request.query', (done) => {
-    var config = new Config('test');
+    var config = Config.get('test');
     var androidAudienceRequest = {
       'name': 'Android Users',
       'query': '{ "test": "android" }'
@@ -87,7 +87,7 @@ describe('AudiencesRouter', () => {
   });
 
   it('query installations with limit = 0', (done) => {
-    var config = new Config('test');
+    var config = Config.get('test');
     var androidAudienceRequest = {
       'name': 'Android Users',
       'query': '{ "test": "android" }'
@@ -106,7 +106,7 @@ describe('AudiencesRouter', () => {
       info: {}
     };
 
-    new Config('test');
+    Config.get('test');
     var router = new AudiencesRouter();
     rest.create(config, auth.nobody(config), '_Audience', androidAudienceRequest)
       .then(() => {
@@ -127,7 +127,7 @@ describe('AudiencesRouter', () => {
   });
 
   it('query installations with count = 1', done => {
-    var config = new Config('test');
+    var config = Config.get('test');
     var androidAudienceRequest = {
       'name': 'Android Users',
       'query': '{ "test": "android" }'
@@ -163,7 +163,7 @@ describe('AudiencesRouter', () => {
   });
 
   it('query installations with limit = 0 and count = 1', (done) => {
-    var config = new Config('test');
+    var config = Config.get('test');
     var androidAudienceRequest = {
       'name': 'Android Users',
       'query': '{ "test": "android" }'
@@ -286,7 +286,7 @@ describe('AudiencesRouter', () => {
   });
 
   it_exclude_dbs(['postgres'])('should support legacy parse.com audience fields', (done) => {
-    const database = (new Config(Parse.applicationId)).database.adapter.database;
+    const database = (Config.get(Parse.applicationId)).database.adapter.database;
     const now  = new Date();
     Parse._request('POST', 'push_audiences', { name: 'My Audience', query: JSON.stringify({ deviceType: 'ios' })}, { useMasterKey: true })
       .then((audience) => {

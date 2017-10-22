@@ -13,7 +13,6 @@ import { ParseServerOptions,
   LiveQueryServerOptions }      from './Options';
 import defaults                 from './defaults';
 import * as logging             from './logger';
-import AppCache                 from './cache';
 import Config                   from './Config';
 import PromiseRouter            from './PromiseRouter';
 import requiredParameter        from './requiredParameter';
@@ -213,7 +212,8 @@ class ParseServer {
 
     const dbInitPromise = databaseController.performInitialization();
 
-    AppCache.put(appId, {
+    this.config = Config.put({
+      applicationId: appId,
       appId,
       masterKey: masterKey,
       masterKeyIps:masterKeyIps,
@@ -260,9 +260,6 @@ class ParseServer {
       objectIdSize
     });
 
-    Config.validate(AppCache.get(appId));
-    this.config = AppCache.get(appId);
-    Config.setupPasswordValidator(this.config.passwordPolicy);
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.

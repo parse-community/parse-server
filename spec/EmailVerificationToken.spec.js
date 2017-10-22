@@ -242,7 +242,7 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'sets_email_verify_token_expires_at'});
       })
       .then(results => {
@@ -289,7 +289,7 @@ describe("Email Verification Token Expiration: ", () => {
           followRedirect: false,
         }, (error, response) => {
           expect(response.statusCode).toEqual(302);
-          const config = new Config('test');
+          const config = Config.get('test');
           return config.database.find('_User', {username: 'unsets_email_verify_token_expires_at'}).then((results) => {
             expect(results.length).toBe(1);
             return results[0];
@@ -448,7 +448,7 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
           return results[0];
         });
@@ -465,7 +465,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
           return results[0];
         });

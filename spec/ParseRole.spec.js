@@ -116,7 +116,7 @@ describe('Parse Role testing', () => {
 
       return Parse.Object.saveAll(roles, { useMasterKey: true });
     }).then(() => {
-      auth = new Auth({config: new Config("test"), isMaster: true, user: user});
+      auth = new Auth({config: Config.get("test"), isMaster: true, user: user});
       getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
@@ -159,7 +159,7 @@ describe('Parse Role testing', () => {
         return createRole(rolesNames[2], anotherRole, null);
       }).then((lastRole) => {
         roleIds[lastRole.get("name")] = lastRole.id;
-        var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+        var auth = new Auth({ config: Config.get("test"), isMaster: true, user: user });
         return auth._loadRoles();
       })
     }).then((roles) => {
@@ -222,7 +222,7 @@ describe('Parse Role testing', () => {
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => {
-      var auth = new Auth({ config: new Config("test"), isMaster: true });
+      var auth = new Auth({ config: Config.get("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {

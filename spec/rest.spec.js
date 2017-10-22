@@ -13,7 +13,7 @@ let database;
 describe('rest create', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
     database = config.database;
   });
 

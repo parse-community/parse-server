@@ -166,7 +166,7 @@ describe('server', () => {
 
   it('can properly sets the push support', done => {
     // default config passes push options
-    const config = new Config('test');
+    const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
     expect(config.hasPushScheduledSupport).toEqual(false);
     request.get({
@@ -187,7 +187,7 @@ describe('server', () => {
     reconfigureServer({
       push: undefined // force no config
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(false);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -214,7 +214,7 @@ describe('server', () => {
         }
       }
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -242,7 +242,7 @@ describe('server', () => {
       },
       scheduledPush: true,
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(true);
       request.get({
@@ -360,7 +360,7 @@ describe('server', () => {
   it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1');
+        var config = Config.get('test', 'http://localhost:8378/1');
         expect(config.mount).toEqual('https://myserver.com/1');
         done();
       });
@@ -369,7 +369,7 @@ describe('server', () => {
   it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1/');
+        var config = Config.get('test', 'http://localhost:8378/1/');
         expect(config.mount).toEqual('http://localhost:8378/1');
         done();
       });
