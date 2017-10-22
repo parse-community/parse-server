@@ -57,7 +57,7 @@
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "5.1.0",
     "deep-diff": "0.3.8",
-    "eslint": "^4.7.1",
+    "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.25.0",
     "gaze": "1.1.2",
     "jasmine": "2.8.0",
