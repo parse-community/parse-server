@@ -627,7 +627,7 @@ RestWrite.prototype.handleFollowup = function() {
 };
 
 // Handles the _Session class specialness.
-// Does nothing if this isn't an installation object.
+// Does nothing if this isn't an _Session object.
 RestWrite.prototype.handleSession = function() {
   if (this.response || this.className !== '_Session') {
     return;
@@ -642,6 +642,16 @@ RestWrite.prototype.handleSession = function() {
   if (this.data.ACL) {
     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, 'Cannot set ' +
                           'ACL on a Session.');
+  }
+
+  if (this.query) {
+    if (this.data.user && !this.auth.isMaster && this.data.user.objectId != this.auth.user.id) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.installationId) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    } else if (this.data.sessionToken) {
+      throw new Parse.Error(Parse.Error.INVALID_KEY_NAME);
+    }
   }
 
   if (!this.query && !this.auth.isMaster) {
@@ -661,7 +671,7 @@ RestWrite.prototype.handleSession = function() {
       expiresAt: Parse._encode(expiresAt)
     };
     for (var key in this.data) {
-      if (key == 'objectId') {
+      if (key === 'objectId' || key === 'user') {
         continue;
       }
       sessionData[key] = this.data[key];
@@ -1185,9 +1195,10 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
-    const responseValue = response[fieldName];
 
-    response[fieldName] = responseValue || dataValue;
+    if(!response.hasOwnProperty(fieldName)) {
+      response[fieldName] = dataValue;
+    }
 
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {

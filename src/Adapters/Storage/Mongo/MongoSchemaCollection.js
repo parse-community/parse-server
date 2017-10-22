@@ -152,7 +152,11 @@ class MongoSchemaCollection {
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
     return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(schema => {
-      // The schema exists. Check for existing GeoPoints.
+        // If a field with this name already exists, it will be handled elsewhere.
+        if (schema.fields[fieldName] != undefined) {
+          return;
+        }
+        // The schema exists. Check for existing GeoPoints.
         if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
           if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {

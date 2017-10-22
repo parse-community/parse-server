@@ -15,6 +15,7 @@ const baseStore = function() {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
+  const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -24,9 +25,24 @@ const baseStore = function() {
     Functions,
     Jobs,
     Validators,
-    Triggers
+    Triggers,
+    LiveQuery,
   });
 };
+
+function validateClassNameForTriggers(className, type) {
+  const restrictedClassNames = [ '_Session' ];
+  if (restrictedClassNames.indexOf(className) != -1) {
+    throw `Triggers are not supported for ${className} class.`;
+  }
+  if (type == Types.beforeSave && className === '_PushStatus') {
+    // _PushStatus uses undocumented nested key increment ops
+    // allowing beforeSave would mess up the objects big time
+    // TODO: Allow proper documented way of using nested increment ops
+    throw 'Only afterSave is allowed on _PushStatus';
+  }
+  return className;
+}
 
 const _triggerStore = {};
 
@@ -44,9 +60,16 @@ export function addJob(jobName, handler, applicationId) {
 }
 
 export function addTrigger(type, className, handler, applicationId) {
+  validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
+}
+
+export function addLiveQueryEventHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -121,6 +144,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     master: false,
     log: config.loggerController,
     headers: config.headers,
+    ip: config.ip,
   };
 
   if (originalParseObject) {
@@ -153,6 +177,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
     log: config.loggerController,
     isGet,
     headers: config.headers,
+    ip: config.ip,
   };
 
   if (!auth) {
@@ -410,4 +435,9 @@ export function inflate(data, restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);
+}
+
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
+  _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }

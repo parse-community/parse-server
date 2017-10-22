@@ -1,7 +1,61 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...master)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.3...master)
+
+### 2.6.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.2...2.6.3)
+
+#### Improvements:
+* Queries on Pointer fields with `$in` and `$nin` now supports list of objectId's, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* LiveQueries on `$in` and `$nin` for pointer fields work as expected thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Also remove device token when APNS error is BadDeviceToken, thanks to [Mauricio Tollin](https://github.com/)
+* LRU cache is not available on the ParseServer object, thanks to [Tyler Brock](https://github.com/tbrock)
+* Error messages are more expressive, thanks to [Tyler Brock](https://github.com/tbrock)
+* Postgres: Properly handle undefined field values, thanks to [Diamond Lewis](https://github.com/dlewis)
+* Updating with two GeoPoints fails correctly, thanks to [Anthony Mosca](https://github.com/aontas)
+
+#### New Features:
+* Adds ability to set a maxLimit on server configuration for queries, thanks to [Chris Norris](https://github.com/)
+
+#### Bug fixes:
+* Fixes issue affecting reporting `_PushStatus` with misconfigured serverURL, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting deletion of class that doesn't exist, thanks to [Diamond Lewis](https://github.com/dlewis)
+
+#### Dependency Updates:
+* [winston@2.4.0](https://www.npmjs.com/package/winston)
+* [pg-promise@6.10.2](https://www.npmjs.com/package/pg-promise)
+* [winston-daily-rotate-file@1.6.0](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [request@2.83.0](https://www.npmjs.com/package/request)
+* [body-parser@1.18.2](https://www.npmjs.com/package/body-parser)
+
+##### Devevelopment Dependencies Updates:
+* [request-promise@4.2.2](https://www.npmjs.com/package/request-promise)
+* [eslint@4.7.1](https://www.npmjs.com/package/eslint)
+
+### 2.6.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...2.6.2)
+
+#### Improvements:
+* PushWorker/PushQueue channels are properly prefixed with the Parse applicationId, thanks to [Marvel Mathew](https://github.com/marvelm)
+* You can use Parse.Cloud.afterSave hooks on _PushStatus
+* You can use Parse.Cloud.onLiveQueryEvent to track the number of clients and subscriptions
+* Adds support for more fields from the Audience class.
+
+#### New Features:
+* Push: Adds ability to track sentPerUTC offset if your push scheduler supports it.
+* Push: Adds support for cleaning up invalid deviceTokens from _Installation (PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS=1).
+
+#### Dependency Updates:
+* [ws@3.2.0](https://www.npmjs.com/package/ws)
+* [pg-promise@6.5.3](https://www.npmjs.com/package/pg-promise)
+* [winston-daily-rotate-file@1.5.0](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [body-parser@1.18.1](https://www.npmjs.com/package/body-parser)
+
+##### Devevelopment Dependencies Updates:
+* [nodemon@1.12.1](https://www.npmjs.com/package/nodemon)
+* [mongodb-runner@3.6.0](https://www.npmjs.com/package/mongodb-runner)
+* [babel-eslint@8.0.0](https://www.npmjs.com/package/babel-eslint)
 
 ### 2.6.1
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...2.6.1)

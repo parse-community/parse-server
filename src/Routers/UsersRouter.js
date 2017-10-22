@@ -118,7 +118,7 @@ export class UsersRouter extends ClassesRouter {
         delete user.password;
 
         // Sometimes the authData still has null on that keys
-        // https://github.com/ParsePlatform/parse-server/issues/935
+        // https://github.com/parse-community/parse-server/issues/935
         if (user.authData) {
           Object.keys(user.authData).forEach((provider) => {
             if (user.authData[provider] === null) {
