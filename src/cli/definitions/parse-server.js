@@ -82,7 +82,7 @@ export default {
   },
   "push": {
     env: "PARSE_SERVER_PUSH",
-    help: "Configuration for push, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Push",
+    help: "Configuration for push, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#push-notifications",
     action: objectParser
   },
   "scheduledPush": {
@@ -92,12 +92,12 @@ export default {
   },
   "oauth": {
     env: "PARSE_SERVER_OAUTH_PROVIDERS",
-    help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    help: "[DEPRECATED (use auth option)] Configuration for your oAuth providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication",
     action: objectParser
   },
   "auth": {
     env: "PARSE_SERVER_AUTH_PROVIDERS",
-    help: "Configuration for your authentication providers, as stringified JSON. See https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#oauth",
+    help: "Configuration for your authentication providers, as stringified JSON. See http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication",
     action: objectParser
   },
   "fileKey": {
