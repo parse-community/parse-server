@@ -305,7 +305,10 @@ class ParseServer {
   }
 
   get app() {
-    return ParseServer.app(this.config);
+    if (!this._app) {
+      this._app = ParseServer.app(this.config);
+    }
+    return this._app;
   }
 
   handleShutdown() {
@@ -394,6 +397,44 @@ class ParseServer {
     return appRouter;
   }
 
+  start(options: ParseServerOptions, callback: ?()=>void) {
+    const app = express();
+    if (options.middleware) {
+      let middleware;
+      if (typeof options.middleware == 'string') {
+        middleware = require(path.resolve(process.cwd(), options.middleware));
+      } else {
+        middleware = options.middleware; // use as-is let express fail
+      }
+      app.use(middleware);
+    }
+
+    app.use(options.mountPath, this.app);
+    const server = app.listen(options.port, options.host, callback);
+    this.server = server;
+
+    if (options.startLiveQueryServer || options.liveQueryServerOptions) {
+      let liveQueryServer = server;
+      if (options.liveQueryPort) {
+        liveQueryServer = express().listen(options.liveQueryPort, () => {
+          process.stdout.write('ParseLiveQuery listening on ' + options.liveQueryPort);
+        });
+      }
+      ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
+      this.liveQueryServer = liveQueryServer;
+    }
+    if (!process.env.TESTING) {
+      configureListeners(this);
+    }
+    this.expressApp = app;
+    return this;
+  }
+
+  static start(options: ParseServerOptions, callback: ?()=>void) {
+    const parseServer = new ParseServer(options);
+    return parseServer.start(options, callback);
+  }
+
   static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
     return new ParseLiveQueryServer(httpServer, config);
   }
@@ -440,6 +481,37 @@ function mergeWithDefaults(options: ParseServerOptions): ParseServerOptions {
   )));
 
   return options;
+}
+
+function configureListeners(parseServer) {
+  const server = parseServer.server;
+  const sockets = {};
+  /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+    This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
+  server.on('connection', (socket) => {
+    const socketId = socket.remoteAddress + ':' + socket.remotePort;
+    sockets[socketId] = socket;
+    socket.on('close', () => {
+      delete sockets[socketId];
+    });
+  });
+
+  const destroyAliveConnections = function() {
+    for (const socketId in sockets) {
+      try {
+        sockets[socketId].destroy();
+      } catch (e) { /* */ }
+    }
+  }
+
+  const handleShutdown = function() {
+    process.stdout.write('Termination signal received. Shutting down.');
+    destroyAliveConnections();
+    server.close();
+    parseServer.handleShutdown();
+  };
+  process.on('SIGTERM', handleShutdown);
+  process.on('SIGINT', handleShutdown);
 }
 
 export default ParseServer;

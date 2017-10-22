@@ -18,6 +18,7 @@ const _ParseServer = function(options: ParseServerOptions) {
 }
 // Mount the create liveQueryServer
 _ParseServer.createLiveQueryServer = ParseServer.createLiveQueryServer;
+_ParseServer.start = ParseServer.start;
 
 const GCSAdapter = useExternal('GCSAdapter', 'parse-server-gcs-adapter');
 
