@@ -414,13 +414,16 @@ class ParseServer {
 
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       let liveQueryServer = server;
-      if (options.liveQueryPort) {
-        liveQueryServer = express().listen(options.liveQueryPort, () => {
-          process.stdout.write('ParseLiveQuery listening on ' + options.liveQueryPort);
+      let port;
+      if (options.liveQueryServerOptions && options.liveQueryServerOptions.port) {
+        port = options.liveQueryServerOptions.port;
+      }
+      if (port) {
+        liveQueryServer = express().listen(port, () => {
+          process.stdout.write('ParseLiveQuery listening on ' + port);
         });
       }
-      ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
-      this.liveQueryServer = liveQueryServer;
+      this.liveQueryServer = ParseServer.createLiveQueryServer(liveQueryServer, options.liveQueryServerOptions);
     }
     /* istanbul ignore next */
     if (!process.env.TESTING) {

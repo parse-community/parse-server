@@ -105,6 +105,46 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer.server.close(done);
   });
 
+  it('can be initialized through ParseServer without liveQueryServerOptions', function(done) {
+    var parseServer = ParseServer.start({
+      appId: 'hello',
+      masterKey: 'world',
+      port: 22345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:12345/1',
+      liveQuery: {
+        classNames: ['Yolo']
+      },
+      startLiveQueryServer: true
+    });
+
+    expect(parseServer.liveQueryServer).not.toBeUndefined();
+    expect(parseServer.liveQueryServer.server).toBe(parseServer.server);
+    parseServer.server.close(done);
+  });
+
+  it('can be initialized through ParseServer with liveQueryServerOptions', function(done) {
+    var parseServer = ParseServer.start({
+      appId: 'hello',
+      masterKey: 'world',
+      port: 22345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:12345/1',
+      liveQuery: {
+        classNames: ['Yolo']
+      },
+      liveQueryServerOptions: {
+        port: 22346,
+      }
+    });
+
+    expect(parseServer.liveQueryServer).not.toBeUndefined();
+    expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
+    parseServer.liveQueryServer.server.close();
+    parseServer.server.close(done);
+  });
+
+
   it('can handle connect command', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     var parseWebSocket = {
