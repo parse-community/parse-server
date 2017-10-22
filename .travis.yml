@@ -1,5 +1,6 @@
 language: node_js
 dist: trusty
+sudo: false
 services:
   - mongodb
   - postgresql
