@@ -43,7 +43,7 @@ export class Config {
 
   static put(serverConfiguration) {
     Config.validate(serverConfiguration);
-    AppCache.put(serverConfiguration.applicationId, serverConfiguration);
+    AppCache.put(serverConfiguration.appId, serverConfiguration);
     Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
     return serverConfiguration;
   }

@@ -5,9 +5,7 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  path = require('path'),
-  url = require('url'),
-  authDataManager = require('./Adapters/Auth');
+  path = require('path');
 
 import { ParseServerOptions,
   LiveQueryServerOptions }      from './Options';
@@ -19,46 +17,26 @@ import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
-import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
-import { AnalyticsController }  from './Controllers/AnalyticsController';
-import { CacheController }      from './Controllers/CacheController';
-import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
-import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
-import { FilesController }      from './Controllers/FilesController';
 import { FilesRouter }          from './Routers/FilesRouter';
 import { FunctionsRouter }      from './Routers/FunctionsRouter';
 import { GlobalConfigRouter }   from './Routers/GlobalConfigRouter';
-import { GridStoreAdapter }     from './Adapters/Files/GridStoreAdapter';
-import { HooksController }      from './Controllers/HooksController';
 import { HooksRouter }          from './Routers/HooksRouter';
 import { IAPValidationRouter }  from './Routers/IAPValidationRouter';
 import { InstallationsRouter }  from './Routers/InstallationsRouter';
-import { loadAdapter }          from './Adapters/AdapterLoader';
-import { LiveQueryController }  from './Controllers/LiveQueryController';
-import { LoggerController }     from './Controllers/LoggerController';
 import { LogsRouter }           from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
-import { PushController }       from './Controllers/PushController';
-import { PushQueue }            from './Push/PushQueue';
-import { PushWorker }           from './Push/PushWorker';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
-import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
 import { AudiencesRouter }          from './Routers/AudiencesRouter';
 
-import DatabaseController       from './Controllers/DatabaseController';
-import SchemaCache              from './Controllers/SchemaCache';
-import ParsePushAdapter         from 'parse-server-push-adapter';
-import MongoStorageAdapter      from './Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter   from './Adapters/Storage/Postgres/PostgresStorageAdapter';
-
 import { ParseServerRESTController } from './ParseServerRESTController';
+import * as controllers from './Controllers';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -96,170 +74,26 @@ class ParseServer {
     const {
       appId = requiredParameter('You must provide an appId!'),
       masterKey = requiredParameter('You must provide a masterKey!'),
-      appName,
-      analyticsAdapter,
-      filesAdapter,
-      push,
-      scheduledPush,
-      loggerAdapter,
-      jsonLogs,
-      logsFolder,
-      verbose,
-      logLevel,
-      silent,
-      databaseURI,
-      databaseOptions,
       cloud,
-      collectionPrefix,
-      clientKey,
       javascriptKey,
-      dotNetKey,
-      restAPIKey,
-      webhookKey,
-      fileKey,
-      enableAnonymousUsers,
-      allowClientClassCreation,
-      auth,
       serverURL = requiredParameter('You must provide a serverURL!'),
-      maxUploadSize,
-      verifyUserEmails,
-      preventLoginWithUnverifiedEmail,
-      emailVerifyTokenValidityDuration,
-      accountLockout,
-      passwordPolicy,
-      cacheAdapter,
-      emailAdapter,
-      publicServerURL,
-      customPages,
-      liveQuery,
-      sessionLength, // 1 Year in seconds
-      maxLimit,
-      expireInactiveSessions,
-      revokeSessionOnPasswordReset,
-      schemaCacheTTL, // cache for 5s
-      cacheTTL, // cache for 5s
-      cacheMaxSize, // 10000
-      enableSingleSchemaCache,
-      objectIdSize,
-      masterKeyIps,
-      userSensitiveFields,
       __indexBuildCompletionCallbackForTests = () => {},
-    } = options;
-
-    let {
-      databaseAdapter,
     } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || (databaseURI && databaseURI !== defaults.databaseURI) || collectionPrefix !== defaults.collectionPrefix) && databaseAdapter) {
-      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
-    } else if (!databaseAdapter) {
-      databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions)
-    } else {
-      databaseAdapter = loadAdapter(databaseAdapter)
-    }
 
-    if (!filesAdapter && !databaseURI) {
-      throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
-    }
-
-    const loggerOptions = { jsonLogs, logsFolder, verbose, logLevel, silent };
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, loggerOptions);
-    const loggerController = new LoggerController(loggerControllerAdapter, appId, loggerOptions);
-    logging.setLogger(loggerController);
-
-    const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-      return new GridStoreAdapter(databaseURI);
-    });
-    const filesController = new FilesController(filesControllerAdapter, appId);
-
-    const pushOptions = Object.assign({}, push);
-    const pushQueueOptions = pushOptions.queueOptions || {};
-    if (pushOptions.queueOptions) {
-      delete pushOptions.queueOptions;
-    }
-    // Pass the push options too as it works with the default
-    const pushAdapter = loadAdapter(pushOptions && pushOptions.adapter, ParsePushAdapter, pushOptions);
-    // We pass the options and the base class for the adatper,
-    // Note that passing an instance would work too
-    const pushController = new PushController();
-    const hasPushSupport = !!(pushAdapter && push);
-    const hasPushScheduledSupport = hasPushSupport && (scheduledPush === true);
+    const allControllers = controllers.getControllers(options);
 
     const {
-      disablePushWorker
-    } = pushQueueOptions;
-
-    const pushControllerQueue = new PushQueue(pushQueueOptions);
-    let pushWorker;
-    if (!disablePushWorker) {
-      pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
-    }
-
-    const emailControllerAdapter = loadAdapter(emailAdapter);
-    const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
-
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId, ttl: cacheTTL, maxSize: cacheMaxSize });
-    const cacheController = new CacheController(cacheControllerAdapter, appId);
-
-    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
-    const analyticsController = new AnalyticsController(analyticsControllerAdapter);
-
-    const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
-    const hooksController = new HooksController(appId, databaseController, webhookKey);
-
-    const dbInitPromise = databaseController.performInitialization();
-
-    this.config = Config.put({
-      applicationId: appId,
-      appId,
-      masterKey: masterKey,
-      masterKeyIps:masterKeyIps,
-      serverURL: serverURL,
-      collectionPrefix: collectionPrefix,
-      clientKey: clientKey,
-      javascriptKey: javascriptKey,
-      dotNetKey: dotNetKey,
-      restAPIKey: restAPIKey,
-      webhookKey: webhookKey,
-      fileKey: fileKey,
-      analyticsController: analyticsController,
-      cacheController: cacheController,
-      filesController: filesController,
-      pushController: pushController,
-      loggerController: loggerController,
-      hooksController: hooksController,
-      userController: userController,
-      verifyUserEmails: verifyUserEmails,
-      preventLoginWithUnverifiedEmail: preventLoginWithUnverifiedEmail,
-      emailVerifyTokenValidityDuration: emailVerifyTokenValidityDuration,
-      accountLockout: accountLockout,
-      passwordPolicy: passwordPolicy,
-      allowClientClassCreation: allowClientClassCreation,
-      authDataManager: authDataManager(auth, enableAnonymousUsers),
-      appName: appName,
-      publicServerURL: publicServerURL,
-      customPages: customPages,
-      maxUploadSize: maxUploadSize,
-      liveQueryController: liveQueryController,
-      sessionLength: Number(sessionLength),
-      maxLimit: Number(maxLimit),
-      expireInactiveSessions: expireInactiveSessions,
-      jsonLogs,
-      revokeSessionOnPasswordReset,
+      loggerController,
       databaseController,
-      schemaCacheTTL,
-      enableSingleSchemaCache,
-      userSensitiveFields,
-      pushWorker,
-      pushControllerQueue,
-      hasPushSupport,
-      hasPushScheduledSupport,
-      objectIdSize
-    });
+      hooksController,
+    } = allControllers;
+    this.config = Config.put(Object.assign({}, options, allControllers));
 
+    logging.setLogger(loggerController);
+    const dbInitPromise = databaseController.performInitialization();
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
@@ -276,28 +110,6 @@ class ParseServer {
       } else {
         throw "argument 'cloud' must either be a string or a function";
       }
-    }
-  }
-
-  getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
-    let protocol;
-    try {
-      const parsedURI = url.parse(databaseURI);
-      protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
-    } catch(e) { /* */ }
-    switch (protocol) {
-    case 'postgres:':
-      return new PostgresStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        databaseOptions
-      });
-    default:
-      return new MongoStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        mongoOptions: databaseOptions,
-      });
     }
   }
 
