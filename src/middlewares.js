@@ -106,13 +106,15 @@ export function handleParseHeaders(req, res, next) {
     req.body = new Buffer(base64, 'base64');
   }
 
+  const clientIp = getClientIp(req);
+
   info.app = AppCache.get(info.appId);
   req.config = new Config(info.appId, mount);
   req.config.headers = req.headers || {};
+  req.config.ip = clientIp;
   req.info = info;
 
-  const ip = getClientIp(req);
-  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(ip) === -1) {
+  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(clientIp) === -1) {
     return invalidRequest(req, res);
   }
 

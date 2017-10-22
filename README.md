@@ -218,11 +218,13 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
 * `logLevel` - Set the specific level you want to log. Defaults to `info`. The default logger uses the npm log levels as defined by the underlying winston logger. Check [Winston logging levels](https://github.com/winstonjs/winston#logging-levels) for details on values to specify.
 * `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
+* `maxLimit` - The maximum value supported for the limit option on queries. Defaults to unlimited.
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
 * `passwordPolicy` - Optional password policy rules to enforce.
 * `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
 * `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
+* `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
 
 ##### Logging
 

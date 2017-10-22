@@ -239,6 +239,38 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("query with limit equal to maxlimit", function(done) {
+    var baz = new TestObject({ foo: 'baz' });
+    var qux = new TestObject({ foo: 'qux' });
+    reconfigureServer({ maxLimit: 1 })
+    Parse.Object.saveAll([baz, qux], function() {
+      var query = new Parse.Query(TestObject);
+      query.limit(1);
+      query.find({
+        success: function(results) {
+          equal(results.length, 1);
+          done();
+        }
+      });
+    });
+  });
+
+  it("query with limit exceeding maxlimit", function(done) {
+    var baz = new TestObject({ foo: 'baz' });
+    var qux = new TestObject({ foo: 'qux' });
+    reconfigureServer({ maxLimit: 1 })
+    Parse.Object.saveAll([baz, qux], function() {
+      var query = new Parse.Query(TestObject);
+      query.limit(2);
+      query.find({
+        success: function(results) {
+          equal(results.length, 1);
+          done();
+        }
+      });
+    });
+  });
+
   it("containedIn object array queries", function(done) {
     var messageList = [];
     for (var i = 0; i < 4; ++i) {
@@ -285,6 +317,40 @@ describe('Parse.Query testing', () => {
       return query.find({ useMasterKey: true });
     }).then((results) => {
       equal(results.length, 1);
+      done();
+    }, done.fail);
+  });
+
+  it('nested containedIn string', (done) => {
+    const sender1 = { group: ['A', 'B'] };
+    const sender2 = { group: ['A', 'C'] };
+    const sender3 = { group: ['B', 'C'] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.containedIn('sender.group', ['A']);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    }, done.fail);
+  });
+
+  it('nested containedIn number', (done) => {
+    const sender1 = { group: [1, 2] };
+    const sender2 = { group: [1, 3] };
+    const sender3 = { group: [2, 3] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.containedIn('sender.group', [1]);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
       done();
     }, done.fail);
   });
@@ -1377,6 +1443,23 @@ describe('Parse.Query testing', () => {
         }
       });
     });
+  });
+
+  it('nested contains', (done) => {
+    const sender1 = { group: ['A', 'B'] };
+    const sender2 = { group: ['A', 'C'] };
+    const sender3 = { group: ['B', 'C'] };
+    const obj1 = new TestObject({ sender: sender1 });
+    const obj2 = new TestObject({ sender: sender2 });
+    const obj3 = new TestObject({ sender: sender3 });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.contains('sender.group', 'A');
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    }, done.fail);
   });
 
   it("startsWith", function(done) {
@@ -2751,6 +2834,53 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containedIn with pointers should work with string array', done => {
+    const obj = new Parse.Object('MyClass');
+    const child = new Parse.Object('Child');
+    child.save().then(() => {
+      obj.set('child', child);
+      return obj.save();
+    }).then(() => {
+      const objs = [];
+      for(let i = 0; i < 10; i++) {
+        objs.push(new Parse.Object('MyClass'));
+      }
+      return Parse.Object.saveAll(objs);
+    }).then(() => {
+      const query = new Parse.Query('MyClass');
+      query.containedIn('child', [child.id]);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(1);
+    }).then(done).catch(done.fail);
+  });
+
+  it('containedIn with pointers should work with string array, with many objects', done => {
+    const objs = [];
+    const children = [];
+    for(let i = 0; i < 10; i++) {
+      const obj = new Parse.Object('MyClass');
+      const child = new Parse.Object('Child');
+      objs.push(obj);
+      children.push(child);
+    }
+    Parse.Object.saveAll(children).then(() => {
+      return Parse.Object.saveAll(objs.map((obj, i) => {
+        obj.set('child', children[i]);
+        return obj;
+      }));
+    }).then(() => {
+      const query = new Parse.Query('MyClass');
+      const subset = children.slice(0, 5).map((child) => {
+        return child.id;
+      });
+      query.containedIn('child', subset);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(5);
+    }).then(done).catch(done.fail);
+  });
+
   it('include for specific object', function(done){
     var child = new Parse.Object('Child');
     var parent = new Parse.Object('Parent');
@@ -2955,5 +3085,27 @@ describe('Parse.Query testing', () => {
       expect(response.results.length).toBe(1);
       done();
     }, done.fail);
+  });
+
+  it('should not interfere with has when using select on field with undefined value #3999', (done) => {
+    const obj1 = new Parse.Object('TestObject');
+    const obj2 = new Parse.Object('OtherObject');
+    obj2.set('otherField', 1);
+    obj1.set('testPointerField', obj2);
+    obj1.set('shouldBe', true);
+    const obj3 = new Parse.Object('TestObject');
+    obj3.set('shouldBe', false);
+    Parse.Object.saveAll([obj1, obj3]).then(() => {
+      const query = new Parse.Query('TestObject');
+      query.include('testPointerField');
+      query.select(['testPointerField', 'testPointerField.otherField', 'shouldBe']);
+      return query.find();
+    }).then(results => {
+      results.forEach(result => {
+        equal(result.has('testPointerField'), result.get('shouldBe'));
+      });
+      done();
+    }
+    ).catch(done.fail);
   });
 });

@@ -191,7 +191,11 @@ function wrapToHTTPRequest(hook, key) {
           try {
             body = JSON.parse(body);
           } catch (e) {
-            err = { error: "Malformed response", code: -1 };
+            err = {
+              error: "Malformed response",
+              code: -1,
+              partialResponse: body.substring(0, 100)
+            };
           }
         }
         if (!err) {

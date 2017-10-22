@@ -258,7 +258,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         user.setUsername("zxcv");
         user.set("email", "testInvalidConfig@parse.com");
         user.signUp(null)
-          .then(() => Parse.User.logIn("zxcv", "asdf"))
+          .then((user) => {
+            expect(user.getSessionToken()).toBe(undefined);
+            return Parse.User.logIn("zxcv", "asdf");
+          })
           .then(() => {
             fail('login should have failed');
             done();

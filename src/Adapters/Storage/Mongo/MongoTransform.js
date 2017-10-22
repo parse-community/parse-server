@@ -10,6 +10,8 @@ const transformKey = (className, fieldName, schema) => {
   case 'createdAt': return '_created_at';
   case 'updatedAt': return '_updated_at';
   case 'sessionToken': return '_session_token';
+  case 'lastUsed': return '_last_used';
+  case 'timesUsed': return 'times_used';
   }
 
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
@@ -77,6 +79,16 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
+  case 'lastUsed':
+  case '_last_used':
+    key = '_last_used';
+    timeField = true;
+    break;
+  case 'timesUsed':
+  case 'times_used':
+    key = 'times_used';
+    timeField = true;
+    break;
   }
 
   if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
@@ -107,7 +119,7 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   }
 
   // Handle normal objects by recursing
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key, value};
 }
 
@@ -132,7 +144,7 @@ const transformInteriorValue = restValue => {
   }
 
   // Handle normal objects by recursing
-  return _.mapValues(restValue, transformInteriorValue);
+  return mapValues(restValue, transformInteriorValue);
 }
 
 const valueAsDate = value => {
@@ -200,6 +212,14 @@ function transformQueryKeyValue(className, key, value, schema) {
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case 'lastUsed':
+    if (valueAsDate(value)) {
+      return {key: '_last_used', value: valueAsDate(value)}
+    }
+    key = '_last_used';
+    break;
+  case 'timesUsed':
+    return {key: 'times_used', value: value};
   default: {
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -221,12 +241,13 @@ function transformQueryKeyValue(className, key, value, schema) {
     schema.fields[key] &&
     schema.fields[key].type === 'Pointer';
 
+  const field = schema && schema.fields[key];
   if (expectedTypeIsPointer || !schema && value && value.__type === 'Pointer') {
     key = '_p_' + key;
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
+  const transformedConstraint = transformConstraint(value, field);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
@@ -332,7 +353,7 @@ const parseObjectKeyValueToMongoObjectKeyValue = (restKey, restValue, schema) =>
   if (Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
   }
-  value = _.mapValues(restValue, transformInteriorValue);
+  value = mapValues(restValue, transformInteriorValue);
   return {key: restKey, value};
 }
 
@@ -434,7 +455,7 @@ const addLegacyACL = restObject => {
 // cannot perform a transformation
 function CannotTransform() {}
 
-const transformInteriorAtom = atom => {
+const transformInteriorAtom = (atom) => {
   // TODO: check validity harder for the __type-defined types
   if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
     return {
@@ -460,13 +481,16 @@ const transformInteriorAtom = atom => {
 // or arrays with generic stuff inside.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom
-function transformTopLevelAtom(atom) {
+function transformTopLevelAtom(atom, field) {
   switch(typeof atom) {
-  case 'string':
   case 'number':
   case 'boolean':
-    return atom;
   case 'undefined':
+    return atom;
+  case 'string':
+    if (field && field.type === 'Pointer') {
+      return `${field.targetClass}$${atom}`;
+    }
     return atom;
   case 'symbol':
   case 'function':
@@ -514,13 +538,14 @@ function transformTopLevelAtom(atom) {
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, inArray) {
+function transformConstraint(constraint, field) {
+  const inArray = field && field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
   const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = (atom) => {
-    const result = transformFunction(atom);
+    const result = transformFunction(atom, field);
     if (result === CannotTransform) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
     }
@@ -789,6 +814,13 @@ function transformUpdateOperator({
     throw new Parse.Error(Parse.Error.COMMAND_UNAVAILABLE, `The ${__op} operator is not supported yet.`);
   }
 }
+function mapValues(object, iterator) {
+  const result = {};
+  Object.keys(object).forEach((key) => {
+    result[key] = iterator(object[key]);
+  });
+  return result;
+}
 
 const nestedMongoObjectToNestedParseObject = mongoObject => {
   switch(typeof mongoObject) {
@@ -829,7 +861,7 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
       return mongoObject;
     }
 
-    return _.mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
+    return mapValues(mongoObject, nestedMongoObjectToNestedParseObject);
   default:
     throw 'unknown js type';
   }
@@ -915,6 +947,14 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       case 'expiresAt':
       case '_expiresAt':
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
+        break;
+      case 'lastUsed':
+      case '_last_used':
+        restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'timesUsed':
+      case 'times_used':
+        restObject['timesUsed'] = mongoObject[key];
         break;
       default:
         // Check other auth data keys

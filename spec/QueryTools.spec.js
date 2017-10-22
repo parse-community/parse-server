@@ -360,7 +360,16 @@ describe('matchesQuery', function() {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(40, 40)
     };
+    var ptUndefined = {
+      id: new Id('Checkin', 'C1')
+    };
+    var ptNull = {
+      id: new Id('Checkin', 'C1'),
+      location: null
+    };
     expect(matchesQuery(pt, q)).toBe(true);
+    expect(matchesQuery(ptUndefined, q)).toBe(false);
+    expect(matchesQuery(ptNull, q)).toBe(false);
 
     q = new Parse.Query('Checkin');
     pt.location = new Parse.GeoPoint(40, 40);
@@ -384,6 +393,17 @@ describe('matchesQuery', function() {
       name: 'Santa Clara'
     };
 
+    var noLocation = {
+      id: new Id('Checkin', 'C2'),
+      name: 'Santa Clara'
+    };
+
+    var nullLocation = {
+      id: new Id('Checkin', 'C2'),
+      location: null,
+      name: 'Santa Clara'
+    };
+
     var q = new Parse.Query('Checkin').withinGeoBox(
       'location',
       new Parse.GeoPoint(37.708813, -122.526398),
@@ -392,7 +412,8 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(true);
     expect(matchesQuery(santaClara, q)).toBe(false);
-
+    expect(matchesQuery(noLocation, q)).toBe(false);
+    expect(matchesQuery(nullLocation, q)).toBe(false);
     // Invalid rectangles
     q = new Parse.Query('Checkin').withinGeoBox(
       'location',
@@ -473,5 +494,80 @@ describe('matchesQuery', function() {
     q.doesNotExist("status.y");
     expect(matchesQuery(message, q)).toBe(false);
 
+  });
+
+  function pointer(className, objectId) {
+    return { __type: 'Pointer', className, objectId };
+  }
+
+  it('should support containedIn with pointers', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'abc' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn with pointers', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'def')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support containedIn queries with [objectId]', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    var q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn queries with [objectId]', () => {
+    var message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    var q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def', 'ghi']);
+    expect(matchesQuery(message, q)).toBe(false);
   });
 });

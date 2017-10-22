@@ -135,7 +135,7 @@ Auth.prototype._loadRoles = function() {
         this.fetchedRoles = true;
         this.rolePromise = null;
 
-        cacheAdapter.role.put(this.user.id, this.userRoles);
+        cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
         return Promise.resolve(this.userRoles);
       }
       var rolesMap = results.reduce((m, r) => {
@@ -152,8 +152,7 @@ Auth.prototype._loadRoles = function() {
           });
           this.fetchedRoles = true;
           this.rolePromise = null;
-
-          cacheAdapter.role.put(this.user.id, this.userRoles);
+          cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
           return Promise.resolve(this.userRoles);
         });
     });

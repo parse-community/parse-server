@@ -132,7 +132,7 @@ describe('server', () => {
       });
   });
 
-  it('throws if you initialize email adapter incorrecly', done => {
+  it('throws if you initialize email adapter incorrectly', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
@@ -415,6 +415,14 @@ describe('server', () => {
       .then(done);
   })
 
+  it('fails if maxLimit is negative', (done) => {
+    reconfigureServer({ maxLimit: -100 })
+      .catch(error => {
+        expect(error).toEqual('Max limit must be a value greater than 0.');
+        done();
+      });
+  });
+
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
       .catch(done);
@@ -428,7 +436,7 @@ describe('server', () => {
       })
   });
 
-  it('should suceed if you provide valid ip in masterKeyIps', done => {
+  it('should succeed if you provide valid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['1.2.3.4','2001:0db8:0000:0042:0000:8a2e:0370:7334'] })
       .then(done)
   });

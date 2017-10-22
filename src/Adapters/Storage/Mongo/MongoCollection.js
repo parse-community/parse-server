@@ -79,10 +79,6 @@ export default class MongoCollection {
     return this._mongoCollection.updateMany(query, update);
   }
 
-  deleteOne(query) {
-    return this._mongoCollection.deleteOne(query);
-  }
-
   deleteMany(query) {
     return this._mongoCollection.deleteMany(query);
   }

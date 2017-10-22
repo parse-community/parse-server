@@ -72,20 +72,22 @@ const defaultColumns = Object.freeze({
     "subtitle":           {type:'String'},
   },
   _PushStatus: {
-    "pushTime":     {type:'String'},
-    "source":       {type:'String'}, // rest or webui
-    "query":        {type:'String'}, // the stringified JSON query
-    "payload":      {type:'String'}, // the stringified JSON payload,
-    "title":        {type:'String'},
-    "expiry":       {type:'Number'},
-    "status":       {type:'String'},
-    "numSent":      {type:'Number'},
-    "numFailed":    {type:'Number'},
-    "pushHash":     {type:'String'},
-    "errorMessage": {type:'Object'},
-    "sentPerType":  {type:'Object'},
-    "failedPerType":{type:'Object'},
-    "count":       {type:'Number'}
+    "pushTime":           {type:'String'},
+    "source":             {type:'String'}, // rest or webui
+    "query":              {type:'String'}, // the stringified JSON query
+    "payload":            {type:'String'}, // the stringified JSON payload,
+    "title":              {type:'String'},
+    "expiry":             {type:'Number'},
+    "status":             {type:'String'},
+    "numSent":            {type:'Number'},
+    "numFailed":          {type:'Number'},
+    "pushHash":           {type:'String'},
+    "errorMessage":       {type:'Object'},
+    "sentPerType":        {type:'Object'},
+    "failedPerType":      {type:'Object'},
+    "sentPerUTCOffset":   {type:'Object'},
+    "failedPerUTCOffset": {type:'Object'},
+    "count":              {type:'Number'}
   },
   _JobStatus: {
     "jobName":    {type: 'String'},
@@ -113,12 +115,14 @@ const defaultColumns = Object.freeze({
   },
   _GlobalConfig: {
     "objectId": {type: 'String'},
-    "params": {type: 'Object'}
+    "params":   {type: 'Object'}
   },
   _Audience: {
-    "objectId": {type:'String'},
-    "name":   {type:'String'},
-    "query": {type:'String'} //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
+    "objectId":  {type:'String'},
+    "name":      {type:'String'},
+    "query":     {type:'String'}, //storing query as JSON string to prevent "Nested keys should not contain the '$' or '.' characters" error
+    "lastUsed":  {type:'Date'},
+    "timesUsed": {type:'Number'}
   }
 });
 
@@ -657,9 +661,11 @@ export default class SchemaController {
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData({ clearCache: true });
-      }, () => {
-        //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
-
+      }, (error) => {
+        if (error.code == Parse.Error.INCORRECT_TYPE) {
+          // Make sure that we throw errors when it is appropriate to do so.
+          throw error;
+        }
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema
