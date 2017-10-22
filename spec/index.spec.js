@@ -443,4 +443,33 @@ describe('server', () => {
       .then(done)
   });
 
+  it('should load a middleware', (done) => {
+    const obj = {
+      middleware: function(req, res, next) {
+        next();
+      }
+    }
+    const spy = spyOn(obj, 'middleware').and.callThrough();
+    reconfigureServer({
+      middleware: obj.middleware
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      return query.find();
+    }).then(() => {
+      expect(spy).toHaveBeenCalled();
+      done();
+    }).catch(done.fail);
+  });
+
+  it('should load a middleware from string', (done) => {
+    reconfigureServer({
+      middleware: 'spec/support/CustomMiddleware'
+    }).then(() => {
+      return request.get('http://localhost:8378/1', (err, res) => {
+        // Just check that the middleware set the header
+        expect(res.headers['x-yolo']).toBe('1');
+        done();
+      });
+    }).catch(done.fail);
+  });
 });
