@@ -55,6 +55,7 @@ jobs:
       deploy:
         - provider: script
           skip_cleanup: true
+          before_script: npm install -g nsp && nsp check
           script: ./resources/npm-git.sh
           on:
            branch: master
