@@ -429,7 +429,7 @@ class ParseServer {
   }
 
   static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
-    if (!httpServer || config.port) {
+    if (!httpServer || (config && config.port)) {
       var app = express();
       httpServer = require('http').createServer(app);
       httpServer.listen(config.port);

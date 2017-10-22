@@ -127,14 +127,14 @@ describe('ParseLiveQueryServer', function() {
     var parseServer = ParseServer.start({
       appId: 'hello',
       masterKey: 'world',
-      port: 22345,
+      port: 22346,
       mountPath: '/1',
       serverURL: 'http://localhost:12345/1',
       liveQuery: {
         classNames: ['Yolo']
       },
       liveQueryServerOptions: {
-        port: 22346,
+        port: 22347,
       }
     });
 
