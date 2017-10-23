@@ -100,8 +100,7 @@ module.exports.ParseServerOptions = {
   },
   "cloud": {
     "env": "PARSE_SERVER_CLOUD",
-    "help": "Full path to your cloud code main.js",
-    "action": parsers.objectParser
+    "help": "Full path to your cloud code main.js"
   },
   "collectionPrefix": {
     "env": "PARSE_SERVER_COLLECTION_PREFIX",

@@ -46,7 +46,7 @@ export interface ParseServerOptions {
   /* Adapter module for the database */
   databaseAdapter: ?Adapter;
   /* Full path to your cloud code main.js */
-  cloud: ?any;
+  cloud: ?string;
   /* A collection prefix for the classes */
   collectionPrefix: ?string; // = ''
   /* Key for iOS, MacOS, tvOS clients */
