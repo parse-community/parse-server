@@ -265,7 +265,7 @@ module.exports.ParseServerOptions = {
     "default": 10
   },
   "port": {
-    "env": "PARSE_SERVER_PORT",
+    "env": "PORT",
     "help": "The port to run the ParseServer. defaults to 1337.",
     "action": parsers.numberParser("port"),
     "default": 1337
