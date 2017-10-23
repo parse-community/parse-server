@@ -325,59 +325,59 @@ module.exports.LiveQueryOptions = {
     "action": parsers.arrayParser
   },
   "redisURL": {
-    "env": "undefinedREDIS_URL",
+    "env": "PARSE_SERVER_LIVEQUERY_REDIS_URL",
     "help": "parse-server's LiveQuery redisURL"
   },
   "pubSubAdapter": {
-    "env": "undefinedPUB_SUB_ADAPTER",
+    "env": "PARSE_SERVER_LIVEQUERY_PUB_SUB_ADAPTER",
     "help": "LiveQuery pubsub adapter",
     "action": parsers.moduleOrObjectParser
   }
 };
 module.exports.LiveQueryServerOptions = {
   "appId": {
-    "env": "PARSE_SERVER_LIVE_QUERY_APP_ID",
+    "env": "PARSE_LIVE_QUERY_SERVER_APP_ID",
     "help": "This string should match the appId in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same appId."
   },
   "masterKey": {
-    "env": "PARSE_SERVER_LIVE_QUERY_MASTER_KEY",
+    "env": "PARSE_LIVE_QUERY_SERVER_MASTER_KEY",
     "help": "This string should match the masterKey in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same masterKey."
   },
   "serverURL": {
-    "env": "PARSE_SERVER_LIVE_QUERY_SERVER_URL",
+    "env": "PARSE_LIVE_QUERY_SERVER_SERVER_URL",
     "help": "This string should match the serverURL in use by your Parse Server. If you deploy the LiveQuery server alongside Parse Server, the LiveQuery server will try to use the same serverURL."
   },
   "keyPairs": {
-    "env": "PARSE_SERVER_LIVE_QUERY_KEY_PAIRS",
+    "env": "PARSE_LIVE_QUERY_SERVER_KEY_PAIRS",
     "help": "A JSON object that serves as a whitelist of keys. It is used for validating clients when they try to connect to the LiveQuery server. Check the following Security section and our protocol specification for details.",
     "action": parsers.objectParser
   },
   "websocketTimeout": {
-    "env": "PARSE_SERVER_LIVE_QUERY_WEBSOCKET_TIMEOUT",
+    "env": "PARSE_LIVE_QUERY_SERVER_WEBSOCKET_TIMEOUT",
     "help": "Number of milliseconds between ping/pong frames. The WebSocket server sends ping/pong frames to the clients to keep the WebSocket alive. This value defines the interval of the ping/pong frame from the server to clients. Defaults to 10 * 1000 ms (10 s).",
     "action": parsers.numberParser("websocketTimeout")
   },
   "cacheTimeout": {
-    "env": "PARSE_SERVER_LIVE_QUERY_CACHE_TIMEOUT",
+    "env": "PARSE_LIVE_QUERY_SERVER_CACHE_TIMEOUT",
     "help": "Number in milliseconds. When clients provide the sessionToken to the LiveQuery server, the LiveQuery server will try to fetch its ParseUser's objectId from parse server and store it in the cache. The value defines the duration of the cache. Check the following Security section and our protocol specification for details. Defaults to 30 * 24 * 60 * 60 * 1000 ms (~30 days).",
     "action": parsers.numberParser("cacheTimeout")
   },
   "logLevel": {
-    "env": "PARSE_SERVER_LIVE_QUERY_LOG_LEVEL",
+    "env": "PARSE_LIVE_QUERY_SERVER_LOG_LEVEL",
     "help": "This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO."
   },
   "port": {
-    "env": "PARSE_SERVER_LIVE_QUERY_PORT",
+    "env": "PARSE_LIVE_QUERY_SERVER_PORT",
     "help": "The port to run the ParseServer. defaults to 1337.",
     "action": parsers.numberParser("port"),
     "default": 1337
   },
   "redisURL": {
-    "env": "PARSE_SERVER_LIVE_QUERY_REDIS_URL",
+    "env": "PARSE_LIVE_QUERY_SERVER_REDIS_URL",
     "help": "parse-server's LiveQuery redisURL"
   },
   "pubSubAdapter": {
-    "env": "PARSE_SERVER_LIVE_QUERY_PUB_SUB_ADAPTER",
+    "env": "PARSE_LIVE_QUERY_SERVER_PUB_SUB_ADAPTER",
     "help": "LiveQuery pubsub adapter",
     "action": parsers.moduleOrObjectParser
   }
