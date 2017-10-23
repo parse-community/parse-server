@@ -17,7 +17,7 @@ const mockAdapter = {
 describe("FilesController",() =>{
   it("should properly expand objects", (done) => {
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var gridStoreAdapter = new GridStoreAdapter('mongodb://localhost:27017/parse');
     var filesController = new FilesController(gridStoreAdapter)
     var result = filesController.expandFilesInObject(config, function(){});

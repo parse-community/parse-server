@@ -2523,7 +2523,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should cleanup null authData keys (regression test for #935)', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2557,7 +2557,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2842,7 +2842,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should not create extraneous session tokens', (done) => {
-    const config = new Config(Parse.applicationId);
+    const config = Config.get(Parse.applicationId);
     config.database.loadSchema().then((s) => {
       // Lock down the _User class for creation
       return s.addClassIfNotExists('_User', {}, {create: {}})
