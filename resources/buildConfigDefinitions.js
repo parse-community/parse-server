@@ -1,18 +1,29 @@
+/**
+ * Parse Server Configuration Builder
+ * 
+ * This module builds the definitions file (src/Options/Definitions.js)
+ * from the src/Options/index.js options interfaces.
+ * The Definitions.js module is responsible for the default values as well
+ * as the mappings for the CLI.
+ * 
+ * To rebuild the definitions file, run
+ * `$ node resources/buildConfigDefinitions.js`
+ */
+const parsers = require('../src/Options/parsers');
+
 function last(array) {
   return array[array.length - 1];
 }
 
-const parsers = require('../src/Options/parsers');
-
 const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
 function toENV(key) {
-  var str = '';
+  let str = '';
   let previousIsUpper = false;
   for(let i = 0; i < key.length; i++) {
     const char = key[i];
     if (letters.indexOf(char) >= 0) {
       if (!previousIsUpper) {
-        str += "_"
+        str += '_';
         previousIsUpper = true;
       }
     } else {
@@ -79,16 +90,14 @@ function processProperty(property, iface) {
 
 
 function doInterface(iface) {
-  return iface.body.properties.map((prop) => {
-    return processProperty(prop, iface);
-  }).filter((e) => e !== undefined);
+  return iface.body.properties
+    .map((prop) => processProperty(prop, iface))
+    .filter((e) => e !== undefined);
 }
 
 function mapperFor(elt, t) {
   const p = t.identifier('parsers');
-  const wrap = function(identifier) {
-    return t.memberExpression(p, identifier);
-  }
+  const wrap = (identifier) => t.memberExpression(p, identifier);
 
   if (t.isNumberTypeAnnotation(elt)) {
     return t.callExpression(wrap(t.identifier('numberParser')), [t.stringLiteral(elt.name)]);
