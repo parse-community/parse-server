@@ -136,7 +136,6 @@ describe('Parse.User testing', () => {
             'X-Parse-REST-API-Key': 'rest',
           },
           json: {
-            _method: 'POST',
             username: 'some_user',
             password: 'some_password',
           }
