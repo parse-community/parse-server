@@ -536,7 +536,7 @@ function transformTopLevelAtom(atom, field) {
 function relativeTimeToDate(text, now = new Date()) {
   let parts = text.split(' ');
   if (!parts.length) {
-    return { status: 'invalid', info: 'Not a time string' };
+    return { status: 'error', info: 'Not a time string' };
   }
 
   // Filter out whitespace
@@ -672,9 +672,8 @@ function transformConstraint(constraint, field) {
           break;
         }
 
-        if (parserResult.status === 'error') {
-          log.info('Error while parsing relative date', parserResult);
-        }
+        log.info('Error while parsing relative date', parserResult);
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $relativeTime (${key}) value. ${parserResult.info}`);
       }
 
       answer[key] = transformer(constraint[key]);
