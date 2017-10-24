@@ -3123,7 +3123,7 @@ describe('Parse.Query testing', () => {
       .then(() => Parse.Object.saveAll([obj1, obj2]))
       .then(() => {
         const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', 'in 1 day');
+        q.greaterThan('ttl', { $relativeTime: 'in 1 day' });
         return q.find({ useMasterKey: true });
       })
       .then((results) => {
@@ -3131,7 +3131,7 @@ describe('Parse.Query testing', () => {
       })
       .then(() => {
         const q = new Parse.Query('MyCustomObject');
-        q.greaterThan('ttl', '1 day ago');
+        q.greaterThan('ttl', { $relativeTime: '1 day ago' });
         return q.find({ useMasterKey: true });
       })
       .then((results) => {
@@ -3139,7 +3139,7 @@ describe('Parse.Query testing', () => {
       })
       .then(() => {
         const q = new Parse.Query('MyCustomObject');
-        q.lessThan('ttl', '5 days ago');
+        q.lessThan('ttl', { $relativeTime: '5 days ago' });
         return q.find({ useMasterKey: true });
       })
       .then((results) => {
