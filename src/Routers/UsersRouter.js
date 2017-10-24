@@ -256,6 +256,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
+    this.route('POST', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });

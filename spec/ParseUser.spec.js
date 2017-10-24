@@ -126,6 +126,30 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('user login using POST with REST API', (done) => {
+    Parse.User.signUp('some_user', 'some_password', null, {
+      success: () => {
+        return rp.post({
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            username: 'some_user',
+            password: 'some_password',
+          }
+        }).then((res) => {
+          expect(res.username).toBe('some_user');
+          done();
+        }).catch((err) => {
+          fail(`no request should fail: ${JSON.stringify(err)}`);
+          done();
+        });
+      },
+    });
+  });
+
   it("user login", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
