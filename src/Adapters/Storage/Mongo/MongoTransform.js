@@ -665,7 +665,7 @@ function transformConstraint(constraint, field) {
     case '$ne':
     case '$eq': {
       const val = constraint[key];
-      if (key !== '$exists' && typeof val === 'object' && val.$relativeTime) {
+      if (key !== '$exists' && val && typeof val === 'object' && val.$relativeTime) {
         const parserResult = relativeTimeToDate(val.$relativeTime);
         if (parserResult.status === 'success') {
           answer[key] = parserResult.result;
