@@ -12,6 +12,7 @@
 * Adds request original IP to cloud code hooks, thanks to [Gustav Ahlberg](https://github.com/Gyran)
 * Corrects some outdated links, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 * Adds serverURL validation on startup, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Adds ability to login with POST requests alongside GET, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 
 ### Bug Fixes:
 * Fixes issue affecting beforeSaves and increments, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
