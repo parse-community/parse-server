@@ -126,6 +126,30 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('user login using POST with REST API', (done) => {
+    Parse.User.signUp('some_user', 'some_password', null, {
+      success: () => {
+        return rp.post({
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            username: 'some_user',
+            password: 'some_password',
+          }
+        }).then((res) => {
+          expect(res.username).toBe('some_user');
+          done();
+        }).catch((err) => {
+          fail(`no request should fail: ${JSON.stringify(err)}`);
+          done();
+        });
+      },
+    });
+  });
+
   it("user login", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
@@ -2523,7 +2547,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should cleanup null authData keys (regression test for #935)', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2557,7 +2581,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2842,7 +2866,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should not create extraneous session tokens', (done) => {
-    const config = new Config(Parse.applicationId);
+    const config = Config.get(Parse.applicationId);
     config.database.loadSchema().then((s) => {
       // Lock down the _User class for creation
       return s.addClassIfNotExists('_User', {}, {create: {}})

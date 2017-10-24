@@ -7,7 +7,7 @@ const Config = require("../src/Config");
 
 describe_only_db('mongo')('Read preference option', () => {
   it('should find in primary by default', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -39,7 +39,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference in the beforeFind trigger', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -75,7 +75,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference in the beforeFind trigger even changing query', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -112,7 +112,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference in the beforeFind trigger even returning query', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -152,7 +152,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference in the beforeFind trigger even returning promise', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -192,7 +192,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference to PRIMARY_PREFERRED', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -228,7 +228,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference to SECONDARY_PREFERRED', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -264,7 +264,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference to NEAREST', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -300,7 +300,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for GET', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -334,7 +334,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for GET using API', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -374,7 +374,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change read preference for count', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject');
     obj0.set('boolKey', false);
@@ -407,7 +407,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should find includes in primary by default', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -462,7 +462,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change includes read preference', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -519,7 +519,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should find subqueries in primary by default', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -575,7 +575,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change subqueries read preference when using matchesQuery', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -632,7 +632,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change subqueries read preference when using doesNotMatchQuery', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);
@@ -689,7 +689,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should change subqueries read preference when using matchesKeyInQuery and doesNotMatchKeyInQuery', (done) => {
-    const databaseAdapter = (new Config(Parse.applicationId)).database.adapter;
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
     const obj0 = new Parse.Object('MyObject0');
     obj0.set('boolKey', false);

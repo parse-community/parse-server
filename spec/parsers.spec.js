@@ -6,7 +6,7 @@ import {
   arrayParser,
   moduleOrObjectParser,
   nullParser,
-} from '../src/cli/utils/parsers';
+} from '../src/Options/parsers';
 
 describe('parsers', () => {
   it('parses correctly with numberParser', () => {

@@ -1234,7 +1234,7 @@ describe('Parse.ACL', () => {
   });
 
   it('regression test #701', done => {
-    const config = new Config('test');
+    const config = Config.get('test');
     var anonUser = {
       authData: {
         anonymous: {

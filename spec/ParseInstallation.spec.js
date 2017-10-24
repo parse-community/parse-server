@@ -21,7 +21,7 @@ const installationSchema = { fields: Object.assign({}, defaultColumns._Default, 
 describe('Installations', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
     database = config.database;
   });
 

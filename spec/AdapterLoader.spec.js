@@ -135,7 +135,7 @@ describe("AdapterLoader", ()=>{
       reconfigureServer({
         push: pushAdapterOptions,
       }).then(() => {
-        const config = new Config(Parse.applicationId);
+        const config = Config.get(Parse.applicationId);
         const pushAdapter = config.pushWorker.adapter;
         expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
         expect(pushAdapter.options).toEqual(pushAdapterOptions);

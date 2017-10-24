@@ -109,7 +109,7 @@ export function handleParseHeaders(req, res, next) {
   const clientIp = getClientIp(req);
 
   info.app = AppCache.get(info.appId);
-  req.config = new Config(info.appId, mount);
+  req.config = Config.get(info.appId, mount);
   req.config.headers = req.headers || {};
   req.config.ip = clientIp;
   req.info = info;

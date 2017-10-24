@@ -1,5 +1,6 @@
 var Parse = require('parse/node');
 var ParseLiveQueryServer = require('../src/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
+var ParseServer = require('../src/ParseServer').default;
 
 // Global mock info
 var queryHashValue = 'hash';
@@ -85,6 +86,66 @@ describe('ParseLiveQueryServer', function() {
     expect(parseLiveQueryServer.clients.size).toBe(0);
     expect(parseLiveQueryServer.subscriptions.size).toBe(0);
   });
+
+  it('can be initialized from ParseServer', function() {
+    var httpServer = {};
+    var parseLiveQueryServer = ParseServer.createLiveQueryServer(httpServer, {});
+
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
+    expect(parseLiveQueryServer.clients.size).toBe(0);
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+  });
+
+  it('can be initialized from ParseServer without httpServer', function(done) {
+    var parseLiveQueryServer = ParseServer.createLiveQueryServer(undefined, {
+      port: 22345
+    });
+
+    expect(parseLiveQueryServer.clientId).toBeUndefined();
+    expect(parseLiveQueryServer.clients.size).toBe(0);
+    expect(parseLiveQueryServer.subscriptions.size).toBe(0);
+    parseLiveQueryServer.server.close(done);
+  });
+
+  it('can be initialized through ParseServer without liveQueryServerOptions', function(done) {
+    var parseServer = ParseServer.start({
+      appId: 'hello',
+      masterKey: 'world',
+      port: 22345,
+      mountPath: '/1',
+      serverURL: 'http://localhost:12345/1',
+      liveQuery: {
+        classNames: ['Yolo']
+      },
+      startLiveQueryServer: true
+    });
+
+    expect(parseServer.liveQueryServer).not.toBeUndefined();
+    expect(parseServer.liveQueryServer.server).toBe(parseServer.server);
+    parseServer.server.close(done);
+  });
+
+  it('can be initialized through ParseServer with liveQueryServerOptions', function(done) {
+    var parseServer = ParseServer.start({
+      appId: 'hello',
+      masterKey: 'world',
+      port: 22346,
+      mountPath: '/1',
+      serverURL: 'http://localhost:12345/1',
+      liveQuery: {
+        classNames: ['Yolo']
+      },
+      liveQueryServerOptions: {
+        port: 22347,
+      }
+    });
+
+    expect(parseServer.liveQueryServer).not.toBeUndefined();
+    expect(parseServer.liveQueryServer.server).not.toBe(parseServer.server);
+    parseServer.liveQueryServer.server.close();
+    parseServer.server.close(done);
+  });
+
 
   it('can handle connect command', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
