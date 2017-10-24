@@ -13,6 +13,7 @@
 * Corrects some outdated links, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 * Adds serverURL validation on startup, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 * Adds ability to login with POST requests alongside GET, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Adds ability to login with email, instead of username, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
 ### Bug Fixes:
 * Fixes issue affecting beforeSaves and increments, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
