@@ -125,27 +125,45 @@ function create(config, auth, className, restObject, clientSDK) {
 // Usually, this is just updatedAt.
 function update(config, auth, className, restWhere, restObject, clientSDK) {
   enforceRoleSecurity('update', className, auth);
+  let query = restWhere;
+  let update = restObject;
+  let many  = false;
 
+  if (!restWhere) {
+    query = restObject.query;
+    update = restObject.update;
+    many = restObject.many || false;
+  }
+
+  const { objectId } = query;
   return Promise.resolve().then(() => {
     const hasTriggers = checkTriggers(className, config, ['beforeSave', 'afterSave']);
     const hasLiveQuery = checkLiveQuery(className, config);
-    if (hasTriggers || hasLiveQuery) {
-      return find(config, Auth.master(config), className, restWhere);
+    if (objectId && (hasTriggers || hasLiveQuery)) {
+      return find(config, Auth.master(config), className, query);
     }
-    return Promise.resolve({});
   }).then((response) => {
     var originalRestObject;
     if (response && response.results && response.results.length) {
       originalRestObject = response.results[0];
     }
 
-    var write = new RestWrite(config, auth, className, restWhere, restObject, originalRestObject, clientSDK);
+    var write = new RestWrite(
+      config,
+      auth,
+      className,
+      query,
+      update,
+      originalRestObject,
+      clientSDK,
+      { many }
+    );
     return write.execute();
   });
 }
 
 const classesWithMasterOnlyAccess = ['_JobStatus', '_PushStatus', '_Hooks', '_GlobalConfig', '_JobSchedule'];
-// Disallowing access to the _Role collection except by master key
+// Disallowing access to the restricted collections except by master key
 function enforceRoleSecurity(method, className, auth) {
   if (className === '_Installation' && !auth.isMaster) {
     if (method === 'delete' || method === 'find') {
