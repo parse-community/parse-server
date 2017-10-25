@@ -398,6 +398,13 @@ describe('relativeTimeToDate', () => {
       });
     });
 
+    it('should error on floating point numbers', () => {
+      expect(transform.relativeTimeToDate('in 12.3 hours')).toEqual({
+        status: 'error',
+        info: "'12.3' is not an integer.",
+      });
+    });
+
     it('should error if numbers are invalid', () => {
       expect(transform.relativeTimeToDate('12 hours 123a minute ago')).toEqual({
         status: 'error',
