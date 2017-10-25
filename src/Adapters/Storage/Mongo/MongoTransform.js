@@ -590,12 +590,12 @@ function relativeTimeToDate(text, now = new Date()) {
     switch(interval) {
     case 'day':
     case 'days':
-      seconds += val * 24 * 60 * 60;
+      seconds += val * 86400; // 24 * 60 * 60
       break;
 
     case 'hour':
     case 'hours':
-      seconds += val * 60 * 60;
+      seconds += val * 3600; // 60 * 60
       break;
 
     case 'minute':
