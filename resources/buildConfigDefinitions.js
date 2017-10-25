@@ -47,7 +47,10 @@ function getENVPrefix(iface) {
     return 'PARSE_SERVER_CUSTOM_PAGES_';
   }
   if (iface.id.name === 'LiveQueryServerOptions') {
-    return 'PARSE_SERVER_LIVE_QUERY_';
+    return 'PARSE_LIVE_QUERY_SERVER_';
+  }
+  if (iface.id.name === 'LiveQueryOptions') {
+    return 'PARSE_SERVER_LIVEQUERY_';
   }
 }
 
