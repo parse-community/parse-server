@@ -1120,8 +1120,15 @@ RestWrite.prototype.runAfterTrigger = function() {
   // Notifiy LiveQueryServer if possible
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
+
   // Run afterSave trigger
-  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
+  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config)
+    .catch(function(err) {
+      // log this error
+      /* eslint-disable no-console */
+      console.warn("afterSave caught an error: " + err);
+      /* eslint-enable no-console */
+    })
 };
 
 // A helper to figure out what location this operation happens at.
