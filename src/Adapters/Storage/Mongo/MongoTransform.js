@@ -593,16 +593,22 @@ function relativeTimeToDate(text, now = new Date()) {
       seconds += val * 86400; // 24 * 60 * 60
       break;
 
+    case 'hr':
+    case 'hrs':
     case 'hour':
     case 'hours':
       seconds += val * 3600; // 60 * 60
       break;
 
+    case 'min':
+    case 'mins':
     case 'minute':
     case 'minutes':
       seconds += val * 60;
       break;
 
+    case 'sec':
+    case 'secs':
     case 'second':
     case 'seconds':
       seconds += val;
