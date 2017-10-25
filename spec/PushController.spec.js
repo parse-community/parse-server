@@ -1259,7 +1259,7 @@ describe('PushController', () => {
     const auth = {isMaster: true};
     const pushController = new PushController();
 
-    const config = new Config(Parse.applicationId);
+    let config = Config.get(Parse.applicationId);
 
     const pushes = [];
     const pushAdapter = {
@@ -1275,7 +1275,11 @@ describe('PushController', () => {
     beforeEach((done) => {
       reconfigureServer({
         push: {adapter: pushAdapter},
-      }).then(done, done.fail);
+      })
+        .then(() => {
+          config = Config.get(Parse.applicationId);
+        })
+        .then(done, done.fail);
     });
 
     it('should throw if both expiration_time and expiration_interval are set', () => {
@@ -1288,10 +1292,13 @@ describe('PushController', () => {
     it('should throw on invalid expiration_interval', () => {
       expect(() => pushController.sendPush({
         expiration_interval: -1
-      })).toThrow();
+      }, {}, config, auth)).toThrow();
       expect(() => pushController.sendPush({
         expiration_interval: '',
-      })).toThrow();
+      }, {}, config, auth)).toThrow();
+      expect(() => pushController.sendPush({
+        expiration_time: {},
+      }, {}, config, auth)).toThrow();
     });
 
     describe('For immediate pushes',() => {
@@ -1308,7 +1315,7 @@ describe('PushController', () => {
                   alert: 'immediate push',
                 },
                 expiration_interval: 20 * 60, // twenty minutes
-              }, {}, new Config(Parse.applicationId), auth, resolve, now)
+              }, {}, Config.get(Parse.applicationId), auth, resolve, now)
             }))
           .then((pushStatusId) => {
             const p = new Parse.Object('_PushStatus');
