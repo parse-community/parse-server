@@ -561,7 +561,7 @@ function relativeTimeToDate(text, now = new Date()) {
   // strip the 'ago' or 'in'
   if (future) {
     parts = parts.slice(1);
-  } else if (past) {
+  } else { // past
     parts = parts.slice(0, parts.length - 1);
   }
 
