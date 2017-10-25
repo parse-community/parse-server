@@ -120,7 +120,7 @@ module.exports.ParseServerOptions = {
     "help": "Key for Unity and .Net SDK"
   },
   "restAPIKey": {
-    "env": "PARSE_SERVER_REST_APIKEY",
+    "env": "PARSE_SERVER_REST_API_KEY",
     "help": "Key for REST calls"
   },
   "webhookKey": {
