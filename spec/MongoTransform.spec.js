@@ -353,9 +353,9 @@ describe('relativeTimeToDate', () => {
 
   describe('In the future', () => {
     it('should parse valid natural time', () => {
-      const text = 'in 12 days 10 hours 24 minutes';
+      const text = 'in 12 days 10 hours 24 minutes 30 seconds';
       const { result, status, info } = transform.relativeTimeToDate(text, now);
-      expect(result.toISOString()).toBe('2017-10-08T23:52:16.617Z');
+      expect(result.toISOString()).toBe('2017-10-08T23:52:46.617Z');
       expect(status).toBe('success');
       expect(info).toBe('future');
     });
@@ -363,15 +363,22 @@ describe('relativeTimeToDate', () => {
 
   describe('In the past', () => {
     it('should parse valid natural time', () => {
-      const text = '2 days 12 hours 1 minute ago';
+      const text = '2 days 12 hours 1 minute 12 seconds ago';
       const { result, status, info } = transform.relativeTimeToDate(text, now);
-      expect(result.toISOString()).toBe('2017-09-24T01:27:16.617Z');
+      expect(result.toISOString()).toBe('2017-09-24T01:27:04.617Z');
       expect(status).toBe('success');
       expect(info).toBe('past');
     });
   });
 
   describe('Error cases', () => {
+    it('should error if string is completely gibberish', () => {
+      expect(transform.relativeTimeToDate('gibberishasdnklasdnjklasndkl123j123')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
     it('should error if string contains neither `ago` nor `in`', () => {
       expect(transform.relativeTimeToDate('12 hours 1 minute')).toEqual({
         status: 'error',
