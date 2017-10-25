@@ -459,26 +459,3 @@ jasmine.restoreLibrary = function(library, name) {
   }
   require(library)[name] = libraryCache[library][name];
 }
-
-const { MongoClient } = require('mongodb');
-global.dropDatabase = () => {
-  const connectionPromise = new Promise((resolve, reject) =>
-    MongoClient.connect(mongoURI, (err, db) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve(db);
-      }
-    }));
-
-  return connectionPromise.then((connection) =>
-    new Promise((resolve, reject) => {
-      connection.dropDatabase((err, res) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(res);
-        }
-      });
-    }));
-};
