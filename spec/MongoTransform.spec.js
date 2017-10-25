@@ -374,9 +374,7 @@ describe('transformConstraint', () => {
       expect(() => {
         transform.transformConstraint({
           $exists: {
-            ttl: {
-              $relativeTime: '12 days ago',
-            }
+            $relativeTime: '12 days ago',
           }
         });
       }).toThrow();
