@@ -534,6 +534,8 @@ function transformTopLevelAtom(atom, field) {
 }
 
 function relativeTimeToDate(text, now = new Date()) {
+  text = text.toLowerCase();
+
   let parts = text.split(' ');
   if (!parts.length) {
     return { status: 'error', info: 'Not a time string' };
