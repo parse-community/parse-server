@@ -174,6 +174,7 @@ export function pushStatusHandler(config, existingObjectId) {
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
+      expiration_interval: body.expiration_interval,
       status: status,
       numSent: 0,
       pushHash,
