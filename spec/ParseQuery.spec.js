@@ -3119,8 +3119,7 @@ describe('Parse.Query testing', () => {
       ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
     });
 
-    dropDatabase()
-      .then(() => Parse.Object.saveAll([obj1, obj2]))
+    Parse.Object.saveAll([obj1, obj2])
       .then(() => {
         const q = new Parse.Query('MyCustomObject');
         q.greaterThan('ttl', { $relativeTime: 'in 1 day' });
@@ -3164,7 +3163,20 @@ describe('Parse.Query testing', () => {
 
     const q = new Parse.Query('MyCustomObject');
     q.greaterThan('ttl', { $relativeTime: '-12 bananas ago' });
-    return obj1.save({ useMasterKey: true })
+    obj1.save({ useMasterKey: true })
+      .then(() => q.find({ useMasterKey: true }))
+      .then(done.fail, done);
+  });
+
+  it_only_db('mongo')('should error when using $relativeTime with $eq, $ne, and $', function(done) {
+    const obj1 = new Parse.Object('MyCustomObject', {
+      name: 'obj1',
+      ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    });
+
+    const q = new Parse.Query('MyCustomObject');
+    q.exists('ttl', { $relativeTime: 'in 1 day' });
+    obj1.save({ useMasterKey: true })
       .then(() => q.find({ useMasterKey: true }))
       .then(done.fail, done);
   });

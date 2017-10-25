@@ -673,7 +673,14 @@ function transformConstraint(constraint, field) {
     case '$ne':
     case '$eq': {
       const val = constraint[key];
-      if (key !== '$exists' && val && typeof val === 'object' && val.$relativeTime) {
+      if (val && typeof val === 'object' && val.$relativeTime) {
+        switch (key) {
+        case '$exists':
+        case '$ne':
+        case '$eq':
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators');
+        }
+
         const parserResult = relativeTimeToDate(val.$relativeTime);
         if (parserResult.status === 'success') {
           answer[key] = parserResult.result;
@@ -684,7 +691,7 @@ function transformConstraint(constraint, field) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $relativeTime (${key}) value. ${parserResult.info}`);
       }
 
-      answer[key] = transformer(constraint[key]);
+      answer[key] = transformer(val);
       break;
     }
 
