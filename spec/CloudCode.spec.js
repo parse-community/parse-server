@@ -1080,7 +1080,7 @@ describe('Cloud Code', () => {
    * Verifies that an afterSave hook throwing an exception
    * will not prevent a successful save response from being returned
    */
-  it('after save should succeed on exception', (done) => {
+  it('should succeed on afterSave exception', (done) => {
     Parse.Cloud.afterSave("AfterSaveTestClass", function () {
       throw "Exception";
     });
