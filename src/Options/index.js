@@ -55,7 +55,8 @@ export interface ParseServerOptions {
   javascriptKey: ?string;
   /* Key for Unity and .Net SDK */
   dotNetKey: ?string;
-  /* Key for REST calls */
+  /* Key for REST calls
+  :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
   /* Key sent with outgoing webhook calls */
   webhookKey: ?string;
