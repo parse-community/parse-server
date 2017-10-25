@@ -671,6 +671,10 @@ function transformConstraint(constraint, field) {
     case '$eq': {
       const val = constraint[key];
       if (val && typeof val === 'object' && val.$relativeTime) {
+        if (field && field.type !== 'Date') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with Date field');
+        }
+
         switch (key) {
         case '$exists':
         case '$ne':
