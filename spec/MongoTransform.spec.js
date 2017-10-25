@@ -348,6 +348,42 @@ describe('transformUpdate', () => {
   });
 });
 
+describe('transformConstraint', () => {
+  describe('$relativeTime', () => {
+    it('should error on $eq, $ne, and $exists', () => {
+      expect(() => {
+        transform.transformConstraint({
+          $eq: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $ne: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $exists: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+    });
+  })
+});
+
 describe('relativeTimeToDate', () => {
   const now = new Date('2017-09-26T13:28:16.617Z');
 

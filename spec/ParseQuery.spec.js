@@ -3167,17 +3167,4 @@ describe('Parse.Query testing', () => {
       .then(() => q.find({ useMasterKey: true }))
       .then(done.fail, done);
   });
-
-  it_only_db('mongo')('should error when using $relativeTime with $eq, $ne, and $', function(done) {
-    const obj1 = new Parse.Object('MyCustomObject', {
-      name: 'obj1',
-      ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
-    });
-
-    const q = new Parse.Query('MyCustomObject');
-    q.exists('ttl', { $relativeTime: 'in 1 day' });
-    obj1.save({ useMasterKey: true })
-      .then(() => q.find({ useMasterKey: true }))
-      .then(done.fail, done);
-  });
 });

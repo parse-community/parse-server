@@ -1320,4 +1320,5 @@ module.exports = {
   transformWhere,
   mongoObjectToParseObject,
   relativeTimeToDate,
+  transformConstraint,
 };
