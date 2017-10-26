@@ -90,6 +90,7 @@ var defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   silent,
   logLevel,

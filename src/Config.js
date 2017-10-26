@@ -60,8 +60,15 @@ export class Config {
     emailVerifyTokenValidityDuration,
     accountLockout,
     passwordPolicy,
-    masterKeyIps
+    masterKeyIps,
+    masterKey,
+    readOnlyMasterKey,
   }) {
+
+    if (masterKey === readOnlyMasterKey) {
+      throw new Error('masterKey and readOnlyMasterKey should be different');
+    }
+
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
       this.validateEmailConfiguration({emailAdapter, appName, publicServerURL, emailVerifyTokenValidityDuration});

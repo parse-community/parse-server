@@ -123,6 +123,10 @@ module.exports.ParseServerOptions = {
     "env": "PARSE_SERVER_REST_API_KEY",
     "help": "Key for REST calls"
   },
+  "readOnlyMasterKey": {
+    "env": "PARSE_SERVER_READ_ONLY_MASTER_KEY",
+    "help": "Read-only key, which has the same capabilities as MasterKey without writes"
+  },
   "webhookKey": {
     "env": "PARSE_SERVER_WEBHOOK_KEY",
     "help": "Key sent with outgoing webhook calls"

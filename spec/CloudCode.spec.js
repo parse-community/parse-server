@@ -1076,6 +1076,19 @@ describe('Cloud Code', () => {
       });
   });
 
+  /**
+   * Verifies that an afterSave hook throwing an exception
+   * will not prevent a successful save response from being returned
+   */
+  it('should succeed on afterSave exception', (done) => {
+    Parse.Cloud.afterSave("AfterSaveTestClass", function () {
+      throw "Exception";
+    });
+    const AfterSaveTestClass = Parse.Object.extend('AfterSaveTestClass');
+    const obj = new AfterSaveTestClass();
+    obj.save().then(done, done.fail);
+  });
+
   describe('cloud jobs', () => {
     it('should define a job', (done) => {
       expect(() => {

@@ -58,6 +58,8 @@ export interface ParseServerOptions {
   /* Key for REST calls
   :ENV: PARSE_SERVER_REST_API_KEY */
   restAPIKey: ?string;
+  /* Read-only key, which has the same capabilities as MasterKey without writes */
+  readOnlyMasterKey: ?string;
   /* Key sent with outgoing webhook calls */
   webhookKey: ?string;
   /* Key for your files */
