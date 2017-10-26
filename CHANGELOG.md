@@ -1,12 +1,26 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.4...master)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.5...master)
+
+### 2.6.5
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.5...2.6.4)
+
+#### New Features:
+* Adds support for read-only masterKey, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Adds support for relative time queries (mongodb only), thanks to [Marvel Mathew](https://github.com/marvelm)
+
+#### Improvements:
+* Handle possible afterSave exception, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Add support for expiration interval in Push, thanks to [Marvel Mathew](https://github.com/marvelm)
+
+#### Bug Fixes:
+* The REST API key was improperly inferred from environment when using the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
 ### 2.6.4
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.4...2.6.3)
 
-### Improvements:
+#### Improvements:
 * Improves management of configurations and default values, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Adds ability to start ParseServer with `ParseServer.start(options)`, thanks to [Florent Vilmart](https://github.com/flovilmart)
 * Adds request original IP to cloud code hooks, thanks to [Gustav Ahlberg](https://github.com/Gyran)
@@ -15,7 +29,7 @@
 * Adds ability to login with POST requests alongside GET, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 * Adds ability to login with email, instead of username, thanks to [Florent Vilmart](https://github.com/flovilmart)
 
-### Bug Fixes:
+#### Bug Fixes:
 * Fixes issue affecting beforeSaves and increments, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
 
 #### Dependency Updates:
