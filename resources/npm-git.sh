@@ -30,4 +30,4 @@ git config user.name "Travis CI"
 git config user.email "github@fb.com"
 git add .
 git commit -m "Deploy master to LATEST branch"
-git push --force --quiet "https://${GH_TOKEN}@github.com/parseplatform/parse-server.git" master:latest
+git push --force --quiet "https://${GH_TOKEN}@github.com/parse-community/parse-server.git" master:latest

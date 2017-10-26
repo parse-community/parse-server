@@ -9,7 +9,7 @@ describe('DatabaseController', function() {
       var query = {$or: [{a: 1}, {a: 2}], _rperm: {$in: ['a', 'b']}, foo: 3};
       validateQuery(query);
       expect(query).toEqual({$or: [{a: 1, _rperm: {$in: ['a', 'b']}, foo: 3},
-                                   {a: 2, _rperm: {$in: ['a', 'b']}, foo: 3}]});
+        {a: 2, _rperm: {$in: ['a', 'b']}, foo: 3}]});
       done();
     });
 
@@ -28,10 +28,10 @@ describe('DatabaseController', function() {
 
     it('should push refactored keys down a tree for SERVER-13732', (done) => {
       var query = {a: 1, $or: [{$or: [{b: 1}, {b: 2}]},
-                               {$or: [{c: 1}, {c: 2}]}]};
+        {$or: [{c: 1}, {c: 2}]}]};
       validateQuery(query);
       expect(query).toEqual({$or: [{$or: [{b: 1, a: 1}, {b: 2, a: 1}]},
-                                   {$or: [{c: 1, a: 1}, {c: 2, a: 1}]}]});
+        {$or: [{c: 1, a: 1}, {c: 2, a: 1}]}]});
 
       done();
     });

@@ -4,11 +4,12 @@ var RestQuery = require('./RestQuery');
 // An Auth object tells you who is requesting something and whether
 // the master key was used.
 // userObject is a Parse.User and can be null if there's no user.
-function Auth({ config, isMaster = false, user, installationId } = {}) {
+function Auth({ config, isMaster = false, isReadOnly = false, user, installationId } = {}) {
   this.config = config;
   this.installationId = installationId;
   this.isMaster = isMaster;
   this.user = user;
+  this.isReadOnly = isReadOnly;
 
   // Assuming a users roles won't change during a single request, we'll
   // only load them once.
@@ -32,6 +33,11 @@ Auth.prototype.couldUpdateUserId = function(userId) {
 // A helper to get a master-level Auth object
 function master(config) {
   return new Auth({ config, isMaster: true });
+}
+
+// A helper to get a master-level Auth object
+function readOnly(config) {
+  return new Auth({ config, isMaster: true, isReadOnly: true });
 }
 
 // A helper to get a nobody-level Auth object
@@ -135,7 +141,7 @@ Auth.prototype._loadRoles = function() {
         this.fetchedRoles = true;
         this.rolePromise = null;
 
-        cacheAdapter.role.put(this.user.id, this.userRoles);
+        cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
         return Promise.resolve(this.userRoles);
       }
       var rolesMap = results.reduce((m, r) => {
@@ -152,8 +158,7 @@ Auth.prototype._loadRoles = function() {
           });
           this.fetchedRoles = true;
           this.rolePromise = null;
-
-          cacheAdapter.role.put(this.user.id, this.userRoles);
+          cacheAdapter.role.put(this.user.id, Array(...this.userRoles));
           return Promise.resolve(this.userRoles);
         });
     });
@@ -208,9 +213,10 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queri
 }
 
 module.exports = {
-  Auth: Auth,
-  master: master,
-  nobody: nobody,
+  Auth,
+  master,
+  nobody,
+  readOnly,
   getAuthForSessionToken,
   getAuthForLegacySessionToken
 };

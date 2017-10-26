@@ -24,7 +24,6 @@ if (global._babelPolyfill) {
 }
 
 var cache = require('../src/cache').default;
-var express = require('express');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/TestUtils');
@@ -51,7 +50,7 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   startDB = require('mongodb-runner/mocha/before').bind({
     timeout: () => {},
     slow: () => {}
-  });
+  })
   stopDB = require('mongodb-runner/mocha/after');
   databaseAdapter = new MongoStorageAdapter({
     uri: mongoURI,
@@ -91,15 +90,14 @@ var defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   silent,
   logLevel,
   push: {
-    'ios': {
-      cert: 'prodCert.pem',
-      key: 'prodKey.pem',
-      production: true,
-      bundleId: 'bundleId',
+    android: {
+      senderId: 'yolo',
+      apiKey: 'yolo',
     }
   },
   auth: { // Override the facebook provider
@@ -118,44 +116,39 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var app = express();
-var api = new ParseServer(defaultConfiguration);
-app.use('/1', api);
-app.use('/1', () => {
-  fail('should not call next');
-});
-var server = app.listen(port);
-server.on('connection', connection => {
-  const key = `${connection.remoteAddress}:${connection.remotePort}`;
-  openConnections[key] = connection;
-  connection.on('close', () => { delete openConnections[key] });
-});
+var server;
+
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    server.close(() => {
-      try {
-        const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-          __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
-        });
-        cache.clear();
-        app = express();
-        api = new ParseServer(newConfiguration);
-        api.use(require('./testing-routes').router);
-        app.use('/1', api);
-        app.use('/1', () => {
-          fail('should not call next');
-        });
-        server = app.listen(port);
-        server.on('connection', connection => {
-          const key = `${connection.remoteAddress}:${connection.remotePort}`;
-          openConnections[key] = connection;
-          connection.on('close', () => { delete openConnections[key] });
-        });
-      } catch(error) {
-        reject(error);
-      }
-    });
+    if (server) {
+      return server.close(() => {
+        server = undefined;
+        reconfigureServer(changedConfiguration).then(resolve, reject);
+      });
+    }
+    try {
+      const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
+        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject),
+        mountPath: '/1',
+        port,
+      });
+      cache.clear();
+      const parseServer = ParseServer.start(newConfiguration);
+      parseServer.app.use(require('./testing-routes').router);
+      parseServer.expressApp.use('/1', (err) => {
+        console.error(err);
+        fail('should not call next');
+      });
+      server = parseServer.server;
+      server.on('connection', connection => {
+        const key = `${connection.remoteAddress}:${connection.remotePort}`;
+        openConnections[key] = connection;
+        connection.on('close', () => { delete openConnections[key] });
+      });
+    } catch(error) {
+      reject(error);
+    }
   });
 }
 
@@ -181,26 +174,21 @@ beforeEach(done => {
     }
   }
   TestUtils.destroyAllDataPermanently()
-  .catch(error => {
+    .catch(error => {
     // For tests that connect to their own mongo, there won't be any data to delete.
-    if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
-      return;
-    } else {
-      fail(error);
-      return;
-    }
-  })
-  .then(reconfigureServer)
-  .then(() => {
-    Parse.initialize('test', 'test', 'test');
-    Parse.serverURL = 'http://localhost:' + port + '/1';
-    done();
-  }, () => {
-    Parse.initialize('test', 'test', 'test');
-    Parse.serverURL = 'http://localhost:' + port + '/1';
-    // fail(JSON.stringify(error));
-    done();
-  })
+      if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
+        return;
+      } else {
+        fail(error);
+        return;
+      }
+    })
+    .then(reconfigureServer)
+    .then(() => {
+      Parse.initialize('test', 'test', 'test');
+      Parse.serverURL = 'http://localhost:' + port + '/1';
+      done();
+    }).catch(done.fail);
 });
 
 afterEach(function(done) {
@@ -214,22 +202,22 @@ afterEach(function(done) {
   };
   Parse.Cloud._removeAllHooks();
   databaseAdapter.getAllClasses()
-  .then(allSchemas => {
-    allSchemas.forEach((schema) => {
-      var className = schema.className;
-      expect(className).toEqual({ asymmetricMatch: className => {
-        if (!className.startsWith('_')) {
-          return true;
-        } else {
+    .then(allSchemas => {
+      allSchemas.forEach((schema) => {
+        var className = schema.className;
+        expect(className).toEqual({ asymmetricMatch: className => {
+          if (!className.startsWith('_')) {
+            return true;
+          } else {
           // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
           // break it.
-          return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
-        }
-      }});
-    });
-  })
-  .then(() => Parse.User.logOut())
-  .then(afterLogOut, afterLogOut)
+            return ['_User', '_Installation', '_Role', '_Session', '_Product', '_Audience'].indexOf(className) >= 0;
+          }
+        }});
+      });
+    })
+    .then(() => Parse.User.logOut())
+    .then(afterLogOut, afterLogOut)
 });
 
 var TestObject = Parse.Object.extend({
@@ -420,6 +408,14 @@ global.it_exclude_dbs = excluded => {
     return it;
   }
 }
+
+global.it_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB === db) {
+    return it;
+  } else {
+    return xit;
+  }
+};
 
 global.fit_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {

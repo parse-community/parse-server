@@ -1,7 +1,8 @@
 const Parse = require('parse/node').Parse;
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
-
+const ParseServer = require("../src/index");
+const express = require('express');
 //public schema
 const databaseOptions1 = {
   initOptions: {
@@ -28,33 +29,54 @@ const GameScore = Parse.Object.extend({
   className: "GameScore"
 });
 
-describe('Postgres database init options', () => {
-  it('should create server with public schema databaseOptions', (done) => {
-    reconfigureServer({
-      databaseAdapter: new PostgresStorageAdapter({
-        uri: postgresURI, collectionPrefix: 'test_',
-        databaseOptions: databaseOptions1
-      })
-    }).then(done, fail);
-  });
+function createParseServer(options) {
+  return new Promise((resolve, reject) => {
+    const parseServer = new ParseServer.default(Object.assign({},
+      defaultConfiguration, options, {
+        serverURL: "http://localhost:12666/parse",
+        __indexBuildCompletionCallbackForTests: promise => {
+          promise
+            .then(() => {
+              expect(Parse.applicationId).toEqual("test");
+              var app = express();
+              app.use('/parse', parseServer.app);
 
-  it("save new GameScore in public schema", function (done) {
-    var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
-    score.save().then(done, fail);
+              const server = app.listen(12666);
+              Parse.serverURL = "http://localhost:12666/parse";
+              resolve(server);
+            }, reject);
+        }}));
+  });
+}
+
+describe_only_db('postgres')('Postgres database init options', () => {
+  let server;
+
+  afterEach(() => {
+    if (server) {
+      server.close();
+    }
+  })
+
+  it('should create server with public schema databaseOptions', (done) => {
+    const adapter = new PostgresStorageAdapter({
+      uri: postgresURI, collectionPrefix: 'test_',
+      databaseOptions: databaseOptions1
+    })
+
+    createParseServer({ databaseAdapter: adapter }).then((newServer) => {
+      server = newServer;
+      var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
+      return score.save();
+    }).then(done, done.fail);
   });
 
   it('should fail to create server if schema databaseOptions does not exist', (done) => {
-    reconfigureServer({
-      databaseAdapter: new PostgresStorageAdapter({
-        uri: postgresURI, collectionPrefix: 'test_',
-        databaseOptions: databaseOptions2
-      })
-    }).then(() => {
-      done();
+    const adapter = new PostgresStorageAdapter({
+      uri: postgresURI, collectionPrefix: 'test_',
+      databaseOptions: databaseOptions2
     })
-      .catch(error => {
-        expect(error.code).toEqual('42P01');
-        done();
-      });
+
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, done);
   });
 });

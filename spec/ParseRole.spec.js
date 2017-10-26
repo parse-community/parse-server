@@ -116,7 +116,7 @@ describe('Parse Role testing', () => {
 
       return Parse.Object.saveAll(roles, { useMasterKey: true });
     }).then(() => {
-      auth = new Auth({config: new Config("test"), isMaster: true, user: user});
+      auth = new Auth({config: Config.get("test"), isMaster: true, user: user});
       getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
@@ -146,20 +146,20 @@ describe('Parse Role testing', () => {
     var rolesNames = ["FooRole", "BarRole", "BazRole"];
     var roleIds = {};
     createTestUser().then((user) => {
-       // Put the user on the 1st role
+      // Put the user on the 1st role
       return createRole(rolesNames[0], null, user).then((aRole) => {
         roleIds[aRole.get("name")] = aRole.id;
-         // set the 1st role as a sibling of the second
-         // user will should have 2 role now
+        // set the 1st role as a sibling of the second
+        // user will should have 2 role now
         return createRole(rolesNames[1], aRole, null);
       }).then((anotherRole) => {
         roleIds[anotherRole.get("name")] = anotherRole.id;
-         // set this role as a sibling of the last
-         // the user should now have 3 roles
+        // set this role as a sibling of the last
+        // the user should now have 3 roles
         return createRole(rolesNames[2], anotherRole, null);
       }).then((lastRole) => {
         roleIds[lastRole.get("name")] = lastRole.id;
-        var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+        var auth = new Auth({ config: Config.get("test"), isMaster: true, user: user });
         return auth._loadRoles();
       })
     }).then((roles) => {
@@ -177,19 +177,19 @@ describe('Parse Role testing', () => {
   it("_Role object should not save without name.", (done) => {
     var role = new Parse.Role();
     role.save(null,{useMasterKey:true})
-    .then(() => {
-      fail("_Role object should not save without name.");
-    }, (error) => {
-      expect(error.code).toEqual(111);
-      role.set('name','testRole');
-      role.save(null,{useMasterKey:true})
-      .then(()=>{
-        fail("_Role object should not save without ACL.");
-      }, (error2) =>{
-        expect(error2.code).toEqual(111);
-        done();
+      .then(() => {
+        fail("_Role object should not save without name.");
+      }, (error) => {
+        expect(error.code).toEqual(111);
+        role.set('name','testRole');
+        role.save(null,{useMasterKey:true})
+          .then(()=>{
+            fail("_Role object should not save without ACL.");
+          }, (error2) =>{
+            expect(error2.code).toEqual(111);
+            done();
+          });
       });
-    });
   });
 
   it("Different _Role objects cannot have the same name.", (done) => {
@@ -222,7 +222,7 @@ describe('Parse Role testing', () => {
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => {
-      var auth = new Auth({ config: new Config("test"), isMaster: true });
+      var auth = new Auth({ config: Config.get("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
@@ -428,4 +428,103 @@ describe('Parse Role testing', () => {
     });
   });
 
+  it('should be secure (#3835)', (done) => {
+    const acl = new Parse.ACL();
+    acl.getPublicReadAccess(true);
+    const role = new Parse.Role('admin', acl);
+    role.save().then(() => {
+      const user = new Parse.User();
+      return user.signUp({username: 'hello', password: 'world'});
+    }).then((user) => {
+      role.getUsers().add(user)
+      return role.save();
+    }).then(done.fail, () => {
+      const query = role.getUsers().query();
+      return query.find({useMasterKey: true});
+    }).then((results) => {
+      expect(results.length).toBe(0);
+      done();
+    })
+      .catch(done.fail);
+  });
+
+  it('should match when matching in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var query = new Parse.Query(Parse.Role);
+            query.equalTo('name', 'admin');
+            query.equalTo('users', user);
+            query.find().then(function (roles) {
+              expect(roles.length).toEqual(1);
+              done();
+            });
+          });
+      });
+  });
+
+  it('should not match any entry when not matching in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var otherUser = new Parse.User();
+            otherUser
+              .save({ username: 'otherUser', password: 'otherUser' })
+              .then((otherUser) => {
+                var query = new Parse.Query(Parse.Role);
+                query.equalTo('name', 'admin');
+                query.equalTo('users', otherUser);
+                query.find().then(function(roles) {
+                  expect(roles.length).toEqual(0);
+                  done();
+                });
+              });
+          });
+      });
+  });
+
+  it('should not match any entry when searching for null in users relation', (done) => {
+    var user = new Parse.User();
+    user
+      .save({ username: 'admin', password: 'admin' })
+      .then((user) => {
+        var aCL = new Parse.ACL();
+        aCL.setPublicReadAccess(true);
+        aCL.setPublicWriteAccess(true);
+        var role = new Parse.Role('admin', aCL);
+        var users = role.relation('users');
+        users.add(user);
+        role
+          .save({}, { useMasterKey: true })
+          .then(() => {
+            var query = new Parse.Query(Parse.Role);
+            query.equalTo('name', 'admin');
+            query.equalTo('users', null);
+            query.find().then(function (roles) {
+              expect(roles.length).toEqual(0);
+              done();
+            });
+          });
+      });
+  });
 });

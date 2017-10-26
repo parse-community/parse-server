@@ -107,8 +107,9 @@ describe("AdapterLoader", ()=>{
 
   it("should load push adapter from options", (done) => {
     var options = {
-      ios: {
-        bundleId: 'bundle.id'
+      android: {
+        senderId: 'yolo',
+        apiKey: 'yolo'
       }
     }
     expect(() => {
@@ -134,7 +135,7 @@ describe("AdapterLoader", ()=>{
       reconfigureServer({
         push: pushAdapterOptions,
       }).then(() => {
-        const config = new Config(Parse.applicationId);
+        const config = Config.get(Parse.applicationId);
         const pushAdapter = config.pushWorker.adapter;
         expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
         expect(pushAdapter.options).toEqual(pushAdapterOptions);

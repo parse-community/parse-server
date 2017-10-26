@@ -22,11 +22,11 @@ describe('Parse.Relation testing', () => {
       return relation.query().find();
     }).then((list) => {
       equal(list.length, 1,
-            "Should have gotten one element back");
+        "Should have gotten one element back");
       equal(list[0].id, child.id,
-            "Should have gotten the right value");
+        "Should have gotten the right value");
       ok(!parent.dirty("child"),
-         "The relation should not be dirty");
+        "The relation should not be dirty");
 
       relation.remove(child);
       return parent.save();
@@ -34,9 +34,9 @@ describe('Parse.Relation testing', () => {
       return relation.query().find();
     }).then((list) => {
       equal(list.length, 0,
-            "Delete should have worked");
+        "Delete should have worked");
       ok(!parent.dirty("child"),
-         "The relation should not be dirty");
+        "The relation should not be dirty");
       done();
     });
   });
@@ -63,9 +63,9 @@ describe('Parse.Relation testing', () => {
             relation.query().find(expectSuccess({
               success: function(list) {
                 equal(list.length, 1,
-                      "Should have gotten one element back");
+                  "Should have gotten one element back");
                 equal(list[0].id, childObjects[0].id,
-                      "Should have gotten the right value");
+                  "Should have gotten the right value");
                 done();
               }
             }));
@@ -99,11 +99,11 @@ describe('Parse.Relation testing', () => {
                 relationAgain.query().find({
                   success: function(list) {
                     equal(list.length, 1,
-                          "Should have gotten one element back");
+                      "Should have gotten one element back");
                     equal(list[0].id, childObjects[0].id,
-                          "Should have gotten the right value");
+                      "Should have gotten the right value");
                     ok(!parent.dirty("child"),
-                       "The relation should not be dirty");
+                      "The relation should not be dirty");
                     done();
                   },
                   error: function() {
@@ -188,11 +188,11 @@ describe('Parse.Relation testing', () => {
             query.find({
               success: function(list) {
                 equal(list.length, 1,
-                      "There should only be one element");
+                  "There should only be one element");
                 ok(list[0] instanceof ChildObject,
-                   "Should be of type ChildObject");
+                  "Should be of type ChildObject");
                 equal(list[0].id, childObjects[2].id,
-                      "We should have gotten back the right result");
+                  "We should have gotten back the right result");
                 done();
               }
             });
@@ -238,7 +238,7 @@ describe('Parse.Relation testing', () => {
               success: function(list) {
                 equal(list.length, 1, "There should be only one result");
                 equal(list[0].id, parent2.id,
-                      "Should have gotten back the right result");
+                  "Should have gotten back the right result");
                 done();
               }
             });
@@ -365,8 +365,8 @@ describe('Parse.Relation testing', () => {
       return Parse.Object.saveAll(parents).then(() => {
         var query = new Parse.Query(ParentObject);
         query.equalTo("objectId", parent2.id);
-          // childObjects[2] is in 2 relations
-          // before the fix, that woul yield 2 results
+        // childObjects[2] is in 2 relations
+        // before the fix, that woul yield 2 results
         query.equalTo("toChilds", childObjects[2]);
 
         return query.find().then((list) => {
@@ -697,81 +697,81 @@ describe('Parse.Relation testing', () => {
       const query = new Parse.Query(Parse.Role);
       query.equalTo('name', 'admin');
       query.first({ useMasterKey: true })
-      .then(role => {
-        const relation = new Parse.Relation(role, 'users');
-        const admins = relation.query();
-        admins.equalTo('username', request.user.get('username'));
-        admins.first({ useMasterKey: true })
-        .then(user => {
-          if (user) {
-            response.success(user);
-            done();
-          } else {
-            fail('Should have found admin user, found nothing instead');
-            done();
-          }
-        }, () => {
-          fail('User not admin');
+        .then(role => {
+          const relation = new Parse.Relation(role, 'users');
+          const admins = relation.query();
+          admins.equalTo('username', request.user.get('username'));
+          admins.first({ useMasterKey: true })
+            .then(user => {
+              if (user) {
+                response.success(user);
+                done();
+              } else {
+                fail('Should have found admin user, found nothing instead');
+                done();
+              }
+            }, () => {
+              fail('User not admin');
+              done();
+            })
+        }, error => {
+          fail('Should have found admin user, errored instead');
+          fail(error);
           done();
-        })
-      }, error => {
-        fail('Should have found admin user, errored instead');
-        fail(error);
-        done();
-      });
+        });
     });
 
     const adminUser = new Parse.User();
     adminUser.set('username', 'name');
     adminUser.set('password', 'pass');
     adminUser.signUp()
-    .then(adminUser => {
-      const adminACL = new Parse.ACL();
-      adminACL.setPublicReadAccess(true);
+      .then(adminUser => {
+        const adminACL = new Parse.ACL();
+        adminACL.setPublicReadAccess(true);
 
-      // Create admin role
-      const adminRole = new Parse.Role('admin', adminACL);
-      adminRole.getUsers().add(adminUser);
-      adminRole.save()
-      .then(() => {
-        Parse.Cloud.run('isAdmin');
+        // Create admin role
+        const adminRole = new Parse.Role('admin', adminACL);
+        adminRole.getUsers().add(adminUser);
+        adminRole.save()
+          .then(() => {
+            Parse.Cloud.run('isAdmin');
+          }, error => {
+            fail('failed to save role');
+            fail(error);
+            done()
+          });
       }, error => {
-        fail('failed to save role');
+        fail('failed to sign up');
         fail(error);
-        done()
+        done();
       });
-    }, error => {
-      fail('failed to sign up');
-      fail(error);
-      done();
-    });
   });
 
   it('can be saved without error', done => {
     const obj1 = new Parse.Object('PPAP');
     obj1.save()
-    .then(() => {
-      const newRelation = obj1.relation('aRelation');
-      newRelation.add(obj1);
-      obj1.save().then(() => {
-        const relation = obj1.get('aRelation');
-        obj1.set('aRelation', relation);
+      .then(() => {
+        const newRelation = obj1.relation('aRelation');
+        newRelation.add(obj1);
         obj1.save().then(() => {
-          done();
+          const relation = obj1.get('aRelation');
+          obj1.set('aRelation', relation);
+          obj1.save().then(() => {
+            done();
+          }, error => {
+            fail('failed to save ParseRelation object');
+            fail(error);
+            done();
+          });
         }, error => {
-          fail('failed to save ParseRelation object');
+          fail('failed to create relation field');
           fail(error);
           done();
         });
       }, error => {
-        fail('failed to create relation field');
+        fail('failed to save obj');
         fail(error);
         done();
       });
-    }, error => {
-      fail('failed to save obj');
-      fail(error);
-      done();
-    });
   });
 });

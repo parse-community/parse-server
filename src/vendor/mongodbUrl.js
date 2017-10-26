@@ -242,21 +242,21 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
       case 123: // '{'
       case 124: // '|'
       case 125: // '}'
-          // Characters that are never ever allowed in a hostname from RFC 2396
+        // Characters that are never ever allowed in a hostname from RFC 2396
         if (nonHost === -1)
           nonHost = i;
         break;
       case 35: // '#'
       case 47: // '/'
       case 63: // '?'
-          // Find the first instance of any host-ending characters
+        // Find the first instance of any host-ending characters
         if (nonHost === -1)
           nonHost = i;
         hostEnd = i;
         break;
       case 64: // '@'
-          // At this point, either we have an explicit point where the
-          // auth portion cannot go past, or the last @ char is the decider.
+        // At this point, either we have an explicit point where the
+        // auth portion cannot go past, or the last @ char is the decider.
         atSign = i;
         nonHost = -1;
         break;
@@ -371,8 +371,8 @@ Url.prototype.parse = function(url, parseQueryString, slashesDenoteHost) {
 
   var firstIdx = (questionIdx !== -1 &&
                   (hashIdx === -1 || questionIdx < hashIdx)
-                  ? questionIdx
-                  : hashIdx);
+    ? questionIdx
+    : hashIdx);
   if (firstIdx === -1) {
     if (rest.length > 0)
       this.pathname = rest;
@@ -570,8 +570,8 @@ Url.prototype.format = function() {
     host = auth + this.host;
   } else if (this.hostname) {
     host = auth + (this.hostname.indexOf(':') === -1 ?
-        this.hostname :
-        '[' + this.hostname + ']');
+      this.hostname :
+      '[' + this.hostname + ']');
     if (this.port) {
       host += ':' + this.port;
     }
@@ -742,7 +742,7 @@ Url.prototype.resolveObject = function(relative) {
 
   var isSourceAbs = (result.pathname && result.pathname.charAt(0) === '/');
   var isRelAbs = (
-      relative.host ||
+    relative.host ||
       relative.pathname && relative.pathname.charAt(0) === '/'
   );
   var mustEndAbs = (isRelAbs || isSourceAbs ||
@@ -780,9 +780,9 @@ Url.prototype.resolveObject = function(relative) {
   if (isRelAbs) {
     // it's absolute.
     result.host = (relative.host || relative.host === '') ?
-                  relative.host : result.host;
+      relative.host : result.host;
     result.hostname = (relative.hostname || relative.hostname === '') ?
-                      relative.hostname : result.hostname;
+      relative.hostname : result.hostname;
     result.search = relative.search;
     result.query = relative.query;
     srcPath = relPath;
@@ -805,7 +805,7 @@ Url.prototype.resolveObject = function(relative) {
       //this especially happens in cases like
       //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
       const authInHost = result.host && result.host.indexOf('@') > 0 ?
-                       result.host.split('@') : false;
+        result.host.split('@') : false;
       if (authInHost) {
         result.auth = authInHost.shift();
         result.host = result.hostname = authInHost.shift();
@@ -841,7 +841,7 @@ Url.prototype.resolveObject = function(relative) {
   // then it must NOT get a trailing slash.
   var last = srcPath.slice(-1)[0];
   var hasTrailingSlash = (
-      (result.host || relative.host || srcPath.length > 1) &&
+    (result.host || relative.host || srcPath.length > 1) &&
       (last === '.' || last === '..') || last === '');
 
   // strip single dots, resolve double dots to parent dir
@@ -882,12 +882,12 @@ Url.prototype.resolveObject = function(relative) {
   // put the host back
   if (psychotic) {
     result.hostname = result.host = isAbsolute ? '' :
-                                    srcPath.length ? srcPath.shift() : '';
+      srcPath.length ? srcPath.shift() : '';
     //occasionally the auth can get stuck only in host
     //this especially happens in cases like
     //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
     const authInHost = result.host && result.host.indexOf('@') > 0 ?
-                     result.host.split('@') : false;
+      result.host.split('@') : false;
     if (authInHost) {
       result.auth = authInHost.shift();
       result.host = result.hostname = authInHost.shift();
