@@ -23,7 +23,7 @@
 * [semver@5.4.1](https://www.npmjs.com/package/semver)
 * [pg-promise@7.0.3](https://www.npmjs.com/package/pg-promise)
 * [mongodb@2.2.33](https://www.npmjs.com/package/mongodb)
-* [parse@1.10.1](https://www.npmjs.com/package/mongodb)
+* [parse@1.10.1](https://www.npmjs.com/package/parse)
 * [express@4.16.0](https://www.npmjs.com/package/express)
 * [mime@1.4.1](https://www.npmjs.com/package/mime)
 * [parse-server-simple-mailgun-adapter@1.0.1](https://www.npmjs.com/package/parse-server-simple-mailgun-adapter)
