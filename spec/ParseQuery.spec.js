@@ -3105,7 +3105,80 @@ describe('Parse.Query testing', () => {
         equal(result.has('testPointerField'), result.get('shouldBe'));
       });
       done();
-    }
-    ).catch(done.fail);
+    }).catch(done.fail);
+  });
+
+  it_only_db('mongo')('should handle relative times correctly', function(done) {
+    const now = Date.now();
+    const obj1 = new Parse.Object('MyCustomObject', {
+      name: 'obj1',
+      ttl: new Date(now + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    });
+    const obj2 = new Parse.Object('MyCustomObject', {
+      name: 'obj2',
+      ttl: new Date(now - 2 * 24 * 60 * 60 * 1000), // 2 days ago
+    });
+
+    Parse.Object.saveAll([obj1, obj2])
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: 'in 1 day' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: '1 day ago' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.lessThan('ttl', { $relativeTime: '5 days ago' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(0);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: '3 days ago' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(2);
+      })
+      .then(done, done.fail);
+  });
+
+  it_only_db('mongo')('should error on invalid relative time', function(done) {
+    const obj1 = new Parse.Object('MyCustomObject', {
+      name: 'obj1',
+      ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    });
+
+    const q = new Parse.Query('MyCustomObject');
+    q.greaterThan('ttl', { $relativeTime: '-12 bananas ago' });
+    obj1.save({ useMasterKey: true })
+      .then(() => q.find({ useMasterKey: true }))
+      .then(done.fail, done);
+  });
+
+  it_only_db('mongo')('should error when using $relativeTime on non-Date field', function(done) {
+    const obj1 = new Parse.Object('MyCustomObject', {
+      name: 'obj1',
+      nonDateField: 'abcd',
+      ttl: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000), // 2 days from now
+    });
+
+    const q = new Parse.Query('MyCustomObject');
+    q.greaterThan('nonDateField', { $relativeTime: '1 day ago' });
+    obj1.save({ useMasterKey: true })
+      .then(() => q.find({ useMasterKey: true }))
+      .then(done.fail, done);
   });
 });
