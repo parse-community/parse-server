@@ -1086,17 +1086,7 @@ describe('Cloud Code', () => {
     });
     const AfterSaveTestClass = Parse.Object.extend('AfterSaveTestClass');
     const obj = new AfterSaveTestClass();
-    obj.save()
-      .then(function() {
-        // expected success
-        done();
-      })
-      .catch(function() {
-        // failed
-        fail("afterSave throwing an exception indicated that the save failed");
-        done();
-      })
-
+    obj.save().then(done, done.fail);
   });
 
   describe('cloud jobs', () => {
