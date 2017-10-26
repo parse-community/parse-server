@@ -126,6 +126,13 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
+  var isReadOnlyMaster = (info.masterKey === req.config.readOnlyMasterKey);
+  if (typeof req.config.readOnlyMasterKey != 'undefined' && req.config.readOnlyMasterKey && isReadOnlyMaster) {
+    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true, isReadOnly: true });
+    next();
+    return;
+  }
+
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
