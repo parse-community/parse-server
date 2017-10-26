@@ -690,7 +690,7 @@ describe('read-only masterKey', () => {
     });
   });
 
-  it('should throw when trying to create schema', (done) => {
+  it('should throw when trying to create schema with a name', (done) => {
     return rp.post(`${Parse.serverURL}/schemas/MyClass`, {
       headers: {
         'X-Parse-Application-Id': Parse.applicationId,
