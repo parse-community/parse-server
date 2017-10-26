@@ -533,6 +533,109 @@ function transformTopLevelAtom(atom, field) {
   }
 }
 
+function relativeTimeToDate(text, now = new Date()) {
+  text = text.toLowerCase();
+
+  let parts = text.split(' ');
+
+  // Filter out whitespace
+  parts = parts.filter((part) => part !== '');
+
+  const future = parts[0] === 'in';
+  const past = parts[parts.length - 1] === 'ago';
+
+  if (!future && !past) {
+    return { status: 'error', info: "Time should either start with 'in' or end with 'ago'" };
+  }
+
+  if (future && past) {
+    return {
+      status: 'error',
+      info: "Time cannot have both 'in' and 'ago'",
+    };
+  }
+
+  // strip the 'ago' or 'in'
+  if (future) {
+    parts = parts.slice(1);
+  } else { // past
+    parts = parts.slice(0, parts.length - 1);
+  }
+
+  if (parts.length % 2 !== 0) {
+    return {
+      status: 'error',
+      info: 'Invalid time string. Dangling unit or number.',
+    };
+  }
+
+  const pairs = [];
+  while(parts.length) {
+    pairs.push([ parts.shift(), parts.shift() ]);
+  }
+
+  let seconds = 0;
+  for (const [num, interval] of pairs) {
+    const val = Number(num);
+    if (!Number.isInteger(val)) {
+      return {
+        status: 'error',
+        info: `'${num}' is not an integer.`,
+      };
+    }
+
+    switch(interval) {
+    case 'day':
+    case 'days':
+      seconds += val * 86400; // 24 * 60 * 60
+      break;
+
+    case 'hr':
+    case 'hrs':
+    case 'hour':
+    case 'hours':
+      seconds += val * 3600; // 60 * 60
+      break;
+
+    case 'min':
+    case 'mins':
+    case 'minute':
+    case 'minutes':
+      seconds += val * 60;
+      break;
+
+    case 'sec':
+    case 'secs':
+    case 'second':
+    case 'seconds':
+      seconds += val;
+      break;
+
+    default:
+      return {
+        status: 'error',
+        info: `Invalid interval: '${interval}'`,
+      };
+    }
+  }
+
+  const milliseconds = seconds * 1000;
+  if (future) {
+    return {
+      status: 'success',
+      info: 'future',
+      result: new Date(now.valueOf() + milliseconds)
+    };
+  }
+  if (past) {
+    return {
+      status: 'success',
+      info: 'past',
+      result: new Date(now.valueOf() - milliseconds)
+    };
+  }
+}
+
 // Transforms a query constraint from REST API format to Mongo format.
 // A constraint is something with fields like $lt.
 // If it is not a valid constraint but it could be a valid something
@@ -565,9 +668,33 @@ function transformConstraint(constraint, field) {
     case '$gte':
     case '$exists':
     case '$ne':
-    case '$eq':
-      answer[key] = transformer(constraint[key]);
+    case '$eq': {
+      const val = constraint[key];
+      if (val && typeof val === 'object' && val.$relativeTime) {
+        if (field && field.type !== 'Date') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with Date field');
+        }
+
+        switch (key) {
+        case '$exists':
+        case '$ne':
+        case '$eq':
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators');
+        }
+
+        const parserResult = relativeTimeToDate(val.$relativeTime);
+        if (parserResult.status === 'success') {
+          answer[key] = parserResult.result;
+          break;
+        }
+
+        log.info('Error while parsing relative date', parserResult);
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $relativeTime (${key}) value. ${parserResult.info}`);
+      }
+
+      answer[key] = transformer(val);
       break;
+    }
 
     case '$in':
     case '$nin': {
@@ -1196,4 +1323,6 @@ module.exports = {
   transformUpdate,
   transformWhere,
   mongoObjectToParseObject,
+  relativeTimeToDate,
+  transformConstraint,
 };

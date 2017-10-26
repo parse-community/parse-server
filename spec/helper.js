@@ -409,6 +409,14 @@ global.it_exclude_dbs = excluded => {
   }
 }
 
+global.it_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB === db) {
+    return it;
+  } else {
+    return xit;
+  }
+};
+
 global.fit_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return xit;
