@@ -4,6 +4,7 @@ var auth = require('../src/Auth');
 var Config = require('../src/Config');
 var Parse = require('parse/node').Parse;
 var rest = require('../src/rest');
+var RestWrite = require('../src/RestWrite');
 var request = require('request');
 var rp = require('request-promise');
 
@@ -626,7 +627,7 @@ describe('rest update', () => {
 });
 
 describe('read-only masterKey', () => {
-  it('properly throws on create using readOnly masterKey', () => {
+  it('properly throws on rest.create, rest.update and rest.del', () => {
     const config = Config.get('test');
     const readOnly = auth.readOnly(config);
     expect(() => {
@@ -640,7 +641,7 @@ describe('read-only masterKey', () => {
     }).toThrow();
   });
 
-  it('properly blocks writes when using read-only key', (done) => {
+  it('properly blocks writes', (done) => {
     reconfigureServer({
       readOnlyMasterKey: 'yolo-read-only'
     }).then(() => {
@@ -650,7 +651,7 @@ describe('read-only masterKey', () => {
           'X-Parse-Master-Key': 'yolo-read-only',
         },
         json: { foo: 'bar' }
-      })
+      });
     }).then(done.fail).catch((res) => {
       expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
       expect(res.error.error).toBe('read-only masterKey isn\'t allowed to perform the create operation.');
@@ -664,6 +665,97 @@ describe('read-only masterKey', () => {
       readOnlyMasterKey: 'yolo'
     }).then(done.fail).catch((err) => {
       expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
+      done();
+    });
+  });
+
+  it('should throw when trying to create RestWrite', () => {
+    const config = Config.get('test');
+    expect(() => {
+      new RestWrite(config, auth.readOnly(config));
+    }).toThrow(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot perform a write operation when using readOnlyMasterKey'));
+  });
+
+  it('should throw when trying to create schema', (done) => {
+    return rp.post(`${Parse.serverURL}/schemas`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to create a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to create schema', (done) => {
+    return rp.post(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to create a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to update schema', (done) => {
+    return rp.put(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to update a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to delete schema', (done) => {
+    return rp.del(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to delete a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to update the global config', (done) => {
+    return rp.put(`${Parse.serverURL}/config`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to update the config.');
+      done();
+    });
+  });
+
+  it('should throw when trying to send push', (done) => {
+    return rp.post(`${Parse.serverURL}/push`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to send push notifications.');
       done();
     });
   });
