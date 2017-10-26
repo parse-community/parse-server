@@ -24,6 +24,9 @@ import _         from 'lodash';
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK) {
+  if (auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot perform a write operation when using readOnlyMasterKey');
+  }
   this.config = config;
   this.auth = auth;
   this.className = className;

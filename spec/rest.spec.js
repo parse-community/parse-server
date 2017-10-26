@@ -623,5 +623,48 @@ describe('rest update', () => {
       done();
     });
   });
+});
 
+describe('read-only masterKey', () => {
+  it('properly throws on create using readOnly masterKey', () => {
+    const config = Config.get('test');
+    const readOnly = auth.readOnly(config);
+    expect(() => {
+      rest.create(config, readOnly, 'AnObject', {})
+    }).toThrow(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `read-only masterKey isn't allowed to perform the create operation.`));
+    expect(() => {
+      rest.update(config, readOnly, 'AnObject', {})
+    }).toThrow();
+    expect(() => {
+      rest.del(config, readOnly, 'AnObject', {})
+    }).toThrow();
+  });
+
+  it('properly blocks writes when using read-only key', (done) => {
+    reconfigureServer({
+      readOnlyMasterKey: 'yolo-read-only'
+    }).then(() => {
+      return rp.post(`${Parse.serverURL}/classes/MyYolo`, {
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'yolo-read-only',
+        },
+        json: { foo: 'bar' }
+      })
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to perform the create operation.');
+      done();
+    });
+  });
+
+  it('should throw when masterKey and readOnlyMasterKey are the same', (done) => {
+    reconfigureServer({
+      masterKey: 'yolo',
+      readOnlyMasterKey: 'yolo'
+    }).then(done.fail).catch((err) => {
+      expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
+      done();
+    });
+  });
 });
