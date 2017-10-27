@@ -88,5 +88,10 @@
   "optionalDependencies": {
     "bcrypt": "1.0.3",
     "uws": "^8.14.1"
+  },
+  "collective": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/parse-server",
+    "logo": "https://opencollective.com/parse-server/logo.txt?reverse=true&variant=binary"
   }
 }
