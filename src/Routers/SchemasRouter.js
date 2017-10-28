@@ -34,6 +34,9 @@ function getOneSchema(req) {
 }
 
 function createSchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to create a schema.');
+  }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
@@ -51,6 +54,9 @@ function createSchema(req) {
 }
 
 function modifySchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to update a schema.');
+  }
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
@@ -64,6 +70,9 @@ function modifySchema(req) {
 }
 
 const deleteSchema = req => {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to delete a schema.');
+  }
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }

@@ -71,7 +71,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('set duration to an invalid number test failed');
         done();
       })
@@ -95,7 +95,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('set threshold to an invalid number test failed');
         done();
       })
@@ -119,7 +119,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('threshold value < 1 is invalid test failed');
         done();
       })
@@ -143,7 +143,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('threshold value > 999 is invalid test failed');
         done();
       })
@@ -167,7 +167,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('duration value < 1 is invalid test failed');
         done();
       })
@@ -191,7 +191,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        new Config('test');
+        Config.get('test');
         fail('duration value > 99999 is invalid test failed');
         done();
       })

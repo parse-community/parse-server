@@ -30,7 +30,7 @@ env:
   - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=8.1.3
+  - NODE_VERSION=8.5
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
@@ -51,7 +51,7 @@ jobs:
       env: 
       before_script: skip
       after_script: skip
-      script: skip
+      script: npm install -g nsp && nsp check
       deploy:
         - provider: script
           skip_cleanup: true

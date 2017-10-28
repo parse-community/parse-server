@@ -21,7 +21,7 @@ var hasAllPODobject = () => {
 
 describe('SchemaController', () => {
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   it('can validate one object', (done) => {
@@ -1029,7 +1029,7 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   function createUser() {

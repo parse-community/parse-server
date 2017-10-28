@@ -51,25 +51,33 @@ export class UsersRouter extends ClassesRouter {
 
   handleLogIn(req) {
     // Use query parameters instead if provided in url
-    if (!req.body.username && req.query.username) {
-      req.body = req.query;
+    let payload = req.body;
+    if (!payload.username && req.query.username || !payload.email && req.query.email) {
+      payload = req.query;
     }
+    const {
+      username,
+      email,
+      password,
+    } = payload;
 
     // TODO: use the right error codes / descriptions.
-    if (!req.body.username) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username is required.');
+    if (!username && !email) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
     }
-    if (!req.body.password) {
+    if (!password) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
     }
-    if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') {
+    if (typeof password !== 'string'
+        || email && typeof email !== 'string'
+        || username && typeof username !== 'string') {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
     }
 
     let user;
     let isValidPassword = false;
-
-    return req.config.database.find('_User', { username: req.body.username })
+    const query = Object.assign({}, username ? { username } : {}, email ? { email } : {});
+    return req.config.database.find('_User', query)
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
@@ -79,7 +87,7 @@ export class UsersRouter extends ClassesRouter {
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
         }
-        return passwordCrypto.compare(req.body.password, user.password);
+        return passwordCrypto.compare(password, user.password);
       })
       .then((correct) => {
         isValidPassword = correct;
@@ -118,7 +126,7 @@ export class UsersRouter extends ClassesRouter {
         delete user.password;
 
         // Sometimes the authData still has null on that keys
-        // https://github.com/ParsePlatform/parse-server/issues/935
+        // https://github.com/parse-community/parse-server/issues/935
         if (user.authData) {
           Object.keys(user.authData).forEach((provider) => {
             if (user.authData[provider] === null) {
@@ -256,6 +264,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
+    this.route('POST', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });

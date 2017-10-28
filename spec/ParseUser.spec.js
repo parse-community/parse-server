@@ -126,6 +126,30 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('user login using POST with REST API', (done) => {
+    Parse.User.signUp('some_user', 'some_password', null, {
+      success: () => {
+        return rp.post({
+          url: 'http://localhost:8378/1/login',
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-REST-API-Key': 'rest',
+          },
+          json: {
+            username: 'some_user',
+            password: 'some_password',
+          }
+        }).then((res) => {
+          expect(res.username).toBe('some_user');
+          done();
+        }).catch((err) => {
+          fail(`no request should fail: ${JSON.stringify(err)}`);
+          done();
+        });
+      },
+    });
+  });
+
   it("user login", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
@@ -1164,6 +1188,36 @@ describe('Parse.User testing', () => {
             Parse.Object.disableSingleInstance();
             done();
           });
+      }
+    });
+  });
+
+  it('only creates a single session for an installation / user pair (#2885)', done => {
+    Parse.Object.disableSingleInstance();
+    const provider = getMockFacebookProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+    Parse.User.logInWith('facebook', {
+      success: () => {
+        return Parse.User.logInWith('facebook', {
+          success: () => {
+            return Parse.User.logInWith('facebook', {
+              success: (user) => {
+                const sessionToken = user.getSessionToken();
+                const query = new Parse.Query('_Session');
+                return query.find({ useMasterKey: true })
+                  .then((results) => {
+                    expect(results.length).toBe(1);
+                    expect(results[0].get('sessionToken')).toBe(sessionToken);
+                    expect(results[0].get('createdWith')).toEqual({
+                      action: 'login',
+                      authProvider: 'facebook'
+                    });
+                    done();
+                  }).catch(done.fail);
+              }
+            });
+          }
+        });
       }
     });
   });
@@ -2493,7 +2547,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should cleanup null authData keys (regression test for #935)', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2527,7 +2581,7 @@ describe('Parse.User testing', () => {
   });
 
   it_exclude_dbs(['postgres'])('should not serve null authData keys', (done) => {
-    const database = new Config(Parse.applicationId).database;
+    const database = Config.get(Parse.applicationId).database;
     database.create('_User', {
       username: 'user',
       _hashed_password: '$2a$10$8/wZJyEuiEaobBBqzTG.jeY.XSFJd0rzaN//ososvEI4yLqI.4aie',
@@ -2812,7 +2866,7 @@ describe('Parse.User testing', () => {
   });
 
   it('should not create extraneous session tokens', (done) => {
-    const config = new Config(Parse.applicationId);
+    const config = Config.get(Parse.applicationId);
     config.database.loadSchema().then((s) => {
       // Lock down the _User class for creation
       return s.addClassIfNotExists('_User', {}, {create: {}})
@@ -3169,5 +3223,167 @@ describe('Parse.User testing', () => {
     })
       .then(done)
       .catch(done.fail);
+  });
+
+  it('can login with email', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { email: "yo@lo.com", password: 'yolopass'}
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it('cannot login with email and invalid password', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { email: "yo@lo.com", password: 'yolopass2'}
+      }
+      return rp.get(options);
+    }).then(done.fail).catch(done);
+  });
+
+  it('can login with email through query string', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it('can login when both email and username are passed', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+      }
+      return rp.get(options);
+    }).then(done).catch(done.fail);
+  });
+
+  it("fails to login when username doesn't match email", (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo.com&username=yolo2&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('Invalid username/password.');
+      done();
+    });
+  });
+
+  it("fails to login when email doesn't match username", (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?email=yo@lo2.com&username=yolo&password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('Invalid username/password.');
+      done();
+    });
+  });
+
+  it('fails to login when email and username are not provided', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?password=yolopass`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('username/email is required.');
+      done();
+    });
+  });
+
+  it('fails to login when password is not provided', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const options = {
+        url: `http://localhost:8378/1/login?username=yolo`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: true,
+      }
+      return rp.get(options);
+    }).then(done.fail).catch((err) => {
+      expect(err.response.body.error).toEqual('password is required.');
+      done();
+    });
   });
 });

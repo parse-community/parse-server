@@ -308,6 +308,19 @@ DatabaseController.prototype.update = function(className, query, update, {
     });
 };
 
+function expandResultOnKeyPath(object, key, value) {
+  if (key.indexOf('.') < 0) {
+    object[key] = value[key];
+    return object;
+  }
+  const path = key.split('.');
+  const firstKey = path[0];
+  const nextPath = path.slice(1).join('.');
+  object[firstKey] = expandResultOnKeyPath(object[firstKey] || {}, nextPath, value[firstKey]);
+  delete object[key];
+  return object;
+}
+
 function sanitizeDatabaseResult(originalObject, result) {
   const response = {};
   if (!result) {
@@ -319,7 +332,8 @@ function sanitizeDatabaseResult(originalObject, result) {
     if (keyUpdate && typeof keyUpdate === 'object' && keyUpdate.__op
       && ['Add', 'AddUnique', 'Remove', 'Increment'].indexOf(keyUpdate.__op) > -1) {
       // only valid ops that produce an actionable result
-      response[key] = result[key];
+      // the op may have happend on a keypath
+      expandResultOnKeyPath(response, key, result);
     }
   });
   return Promise.resolve(response);
@@ -941,7 +955,14 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
       const q = {
         [key]: userPointer
       };
-      return {'$and': [q, query]};
+      // if we already have a constraint on the key, use the $and
+      if (query.hasOwnProperty(key)) {
+        return {'$and': [q, query]};
+      }
+      // otherwise just add the constaint
+      return Object.assign({}, query, {
+        [`${key}`]: userPointer,
+      })
     });
     if (ors.length > 1) {
       return {'$or': ors};

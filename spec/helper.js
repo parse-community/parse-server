@@ -24,7 +24,6 @@ if (global._babelPolyfill) {
 }
 
 var cache = require('../src/cache').default;
-var express = require('express');
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/TestUtils');
@@ -91,6 +90,7 @@ var defaultConfiguration = {
   restAPIKey: 'rest',
   webhookKey: 'hook',
   masterKey: 'test',
+  readOnlyMasterKey: 'read-only-test',
   fileKey: 'test',
   silent,
   logLevel,
@@ -116,8 +116,6 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var app;
-var api;
 var server;
 
 // Allows testing specific configurations of Parse Server
@@ -131,17 +129,18 @@ const reconfigureServer = changedConfiguration => {
     }
     try {
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject)
+        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject),
+        mountPath: '/1',
+        port,
       });
       cache.clear();
-      app = express();
-      api = new ParseServer(newConfiguration);
-      api.use(require('./testing-routes').router);
-      app.use('/1', api);
-      app.use('/1', () => {
+      const parseServer = ParseServer.start(newConfiguration);
+      parseServer.app.use(require('./testing-routes').router);
+      parseServer.expressApp.use('/1', (err) => {
+        console.error(err);
         fail('should not call next');
       });
-      server = app.listen(port);
+      server = parseServer.server;
       server.on('connection', connection => {
         const key = `${connection.remoteAddress}:${connection.remotePort}`;
         openConnections[key] = connection;
@@ -212,7 +211,7 @@ afterEach(function(done) {
           } else {
           // Other system classes will break Parse.com, so make sure that we don't save anything to _SCHEMA that will
           // break it.
-            return ['_User', '_Installation', '_Role', '_Session', '_Product'].indexOf(className) >= 0;
+            return ['_User', '_Installation', '_Role', '_Session', '_Product', '_Audience'].indexOf(className) >= 0;
           }
         }});
       });
@@ -409,6 +408,14 @@ global.it_exclude_dbs = excluded => {
     return it;
   }
 }
+
+global.it_only_db = db => {
+  if (process.env.PARSE_SERVER_TEST_DB === db) {
+    return it;
+  } else {
+    return xit;
+  }
+};
 
 global.fit_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {

@@ -10,6 +10,8 @@ const transformKey = (className, fieldName, schema) => {
   case 'createdAt': return '_created_at';
   case 'updatedAt': return '_updated_at';
   case 'sessionToken': return '_session_token';
+  case 'lastUsed': return '_last_used';
+  case 'timesUsed': return 'times_used';
   }
 
   if (schema.fields[fieldName] && schema.fields[fieldName].__type == 'Pointer') {
@@ -77,6 +79,16 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   case '_rperm':
   case '_wperm':
     return {key: key, value: restValue};
+  case 'lastUsed':
+  case '_last_used':
+    key = '_last_used';
+    timeField = true;
+    break;
+  case 'timesUsed':
+  case 'times_used':
+    key = 'times_used';
+    timeField = true;
+    break;
   }
 
   if ((parseFormatSchema.fields[key] && parseFormatSchema.fields[key].type === 'Pointer') || (!parseFormatSchema.fields[key] && restValue && restValue.__type == 'Pointer')) {
@@ -200,6 +212,14 @@ function transformQueryKeyValue(className, key, value, schema) {
     return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
     return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case 'lastUsed':
+    if (valueAsDate(value)) {
+      return {key: '_last_used', value: valueAsDate(value)}
+    }
+    key = '_last_used';
+    break;
+  case 'timesUsed':
+    return {key: 'times_used', value: value};
   default: {
     // Other auth data
     const authDataMatch = key.match(/^authData\.([a-zA-Z0-9_]+)\.id$/);
@@ -221,12 +241,13 @@ function transformQueryKeyValue(className, key, value, schema) {
     schema.fields[key] &&
     schema.fields[key].type === 'Pointer';
 
+  const field = schema && schema.fields[key];
   if (expectedTypeIsPointer || !schema && value && value.__type === 'Pointer') {
     key = '_p_' + key;
   }
 
   // Handle query constraints
-  const transformedConstraint = transformConstraint(value, expectedTypeIsArray);
+  const transformedConstraint = transformConstraint(value, field);
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
@@ -434,7 +455,7 @@ const addLegacyACL = restObject => {
 // cannot perform a transformation
 function CannotTransform() {}
 
-const transformInteriorAtom = atom => {
+const transformInteriorAtom = (atom) => {
   // TODO: check validity harder for the __type-defined types
   if (typeof atom === 'object' && atom && !(atom instanceof Date) && atom.__type === 'Pointer') {
     return {
@@ -460,13 +481,16 @@ const transformInteriorAtom = atom => {
 // or arrays with generic stuff inside.
 // Raises an error if this cannot possibly be valid REST format.
 // Returns CannotTransform if it's just not an atom
-function transformTopLevelAtom(atom) {
+function transformTopLevelAtom(atom, field) {
   switch(typeof atom) {
-  case 'string':
   case 'number':
   case 'boolean':
-    return atom;
   case 'undefined':
+    return atom;
+  case 'string':
+    if (field && field.type === 'Pointer') {
+      return `${field.targetClass}$${atom}`;
+    }
     return atom;
   case 'symbol':
   case 'function':
@@ -509,18 +533,122 @@ function transformTopLevelAtom(atom) {
   }
 }
 
+function relativeTimeToDate(text, now = new Date()) {
+  text = text.toLowerCase();
+
+  let parts = text.split(' ');
+
+  // Filter out whitespace
+  parts = parts.filter((part) => part !== '');
+
+  const future = parts[0] === 'in';
+  const past = parts[parts.length - 1] === 'ago';
+
+  if (!future && !past) {
+    return { status: 'error', info: "Time should either start with 'in' or end with 'ago'" };
+  }
+
+  if (future && past) {
+    return {
+      status: 'error',
+      info: "Time cannot have both 'in' and 'ago'",
+    };
+  }
+
+  // strip the 'ago' or 'in'
+  if (future) {
+    parts = parts.slice(1);
+  } else { // past
+    parts = parts.slice(0, parts.length - 1);
+  }
+
+  if (parts.length % 2 !== 0) {
+    return {
+      status: 'error',
+      info: 'Invalid time string. Dangling unit or number.',
+    };
+  }
+
+  const pairs = [];
+  while(parts.length) {
+    pairs.push([ parts.shift(), parts.shift() ]);
+  }
+
+  let seconds = 0;
+  for (const [num, interval] of pairs) {
+    const val = Number(num);
+    if (!Number.isInteger(val)) {
+      return {
+        status: 'error',
+        info: `'${num}' is not an integer.`,
+      };
+    }
+
+    switch(interval) {
+    case 'day':
+    case 'days':
+      seconds += val * 86400; // 24 * 60 * 60
+      break;
+
+    case 'hr':
+    case 'hrs':
+    case 'hour':
+    case 'hours':
+      seconds += val * 3600; // 60 * 60
+      break;
+
+    case 'min':
+    case 'mins':
+    case 'minute':
+    case 'minutes':
+      seconds += val * 60;
+      break;
+
+    case 'sec':
+    case 'secs':
+    case 'second':
+    case 'seconds':
+      seconds += val;
+      break;
+
+    default:
+      return {
+        status: 'error',
+        info: `Invalid interval: '${interval}'`,
+      };
+    }
+  }
+
+  const milliseconds = seconds * 1000;
+  if (future) {
+    return {
+      status: 'success',
+      info: 'future',
+      result: new Date(now.valueOf() + milliseconds)
+    };
+  }
+  if (past) {
+    return {
+      status: 'success',
+      info: 'past',
+      result: new Date(now.valueOf() - milliseconds)
+    };
+  }
+}
+
 // Transforms a query constraint from REST API format to Mongo format.
 // A constraint is something with fields like $lt.
 // If it is not a valid constraint but it could be a valid something
 // else, return CannotTransform.
 // inArray is whether this is an array field.
-function transformConstraint(constraint, inArray) {
+function transformConstraint(constraint, field) {
+  const inArray = field && field.type && field.type === 'Array';
   if (typeof constraint !== 'object' || !constraint) {
     return CannotTransform;
   }
   const transformFunction = inArray ? transformInteriorAtom : transformTopLevelAtom;
   const transformer = (atom) => {
-    const result = transformFunction(atom);
+    const result = transformFunction(atom, field);
     if (result === CannotTransform) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `bad atom: ${JSON.stringify(atom)}`);
     }
@@ -540,9 +668,33 @@ function transformConstraint(constraint, inArray) {
     case '$gte':
     case '$exists':
     case '$ne':
-    case '$eq':
-      answer[key] = transformer(constraint[key]);
+    case '$eq': {
+      const val = constraint[key];
+      if (val && typeof val === 'object' && val.$relativeTime) {
+        if (field && field.type !== 'Date') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with Date field');
+        }
+
+        switch (key) {
+        case '$exists':
+        case '$ne':
+        case '$eq':
+          throw new Parse.Error(Parse.Error.INVALID_JSON, '$relativeTime can only be used with the $lt, $lte, $gt, and $gte operators');
+        }
+
+        const parserResult = relativeTimeToDate(val.$relativeTime);
+        if (parserResult.status === 'success') {
+          answer[key] = parserResult.result;
+          break;
+        }
+
+        log.info('Error while parsing relative date', parserResult);
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad $relativeTime (${key}) value. ${parserResult.info}`);
+      }
+
+      answer[key] = transformer(val);
       break;
+    }
 
     case '$in':
     case '$nin': {
@@ -923,6 +1075,14 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
       case '_expiresAt':
         restObject['expiresAt'] = Parse._encode(new Date(mongoObject[key]));
         break;
+      case 'lastUsed':
+      case '_last_used':
+        restObject['lastUsed'] = Parse._encode(new Date(mongoObject[key])).iso;
+        break;
+      case 'timesUsed':
+      case 'times_used':
+        restObject['timesUsed'] = mongoObject[key];
+        break;
       default:
         // Check other auth data keys
         var authDataMatch = key.match(/^_auth_data_([a-zA-Z0-9_]+)$/);
@@ -1163,4 +1323,6 @@ module.exports = {
   transformUpdate,
   transformWhere,
   mongoObjectToParseObject,
+  relativeTimeToDate,
+  transformConstraint,
 };

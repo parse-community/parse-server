@@ -35,7 +35,7 @@ function ParseServerRESTController(applicationId, router) {
     // Store the arguments, for later use if internal fails
     const args = arguments;
 
-    const config = new Config(applicationId);
+    const config = Config.get(applicationId);
     const serverURL = URL.parse(config.serverURL);
     if (path.indexOf(serverURL.path) === 0) {
       path = path.slice(serverURL.path.length, path.length);

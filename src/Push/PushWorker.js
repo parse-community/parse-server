@@ -9,6 +9,7 @@ import { pushStatusHandler }  from '../StatusHandler';
 import * as utils             from './utils';
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import { PushQueue }          from './PushQueue';
+import logger                 from '../logger';
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
@@ -46,23 +47,23 @@ export class PushWorker {
     }
   }
 
-  run({ body, query, pushStatus, applicationId }: any): Promise<*> {
-    const config = new Config(applicationId);
+  run({ body, query, pushStatus, applicationId, UTCOffset }: any): Promise<*> {
+    const config = Config.get(applicationId);
     const auth = master(config);
     const where = utils.applyDeviceTokenExists(query.where);
     delete query.where;
+    pushStatus = pushStatusHandler(config, pushStatus.objectId);
     return rest.find(config, auth, '_Installation', where, query).then(({results}) => {
       if (results.length == 0) {
         return;
       }
-      return this.sendToAdapter(body, results, pushStatus, config);
+      return this.sendToAdapter(body, results, pushStatus, config, UTCOffset);
     }, err => {
       throw err;
     });
   }
 
-  sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config): Promise<*> {
-    pushStatus = pushStatusHandler(config, pushStatus.objectId);
+  sendToAdapter(body: any, installations: any[], pushStatus: any, config: Config, UTCOffset: ?any): Promise<*> {
     // Check if we have locales in the push body
     const locales = utils.getLocalesFromPush(body);
     if (locales.length > 0) {
@@ -74,14 +75,15 @@ export class PushWorker {
       const promises = Object.keys(grouppedInstallations).map((locale) => {
         const installations = grouppedInstallations[locale];
         const body = bodiesPerLocales[locale];
-        return this.sendToAdapter(body, installations, pushStatus, config);
+        return this.sendToAdapter(body, installations, pushStatus, config, UTCOffset);
       });
       return Promise.all(promises);
     }
 
     if (!utils.isPushIncrementing(body)) {
+      logger.verbose(`Sending push to ${installations.length}`);
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
-        return pushStatus.trackSent(results);
+        return pushStatus.trackSent(results, UTCOffset).then(() => results);
       });
     }
 
@@ -93,7 +95,7 @@ export class PushWorker {
       const payload = deepcopy(body);
       payload.data.badge = parseInt(badge);
       const installations = badgeInstallationsMap[badge];
-      return this.sendToAdapter(payload, installations, pushStatus, config);
+      return this.sendToAdapter(payload, installations, pushStatus, config, UTCOffset);
     });
     return Promise.all(promises);
   }
