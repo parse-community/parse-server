@@ -3,12 +3,16 @@
 const express = require('express');
 
 import ParseServer from '../src/ParseServer';
+import { version } from '../package.json';
 
 describe('Server Url Checks', () => {
 
   const app = express();
   app.get('/health', function(req, res){
-    res.send('OK');
+    res.json({
+      status: 'ok',
+      version: version
+    });
   });
   app.listen(13376);
 
