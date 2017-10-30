@@ -585,6 +585,28 @@ function relativeTimeToDate(text, now = new Date()) {
     }
 
     switch(interval) {
+    case 'yr':
+    case 'yrs':
+    case 'year':
+    case 'years':
+      seconds += val * 31536000; // 365 * 24 * 60 * 60
+      break;
+
+    case 'mo':
+    case 'mos':
+    case 'month':
+    case 'months':
+      seconds += val * 2592000; // 30 * 24 * 60 * 60, approx. 30 days/month
+      break;
+
+    case 'wk':
+    case 'wks':
+    case 'week':
+    case 'weeks':
+      seconds += val * 604800; // 7 * 24 * 60 * 60
+      break;
+
+    case 'd':
     case 'day':
     case 'days':
       seconds += val * 86400; // 24 * 60 * 60

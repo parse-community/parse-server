@@ -3169,6 +3169,14 @@ describe('Parse.Query testing', () => {
       .then((results) => {
         expect(results.length).toBe(0);
       })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: '1 year 2 months 3 weeks ago' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(2);
+      })
       .then(done, done.fail);
   });
 
