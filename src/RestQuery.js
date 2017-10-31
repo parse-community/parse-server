@@ -337,7 +337,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
 const transformSelect = (selectObject, key ,objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(result[key]);
+    values.push(key.split('.').reduce((o,i)=>o[i], result));
   }
   delete selectObject['$select'];
   if (Array.isArray(selectObject['$in'])) {
