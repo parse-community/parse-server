@@ -544,7 +544,7 @@ function relativeTimeToDate(text, now = new Date()) {
   const future = parts[0] === 'in';
   const past = parts[parts.length - 1] === 'ago';
 
-  if (!future && !past) {
+  if (!future && !past && text !== 'now') {
     return { status: 'error', info: "Time should either start with 'in' or end with 'ago'" };
   }
 
@@ -562,7 +562,7 @@ function relativeTimeToDate(text, now = new Date()) {
     parts = parts.slice(0, parts.length - 1);
   }
 
-  if (parts.length % 2 !== 0) {
+  if (parts.length % 2 !== 0 && text !== 'now') {
     return {
       status: 'error',
       info: 'Invalid time string. Dangling unit or number.',
@@ -585,6 +585,21 @@ function relativeTimeToDate(text, now = new Date()) {
     }
 
     switch(interval) {
+    case 'yr':
+    case 'yrs':
+    case 'year':
+    case 'years':
+      seconds += val * 31536000; // 365 * 24 * 60 * 60
+      break;
+
+    case 'wk':
+    case 'wks':
+    case 'week':
+    case 'weeks':
+      seconds += val * 604800; // 7 * 24 * 60 * 60
+      break;
+
+    case 'd':
     case 'day':
     case 'days':
       seconds += val * 86400; // 24 * 60 * 60
@@ -626,13 +641,18 @@ function relativeTimeToDate(text, now = new Date()) {
       info: 'future',
       result: new Date(now.valueOf() + milliseconds)
     };
-  }
-  if (past) {
+  } else if (past) {
     return {
       status: 'success',
       info: 'past',
       result: new Date(now.valueOf() - milliseconds)
     };
+  } else {
+    return {
+      status: 'success',
+      info: 'present',
+      result: new Date(now.valueOf())
+    }
   }
 }
 
