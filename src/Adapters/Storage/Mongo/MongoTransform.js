@@ -592,13 +592,6 @@ function relativeTimeToDate(text, now = new Date()) {
       seconds += val * 31536000; // 365 * 24 * 60 * 60
       break;
 
-    case 'mo':
-    case 'mos':
-    case 'month':
-    case 'months':
-      seconds += val * 2592000; // 30 * 24 * 60 * 60, approx. 30 days/month
-      break;
-
     case 'wk':
     case 'wks':
     case 'week':

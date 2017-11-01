@@ -387,9 +387,9 @@ describe('relativeTimeToDate', () => {
 
   describe('In the future', () => {
     it('should parse valid natural time', () => {
-      const text = 'in 1 year 1 month 2 weeks 12 days 10 hours 24 minutes 30 seconds';
+      const text = 'in 1 year 2 weeks 12 days 10 hours 24 minutes 30 seconds';
       const { result, status, info } = transform.relativeTimeToDate(text, now);
-      expect(result.toISOString()).toBe('2018-11-21T23:52:46.617Z');
+      expect(result.toISOString()).toBe('2018-10-22T23:52:46.617Z');
       expect(status).toBe('success');
       expect(info).toBe('future');
     });
