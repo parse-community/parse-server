@@ -256,6 +256,7 @@ class ParseServer {
           /* eslint-disable no-console */
           console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
             ` Cloud code and push notifications may be unavailable!\n`);
+          /* eslint-enable no-console */
           if(callback) {
             callback(false);
           }
