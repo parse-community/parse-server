@@ -34,7 +34,6 @@ import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
 import { AudiencesRouter }      from './Routers/AudiencesRouter';
-import { version }              from '../package.json';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
@@ -140,7 +139,6 @@ class ParseServer {
 
     api.use('/health', (function(req, res) {
       res.json({
-        version: version,
         status: 'ok'
       });
     }));
