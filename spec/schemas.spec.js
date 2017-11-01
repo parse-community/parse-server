@@ -2297,4 +2297,24 @@ describe('schemas', () => {
       });
     })
   });
+
+  it_exclude_dbs(['postgres'])('get indexes on startup', (done) => {
+    const obj = new Parse.Object('TestObject');
+    obj.save().then(() => {
+      return reconfigureServer({
+        appId: 'test',
+        restAPIKey: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+    }).then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        done();
+      });
+    });
+  });
 });

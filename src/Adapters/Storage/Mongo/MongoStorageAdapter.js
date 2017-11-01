@@ -545,6 +545,25 @@ export class MongoStorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.dropIndexes());
   }
+
+  updateSchemaWithIndexes() {
+    return this.getAllClasses()
+      .then((classes) => {
+        const promises = classes.map((schema) => {
+          return this.getIndexes(schema.className).then((indexes) => {
+            indexes = indexes.reduce((obj, index) => {
+              obj[index.name] = index.key;
+              return obj;
+            }, {});
+            return this._schemaCollection()
+              .then(schemaCollection => schemaCollection.updateSchema(schema.className, {
+                $set: { _metadata: { indexes: indexes } }
+              }));
+          });
+        });
+        return Promise.all(promises);
+      });
+  }
 }
 
 export default MongoStorageAdapter;
