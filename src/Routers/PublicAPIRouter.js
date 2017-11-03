@@ -151,21 +151,20 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
-  var invalid_verification_link_page_template_file;
   /**
    * loading the template for invalid verification link page
    * this method returns the template for the page stored in memory
    * on first access it will load the template file from disk
    */
   loadInvalidVerificationLinkPageTemplate() {
-    if (invalid_verification_link_page_template_file) {
-      return invalid_verification_link_page_template_file;
+    if (this.invalid_verification_link_page_template_file) {
+      return this.invalid_verification_link_page_template_file;
     } else {
-      invalid_verification_link_page_template_file = loadPageTemplateFile("invalid_verification_link");
-      if (invalid_verification_link_page_template_file) {
-        invalid_verification_link_page_template_file = invalid_verification_link_page_template_file.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
+      this.invalid_verification_link_page_template_file = loadPageTemplateFile("invalid_verification_link");
+      if (this.invalid_verification_link_page_template_file) {
+        this.invalid_verification_link_page_template_file = this.invalid_verification_link_page_template_file.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
       }
-      return invalid_verification_link_page_template_file;
+      return this.invalid_verification_link_page_template_file;
     }
   }
 
