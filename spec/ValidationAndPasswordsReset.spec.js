@@ -18,7 +18,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        var config = new Config("test");
+        var config = Config.get("test");
         expect(config.invalidLinkURL).toEqual("myInvalidLink");
         expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
         expect(config.choosePasswordURL).toEqual("myChoosePassword");
@@ -258,7 +258,10 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
         user.setUsername("zxcv");
         user.set("email", "testInvalidConfig@parse.com");
         user.signUp(null)
-          .then(() => Parse.User.logIn("zxcv", "asdf"))
+          .then((user) => {
+            expect(user.getSessionToken()).toBe(undefined);
+            return Parse.User.logIn("zxcv", "asdf");
+          })
           .then(() => {
             fail('login should have failed');
             done();
@@ -846,7 +849,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             expect(response.body).toEqual('Found. Redirecting to http://localhost:8378/1/apps/password_reset_success.html?username=zxcv');
 
             Parse.User.logIn("zxcv", "hello").then(function(){
-              const config = new Config('test');
+              const config = Config.get('test');
               config.database.adapter.find('_User', { fields: {} }, { 'username': 'zxcv' }, { limit: 1 })
                 .then(results => {
                 // _perishable_token should be unset after reset password

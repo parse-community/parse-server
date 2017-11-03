@@ -21,7 +21,7 @@ var hasAllPODobject = () => {
 
 describe('SchemaController', () => {
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   it('can validate one object', (done) => {
@@ -524,6 +524,7 @@ describe('SchemaController', () => {
         aPointer: {type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet'},
         aRelation: {type: 'Relation', targetClass: 'NewClass'},
         aBytes: {type: 'Bytes'},
+        aPolygon: {type: 'Polygon'},
       }))
       .then(actualSchema => {
         const expectedSchema = {
@@ -544,6 +545,7 @@ describe('SchemaController', () => {
             aPointer: { type: 'Pointer', targetClass: 'ThisClassDoesNotExistYet' },
             aRelation: { type: 'Relation', targetClass: 'NewClass' },
             aBytes: {type: 'Bytes'},
+            aPolygon: {type: 'Polygon'},
           },
           classLevelPermissions: {
             find: { '*': true },
@@ -1027,7 +1029,7 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   function createUser() {

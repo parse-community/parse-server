@@ -25,6 +25,7 @@ function mongoFieldToParseSchemaField(type) {
   case 'geopoint': return {type: 'GeoPoint'};
   case 'file':     return {type: 'File'};
   case 'bytes':    return {type: 'Bytes'};
+  case 'polygon':  return {type: 'Polygon'};
   }
 }
 
@@ -98,6 +99,7 @@ function parseFieldTypeToMongoFieldType({ type, targetClass }) {
   case 'GeoPoint': return 'geopoint';
   case 'File':     return 'file';
   case 'Bytes':    return 'bytes';
+  case 'Polygon':  return 'polygon';
   }
 }
 
@@ -113,7 +115,7 @@ class MongoSchemaCollection {
       .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  _fechOneSchemaFrom_SCHEMA(name: string) {
+  _fetchOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
@@ -148,9 +150,13 @@ class MongoSchemaCollection {
 
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
-    return this._fechOneSchemaFrom_SCHEMA(className)
+    return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(schema => {
-      // The schema exists. Check for existing GeoPoints.
+        // If a field with this name already exists, it will be handled elsewhere.
+        if (schema.fields[fieldName] != undefined) {
+          return;
+        }
+        // The schema exists. Check for existing GeoPoints.
         if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
           if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {

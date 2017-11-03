@@ -23,7 +23,7 @@ describe_only_db('mongo')('miscellaneous', () => {
       obj.set('foo', 'bar');
       return obj.save();
     }).then(() => {
-      const config = new Config(appId);
+      const config = Config.get(appId);
       return config.database.adapter.find('TestObject', { fields: {} }, {}, {});
     }).then((results) => {
       expect(results.length).toEqual(1);
@@ -151,7 +151,7 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate users, they can still sign up new users', done => {
-    const config = new Config('test');
+    const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
       .then(() => config.database.adapter.createClass('_User', userSchema))
@@ -183,7 +183,7 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if people already have duplicate emails, they can still sign up new users', done => {
-    const config = new Config('test');
+    const config = Config.get('test');
     // Remove existing data to clear out unique index
     TestUtils.destroyAllDataPermanently()
       .then(() => config.database.adapter.createClass('_User', userSchema))
@@ -211,7 +211,7 @@ describe('miscellaneous', function() {
   });
 
   it('ensure that if you try to sign up a user with a unique username and email, but duplicates in some other field that has a uniqueness constraint, you get a regular duplicate value error', done => {
-    const config = new Config('test');
+    const config = Config.get('test');
     config.database.adapter.addFieldIfNotExists('_User', 'randomField', { type: 'String' })
       .then(() => config.database.adapter.ensureUniqueness('_User', userSchema, ['randomField']))
       .then(() => {
@@ -1546,7 +1546,7 @@ describe_only_db('mongo')('legacy _acl', () => {
       },
       json: true
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const adapter = config.database.adapter;
       return adapter._adaptiveCollection("Report")
         .then(collection => collection.find({}))

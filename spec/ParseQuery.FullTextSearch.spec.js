@@ -43,11 +43,6 @@ const fullTextHelper = () => {
     publicServerURL: 'http://localhost:8378/1',
     databaseAdapter
   }).then(() => {
-    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
-      return Parse.Promise.as();
-    }
-    return databaseAdapter.createIndex('TestObject', {subject: 'text'});
-  }).then(() => {
     return rp.post({
       url: 'http://localhost:8378/1/batch',
       body: {
@@ -285,7 +280,7 @@ describe('Parse.Query Full Text Search testing', () => {
 });
 
 describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
-  it('fullTextSearch: $search, index not exist', (done) => {
+  it('fullTextSearch: $search, only one text index', (done) => {
     return reconfigureServer({
       appId: 'test',
       restAPIKey: 'test',
@@ -319,6 +314,8 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
         }
       });
     }).then(() => {
+      return databaseAdapter.createIndex('TestObject', {random: 'text'});
+    }).then(() => {
       const where = {
         subject: {
           $text: {
@@ -337,7 +334,7 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
         }
       });
     }).then((resp) => {
-      fail(`Text Index should not exist: ${JSON.stringify(resp)}`);
+      fail(`Should not be more than one text index: ${JSON.stringify(resp)}`);
       done();
     }).catch((err) => {
       expect(err.error.code).toEqual(Parse.Error.INTERNAL_SERVER_ERROR);

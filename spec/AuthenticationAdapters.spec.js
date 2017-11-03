@@ -4,7 +4,7 @@ var defaultColumns = require('../src/Controllers/SchemaController').defaultColum
 var authenticationLoader = require('../src/Adapters/Auth');
 var path = require('path');
 
-describe('AuthenticationProviers', function() {
+describe('AuthenticationProviders', function() {
   ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       var provider = require("../src/Adapters/Auth/" + providerName);
@@ -71,6 +71,10 @@ describe('AuthenticationProviers', function() {
   });
 
   var createOAuthUser = function(callback) {
+    return createOAuthUserWithSessionToken(undefined, callback);
+  }
+
+  var createOAuthUserWithSessionToken = function(token, callback) {
     var jsonBody = {
       authData: {
         myoauth: getMockMyOauthProvider().authData
@@ -81,18 +85,27 @@ describe('AuthenticationProviers', function() {
       headers: {'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
         'X-Parse-Installation-Id': 'yolo',
+        'X-Parse-Session-Token': token,
         'Content-Type': 'application/json' },
       url: 'http://localhost:8378/1/users',
-      body: JSON.stringify(jsonBody)
+      body: jsonBody,
+      json: true
     };
 
-    return request.post(options, callback);
+    return new Promise((resolve) => {
+      request.post(options, (err, res, body) => {
+        resolve({err, res, body});
+        if (callback) {
+          callback(err, res, body);
+        }
+      });
+    });
   }
 
   it("should create user with REST API", done => {
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
-      var b = JSON.parse(body);
+      var b = body;
       ok(b.sessionToken);
       expect(b.objectId).not.toBeNull();
       expect(b.objectId).not.toBeUndefined();
@@ -118,20 +131,36 @@ describe('AuthenticationProviers', function() {
     var objectId;
     createOAuthUser((error, response, body) => {
       expect(error).toBe(null);
-      var b = JSON.parse(body);
+      var b = body
       expect(b.objectId).not.toBeNull();
       expect(b.objectId).not.toBeUndefined();
       objectId = b.objectId;
 
       createOAuthUser((error, response, body) => {
         expect(error).toBe(null);
-        var b = JSON.parse(body);
+        var b = body;
         expect(b.objectId).not.toBeNull();
         expect(b.objectId).not.toBeUndefined();
         expect(b.objectId).toBe(objectId);
         done();
       });
     });
+  });
+
+  it("should fail to link if session token don't match user", (done) => {
+    Parse.User.signUp('myUser', 'password').then((user) => {
+      return createOAuthUserWithSessionToken(user.getSessionToken());
+    }).then(() => {
+      return Parse.User.logOut();
+    }).then(() => {
+      return Parse.User.signUp('myUser2', 'password');
+    }).then((user) => {
+      return createOAuthUserWithSessionToken(user.getSessionToken());
+    }).then(({ body }) => {
+      expect(body.code).toBe(208);
+      expect(body.error).toBe('this auth is already used');
+      done();
+    }).catch(done.fail);
   });
 
   it("unlink and link with custom provider", (done) => {
@@ -157,7 +186,7 @@ describe('AuthenticationProviers', function() {
             ok(!provider.synchronizedExpiration,
               "Expiration should be cleared");
             // make sure the auth data is properly deleted
-            var config = new Config(Parse.applicationId);
+            var config = Config.get(Parse.applicationId);
             config.database.adapter.find('_User', {
               fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
             }, { objectId: model.id }, {})
@@ -201,10 +230,10 @@ describe('AuthenticationProviers', function() {
     expect(typeof validator).toBe('function');
   }
 
-  function validateAuthenticationHandler(authenticatonHandler) {
-    expect(authenticatonHandler).not.toBeUndefined();
-    expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
-    expect(typeof authenticatonHandler.getValidatorForProvider).toBe('function');
+  function validateAuthenticationHandler(authenticationHandler) {
+    expect(authenticationHandler).not.toBeUndefined();
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
+    expect(typeof authenticationHandler.getValidatorForProvider).toBe('function');
   }
 
   function validateAuthenticationAdapter(authAdapter) {
