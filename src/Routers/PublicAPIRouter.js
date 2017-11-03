@@ -157,10 +157,11 @@ export class PublicAPIRouter extends PromiseRouter {
    * on first access it will load the template file from disk
    */
   loadInvalidVerificationLinkPageTemplate() {
+    const config = req.config;
     if (this.invalid_verification_link_page_template_file) {
       return this.invalid_verification_link_page_template_file;
     } else {
-      this.invalid_verification_link_page_template_file = loadPageTemplateFile("invalid_verification_link");
+      this.invalid_verification_link_page_template_file = this.loadPageTemplateFile("invalid_verification_link");
       if (this.invalid_verification_link_page_template_file) {
         this.invalid_verification_link_page_template_file = this.invalid_verification_link_page_template_file.replace("PARSE_SERVER_URL", `'${config.publicServerURL}'`);
       }
@@ -188,7 +189,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     if (req.query.username && req.params.appId) {
       // load page template from file or from memory
-      var invalid_verification_link_page = loadInvalidVerificationLinkPageTemplate();
+      var invalid_verification_link_page = this.loadInvalidVerificationLinkPageTemplate();
       if (invalid_verification_link_page) {
         // replace dynamic template attributes
         invalid_verification_link_page = invalid_verification_link_page.replace("USERNAME", `'${req.query.username}'`);
