@@ -151,7 +151,7 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
-  var invalid_verification_link_page_template_file = null;
+  var invalid_verification_link_page_template_file;
   /**
    * loading the template for invalid verification link page
    * this method returns the template for the page stored in memory
