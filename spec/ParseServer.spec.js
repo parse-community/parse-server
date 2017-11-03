@@ -8,7 +8,9 @@ describe('Server Url Checks', () => {
 
   const app = express();
   app.get('/health', function(req, res){
-    res.send('OK');
+    res.json({
+      status: 'ok'
+    });
   });
   app.listen(13376);
 

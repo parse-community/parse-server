@@ -33,7 +33,7 @@ import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
-import { AudiencesRouter }          from './Routers/AudiencesRouter';
+import { AudiencesRouter }      from './Routers/AudiencesRouter';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
@@ -137,7 +137,11 @@ class ParseServer {
       maxUploadSize: maxUploadSize
     }));
 
-    api.use('/health', (req, res) => res.sendStatus(200));
+    api.use('/health', (function(req, res) {
+      res.json({
+        status: 'ok'
+      });
+    }));
 
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
@@ -252,7 +256,13 @@ class ParseServer {
     if(Parse.serverURL) {
       const request = require('request');
       request(Parse.serverURL.replace(/\/$/, "") + "/health", function (error, response, body) {
-        if (error || response.statusCode !== 200 || body !== "OK") {
+        let json;
+        try {
+          json = JSON.parse(body);
+        } catch(e) {
+          json = null;
+        }
+        if (error || response.statusCode !== 200 || !json || json && json.status !== 'ok') {
           /* eslint-disable no-console */
           console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
             ` Cloud code and push notifications may be unavailable!\n`);
