@@ -329,7 +329,7 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
-  it('distint query with where', (done) => {
+  it('distinct query with where', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
@@ -345,7 +345,7 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
-  it('distint query with where string', (done) => {
+  it('distinct query with where string', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         distinct: 'score',
