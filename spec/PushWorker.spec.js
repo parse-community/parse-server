@@ -276,7 +276,7 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 }
+          count: { __op: 'Increment', amount: -1 }
         });
         const query = new Parse.Query('_PushStatus');
         return query.get(handler.objectId, { useMasterKey: true });
@@ -354,7 +354,7 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 }
+          count: { __op: 'Increment', amount: -1 }
         });
         done();
       });
