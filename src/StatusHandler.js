@@ -190,8 +190,8 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   }
 
-  const setRunning = function(count, batches) {
-    logger.verbose(`_PushStatus ${objectId}: sending push to %d installations with %d batches`, count, batches);
+  const setRunning = function(batches) {
+    logger.verbose(`_PushStatus ${objectId}: sending push to installations with %d batches`, batches);
     return handler.update(
       {
         status:"pending",
@@ -199,8 +199,7 @@ export function pushStatusHandler(config, existingObjectId) {
       },
       {
         status: "running",
-        count: count,
-        batches: batches
+        count: batches
       }
     );
   }
@@ -244,7 +243,6 @@ export function pushStatusHandler(config, existingObjectId) {
         }
         return memo;
       }, update);
-      incrementOp(update, 'count', -results.length);
     }
 
     logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
@@ -269,10 +267,10 @@ export function pushStatusHandler(config, existingObjectId) {
     }
 
     // indicate this batch is complete
-    incrementOp(update, 'batches', -1);
+    incrementOp(update, 'count', -1);
 
     return handler.update({ objectId }, update).then((res) => {
-      if (res && res.batches === 0) {
+      if (res && res.count === 0) {
         return this.complete();
       }
     })
@@ -281,8 +279,7 @@ export function pushStatusHandler(config, existingObjectId) {
   const complete = function() {
     return handler.update({ objectId }, {
       status: 'succeeded',
-      count: {__op: 'Delete'},
-      batches: {__op: 'Delete'}
+      count: {__op: 'Delete'}
     });
   }
 

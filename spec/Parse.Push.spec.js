@@ -282,7 +282,6 @@ describe('Parse.Push', () => {
       expect(result.get('status')).toEqual('succeeded');
       expect(result.get('numSent')).toEqual(1);
       expect(result.get('count')).toEqual(undefined);
-      expect(result.get('batches')).toEqual(undefined);
       done();
     });
   });
@@ -345,7 +344,6 @@ describe('Parse.Push', () => {
       expect(result.get('status')).toEqual('succeeded');
       expect(result.get('numSent')).toEqual(3);
       expect(result.get('count')).toEqual(undefined);
-      expect(result.get('batches')).toEqual(undefined);
       done();
     });
   });
@@ -390,7 +388,6 @@ describe('Parse.Push', () => {
       // expect # less than # of batches used, assuming each batch is 100 pushes
       expect(result.get('numSent')).toEqual(devices - (devices / 100));
       expect(result.get('count')).toEqual(undefined);
-      expect(result.get('batches')).toEqual(undefined);
       done();
     });
   });
@@ -460,7 +457,6 @@ describe('Parse.Push', () => {
       // expect # less than # of batches used, assuming each batch is 100 pushes
       expect(result.get('numSent')).toEqual(devices + (devices / 100));
       expect(result.get('count')).toEqual(undefined);
-      expect(result.get('batches')).toEqual(undefined);
       done();
     });
   });
