@@ -159,6 +159,12 @@ function enforceRoleSecurity(method, className, auth) {
     const error = `Clients aren't allowed to perform the ${method} operation on the ${className} collection.`
     throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
   }
+
+  // readOnly masterKey is not allowed
+  if (auth.isReadOnly && (method === 'delete' || method === 'create' || method === 'update')) {
+    const error = `read-only masterKey isn't allowed to perform the ${method} operation.`
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, error);
+  }
 }
 
 module.exports = {

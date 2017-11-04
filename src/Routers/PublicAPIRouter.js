@@ -13,7 +13,7 @@ export class PublicAPIRouter extends PromiseRouter {
   verifyEmail(req) {
     const { token, username } = req.query;
     const appId = req.params.appId;
-    const config = new Config(appId);
+    const config = Config.get(appId);
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -38,7 +38,7 @@ export class PublicAPIRouter extends PromiseRouter {
   resendVerificationEmail(req) {
     const username = req.body.username;
     const appId = req.params.appId;
-    const config = new Config(appId);
+    const config = Config.get(appId);
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -65,7 +65,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      const config = new Config(req.query.id);
+      const config = Config.get(req.query.id);
       if (!config.publicServerURL) {
         return resolve({
           status: 404,
@@ -172,7 +172,7 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 
   setConfig(req) {
-    req.config = new Config(req.params.appId);
+    req.config = Config.get(req.params.appId);
     return Promise.resolve();
   }
 
