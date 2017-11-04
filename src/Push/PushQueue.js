@@ -40,7 +40,7 @@ export class PushQueue {
       if (!results || count == 0) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
-      pushStatus.setRunning(count);
+      pushStatus.setRunning(count, Math.ceil(count / limit));
       let skip = 0;
       while (skip < count) {
         const query = { where,

@@ -88,7 +88,8 @@ const defaultColumns = Object.freeze({
     "failedPerType":       {type:'Object'},
     "sentPerUTCOffset":    {type:'Object'},
     "failedPerUTCOffset":  {type:'Object'},
-    "count":               {type:'Number'}
+    "count":               {type:'Number'}, // tracks estimated # of pushes pending
+    "batches":             {type:'Number'}  // tracks # of batches queued and pending
   },
   _JobStatus: {
     "jobName":    {type: 'String'},
