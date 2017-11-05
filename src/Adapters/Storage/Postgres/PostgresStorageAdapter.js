@@ -1466,6 +1466,10 @@ export class PostgresStorageAdapter {
     const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
     return this._client.any(qs, {className});
   }
+
+  updateSchemaWithIndexes() {
+    return Promise.resolve();
+  }
 }
 
 function convertPolygonToSQL(polygon) {

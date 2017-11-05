@@ -1005,9 +1005,11 @@ DatabaseController.prototype.performInitialization = function() {
       throw error;
     });
 
+  const indexPromise = this.adapter.updateSchemaWithIndexes();
+
   // Create tables for volatile classes
   const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
-  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit]);
+  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit, indexPromise]);
 }
 
 function joinTableName(className, key) {
