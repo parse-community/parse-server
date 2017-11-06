@@ -559,6 +559,11 @@ export class MongoStorageAdapter {
               .then(schemaCollection => schemaCollection.updateSchema(schema.className, {
                 $set: { _metadata: { indexes: indexes } }
               }));
+          }).catch((err) => {
+            /* eslint-disable no-console */
+            console.info("\n>>>>>>> Caught an index error for " + schema.className + "\n");
+            console.dir(err);
+            /* eslint-enable no-console */
           });
         });
         return Promise.all(promises);
