@@ -15,7 +15,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const appId = req.params.appId;
     const config = Config.get(appId);
 
-    if (!config.publicServerURL) {
+    if (!config || !config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
@@ -40,7 +40,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const appId = req.params.appId;
     const config = Config.get(appId);
 
-    if (!config.publicServerURL) {
+    if (!config || !config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
@@ -66,7 +66,7 @@ export class PublicAPIRouter extends PromiseRouter {
   changePassword(req) {
     return new Promise((resolve, reject) => {
       const config = Config.get(req.query.id);
-      if (!config.publicServerURL) {
+      if (!config || !config.publicServerURL) {
         return resolve({
           status: 404,
           text: 'Not found.'
@@ -89,7 +89,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
-    if (!config.publicServerURL) {
+    if (!config || !config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
@@ -114,7 +114,7 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
-    if (!config.publicServerURL) {
+    if (!config || !config.publicServerURL) {
       return this.missingPublicServerURL();
     }
 
