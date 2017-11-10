@@ -16,6 +16,21 @@ export class UsersRouter extends ClassesRouter {
     return '_User';
   }
 
+  /**
+   * Removes all "_" prefixed properties from an object, except "__type"
+   * @param {Object} obj An object.
+   */
+  static removeHiddenProperties (obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        // Regexp comes from Parse.Object.prototype.validate
+        if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+          delete obj[key];
+        }
+      }
+    }
+  }
+
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
@@ -35,14 +50,7 @@ export class UsersRouter extends ClassesRouter {
           user.sessionToken = sessionToken;
 
           // Remove hidden properties.
-          for (var key in user) {
-            if (user.hasOwnProperty(key)) {
-              // Regexp comes from Parse.Object.prototype.validate
-              if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
-                delete user[key];
-              }
-            }
-          }
+          UsersRouter.removeHiddenProperties(user);
 
           return { response: user };
         }
@@ -124,6 +132,9 @@ export class UsersRouter extends ClassesRouter {
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
 
         // Sometimes the authData still has null on that keys
         // https://github.com/parse-community/parse-server/issues/935
