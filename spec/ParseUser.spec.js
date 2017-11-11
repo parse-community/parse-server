@@ -3453,4 +3453,34 @@ describe('Parse.User testing', () => {
       done();
     });
   });
+
+  it('does not duplicate session when loggin in multiple times #3451', (done) => {
+    const user = new Parse.User();
+    user.signUp({
+      username: 'yolo',
+      password: 'yolo',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const promises = [];
+      while(promises.length != 5) {
+        Parse.User.logIn('yolo', 'yolo')
+        promises.push(Parse.User.logIn('yolo', 'yolo').then((res) => {
+          // generate a new session token every times
+          expect(res.getSessionToken()).not.toBe(user.getSessionToken());
+        }));
+      }
+      return Promise.all(promises);
+    }).then(() => {
+      // wait because session destruction is not syncrhonous
+      return new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+    }).then(() => {
+      const query = new Parse.Query('_Session');
+      return query.find({ useMasterKey: true });
+    }).then((results) => {
+      // only one session in the end
+      expect(results.length).toBe(1);
+    }).then(done, done.fail);
+  });
 });
