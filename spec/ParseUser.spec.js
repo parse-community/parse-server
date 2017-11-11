@@ -3454,7 +3454,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('does not duplicate session when loggin in multiple times #3451', (done) => {
+  it('does not duplicate session when logging in multiple times #3451', (done) => {
     const user = new Parse.User();
     user.signUp({
       username: 'yolo',
@@ -3465,13 +3465,13 @@ describe('Parse.User testing', () => {
       while(promises.length != 5) {
         Parse.User.logIn('yolo', 'yolo')
         promises.push(Parse.User.logIn('yolo', 'yolo').then((res) => {
-          // generate a new session token every times
+          // ensure a new session token is generated at each login
           expect(res.getSessionToken()).not.toBe(user.getSessionToken());
         }));
       }
       return Promise.all(promises);
     }).then(() => {
-      // wait because session destruction is not syncrhonous
+      // wait because session destruction is not synchronous
       return new Promise((resolve) => {
         setTimeout(resolve, 100);
       });
