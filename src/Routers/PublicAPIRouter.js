@@ -14,7 +14,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const { token, username } = req.query;
     const appId = req.params.appId;
     const config = Config.get(appId);
-    
+
     if(!config){
       this.invalidRequest();
     }
@@ -74,7 +74,7 @@ export class PublicAPIRouter extends PromiseRouter {
   changePassword(req) {
     return new Promise((resolve, reject) => {
       const config = Config.get(req.query.id);
-      
+
       if(!config){
         this.invalidRequest();
       }
@@ -193,10 +193,10 @@ export class PublicAPIRouter extends PromiseRouter {
   }
 
   invalidRequest() {
-      const error = new Error();
-      error.status = 403;
-      error.message = "unauthorized";
-      throw error;
+    const error = new Error();
+    error.status = 403;
+    error.message = "unauthorized";
+    throw error;
   }
 
   setConfig(req) {
