@@ -169,7 +169,7 @@ describe('Parse.Relation testing', () => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
-      childObjects.push(new ChildObject({x: i}));
+      childObjects.push(new ChildObject({x: i, y: 'yolo'}));
     }
 
     Parse.Object.saveAll(childObjects, {
@@ -185,6 +185,7 @@ describe('Parse.Relation testing', () => {
           success: function() {
             var query = relation.query();
             query.equalTo("x", 2);
+            query.select('x');
             query.find({
               success: function(list) {
                 equal(list.length, 1,
@@ -193,6 +194,8 @@ describe('Parse.Relation testing', () => {
                   "Should be of type ChildObject");
                 equal(list[0].id, childObjects[2].id,
                   "We should have gotten back the right result");
+                expect(list[0].get('x')).toBe(2);
+                expect(list[0].get('y')).toBeUndefined();
                 done();
               }
             });
@@ -773,5 +776,32 @@ describe('Parse.Relation testing', () => {
         fail(error);
         done();
       });
+  });
+
+  it('can skip/limit correctly', done => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x:i}));
+    }
+    var ParentObject = Parse.Object.extend("ParentObject");
+    var parent = new ParentObject();
+    Parse.Object.saveAll(childObjects).then(() => {
+      parent.set("x", 4);
+      var relation = parent.relation("child");
+      relation.add(childObjects);
+      return parent.save()
+    }).then(() => {
+      const query = parent.relation('child').query();
+      query.ascending('x');
+      query.limit(2);
+      query.skip(3);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(2);
+      expect(results[0].get('x')).toBe(3);
+      expect(results[1].get('x')).toBe(4);
+    })
+      .then(done, done.fail);
   });
 });

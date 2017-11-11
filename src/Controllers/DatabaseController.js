@@ -830,7 +830,12 @@ DatabaseController.prototype.find = function(className, query, {
             }
           });
           return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
-            .then(() => this.reduceRelationKeys(className, query))
+            .then(() => {
+              if (typeof this.adapter.leftJoin === 'function' && query['$relatedTo']) { // do the thing
+                return;
+              }
+              return this.reduceRelationKeys(className, query)
+            })
             .then(() => this.reduceInRelation(className, query, schemaController))
             .then(() => {
               if (!isMaster) {
@@ -846,25 +851,39 @@ DatabaseController.prototype.find = function(className, query, {
               if (!isMaster) {
                 query = addReadACL(query, aclGroup);
               }
+              // Cleanup related to before query validation
+              // can posibly be better
+              let relatedTo;
+              if (typeof this.adapter.leftJoin === 'function' && query['$relatedTo']) {
+                relatedTo = query['$relatedTo'];
+                delete query['$relatedTo'];
+              }
               validateQuery(query);
-              if (count) {
-                if (!classExists) {
+              if (!classExists) {
+                if (count) {
                   return 0;
-                } else {
-                  return this.adapter.count(className, schema, query, readPreference);
                 }
+                return [];
+              }
+              if (count && !relatedTo) {
+                return this.adapter.count(className, schema, query, readPreference);
               } else {
-                if (!classExists) {
-                  return [];
+                let promise;
+                if (relatedTo) {
+                  const joinTable = joinTableName(relatedTo.object.className, relatedTo.key);
+                  promise = this.adapter.leftJoin(joinTable, 'relatedId', className, '_id', schema, {
+                    'owningId': relatedTo.object.objectId,
+                  }, query, { skip, limit, sort, keys, readPreference, count });
                 } else {
-                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference })
-                    .then(objects => objects.map(object => {
-                      object = untransformObjectACL(object);
-                      return filterSensitiveData(isMaster, aclGroup, className, object)
-                    })).catch((error) => {
-                      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
-                    });
+                  promise = this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference });
                 }
+                return promise
+                  .then(objects => objects.map(object => {
+                    object = untransformObjectACL(object);
+                    return filterSensitiveData(isMaster, aclGroup, className, object)
+                  })).catch((error) => {
+                    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, error);
+                  });
               }
             });
         });
