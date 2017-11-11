@@ -16,7 +16,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const config = Config.get(appId);
     
     if(!config){
-      this.invalidRequest():
+      this.invalidRequest();
     }
 
     if (!config.publicServerURL) {
@@ -45,7 +45,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const config = Config.get(appId);
 
     if(!config){
-      this.invalidRequest():
+      this.invalidRequest();
     }
 
     if (!config.publicServerURL) {
@@ -103,7 +103,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const config = req.config;
 
     if(!config){
-      this.invalidRequest():
+      this.invalidRequest();
     }
 
     if (!config.publicServerURL) {
@@ -132,7 +132,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const config = req.config;
 
     if(!config){
-      this.invalidRequest():
+      this.invalidRequest();
     }
 
     if (!config.publicServerURL) {
