@@ -169,7 +169,7 @@ describe('Parse.Relation testing', () => {
     var ChildObject = Parse.Object.extend("ChildObject");
     var childObjects = [];
     for (var i = 0; i < 10; i++) {
-      childObjects.push(new ChildObject({x: i}));
+      childObjects.push(new ChildObject({x: i, y: 'yolo'}));
     }
 
     Parse.Object.saveAll(childObjects, {
@@ -185,6 +185,7 @@ describe('Parse.Relation testing', () => {
           success: function() {
             var query = relation.query();
             query.equalTo("x", 2);
+            query.select('x');
             query.find({
               success: function(list) {
                 equal(list.length, 1,
@@ -193,6 +194,8 @@ describe('Parse.Relation testing', () => {
                   "Should be of type ChildObject");
                 equal(list[0].id, childObjects[2].id,
                   "We should have gotten back the right result");
+                expect(list[0].get('x')).toBe(2);
+                expect(list[0].get('y')).toBeUndefined();
                 done();
               }
             });

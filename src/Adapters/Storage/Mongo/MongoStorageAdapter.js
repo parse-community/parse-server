@@ -365,6 +365,66 @@ export class MongoStorageAdapter {
       .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
 
+  leftJoin(className, from, localField, foreignField, schema, leftQuery, query, sort, keys, count) {
+    const as = `from_${from}`;
+    schema = convertParseSchemaToMongoSchema(schema);
+    // TODO: optimize here for keys mapping
+    const mongoWhere = transformWhere(from, query, schema);
+    const mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
+    const mongoKeys = _.reduce(keys, (memo, key) => {
+      memo[transformKey(className, key, schema)] = 1;
+      return memo;
+    }, {});
+
+    function toLocal(object, as) {
+      if (!object) {
+        return undefined;
+      }
+      return Object.keys(object).reduce((memo, key) => {
+        memo[`${as}.${key}`] = object[key];
+        return memo;
+      }, {});
+    }
+
+    query = toLocal(mongoWhere, as);
+    sort = toLocal(mongoSort, as);
+    keys = toLocal(mongoKeys, as);
+    const aggregate = [
+      {
+        $match: leftQuery,
+      },
+      {
+        $lookup: {
+          from: this._collectionPrefix + from,
+          localField,
+          foreignField,
+          as,
+        }
+      }];
+    if (query && Object.keys(query).length > 0) {
+      aggregate.push({ $match: query });
+    }
+    if (sort && Object.keys(sort).length > 0) {
+      aggregate.push({ $sort: sort });
+    }
+    if (keys && Object.keys(keys).length > 0) {
+      aggregate.push({ $project: keys });
+    }
+    if (count) {
+      aggregate.push({
+        $count: `${as}._id`, // count ids
+      })
+    }
+
+    return this._adaptiveCollection(className).then((collection) => {
+      return collection.aggregate(aggregate);
+    }).then(objects => {
+      return objects.reduce((memo, object) => {
+        return memo.concat(object[as].map(object => mongoObjectToParseObject(from, object, schema)));
+      }, []);
+    });
+  }
+
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
   // currently know which fields are nullable and which aren't, we ignore that criteria.
   // As such, we shouldn't expose this function to users of parse until we have an out-of-band
