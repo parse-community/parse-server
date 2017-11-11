@@ -14,9 +14,9 @@ export class PublicAPIRouter extends PromiseRouter {
     const { token, username } = req.query;
     const appId = req.params.appId;
     const config = Config.get(appId);
-
-    if(!config) {
-        this.invalidRequest();
+    
+    if(!config){
+      this.invalidRequest():
     }
 
     if (!config.publicServerURL) {
@@ -44,8 +44,8 @@ export class PublicAPIRouter extends PromiseRouter {
     const appId = req.params.appId;
     const config = Config.get(appId);
 
-    if(!config) {
-        this.invalidRequest();
+    if(!config){
+      this.invalidRequest():
     }
 
     if (!config.publicServerURL) {
@@ -74,9 +74,9 @@ export class PublicAPIRouter extends PromiseRouter {
   changePassword(req) {
     return new Promise((resolve, reject) => {
       const config = Config.get(req.query.id);
-
-      if(!config) {
-          this.invalidRequest();
+      
+      if(!config){
+        this.invalidRequest();
       }
 
       if (!config.publicServerURL) {
@@ -102,8 +102,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
-    if(!config) {
-        this.invalidRequest();
+    if(!config){
+      this.invalidRequest():
     }
 
     if (!config.publicServerURL) {
@@ -131,8 +131,8 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
-    if(!config) {
-        this.invalidRequest();
+    if(!config){
+      this.invalidRequest():
     }
 
     if (!config.publicServerURL) {
