@@ -871,9 +871,9 @@ DatabaseController.prototype.find = function(className, query, {
                 let promise;
                 if (relatedTo) {
                   const joinTable = joinTableName(relatedTo.object.className, relatedTo.key);
-                  promise = this.adapter.leftJoin(joinTable, className, 'relatedId', '_id', schema, {
+                  promise = this.adapter.leftJoin(joinTable, 'relatedId', className, '_id', schema, {
                     'owningId': relatedTo.object.objectId,
-                  }, query, sort, keys, count);
+                  }, query, { skip, limit, sort, keys, readPreference, count });
                 } else {
                   promise = this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference });
                 }

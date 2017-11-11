@@ -777,4 +777,31 @@ describe('Parse.Relation testing', () => {
         done();
       });
   });
+
+  it('can skip/limit correctly', done => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x:i}));
+    }
+    var ParentObject = Parse.Object.extend("ParentObject");
+    var parent = new ParentObject();
+    Parse.Object.saveAll(childObjects).then(() => {
+      parent.set("x", 4);
+      var relation = parent.relation("child");
+      relation.add(childObjects);
+      return parent.save()
+    }).then(() => {
+      const query = parent.relation('child').query();
+      query.ascending('x');
+      query.limit(2);
+      query.skip(3);
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(2);
+      expect(results[0].get('x')).toBe(3);
+      expect(results[1].get('x')).toBe(4);
+    })
+      .then(done, done.fail);
+  });
 });

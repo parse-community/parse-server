@@ -365,7 +365,7 @@ export class MongoStorageAdapter {
       .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
   }
 
-  leftJoin(className, from, localField, foreignField, schema, leftQuery, query, sort, keys, count) {
+  leftJoin(className, localField, from, foreignField, schema, leftQuery, query, { skip, limit, sort, keys, count }) {
     const as = `from_${from}`;
     schema = convertParseSchemaToMongoSchema(schema);
     // TODO: optimize here for keys mapping
@@ -406,6 +406,12 @@ export class MongoStorageAdapter {
     }
     if (sort && Object.keys(sort).length > 0) {
       aggregate.push({ $sort: sort });
+    }
+    if (skip) {
+      aggregate.push({ $skip: skip });
+    }
+    if (limit) {
+      aggregate.push({ $limit: limit });
     }
     if (keys && Object.keys(keys).length > 0) {
       aggregate.push({ $project: keys });
