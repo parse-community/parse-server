@@ -785,6 +785,8 @@ DatabaseController.prototype.find = function(className, query, {
   count,
   keys,
   op,
+  distinct,
+  pipeline,
   readPreference
 } = {}) {
   const isMaster = acl === undefined;
@@ -852,6 +854,18 @@ DatabaseController.prototype.find = function(className, query, {
                   return 0;
                 } else {
                   return this.adapter.count(className, schema, query, readPreference);
+                }
+              }  else if (distinct) {
+                if (!classExists) {
+                  return [];
+                } else {
+                  return this.adapter.distinct(className, schema, query, distinct);
+                }
+              }  else if (pipeline) {
+                if (!classExists) {
+                  return [];
+                } else {
+                  return this.adapter.aggregate(className, pipeline, readPreference);
                 }
               } else {
                 if (!classExists) {
