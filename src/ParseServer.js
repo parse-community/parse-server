@@ -34,6 +34,7 @@ import { SessionsRouter }       from './Routers/SessionsRouter';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
 import { AudiencesRouter }      from './Routers/AudiencesRouter';
+import { AggregateRouter }      from './Routers/AggregateRouter';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
 import * as controllers from './Controllers';
@@ -197,7 +198,8 @@ class ParseServer {
       new PurgeRouter(),
       new HooksRouter(),
       new CloudCodeRouter(),
-      new AudiencesRouter()
+      new AudiencesRouter(),
+      new AggregateRouter()
     ];
 
     const routes = routers.reduce((memo, router) => {
