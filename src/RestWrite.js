@@ -450,15 +450,13 @@ RestWrite.prototype._validateEmail = function() {
   }
 
   // Validate basic email address format.
-  // Will strip spaces surrounding the string. Any space within the string will not pass.
-  if (!this.data.email.trim().match( /^[^\s@]+@[^\s@]+\.[^\s@]+$/ )) {
+  // Will strip spaces surrounding the string. If any space within the string, will not pass.
+  if (!this.data.email.trim().match( /^\w+([-+.']\w+)*@\w+([-.]\w+)*\.\w+([-.]\w+)*$/ )) {
     return Promise.reject(new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.'));
   }
 
   //Fixes issues where emails might be duplicated because of a space ' ' or case sensitivity.
-  if ( this.data.email ) {
-    this.data.email = this.data.email.split(' ').join('').toLowerCase();
-  }
+  this.data.email = this.data.email.split(' ').join('').toLowerCase();
   
   // Same problem for email as above for username
   return this.config.database.find(
