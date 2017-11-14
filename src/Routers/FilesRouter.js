@@ -51,6 +51,7 @@ export class FilesRouter {
         res.status(200);
         res.set('Content-Type', contentType);
         res.set('Content-Length', data.length);
+        res.set('Cache-Control', 'public, max-age=86400')
         res.end(data);
       }).catch(() => {
         res.status(404);
@@ -149,6 +150,7 @@ function handleFileStream(stream, req, res, contentType) {
     'Accept-Ranges': 'bytes',
     'Content-Length': contentLength,
     'Content-Type': contentType,
+    'Cache-Control': 'public, max-age=86400'
   });
 
   stream.seek(start, function () {
