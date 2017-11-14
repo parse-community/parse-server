@@ -1,5 +1,5 @@
 const Parse = require('parse/node').Parse;
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter').PostgresStorageAdapter;
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 const ParseServer = require("../src/index");
 const express = require('express');

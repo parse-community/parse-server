@@ -1,8 +1,8 @@
 'use strict';
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter').MongoStorageAdapter;
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter').PostgresStorageAdapter;
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 const Parse = require('parse/node');
 const rp = require('request-promise');

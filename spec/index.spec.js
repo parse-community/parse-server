@@ -6,7 +6,7 @@ var ParseServer = require("../src/index");
 var Config = require('../src/Config');
 var express = require('express');
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter').MongoStorageAdapter;
 
 describe('server', () => {
   it('requires a master key and app id', done => {

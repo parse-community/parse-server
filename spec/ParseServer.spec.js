@@ -35,8 +35,8 @@ describe('Server Url Checks', () => {
   });
 
   it('handleShutdown, close connection', (done) => {
-    var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-    const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+    const { MongoStorageAdapter } = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const { PostgresStorageAdapter } = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
     const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
     const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
     let databaseAdapter;

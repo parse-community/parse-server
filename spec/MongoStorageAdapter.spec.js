@@ -1,6 +1,6 @@
 'use strict';
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter').MongoStorageAdapter;
 const MongoClient = require('mongodb').MongoClient;
 const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 

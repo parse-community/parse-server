@@ -56,6 +56,7 @@
     "deep-diff": "0.3.8",
     "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.39.1",
+    "flow-bin": "^0.59.0",
     "gaze": "1.1.2",
     "jasmine": "2.8.0",
     "jasmine-spec-reporter": "^4.1.0",
