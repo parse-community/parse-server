@@ -3,10 +3,10 @@ export type SchemaType = any;
 export type StorageClass = any;
 export type QueryType = any;
 export type QueryOptionsType = {
-  skip?: number;
-  limit?: number;
-  sort?: any;
-  keys?: string[];
+  skip?: ?number;
+  limit?: ?number;
+  sort?: ?any;
+  keys?: ?string[];
   readPreference?: ?string;
 };
 

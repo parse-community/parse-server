@@ -17,13 +17,13 @@ import {
   transformUpdate,
   transformPointerString,
 } from './MongoTransform';
-// $FlowFixMe
+// @flow-disable-next
 import Parse                 from 'parse/node';
-// $FlowFixMe
+// @flow-disable-next
 import _                     from 'lodash';
 import defaults              from '../../../defaults';
 
-// $FlowFixMe
+// @flow-disable-next
 const mongodb = require('mongodb');
 const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
