@@ -602,7 +602,7 @@ DatabaseController.prototype.deleteEverything = function() {
 DatabaseController.prototype.relatedIds = function(className, key, owningId, queryOptions) {
   const { skip, limit, sort } = queryOptions;
   const findOptions = {};
-  if (sort && sort.createdAt) {
+  if (sort && sort.createdAt && this.adapter.canSortOnJoinTables) {
     findOptions.sort = { '_id' : sort.createdAt };
     findOptions.limit = limit;
     findOptions.skip = skip;

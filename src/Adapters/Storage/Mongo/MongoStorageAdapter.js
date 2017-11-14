@@ -86,7 +86,7 @@ export class MongoStorageAdapter {
   // Public
   connectionPromise;
   database;
-
+  canSortOnJoinTables;
   constructor({
     uri = defaults.DefaultMongoURI,
     collectionPrefix = '',
@@ -98,6 +98,7 @@ export class MongoStorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    this.canSortOnJoinTables = true;
     delete mongoOptions.maxTimeMS;
   }
 
