@@ -24,8 +24,20 @@ type SchemaFields = { [string]: SchemaField }
 type Schema = {
   className: string,
   fields: SchemaFields,
-  classLevelPermissions: any,
+  classLevelPermissions: ClassLevelPermissions,
   indexes?: ?any
+};
+
+type ClassLevelPermissions = {
+  find?: {[string]: boolean};
+  count?: {[string]: boolean};
+  get?: {[string]: boolean};
+  create?: {[string]: boolean};
+  update?: {[string]: boolean};
+  delete?: {[string]: boolean};
+  addField?: {[string]: boolean};
+  readUserFields?: string[];
+  writeUserFields?: string[];
 };
 
 // @flow-disable-next
@@ -176,7 +188,7 @@ function verifyPermissionKey(key) {
 }
 
 const CLPValidKeys = Object.freeze(['find', 'count', 'get', 'create', 'update', 'delete', 'addField', 'readUserFields', 'writeUserFields']);
-function validateCLP(perms: any, fields: SchemaFields) {
+function validateCLP(perms: ClassLevelPermissions, fields: SchemaFields) {
   if (!perms) {
     return;
   }
@@ -184,9 +196,13 @@ function validateCLP(perms: any, fields: SchemaFields) {
     if (CLPValidKeys.indexOf(operation) == -1) {
       throw new Parse.Error(Parse.Error.INVALID_JSON, `${operation} is not a valid operation for class level permissions`);
     }
+    if (!perms[operation]) {
+      return;
+    }
 
     if (operation === 'readUserFields' || operation === 'writeUserFields') {
       if (!Array.isArray(perms[operation])) {
+        // @flow-disable-next
         throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perms[operation]}' is not a valid value for class level permissions ${operation}`);
       } else {
         perms[operation].forEach((key) => {
@@ -198,10 +214,13 @@ function validateCLP(perms: any, fields: SchemaFields) {
       return;
     }
 
+    // @flow-disable-next
     Object.keys(perms[operation]).forEach((key) => {
       verifyPermissionKey(key);
+      // @flow-disable-next
       const perm = perms[operation][key];
       if (perm !== true) {
+        // @flow-disable-next
         throw new Parse.Error(Parse.Error.INVALID_JSON, `'${perm}' is not a valid value for class level permissions ${operation}:${key}:${perm}`);
       }
     });
@@ -352,7 +371,7 @@ const _AudienceSchema = convertSchemaToAdapterSchema(injectDefaultSchema({
 }));
 const VolatileClassesSchemas = [_HooksSchema, _JobStatusSchema, _JobScheduleSchema, _PushStatusSchema, _GlobalConfigSchema, _AudienceSchema];
 
-const dbTypeMatchesObjectType = (dbType: any, objectType: any) => {
+const dbTypeMatchesObjectType = (dbType: SchemaField | string, objectType: SchemaField) => {
   if (dbType.type !== objectType.type) return false;
   if (dbType.targetClass !== objectType.targetClass) return false;
   if (dbType === objectType.type) return true;
@@ -629,7 +648,7 @@ export default class SchemaController {
     return this.validateSchemaData(className, fields, classLevelPermissions, []);
   }
 
-  validateSchemaData(className: string, fields: SchemaFields, classLevelPermissions: any, existingFieldNames: Array<string>) {
+  validateSchemaData(className: string, fields: SchemaFields, classLevelPermissions: ClassLevelPermissions, existingFieldNames: Array<string>) {
     for (const fieldName in fields) {
       if (existingFieldNames.indexOf(fieldName) < 0) {
         if (!fieldNameIsValid(fieldName)) {
@@ -721,7 +740,11 @@ export default class SchemaController {
         return this.reloadData({ clearCache: true });
       }).then(() => {
         // Ensure that the schema now validates
-        if (!dbTypeMatchesObjectType(this.getExpectedType(className, fieldName), type)) {
+        const expectedType = this.getExpectedType(className, fieldName);
+        if (typeof type === 'string') {
+          type = { type };
+        }
+        if (!expectedType || !dbTypeMatchesObjectType(expectedType, type)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, `Could not add field ${fieldName}`);
         }
         // Remove the cached schema
@@ -732,7 +755,7 @@ export default class SchemaController {
   }
 
   // maintain compatibility
-  deleteField(fieldName: string, className: any, database: DatabaseController) {
+  deleteField(fieldName: string, className: string, database: DatabaseController) {
     return this.deleteFields([fieldName], className, database);
   }
 
