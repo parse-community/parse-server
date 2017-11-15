@@ -90,6 +90,25 @@ function queryHash(query) {
 }
 
 /**
+ * contains -- Determines if an object is contained in a list with special handling for Parse pointers.
+ */
+function contains(haystack: Array, needle: any): boolean {
+  if (needle && needle.__type && needle.__type === 'Pointer') {
+    for (const i in haystack) {
+      const ptr = haystack[i];
+      if (typeof ptr === 'string' && ptr === needle.objectId) {
+        return true;
+      }
+      if (ptr.className === needle.className &&
+          ptr.objectId === needle.objectId) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return haystack.indexOf(needle) > -1;
+}
+/**
  * matchesQuery -- Determines if an object would be returned by a Parse Query
  * It's a lightweight, where-clause only implementation of a full query engine.
  * Since we find queries that match objects, rather than objects that match
@@ -207,12 +226,12 @@ function matchesKeyConstraints(object, key, constraints) {
       }
       break;
     case '$in':
-      if (compareTo.indexOf(object[key]) < 0) {
+      if (!contains(compareTo, object[key])) {
         return false;
       }
       break;
     case '$nin':
-      if (compareTo.indexOf(object[key]) > -1) {
+      if (contains(compareTo, object[key])) {
         return false;
       }
       break;

@@ -1,6 +1,7 @@
 import { md5Hash, newObjectId } from './cryptoUtils';
 import { logger }               from './logger';
-import Parse                    from 'parse/node';
+import rest                     from './rest';
+import Auth                     from './Auth';
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
@@ -51,21 +52,16 @@ function statusHandler(className, database) {
   })
 }
 
-function restStatusHandler(className) {
+function restStatusHandler(className, config) {
   let lastPromise = Promise.resolve();
-
+  const auth = Auth.master(config);
   function create(object) {
     lastPromise = lastPromise.then(() => {
-      return Parse._request(
-        'POST',
-        `classes/${className}`,
-        object,
-        { useMasterKey: true }
-      ).then((result) => {
-        // merge the objects
-        const response = Object.assign({}, object, result);
-        return Promise.resolve(response);
-      });
+      return rest.create(config, auth, className, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
     });
     return lastPromise;
   }
@@ -73,15 +69,11 @@ function restStatusHandler(className) {
   function update(where, object) {
     // TODO: when we have updateWhere, use that for proper interfacing
     lastPromise = lastPromise.then(() => {
-      return Parse._request(
-        'PUT',
-        `classes/${className}/${where.objectId}`,
-        object,
-        { useMasterKey: true }).then((result) => {
-        // merge the objects
-        const response = Object.assign({}, object, result);
-        return Promise.resolve(response);
-      });
+      return rest.update(config, auth, className, { objectId: where.objectId }, object)
+        .then(({ response }) => {
+          // merge the objects
+          return Promise.resolve(Object.assign({}, object, response));
+        });
     });
     return lastPromise;
   }
@@ -149,7 +141,7 @@ export function pushStatusHandler(config, existingObjectId) {
 
   let pushStatus;
   const database = config.database;
-  const handler = restStatusHandler(PUSH_STATUS_COLLECTION);
+  const handler = restStatusHandler(PUSH_STATUS_COLLECTION, config);
   let objectId = existingObjectId;
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
@@ -182,13 +174,13 @@ export function pushStatusHandler(config, existingObjectId) {
       source: options.source,
       title: options.title,
       expiry: body.expiration_time,
+      expiration_interval: body.expiration_interval,
       status: status,
       numSent: 0,
       pushHash,
       // lockdown!
       ACL: {}
     }
-
     return handler.create(object).then((result) => {
       objectId = result.objectId;
       pushStatus = {
@@ -198,10 +190,18 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   }
 
-  const setRunning = function(count) {
-    logger.verbose(`_PushStatus ${objectId}: sending push to %d installations`, count);
-    return handler.update({status:"pending", objectId: objectId},
-      {status: "running", count });
+  const setRunning = function(batches) {
+    logger.verbose(`_PushStatus ${objectId}: sending push to installations with %d batches`, batches);
+    return handler.update(
+      {
+        status:"pending",
+        objectId: objectId
+      },
+      {
+        status: "running",
+        count: batches
+      }
+    );
   }
 
   const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
@@ -235,7 +235,7 @@ export function pushStatusHandler(config, existingObjectId) {
               devicesToRemove.push(token);
             }
             // APNS errors
-            if (error === 'Unregistered') {
+            if (error === 'Unregistered' || error === 'BadDeviceToken') {
               devicesToRemove.push(token);
             }
           }
@@ -243,7 +243,6 @@ export function pushStatusHandler(config, existingObjectId) {
         }
         return memo;
       }, update);
-      incrementOp(update, 'count', -results.length);
     }
 
     logger.verbose(`_PushStatus ${objectId}: sent push! %d success, %d failures`, update.numSent, update.numFailed);
@@ -266,6 +265,9 @@ export function pushStatusHandler(config, existingObjectId) {
         many: true
       });
     }
+
+    // indicate this batch is complete
+    incrementOp(update, 'count', -1);
 
     return handler.update({ objectId }, update).then((res) => {
       if (res && res.count === 0) {

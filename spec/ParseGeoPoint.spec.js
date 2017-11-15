@@ -75,7 +75,6 @@ describe('Parse.GeoPoint testing', () => {
     })
   });
 
-
   it('geo point supports more than one field', (done) => {
     const point1 = new Parse.GeoPoint(44, -11);
     const point2 = new Parse.GeoPoint(24, 19);
@@ -94,6 +93,24 @@ describe('Parse.GeoPoint testing', () => {
       equal(location2.longitude, point2.longitude);
       done();
     }, done.fail);
+  });
+
+  // TODO: This should also have support in postgres, or higher level database agnostic support.
+  it_exclude_dbs(['postgres'])('updating geo point exception two fields', (done) => {
+    var point = new Parse.GeoPoint(20, 20);
+    var obj = new TestObject();
+    obj.set('locationOne', point);
+    obj.save(null, {
+      success: (obj) => {
+        obj.set('locationTwo', point);
+        obj.save().then(() => {
+          fail('expected error');
+        }, (err) => {
+          equal(err.code, Parse.Error.INCORRECT_TYPE);
+          done();
+        })
+      }
+    });
   });
 
   it('geo line', (done) => {

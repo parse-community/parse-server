@@ -132,7 +132,7 @@ var masterKeyHeaders = {
 
 describe('schemas', () => {
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   afterEach(() => {

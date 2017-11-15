@@ -186,7 +186,7 @@ describe('AuthenticationProviders', function() {
             ok(!provider.synchronizedExpiration,
               "Expiration should be cleared");
             // make sure the auth data is properly deleted
-            var config = new Config(Parse.applicationId);
+            var config = Config.get(Parse.applicationId);
             config.database.adapter.find('_User', {
               fields: Object.assign({}, defaultColumns._Default, defaultColumns._Installation),
             }, { objectId: model.id }, {})

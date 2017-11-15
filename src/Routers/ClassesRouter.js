@@ -15,6 +15,10 @@ export class ClassesRouter extends PromiseRouter {
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
+    if (req.config.maxLimit && (body.limit > req.config.maxLimit)) {
+      // Silently replace the limit on the query with the max configured
+      options.limit = Number(req.config.maxLimit);
+    }
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }

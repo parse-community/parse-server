@@ -54,7 +54,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.include = [];
 
   // If we have keys, we probably want to force some includes (n-1 level)
-  // See issue: https://github.com/ParsePlatform/parse-server/issues/3185
+  // See issue: https://github.com/parse-community/parse-server/issues/3185
   if (restOptions.hasOwnProperty('keys')) {
     const keysForInclude = restOptions.keys.split(',').filter((key) => {
       // At least 2 components
@@ -86,6 +86,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'count':
       this.doCount = true;
       break;
+    case 'distinct':
+    case 'pipeline':
     case 'skip':
     case 'limit':
     case 'readPreference':
