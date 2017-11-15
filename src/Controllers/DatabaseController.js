@@ -11,7 +11,7 @@ import intersect              from 'intersect';
 // @flow-disable-next
 import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
-import * as SchemaController  from './SchemaController';
+import * as SchemaController       from './SchemaController';
 import { StorageAdapter }     from '../Adapters/Storage/StorageAdapter';
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -152,6 +152,14 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   return object;
 };
 
+type Options = {
+  acl?: string[]
+}
+
+type LoadSchemaOptions = {
+  clearCache: boolean
+}
+
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
 // modifications that don't know their results ahead of time, like
@@ -285,7 +293,7 @@ const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { ty
 class DatabaseController {
   adapter: StorageAdapter;
   schemaCache: any;
-  schemaPromise: ?Promise<any>;
+  schemaPromise: ?Promise<SchemaController.SchemaController>;
 
   constructor(adapter: StorageAdapter, schemaCache: any) {
     this.adapter = adapter;
@@ -314,7 +322,7 @@ class DatabaseController {
   }
 
   // Returns a promise for a schemaController.
-  loadSchema(options : any = {clearCache: false}): Promise<any> {
+  loadSchema(options: LoadSchemaOptions = {clearCache: false}): Promise<SchemaController.SchemaController> {
     if (this.schemaPromise != null) {
       return this.schemaPromise;
     }
@@ -327,14 +335,13 @@ class DatabaseController {
   // Returns a promise for the classname that is related to the given
   // classname through the key.
   // TODO: make this not in the DatabaseController interface
-  redirectClassNameForKey(className: string, key: string): Promise<string> {
+  redirectClassNameForKey(className: string, key: string): Promise<?string> {
     return this.loadSchema().then((schema) => {
-      var t = schema.getExpectedType(className, key);
-      if (t && t.type == 'Relation') {
+      var t  = schema.getExpectedType(className, key);
+      if (t != null && typeof t !== 'string' && t.type === 'Relation') {
         return t.targetClass;
-      } else {
-        return className;
       }
+      return className;
     });
   }
 
@@ -342,10 +349,10 @@ class DatabaseController {
   // Returns a promise that resolves to the new schema.
   // This does not update this.schema, because in a situation like a
   // batch request, that could confuse other users of the schema.
-  validateObject(className: string, object: any, query: any, { acl }: any): Promise<boolean> {
+  validateObject(className: string, object: any, query: any, { acl }: Options): Promise<boolean> {
     let schema;
     const isMaster = acl === undefined;
-    var aclGroup = acl || [];
+    var aclGroup: string[]  = acl || [];
     return this.loadSchema().then(s => {
       schema = s;
       if (isMaster) {
@@ -537,7 +544,7 @@ class DatabaseController {
   //   acl:  a list of strings. If the object to be updated has an ACL,
   //         one of the provided strings must provide the caller with
   //         write permissions.
-  destroy(className: string, query: any, { acl }: any = {}): Promise<any> {
+  destroy(className: string, query: any, { acl }: Options = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
 
@@ -579,7 +586,7 @@ class DatabaseController {
 
   // Inserts an object into the database.
   // Returns a promise that resolves successfully iff the object saved.
-  create(className: string, object: any, { acl }: any = {}): Promise<any> {
+  create(className: string, object: any, { acl }: Options = {}): Promise<any> {
   // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
     object = transformObjectACL(object);
@@ -610,7 +617,7 @@ class DatabaseController {
       })
   }
 
-  canAddField(schema: any, className: string, object: any, aclGroup: string[]): Promise<void> {
+  canAddField(schema: SchemaController.SchemaController, className: string, object: any, aclGroup: string[]): Promise<void> {
     const classSchema = schema.data[className];
     if (!classSchema) {
       return Promise.resolve();
@@ -843,7 +850,7 @@ class DatabaseController {
     distinct,
     pipeline,
     readPreference
-  }: any = {}): Promise<[any]> {
+  }: any = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
     op = op || (typeof query.objectId == 'string' && Object.keys(query).length === 1 ? 'get' : 'find');
@@ -938,7 +945,7 @@ class DatabaseController {
   }
 
   deleteSchema(className: string): Promise<void> {
-    return this.loadSchema(true)
+    return this.loadSchema({ clearCache: true })
       .then(schemaController => schemaController.getOneSchema(className, true))
       .catch(error => {
         if (error === undefined) {

@@ -34,7 +34,7 @@ export interface StorageAdapter {
 
   // Indexing
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void>;
-  createIndexesIfNeeded(className: string, fieldName: string, type: any, conn: ?any): Promise<void>;
   getIndexes(className: string, connection: ?any): Promise<void>;
   updateSchemaWithIndexes(): Promise<void>;
+  setIndexesWithSchemaFormat(className: string, submittedIndexes: any, existingIndexes: any, fields: any, conn: ?any): Promise<void>;
 }

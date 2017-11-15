@@ -1,4 +1,5 @@
 // @flow
+// @flow-disable-next
 import deepcopy               from 'deepcopy';
 import AdaptableController    from '../Controllers/AdaptableController';
 import { master }             from '../Auth';
