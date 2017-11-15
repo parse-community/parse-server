@@ -13,6 +13,7 @@ var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
+import logger    from './logger';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -24,6 +25,9 @@ import _         from 'lodash';
 // everything. It also knows to use triggers and special modifications
 // for the _User class.
 function RestWrite(config, auth, className, query, data, originalData, clientSDK) {
+  if (auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot perform a write operation when using readOnlyMasterKey');
+  }
   this.config = config;
   this.auth = auth;
   this.className = className;
@@ -77,6 +81,8 @@ RestWrite.prototype.execute = function() {
     return this.transformUser();
   }).then(() => {
     return this.expandFilesForExistingObjects();
+  }).then(() => {
+    return this.destroyDuplicatedSessions();
   }).then(() => {
     return this.runDatabaseOperation();
   }).then(() => {
@@ -584,17 +590,31 @@ RestWrite.prototype.createSessionToken = function() {
     this.response.response.sessionToken = token;
   }
 
-  // Destroy the sessions in 'Background'
-  this.config.database.destroy('_Session', {
-    user: {
-      __type: 'Pointer',
-      className: '_User',
-      objectId: this.objectId()
-    },
-    installationId: this.auth.installationId,
-    sessionToken: { '$ne': token },
-  });
   return new RestWrite(this.config, Auth.master(this.config), '_Session', null, sessionData).execute();
+}
+
+RestWrite.prototype.destroyDuplicatedSessions = function() {
+  // Only for _Session, and at creation time
+  if (this.className != '_Session' || this.query) {
+    return;
+  }
+  // Destroy the sessions in 'Background'
+  const {
+    user,
+    installationId,
+    sessionToken,
+  } = this.data;
+  if (!user || !installationId)  {
+    return;
+  }
+  if (!user.objectId) {
+    return;
+  }
+  this.config.database.destroy('_Session', {
+    user,
+    installationId,
+    sessionToken: { '$ne': sessionToken },
+  });
 }
 
 // Handles any followup logic
@@ -1121,7 +1141,10 @@ RestWrite.prototype.runAfterTrigger = function() {
   this.config.liveQueryController.onAfterSave(updatedObject.className, updatedObject, originalObject);
 
   // Run afterSave trigger
-  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config);
+  return triggers.maybeRunTrigger(triggers.Types.afterSave, this.auth, updatedObject, originalObject, this.config)
+    .catch(function(err) {
+      logger.warn('afterSave caught an error', err);
+    })
 };
 
 // A helper to figure out what location this operation happens at.
@@ -1195,9 +1218,10 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   const clientSupportsDelete = ClientSDK.supportsForwardDelete(this.clientSDK);
   this.storage.fieldsChangedByTrigger.forEach(fieldName => {
     const dataValue = data[fieldName];
-    const responseValue = response[fieldName];
 
-    response[fieldName] = responseValue || dataValue;
+    if(!response.hasOwnProperty(fieldName)) {
+      response[fieldName] = dataValue;
+    }
 
     // Strips operations from responses
     if (response[fieldName] && response[fieldName].__op) {

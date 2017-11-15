@@ -35,7 +35,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     );
   });
 
-  // https://github.com/ParsePlatform/parse-server/pull/148#issuecomment-180407057
+  // https://github.com/parse-community/parse-server/pull/148#issuecomment-180407057
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({

@@ -7,13 +7,27 @@ import { applyDeviceTokenExists } from '../Push/utils';
 
 export class PushController {
 
-  sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}) {
+  sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}, now = new Date()) {
     if (!config.hasPushSupport) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
         'Missing push configuration');
     }
+
     // Replace the expiration_time and push_time with a valid Unix epoch milliseconds time
     body.expiration_time = PushController.getExpirationTime(body);
+    body.expiration_interval = PushController.getExpirationInterval(body);
+    if (body.expiration_time && body.expiration_interval) {
+      throw new Parse.Error(
+        Parse.Error.PUSH_MISCONFIGURED,
+        'Both expiration_time and expiration_interval cannot be set');
+    }
+
+    // Immediate push
+    if (body.expiration_interval && !body.hasOwnProperty('push_time')) {
+      const ttlMs = body.expiration_interval * 1000;
+      body.expiration_time = (new Date(now.valueOf() + ttlMs)).valueOf();
+    }
+
     const pushTime = PushController.getPushTime(body);
     if (pushTime && pushTime.date !== 'undefined') {
       body['push_time'] = PushController.formatPushTime(pushTime);
@@ -106,6 +120,20 @@ export class PushController {
         body['expiration_time'] + ' is not valid time.');
     }
     return expirationTime.valueOf();
+  }
+
+  static getExpirationInterval(body = {}) {
+    const hasExpirationInterval = body.hasOwnProperty('expiration_interval');
+    if (!hasExpirationInterval) {
+      return;
+    }
+
+    var expirationIntervalParam = body['expiration_interval'];
+    if (typeof expirationIntervalParam !== 'number' || expirationIntervalParam <= 0) {
+      throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED,
+        `expiration_interval must be a number greater than 0`);
+    }
+    return expirationIntervalParam;
   }
 
   /**

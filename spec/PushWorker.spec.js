@@ -16,7 +16,7 @@ describe('PushWorker', () => {
         }
       }
     }).then(() => {
-      expect(new Config('test').pushWorker).toBeUndefined();
+      expect(Config.get('test').pushWorker).toBeUndefined();
       new PushWorker({
         send: (body, installations) => {
           expect(installations.length <= batchSize).toBe(true);
@@ -161,7 +161,7 @@ describe('PushWorker', () => {
 
   describe('pushStatus', () => {
     it('should remove invalid installations', (done) => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(config.database, "update").and.callFake(() => {
         return Promise.resolve();
@@ -244,7 +244,7 @@ describe('PushWorker', () => {
     });
 
     it('tracks push status per UTC offsets', (done) => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = 1;
@@ -276,7 +276,7 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 },
+          count: { __op: 'Increment', amount: -1 }
         });
         const query = new Parse.Query('_PushStatus');
         return query.get(handler.objectId, { useMasterKey: true });
@@ -320,7 +320,7 @@ describe('PushWorker', () => {
     });
 
     it('tracks push status per UTC offsets with negative offsets', (done) => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = -6;
@@ -354,7 +354,7 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 },
+          count: { __op: 'Increment', amount: -1 }
         });
         done();
       });

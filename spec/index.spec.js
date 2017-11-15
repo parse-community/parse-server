@@ -166,7 +166,7 @@ describe('server', () => {
 
   it('can properly sets the push support', done => {
     // default config passes push options
-    const config = new Config('test');
+    const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
     expect(config.hasPushScheduledSupport).toEqual(false);
     request.get({
@@ -187,7 +187,7 @@ describe('server', () => {
     reconfigureServer({
       push: undefined // force no config
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(false);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -214,7 +214,7 @@ describe('server', () => {
         }
       }
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -242,7 +242,7 @@ describe('server', () => {
       },
       scheduledPush: true,
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(true);
       request.get({
@@ -360,7 +360,7 @@ describe('server', () => {
   it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1');
+        var config = Config.get('test', 'http://localhost:8378/1');
         expect(config.mount).toEqual('https://myserver.com/1');
         done();
       });
@@ -369,7 +369,7 @@ describe('server', () => {
   it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1/');
+        var config = Config.get('test', 'http://localhost:8378/1/');
         expect(config.mount).toEqual('http://localhost:8378/1');
         done();
       });
@@ -385,6 +385,7 @@ describe('server', () => {
 
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a valid number.');
         done();
@@ -393,6 +394,7 @@ describe('server', () => {
 
   it('fails if the session length is less than or equal to 0', done => {
     reconfigureServer({ sessionLength: '-33' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a value greater than 0.');
         return reconfigureServer({ sessionLength: '0' })
@@ -441,4 +443,33 @@ describe('server', () => {
       .then(done)
   });
 
+  it('should load a middleware', (done) => {
+    const obj = {
+      middleware: function(req, res, next) {
+        next();
+      }
+    }
+    const spy = spyOn(obj, 'middleware').and.callThrough();
+    reconfigureServer({
+      middleware: obj.middleware
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      return query.find();
+    }).then(() => {
+      expect(spy).toHaveBeenCalled();
+      done();
+    }).catch(done.fail);
+  });
+
+  it('should load a middleware from string', (done) => {
+    reconfigureServer({
+      middleware: 'spec/support/CustomMiddleware'
+    }).then(() => {
+      return request.get('http://localhost:8378/1', (err, res) => {
+        // Just check that the middleware set the header
+        expect(res.headers['x-yolo']).toBe('1');
+        done();
+      });
+    }).catch(done.fail);
+  });
 });

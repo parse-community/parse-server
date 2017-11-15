@@ -72,22 +72,23 @@ const defaultColumns = Object.freeze({
     "subtitle":           {type:'String'},
   },
   _PushStatus: {
-    "pushTime":           {type:'String'},
-    "source":             {type:'String'}, // rest or webui
-    "query":              {type:'String'}, // the stringified JSON query
-    "payload":            {type:'String'}, // the stringified JSON payload,
-    "title":              {type:'String'},
-    "expiry":             {type:'Number'},
-    "status":             {type:'String'},
-    "numSent":            {type:'Number'},
-    "numFailed":          {type:'Number'},
-    "pushHash":           {type:'String'},
-    "errorMessage":       {type:'Object'},
-    "sentPerType":        {type:'Object'},
-    "failedPerType":      {type:'Object'},
-    "sentPerUTCOffset":   {type:'Object'},
-    "failedPerUTCOffset": {type:'Object'},
-    "count":              {type:'Number'}
+    "pushTime":            {type:'String'},
+    "source":              {type:'String'}, // rest or webui
+    "query":               {type:'String'}, // the stringified JSON query
+    "payload":             {type:'String'}, // the stringified JSON payload,
+    "title":               {type:'String'},
+    "expiry":              {type:'Number'},
+    "expiration_interval": {type:'Number'},
+    "status":              {type:'String'},
+    "numSent":             {type:'Number'},
+    "numFailed":           {type:'Number'},
+    "pushHash":            {type:'String'},
+    "errorMessage":        {type:'Object'},
+    "sentPerType":         {type:'Object'},
+    "failedPerType":       {type:'Object'},
+    "sentPerUTCOffset":    {type:'Object'},
+    "failedPerUTCOffset":  {type:'Object'},
+    "count":               {type:'Number'} // tracks # of batches queued and pending
   },
   _JobStatus: {
     "jobName":    {type: 'String'},

@@ -11,7 +11,7 @@ describe_only_db('mongo')("GridStoreAdapter",() =>{
   it("should properly instanciate the GridStore when deleting a file", (done) => {
 
     var databaseURI = 'mongodb://localhost:27017/parse';
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var gridStoreAdapter = new GridStoreAdapter(databaseURI);
     var filesController = new FilesController(gridStoreAdapter);
 

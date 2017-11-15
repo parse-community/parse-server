@@ -48,7 +48,7 @@ export class PushWorker {
   }
 
   run({ body, query, pushStatus, applicationId, UTCOffset }: any): Promise<*> {
-    const config = new Config(applicationId);
+    const config = Config.get(applicationId);
     const auth = master(config);
     const where = utils.applyDeviceTokenExists(query.where);
     delete query.where;
