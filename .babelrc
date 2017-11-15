@@ -1,13 +1,12 @@
 {
     "plugins": [
-        "transform-flow-strip-types"
+        "transform-flow-strip-types",
+        "transform-object-rest-spread"
     ],
     "presets": [
-        "es2015",
-        "stage-3",
         ["env", {
             "targets": {
-                "node": "4.6"
+                "node": "6.11.4"
             }
         }]
     ]
