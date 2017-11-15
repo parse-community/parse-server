@@ -668,6 +668,31 @@ describe('Parse.File testing', () => {
     });
   });
 
+  it("responses with configured Cache-Control header", done => {
+    var headers = {
+      'Content-Type': 'text/html',
+      'X-Parse-Application-Id': 'test',
+      'X-Parse-REST-API-Key': 'rest'
+    };
+    request.post({
+      headers: headers,
+      url: 'http://localhost:8378/1/files/cache_control_1.txt',
+      body: 'cache_control_1',
+    }, (error, response, body) => {
+      expect(error).toBe(null);
+      var b = JSON.parse(body);
+      request.get({ url: b.url, headers: {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+      } }, (error, response, body) => {
+        expect(error).toBe(null);
+        expect(response.headers['cache-control']).toEqual('public, max-age=86400');
+        done();
+      });
+    })
+  });
+
   describe_only_db('mongo')('Gridstore Range tests', () => {
     it('supports range requests', done => {
       var headers = {
@@ -848,6 +873,32 @@ describe('Parse.File testing', () => {
         expect(response.statusCode).toBe(404);
         expect(body).toEqual('File not found.');
         done();
+      });
+    });
+
+    it('supports responses with Cache-Control header for range requests', done => {
+      var headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest'
+      };
+      request.post({
+        headers: headers,
+        url: 'http://localhost:8378/1/files/cache_control_2.txt',
+        body: 'cache_control_2',
+      }, (error, response, body) => {
+        expect(error).toBe(null);
+        var b = JSON.parse(body);
+        request.get({ url: b.url, headers: {
+          'Content-Type': 'application/octet-stream',
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'Range': 'bytes=0-5'
+        } }, (error, response, body) => {
+          expect(error).toBe(null);
+          expect(response.headers['cache-control']).toEqual('public, max-age=86400');
+          done();
+        });
       });
     });
   });

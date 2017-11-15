@@ -135,6 +135,10 @@ module.exports.ParseServerOptions = {
     "env": "PARSE_SERVER_FILE_KEY",
     "help": "Key for your files"
   },
+  "filesCacheControl": {
+    "env": "PARSE_SERVER_FILES_CACHE_CONTROL",
+    "help": "Cache-Control header for files router"
+  },
   "userSensitiveFields": {
     "env": "PARSE_SERVER_USER_SENSITIVE_FIELDS",
     "help": "Personally identifiable information fields in the user table the should be removed for non-authorized users.",
