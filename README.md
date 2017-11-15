@@ -7,7 +7,7 @@
 
 [![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
 
-Parse Server is an [open source version of the Parse backend](http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
+Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
@@ -16,7 +16,7 @@ Parse Server works with the Express web application framework. It can be added t
 [![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
 
 
-April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
+April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/](http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/)
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
