@@ -685,7 +685,7 @@ describe('Parse.File testing', () => {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
-      } }, (error, response, body) => {
+      } }, (error, response) => {
         expect(error).toBe(null);
         expect(response.headers['cache-control']).toEqual('public, max-age=86400');
         done();
@@ -894,7 +894,7 @@ describe('Parse.File testing', () => {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest',
           'Range': 'bytes=0-5'
-        } }, (error, response, body) => {
+        } }, (error, response) => {
           expect(error).toBe(null);
           expect(response.headers['cache-control']).toEqual('public, max-age=86400');
           done();
