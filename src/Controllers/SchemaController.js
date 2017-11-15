@@ -14,36 +14,17 @@
 // DatabaseController. This will let us replace the schema logic for
 // different databases.
 // TODO: hide all schema logic inside the database adapter.
-type SchemaField = {
-  type: string;
-  targetClass?: ?string;
-}
-
-type SchemaFields = { [string]: SchemaField }
-
-type Schema = {
-  className: string,
-  fields: SchemaFields,
-  classLevelPermissions: ClassLevelPermissions,
-  indexes?: ?any
-};
-
-type ClassLevelPermissions = {
-  find?: {[string]: boolean};
-  count?: {[string]: boolean};
-  get?: {[string]: boolean};
-  create?: {[string]: boolean};
-  update?: {[string]: boolean};
-  delete?: {[string]: boolean};
-  addField?: {[string]: boolean};
-  readUserFields?: string[];
-  writeUserFields?: string[];
-};
-
 // @flow-disable-next
 const Parse = require('parse/node').Parse;
 import { StorageAdapter }     from '../Adapters/Storage/StorageAdapter';
 import DatabaseController     from './DatabaseController';
+import type {
+  Schema,
+  SchemaFields,
+  ClassLevelPermissions,
+  SchemaField,
+  LoadSchemaOptions,
+} from './types';
 
 const defaultColumns: {[string]: SchemaFields} = Object.freeze({
   // Contain the default columns for every parse object type (except _Join collection)
@@ -410,7 +391,7 @@ export default class SchemaController {
     this.indexes = {};
   }
 
-  reloadData(options: any = {clearCache: false}): Promise<any> {
+  reloadData(options: LoadSchemaOptions = {clearCache: false}): Promise<any> {
     let promise = Promise.resolve();
     if (options.clearCache) {
       promise = promise.then(() => {
@@ -453,7 +434,7 @@ export default class SchemaController {
     return this.reloadDataPromise;
   }
 
-  getAllClasses(options: any = {clearCache: false}): Promise<Array<Schema>> {
+  getAllClasses(options: LoadSchemaOptions = {clearCache: false}): Promise<Array<Schema>> {
     let promise = Promise.resolve();
     if (options.clearCache) {
       promise = this._cache.clear();
@@ -474,7 +455,7 @@ export default class SchemaController {
     });
   }
 
-  getOneSchema(className: string, allowVolatileClasses: boolean = false, options: any = {clearCache: false}): Promise<Schema> {
+  getOneSchema(className: string, allowVolatileClasses: boolean = false, options: LoadSchemaOptions = {clearCache: false}): Promise<Schema> {
     let promise = Promise.resolve();
     if (options.clearCache) {
       promise = this._cache.clear();

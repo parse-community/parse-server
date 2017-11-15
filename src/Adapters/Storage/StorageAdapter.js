@@ -2,13 +2,26 @@
 export type SchemaType = any;
 export type StorageClass = any;
 export type QueryType = any;
-export type QueryOptionsType = {
-  skip?: ?number;
-  limit?: ?number;
-  sort?: ?any;
-  keys?: ?string[];
-  readPreference?: ?string;
+
+export type QueryOptions = {
+  skip?: number,
+  limit?: number,
+  acl?: string[],
+  sort?: {[string]: number},
+  count?: boolean | number,
+  keys?: string[],
+  op?: string,
+  distinct?: boolean,
+  pipeline?: any,
+  readPreference?: ?string,
 };
+
+export type UpdateQueryOptions = {
+  many?: boolean,
+  upsert?: boolean
+}
+
+export type FullQueryOptions = QueryOptions & UpdateQueryOptions;
 
 export interface StorageAdapter {
   classExists(className: string): Promise<boolean>;
@@ -25,7 +38,7 @@ export interface StorageAdapter {
   updateObjectsByQuery(className: string, schema: SchemaType, query: QueryType, update: any): Promise<[any]>;
   findOneAndUpdate(className: string, schema: SchemaType, query: QueryType, update: any): Promise<any>;
   upsertOneObject(className: string, schema: SchemaType, query: QueryType, update: any): Promise<any>;
-  find(className: string, schema: SchemaType, query: QueryType, options: QueryOptionsType): Promise<[any]>;
+  find(className: string, schema: SchemaType, query: QueryType, options: QueryOptions): Promise<[any]>;
   ensureUniqueness(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
   count(className: string, schema: SchemaType, query: QueryType, readPreference: ?string): Promise<number>;
   distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string): Promise<any>;

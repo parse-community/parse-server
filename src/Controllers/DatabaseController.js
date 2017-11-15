@@ -13,6 +13,9 @@ import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
 import * as SchemaController       from './SchemaController';
 import { StorageAdapter }     from '../Adapters/Storage/StorageAdapter';
+import type { QueryOptions,
+  FullQueryOptions }          from '../Adapters/Storage/StorageAdapter';
+
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
   //Can't be any existing '_wperm' query, we don't allow client queries on that, no need to $and
@@ -152,13 +155,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   return object;
 };
 
-type Options = {
-  acl?: string[]
-}
-
-type LoadSchemaOptions = {
-  clearCache: boolean
-}
+import type { LoadSchemaOptions } from './types';
 
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
@@ -349,7 +346,7 @@ class DatabaseController {
   // Returns a promise that resolves to the new schema.
   // This does not update this.schema, because in a situation like a
   // batch request, that could confuse other users of the schema.
-  validateObject(className: string, object: any, query: any, { acl }: Options): Promise<boolean> {
+  validateObject(className: string, object: any, query: any, { acl }: QueryOptions): Promise<boolean> {
     let schema;
     const isMaster = acl === undefined;
     var aclGroup: string[]  = acl || [];
@@ -368,7 +365,7 @@ class DatabaseController {
     acl,
     many,
     upsert,
-  }: any = {}, skipSanitization: boolean = false): Promise<any> {
+  }: FullQueryOptions = {}, skipSanitization: boolean = false): Promise<any> {
     const originalQuery = query;
     const originalUpdate = update;
     // Make a copy of the object, so we don't mutate the incoming data.
@@ -544,7 +541,7 @@ class DatabaseController {
   //   acl:  a list of strings. If the object to be updated has an ACL,
   //         one of the provided strings must provide the caller with
   //         write permissions.
-  destroy(className: string, query: any, { acl }: Options = {}): Promise<any> {
+  destroy(className: string, query: any, { acl }: QueryOptions = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
 
@@ -586,7 +583,7 @@ class DatabaseController {
 
   // Inserts an object into the database.
   // Returns a promise that resolves successfully iff the object saved.
-  create(className: string, object: any, { acl }: Options = {}): Promise<any> {
+  create(className: string, object: any, { acl }: QueryOptions = {}): Promise<any> {
   // Make a copy of the object, so we don't mutate the incoming data.
     const originalObject = object;
     object = transformObjectACL(object);
@@ -646,7 +643,7 @@ class DatabaseController {
 
   // Returns a promise for a list of related ids given an owning id.
   // className here is the owning className.
-  relatedIds(className: string, key: string, owningId: string, queryOptions: any): Promise<Array<string>> {
+  relatedIds(className: string, key: string, owningId: string, queryOptions: QueryOptions): Promise<Array<string>> {
     const { skip, limit, sort } = queryOptions;
     const findOptions = {};
     if (sort && sort.createdAt && this.adapter.canSortOnJoinTables) {

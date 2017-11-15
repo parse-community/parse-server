@@ -4,7 +4,7 @@ import MongoSchemaCollection from './MongoSchemaCollection';
 import { StorageAdapter }    from '../StorageAdapter';
 import type { SchemaType,
   QueryType,
-  QueryOptionsType } from '../StorageAdapter';
+  QueryOptions } from '../StorageAdapter';
 import {
   parse as parseUrl,
   format as formatUrl,
@@ -437,7 +437,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
-  find(className: string, schema: SchemaType, query: QueryType, { skip, limit, sort, keys, readPreference }: QueryOptionsType): Promise<any> {
+  find(className: string, schema: SchemaType, query: QueryType, { skip, limit, sort, keys, readPreference }: QueryOptions): Promise<any> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoWhere = transformWhere(className, query, schema);
     const mongoSort = _.mapKeys(sort, (value, fieldName) => transformKey(className, fieldName, schema));
