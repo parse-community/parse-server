@@ -2317,4 +2317,29 @@ describe('schemas', () => {
       });
     });
   });
+
+  it_exclude_dbs(['postgres'])('get compound indexes on startup', (done) => {
+    const obj = new Parse.Object('TestObject');
+    obj.set('subject', 'subject');
+    obj.set('comment', 'comment');
+    obj.save().then(() => {
+      return config.database.adapter.createIndex('TestObject', {subject: 'text', comment: 'text'});
+    }).then(() => {
+      return reconfigureServer({
+        appId: 'test',
+        restAPIKey: 'test',
+        publicServerURL: 'http://localhost:8378/1',
+      });
+    }).then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes.subject_text_comment_text).toBeDefined();
+        done();
+      });
+    });
+  });
 });
