@@ -11,6 +11,32 @@ Parse Server is an [open source version of the Parse backend](http://blog.parsep
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
+- [Getting Started](#getting-started)
+    - [Running Parse Server](#running-parse-server)
+        - [Locally](#locally)
+        - [Docker](#inside-a-docker-container)
+        - [Saving an Object](#saving-your-first-object)
+        - [Connect an SDK](#connect-your-app-to-parse-server)
+    - [Running elsewhere](#running-parse-server-elsewhere)
+        - [Sample Application](#parse-server-sample-application)
+        - [Parse Server + Express](#parse-server--express)
+    - [Logging](#logging)
+- [Documentation](#documentation)
+    - [Configuration](#configuration)
+        - [Basic Options](#basic-options)
+        - [Client Key Options](#client-key-options)
+        - [Advanced Options](#advanced-options)
+            - [Logging](#logging-1)
+            - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
+        - [Available Adapters](#available-adapters)
+        - [Configuring File Adapters](#configuring-file-adapters)
+- [Support](#support)
+- [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
+- [Contributing](#contributing)
+- [Backers](#backers)
+- [Sponsors](#sponsors)
+
 # Getting Started
 
 [![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
