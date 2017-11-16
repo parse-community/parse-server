@@ -116,7 +116,7 @@ export interface ParseServerOptions {
   enableSingleSchemaCache: ?boolean; // = false
   /* Sets the number of characters in generated object id's, default 10 */
   objectIdSize: ?number; // = 10
-  /* The port to run the ParseServer. defaults to 1337. 
+  /* The port to run the ParseServer. defaults to 1337.
   :ENV: PORT */
   port: ?number; // = 1337
   /* The host to serve ParseServer on. defaults to 0.0.0.0 */
