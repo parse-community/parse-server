@@ -474,7 +474,7 @@ describe('ParseLiveQueryServer', function() {
     // Trigger disconnect event
     parseWebSocket.emit('disconnect');
     expect(spy).toHaveBeenCalled();
-    // call for ws_connect, another for ws_disconnect 
+    // call for ws_connect, another for ws_disconnect
     expect(spy.calls.count()).toBe(2);
   });
 

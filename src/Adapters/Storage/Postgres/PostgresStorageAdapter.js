@@ -574,6 +574,15 @@ export class PostgresStorageAdapter {
     this._pgp = pgp;
   }
 
+  handleShutdown() {
+    if (!this._pgp) {
+      return;
+    }
+    // For immediate app exit, shutting down all connection pools
+    // See API: http://vitaly-t.github.io/pg-promise/module-pg-promise.html#~end
+    this._pgp.end();
+  }
+
   _ensureSchemaCollectionExists(conn) {
     conn = conn || this._client;
     return conn.none('CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
