@@ -434,6 +434,7 @@ describe('Parse.Query Aggregate testing', () => {
       expect(resp.results.length).toBe(1);
       const result = resp.results[0];
 
+      // verify server-side keys are not present...
       expect(result._hashed_password).toBe(undefined);
       expect(result._wperm).toBe(undefined);
       expect(result._rperm).toBe(undefined);
@@ -441,6 +442,9 @@ describe('Parse.Query Aggregate testing', () => {
       expect(result._created_at).toBe(undefined);
       expect(result._updated_at).toBe(undefined);
 
+      // verify createdAt, updatedAt and others are present
+      expect(result.createdAt).not.toBe(undefined);
+      expect(result.updatedAt).not.toBe(undefined);
       expect(result.objectId).not.toBe(undefined);
       expect(result.username).toBe(username);
       expect(result.score).toBe(score);
