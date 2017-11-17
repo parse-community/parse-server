@@ -116,32 +116,45 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var server;
+var parseServer;
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
-    if (server) {
-      return server.close(() => {
-        server = undefined;
+    if (parseServer) {
+      return parseServer.server.close(() => {
+        parseServer.handleShutdown();
+        parseServer = undefined;
         reconfigureServer(changedConfiguration).then(resolve, reject);
       });
     }
     try {
+      databaseAdapter.handleShutdown();
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
         __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject),
         mountPath: '/1',
         port,
       });
+      if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+        databaseAdapter = new PostgresStorageAdapter({
+          uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+          collectionPrefix: 'test_',
+        });
+      } else {
+        databaseAdapter = new MongoStorageAdapter({
+          uri: mongoURI,
+          collectionPrefix: 'test_',
+        });
+      }
+      newConfiguration.databaseAdapter = databaseAdapter
       cache.clear();
-      const parseServer = ParseServer.start(newConfiguration);
+      parseServer = ParseServer.start(newConfiguration);
       parseServer.app.use(require('./testing-routes').router);
       parseServer.expressApp.use('/1', (err) => {
         console.error(err);
         fail('should not call next');
       });
-      server = parseServer.server;
-      server.on('connection', connection => {
+      parseServer.server.on('connection', connection => {
         const key = `${connection.remoteAddress}:${connection.remotePort}`;
         openConnections[key] = connection;
         connection.on('close', () => { delete openConnections[key] });
