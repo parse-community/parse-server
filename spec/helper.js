@@ -122,8 +122,8 @@ var server;
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
     if (server) {
+      server.handleShutdown()
       return server.server.close(() => {
-        server.handleShutdown()
         server = undefined;
         reconfigureServer(changedConfiguration).then(resolve, reject);
       });
