@@ -294,7 +294,7 @@ var server = ParseServer({
   appName: 'Parse App',
   // The email adapter
   emailAdapter: {
-    module: 'parse-server-simple-mailgun-adapter',
+    module: '@parse/simple-mailgun-adapter',
     options: {
       // The address that your emails come from
       fromAddress: 'parse@example.com',
@@ -360,7 +360,12 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 For the full list of configurable environment variables, run `parse-server --help`.
 
 ### Available Adapters
-[Parse Server Modules (Adapters)](https://github.com/parse-server-modules)
+
+All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
+
+Some well maintained adapters are also available on the [Parse Server Modules](https://github.com/parse-server-modules) organization.
+
+You can also find more adapters maintained by the community by searching on [npm](https://www.npmjs.com/search?q=parse-server%20adapter&page=1&ranking=optimal).
 
 ### Configuring File Adapters
 
