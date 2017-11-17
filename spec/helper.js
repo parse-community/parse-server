@@ -122,7 +122,11 @@ var server;
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
     if (server) {
-      server.handleShutdown()
+      // expect throw error, need handle it.
+      // http://vitaly-t.github.io/pg-promise/module-pg-promise.html#%7Eend
+      try {
+        server.handleShutdown()
+      } catch (err) { }
       return server.server.close(() => {
         server = undefined;
         reconfigureServer(changedConfiguration).then(resolve, reject);
