@@ -33,4 +33,16 @@ describe('Server Url Checks', () => {
       done();
     });
   });
+
+  it('handleShutdown', (done) => {
+    const parseServer = ParseServer.start(defaultConfiguration)
+
+    parseServer.handleShutdown();
+    parseServer.server.close((err) => {
+      if (err) {
+        done.fail('Close server err');
+      }
+      done();
+    })
+  })
 });
