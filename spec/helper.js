@@ -122,7 +122,8 @@ var server;
 const reconfigureServer = changedConfiguration => {
   return new Promise((resolve, reject) => {
     if (server) {
-      return server.close(() => {
+      return server.server.close(() => {
+        server.handleShutdown()
         server = undefined;
         reconfigureServer(changedConfiguration).then(resolve, reject);
       });
@@ -140,8 +141,8 @@ const reconfigureServer = changedConfiguration => {
         console.error(err);
         fail('should not call next');
       });
-      server = parseServer.server;
-      server.on('connection', connection => {
+      server = parseServer;
+      server.server.on('connection', connection => {
         const key = `${connection.remoteAddress}:${connection.remotePort}`;
         openConnections[key] = connection;
         connection.on('close', () => { delete openConnections[key] });
