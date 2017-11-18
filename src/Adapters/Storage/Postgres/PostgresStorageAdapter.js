@@ -575,10 +575,10 @@ export class PostgresStorageAdapter {
   }
 
   handleShutdown() {
-    if (!this._pgp) {
+    if (!this._client) {
       return
     }
-    this._pgp.end();
+    this._client.$pool.end();
   }
 
   _ensureSchemaCollectionExists(conn) {
