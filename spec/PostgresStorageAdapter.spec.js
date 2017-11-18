@@ -6,27 +6,17 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const adapter = new PostgresStorageAdapter({ uri: databaseURI })
       .deleteAllClasses()
       .then(() => {
-        adapter._pgp.end();
+        adapter.handleShutdown();
       }, fail)
       .catch(done);
   });
 
   it('handleShutdown, close connection', (done) => {
     const adapter = new PostgresStorageAdapter({ uri: databaseURI });
-    const schema = {
-      fields: {
-        array: { type: 'Array' },
-        object: { type: 'Object' },
-        date: { type: 'Date' },
-      }
-    };
 
+    expect(adapter._client.$pool.ending).toEqual(false);
     adapter.handleShutdown();
-    adapter.createObject('MyClass', schema, {}).then(() => {
-      done.fail('Should be error, becase connection is expected to destroy.');
-    }).catch(err => {
-      expect(err.message).toEqual('Connection pool of the database object has been destroyed.')
-      done();
-    })
+    expect(adapter._client.$pool.ending).toEqual(true);
+    done();
   });
 });
