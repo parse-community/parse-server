@@ -52,10 +52,16 @@ describe('Server Url Checks', () => {
       });
     }
     const newConfiguration = Object.assign({}, defaultConfiguration, { databaseAdapter });
-
     const parseServer = ParseServer.start(newConfiguration, () => {
       parseServer.handleShutdown();
-      done();
+      parseServer.server.close((err) => {
+        if (err) {
+          done.fail('Close Server Error')
+        }
+        reconfigureServer({}).then(() => {
+          done();
+        });
+      });
     });
   });
 });
