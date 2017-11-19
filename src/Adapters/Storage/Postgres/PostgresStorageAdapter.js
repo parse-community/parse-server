@@ -2,6 +2,7 @@ import { createClient } from './PostgresClient';
 import Parse            from 'parse/node';
 import _                from 'lodash';
 import sql              from './sql';
+import StorageUtils from '../StorageUtils';
 
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
@@ -67,25 +68,6 @@ const transformValue = value => {
   return value;
 }
 
-// Duplicate from then mongo adapter...
-const emptyCLPS = Object.freeze({
-  find: {},
-  get: {},
-  create: {},
-  update: {},
-  delete: {},
-  addField: {},
-});
-
-const defaultCLPS = Object.freeze({
-  find: {'*': true},
-  get: {'*': true},
-  create: {'*': true},
-  update: {'*': true},
-  delete: {'*': true},
-  addField: {'*': true},
-});
-
 const toParseSchema = (schema) => {
   if (schema.className === '_User') {
     delete schema.fields._hashed_password;
@@ -94,9 +76,9 @@ const toParseSchema = (schema) => {
     delete schema.fields._wperm;
     delete schema.fields._rperm;
   }
-  let clps = defaultCLPS;
+  let clps = StorageUtils.getDefaultCLPs();
   if (schema.classLevelPermissions) {
-    clps = {...emptyCLPS, ...schema.classLevelPermissions};
+    clps = {...StorageUtils.getEmptyCLPs(), ...schema.classLevelPermissions};
   }
   return {
     className: schema.className,
@@ -376,7 +358,7 @@ const buildWhereClause = ({ schema, query, index }) => {
 
     if (fieldValue.$text) {
       const search = fieldValue.$text.$search;
-      let language = 'english';
+      const language = StorageUtils.getLanguageFromSearch(search);
       if (typeof search !== 'object') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
@@ -388,14 +370,6 @@ const buildWhereClause = ({ schema, query, index }) => {
           Parse.Error.INVALID_JSON,
           `bad $text: $term, should be string`
         );
-      }
-      if (search.$language && typeof search.$language !== 'string') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $text: $language, should be string`
-        );
-      } else if (search.$language) {
-        language = search.$language;
       }
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
@@ -1057,21 +1031,26 @@ export class PostgresStorageAdapter {
         updatePatterns.push(`$${index}:name = COALESCE($${index}:name, 0) + $${index + 1}`);
         values.push(fieldName, fieldValue.amount);
         index += 2;
-      } else if (fieldValue.__op === 'Add') {
-        updatePatterns.push(`$${index}:name = array_add(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
+      } else if (
+        fieldValue.__op === 'Add' ||
+        fieldValue.__op === 'Remove' ||
+        fieldValue.__op === 'AddUnique'
+      ) {
         values.push(fieldName, JSON.stringify(fieldValue.objects));
+        if(fieldValue.__op === 'Add') {
+          // Add
+          updatePatterns.push(`$${index}:name = array_add(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
+        } else if (fieldValue.__op === 'Remove') {
+          // Remove
+          updatePatterns.push(`$${index}:name = array_remove(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
+        } else {
+          // AddUnique
+          updatePatterns.push(`$${index}:name = array_add_unique(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
+        }
         index += 2;
       } else if (fieldValue.__op === 'Delete') {
         updatePatterns.push(`$${index}:name = $${index + 1}`)
         values.push(fieldName, null);
-        index += 2;
-      } else if (fieldValue.__op === 'Remove') {
-        updatePatterns.push(`$${index}:name = array_remove(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`)
-        values.push(fieldName, JSON.stringify(fieldValue.objects));
-        index += 2;
-      } else if (fieldValue.__op === 'AddUnique') {
-        updatePatterns.push(`$${index}:name = array_add_unique(COALESCE($${index}:name, '[]'::jsonb), $${index + 1}::jsonb)`);
-        values.push(fieldName, JSON.stringify(fieldValue.objects));
         index += 2;
       } else if (fieldName === 'updatedAt') { //TODO: stop special casing this. It should check for __type === 'Date' and use .iso
         updatePatterns.push(`$${index}:name = $${index + 1}`)
@@ -1196,6 +1175,17 @@ export class PostgresStorageAdapter {
     });
   }
 
+  getShouldSortPattern(sort) {
+    const sorting = Object.keys(sort).map((key) => {
+      // Using $idx pattern gives:  non-integer constant in ORDER BY
+      if (sort[key] === 1) {
+        return `"${key}" ASC`;
+      }
+      return `"${key}" DESC`;
+    }).join(',');
+    return sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+  }
+
   find(className, schema, query, { skip, limit, sort, keys }) {
     debug('find', className, query, {skip, limit, sort, keys });
     const hasLimit = limit !== undefined;
@@ -1216,14 +1206,7 @@ export class PostgresStorageAdapter {
 
     let sortPattern = '';
     if (sort) {
-      const sorting = Object.keys(sort).map((key) => {
-        // Using $idx pattern gives:  non-integer constant in ORDER BY
-        if (sort[key] === 1) {
-          return `"${key}" ASC`;
-        }
-        return `"${key}" DESC`;
-      }).join(',');
-      sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+      sortPattern = this.getShouldSortPattern(sort);
     }
     if (where.sorts && Object.keys(where.sorts).length > 0) {
       sortPattern = `ORDER BY ${where.sorts.join(',')}`;
@@ -1479,13 +1462,7 @@ export class PostgresStorageAdapter {
       }
       if (stage.$sort) {
         const sort = stage.$sort;
-        const sorting = Object.keys(sort).map((key) => {
-          if (sort[key] === 1) {
-            return `"${key}" ASC`;
-          }
-          return `"${key}" DESC`;
-        }).join(',');
-        sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+        sortPattern = this.getShouldSortPattern(sort);
       }
     }
 
@@ -1548,24 +1525,7 @@ function convertPolygonToSQL(polygon) {
     polygon[0][1] !== polygon[polygon.length - 1][1]) {
     polygon.push(polygon[0]);
   }
-  const unique = polygon.filter((item, index, ar) => {
-    let foundIndex = -1;
-    for (let i = 0; i < ar.length; i += 1) {
-      const pt = ar[i];
-      if (pt[0] === item[0] &&
-          pt[1] === item[1]) {
-        foundIndex = i;
-        break;
-      }
-    }
-    return foundIndex === index;
-  });
-  if (unique.length < 3) {
-    throw new Parse.Error(
-      Parse.Error.INTERNAL_SERVER_ERROR,
-      'GeoJSON: Loop must have at least 3 different vertices'
-    );
-  }
+  StorageUtils.verifyCoordinatesUnique(polygon);
   const points = polygon.map((point) => {
     Parse.GeoPoint._validate(parseFloat(point[1]), parseFloat(point[0]));
     return `(${point[1]}, ${point[0]})`;

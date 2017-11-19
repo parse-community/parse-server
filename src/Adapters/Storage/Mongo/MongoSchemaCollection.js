@@ -1,5 +1,6 @@
 import MongoCollection from './MongoCollection';
 import Parse           from 'parse/node';
+import StorageUtils    from '../StorageUtils';
 
 function mongoFieldToParseSchemaField(type) {
   if (type[0] === '*') {
@@ -43,28 +44,10 @@ function mongoSchemaFieldsToParseSchemaFields(schema) {
   return response;
 }
 
-const emptyCLPS = Object.freeze({
-  find: {},
-  get: {},
-  create: {},
-  update: {},
-  delete: {},
-  addField: {},
-});
-
-const defaultCLPS = Object.freeze({
-  find: {'*': true},
-  get: {'*': true},
-  create: {'*': true},
-  update: {'*': true},
-  delete: {'*': true},
-  addField: {'*': true},
-});
-
 function mongoSchemaToParseSchema(mongoSchema) {
-  let clps = defaultCLPS;
+  let clps = StorageUtils.getDefaultCLPs();
   if (mongoSchema._metadata && mongoSchema._metadata.class_permissions) {
-    clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
+    clps = {...StorageUtils.getEmptyCLPs(), ...mongoSchema._metadata.class_permissions};
   }
   return {
     className: mongoSchema._id,

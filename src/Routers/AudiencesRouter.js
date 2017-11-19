@@ -1,5 +1,4 @@
 import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
 import * as middleware from '../middlewares';
 
 export class AudiencesRouter extends ClassesRouter {
@@ -9,18 +8,12 @@ export class AudiencesRouter extends ClassesRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    const options = ClassesRouter.optionsFromBody(body);
-
-    return rest.find(req.config, req.auth, '_Audience', body.where, options, req.info.clientSDK)
-      .then((response) => {
-
-        response.results.forEach((item) => {
-          item.query = JSON.parse(item.query);
-        });
-
-        return {response: response};
+    return ClassesRouter.handleFindForClass('_Audience', req).then((response) => {
+      response.results.forEach((item) => {
+        item.query = JSON.parse(item.query);
       });
+      return {response: response};
+    });
   }
 
   handleGet(req) {

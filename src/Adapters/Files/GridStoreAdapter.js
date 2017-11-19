@@ -50,13 +50,17 @@ export class GridStoreAdapter extends FilesAdapter {
     });
   }
 
+  openGridStore(database, filename) {
+    return GridStore.exist(database, filename)
+      .then(() => {
+        const gridStore = new GridStore(database, filename, 'r');
+        return gridStore.open();
+      });
+  }
+
   getFileData(filename: string) {
     return this._connect().then(database => {
-      return GridStore.exist(database, filename)
-        .then(() => {
-          const gridStore = new GridStore(database, filename, 'r');
-          return gridStore.open();
-        });
+      return this.openGridStore(database, filename);
     }).then(gridStore => {
       return gridStore.read();
     });
@@ -68,10 +72,7 @@ export class GridStoreAdapter extends FilesAdapter {
 
   getFileStream(filename: string) {
     return this._connect().then(database => {
-      return GridStore.exist(database, filename).then(() => {
-        const gridStore = new GridStore(database, filename, 'r');
-        return gridStore.open();
-      });
+      return this.openGridStore(database, filename);
     });
   }
 }

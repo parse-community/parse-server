@@ -12,6 +12,13 @@ export class ClassesRouter extends PromiseRouter {
     return req.params.className;
   }
 
+  runFind(req, body, options) {
+    if (typeof body.where === 'string') {
+      body.where = JSON.parse(body.where);
+    }
+    return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK);
+  }
+
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = ClassesRouter.optionsFromBody(body);
@@ -22,10 +29,7 @@ export class ClassesRouter extends PromiseRouter {
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
     }
-    if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
-    }
-    return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK)
+    return this.runFind(req, body, options)
       .then((response) => {
         if (response && response.results) {
           for (const result of response.results) {
@@ -136,6 +140,12 @@ export class ClassesRouter extends PromiseRouter {
       options.include = String(body.include);
     }
     return options;
+  }
+
+  static handleFindForClass(className, req) {
+    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
+    const options = ClassesRouter.optionsFromBody(body);
+    return rest.find(req.config, req.auth, className, body.where, options, req.info.clientSDK);
   }
 
   mountRoutes() {

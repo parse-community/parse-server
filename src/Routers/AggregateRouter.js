@@ -1,5 +1,4 @@
 import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
 import * as middleware from '../middlewares';
 import Parse         from 'parse/node';
 
@@ -62,11 +61,7 @@ export class AggregateRouter extends ClassesRouter {
       options.distinct = String(body.distinct);
     }
     options.pipeline = pipeline;
-    if (typeof body.where === 'string') {
-      body.where = JSON.parse(body.where);
-    }
-    return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK)
-      .then((response) => { return { response }; });
+    return this.runFind(req, body, options).then((response) => { return { response }; });
   }
 
   mountRoutes() {

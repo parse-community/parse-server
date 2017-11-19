@@ -1,29 +1,13 @@
 // Helper functions for accessing the google API.
-var https = require('https');
-var Parse = require('parse/node').Parse;
+import AuthAdapter from "./AuthAdapter";
+const Parse = require('parse/node').Parse;
 
 function validateIdToken(id, token) {
-  return request("tokeninfo?id_token=" + token)
-    .then((response) => {
-      if (response && (response.sub == id || response.user_id == id)) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Google auth is invalid for this user.');
-    });
+  return makeRequest(id, "tokeninfo?id_token=" + token);
 }
 
 function validateAuthToken(id, token) {
-  return request("tokeninfo?access_token=" + token)
-    .then((response) => {
-      if (response &&  (response.sub == id || response.user_id == id)) {
-        return;
-      }
-      throw new Parse.Error(
-        Parse.Error.OBJECT_NOT_FOUND,
-        'Google auth is invalid for this user.');
-    });
+  return makeRequest(id, "tokeninfo?access_token=" + token);
 }
 
 // Returns a promise that fulfills if this user id is valid.
@@ -46,26 +30,21 @@ function validateAppId() {
   return Promise.resolve();
 }
 
+function makeRequest(id, path) {
+  return request(path)
+    .then((response) => {
+      if (response && (response.sub === id || response.user_id === id)) {
+        return;
+      }
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Google auth is invalid for this user.');
+    });
+}
+
 // A promisey wrapper for api requests
 function request(path) {
-  return new Promise(function(resolve, reject) {
-    https.get("https://www.googleapis.com/oauth2/v3/" + path, function(res) {
-      var data = '';
-      res.on('data', function(chunk) {
-        data += chunk;
-      });
-      res.on('end', function() {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function() {
-      reject('Failed to validate this access token with Google.');
-    });
-  });
+  return AuthAdapter.request('Google', 'https://www.googleapis.com/oauth2/v3/' + path);
 }
 
 module.exports = {

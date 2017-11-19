@@ -40,11 +40,11 @@ const connect =  {
   "additionalProperties": false
 };
 
-const subscribe = {
-  'title': 'Subscribe operation schema',
+const base = {
+  'title': 'TITLE',
   'type': 'object',
   'properties': {
-    'op': 'subscribe',
+    'op': 'OP',
     'requestId': {
       'type': 'number'
     },
@@ -78,43 +78,13 @@ const subscribe = {
   'additionalProperties': false
 };
 
-const update = {
-  'title': 'Update operation schema',
-  'type': 'object',
-  'properties': {
-    'op': 'update',
-    'requestId': {
-      'type': 'number'
-    },
-    'query': {
-      'title': 'Query field schema',
-      'type': 'object',
-      'properties': {
-        'className': {
-          'type': 'string'
-        },
-        'where': {
-          'type': 'object'
-        },
-        'fields': {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "minItems": 1,
-          "uniqueItems": true
-        }
-      },
-      'required': ['where', 'className'],
-      'additionalProperties': false
-    },
-    'sessionToken': {
-      'type': 'string'
-    }
-  },
-  'required': ['op', 'requestId', 'query'],
-  'additionalProperties': false
-};
+const subscribe = base;
+subscribe['title'] = 'Subscribe operation schema';
+subscribe['properties']['op'] = 'subscribe';
+
+const update = base;
+subscribe['title'] = 'Update operation schema';
+subscribe['properties']['op'] = 'update';
 
 const unsubscribe = {
   'title': 'Unsubscribe operation schema',

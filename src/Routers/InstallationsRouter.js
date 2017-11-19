@@ -1,7 +1,6 @@
 // InstallationsRouter.js
 
 import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
 
 export class InstallationsRouter extends ClassesRouter {
   className() {
@@ -9,13 +8,9 @@ export class InstallationsRouter extends ClassesRouter {
   }
 
   handleFind(req) {
-    const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    const options = ClassesRouter.optionsFromBody(body);
-    return rest.find(req.config, req.auth,
-      '_Installation', body.where, options, req.info.clientSDK)
-      .then((response) => {
-        return {response: response};
-      });
+    return ClassesRouter.handleFindForClass('_Installation', req).then((response) => {
+      return {response: response};
+    });
   }
 
   mountRoutes() {

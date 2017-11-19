@@ -1,8 +1,7 @@
 'use strict';
 
 // Helper functions for accessing the vkontakte API.
-
-var https = require('https');
+import AuthAdapter from "./AuthAdapter";
 var Parse = require('parse/node').Parse;
 var logger = require('../../logger').default;
 
@@ -41,24 +40,7 @@ function validateAppId() {
 
 // A promisey wrapper for api requests
 function request(host, path) {
-  return new Promise(function (resolve, reject) {
-    https.get("https://" + host + "/" + path, function (res) {
-      var data = '';
-      res.on('data', function (chunk) {
-        data += chunk;
-      });
-      res.on('end', function () {
-        try {
-          data = JSON.parse(data);
-        } catch(e) {
-          return reject(e);
-        }
-        resolve(data);
-      });
-    }).on('error', function () {
-      reject('Failed to validate this access token with Vk.');
-    });
-  });
+  return AuthAdapter.request('Vk', 'https://' + host + '/' + path);
 }
 
 module.exports = {

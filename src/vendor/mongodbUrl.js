@@ -645,6 +645,15 @@ function urlResolveObject(source, relative) {
   return urlParse(source, false, true).resolveObject(relative);
 }
 
+//to support request.http
+function supportRequestHTTP(result) {
+  if (result.pathname !== null || result.search !== null) {
+    result.path = (result.pathname ? result.pathname : '') +
+      (result.search ? result.search : '');
+  }
+  return result;
+}
+
 /* istanbul ignore next: improve coverage */
 Url.prototype.resolveObject = function(relative) {
   if (typeof relative === 'string') {
@@ -814,10 +823,7 @@ Url.prototype.resolveObject = function(relative) {
     result.search = relative.search;
     result.query = relative.query;
     //to support http.request
-    if (result.pathname !== null || result.search !== null) {
-      result.path = (result.pathname ? result.pathname : '') +
-                    (result.search ? result.search : '');
-    }
+    result = supportRequestHTTP(result);
     result.href = result.format();
     return result;
   }
@@ -908,10 +914,7 @@ Url.prototype.resolveObject = function(relative) {
   }
 
   //to support request.http
-  if (result.pathname !== null || result.search !== null) {
-    result.path = (result.pathname ? result.pathname : '') +
-                  (result.search ? result.search : '');
-  }
+  result = supportRequestHTTP(result);
   result.auth = relative.auth || result.auth;
   result.slashes = result.slashes || relative.slashes;
   result.href = result.format();
