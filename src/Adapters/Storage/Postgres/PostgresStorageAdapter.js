@@ -1495,17 +1495,19 @@ export class PostgresStorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
     debug(qs, values);
-    return this._client.any(qs, values).then(results => {
-      if (countField) {
-        results[0][countField] = parseInt(results[0][countField], 10);
-      }
-      results.forEach(result => {
-        if (!result.hasOwnProperty('objectId')) {
-          result.objectId = null;
+    return this._client.any(qs, values)
+      .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)))
+      .then(results => {
+        if (countField) {
+          results[0][countField] = parseInt(results[0][countField], 10);
         }
+        results.forEach(result => {
+          if (!result.hasOwnProperty('objectId')) {
+            result.objectId = null;
+          }
+        });
+        return results;
       });
-      return results;
-    }).then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
 
   performInitialization({ VolatileClassesSchemas }) {
