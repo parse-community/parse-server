@@ -11,7 +11,7 @@ We really want Parse to be yours, to see it grow and thrive in the open source c
 * Run the tests for the file you are working on with the following command:
     * **Windows**: `npm run test:win spec/MyFile.spec.js`
     * **Unix**: `npm test spec/MyFile.spec.js`
-* Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/lcov-report/parse-server/FileUnderTest.js.html*.
+* Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
 * Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
 * **Do not** publish the *lib* folder.
 
