@@ -606,10 +606,13 @@ export class PostgresStorageAdapter {
     });
   }
 
-  setIndexes(className, submittedIndexes, existingIndexes = {}, fields, conn) {
+  setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields, conn) {
     conn = conn || this._client;
     if (submittedIndexes === undefined) {
       return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1} };
     }
     const deletedIndexes = [];
     const insertedIndexes = [];
@@ -658,7 +661,7 @@ export class PostgresStorageAdapter {
     return this._client.tx(t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
-      const q3 = this.setIndexes(className, schema.indexes, {}, schema.fields, t);
+      const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
 
       return t.batch([q1, q2, q3]);
     })
@@ -1251,6 +1254,7 @@ export class PostgresStorageAdapter {
   }
 
   find(className, schema, query, { skip, limit, sort, keys }) {
+    console.log('find');
     debug('find', className, query, {skip, limit, sort, keys });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;

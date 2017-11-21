@@ -538,7 +538,7 @@ export default class SchemaController {
             return Promise.all(promises);
           })
           .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
-          .then(() => this._dbAdapter.setIndexes(className, indexes, schema.indexes, newSchema))
+          .then(() => this._dbAdapter.setIndexesWithSchemaFormat(className, indexes, schema.indexes, newSchema))
           .then(() => this.reloadData({ clearCache: true }))
         //TODO: Move this logic into the database adapter
           .then(() => {

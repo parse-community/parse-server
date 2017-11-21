@@ -315,7 +315,21 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
       expect(indexes.length).toEqual(2);
-      done();
+      rp.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes._id_._id).toEqual(1);
+        expect(body.indexes.subject_text_comment_text).toBeDefined();
+        expect(body.indexes.subject_text_comment_text.subject).toEqual('text');
+        expect(body.indexes.subject_text_comment_text.comment).toEqual('text');
+        done();
+      });
     }).catch(done.fail);
   });
 
@@ -366,7 +380,21 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
       expect(indexes.length).toEqual(2);
-      done();
+      rp.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-Master-Key': 'test',
+        },
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes._id_._id).toEqual(1);
+        expect(body.indexes.text_test).toBeDefined();
+        expect(body.indexes.text_test.subject).toEqual('text');
+        expect(body.indexes.text_test.comment).toEqual('text');
+        done();
+      });
     }).catch(done.fail);
   });
 

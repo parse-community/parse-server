@@ -1903,6 +1903,7 @@ describe('schemas', () => {
           },
           classLevelPermissions: defaultClassLevelPermissions,
           indexes: {
+            _id_: { _id: 1 },
             name1: { aString: 1 },
           }
         })).toEqual(undefined);
@@ -1922,6 +1923,7 @@ describe('schemas', () => {
             },
             classLevelPermissions: defaultClassLevelPermissions,
             indexes: {
+              _id_: { _id: 1 },
               name1: { aString: 1 },
             }
           });
@@ -1973,6 +1975,7 @@ describe('schemas', () => {
           },
           classLevelPermissions: defaultClassLevelPermissions,
           indexes: {
+            _id_: { _id: 1 },
             name1: { aString: 1 },
             name2: { bString: 1 },
             name3: { cString: 1, dString: 1 },
@@ -1997,6 +2000,7 @@ describe('schemas', () => {
             },
             classLevelPermissions: defaultClassLevelPermissions,
             indexes: {
+              _id_: { _id: 1 },
               name1: { aString: 1 },
               name2: { bString: 1 },
               name3: { cString: 1, dString: 1 },
@@ -2042,6 +2046,7 @@ describe('schemas', () => {
           },
           classLevelPermissions: defaultClassLevelPermissions,
           indexes: {
+            _id_: { _id: 1 },
             name1: { aString: 1 },
           }
         })).toEqual(undefined);
@@ -2065,6 +2070,9 @@ describe('schemas', () => {
               aString: {type: 'String'},
             },
             classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+            }
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
             expect(indexes.length).toEqual(1);
@@ -2112,6 +2120,7 @@ describe('schemas', () => {
           },
           classLevelPermissions: defaultClassLevelPermissions,
           indexes: {
+            _id_: { _id: 1 },
             name1: { aString: 1 },
             name2: { bString: 1 },
             name3: { cString: 1 },
@@ -2141,6 +2150,7 @@ describe('schemas', () => {
             },
             classLevelPermissions: defaultClassLevelPermissions,
             indexes: {
+              _id_: { _id: 1 },
               name3: { cString: 1 },
             }
           });
@@ -2192,6 +2202,7 @@ describe('schemas', () => {
           },
           classLevelPermissions: defaultClassLevelPermissions,
           indexes: {
+            _id_: { _id: 1 },
             name1: { aString: 1 },
             name2: { bString: 1 },
             name3: { cString: 1 },
@@ -2223,6 +2234,7 @@ describe('schemas', () => {
             },
             classLevelPermissions: defaultClassLevelPermissions,
             indexes: {
+              _id_: { _id: 1 },
               name3: { cString: 1 },
               name4: { dString: 1 },
             }
@@ -2323,7 +2335,7 @@ describe('schemas', () => {
     obj.set('subject', 'subject');
     obj.set('comment', 'comment');
     obj.save().then(() => {
-      return config.database.adapter.createIndex('TestObject', {subject: 'text', comment: 'text'});
+      return config.database.adapter.createIndex('TestObject', {subject: 'text', comment: 1});
     }).then(() => {
       return reconfigureServer({
         appId: 'test',
@@ -2336,8 +2348,12 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
         json: true,
       }, (error, response, body) => {
+        console.log(body);
         expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes._id_._id).toEqual(1);
         expect(body.indexes.subject_text_comment_text).toBeDefined();
+        expect(body.indexes.subject_text_comment_text.subject).toEqual('text');
+        expect(body.indexes.subject_text_comment_text.comment).toEqual('text');
         done();
       });
     });

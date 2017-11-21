@@ -170,9 +170,12 @@ export class MongoStorageAdapter {
       }));
   }
 
-  setIndexes(className, submittedIndexes, existingIndexes = {}, fields) {
+  setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields) {
     if (submittedIndexes === undefined) {
       return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1} };
     }
     const deletePromises = [];
     const insertedIndexes = [];
@@ -213,11 +216,34 @@ export class MongoStorageAdapter {
       }));
   }
 
+  setIndexesFromMongo(className) {
+    return this.getIndexes(className).then((indexes) => {
+      indexes = indexes.reduce((obj, index) => {
+        if (index.key._fts) {
+          delete index.key._fts;
+          delete index.key._ftsx;
+          for (const field in index.weights) {
+            index.key[field] = 'text';
+          }
+        }
+        obj[index.name] = index.key;
+        return obj;
+      }, {});
+      return this._schemaCollection()
+        .then(schemaCollection => schemaCollection.updateSchema(className, {
+          $set: { _metadata: { indexes: indexes } }
+        }));
+    }).catch(() => {
+      // Ignore if collection not found
+      return Promise.resolve();
+    });
+  }
+
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
-    return this.setIndexes(className, schema.indexes, {}, schema.fields)
+    return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
       .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
@@ -541,11 +567,10 @@ export class MongoStorageAdapter {
       const textIndex = {
         [indexName]: { [fieldName]: 'text' }
       };
-      return this.setIndexes(className, textIndex, existingIndexes, schema.fields)
+      return this.setIndexesWithSchemaFormat(className, textIndex, existingIndexes, schema.fields)
         .catch((error) => {
           if (error.code === 85) { // Index exist with different options
-            return this.getIndexes(className)
-              .then((indexes) => this.setIndexes(className, {}, indexes, schema.fields));
+            return this.setIndexesFromMongo(className);
           }
           throw error;
         });
@@ -572,19 +597,7 @@ export class MongoStorageAdapter {
     return this.getAllClasses()
       .then((classes) => {
         const promises = classes.map((schema) => {
-          return this.getIndexes(schema.className).then((indexes) => {
-            indexes = indexes.reduce((obj, index) => {
-              obj[index.name] = index.key;
-              return obj;
-            }, {});
-            return this._schemaCollection()
-              .then(schemaCollection => schemaCollection.updateSchema(schema.className, {
-                $set: { _metadata: { indexes: indexes } }
-              }));
-          }).catch(() => {
-            // Ignore if collection not found
-            return Promise.resolve();
-          });
+          return this.setIndexesFromMongo(schema.className);
         });
         return Promise.all(promises);
       });
