@@ -15,7 +15,7 @@ module.exports = {
     },
     "rules": {
         "indent": ["error", 2],
-		"linebreak-style": ["error", (require("os").EOL === "\r\n" ? "windows" : "unix")],
+        "linebreak-style": ["error", (require("os").EOL === "\r\n" ? "windows" : "unix")],
         "no-trailing-spaces": 2,
         "eol-last": 2,
         "space-in-parens": ["error", "never"],
