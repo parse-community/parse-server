@@ -2335,7 +2335,7 @@ describe('schemas', () => {
     obj.set('subject', 'subject');
     obj.set('comment', 'comment');
     obj.save().then(() => {
-      return config.database.adapter.createIndex('TestObject', {subject: 'text', comment: 1});
+      return config.database.adapter.createIndex('TestObject', {subject: 'text', comment: 'text'});
     }).then(() => {
       return reconfigureServer({
         appId: 'test',
@@ -2348,7 +2348,6 @@ describe('schemas', () => {
         headers: masterKeyHeaders,
         json: true,
       }, (error, response, body) => {
-        console.log(body);
         expect(body.indexes._id_).toBeDefined();
         expect(body.indexes._id_._id).toEqual(1);
         expect(body.indexes.subject_text_comment_text).toBeDefined();

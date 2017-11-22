@@ -1254,7 +1254,6 @@ export class PostgresStorageAdapter {
   }
 
   find(className, schema, query, { skip, limit, sort, keys }) {
-    console.log('find');
     debug('find', className, query, {skip, limit, sort, keys });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
