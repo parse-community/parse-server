@@ -304,6 +304,9 @@ describe('SchemaController', () => {
                 fooNineteen: {type: 'String'},
               },
               classLevelPermissions: { ...levelPermissions },
+              indexes: {
+                _id_: { _id: 1 }
+              }
             };
 
             expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
