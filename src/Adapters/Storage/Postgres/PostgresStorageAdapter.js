@@ -165,6 +165,10 @@ const transformDotField = (fieldName) => {
   return name;
 }
 
+const transformAggregateField = (fieldName) => {
+  return fieldName.substr(1);
+}
+
 const validateKeys = (object) => {
   if (typeof object == 'object') {
     for (const key in object) {
@@ -568,6 +572,13 @@ export class PostgresStorageAdapter {
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
     this._pgp = pgp;
+  }
+
+  handleShutdown() {
+    if (!this._client) {
+      return
+    }
+    this._client.$pool.end();
   }
 
   _ensureSchemaCollectionExists(conn) {
@@ -1363,6 +1374,140 @@ export class PostgresStorageAdapter {
         return 0;
       }
       throw err;
+    });
+  }
+
+  distinct(className, schema, query, fieldName) {
+    debug('distinct', className, query);
+    let field = fieldName;
+    let column = fieldName;
+    if (fieldName.indexOf('.') >= 0) {
+      field = transformDotFieldToComponents(fieldName).join('->');
+      column = fieldName.split('.')[0];
+    }
+    const isArrayField = schema.fields
+          && schema.fields[fieldName]
+          && schema.fields[fieldName].type === 'Array';
+    const values = [field, column, className];
+    const where = buildWhereClause({ schema, query, index: 4 });
+    values.push(...where.values);
+
+    const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
+    let qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    if (isArrayField) {
+      qs = `SELECT distinct jsonb_array_elements($1:raw) as $2:raw FROM $3:name ${wherePattern}`;
+    }
+    debug(qs, values);
+    return this._client.any(qs, values)
+      .catch(() => [])
+      .then((results) => {
+        if (fieldName.indexOf('.') === -1) {
+          return results.map(object => object[field]);
+        }
+        const child = fieldName.split('.')[1];
+        return results.map(object => object[column][child]);
+      });
+  }
+
+  aggregate(className, pipeline) {
+    debug('aggregate', className, pipeline);
+    const values = [className];
+    let columns = [];
+    let countField = null;
+    let wherePattern = '';
+    let limitPattern = '';
+    let skipPattern = '';
+    let sortPattern = '';
+    let groupPattern = '';
+    for (let i = 0; i < pipeline.length; i += 1) {
+      const stage = pipeline[i];
+      if (stage.$group) {
+        for (const field in stage.$group) {
+          const value = stage.$group[field];
+          if (value === null || value === undefined) {
+            continue;
+          }
+          if (field === '_id') {
+            columns.push(`${transformAggregateField(value)} AS "objectId"`);
+            groupPattern = `GROUP BY ${transformAggregateField(value)}`;
+            continue;
+          }
+          if (value.$sum) {
+            if (typeof value.$sum === 'string') {
+              columns.push(`SUM(${transformAggregateField(value.$sum)}) AS "${field}"`);
+            } else {
+              countField = field;
+              columns.push(`COUNT(*) AS "${field}"`);
+            }
+          }
+          if (value.$max) {
+            columns.push(`MAX(${transformAggregateField(value.$max)}) AS "${field}"`);
+          }
+          if (value.$min) {
+            columns.push(`MIN(${transformAggregateField(value.$min)}) AS "${field}"`);
+          }
+          if (value.$avg) {
+            columns.push(`AVG(${transformAggregateField(value.$avg)}) AS "${field}"`);
+          }
+        }
+        columns.join(',');
+      } else {
+        columns.push('*');
+      }
+      if (stage.$project) {
+        if (columns.includes('*')) {
+          columns = [];
+        }
+        for (const field in stage.$project) {
+          const value = stage.$project[field];
+          if ((value === 1 || value === true)) {
+            columns.push(field);
+          }
+        }
+      }
+      if (stage.$match) {
+        const patterns = [];
+        for (const field in stage.$match) {
+          const value = stage.$match[field];
+          Object.keys(ParseToPosgresComparator).forEach(cmp => {
+            if (value[cmp]) {
+              const pgComparator = ParseToPosgresComparator[cmp];
+              patterns.push(`${field} ${pgComparator} ${value[cmp]}`);
+            }
+          });
+        }
+        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(' ')}` : '';
+      }
+      if (stage.$limit) {
+        limitPattern = `LIMIT ${stage.$limit}`;
+      }
+      if (stage.$skip) {
+        skipPattern = `OFFSET ${stage.$skip}`;
+      }
+      if (stage.$sort) {
+        const sort = stage.$sort;
+        const sorting = Object.keys(sort).map((key) => {
+          if (sort[key] === 1) {
+            return `"${key}" ASC`;
+          }
+          return `"${key}" DESC`;
+        }).join(',');
+        sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+      }
+    }
+
+    const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    debug(qs, values);
+    return this._client.any(qs, values).then(results => {
+      if (countField) {
+        results[0][countField] = parseInt(results[0][countField], 10);
+      }
+      results.forEach(result => {
+        if (!result.hasOwnProperty('objectId')) {
+          result.objectId = null;
+        }
+      });
+      return results;
     });
   }
 

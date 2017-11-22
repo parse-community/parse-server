@@ -4,19 +4,42 @@
 [![Build Status](https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat)](https://travis-ci.org/parse-community/parse-server)
 [![Coverage Status](https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg)](https://codecov.io/github/parse-community/parse-server?branch=master)
 [![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
-
 [![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
+[![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
 
-Parse Server is an [open source version of the Parse backend](http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
+Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
+- [Getting Started](#getting-started)
+    - [Running Parse Server](#running-parse-server)
+        - [Locally](#locally)
+        - [Docker](#inside-a-docker-container)
+        - [Saving an Object](#saving-your-first-object)
+        - [Connect an SDK](#connect-your-app-to-parse-server)
+    - [Running elsewhere](#running-parse-server-elsewhere)
+        - [Sample Application](#parse-server-sample-application)
+        - [Parse Server + Express](#parse-server--express)
+    - [Logging](#logging)
+- [Documentation](#documentation)
+    - [Configuration](#configuration)
+        - [Basic Options](#basic-options)
+        - [Client Key Options](#client-key-options)
+        - [Advanced Options](#advanced-options)
+            - [Logging](#logging-1)
+            - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
+        - [Available Adapters](#available-adapters)
+        - [Configuring File Adapters](#configuring-file-adapters)
+- [Support](#support)
+- [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
+- [Contributing](#contributing)
+- [Backers](#backers)
+- [Sponsors](#sponsors)
+
 # Getting Started
 
-[![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
-
-
-April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
+April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/](http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/)
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
@@ -271,7 +294,7 @@ var server = ParseServer({
   appName: 'Parse App',
   // The email adapter
   emailAdapter: {
-    module: 'parse-server-simple-mailgun-adapter',
+    module: '@parse/simple-mailgun-adapter',
     options: {
       // The address that your emails come from
       fromAddress: 'parse@example.com',
@@ -337,7 +360,12 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 For the full list of configurable environment variables, run `parse-server --help`.
 
 ### Available Adapters
-[Parse Server Modules (Adapters)](https://github.com/parse-server-modules)
+
+All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
+
+Some well maintained adapters are also available on the [Parse Server Modules](https://github.com/parse-server-modules) organization.
+
+You can also find more adapters maintained by the community by searching on [npm](https://www.npmjs.com/search?q=parse-server%20adapter&page=1&ranking=optimal).
 
 ### Configuring File Adapters
 

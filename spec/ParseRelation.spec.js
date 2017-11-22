@@ -163,6 +163,33 @@ describe('Parse.Relation testing', () => {
     });
   });
 
+  it("related at ordering optimizations", (done) => {
+    var ChildObject = Parse.Object.extend("ChildObject");
+    var childObjects = [];
+    for (var i = 0; i < 10; i++) {
+      childObjects.push(new ChildObject({x: i}));
+    }
+
+    var parent;
+    var relation;
+
+    Parse.Object.saveAll(childObjects).then(function() {
+      var ParentObject = Parse.Object.extend('ParentObject');
+      parent = new ParentObject();
+      parent.set('x', 4);
+      relation = parent.relation('child');
+      relation.add(childObjects);
+      return parent.save();
+    }).then(function() {
+      const query = relation.query();
+      query.descending('createdAt');
+      query.skip(1);
+      query.limit(3);
+      return query.find();
+    }).then(function(list) {
+      expect(list.length).toBe(3);
+    }).then(done, done.fail);
+  });
 
   it_exclude_dbs(['postgres'])("queries with relations", (done) => {
 

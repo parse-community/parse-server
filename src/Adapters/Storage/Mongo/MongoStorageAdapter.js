@@ -86,7 +86,7 @@ export class MongoStorageAdapter {
   // Public
   connectionPromise;
   database;
-
+  canSortOnJoinTables;
   constructor({
     uri = defaults.DefaultMongoURI,
     collectionPrefix = '',
@@ -98,6 +98,7 @@ export class MongoStorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    this.canSortOnJoinTables = true;
     delete mongoOptions.maxTimeMS;
   }
 
@@ -403,6 +404,27 @@ export class MongoStorageAdapter {
         maxTimeMS: this._maxTimeMS,
         readPreference,
       }));
+  }
+
+  distinct(className, schema, query, fieldName) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)));
+  }
+
+  aggregate(className, pipeline, readPreference) {
+    readPreference = this._parseReadPreference(readPreference);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
+      .then(results => {
+        results.forEach(result => {
+          if (result.hasOwnProperty('_id')) {
+            result.objectId = result._id;
+            delete result._id;
+          }
+        });
+        return results;
+      });
   }
 
   _parseReadPreference(readPreference) {

@@ -3038,7 +3038,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should not retrieve hidden fields', done => {
+  it('should not retrieve hidden fields on GET users/me (#3432)', done => {
 
     var emailAdapter = {
       sendVerificationEmail: () => {},
@@ -3073,6 +3073,34 @@ describe('Parse.User testing', () => {
       expect(res.emailVerified).toBe(false);
       expect(res._email_verify_token).toBeUndefined();
       done()
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
+  });
+
+  it('should not retrieve hidden fields on GET users/id (#3432)', done => {
+
+    var emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: "test@email.com"
+    })
+
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      return user.signUp();
     }).then(() => rp({
       method: 'GET',
       url: 'http://localhost:8378/1/users/' + Parse.User.current().id,
@@ -3085,6 +3113,45 @@ describe('Parse.User testing', () => {
       expect(res.emailVerified).toBe(false);
       expect(res._email_verify_token).toBeUndefined();
       done()
+    }).catch((err) => {
+      fail(JSON.stringify(err));
+      done();
+    });
+  });
+
+  it('should not retrieve hidden fields on login (#3432)', done => {
+
+    var emailAdapter = {
+      sendVerificationEmail: () => {},
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => Promise.resolve()
+    }
+
+    const user = new Parse.User();
+    user.set({
+      username: 'hello',
+      password: 'world',
+      email: "test@email.com"
+    })
+
+    reconfigureServer({
+      appName: 'unused',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      publicServerURL: "http://localhost:8378/1"
+    }).then(() => {
+      return user.signUp();
+    }).then(() => rp.get({
+      url: 'http://localhost:8378/1/login?email=test@email.com&username=hello&password=world',
+      json: true,
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest'
+      },
+    })).then((res) => {
+      expect(res.emailVerified).toBe(false);
+      expect(res._email_verify_token).toBeUndefined();
+      done();
     }).catch((err) => {
       fail(JSON.stringify(err));
       done();
@@ -3385,5 +3452,35 @@ describe('Parse.User testing', () => {
       expect(err.response.body.error).toEqual('password is required.');
       done();
     });
+  });
+
+  it('does not duplicate session when logging in multiple times #3451', (done) => {
+    const user = new Parse.User();
+    user.signUp({
+      username: 'yolo',
+      password: 'yolo',
+      email: 'yo@lo.com'
+    }).then(() => {
+      const promises = [];
+      while(promises.length != 5) {
+        Parse.User.logIn('yolo', 'yolo')
+        promises.push(Parse.User.logIn('yolo', 'yolo').then((res) => {
+          // ensure a new session token is generated at each login
+          expect(res.getSessionToken()).not.toBe(user.getSessionToken());
+        }));
+      }
+      return Promise.all(promises);
+    }).then(() => {
+      // wait because session destruction is not synchronous
+      return new Promise((resolve) => {
+        setTimeout(resolve, 100);
+      });
+    }).then(() => {
+      const query = new Parse.Query('_Session');
+      return query.find({ useMasterKey: true });
+    }).then((results) => {
+      // only one session in the end
+      expect(results.length).toBe(1);
+    }).then(done, done.fail);
   });
 });
