@@ -743,6 +743,37 @@ export class PostgresStorageAdapter {
     });
   }
 
+  schemaUpgrade(className, schema) {
+    debug('schemaUpgrade', { className, schema });
+    return this._client.tx('schemaUpgrade', t =>
+      t.any(`SELECT column_name FROM information_schema.columns WHERE table_name = '${className}'`)
+    )
+      .then(columns => {
+        if (!columns) {
+          return Promise.resolve();
+        }
+
+        const currentColumns = columns.map(item => item.column_name);
+        const newColumns = Object.keys(schema.fields);
+
+        const columnsToCreate = newColumns.filter(item => currentColumns.indexOf(item) === -1);
+        const columnsToDelete = currentColumns.filter(item => newColumns.indexOf(item) === -1);
+
+        const promise = [];
+
+        columnsToCreate.forEach(fieldName => {
+          const type = schema.fields[fieldName];
+          promise.push(this.addFieldIfNotExists(className, fieldName, type));
+        });
+
+        if (columnsToDelete.length) {
+          promise.push(this.deleteFields(className, schema, columnsToDelete));
+        }
+
+        return Promise.all(promise);
+      });
+  }
+
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
@@ -1581,12 +1612,14 @@ export class PostgresStorageAdapter {
   performInitialization({ VolatileClassesSchemas }) {
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map((schema) => {
-      return this.createTable(schema.className, schema).catch((err) => {
-        if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
-          return Promise.resolve();
-        }
-        throw err;
-      });
+      return this.createTable(schema.className, schema)
+        .catch((err) => {
+          if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
+            return Promise.resolve();
+          }
+          throw err;
+        })
+        .then(() => this.schemaUpgrade(schema.className, schema));
     });
     return Promise.all(promises)
       .then(() => {
