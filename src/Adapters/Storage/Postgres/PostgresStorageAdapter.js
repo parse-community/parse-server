@@ -757,7 +757,6 @@ export class PostgresStorageAdapter {
         const newColumns = Object.keys(schema.fields);
 
         const columnsToCreate = newColumns.filter(item => currentColumns.indexOf(item) === -1);
-        const columnsToDelete = currentColumns.filter(item => newColumns.indexOf(item) === -1);
 
         const promise = [];
 
@@ -765,10 +764,6 @@ export class PostgresStorageAdapter {
           const type = schema.fields[fieldName];
           promise.push(this.addFieldIfNotExists(className, fieldName, type));
         });
-
-        if (columnsToDelete.length) {
-          promise.push(this.deleteFields(className, schema, columnsToDelete));
-        }
 
         return Promise.all(promise);
       });
