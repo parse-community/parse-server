@@ -1,4 +1,4 @@
-* text=auto
+* text=auto eol=lf
 
 *.js text
 *.html text
@@ -8,4 +8,4 @@
 *.xml text
 *.md text
 
-*.sh text eol=lf
+*.sh text
