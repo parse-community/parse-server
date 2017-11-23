@@ -409,4 +409,49 @@ describe('Parse.Query Aggregate testing', () => {
         done();
       }).catch(done.fail);
   });
+
+  it('does not return sensitive hidden properties', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        match: {
+          score: {
+            $gt: 5
+          }
+        },
+      }
+    });
+
+    const username = 'leaky_user';
+    const score = 10;
+
+    const user = new Parse.User();
+    user.setUsername(username);
+    user.setPassword('password');
+    user.set('score', score);
+    user.signUp().then(function() {
+      return rp.get(Parse.serverURL + '/aggregate/_User', options);
+    }).then(function(resp) {
+      expect(resp.results.length).toBe(1);
+      const result = resp.results[0];
+
+      // verify server-side keys are not present...
+      expect(result._hashed_password).toBe(undefined);
+      expect(result._wperm).toBe(undefined);
+      expect(result._rperm).toBe(undefined);
+      expect(result._acl).toBe(undefined);
+      expect(result._created_at).toBe(undefined);
+      expect(result._updated_at).toBe(undefined);
+
+      // verify createdAt, updatedAt and others are present
+      expect(result.createdAt).not.toBe(undefined);
+      expect(result.updatedAt).not.toBe(undefined);
+      expect(result.objectId).not.toBe(undefined);
+      expect(result.username).toBe(username);
+      expect(result.score).toBe(score);
+
+      done();
+    }).catch(function(err) {
+      fail(err);
+    });
+  });
 });
