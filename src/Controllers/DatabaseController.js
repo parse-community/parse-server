@@ -875,7 +875,7 @@ DatabaseController.prototype.find = function(className, query, {
                 if (!classExists) {
                   return [];
                 } else {
-                  return this.adapter.aggregate(className, pipeline, readPreference);
+                  return this.adapter.aggregate(className, schema, pipeline, readPreference);
                 }
               } else {
                 if (!classExists) {
