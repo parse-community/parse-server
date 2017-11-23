@@ -409,10 +409,11 @@ export class MongoStorageAdapter {
   distinct(className, schema, query, fieldName) {
     schema = convertParseSchemaToMongoSchema(schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)));
+      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
+      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
   }
 
-  aggregate(className, pipeline, readPreference) {
+  aggregate(className, schema, pipeline, readPreference) {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
@@ -424,7 +425,8 @@ export class MongoStorageAdapter {
           }
         });
         return results;
-      });
+      })
+      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
   }
 
   _parseReadPreference(readPreference) {
