@@ -2,6 +2,8 @@
 environment:
   nodejs_version: "6"
   MONGODB_VERSION: "3.4.4"
+  DEBUG: "*"
+
 services:
   - mongodb
 
@@ -11,7 +13,9 @@ install:
   - ps: Install-Product node $env:nodejs_version
   # install modules
   - npm install
-  - ps: npm run mongodb-runner
+  - npm install -g mongodb-version-manager
+  - m use 3.4.4
+  - npm run mongodb-runner
 
 # Post-install test scripts.
 test_script:
