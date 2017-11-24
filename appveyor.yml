@@ -11,7 +11,7 @@ install:
   - ps: Install-Product node $env:nodejs_version
   # install modules
   - npm install
-  - npm run mongodb-runner
+  - ps: npm run mongodb-runner
 
 # Post-install test scripts.
 test_script:
