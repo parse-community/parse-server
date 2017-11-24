@@ -74,7 +74,7 @@
     "pretest": "npm run lint",
     "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
     "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 nyc jasmine",
-    "mongodb-runner": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} mongodb-runner --start",
+    "mongodb-runner": "mongodb-runner --start",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },
