@@ -1,7 +1,7 @@
 # Test against the latest version of this Node.js version
 environment:
   nodejs_version: "6"
-  MONGODB_VERSION: "3.2.13"
+  MONGODB_VERSION: "3.4.4"
 services:
   - mongodb
 
