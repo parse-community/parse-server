@@ -8,7 +8,6 @@ install:
   - ps: Install-Product node $env:nodejs_version
   # install modules
   - npm install
-  - mongodb-runner --start
 
 # Post-install test scripts.
 test_script:
