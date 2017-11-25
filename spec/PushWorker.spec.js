@@ -157,6 +157,138 @@ describe('PushWorker', () => {
       expect(PushUtils.bodiesPerLocales({where: {}})).toEqual({default: {where: {}}});
       expect(PushUtils.groupByLocaleIdentifier([])).toEqual({default: []});
     });
+
+    it('should propely apply translations strings', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+        },
+        translation: {
+          'fr': 'frenchy!',
+          'en': 'english',
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!'
+          }
+        }
+      });
+    });
+
+    it('should propely apply translations objects', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+        },
+        translation: {
+          'fr': { alert: 'frenchy!', title: 'yolo' },
+          'en': { alert: 'english', badge: 2, other: 'value' },
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+            title: 'yolo',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+            badge: 2,
+            other: 'value'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
+
+    it('should propely override alert-lang with translations', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+          'alert-fr': 'Yolo!',
+        },
+        translation: {
+          'fr': { alert: 'frenchy!', title: 'yolo' },
+          'en': { alert: 'english', badge: 2, other: 'value' },
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+            title: 'yolo',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+            badge: 2,
+            other: 'value'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
+
+    it('should propely override alert-lang with translations strings', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+          'alert-fr': 'Yolo!',
+          'alert-en': 'Yolo!'
+        },
+        translation: {
+          'fr': 'frenchy',
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy',
+            badge: 'Increment',
+          }
+        },
+        en: {
+          data: {
+            alert: 'Yolo!',
+            badge: 'Increment'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
   });
 
   describe('pushStatus', () => {
@@ -276,7 +408,6 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -1 }
         });
         const query = new Parse.Query('_PushStatus');
         return query.get(handler.objectId, { useMasterKey: true });
@@ -354,7 +485,6 @@ describe('PushWorker', () => {
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -1 }
         });
         done();
       });

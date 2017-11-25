@@ -146,11 +146,10 @@ export function pushStatusHandler(config, existingObjectId) {
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
     let pushTime = now.toISOString();
-    let status = 'pending';
+    const status = 'pending';
     if (body.hasOwnProperty('push_time')) {
       if (config.hasPushScheduledSupport) {
         pushTime = body.push_time;
-        status = 'scheduled';
       } else {
         logger.warn('Trying to schedule a push while server is not configured.');
         logger.warn('Push will be sent immediately');
@@ -188,20 +187,6 @@ export function pushStatusHandler(config, existingObjectId) {
       };
       return Promise.resolve(pushStatus);
     });
-  }
-
-  const setRunning = function(batches) {
-    logger.verbose(`_PushStatus ${objectId}: sending push to installations with %d batches`, batches);
-    return handler.update(
-      {
-        status:"pending",
-        objectId: objectId
-      },
-      {
-        status: "running",
-        count: batches
-      }
-    );
   }
 
   const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
@@ -266,20 +251,12 @@ export function pushStatusHandler(config, existingObjectId) {
       });
     }
 
-    // indicate this batch is complete
-    incrementOp(update, 'count', -1);
-
-    return handler.update({ objectId }, update).then((res) => {
-      if (res && res.count === 0) {
-        return this.complete();
-      }
-    })
+    return handler.update({ objectId }, update);
   }
 
   const complete = function() {
     return handler.update({ objectId }, {
-      status: 'succeeded',
-      count: {__op: 'Delete'}
+      status: 'succeeded'
     });
   }
 
@@ -296,7 +273,6 @@ export function pushStatusHandler(config, existingObjectId) {
 
   const rval = {
     setInitial,
-    setRunning,
     trackSent,
     complete,
     fail

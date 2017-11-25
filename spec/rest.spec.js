@@ -626,6 +626,31 @@ describe('rest update', () => {
   });
 });
 
+describe('rest each', () => {
+  it('should iterate through all results', () => {
+    const className = 'Yolo';
+    const config = Config.get('test');
+    const master = auth.master(config);
+    let promise = Promise.resolve();
+    let done = 0;
+    while (done != 10) {
+      done++;
+      promise = promise.then(() => {
+        return rest.create(config, auth, className, {});
+      });
+    }
+    return promise.then(() => {
+      let seen = 0;
+      // use limit 1 to get them 1 by one
+      return rest.each(config, master, className, {}, {limit: 1}, () => {
+        seen++;
+      }).then(() => {
+        expect(seen).toBe(10);
+      })
+    }).then(done, done.fail);
+  });
+})
+
 describe('read-only masterKey', () => {
   it('properly throws on rest.create, rest.update and rest.del', () => {
     const config = Config.get('test');

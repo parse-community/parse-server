@@ -35,6 +35,33 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
   });
 }
 
+function each(config, auth, className, where, options, callback) {
+  options = Object.assign({}, options);
+  options.order = 'objectId'; // force ordering on objectId
+  where = Object.assign({}, where);
+  let finished;
+  return Parse.Promise._continueWhile(() => {
+    return !finished;
+  }, () => {
+    return find(config, auth, className, where, options).then(({ results }) => {
+      let callbacksDone = Parse.Promise.as();
+      results.forEach((result) => {
+        callbacksDone = callbacksDone.then(() => {
+          return callback(result);
+        });
+      });
+      return callbacksDone.then(() => {
+        if (results.length >= options.limit) {
+          where['objectId'] = where['objectId'] || {};
+          where['objectId']['$gt'] = results[results.length - 1].objectId;
+        } else {
+          finished = true;
+        }
+      });
+    })
+  });
+}
+
 // get is just like find but only queries an objectId.
 const get = (config, auth, className, objectId, restOptions, clientSDK) => {
   var restWhere = { objectId };
@@ -172,5 +199,6 @@ module.exports = {
   del,
   find,
   get,
-  update
+  update,
+  each
 };
