@@ -27,13 +27,6 @@ export class ClassesRouter extends PromiseRouter {
     }
     return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK)
       .then((response) => {
-        if (response && response.results) {
-          for (const result of response.results) {
-            if (result.sessionToken) {
-              result.sessionToken = req.info.sessionToken || result.sessionToken;
-            }
-          }
-        }
         return { response: response };
       });
   }
