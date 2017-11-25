@@ -493,11 +493,6 @@ const flattenUpdateOperatorsForCreate = object => {
         object[key] = object[key].amount;
         break;
       case 'Add':
-        if (!(object[key].objects instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
-        }
-        object[key] = object[key].objects;
-        break;
       case 'AddUnique':
         if (!(object[key].objects instanceof Array)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'objects to add must be an array');
@@ -724,6 +719,18 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query, que
   }
 };
 
+// Makes sure we don't clobber existing shorthand $eq constraints on objectId.
+DatabaseController.prototype.preserveObjectIdConstraint = function(query) {
+  if (!('objectId' in query)) {
+    query.objectId = {};
+  } else if (typeof query.objectId === 'string') {
+    query.objectId = {
+      $eq: query.objectId
+    };
+  }
+  return query;
+};
+
 DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
   const idsFromString = typeof query.objectId === 'string' ? [query.objectId] : null;
   const idsFromEq = query.objectId && query.objectId['$eq'] ? [query.objectId['$eq']] : null;
@@ -740,13 +747,7 @@ DatabaseController.prototype.addInObjectIdsIds = function(ids = null, query) {
   }
 
   // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
-  if (!('objectId' in query)) {
-    query.objectId = {};
-  } else if (typeof query.objectId === 'string') {
-    query.objectId = {
-      $eq: query.objectId
-    };
-  }
+  query = this.preserveObjectIdConstraint(query);
   query.objectId['$in'] = idsIntersection;
 
   return query;
@@ -760,13 +761,7 @@ DatabaseController.prototype.addNotInObjectIdsIds = function(ids = [], query) {
   allIds = [...new Set(allIds)];
 
   // Need to make sure we don't clobber existing shorthand $eq constraints on objectId.
-  if (!('objectId' in query)) {
-    query.objectId = {};
-  } else if (typeof query.objectId === 'string') {
-    query.objectId = {
-      $eq: query.objectId
-    };
-  }
+  query = this.preserveObjectIdConstraint(query);
 
   query.objectId['$nin'] = allIds;
   return query;

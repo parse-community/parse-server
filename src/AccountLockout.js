@@ -33,11 +33,7 @@ export class AccountLockout {
 
     return this._config.database.find('_User', query)
       .then(users => {
-        if (Array.isArray(users) && users.length > 0) {
-          return true;
-        } else {
-          return false;
-        }
+        return Array.isArray(users) && users.length > 0;
       });
   }
 

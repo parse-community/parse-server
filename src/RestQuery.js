@@ -1,9 +1,9 @@
 // An object that encapsulates everything we need to run a 'find'
 // operation, encoded in the REST API format.
 
-var SchemaController = require('./Controllers/SchemaController');
 var Parse = require('parse/node').Parse;
 const triggers = require('./triggers');
+import RestUtils from './RestUtils';
 
 const AlwaysSelectedKeys = ['objectId', 'createdAt', 'updatedAt'];
 // restOptions can include:
@@ -168,7 +168,7 @@ RestQuery.prototype.buildRestWhere = function() {
   }).then(() => {
     return this.redirectClassNameForKey();
   }).then(() => {
-    return this.validateClientClassCreation();
+    return RestUtils.validateClientClassCreation(this.config, this.auth, this.className);
   }).then(() => {
     return this.replaceSelect();
   }).then(() => {
@@ -210,33 +210,20 @@ RestQuery.prototype.redirectClassNameForKey = function() {
     });
 };
 
-// Validates this operation against the allowClientClassCreation config.
-RestQuery.prototype.validateClientClassCreation = function() {
-  if (this.config.allowClientClassCreation === false && !this.auth.isMaster
-      && SchemaController.systemClasses.indexOf(this.className) === -1) {
-    return this.config.database.loadSchema()
-      .then(schemaController => schemaController.hasClass(this.className))
-      .then(hasClass => {
-        if (hasClass !== true) {
-          throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' +
-                                'non-existent class: ' + this.className);
-        }
-      });
-  } else {
-    return Promise.resolve();
-  }
-};
-
-function transformInQuery(inQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
+function getQueryPointers(results, className) {
+  const values = [];
+  for (const result of results) {
     values.push({
       __type: 'Pointer',
       className: className,
       objectId: result.objectId
     });
   }
+  return values;
+}
+
+function transformInQuery(inQueryObject, className, results) {
+  const values = getQueryPointers(results, className);
   delete inQueryObject['$inQuery'];
   if (Array.isArray(inQueryObject['$in'])) {
     inQueryObject['$in'] = inQueryObject['$in'].concat(values);
@@ -282,14 +269,7 @@ RestQuery.prototype.replaceInQuery = function() {
 };
 
 function transformNotInQuery(notInQueryObject, className, results) {
-  var values = [];
-  for (var result of results) {
-    values.push({
-      __type: 'Pointer',
-      className: className,
-      objectId: result.objectId
-    });
-  }
+  const values = getQueryPointers(results, className);
   delete notInQueryObject['$notInQuery'];
   if (Array.isArray(notInQueryObject['$nin'])) {
     notInQueryObject['$nin'] = notInQueryObject['$nin'].concat(values);

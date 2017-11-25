@@ -1,5 +1,6 @@
 import log from '../../../logger';
 import _   from 'lodash';
+import StorageUtils from '../StorageUtils';
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 
@@ -717,29 +718,26 @@ function transformConstraint(constraint, field) {
     }
 
     case '$in':
-    case '$nin': {
-      const arr = constraint[key];
-      if (!(arr instanceof Array)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad ' + key + ' value');
-      }
-      answer[key] = _.flatMap(arr, value => {
-        return ((atom) => {
-          if (Array.isArray(atom)) {
-            return value.map(transformer);
-          } else {
-            return transformer(atom);
-          }
-        })(value);
-      });
-      break;
-    }
+    case '$nin':
     case '$all': {
       const arr = constraint[key];
       if (!(arr instanceof Array)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON,
           'bad ' + key + ' value');
       }
-      answer[key] = arr.map(transformInteriorAtom);
+      if (key === '$all') {
+        answer[key] = arr.map(transformInteriorAtom);
+      } else {
+        answer[key] = _.flatMap(arr, value => {
+          return ((atom) => {
+            if (Array.isArray(atom)) {
+              return value.map(transformer);
+            } else {
+              return transformer(atom);
+            }
+          })(value);
+        });
+      }
       break;
     }
     case '$regex':
@@ -772,14 +770,7 @@ function transformConstraint(constraint, field) {
           '$search': search.$term
         }
       }
-      if (search.$language && typeof search.$language !== 'string') {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          `bad $text: $language, should be string`
-        );
-      } else if (search.$language) {
-        answer[key].$language = search.$language;
-      }
+      answer[key].$language = StorageUtils.getLanguageFromSearch(search);
       if (search.$caseSensitive && typeof search.$caseSensitive !== 'boolean') {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
@@ -1284,24 +1275,7 @@ var PolygonCoder = {
         coords[0][1] !== coords[coords.length - 1][1]) {
       coords.push(coords[0]);
     }
-    const unique = coords.filter((item, index, ar) => {
-      let foundIndex = -1;
-      for (let i = 0; i < ar.length; i += 1) {
-        const pt = ar[i];
-        if (pt[0] === item[0] &&
-            pt[1] === item[1]) {
-          foundIndex = i;
-          break;
-        }
-      }
-      return foundIndex === index;
-    });
-    if (unique.length < 3) {
-      throw new Parse.Error(
-        Parse.Error.INTERNAL_SERVER_ERROR,
-        'GeoJSON: Loop must have at least 3 different vertices'
-      );
-    }
+    StorageUtils.verifyCoordinatesUnique(coords);
     return { type: 'Polygon', coordinates: [coords] };
   },
 

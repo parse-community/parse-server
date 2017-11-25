@@ -8,6 +8,8 @@ import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
+import SessionsRouter from './SessionsRouter';
+import RestUtils from "../RestUtils";
 const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
@@ -138,16 +140,7 @@ export class UsersRouter extends ClassesRouter {
 
         // Sometimes the authData still has null on that keys
         // https://github.com/parse-community/parse-server/issues/935
-        if (user.authData) {
-          Object.keys(user.authData).forEach((provider) => {
-            if (user.authData[provider] === null) {
-              delete user.authData[provider];
-            }
-          });
-          if (Object.keys(user.authData).length == 0) {
-            delete user.authData;
-          }
-        }
+        user = RestUtils.cleanUserAuthData(user);
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
@@ -181,9 +174,7 @@ export class UsersRouter extends ClassesRouter {
   handleLogOut(req) {
     const success = {response: {}};
     if (req.info && req.info.sessionToken) {
-      return rest.find(req.config, Auth.master(req.config), '_Session',
-        { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK
-      ).then((records) => {
+      return SessionsRouter.getCurrentSession(req).then((records) => {
         if (records.results && records.results.length) {
           return rest.del(req.config, Auth.master(req.config), '_Session',
             records.results[0].objectId
@@ -215,7 +206,7 @@ export class UsersRouter extends ClassesRouter {
     }
   }
 
-  handleResetRequest(req) {
+  _verifyRequest(req) {
     this._throwOnBadEmailConfig(req);
 
     const { email } = req.body;
@@ -225,6 +216,11 @@ export class UsersRouter extends ClassesRouter {
     if (typeof email !== 'string') {
       throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
     }
+  }
+
+  handleResetRequest(req) {
+    const { email } = req.body;
+    this._verifyRequest(req);
     const userController = req.config.userController;
     return userController.sendPasswordResetEmail(email).then(() => {
       return Promise.resolve({
@@ -240,16 +236,8 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleVerificationEmailRequest(req) {
-    this._throwOnBadEmailConfig(req);
-
     const { email } = req.body;
-    if (!email) {
-      throw new Parse.Error(Parse.Error.EMAIL_MISSING, 'you must provide an email');
-    }
-    if (typeof email !== 'string') {
-      throw new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'you must provide a valid email string');
-    }
-
+    this._verifyRequest(req);
     return req.config.database.find('_User', { email: email }).then((results) => {
       if (!results.length || results.length < 1) {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);

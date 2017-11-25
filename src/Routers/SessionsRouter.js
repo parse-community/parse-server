@@ -12,13 +12,29 @@ export class SessionsRouter extends ClassesRouter {
     return '_Session';
   }
 
+  /**
+   * Get the current session from the given request
+   *
+   * @param {Object} req  Request to get session for
+   */
+  static getCurrentSession(req) {
+    return rest.find(
+      req.config,
+      Auth.master(req.config),
+      '_Session',
+      { sessionToken: req.info.sessionToken },
+      undefined,
+      req.info.clientSDK
+    );
+  }
+
   handleMe(req) {
     // TODO: Verify correct behavior
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
         'Session token required.');
     }
-    return rest.find(req.config, Auth.master(req.config), '_Session', { sessionToken: req.info.sessionToken }, undefined, req.info.clientSDK)
+    return SessionsRouter.getCurrentSession(req)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,

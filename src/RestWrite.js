@@ -2,15 +2,14 @@
 // that writes to the database.
 // This could be either a "create" or an "update".
 
-var SchemaController = require('./Controllers/SchemaController');
 var deepcopy = require('deepcopy');
-
 var Auth = require('./Auth');
 var cryptoUtils = require('./cryptoUtils');
 var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
+import RestUtils from './RestUtils';
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 import logger    from './logger';
@@ -64,7 +63,7 @@ RestWrite.prototype.execute = function() {
   return Promise.resolve().then(() => {
     return this.getUserAndRoleACL();
   }).then(() => {
-    return this.validateClientClassCreation();
+    return RestUtils.validateClientClassCreation(this.config, this.auth, this.className);
   }).then(() => {
     return this.handleInstallation();
   }).then(() => {
@@ -111,24 +110,6 @@ RestWrite.prototype.getUserAndRoleACL = function() {
       this.runOptions.acl = this.runOptions.acl.concat(roles, [this.auth.user.id]);
       return;
     });
-  } else {
-    return Promise.resolve();
-  }
-};
-
-// Validates this operation against the allowClientClassCreation config.
-RestWrite.prototype.validateClientClassCreation = function() {
-  if (this.config.allowClientClassCreation === false && !this.auth.isMaster
-      && SchemaController.systemClasses.indexOf(this.className) === -1) {
-    return this.config.database.loadSchema()
-      .then(schemaController => schemaController.hasClass(this.className))
-      .then(hasClass => {
-        if (hasClass !== true) {
-          throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN,
-            'This user is not allowed to access ' +
-                                'non-existent class: ' + this.className);
-        }
-      });
   } else {
     return Promise.resolve();
   }
@@ -421,6 +402,25 @@ RestWrite.prototype.transformUser = function() {
   });
 };
 
+// Returns any users with matching usernames
+// but not equal to the current user id
+RestWrite.prototype._findDuplicateUsernames = function() {
+  return this.config.database.find(
+    this.className,
+    {username: this.data.username, objectId: {'$ne': this.objectId()} },
+    {limit: 1}
+  )
+};
+
+// Returns any users with matching emails
+RestWrite.prototype._findDuplicateEmails = function() {
+  return this.config.database.find(
+    this.className,
+    {email: this.data.email, objectId: {'$ne': this.objectId()}},
+    {limit: 1}
+  );
+};
+
 RestWrite.prototype._validateUserName = function () {
   // Check for username uniqueness
   if (!this.data.username) {
@@ -432,11 +432,7 @@ RestWrite.prototype._validateUserName = function () {
   }
   // We need to a find to check for duplicate username in case they are missing the unique index on usernames
   // TODO: Check if there is a unique index, and if so, skip this query.
-  return this.config.database.find(
-    this.className,
-    {username: this.data.username, objectId: {'$ne': this.objectId()}},
-    {limit: 1}
-  ).then(results => {
+  return this._findDuplicateUsernames().then(results => {
     if (results.length > 0) {
       throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
     }
@@ -453,11 +449,7 @@ RestWrite.prototype._validateEmail = function() {
     return Promise.reject(new Parse.Error(Parse.Error.INVALID_EMAIL_ADDRESS, 'Email address format is invalid.'));
   }
   // Same problem for email as above for username
-  return this.config.database.find(
-    this.className,
-    {email: this.data.email, objectId: {'$ne': this.objectId()}},
-    {limit: 1}
-  ).then(results => {
+  return this._findDuplicateEmails().then(results => {
     if (results.length > 0) {
       throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
     }
@@ -512,37 +504,42 @@ RestWrite.prototype._validatePasswordRequirements = function() {
   return Promise.resolve();
 };
 
+RestWrite.prototype._getUser = function() {
+  return this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_password_history", "_hashed_password"]})
+    .then(results => {
+      if (results.length !== 1) {
+        throw undefined;
+      }
+      return results[0];
+    });
+}
+
 RestWrite.prototype._validatePasswordHistory = function() {
   // check whether password is repeating from specified history
   if (this.query && this.config.passwordPolicy.maxPasswordHistory) {
-    return this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_password_history", "_hashed_password"]})
-      .then(results => {
-        if (results.length != 1) {
-          throw undefined;
-        }
-        const user = results[0];
-        let oldPasswords = [];
-        if (user._password_history)
-          oldPasswords = _.take(user._password_history, this.config.passwordPolicy.maxPasswordHistory - 1);
-        oldPasswords.push(user.password);
-        const newPassword = this.data.password;
-        // compare the new password hash with all old password hashes
-        const promises = oldPasswords.map(function (hash) {
-          return passwordCrypto.compare(newPassword, hash).then((result) => {
-            if (result) // reject if there is a match
-              return Promise.reject("REPEAT_PASSWORD");
-            return Promise.resolve();
-          })
-        });
-        // wait for all comparisons to complete
-        return Promise.all(promises).then(() => {
+    return this._getUser().then(user => {
+      let oldPasswords = [];
+      if (user._password_history)
+        oldPasswords = _.take(user._password_history, this.config.passwordPolicy.maxPasswordHistory - 1);
+      oldPasswords.push(user.password);
+      const newPassword = this.data.password;
+      // compare the new password hash with all old password hashes
+      const promises = oldPasswords.map(function (hash) {
+        return passwordCrypto.compare(newPassword, hash).then((result) => {
+          if (result) // reject if there is a match
+            return Promise.reject("REPEAT_PASSWORD");
           return Promise.resolve();
-        }).catch(err => {
-          if (err === "REPEAT_PASSWORD") // a match was found
-            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`));
-          throw err;
-        });
+        })
       });
+      // wait for all comparisons to complete
+      return Promise.all(promises).then(() => {
+        return Promise.resolve();
+      }).catch(err => {
+        if (err === "REPEAT_PASSWORD") // a match was found
+          return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, `New password should not be the same as last ${this.config.passwordPolicy.maxPasswordHistory} passwords.`));
+        throw err;
+      });
+    });
   }
   return Promise.resolve();
 };
@@ -712,6 +709,21 @@ RestWrite.prototype.handleSession = function() {
   }
 };
 
+RestWrite.prototype.cleanInstallations = function(query) {
+  if (this.data.appIdentifier) {
+    query['appIdentifier'] = this.data.appIdentifier;
+  }
+  this.config.database.destroy('_Installation', query)
+    .catch(err => {
+      if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
+        // no deletions were made. Can be ignored.
+        return;
+      }
+      // rethrow the error
+      throw err;
+    });
+}
+
 // Handles the _Installation class specialness.
 // Does nothing if this isn't an installation object.
 // If an installation is found, this can mutate this.query and turn a create
@@ -867,18 +879,7 @@ RestWrite.prototype.handleInstallation = function() {
             '$ne': installationId
           }
         };
-        if (this.data.appIdentifier) {
-          delQuery['appIdentifier'] = this.data.appIdentifier;
-        }
-        this.config.database.destroy('_Installation', delQuery)
-          .catch(err => {
-            if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-              // no deletions were made. Can be ignored.
-              return;
-            }
-            // rethrow the error
-            throw err;
-          });
+        this.cleanInstallations(delQuery);
         return;
       }
     } else {
@@ -925,18 +926,7 @@ RestWrite.prototype.handleInstallation = function() {
             // What to do here? can't really clean up everything...
             return idMatch.objectId;
           }
-          if (this.data.appIdentifier) {
-            delQuery['appIdentifier'] = this.data.appIdentifier;
-          }
-          this.config.database.destroy('_Installation', delQuery)
-            .catch(err => {
-              if (err.code == Parse.Error.OBJECT_NOT_FOUND) {
-                // no deletions were made. Can be ignored.
-                return;
-              }
-              // rethrow the error
-              throw err;
-            });
+          this.cleanInstallations(delQuery);
         }
         // In non-merge scenarios, just return the installation match id
         return idMatch.objectId;
@@ -1004,11 +994,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
     let defer = Promise.resolve();
     // if password history is enabled then save the current password to history
     if (this.className === '_User' && this.data._hashed_password && this.config.passwordPolicy && this.config.passwordPolicy.maxPasswordHistory) {
-      defer = this.config.database.find('_User', {objectId: this.objectId()}, {keys: ["_password_history", "_hashed_password"]}).then(results => {
-        if (results.length != 1) {
-          throw undefined;
-        }
-        const user = results[0];
+      defer = this._getUser().then(user => {
         let oldPasswords = [];
         if (user._password_history) {
           oldPasswords = _.take(user._password_history, this.config.passwordPolicy.maxPasswordHistory);
@@ -1069,27 +1055,17 @@ RestWrite.prototype.runDatabaseOperation = function() {
         // check whether it was username or email and return the appropriate error.
         // Fallback to the original method
         // TODO: See if we can later do this without additional queries by using named indexes.
-        return this.config.database.find(
-          this.className,
-          { username: this.data.username, objectId: {'$ne': this.objectId()} },
-          { limit: 1 }
-        )
-          .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
-            }
-            return this.config.database.find(
-              this.className,
-              { email: this.data.email, objectId: {'$ne': this.objectId()} },
-              { limit: 1 }
-            );
-          })
-          .then(results => {
-            if (results.length > 0) {
-              throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
-            }
-            throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
-          });
+        return this._findDuplicateUsernames().then(results => {
+          if (results.length > 0) {
+            throw new Parse.Error(Parse.Error.USERNAME_TAKEN, 'Account already exists for this username.');
+          }
+          return this._findDuplicateEmails();
+        }).then(results => {
+          if (results.length > 0) {
+            throw new Parse.Error(Parse.Error.EMAIL_TAKEN, 'Account already exists for this email address.');
+          }
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+        });
       })
       .then(response => {
         response.objectId = this.data.objectId;
@@ -1195,19 +1171,11 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
   return updatedObject;
 };
 
+// TODO: (montymxb) UsersRouter cleans authData from user in handleLogIn, this may be redundant
 RestWrite.prototype.cleanUserAuthData = function() {
   if (this.response && this.response.response && this.className === '_User') {
     const user = this.response.response;
-    if (user.authData) {
-      Object.keys(user.authData).forEach((provider) => {
-        if (user.authData[provider] === null) {
-          delete user.authData[provider];
-        }
-      });
-      if (Object.keys(user.authData).length == 0) {
-        delete user.authData;
-      }
-    }
+    RestUtils.cleanUserAuthData(user);
   }
 };
 

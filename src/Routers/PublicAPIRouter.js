@@ -98,16 +98,27 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  /**
+   * Validates config
+   *
+   * @param {Object} config  Config to validate
+   */
+  validateConfig(config) {
+    if(!config){
+      return this.invalidRequest();
+    }
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+  }
+
   requestResetPassword(req) {
 
     const config = req.config;
 
-    if(!config){
-      this.invalidRequest();
-    }
-
-    if (!config.publicServerURL) {
-      return this.missingPublicServerURL();
+    const response = this.validateConfig(config);
+    if(response) {
+      return response;
     }
 
     const { username, token } = req.query;
@@ -131,12 +142,9 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
-    if(!config){
-      this.invalidRequest();
-    }
-
-    if (!config.publicServerURL) {
-      return this.missingPublicServerURL();
+    const response = this.validateConfig(config);
+    if(response) {
+      return response;
     }
 
     const {
