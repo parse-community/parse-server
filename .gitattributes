@@ -11,3 +11,5 @@
 *.yml text
 *.sql text
 *.sh text
+
+*.png binary
