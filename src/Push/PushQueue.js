@@ -2,9 +2,11 @@ import { ParseMessageQueue }      from '../ParseMessageQueue';
 import rest                       from '../rest';
 import { applyDeviceTokenExists } from './utils';
 import Parse from 'parse/node';
+import logger from '../logger';
 
 const PUSH_CHANNEL = 'parse-server-push';
 const DEFAULT_BATCH_SIZE = 100;
+const DEFAULT_QUERY_BATCH_SIZE = 10000;
 
 export class PushQueue {
   parsePublisher: Object;
@@ -16,6 +18,7 @@ export class PushQueue {
   constructor(config: any = {}) {
     this.channel = config.channel || PushQueue.defaultPushChannel();
     this.batchSize = config.batchSize || DEFAULT_BATCH_SIZE;
+    this.installationsQueryBatchSize = config.installationsQueryBatchSize || DEFAULT_QUERY_BATCH_SIZE;
     this.parsePublisher = ParseMessageQueue.createPublisher(config);
   }
 
@@ -24,39 +27,46 @@ export class PushQueue {
   }
 
   enqueue(body, where, config, auth, pushStatus) {
-    const limit = this.batchSize;
-
     where = applyDeviceTokenExists(where);
-
-    // Order by objectId so no impact on the DB
-    const order = 'objectId';
     return Promise.resolve().then(() => {
-      return rest.find(config,
-        auth,
-        '_Installation',
-        where,
-        {limit: 0, count: true});
-    }).then(({results, count}) => {
-      if (!results || count == 0) {
+      const batches = [];
+      let currentBatch = [];
+      let total = 0;
+      const options = {
+        limit: this.installationsQueryBatchSize,
+        keys: 'objectId'
+      }
+      return rest.each(config, auth, '_Installation', where, options, (result) => {
+        total++;
+        currentBatch.push(result.objectId);
+        if (currentBatch.length == this.batchSize) {
+          batches.push(currentBatch);
+          currentBatch = [];
+        }
+      }, { useMasterKey: true, batchSize: 10000 }).then(() => {
+        if (currentBatch.length > 0) {
+          batches.push(currentBatch);
+        }
+        return Promise.resolve({ batches, total });
+      });
+    }).then(({ batches, total }) => {
+      if (total == 0) {
         return Promise.reject({error: 'PushController: no results in query'})
       }
-      pushStatus.setRunning(Math.ceil(count / limit));
-      let skip = 0;
-      while (skip < count) {
-        const query = { where,
-          limit,
-          skip,
-          order };
-
+      logger.verbose(`_PushStatus ${pushStatus.objectId}: sending push to installations with %d batches`, total);
+      batches.forEach((batch) => {
         const pushWorkItem = {
           body,
-          query,
+          query: {
+            where: { objectId: { '$in': batch }},
+          },
           pushStatus: { objectId: pushStatus.objectId },
           applicationId: config.applicationId
-        }
+        };
         this.parsePublisher.publish(this.channel, JSON.stringify(pushWorkItem));
-        skip += limit;
-      }
+      });
+    }).then(() => {
+      pushStatus.complete(); // complete right away
     });
   }
 }

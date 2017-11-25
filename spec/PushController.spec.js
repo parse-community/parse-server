@@ -477,7 +477,7 @@ describe('PushController', () => {
           return spy.calls.all()[callIndex].args[0].object;
         }
         expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(4);
+        expect(spy.calls.count()).toBe(3);
         const allCalls = spy.calls.all();
         allCalls.forEach((call) => {
           expect(call.args.length).toBe(2);
@@ -485,9 +485,9 @@ describe('PushController', () => {
           expect(object instanceof Parse.Object).toBe(true);
         });
         expect(getPushStatus(0).get('status')).toBe('pending');
-        expect(getPushStatus(1).get('status')).toBe('running');
+        expect(getPushStatus(1).get('status')).toBe('succeeded');
         expect(getPushStatus(1).get('numSent')).toBe(0);
-        expect(getPushStatus(2).get('status')).toBe('running');
+        expect(getPushStatus(2).get('status')).toBe('succeeded');
         expect(getPushStatus(2).get('numSent')).toBe(10);
         expect(getPushStatus(2).get('numFailed')).toBe(5);
         // Those are updated from a nested . operation, this would
@@ -498,7 +498,6 @@ describe('PushController', () => {
         expect(getPushStatus(2).get('sentPerType')).toEqual({
           ios: 10
         });
-        expect(getPushStatus(3).get('status')).toBe('succeeded');
       })
       .then(done).catch(done.fail);
   });

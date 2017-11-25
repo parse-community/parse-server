@@ -190,20 +190,6 @@ export function pushStatusHandler(config, existingObjectId) {
     });
   }
 
-  const setRunning = function(batches) {
-    logger.verbose(`_PushStatus ${objectId}: sending push to installations with %d batches`, batches);
-    return handler.update(
-      {
-        status:"pending",
-        objectId: objectId
-      },
-      {
-        status: "running",
-        count: batches
-      }
-    );
-  }
-
   const trackSent = function(results, UTCOffset, cleanupInstallations = process.env.PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS) {
     const update = {
       numSent: 0,
@@ -266,20 +252,12 @@ export function pushStatusHandler(config, existingObjectId) {
       });
     }
 
-    // indicate this batch is complete
-    incrementOp(update, 'count', -1);
-
-    return handler.update({ objectId }, update).then((res) => {
-      if (res && res.count === 0) {
-        return this.complete();
-      }
-    })
+    return handler.update({ objectId }, update);
   }
 
   const complete = function() {
     return handler.update({ objectId }, {
-      status: 'succeeded',
-      count: {__op: 'Delete'}
+      status: 'succeeded'
     });
   }
 
@@ -296,7 +274,6 @@ export function pushStatusHandler(config, existingObjectId) {
 
   const rval = {
     setInitial,
-    setRunning,
     trackSent,
     complete,
     fail
