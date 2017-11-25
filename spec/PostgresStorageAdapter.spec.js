@@ -44,12 +44,21 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     };
 
     adapter.createTable(className, schema)
-      .then(() => {
+      .then(() => getColumns(client, className))
+      .then(columns => {
+        expect(columns).toContain('pushTime');
+        expect(columns).toContain('source');
+        expect(columns).toContain('query');
+        expect(columns).not.toContain('expiration_interval');
+
         schema.fields.expiration_interval = { type:'Number' };
         return adapter.schemaUpgrade(className, schema);
       })
       .then(() => getColumns(client, className))
       .then(columns => {
+        expect(columns).toContain('pushTime');
+        expect(columns).toContain('source');
+        expect(columns).toContain('query');
         expect(columns).toContain('expiration_interval');
         done();
       })
