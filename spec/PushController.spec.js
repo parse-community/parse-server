@@ -870,7 +870,7 @@ describe('PushController', () => {
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
-        expect(pushStatus.get('status')).toBe('pending');
+        expect(pushStatus.get('status')).toBe('succeeded');
       });
     }).then(done).catch(done.err);
   });
