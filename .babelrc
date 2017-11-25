@@ -9,5 +9,10 @@
                 "node": "6.11.4"
             }
         }]
-    ]
+    ],
+    "env": {
+        "test": {
+            "plugins": ["istanbul"]
+        }
+    }
 }

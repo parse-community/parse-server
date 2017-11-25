@@ -48,6 +48,7 @@
     "babel-cli": "6.26.0",
     "babel-core": "6.26.0",
     "babel-eslint": "^8.0.0",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-plugin-transform-flow-strip-types": "6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "1.6.1",
@@ -71,7 +72,7 @@
     "pretest": "npm run lint",
     "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 $COVERAGE_OPTION jasmine",
     "test:win": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
-    "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/nyc' npm test",
+    "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/nyc' NODE_ENV=test npm test",
     "coverage:win": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 node ./node_modules/.bin/nyc ./node_modules/jasmine/bin/jasmine.js",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
