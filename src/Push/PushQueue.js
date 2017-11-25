@@ -63,7 +63,6 @@ export class PushQueue {
           pushStatus: { objectId: pushStatus.objectId },
           applicationId: config.applicationId
         };
-        console.log(body) // eslint-disable-line
         this.parsePublisher.publish(this.channel, JSON.stringify(pushWorkItem));
       });
     }).then(() => {
