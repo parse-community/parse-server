@@ -53,7 +53,7 @@ const convertParseSchemaToMongoSchema = ({...schema}) => {
 
 // Returns { code, error } if invalid, or { result }, an object
 // suitable for inserting into _SCHEMA collection, otherwise.
-const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions) => {
+const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions, indexes) => {
   const mongoObject = {
     _id: className,
     objectId: 'string',
@@ -72,6 +72,11 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
     } else {
       mongoObject._metadata.class_permissions = classLevelPermissions;
     }
+  }
+
+  if (indexes && typeof indexes === 'object' && Object.keys(indexes).length > 0) {
+    mongoObject._metadata = mongoObject._metadata || {};
+    mongoObject._metadata.indexes = indexes;
   }
 
   return mongoObject;
@@ -165,11 +170,81 @@ export class MongoStorageAdapter {
       }));
   }
 
+  setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields) {
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1} };
+    }
+    const deletePromises = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
+      }
+      if (field.__op === 'Delete') {
+        const promise = this.dropIndex(className, name);
+        deletePromises.push(promise);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (!fields.hasOwnProperty(key)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
+    });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes);
+    }
+    return Promise.all(deletePromises)
+      .then(() => insertPromise)
+      .then(() => this._schemaCollection())
+      .then(schemaCollection => schemaCollection.updateSchema(className, {
+        $set: { _metadata: { indexes: existingIndexes } }
+      }));
+  }
+
+  setIndexesFromMongo(className) {
+    return this.getIndexes(className).then((indexes) => {
+      indexes = indexes.reduce((obj, index) => {
+        if (index.key._fts) {
+          delete index.key._fts;
+          delete index.key._ftsx;
+          for (const field in index.weights) {
+            index.key[field] = 'text';
+          }
+        }
+        obj[index.name] = index.key;
+        return obj;
+      }, {});
+      return this._schemaCollection()
+        .then(schemaCollection => schemaCollection.updateSchema(className, {
+          $set: { _metadata: { indexes: indexes } }
+        }));
+    }).catch(() => {
+      // Ignore if collection not found
+      return Promise.resolve();
+    });
+  }
+
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
-    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);
+    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
-    return this._schemaCollection()
+    return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
+      .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
       .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
       .catch(error => {
@@ -353,7 +428,7 @@ export class MongoStorageAdapter {
     }, {});
 
     readPreference = this._parseReadPreference(readPreference);
-    return this.createTextIndexesIfNeeded(className, query)
+    return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
@@ -463,6 +538,11 @@ export class MongoStorageAdapter {
       .then(collection => collection._mongoCollection.createIndex(index));
   }
 
+  createIndexes(className, indexes) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.createIndexes(indexes));
+  }
+
   createIndexesIfNeeded(className, fieldName, type) {
     if (type && type.type === 'Polygon') {
       const index = {
@@ -473,20 +553,26 @@ export class MongoStorageAdapter {
     return Promise.resolve();
   }
 
-  createTextIndexesIfNeeded(className, query) {
+  createTextIndexesIfNeeded(className, query, schema) {
     for(const fieldName in query) {
       if (!query[fieldName] || !query[fieldName].$text) {
         continue;
       }
-      const index = {
-        [fieldName]: 'text'
+      const existingIndexes = schema.indexes;
+      for (const key in existingIndexes) {
+        const index = existingIndexes[key];
+        if (index.hasOwnProperty(fieldName)) {
+          return Promise.resolve();
+        }
+      }
+      const indexName = `${fieldName}_text`;
+      const textIndex = {
+        [indexName]: { [fieldName]: 'text' }
       };
-      return this.createIndex(className, index)
+      return this.setIndexesWithSchemaFormat(className, textIndex, existingIndexes, schema.fields)
         .catch((error) => {
-          if (error.code === 85) {
-            throw new Parse.Error(
-              Parse.Error.INTERNAL_SERVER_ERROR,
-              'Only one text index is supported, please delete all text indexes to use new field.');
+          if (error.code === 85) { // Index exist with different options
+            return this.setIndexesFromMongo(className);
           }
           throw error;
         });
@@ -497,6 +583,26 @@ export class MongoStorageAdapter {
   getIndexes(className) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.indexes());
+  }
+
+  dropIndex(className, index) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndex(index));
+  }
+
+  dropAllIndexes(className) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndexes());
+  }
+
+  updateSchemaWithIndexes() {
+    return this.getAllClasses()
+      .then((classes) => {
+        const promises = classes.map((schema) => {
+          return this.setIndexesFromMongo(schema.className);
+        });
+        return Promise.all(promises);
+      });
   }
 }
 
