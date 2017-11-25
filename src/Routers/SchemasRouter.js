@@ -49,7 +49,7 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema({ clearCache: true})
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions, req.body.indexes))
     .then(schema => ({ response: schema }));
 }
 
@@ -65,7 +65,7 @@ function modifySchema(req) {
   const className = req.params.className;
 
   return req.config.database.loadSchema({ clearCache: true})
-    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
+    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.body.indexes, req.config.database))
     .then(result => ({response: result}));
 }
 
