@@ -7,5 +7,7 @@
 *.css text
 *.xml text
 *.md text
-
+*.txt text
+*.yml text
+*.sql text
 *.sh text
