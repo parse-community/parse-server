@@ -157,6 +157,69 @@ describe('PushWorker', () => {
       expect(PushUtils.bodiesPerLocales({where: {}})).toEqual({default: {where: {}}});
       expect(PushUtils.groupByLocaleIdentifier([])).toEqual({default: []});
     });
+
+    it('should propely apply translations strings', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+        },
+        translation: {
+          'fr': 'frenchy!',
+          'en': 'english',
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!'
+          }
+        }
+      });
+    });
+
+    it('should propely apply translations objects', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+        },
+        translation: {
+          'fr': { alert: 'frenchy!', title: 'yolo' },
+          'en': { alert: 'english', badge: 2, other: 'value' },
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+            title: 'yolo',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+            badge: 2,
+            other: 'value'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
   });
 
   describe('pushStatus', () => {

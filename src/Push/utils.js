@@ -52,14 +52,29 @@ export function stripLocalesFromBody(body) {
   return body;
 }
 
+export function translateBody(body, locale) {
+  body = deepcopy(body);
+  if (body.translation && body.translation[locale] && locale) {
+    const translation = body.translation[locale];
+    if (typeof translation === 'string') { // use translation
+      body.data = body.data || {};
+      body.data.alert = translation;
+    } else if (typeof translation === 'object') { // override tranlsation
+      body.data = translation;
+    }
+  }
+  delete body.translation;
+  return body;
+}
+
 export function bodiesPerLocales(body, locales = []) {
   // Get all tranformed bodies for each locale
   const result = locales.reduce((memo, locale) => {
-    memo[locale] = transformPushBodyForLocale(body, locale);
+    memo[locale] = translateBody(transformPushBodyForLocale(body, locale), locale);
     return memo;
   }, {});
   // Set the default locale, with the stripped body
-  result.default = stripLocalesFromBody(body);
+  result.default = translateBody(stripLocalesFromBody(body));
   return result;
 }
 
