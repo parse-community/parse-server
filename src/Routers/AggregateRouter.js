@@ -1,6 +1,7 @@
 import ClassesRouter from './ClassesRouter';
 import * as middleware from '../middlewares';
 import Parse         from 'parse/node';
+import UsersRouter   from './UsersRouter';
 
 const ALLOWED_KEYS = [
   'where',

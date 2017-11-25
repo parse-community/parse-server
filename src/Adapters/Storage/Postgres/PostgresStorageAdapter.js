@@ -548,6 +548,13 @@ export class PostgresStorageAdapter {
     this._pgp = pgp;
   }
 
+  handleShutdown() {
+    if (!this._client) {
+      return
+    }
+    this._client.$pool.end();
+  }
+
   _ensureSchemaCollectionExists(conn) {
     conn = conn || this._client;
     return conn.none('CREATE TABLE IF NOT EXISTS "_SCHEMA" ( "className" varChar(120), "schema" jsonb, "isParseClass" bool, PRIMARY KEY ("className") )')
@@ -1237,79 +1244,83 @@ export class PostgresStorageAdapter {
         }
         return Promise.reject(err);
       })
-      .then(results => results.map(object => {
-        Object.keys(schema.fields).forEach(fieldName => {
-          if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
-            object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
-          }
-          if (schema.fields[fieldName].type === 'Relation') {
-            object[fieldName] = {
-              __type: "Relation",
-              className: schema.fields[fieldName].targetClass
-            }
-          }
-          if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
-            object[fieldName] = {
-              __type: "GeoPoint",
-              latitude: object[fieldName].y,
-              longitude: object[fieldName].x
-            }
-          }
-          if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
-            let coords = object[fieldName];
-            coords = coords.substr(2, coords.length - 4).split('),(');
-            coords = coords.map((point) => {
-              return [
-                parseFloat(point.split(',')[1]),
-                parseFloat(point.split(',')[0])
-              ];
-            });
-            object[fieldName] = {
-              __type: "Polygon",
-              coordinates: coords
-            }
-          }
-          if (object[fieldName] && schema.fields[fieldName].type === 'File') {
-            object[fieldName] = {
-              __type: 'File',
-              name: object[fieldName]
-            }
-          }
+      .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
+  }
+
+  // Converts from a postgres-format object to a REST-format object.
+  // Does not strip out anything based on a lack of authentication.
+  postgresObjectToParseObject(className, object, schema) {
+    Object.keys(schema.fields).forEach(fieldName => {
+      if (schema.fields[fieldName].type === 'Pointer' && object[fieldName]) {
+        object[fieldName] = { objectId: object[fieldName], __type: 'Pointer', className: schema.fields[fieldName].targetClass };
+      }
+      if (schema.fields[fieldName].type === 'Relation') {
+        object[fieldName] = {
+          __type: "Relation",
+          className: schema.fields[fieldName].targetClass
+        }
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'GeoPoint') {
+        object[fieldName] = {
+          __type: "GeoPoint",
+          latitude: object[fieldName].y,
+          longitude: object[fieldName].x
+        }
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'Polygon') {
+        let coords = object[fieldName];
+        coords = coords.substr(2, coords.length - 4).split('),(');
+        coords = coords.map((point) => {
+          return [
+            parseFloat(point.split(',')[1]),
+            parseFloat(point.split(',')[0])
+          ];
         });
-        //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
-        if (object.createdAt) {
-          object.createdAt = object.createdAt.toISOString();
+        object[fieldName] = {
+          __type: "Polygon",
+          coordinates: coords
         }
-        if (object.updatedAt) {
-          object.updatedAt = object.updatedAt.toISOString();
+      }
+      if (object[fieldName] && schema.fields[fieldName].type === 'File') {
+        object[fieldName] = {
+          __type: 'File',
+          name: object[fieldName]
         }
-        if (object.expiresAt) {
-          object.expiresAt = { __type: 'Date', iso: object.expiresAt.toISOString() };
-        }
-        if (object._email_verify_token_expires_at) {
-          object._email_verify_token_expires_at = { __type: 'Date', iso: object._email_verify_token_expires_at.toISOString() };
-        }
-        if (object._account_lockout_expires_at) {
-          object._account_lockout_expires_at = { __type: 'Date', iso: object._account_lockout_expires_at.toISOString() };
-        }
-        if (object._perishable_token_expires_at) {
-          object._perishable_token_expires_at = { __type: 'Date', iso: object._perishable_token_expires_at.toISOString() };
-        }
-        if (object._password_changed_at) {
-          object._password_changed_at = { __type: 'Date', iso: object._password_changed_at.toISOString() };
-        }
+      }
+    });
+    //TODO: remove this reliance on the mongo format. DB adapter shouldn't know there is a difference between created at and any other date field.
+    if (object.createdAt) {
+      object.createdAt = object.createdAt.toISOString();
+    }
+    if (object.updatedAt) {
+      object.updatedAt = object.updatedAt.toISOString();
+    }
+    if (object.expiresAt) {
+      object.expiresAt = { __type: 'Date', iso: object.expiresAt.toISOString() };
+    }
+    if (object._email_verify_token_expires_at) {
+      object._email_verify_token_expires_at = { __type: 'Date', iso: object._email_verify_token_expires_at.toISOString() };
+    }
+    if (object._account_lockout_expires_at) {
+      object._account_lockout_expires_at = { __type: 'Date', iso: object._account_lockout_expires_at.toISOString() };
+    }
+    if (object._perishable_token_expires_at) {
+      object._perishable_token_expires_at = { __type: 'Date', iso: object._perishable_token_expires_at.toISOString() };
+    }
+    if (object._password_changed_at) {
+      object._password_changed_at = { __type: 'Date', iso: object._password_changed_at.toISOString() };
+    }
 
-        for (const fieldName in object) {
-          if (object[fieldName] === null) {
-            delete object[fieldName];
-          }
-          if (object[fieldName] instanceof Date) {
-            object[fieldName] = { __type: 'Date', iso: object[fieldName].toISOString() };
-          }
-        }
+    for (const fieldName in object) {
+      if (object[fieldName] === null) {
+        delete object[fieldName];
+      }
+      if (object[fieldName] instanceof Date) {
+        object[fieldName] = { __type: 'Date', iso: object[fieldName].toISOString() };
+      }
+    }
 
-        return object;
-      }));
+    return object;
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
@@ -1382,10 +1393,10 @@ export class PostgresStorageAdapter {
         }
         const child = fieldName.split('.')[1];
         return results.map(object => object[column][child]);
-      });
+      }).then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
 
-  aggregate(className, pipeline) {
+  aggregate(className, schema, pipeline) {
     debug('aggregate', className, pipeline);
     const values = [className];
     let columns = [];
@@ -1468,17 +1479,19 @@ export class PostgresStorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
     debug(qs, values);
-    return this._client.any(qs, values).then(results => {
-      if (countField) {
-        results[0][countField] = parseInt(results[0][countField], 10);
-      }
-      results.forEach(result => {
-        if (!result.hasOwnProperty('objectId')) {
-          result.objectId = null;
+    return this._client.any(qs, values)
+      .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)))
+      .then(results => {
+        if (countField) {
+          results[0][countField] = parseInt(results[0][countField], 10);
         }
+        results.forEach(result => {
+          if (!result.hasOwnProperty('objectId')) {
+            result.objectId = null;
+          }
+        });
+        return results;
       });
-      return results;
-    });
   }
 
   performInitialization({ VolatileClassesSchemas }) {

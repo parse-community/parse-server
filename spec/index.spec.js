@@ -108,7 +108,7 @@ describe('server', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: {
-        module: 'parse-server-simple-mailgun-adapter',
+        module: '@parse/simple-mailgun-adapter',
         options: {
           fromAddress: 'parse@example.com',
           apiKey: 'k',
@@ -123,7 +123,7 @@ describe('server', () => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
-      emailAdapter: 'parse-server-simple-mailgun-adapter',
+      emailAdapter: '@parse/simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
     })
       .catch(error => {
@@ -137,7 +137,7 @@ describe('server', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: {
-        module: 'parse-server-simple-mailgun-adapter',
+        module: '@parse/simple-mailgun-adapter',
         options: {
           domain: 'd',
         }
@@ -350,7 +350,7 @@ describe('server', () => {
 
   it('exposes correct adapters', done => {
     expect(ParseServer.S3Adapter).toThrow();
-    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
+    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install @parse/gcs-files-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
     expect(ParseServer.InMemoryCacheAdapter).toThrow();
     expect(ParseServer.NullCacheAdapter).toThrow();

@@ -24,7 +24,7 @@ import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
 import { AnalyticsAdapter }     from '../Adapters/Analytics/AnalyticsAdapter';
 import MongoStorageAdapter      from '../Adapters/Storage/Mongo/MongoStorageAdapter';
 import PostgresStorageAdapter   from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import ParsePushAdapter         from 'parse-server-push-adapter';
+import ParsePushAdapter         from '@parse/push-adapter';
 
 export function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
