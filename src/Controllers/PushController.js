@@ -87,6 +87,8 @@ export class PushController {
         return Promise.resolve();
       }
       return config.pushControllerQueue.enqueue(body, where, config, auth, pushStatus);
+    }).then(() => {
+      return pushStatus.complete();
     }).catch((err) => {
       return pushStatus.fail(err).then(() => {
         throw err;

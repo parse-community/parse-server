@@ -804,7 +804,7 @@ describe('PushController', () => {
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
-        expect(pushStatus.get('status')).not.toBe('scheduled');
+        expect(pushStatus.get('status')).toBe('succeeded');
         done();
       });
     }).catch((err) => {
@@ -870,7 +870,7 @@ describe('PushController', () => {
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
-        expect(pushStatus.get('status')).toBe('scheduled');
+        expect(pushStatus.get('status')).toBe('pending');
       });
     }).then(done).catch(done.err);
   });
@@ -1247,7 +1247,7 @@ describe('PushController', () => {
           return q.get(pushStatusId, {useMasterKey: true});
         })
         .then((pushStatus) => {
-          expect(pushStatus.get('status')).toBe('scheduled');
+          expect(pushStatus.get('status')).toBe('pending');
           expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
         })
         .then(done, done.fail);

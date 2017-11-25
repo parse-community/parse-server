@@ -65,8 +65,6 @@ export class PushQueue {
         };
         this.parsePublisher.publish(this.channel, JSON.stringify(pushWorkItem));
       });
-    }).then(() => {
-      pushStatus.complete(); // complete right away
     });
   }
 }

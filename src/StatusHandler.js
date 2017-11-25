@@ -146,11 +146,10 @@ export function pushStatusHandler(config, existingObjectId) {
   const setInitial = function(body = {}, where, options = {source: 'rest'}) {
     const now = new Date();
     let pushTime = now.toISOString();
-    let status = 'pending';
+    const status = 'pending';
     if (body.hasOwnProperty('push_time')) {
       if (config.hasPushScheduledSupport) {
         pushTime = body.push_time;
-        status = 'scheduled';
       } else {
         logger.warn('Trying to schedule a push while server is not configured.');
         logger.warn('Push will be sent immediately');
