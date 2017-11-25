@@ -37,6 +37,7 @@ function find(config, auth, className, restWhere, restOptions, clientSDK) {
 
 function each(config, auth, className, where, options, callback) {
   options = Object.assign({}, options);
+  options.order = 'objectId'; // force ordering on objectId
   where = Object.assign({}, where);
   let finished;
   return Parse.Promise._continueWhile(() => {
@@ -52,7 +53,7 @@ function each(config, auth, className, where, options, callback) {
       return callbacksDone.then(() => {
         if (results.length >= options.limit) {
           where['objectId'] = where['objectId'] || {};
-          where['objectId']['$gt'] = results[results.length - 1].id;
+          where['objectId']['$gt'] = results[results.length - 1].objectId;
         } else {
           finished = true;
         }
