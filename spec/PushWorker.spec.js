@@ -220,6 +220,75 @@ describe('PushWorker', () => {
         }
       });
     });
+
+    it('should propely override alert-lang with translations', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+          'alert-fr': 'Yolo!',
+        },
+        translation: {
+          'fr': { alert: 'frenchy!', title: 'yolo' },
+          'en': { alert: 'english', badge: 2, other: 'value' },
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy!',
+            title: 'yolo',
+          }
+        },
+        en: {
+          data: {
+            alert: 'english',
+            badge: 2,
+            other: 'value'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
+
+    it('should propely override alert-lang with translations strings', () => {
+      const bodies = PushUtils.bodiesPerLocales({
+        data: {
+          alert: 'Yo!',
+          badge: 'Increment',
+          'alert-fr': 'Yolo!',
+          'alert-en': 'Yolo!'
+        },
+        translation: {
+          'fr': 'frenchy',
+        }
+      }, ['fr', 'en']);
+      expect(bodies).toEqual({
+        fr: {
+          data: {
+            alert: 'frenchy',
+            badge: 'Increment',
+          }
+        },
+        en: {
+          data: {
+            alert: 'Yolo!',
+            badge: 'Increment'
+          }
+        },
+        default: {
+          data: {
+            alert: 'Yo!',
+            badge: 'Increment',
+          }
+        }
+      });
+    });
   });
 
   describe('pushStatus', () => {
