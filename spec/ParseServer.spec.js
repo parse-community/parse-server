@@ -1,8 +1,8 @@
 'use strict';
 /* Tests for ParseServer.js */
 const express = require('express');
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter').PostgresStorageAdapter;
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter').PostgresStorageAdapter;
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParseServer from '../src/ParseServer';
 
 describe('Server Url Checks', () => {
