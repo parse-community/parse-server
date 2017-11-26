@@ -1,6 +1,7 @@
 const Parse = require('parse/node');
 const ParseLiveQueryServer = require('../lib/LiveQuery/ParseLiveQueryServer').ParseLiveQueryServer;
 const ParseServer = require('../lib/ParseServer').default;
+const LiveQueryController = require('../lib/Controllers/LiveQueryController').LiveQueryController;
 
 // Global mock info
 const queryHashValue = 'hash';
@@ -145,7 +146,7 @@ describe('ParseLiveQueryServer', function() {
 
   it('properly passes the CLP to afterSave/afterDelete hook', function(done) {
     function setPermissionsOnClass(className, permissions, doPut) {
-      var request = require('request');
+      const request = require('request');
       let op = request.post;
       if (doPut)
       {
@@ -1160,17 +1161,17 @@ describe('ParseLiveQueryServer', function() {
 
   describe('class level permissions', () => {
     it('matches CLP when find is closed', (done) => {
-      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
-      var acl = new Parse.ACL();
+      const parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
       // Mock sessionTokenCache will return false when sessionToken is undefined
-      var client = {
+      const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
           sessionToken: undefined
         })
       };
-      var requestId = 0;
+      const requestId = 0;
 
       parseLiveQueryServer._matchesCLP({
         find: {}
@@ -1181,17 +1182,17 @@ describe('ParseLiveQueryServer', function() {
     });
 
     it('matches CLP when find is open', (done) => {
-      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
-      var acl = new Parse.ACL();
+      const parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
       // Mock sessionTokenCache will return false when sessionToken is undefined
-      var client = {
+      const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
           sessionToken: undefined
         })
       };
-      var requestId = 0;
+      const requestId = 0;
 
       parseLiveQueryServer._matchesCLP({
         find: { '*': true }
@@ -1202,17 +1203,17 @@ describe('ParseLiveQueryServer', function() {
     });
 
     it('matches CLP when find is restricted to userIds', (done) => {
-      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
-      var acl = new Parse.ACL();
+      const parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
       // Mock sessionTokenCache will return false when sessionToken is undefined
-      var client = {
+      const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
           sessionToken: 'userId'
         })
       };
-      var requestId = 0;
+      const requestId = 0;
 
       parseLiveQueryServer._matchesCLP({
         find: { 'userId': true }
@@ -1223,17 +1224,17 @@ describe('ParseLiveQueryServer', function() {
     });
 
     it('matches CLP when find is restricted to userIds', (done) => {
-      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
-      var acl = new Parse.ACL();
+      const parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      const acl = new Parse.ACL();
       acl.setReadAccess(testUserId, true);
       // Mock sessionTokenCache will return false when sessionToken is undefined
-      var client = {
+      const client = {
         sessionToken: 'sessionToken',
         getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
           sessionToken: undefined
         })
       };
-      var requestId = 0;
+      const requestId = 0;
 
       parseLiveQueryServer._matchesCLP({
         find: { 'userId': true }
@@ -1450,4 +1451,127 @@ describe('ParseLiveQueryServer', function() {
     }
     return message;
   }
+});
+
+describe('LiveQueryController', () => {
+  it('properly passes the CLP to afterSave/afterDelete hook', function(done) {
+    function setPermissionsOnClass(className, permissions, doPut) {
+      const request = require('request');
+      let op = request.post;
+      if (doPut)
+      {
+        op = request.put;
+      }
+      return new Promise((resolve, reject) => {
+        op({
+          url: Parse.serverURL + '/schemas/' + className,
+          headers: {
+            'X-Parse-Application-Id': Parse.applicationId,
+            'X-Parse-Master-Key': Parse.masterKey,
+          },
+          json: true,
+          body: {
+            classLevelPermissions: permissions
+          }
+        }, (error, response, body) => {
+          if (error) {
+            return reject(error);
+          }
+          if (body.error) {
+            return reject(body);
+          }
+          return resolve(body);
+        })
+      });
+    }
+
+    let saveSpy;
+    let deleteSpy;
+    reconfigureServer({
+      liveQuery: {
+        classNames: ['Yolo']
+      }
+    }).then((parseServer) => {
+      saveSpy = spyOn(parseServer.config.liveQueryController, 'onAfterSave').and.callThrough();
+      deleteSpy = spyOn(parseServer.config.liveQueryController, 'onAfterDelete').and.callThrough();
+      return setPermissionsOnClass('Yolo', {
+        create: {'*': true},
+        delete: {'*': true}
+      })
+    }).then(() => {
+      const obj = new Parse.Object('Yolo');
+      return obj.save();
+    }).then((obj) => {
+      return obj.destroy();
+    }).then(() => {
+      expect(saveSpy).toHaveBeenCalled();
+      const saveArgs = saveSpy.calls.mostRecent().args;
+      expect(saveArgs.length).toBe(4);
+      expect(saveArgs[0]).toBe('Yolo');
+      expect(saveArgs[3]).toEqual({
+        get:  {},
+        addField: {},
+        create: {'*': true},
+        find: {},
+        update: {},
+        delete: {'*': true},
+      });
+
+      expect(deleteSpy).toHaveBeenCalled();
+      const deleteArgs = deleteSpy.calls.mostRecent().args;
+      expect(deleteArgs.length).toBe(4);
+      expect(deleteArgs[0]).toBe('Yolo');
+      expect(deleteArgs[3]).toEqual({
+        get:  {},
+        addField: {},
+        create: {'*': true},
+        find: {},
+        update: {},
+        delete: {'*': true},
+      });
+      done();
+    }).catch(done.fail);
+  });
+
+  it('should properly pack message request on afterSave', () => {
+    const controller = new LiveQueryController({
+      classNames: ['Yolo'],
+    });
+    const spy = spyOn(controller.liveQueryPublisher, 'onCloudCodeAfterSave');
+    controller.onAfterSave('Yolo', {o: 1}, {o:2}, {yolo: true});
+    expect(spy).toHaveBeenCalled()
+    const args = spy.calls.mostRecent().args;
+    expect(args.length).toBe(1);
+    expect(args[0]).toEqual({
+      object: {o: 1},
+      original: {o: 2},
+      classLevelPermissions: {yolo: true}
+    })
+  });
+
+  it('should properly pack message request on afterDelete', () => {
+    const controller = new LiveQueryController({
+      classNames: ['Yolo'],
+    });
+    const spy = spyOn(controller.liveQueryPublisher, 'onCloudCodeAfterDelete');
+    controller.onAfterDelete('Yolo', {o: 1}, {o:2}, {yolo: true});
+    expect(spy).toHaveBeenCalled()
+    const args = spy.calls.mostRecent().args;
+    expect(args.length).toBe(1);
+    expect(args[0]).toEqual({
+      object: {o: 1},
+      original: {o: 2},
+      classLevelPermissions: {yolo: true}
+    })
+  });
+
+  it('should properly pack message request', () => {
+    const controller = new LiveQueryController({
+      classNames: ['Yolo'],
+    });
+    expect(controller._makePublisherRequest({})).toEqual({
+      object: {},
+      original: undefined,
+    });
+  });
 });
