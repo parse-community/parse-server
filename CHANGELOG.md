@@ -1,10 +1,10 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.7.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...master)
 
 ### 2.7.0
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.7.0...2.6.5)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...2.6.5)
 
 Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update your engines before updating parse-server
 
