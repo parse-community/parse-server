@@ -2,6 +2,7 @@ var PushWorker = require('../src').PushWorker;
 var PushUtils = require('../src/Push/utils');
 var Config = require('../src/Config');
 var { pushStatusHandler } = require('../src/StatusHandler');
+var rest = require('../src/rest');
 
 describe('PushWorker', () => {
   it('should run with small batch', (done) => {
@@ -15,7 +16,7 @@ describe('PushWorker', () => {
         }
       }
     }).then(() => {
-      expect(new Config('test').pushWorker).toBeUndefined();
+      expect(Config.get('test').pushWorker).toBeUndefined();
       new PushWorker({
         send: (body, installations) => {
           expect(installations.length <= batchSize).toBe(true);
@@ -160,12 +161,12 @@ describe('PushWorker', () => {
 
   describe('pushStatus', () => {
     it('should remove invalid installations', (done) => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(config.database, "update").and.callFake(() => {
         return Promise.resolve();
       });
-      handler.trackSent([
+      const toAwait = handler.trackSent([
         {
           transmitted: false,
           device: {
@@ -239,13 +240,13 @@ describe('PushWorker', () => {
       expect(lastCall.args[2]).toEqual({
         deviceToken: { '__op': "Delete" }
       });
-      done();
+      toAwait.then(done).catch(done);
     });
 
     it('tracks push status per UTC offsets', (done) => {
-      const config = new Config('test');
-      const handler = pushStatusHandler(config, 'ABCDEF1234');
-      const spy = spyOn(config.database, "update").and.callThrough();
+      const config = Config.get('test');
+      const handler = pushStatusHandler(config);
+      const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = 1;
       handler.setInitial().then(() => {
         return handler.trackSent([
@@ -266,25 +267,19 @@ describe('PushWorker', () => {
         ], UTCOffset)
       }).then(() => {
         expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(1);
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[0]).toBe('_PushStatus');
-        const updatePayload = lastCall.args[2];
-        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
-        // remove the updatedAt as not testable
-        delete updatePayload.updatedAt;
-
-        expect(lastCall.args[2]).toEqual({
+        expect(lastCall.args[2]).toBe(`_PushStatus`);
+        expect(lastCall.args[4]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },
           'sentPerType.ios': { __op: 'Increment', amount: 1 },
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 },
+          count: { __op: 'Increment', amount: -1 }
         });
         const query = new Parse.Query('_PushStatus');
-        return query.get('ABCDEF1234', { useMasterKey: true });
+        return query.get(handler.objectId, { useMasterKey: true });
       }).then((pushStatus) => {
         const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
         expect(sentPerUTCOffset['1']).toBe(1);
@@ -315,7 +310,7 @@ describe('PushWorker', () => {
         ], UTCOffset)
       }).then(() => {
         const query = new Parse.Query('_PushStatus');
-        return query.get('ABCDEF1234', { useMasterKey: true });
+        return query.get(handler.objectId, { useMasterKey: true });
       }).then((pushStatus) => {
         const sentPerUTCOffset = pushStatus.get('sentPerUTCOffset');
         expect(sentPerUTCOffset['1']).toBe(3);
@@ -325,50 +320,41 @@ describe('PushWorker', () => {
     });
 
     it('tracks push status per UTC offsets with negative offsets', (done) => {
-      const config = new Config('test');
+      const config = Config.get('test');
       const handler = pushStatusHandler(config);
-      spyOn(config.database, "create").and.callFake(() => {
-        return Promise.resolve();
-      });
-      const spy = spyOn(config.database, "update").and.callFake(() => {
-        return Promise.resolve();
-      });
+      const spy = spyOn(rest, "update").and.callThrough();
       const UTCOffset = -6;
-      handler.trackSent([
-        {
-          transmitted: false,
-          device: {
-            deviceToken: 1,
-            deviceType: 'ios',
+      handler.setInitial().then(() => {
+        return handler.trackSent([
+          {
+            transmitted: false,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+            response: { error: 'Unregistered' }
           },
-          response: { error: 'Unregistered' }
-        },
-        {
-          transmitted: true,
-          device: {
-            deviceToken: 1,
-            deviceType: 'ios',
+          {
+            transmitted: true,
+            device: {
+              deviceToken: 1,
+              deviceType: 'ios',
+            },
+            response: { error: 'Unregistered' }
           },
-          response: { error: 'Unregistered' }
-        },
-      ], UTCOffset).then(() => {
+        ], UTCOffset);
+      }).then(() => {
         expect(spy).toHaveBeenCalled();
-        expect(spy.calls.count()).toBe(1);
         const lastCall = spy.calls.mostRecent();
-        expect(lastCall.args[0]).toBe('_PushStatus');
-        const updatePayload = lastCall.args[2];
-        expect(updatePayload.updatedAt instanceof Date).toBeTruthy();
-        // remove the updatedAt as not testable
-        delete updatePayload.updatedAt;
-
-        expect(lastCall.args[2]).toEqual({
+        expect(lastCall.args[2]).toBe('_PushStatus');
+        expect(lastCall.args[4]).toEqual({
           numSent: { __op: 'Increment', amount: 1 },
           numFailed: { __op: 'Increment', amount: 1 },
           'sentPerType.ios': { __op: 'Increment', amount: 1 },
           'failedPerType.ios': { __op: 'Increment', amount: 1 },
           [`sentPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
           [`failedPerUTCOffset.${UTCOffset}`]: { __op: 'Increment', amount: 1 },
-          count: { __op: 'Increment', amount: -2 },
+          count: { __op: 'Increment', amount: -1 }
         });
         done();
       });

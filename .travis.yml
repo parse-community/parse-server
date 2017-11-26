@@ -13,6 +13,7 @@ branches:
   only:
   - master
   - /^[0-9]+.[0-9]+.[0-9]+(-.*)?$/
+  - 3.x
   - /^greenkeeper/.*$/
 cache:
   directories:
@@ -24,13 +25,13 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - NODE_VERSION=6.10 
+  - NODE_VERSION=6.11.4
   matrix:
   - MONGODB_VERSION=3.2.13
   - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=8.1.3
+  - NODE_VERSION=8.7
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
@@ -47,17 +48,19 @@ jobs:
   include:
     # release on github latest branch
     - stage: release
-      node_js: '4.6'
+      node_js: '6.11.4'
       env: 
       before_script: skip
       after_script: skip
-      script: skip
+      script: npm install -g nsp && nsp check
       deploy:
         - provider: script
           skip_cleanup: true
           script: ./resources/npm-git.sh
           on:
-           branch: master
+           branch:
+            - master
+            - 3.x
         - provider: npm
           skip_cleanup: true
           email:

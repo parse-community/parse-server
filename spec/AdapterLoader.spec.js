@@ -1,8 +1,8 @@
 
 var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
-var FilesAdapter = require("parse-server-fs-adapter").default;
-var S3Adapter = require("parse-server-s3-adapter").default;
-var ParsePushAdapter = require("parse-server-push-adapter").default;
+var FilesAdapter = require("@parse/fs-files-adapter").default;
+var S3Adapter = require("@parse/s3-files-adapter").default;
+var ParsePushAdapter = require("@parse/push-adapter").default;
 const Config = require('../src/Config');
 
 describe("AdapterLoader", ()=>{
@@ -48,7 +48,7 @@ describe("AdapterLoader", ()=>{
 
   it("should instantiate an adapter from npm module", (done) => {
     var adapter = loadAdapter({
-      module: 'parse-server-fs-adapter'
+      module: '@parse/fs-files-adapter'
     });
 
     expect(typeof adapter).toBe('object');
@@ -135,7 +135,7 @@ describe("AdapterLoader", ()=>{
       reconfigureServer({
         push: pushAdapterOptions,
       }).then(() => {
-        const config = new Config(Parse.applicationId);
+        const config = Config.get(Parse.applicationId);
         const pushAdapter = config.pushWorker.adapter;
         expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
         expect(pushAdapter.options).toEqual(pushAdapterOptions);

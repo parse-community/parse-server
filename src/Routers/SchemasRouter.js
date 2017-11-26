@@ -34,6 +34,9 @@ function getOneSchema(req) {
 }
 
 function createSchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to create a schema.');
+  }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
@@ -46,11 +49,14 @@ function createSchema(req) {
   }
 
   return req.config.database.loadSchema({ clearCache: true})
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions, req.body.indexes))
     .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to update a schema.');
+  }
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
@@ -59,11 +65,14 @@ function modifySchema(req) {
   const className = req.params.className;
 
   return req.config.database.loadSchema({ clearCache: true})
-    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
+    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.body.indexes, req.config.database))
     .then(result => ({response: result}));
 }
 
 const deleteSchema = req => {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to delete a schema.');
+  }
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }

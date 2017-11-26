@@ -14,7 +14,7 @@ var nobody = auth.nobody(config);
 describe('rest query', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
     database = config.database;
   });
 

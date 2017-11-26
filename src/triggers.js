@@ -30,6 +30,20 @@ const baseStore = function() {
   });
 };
 
+function validateClassNameForTriggers(className, type) {
+  const restrictedClassNames = [ '_Session' ];
+  if (restrictedClassNames.indexOf(className) != -1) {
+    throw `Triggers are not supported for ${className} class.`;
+  }
+  if (type == Types.beforeSave && className === '_PushStatus') {
+    // _PushStatus uses undocumented nested key increment ops
+    // allowing beforeSave would mess up the objects big time
+    // TODO: Allow proper documented way of using nested increment ops
+    throw 'Only afterSave is allowed on _PushStatus';
+  }
+  return className;
+}
+
 const _triggerStore = {};
 
 export function addFunction(functionName, handler, validationHandler, applicationId) {
@@ -46,6 +60,7 @@ export function addJob(jobName, handler, applicationId) {
 }
 
 export function addTrigger(type, className, handler, applicationId) {
+  validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
@@ -129,6 +144,7 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     master: false,
     log: config.loggerController,
     headers: config.headers,
+    ip: config.ip,
   };
 
   if (originalParseObject) {
@@ -161,6 +177,7 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
     log: config.loggerController,
     isGet,
     headers: config.headers,
+    ip: config.ip,
   };
 
   if (!auth) {

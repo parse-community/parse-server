@@ -9,7 +9,7 @@ describe('Uniqueness', function() {
     obj.set('unique', 'value');
     obj.save().then(() => {
       expect(obj.id).not.toBeUndefined();
-      const config = new Config('test');
+      const config = Config.get('test');
       return config.database.adapter.ensureUniqueness('UniqueField', { fields: { unique: { __type: 'String' } } }, ['unique'])
     })
       .then(() => {
@@ -30,7 +30,7 @@ describe('Uniqueness', function() {
     obj.save({ string: 'who cares' })
       .then(() => obj.save({ ptr: obj }))
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.adapter.ensureUniqueness('UniquePointer', { fields: {
           string: { __type: 'String' },
           ptr: { __type: 'Pointer', targetClass: 'UniquePointer' }
@@ -58,7 +58,7 @@ describe('Uniqueness', function() {
     o2.set('key', 'val');
     Parse.Object.saveAll([o1, o2])
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.adapter.ensureUniqueness('UniqueFail', { fields: { key: { __type: 'String' } } }, ['key']);
       })
       .catch(error => {
@@ -68,7 +68,7 @@ describe('Uniqueness', function() {
   });
 
   it_exclude_dbs(['postgres'])('can do compound uniqueness', done => {
-    const config = new Config('test');
+    const config = Config.get('test');
     config.database.adapter.ensureUniqueness('CompoundUnique', { fields: { k1: { __type: 'String' }, k2: { __type: 'String' } } }, ['k1', 'k2'])
       .then(() => {
         const o1 = new Parse.Object('CompoundUnique');

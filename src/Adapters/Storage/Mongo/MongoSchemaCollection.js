@@ -63,13 +63,20 @@ const defaultCLPS = Object.freeze({
 
 function mongoSchemaToParseSchema(mongoSchema) {
   let clps = defaultCLPS;
-  if (mongoSchema._metadata && mongoSchema._metadata.class_permissions) {
-    clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
+  let indexes = {}
+  if (mongoSchema._metadata) {
+    if (mongoSchema._metadata.class_permissions) {
+      clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
+    }
+    if (mongoSchema._metadata.indexes) {
+      indexes = {...mongoSchema._metadata.indexes};
+    }
   }
   return {
     className: mongoSchema._id,
     fields: mongoSchemaFieldsToParseSchemaFields(mongoSchema),
     classLevelPermissions: clps,
+    indexes: indexes,
   };
 }
 
@@ -152,7 +159,11 @@ class MongoSchemaCollection {
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
     return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(schema => {
-      // The schema exists. Check for existing GeoPoints.
+        // If a field with this name already exists, it will be handled elsewhere.
+        if (schema.fields[fieldName] != undefined) {
+          return;
+        }
+        // The schema exists. Check for existing GeoPoints.
         if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
           if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {

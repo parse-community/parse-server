@@ -21,7 +21,7 @@ var hasAllPODobject = () => {
 
 describe('SchemaController', () => {
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   it('can validate one object', (done) => {
@@ -274,7 +274,7 @@ describe('SchemaController', () => {
             fooSixteen: {type: 'String'},
             fooEighteen: {type: 'String'},
             fooNineteen: {type: 'String'},
-          }, levelPermissions, config.database))
+          }, levelPermissions, {}, config.database))
           .then(actualSchema => {
             const expectedSchema = {
               className: 'NewClass',
@@ -304,6 +304,9 @@ describe('SchemaController', () => {
                 fooNineteen: {type: 'String'},
               },
               classLevelPermissions: { ...levelPermissions },
+              indexes: {
+                _id_: { _id: 1 }
+              }
             };
 
             expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -1029,7 +1032,7 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   function createUser() {

@@ -72,22 +72,23 @@ const defaultColumns = Object.freeze({
     "subtitle":           {type:'String'},
   },
   _PushStatus: {
-    "pushTime":           {type:'String'},
-    "source":             {type:'String'}, // rest or webui
-    "query":              {type:'String'}, // the stringified JSON query
-    "payload":            {type:'String'}, // the stringified JSON payload,
-    "title":              {type:'String'},
-    "expiry":             {type:'Number'},
-    "status":             {type:'String'},
-    "numSent":            {type:'Number'},
-    "numFailed":          {type:'Number'},
-    "pushHash":           {type:'String'},
-    "errorMessage":       {type:'Object'},
-    "sentPerType":        {type:'Object'},
-    "failedPerType":      {type:'Object'},
-    "sentPerUTCOffset":   {type:'Object'},
-    "failedPerUTCOffset": {type:'Object'},
-    "count":              {type:'Number'}
+    "pushTime":            {type:'String'},
+    "source":              {type:'String'}, // rest or webui
+    "query":               {type:'String'}, // the stringified JSON query
+    "payload":             {type:'String'}, // the stringified JSON payload,
+    "title":               {type:'String'},
+    "expiry":              {type:'Number'},
+    "expiration_interval": {type:'Number'},
+    "status":              {type:'String'},
+    "numSent":             {type:'Number'},
+    "numFailed":           {type:'Number'},
+    "pushHash":            {type:'String'},
+    "errorMessage":        {type:'Object'},
+    "sentPerType":         {type:'Object'},
+    "failedPerType":       {type:'Object'},
+    "sentPerUTCOffset":    {type:'Object'},
+    "failedPerUTCOffset":  {type:'Object'},
+    "count":               {type:'Number'} // tracks # of batches queued and pending
   },
   _JobStatus: {
     "jobName":    {type: 'String'},
@@ -286,18 +287,28 @@ const convertAdapterSchemaToParseSchema = ({...schema}) => {
     schema.fields.password = { type: 'String' };
   }
 
+  if (schema.indexes && Object.keys(schema.indexes).length === 0) {
+    delete schema.indexes;
+  }
+
   return schema;
 }
 
-const injectDefaultSchema = ({className, fields, classLevelPermissions}) => ({
-  className,
-  fields: {
-    ...defaultColumns._Default,
-    ...(defaultColumns[className] || {}),
-    ...fields,
-  },
-  classLevelPermissions,
-});
+const injectDefaultSchema = ({className, fields, classLevelPermissions, indexes}) => {
+  const defaultSchema = {
+    className,
+    fields: {
+      ...defaultColumns._Default,
+      ...(defaultColumns[className] || {}),
+      ...fields,
+    },
+    classLevelPermissions,
+  };
+  if (indexes && Object.keys(indexes).length !== 0) {
+    defaultSchema.indexes = indexes;
+  }
+  return defaultSchema;
+};
 
 const _HooksSchema =  {className: "_Hooks", fields: defaultColumns._Hooks};
 const _GlobalConfigSchema = { className: "_GlobalConfig", fields: defaultColumns._GlobalConfig }
@@ -343,6 +354,7 @@ export default class SchemaController {
   _dbAdapter;
   data;
   perms;
+  indexes;
 
   constructor(databaseAdapter, schemaCache) {
     this._dbAdapter = databaseAdapter;
@@ -351,6 +363,8 @@ export default class SchemaController {
     this.data = {};
     // this.perms[className][operation] tells you the acl-style permissions
     this.perms = {};
+    // this.indexes[className][operation] tells you the indexes
+    this.indexes = {};
   }
 
   reloadData(options = {clearCache: false}) {
@@ -369,9 +383,11 @@ export default class SchemaController {
       .then(allSchemas => {
         const data = {};
         const perms = {};
+        const indexes = {};
         allSchemas.forEach(schema => {
           data[schema.className] = injectDefaultSchema(schema).fields;
           perms[schema.className] = schema.classLevelPermissions;
+          indexes[schema.className] = schema.indexes;
         });
 
         // Inject the in-memory classes
@@ -379,13 +395,16 @@ export default class SchemaController {
           const schema = injectDefaultSchema({ className });
           data[className] = schema.fields;
           perms[className] = schema.classLevelPermissions;
+          indexes[className] = schema.indexes;
         });
         this.data = data;
         this.perms = perms;
+        this.indexes = indexes;
         delete this.reloadDataPromise;
       }, (err) => {
         this.data = {};
         this.perms = {};
+        this.indexes = {};
         delete this.reloadDataPromise;
         throw err;
       });
@@ -423,7 +442,8 @@ export default class SchemaController {
         return Promise.resolve({
           className,
           fields: this.data[className],
-          classLevelPermissions: this.perms[className]
+          classLevelPermissions: this.perms[className],
+          indexes: this.indexes[className]
         });
       }
       return this._cache.getOneSchema(className).then((cached) => {
@@ -448,13 +468,13 @@ export default class SchemaController {
   // on success, and rejects with an error on fail. Ensure you
   // have authorization (master key, or client class creation
   // enabled) before calling this function.
-  addClassIfNotExists(className, fields = {}, classLevelPermissions) {
+  addClassIfNotExists(className, fields = {}, classLevelPermissions, indexes = {}) {
     var validationError = this.validateNewClass(className, fields, classLevelPermissions);
     if (validationError) {
       return Promise.reject(validationError);
     }
 
-    return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, className }))
+    return this._dbAdapter.createClass(className, convertSchemaToAdapterSchema({ fields, classLevelPermissions, indexes, className }))
       .then(convertAdapterSchemaToParseSchema)
       .then((res) => {
         return this._cache.clear().then(() => {
@@ -470,7 +490,7 @@ export default class SchemaController {
       });
   }
 
-  updateClass(className, submittedFields, classLevelPermissions, database) {
+  updateClass(className, submittedFields, classLevelPermissions, indexes, database) {
     return this.getOneSchema(className)
       .then(schema => {
         const existingFields = schema.fields;
@@ -508,7 +528,6 @@ export default class SchemaController {
         if (deletedFields.length > 0) {
           deletePromise = this.deleteFields(deletedFields, className, database);
         }
-
         return deletePromise // Delete Everything
           .then(() => this.reloadData({ clearCache: true })) // Reload our Schema, so we have all the new values
           .then(() => {
@@ -519,12 +538,20 @@ export default class SchemaController {
             return Promise.all(promises);
           })
           .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
+          .then(() => this._dbAdapter.setIndexesWithSchemaFormat(className, indexes, schema.indexes, newSchema))
+          .then(() => this.reloadData({ clearCache: true }))
         //TODO: Move this logic into the database adapter
-          .then(() => ({
-            className: className,
-            fields: this.data[className],
-            classLevelPermissions: this.perms[className]
-          }));
+          .then(() => {
+            const reloadedSchema = {
+              className: className,
+              fields: this.data[className],
+              classLevelPermissions: this.perms[className],
+            };
+            if (this.indexes[className] && Object.keys(this.indexes[className]).length !== 0) {
+              reloadedSchema.indexes = this.indexes[className];
+            }
+            return reloadedSchema;
+          });
       })
       .catch(error => {
         if (error === undefined) {
@@ -619,8 +646,7 @@ export default class SchemaController {
       return Promise.resolve();
     }
     validateCLP(perms, newSchema);
-    return this._dbAdapter.setClassLevelPermissions(className, perms)
-      .then(() => this.reloadData({ clearCache: true }));
+    return this._dbAdapter.setClassLevelPermissions(className, perms);
   }
 
   // Returns a promise that resolves successfully to the new schema
@@ -661,9 +687,11 @@ export default class SchemaController {
       return this._dbAdapter.addFieldIfNotExists(className, fieldName, type).then(() => {
         // The update succeeded. Reload the schema
         return this.reloadData({ clearCache: true });
-      }, () => {
-        //TODO: introspect the error and only reload if the error is one for which is makes sense to reload
-
+      }, (error) => {
+        if (error.code == Parse.Error.INCORRECT_TYPE) {
+          // Make sure that we throw errors when it is appropriate to do so.
+          throw error;
+        }
         // The update failed. This can be okay - it might have been a race
         // condition where another client updated the schema in the same
         // way that we wanted to. So, just reload the schema

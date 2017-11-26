@@ -205,7 +205,7 @@ describe('PushController', () => {
       installation.set("deviceType", "android");
       installations.push(installation);
     }
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -276,7 +276,7 @@ describe('PushController', () => {
       installations.push(installation);
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -350,7 +350,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -388,6 +388,11 @@ describe('PushController', () => {
   });
 
   it('properly creates _PushStatus', (done) => {
+    const pushStatusAfterSave = {
+      handler: function() {}
+    };
+    const spy = spyOn(pushStatusAfterSave, 'handler').and.callThrough();
+    Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
     var installations = [];
     while(installations.length != 10) {
       const installation = new Parse.Object("_Installation");
@@ -420,7 +425,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -466,8 +471,92 @@ describe('PushController', () => {
         return query.find();
       }).catch((error) => {
         expect(error.code).toBe(119);
-        done();
-      });
+      })
+      .then(() => {
+        function getPushStatus(callIndex) {
+          return spy.calls.all()[callIndex].args[0].object;
+        }
+        expect(spy).toHaveBeenCalled();
+        expect(spy.calls.count()).toBe(4);
+        const allCalls = spy.calls.all();
+        allCalls.forEach((call) => {
+          expect(call.args.length).toBe(2);
+          const object = call.args[0].object;
+          expect(object instanceof Parse.Object).toBe(true);
+        });
+        expect(getPushStatus(0).get('status')).toBe('pending');
+        expect(getPushStatus(1).get('status')).toBe('running');
+        expect(getPushStatus(1).get('numSent')).toBe(0);
+        expect(getPushStatus(2).get('status')).toBe('running');
+        expect(getPushStatus(2).get('numSent')).toBe(10);
+        expect(getPushStatus(2).get('numFailed')).toBe(5);
+        // Those are updated from a nested . operation, this would
+        // not render correctly before
+        expect(getPushStatus(2).get('failedPerType')).toEqual({
+          android: 5
+        });
+        expect(getPushStatus(2).get('sentPerType')).toEqual({
+          ios: 10
+        });
+        expect(getPushStatus(3).get('status')).toBe('succeeded');
+      })
+      .then(done).catch(done.fail);
+  });
+
+  it('properly creates _PushStatus without serverURL', (done) => {
+    const pushStatusAfterSave = {
+      handler: function() {}
+    };
+    Parse.Cloud.afterSave('_PushStatus', pushStatusAfterSave.handler);
+    const installation = new Parse.Object("_Installation");
+    installation.set("installationId", "installation");
+    installation.set("deviceToken","device_token")
+    installation.set("badge", 0);
+    installation.set("originalBadge", 0);
+    installation.set("deviceType", "ios");
+
+    var payload = {data: {
+      alert: "Hello World!",
+      badge: 1,
+    }}
+
+    var pushAdapter = {
+      send: function(body, installations) {
+        return successfulIOS(body, installations);
+      },
+      getValidPushTypes: function() {
+        return ["ios"];
+      }
+    }
+
+    var config = Config.get(Parse.applicationId);
+    var auth = {
+      isMaster: true
+    }
+    var pushController = new PushController();
+    return installation.save().then(() => {
+      return reconfigureServer({
+        serverURL: 'http://localhost:8378/', // server with borked URL
+        push: { adapter: pushAdapter }
+      })
+    })
+      .then(() => {
+        return pushController.sendPush(payload, {}, config, auth);
+      }).then(() => {
+        // it is enqueued so it can take time
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            resolve();
+          }, 1000);
+        });
+      }).then(() => {
+        Parse.serverURL = 'http://localhost:8378/1'; // GOOD url
+        const query = new Parse.Query('_PushStatus');
+        return query.find({useMasterKey: true});
+      }).then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(done).catch(done.fail);
   });
 
   it('should properly report failures in _PushStatus', (done) => {
@@ -490,7 +579,7 @@ describe('PushController', () => {
       alert: "Hello World!",
       badge: 1,
     }}
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -527,7 +616,7 @@ describe('PushController', () => {
         return ["ios"];
       }
     }
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -588,7 +677,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -673,7 +762,7 @@ describe('PushController', () => {
   });
 
   it('should not schedule push when not configured', (done) => {
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -710,7 +799,7 @@ describe('PushController', () => {
     }).then(() => {
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      });
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
@@ -773,23 +862,18 @@ describe('PushController', () => {
       push: { adapter: pushAdapter },
       scheduledPush: true
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
-      }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
+      }).then(() => new Promise(resolve => setTimeout(resolve, 300)));
     }).then(() => {
       const query = new Parse.Query('_PushStatus');
       return query.find({useMasterKey: true}).then((results) => {
         expect(results.length).toBe(1);
         const pushStatus = results[0];
         expect(pushStatus.get('status')).toBe('scheduled');
-        done();
       });
-    }).catch((err) => {
-      console.error(err);
-      fail('should not fail');
-      done();
-    });
+    }).then(done).catch(done.err);
   });
 
   it('should not enqueue push when device token is not set', (done) => {
@@ -847,7 +931,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth);
       }).then(() => new Promise(resolve => setTimeout(resolve, 100)));
@@ -912,7 +996,7 @@ describe('PushController', () => {
     reconfigureServer({
       push: { adapter: pushAdapter }
     }).then(() => {
-      var config = new Config(Parse.applicationId);
+      var config = Config.get(Parse.applicationId);
       return Parse.Object.saveAll(installations).then(() => {
         return pushController.sendPush(payload, {}, config, auth)
           .then(() => { done.fail('should not success') })
@@ -950,7 +1034,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -1010,7 +1094,7 @@ describe('PushController', () => {
       }
     }
 
-    var config = new Config(Parse.applicationId);
+    var config = Config.get(Parse.applicationId);
     var auth = {
       isMaster: true
     }
@@ -1146,7 +1230,7 @@ describe('PushController', () => {
         scheduledPush: true
       })
         .then(() => {
-          const config = new Config(Parse.applicationId);
+          const config = Config.get(Parse.applicationId);
           return new Promise((resolve, reject) => {
             const pushController = new PushController();
             pushController.sendPush({
@@ -1168,6 +1252,86 @@ describe('PushController', () => {
           expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
         })
         .then(done, done.fail);
+    });
+  });
+
+  describe('With expiration defined', () => {
+    const auth = {isMaster: true};
+    const pushController = new PushController();
+
+    let config = Config.get(Parse.applicationId);
+
+    const pushes = [];
+    const pushAdapter = {
+      send(body, installations) {
+        pushes.push(body);
+        return successfulTransmissions(body, installations);
+      },
+      getValidPushTypes() {
+        return ["ios"];
+      }
+    };
+
+    beforeEach((done) => {
+      reconfigureServer({
+        push: {adapter: pushAdapter},
+      })
+        .then(() => {
+          config = Config.get(Parse.applicationId);
+        })
+        .then(done, done.fail);
+    });
+
+    it('should throw if both expiration_time and expiration_interval are set', () => {
+      expect(() => pushController.sendPush({
+        expiration_time: '2017-09-25T13:21:20.841Z',
+        expiration_interval: 1000,
+      }, {}, config, auth)).toThrow()
+    });
+
+    it('should throw on invalid expiration_interval', () => {
+      expect(() => pushController.sendPush({
+        expiration_interval: -1
+      }, {}, config, auth)).toThrow();
+      expect(() => pushController.sendPush({
+        expiration_interval: '',
+      }, {}, config, auth)).toThrow();
+      expect(() => pushController.sendPush({
+        expiration_time: {},
+      }, {}, config, auth)).toThrow();
+    });
+
+    describe('For immediate pushes',() => {
+      it('should transform the expiration_interval into an absolute time', (done) => {
+        const now = new Date('2017-09-25T13:30:10.452Z');
+
+        reconfigureServer({
+          push: {adapter: pushAdapter},
+        })
+          .then(() =>
+            new Promise((resolve) => {
+              pushController.sendPush({
+                data: {
+                  alert: 'immediate push',
+                },
+                expiration_interval: 20 * 60, // twenty minutes
+              }, {}, Config.get(Parse.applicationId), auth, resolve, now)
+            }))
+          .then((pushStatusId) => {
+            const p = new Parse.Object('_PushStatus');
+            p.id = pushStatusId;
+            return p.fetch({useMasterKey: true});
+          })
+          .then((pushStatus) => {
+            expect(pushStatus.get('expiry')).toBeDefined('expiry must be set');
+            expect(pushStatus.get('expiry'))
+              .toEqual(new Date('2017-09-25T13:50:10.452Z').valueOf());
+
+            expect(pushStatus.get('expiration_interval')).toBeDefined('expiration_interval must be defined');
+            expect(pushStatus.get('expiration_interval')).toBe(20 * 60);
+          })
+          .then(done, done.fail);
+      });
     });
   });
 });

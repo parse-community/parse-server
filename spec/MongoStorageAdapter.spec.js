@@ -35,7 +35,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     );
   });
 
-  // https://github.com/ParsePlatform/parse-server/pull/148#issuecomment-180407057
+  // https://github.com/parse-community/parse-server/pull/148#issuecomment-180407057
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
@@ -236,5 +236,24 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         fail();
         done();
       });
+  });
+
+  it('handleShutdown, close connection', (done) => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      }
+    };
+
+    adapter.createObject('MyClass', schema, {}).then(() => {
+      expect(adapter.database.serverConfig.isConnected()).toEqual(true);
+      adapter.handleShutdown()
+      expect(adapter.database.serverConfig.isConnected()).toEqual(false);
+      done();
+    });
   });
 });

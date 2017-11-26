@@ -34,10 +34,10 @@ export class FilesRouter {
   }
 
   getHandler(req, res) {
-    const config = new Config(req.params.appId);
+    const config = Config.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
-    const contentType = mime.lookup(filename);
+    const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController.getFileStream(config, filename).then((stream) => {
         handleFileStream(stream, req, res, contentType);
