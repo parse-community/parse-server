@@ -62,7 +62,11 @@ var plainOldDataSchema = {
     aGeoPoint: {type: 'GeoPoint'},
     aFile: {type: 'File'}
   },
-  classLevelPermissions: defaultClassLevelPermissions
+  classLevelPermissions: defaultClassLevelPermissions,
+  indexes: {
+    _id_: { _id: 1 },
+    aGeoPoint_2dsphere: { aGeoPoint: '2dsphere'}
+  }
 };
 
 var pointersAndRelationsSchema = {
@@ -552,7 +556,12 @@ describe('schemas', () => {
               "updatedAt": {"type": "Date"},
               "geo2": {"type": "GeoPoint"},
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              geo1_2dsphere: { geo1: '2dsphere'},
+              geo2_2dsphere: { geo2: '2dsphere'}
+            }
           })).toEqual(undefined);
           done();
         });
@@ -764,7 +773,11 @@ describe('schemas', () => {
               aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
               aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              aGeoPoint_2dsphere: { aGeoPoint: '2dsphere'}
+            }
           });
           var obj2 = new Parse.Object('HasAllPOD');
           obj2.set('aNewPointer', obj1);
