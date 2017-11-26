@@ -16,19 +16,19 @@ export class LiveQueryController {
     this.liveQueryPublisher = new ParseCloudCodePublisher(config);
   }
 
-  onAfterSave(className: string, currentObject: any, originalObject: any) {
+  onAfterSave(className: string, currentObject: any, originalObject: any, classLevelPermissions: ?any) {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject, classLevelPermissions);
     this.liveQueryPublisher.onCloudCodeAfterSave(req);
   }
 
-  onAfterDelete(className: string, currentObject: any, originalObject: any) {
+  onAfterDelete(className: string, currentObject: any, originalObject: any, classLevelPermissions: any) {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    const req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject, classLevelPermissions);
     this.liveQueryPublisher.onCloudCodeAfterDelete(req);
   }
 
@@ -36,12 +36,15 @@ export class LiveQueryController {
     return this.classNames.has(className);
   }
 
-  _makePublisherRequest(currentObject: any, originalObject: any): any {
+  _makePublisherRequest(currentObject: any, originalObject: any, classLevelPermissions: ?any): any {
     const req = {
       object: currentObject
     };
     if (currentObject) {
       req.original = originalObject;
+    }
+    if (classLevelPermissions) {
+      req.classLevelPermissions = classLevelPermissions;
     }
     return req;
   }

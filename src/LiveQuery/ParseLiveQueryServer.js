@@ -8,6 +8,7 @@ import RequestSchema from './RequestSchema';
 import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
+import SchemaController from '../Controllers/SchemaController';
 import _ from 'lodash';
 import uuid from 'uuid';
 import { runLiveQueryEventHandlers } from '../triggers';
@@ -107,6 +108,7 @@ class ParseLiveQueryServer {
     logger.verbose(Parse.applicationId + 'afterDelete is triggered');
 
     const deletedParseObject = message.currentParseObject.toJSON();
+    const classLevelPermissions = message.classLevelPermissions;
     const className = deletedParseObject.className;
     logger.verbose('ClassName: %j | ObjectId: %s', className, deletedParseObject.id);
     logger.verbose('Current client number : %d', this.clients.size);
@@ -128,13 +130,17 @@ class ParseLiveQueryServer {
         }
         for (const requestId of requestIds) {
           const acl = message.currentParseObject.getACL();
-          // Check ACL
-          this._matchesACL(acl, client, requestId).then((isMatched) => {
+          // Check CLP
+          const op = this._getCLPOperation(subscription.query);
+          this._matchesCLP(classLevelPermissions, message.currentParseObject, client, requestId, op).then(() => {
+            // Check ACL
+            return this._matchesACL(acl, client, requestId)
+          }).then((isMatched) => {
             if (!isMatched) {
               return null;
             }
             client.pushDelete(requestId, deletedParseObject);
-          }, (error) => {
+          }).catch((error) => {
             logger.error('Matching ACL error : ', error);
           });
         }
@@ -151,6 +157,7 @@ class ParseLiveQueryServer {
     if (message.originalParseObject) {
       originalParseObject = message.originalParseObject.toJSON();
     }
+    const classLevelPermissions = message.classLevelPermissions;
     const currentParseObject = message.currentParseObject.toJSON();
     const className = currentParseObject.className;
     logger.verbose('ClassName: %s | ObjectId: %s', className, currentParseObject.id);
@@ -191,13 +198,13 @@ class ParseLiveQueryServer {
             const currentACL = message.currentParseObject.getACL();
             currentACLCheckingPromise = this._matchesACL(currentACL, client, requestId);
           }
-
-          Promise.all(
-            [
-              originalACLCheckingPromise,
-              currentACLCheckingPromise
-            ]
-          ).then(([isOriginalMatched, isCurrentMatched]) => {
+          const op = this._getCLPOperation(subscription.query);
+          this._matchesCLP(classLevelPermissions, message.currentParseObject, client, requestId, op).then(() => {
+            return Promise.all(
+              [ originalACLCheckingPromise,
+                currentACLCheckingPromise ]
+            );
+          }).then(([isOriginalMatched, isCurrentMatched]) => {
             logger.verbose('Original %j | Current %j | Match: %s, %s, %s, %s | Query: %s',
               originalParseObject,
               currentParseObject,
@@ -327,6 +334,52 @@ class ParseLiveQueryServer {
       return false;
     }
     return matchesQuery(parseObject, subscription.query);
+  }
+
+  _matchesCLP(classLevelPermissions: ?any, object: any, client: any, requestId: number, op: string): any {
+    return Parse.Promise.as().then(() => {
+      // try to match on user first, less expensive than with roles
+      const subscriptionInfo = client.getSubscriptionInfo(requestId);
+      if (typeof subscriptionInfo === 'undefined') {
+        return Parse.Promise.as(['*']);
+      }
+      let foundUserId;
+      const subscriptionSessionToken = subscriptionInfo.sessionToken;
+      return this.sessionTokenCache.getUserId(subscriptionSessionToken).then((userId) => {
+        foundUserId = userId;
+        if (userId) {
+          return Parse.Promise.as(['*', userId]);
+        }
+        return Parse.Promise.as(['*']);
+      }).then((aclGroup) => {
+        console.log(aclGroup); // eslint-disable-line
+        try {
+          return SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op).then(() => {
+            return Parse.Promise.as(true);
+          });
+        } catch(e) {
+          logger.verbose(`Failed matching CLP for ${object.id} ${foundUserId} ${e}`);
+          return Parse.Promise.as(false);
+        }
+        // TODO: handle roles permissions
+        // Object.keys(classLevelPermissions).forEach((key) => {
+        //   const perm = classLevelPermissions[key];
+        //   Object.keys(perm).forEach((key) => {
+        //     if (key.indexOf('role'))
+        //   });
+        // })
+        // // it's rejected here, check the roles
+        // var rolesQuery = new Parse.Query(Parse.Role);
+        // rolesQuery.equalTo("users", user);
+        // return rolesQuery.find({useMasterKey:true});
+      });
+    })
+  }
+
+  _getCLPOperation(query: any) {
+    return typeof query == 'object'
+      && Object.keys(query).length == 1
+      && typeof query.objectId === 'string' ? 'get' : 'find';
   }
 
   _matchesACL(acl: any, client: any, requestId: number): any {

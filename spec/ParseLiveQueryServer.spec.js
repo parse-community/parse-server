@@ -1079,6 +1079,92 @@ describe('ParseLiveQueryServer', function() {
 
   });
 
+  describe('class level permissions', () => {
+    it('matches CLP when find is closed', (done) => {
+      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      var acl = new Parse.ACL();
+      acl.setReadAccess(testUserId, true);
+      // Mock sessionTokenCache will return false when sessionToken is undefined
+      var client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined
+        })
+      };
+      var requestId = 0;
+
+      parseLiveQueryServer._matchesCLP({
+        find: {}
+      }, { className: 'Yolo' }, client, requestId, 'find').then((isMatched) => {
+        expect(isMatched).toBe(false);
+        done();
+      });
+    });
+
+    it('matches CLP when find is open', (done) => {
+      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      var acl = new Parse.ACL();
+      acl.setReadAccess(testUserId, true);
+      // Mock sessionTokenCache will return false when sessionToken is undefined
+      var client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined
+        })
+      };
+      var requestId = 0;
+
+      parseLiveQueryServer._matchesCLP({
+        find: { '*': true }
+      }, { className: 'Yolo' }, client, requestId, 'find').then((isMatched) => {
+        expect(isMatched).toBe(true);
+        done();
+      });
+    });
+
+    it('matches CLP when find is restricted to userIds', (done) => {
+      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      var acl = new Parse.ACL();
+      acl.setReadAccess(testUserId, true);
+      // Mock sessionTokenCache will return false when sessionToken is undefined
+      var client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: 'userId'
+        })
+      };
+      var requestId = 0;
+
+      parseLiveQueryServer._matchesCLP({
+        find: { 'userId': true }
+      }, { className: 'Yolo' }, client, requestId, 'find').then((isMatched) => {
+        expect(isMatched).toBe(true);
+        done();
+      });
+    });
+
+    it('matches CLP when find is restricted to userIds', (done) => {
+      var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+      var acl = new Parse.ACL();
+      acl.setReadAccess(testUserId, true);
+      // Mock sessionTokenCache will return false when sessionToken is undefined
+      var client = {
+        sessionToken: 'sessionToken',
+        getSubscriptionInfo: jasmine.createSpy('getSubscriptionInfo').and.returnValue({
+          sessionToken: undefined
+        })
+      };
+      var requestId = 0;
+
+      parseLiveQueryServer._matchesCLP({
+        find: { 'userId': true }
+      }, { className: 'Yolo' }, client, requestId, 'find').then((isMatched) => {
+        expect(isMatched).toBe(false);
+        done();
+      });
+    });
+  });
+
   it('can validate key when valid key is provided', function() {
     const parseLiveQueryServer = new ParseLiveQueryServer({}, {
       keyPairs: {

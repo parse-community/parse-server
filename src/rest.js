@@ -82,7 +82,10 @@ function del(config, auth, className, objectId) {
             cacheAdapter.user.del(firstResult.sessionToken);
             inflatedObject = Parse.Object.fromJSON(firstResult);
             // Notify LiveQuery server if possible
-            config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject);
+            config.database.loadSchema().then((schemaController) => {
+              const perms = schemaController.perms[inflatedObject.className];
+              config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject, perms);
+            });
             return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
           }
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND,
