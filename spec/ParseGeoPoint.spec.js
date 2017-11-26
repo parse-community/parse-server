@@ -95,24 +95,6 @@ describe('Parse.GeoPoint testing', () => {
     }, done.fail);
   });
 
-  // TODO: This should also have support in postgres, or higher level database agnostic support.
-  it_exclude_dbs(['postgres'])('updating geo point exception two fields', (done) => {
-    var point = new Parse.GeoPoint(20, 20);
-    var obj = new TestObject();
-    obj.set('locationOne', point);
-    obj.save(null, {
-      success: (obj) => {
-        obj.set('locationTwo', point);
-        obj.save().then(() => {
-          fail('expected error');
-        }, (err) => {
-          equal(err.code, Parse.Error.INCORRECT_TYPE);
-          done();
-        })
-      }
-    });
-  });
-
   it('geo line', (done) => {
     var line = [];
     for (var i = 0; i < 10; ++i) {
@@ -663,7 +645,7 @@ describe('Parse.GeoPoint testing', () => {
 
 describe_only_db('mongo')('Parse.GeoPoint testing', () => {
   it('converts geoJSON to geoPoint', (done) => {
-    const config = new Config('test');
+    const config = Config.get('test');
     const database = config.database.adapter.database;
     const geoJSON = {type: 'Point', coordinates:[10, 20]};
     config.database.loadSchema()
@@ -672,8 +654,10 @@ describe_only_db('mongo')('Parse.GeoPoint testing', () => {
       }))
       .then(actualSchema => {
         equal(actualSchema.fields.point.type, 'GeoPoint');
+        // Save GeoJSON in mongo
         database.collection('test_TestObject').insertOne({ point: geoJSON }, {}, (error, records) => {
           const objectId = records.ops[0]._id;
+          // Retrieve GeoJSON as GeoPoint
           config.database.adapter.find('TestObject', actualSchema, { objectId }, {}).then((results) => {
             equal(results[0].point.__type, 'GeoPoint');
             done();
