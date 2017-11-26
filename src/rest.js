@@ -84,7 +84,7 @@ function del(config, auth, className, objectId) {
             // Notify LiveQuery server if possible
             config.database.loadSchema().then((schemaController) => {
               const perms = schemaController.perms[inflatedObject.className];
-              config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject, perms);
+              config.liveQueryController.onAfterDelete(inflatedObject.className, inflatedObject, null, perms);
             });
             return triggers.maybeRunTrigger(triggers.Types.beforeDelete, auth, inflatedObject, null,  config);
           }

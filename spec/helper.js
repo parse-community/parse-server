@@ -127,13 +127,16 @@ const reconfigureServer = changedConfiguration => {
       });
     }
     try {
+      var parseServer;
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
-        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(resolve, reject),
+        __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(() => {
+          resolve(parseServer);
+        }, reject),
         mountPath: '/1',
         port,
       });
       cache.clear();
-      const parseServer = ParseServer.start(newConfiguration);
+      parseServer = ParseServer.start(newConfiguration);
       parseServer.app.use(require('./testing-routes').router);
       parseServer.expressApp.use('/1', (err) => {
         console.error(err);
