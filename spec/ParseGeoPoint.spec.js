@@ -3,35 +3,30 @@
 
 const rp = require('request-promise');
 const Config = require('../src/Config');
+let config;
 
 const TestObject = Parse.Object.extend('TestObject');
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
-const defaultHeaders = {
+
+const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
-  'X-Parse-Rest-API-Key': 'rest'
-}
+  'X-Parse-Master-Key': 'test',
+};
 
 describe('Parse.GeoPoint testing', () => {
   it('geo point roundtrip', (done) => {
-    var point = new Parse.GeoPoint(44.0, -11.0);
-    var obj = new TestObject();
+    const point = new Parse.GeoPoint(44.0, -11.0);
+    const obj = new TestObject();
     obj.set('location', point);
     obj.set('name', 'Ferndale');
-    obj.save(null, {
-      success: function() {
-        var query = new Parse.Query(TestObject);
-        query.find({
-          success: function(results) {
-            equal(results.length, 1);
-            var pointAgain = results[0].get('location');
-            ok(pointAgain);
-            equal(pointAgain.latitude, 44.0);
-            equal(pointAgain.longitude, -11.0);
-            done();
-          }
-        });
-      }
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const pointAgain = result.get('location');
+      ok(pointAgain);
+      equal(pointAgain.latitude, 44.0);
+      equal(pointAgain.longitude, -11.0);
+      done();
     });
   });
 
@@ -644,8 +639,15 @@ describe('Parse.GeoPoint testing', () => {
 });
 
 describe_only_db('mongo')('Parse.GeoPoint testing', () => {
+  beforeEach(() => {
+    config = Config.get('test');
+  });
+
+  afterEach(() => {
+    config.database.schemaCache.clear();
+  });
+
   it('converts geoJSON to geoPoint', (done) => {
-    const config = Config.get('test');
     const database = config.database.adapter.database;
     const geoJSON = {type: 'Point', coordinates:[10, 20]};
     config.database.loadSchema()
@@ -667,39 +669,63 @@ describe_only_db('mongo')('Parse.GeoPoint testing', () => {
   });
 
   it('support legacy geopoints with 2dsphere', (done) => {
-    const location = {__type: 'GeoPoint', latitude:10, longitude:10};
-    const databaseAdapter = new MongoStorageAdapter({ uri: mongoURI });
-    return reconfigureServer({
+    const adapter = config.database.adapter;
+    const geoPoint = new Parse.GeoPoint(10, 10);
+    const obj = new TestObject();
+    reconfigureServer({
       appId: 'test',
-      restAPIKey: 'rest',
+      restAPIKey: 'test',
       publicServerURL: 'http://localhost:8378/1',
-      databaseAdapter
     }).then(() => {
-      return databaseAdapter.createIndex('TestObject', {location: '2d'});
+      return adapter.createIndex('TestObject', {location: '2d'});
     }).then(() => {
-      return rp.post({
-        url: 'http://localhost:8378/1/classes/TestObject',
-        json: {
-          '_method': 'POST',
-          location
-        },
-        headers: defaultHeaders
-      });
+      return adapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      equal(indexes.length, 2);
+      equal(indexes[0].key, {_id: 1});
+      equal(indexes[1].key, {location: '2d'});
+      // Saving Object with GeoPoint will create new index
+      obj.set('location', geoPoint);
+      return obj.save();
+    }).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
     }).then((resp) => {
-      return rp.post({
-        url: `http://localhost:8378/1/classes/TestObject/${resp.objectId}`,
-        json: {'_method': 'GET'},
-        headers: defaultHeaders
-      });
-    }).then((resp) => {
-      equal(resp.location, location);
-      return databaseAdapter.getIndexes('TestObject');
+      equal(resp.get('location'), geoPoint);
+      return adapter.getIndexes('TestObject');
     }).then((indexes) => {
       equal(indexes.length, 3);
       equal(indexes[0].key, {_id: 1});
       equal(indexes[1].key, {location: '2d'});
       equal(indexes[2].key, {location: '2dsphere'});
-      done();
+      // Schema will add new 2dsphere index
+      rp.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes._id_._id).toEqual(1);
+        expect(body.indexes.location_2dsphere).toBeDefined();
+        // Restarting server will update schema with old 2d index
+        reconfigureServer({
+          appId: 'test',
+          restAPIKey: 'test',
+          publicServerURL: 'http://localhost:8378/1',
+        }).then(() => {
+          rp.get({
+            url: 'http://localhost:8378/1/schemas/TestObject',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            expect(body.indexes._id_).toBeDefined();
+            expect(body.indexes._id_._id).toEqual(1);
+            expect(body.indexes.location_2d).toBeDefined();
+            expect(body.indexes.location_2dsphere).toBeDefined();
+            done();
+          });
+        });
+      });
     }, done.fail);
   });
 });

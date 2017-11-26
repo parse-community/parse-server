@@ -545,10 +545,12 @@ export class MongoStorageAdapter {
 
   createIndexesIfNeeded(className, fieldName, type) {
     if (type && (type.type === 'Polygon' || type.type === 'GeoPoint')) {
+      const indexName = `${fieldName}_2dsphere`;
       const index = {
-        [fieldName]: '2dsphere'
+        [indexName]: { [fieldName]: '2dsphere' }
       };
-      return this.createIndex(className, index);
+      return this.getClass(className)
+        .then((schema) => this.setIndexesWithSchemaFormat(className, index, schema.indexes, schema.fields));
     }
     return Promise.resolve();
   }
