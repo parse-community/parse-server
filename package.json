@@ -69,10 +69,9 @@
     "lint": "eslint --cache ./",
     "build": "babel src/ -d lib/ --copy-files",
     "pretest": "npm run lint",
-    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 $COVERAGE_OPTION jasmine",
-    "test:win": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
-    "coverage": "cross-env COVERAGE_OPTION='./node_modules/.bin/nyc' npm test",
-    "coverage:win": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 node ./node_modules/.bin/nyc ./node_modules/jasmine/bin/jasmine.js",
+    "test": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 jasmine",
+    "coverage": "cross-env MONGODB_VERSION=${MONGODB_VERSION:=3.2.6} MONGODB_STORAGE_ENGINE=mmapv1 TESTING=1 nyc jasmine",
+    "mongodb-runner": "cross-env DEBUG=* mongodb-runner start",
     "start": "node ./bin/parse-server",
     "prepublish": "npm run build"
   },
