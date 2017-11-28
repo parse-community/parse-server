@@ -352,7 +352,6 @@ class ParseLiveQueryServer {
         }
         return Parse.Promise.as(['*']);
       }).then((aclGroup) => {
-        console.log(aclGroup); // eslint-disable-line
         try {
           return SchemaController.validatePermission(classLevelPermissions, object.className, aclGroup, op).then(() => {
             return Parse.Promise.as(true);
@@ -377,7 +376,7 @@ class ParseLiveQueryServer {
   }
 
   _getCLPOperation(query: any) {
-    return typeof query == 'object'
+    return typeof query === 'object'
       && Object.keys(query).length == 1
       && typeof query.objectId === 'string' ? 'get' : 'find';
   }
