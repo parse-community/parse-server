@@ -54,7 +54,7 @@ jobs:
       env: 
       before_script: skip
       after_script: skip
-      script: npm install -g nsp && nsp check
+      script: skip
       deploy:
         - provider: script
           skip_cleanup: true
