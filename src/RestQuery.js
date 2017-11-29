@@ -22,6 +22,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.restWhere = restWhere;
   this.restOptions = restOptions;
   this.clientSDK = clientSDK;
+  this.isGet = (Object.keys(restWhere).length == 1 && restWhere.hasOwnProperty('objectId'));
   this.response = null;
   this.findOptions = {};
   if (!this.auth.isMaster) {
@@ -514,7 +515,8 @@ RestQuery.prototype.runBeforeTrigger = function() {
     return Promise.resolve();
   }
 
-  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, this.className, this.restWhere, this.restOptions, this.config, this.auth).then((result) => {
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, this.className, this.restWhere, this.restOptions, 
+    this.config, this.auth, this.isGet).then((result) => {
     this.restWhere = result.restWhere || this.restWhere;
     this.restOptions = result.restOptions || this.restOptions;
   });
