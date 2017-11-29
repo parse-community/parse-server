@@ -150,6 +150,8 @@ RestQuery.prototype.execute = function(executeOptions) {
   return Promise.resolve().then(() => {
     return this.buildRestWhere();
   }).then(() => {
+    return this.runBeforeTrigger();
+  }).then(() => {
     return this.runFind(executeOptions);
   }).then(() => {
     return this.runCount();
@@ -500,6 +502,23 @@ RestQuery.prototype.replaceEquality = function() {
     this.restWhere[key] = replaceEqualityConstraint(this.restWhere[key]);
   }
 }
+
+// Runs any beforeFind triggers against this operation.
+RestQuery.prototype.runBeforeTrigger = function() {
+  if (this.response) {
+    return;
+  }
+
+  // Avoid doing any setup for triggers if there is no 'beforeFind' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeFind, this.config.applicationId)) {
+    return Promise.resolve();
+  }
+
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, this.className, this.restWhere, this.restOptions, this.config, this.auth).then((result) => {
+    this.restWhere = result.restWhere || this.restWhere;
+    this.restOptions = result.restOptions || this.restOptions;
+  });
+};
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.

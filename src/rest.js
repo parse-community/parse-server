@@ -27,12 +27,9 @@ function checkLiveQuery(className, config) {
 // Returns a promise for an object with optional keys 'results' and 'count'.
 function find(config, auth, className, restWhere, restOptions, clientSDK) {
   enforceRoleSecurity('find', className, auth);
-  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, className, restWhere, restOptions, config, auth).then((result) => {
-    restWhere = result.restWhere || restWhere;
-    restOptions = result.restOptions || restOptions;
-    const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
-    return query.execute();
-  });
+
+  const query = new RestQuery(config, auth, className, restWhere, restOptions, clientSDK);
+  return query.execute();
 }
 
 // get is just like find but only queries an objectId.
