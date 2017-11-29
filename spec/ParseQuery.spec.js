@@ -3248,4 +3248,47 @@ describe('Parse.Query testing', () => {
         }))
       })
   });
+
+  it('should match complex structure with dot notation when using matchesKeyInQuery', function(done) {
+    const group1 = new Parse.Object('Group', {
+      name: 'Group #1'
+    });
+
+    const group2 = new Parse.Object('Group', {
+      name: 'Group #2'
+    });
+
+    Parse.Object.saveAll([group1, group2])
+      .then(() => {
+        const role1 = new Parse.Object('Role', {
+          name: 'Role #1',
+          type: 'x',
+          belongsTo: group1
+        });
+
+        const role2 = new Parse.Object('Role', {
+          name: 'Role #2',
+          type: 'y',
+          belongsTo: group1
+        });
+
+        return Parse.Object.saveAll([role1, role2]);
+      })
+      .then(() => {
+        const rolesOfTypeX = new Parse.Query('Role');
+        rolesOfTypeX.equalTo('type', 'x');
+
+        const groupsWithRoleX = new Parse.Query('Group');
+        groupsWithRoleX.doesNotMatchKeyInQuery('objectId', 'belongsTo.objectId', rolesOfTypeX);
+
+        groupsWithRoleX.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 1);
+            equal(results[0].get('name'), group2.get('name'));
+            done();
+          }
+        }))
+      })
+  });
+
 });
