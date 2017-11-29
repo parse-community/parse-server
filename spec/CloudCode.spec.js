@@ -1778,7 +1778,9 @@ describe('afterFind hooks', () => {
       })
       .then(() => done());
   });
+});
 
+describe('Trigger Testing', () => {
   it('should validate triggers correctly', () => {
     expect(() => {
       Parse.Cloud.beforeSave('_Session', () => {});
@@ -1792,5 +1794,19 @@ describe('afterFind hooks', () => {
     expect(() => {
       Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
+  });
+
+  it('beforeSave _Session should not modify class', (done) => {
+    Parse.Cloud.beforeSave('_Session', (req, res) => {
+      req.object.set("")
+      res.success();
+
+      expect(req.headers).toBeDefined();
+      res.success();
+    });
+
+    const MyObject = Parse.Object.extend('MyObject');
+    const myObject = new MyObject();
+    myObject.save().then(() => done());
   });
 });

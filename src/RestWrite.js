@@ -167,7 +167,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
-    if (response && response.object) {
+    if (this.className !== '_Session' && response && response.object) {
       this.storage.fieldsChangedByTrigger = _.reduce(response.object, (result, value, key) => {
         if (!_.isEqual(this.data[key], value)) {
           result.push(key);

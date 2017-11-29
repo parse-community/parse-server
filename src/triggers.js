@@ -199,7 +199,7 @@ export function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
-        if(!response){
+        if(!response) {
           response = request.objects;
         }
         response = response.map(object => {

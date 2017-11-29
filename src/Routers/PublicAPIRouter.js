@@ -15,7 +15,7 @@ export class PublicAPIRouter extends PromiseRouter {
     const appId = req.params.appId;
     const config = Config.get(appId);
 
-    if(!config){
+    if(!config) {
       this.invalidRequest();
     }
 
