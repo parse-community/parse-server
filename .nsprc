@@ -1,7 +1,6 @@
 {
   "exceptions": [
-     // Monitor the issue and remove this exception when it is resolved
-     // https://github.com/moment/moment/issues/4163
-     "https://nodesecurity.io/advisories/532"
+    "https://nodesecurity.io/advisories/532"
   ]
 }
+
