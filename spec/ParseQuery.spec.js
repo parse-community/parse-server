@@ -3249,7 +3249,7 @@ describe('Parse.Query testing', () => {
       })
   });
 
-  it('should match complex structure with dot notation when using matchesKeyInQuery', function(done) {
+  it('should match complex structure with dot notation when using doesNotMatchKeyInQuery', function(done) {
     const group1 = new Parse.Object('Group', {
       name: 'Group #1'
     });
