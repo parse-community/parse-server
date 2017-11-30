@@ -605,9 +605,10 @@ export class PostgresStorageAdapter {
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return this._ensureSchemaCollectionExists().then(() => {
-      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)]
-      return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+    return this._client.task('set-class-level-permissions', function * (t) {
+      yield this._ensureSchemaCollectionExists(t);
+      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
+      yield t.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
     });
   }
 
@@ -653,9 +654,9 @@ export class PostgresStorageAdapter {
     if (deletedIndexes.length > 0) {
       deletePromise = this.dropIndexes(className, deletedIndexes, conn);
     }
-    return conn.task(t => {
+    return conn.task('set-indexes-with-schema-format', function * (t) {
       const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)];
-      return t.batch([
+      yield t.batch([
         deletePromise,
         insertPromise,
         this._ensureSchemaCollectionExists(t),
@@ -665,12 +666,10 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
-    return this._client.tx('create-class', t => {
-      const q1 = this.createTable(className, schema, t);
-      const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
-      const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
-
-      return t.batch([q1, q2, q3]);
+    return this._client.tx('create-class', function * (t) {
+      yield this.createTable(className, schema, t);
+      yield t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+      yield this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
     })
       .then(() => {
         return toParseSchema(schema)
@@ -727,24 +726,24 @@ export class PostgresStorageAdapter {
     });
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return conn.task(t => {
-      return this._ensureSchemaCollectionExists(t)
-        .then(() => conn.none(qs, values))
-        .catch(error => {
-          if (error.code === PostgresDuplicateRelationError) {
-            // Table already exists, must have been created by a different request. Ignore error.
-          } else {
-            throw error;
-          }})
-    })
-      .then(() => {
-        return conn.tx('create-relation-tables', t => {
-          const queries = relations.map((fieldName) => {
-            return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
-          });
-          return t.batch(queries);
+    return conn.task(function * (t) {
+      try {
+        yield this._ensureSchemaCollectionExists(t);
+        yield t.none(qs, values);
+      } catch(error) {
+        if (error.code === PostgresDuplicateRelationError) {
+          // Table already exists, must have been created by a different request. Ignore error.
+        } else {
+          throw error;
+        }
+      }
+      yield t.tx('create-relation-tables', function * (t1) {
+        const queries = relations.map((fieldName) => {
+          return t1.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
         });
+        yield t1.batch(queries);
       });
+    });
   }
 
   addFieldIfNotExists(className, fieldName, type) {
@@ -794,31 +793,34 @@ export class PostgresStorageAdapter {
       {query: `DROP TABLE IF EXISTS $1:name`, values: [className]},
       {query: `DELETE FROM "_SCHEMA" WHERE "className" = $1`, values: [className]}
     ];
-    return this._client.tx(t => t.none(this._pgp.helpers.concat(operations)))
-      .then(() => className.indexOf('_Join:') != 0); // resolves with false when _Join table
+    return this._client.tx('delete-class', function * (t) {
+      yield t.none(this._pgp.helpers.concat(operations));
+      return className.indexOf('_Join:') != 0; // resolves with false when _Join table
+    });
   }
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
-    const now = new Date().getTime();
+    const start = Date.now();
     debug('deleteAllClasses');
-    return this._client.any('SELECT * FROM "_SCHEMA"')
-      .then(results => {
+    return this._client.task('delete-all-classes', function * (t) {
+      const results = yield t.any('SELECT * FROM "_SCHEMA"');
+      try {
         const joins = results.reduce((list, schema) => {
           return list.concat(joinTablesForSchema(schema.schema));
         }, []);
         const classes = ['_SCHEMA', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_GlobalConfig', '_Audience', ...results.map(result => result.className), ...joins];
-        return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', {className}))));
-      }, error => {
+        yield t.tx(t1 => t1.batch(classes.map(className => t1.none('DROP TABLE IF EXISTS $<className:name>', {className}))));
+      } catch(error) {
         if (error.code === PostgresRelationDoesNotExistError) {
           // No _SCHEMA collection. Don't delete anything.
           return;
         } else {
           throw error;
         }
-      }).then(() => {
-        debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-      });
+      }
+      debug(`deleteAllClasses done in ${Date.now() - start}`);
+    });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -860,7 +862,7 @@ export class PostgresStorageAdapter {
             batch.push(t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values));
           }
           return batch;
-        }
+        };
         return this._client.tx((t) => {
           return t.batch(doBatch(t));
         });
@@ -871,9 +873,11 @@ export class PostgresStorageAdapter {
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses() {
-    return this._ensureSchemaCollectionExists()
-      .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })))
-      .then(res => res.map(toParseSchema))
+    return this._client.task('get-all-classes', function * (t) {
+      yield this._ensureSchemaCollectionExists(t);
+      const data = yield t.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema }));
+      return data.map(toParseSchema);
+    });
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
