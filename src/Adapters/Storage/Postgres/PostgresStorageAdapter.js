@@ -668,10 +668,11 @@ export class PostgresStorageAdapter {
   }
 
   createClass(className, schema) {
+    const self = this;
     return this._client.tx('create-class', function * (t) {
-      yield this.createTable(className, schema, t);
+      yield self.createTable(className, schema, t);
       yield t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
-      yield this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
+      yield self.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
     })
       .then(() => {
         return toParseSchema(schema)
