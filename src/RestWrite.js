@@ -1169,34 +1169,35 @@ RestWrite.prototype.sanitizeData = function() {
     }
     return data;
   }, deepcopy(this.data));
+
+  return this.data;
 }
 
-// Expand dot notation keys to their full JSON equivalent
-// e.g. 'x.y':v => 'x':{'y':v}
-RestWrite.prototype.expandData = function() {
+// Returns an updated copy of the object
+RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  if (extraData.className == '_Session') {
+    return triggers.inflate(extraData, this.sanitizeData());
+  }
+
+  const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf(".") > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
       const splittedKey = key.split(".");
       const parentProp = splittedKey[0];
-      let parentVal = this.data[parentProp];
+      let parentVal = updatedObject.get(parentProp);
       if(typeof parentVal !== 'object') {
         parentVal = {};
       }
       parentVal[splittedKey[1]] = data[key];
-      data[parentProp] = parentVal;
+      updatedObject.set(parentProp, parentVal);
       delete data[key];
     }
     return data;
   }, deepcopy(this.data));
-}
 
-// Returns an updated copy of the object
-RestWrite.prototype.buildUpdatedObject = function (extraData) {
-  this.expandData();
-  this.sanitizeData();
-  var updatedObject = Object.assign(extraData, this.originalData, this.data);
-  return Parse.Object.fromJSON(updatedObject);
+  updatedObject.set(Parse._decode(undefined, this.sanitizeData()));
+  return updatedObject;
 };
 
 RestWrite.prototype.cleanUserAuthData = function() {

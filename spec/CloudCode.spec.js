@@ -181,12 +181,12 @@ describe('Cloud Code', () => {
   it('test afterSave ran on created object and returned a promise', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest2', function(req) {
       const obj = req.object;
-      if(!obj.existed())
+      if (!obj.existed())
       {
         const promise = new Parse.Promise();
-        setTimeout(function(){
+        setTimeout(function() {
           obj.set('proof', obj.id);
-          obj.save().then(function(){
+          obj.save().then(function() {
             promise.resolve();
           });
         }, 1000);
@@ -196,7 +196,7 @@ describe('Cloud Code', () => {
     });
 
     const obj = new Parse.Object('AfterSaveTest2');
-    obj.save().then(function(){
+    obj.save().then(function() {
       const query = new Parse.Query('AfterSaveTest2');
       query.equalTo('proof', obj.id);
       query.find().then(function(results) {
