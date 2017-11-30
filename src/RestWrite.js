@@ -1161,38 +1161,42 @@ RestWrite.prototype.objectId = function() {
 };
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
-RestWrite.prototype.sanitizedData = function() {
-  const data = Object.keys(this.data).reduce((data, key) => {
+RestWrite.prototype.sanitizeData = function() {
+  Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
       delete data[key];
     }
     return data;
   }, deepcopy(this.data));
-  return Parse._decode(undefined, data);
 }
 
-// Returns an updated copy of the object
-RestWrite.prototype.buildUpdatedObject = function (extraData) {
-  const updatedObject = triggers.inflate(extraData, this.originalData);
+// Expand dot notation keys to their full JSON equivalent
+// e.g. 'x.y':v => 'x':{'y':v}
+RestWrite.prototype.expandData = function() {
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf(".") > 0) {
       // subdocument key with dot notation ('x.y':v => 'x':{'y':v})
       const splittedKey = key.split(".");
       const parentProp = splittedKey[0];
-      let parentVal = updatedObject.get(parentProp);
+      let parentVal = this.data[parentProp];
       if(typeof parentVal !== 'object') {
         parentVal = {};
       }
       parentVal[splittedKey[1]] = data[key];
-      updatedObject.set(parentProp, parentVal);
+      data[parentProp] = parentVal;
       delete data[key];
     }
     return data;
   }, deepcopy(this.data));
+}
 
-  updatedObject.set(this.sanitizedData());
-  return updatedObject;
+// Returns an updated copy of the object
+RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  this.expandData();
+  this.sanitizeData();
+  var updatedObject = Object.assign(extraData, this.originalData, this.data);
+  return Parse.Object.fromJSON(updatedObject);
 };
 
 RestWrite.prototype.cleanUserAuthData = function() {

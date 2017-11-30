@@ -31,7 +31,10 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  if (type == Types.beforeSave && className === '_PushStatus') {
+  if ((type == Types.beforeFind || type == Types.afterFind) && className === '_Session') {
+    throw 'beforeFind and afterFind triggers are not allowed for _Session class.';
+  }
+  else if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
     // TODO: Allow proper documented way of using nested increment ops

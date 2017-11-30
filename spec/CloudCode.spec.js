@@ -1783,6 +1783,12 @@ describe('afterFind hooks', () => {
 describe('Trigger Testing', () => {
   it('should validate triggers correctly', () => {
     expect(() => {
+      Parse.Cloud.beforeFind('_Session', () => {});
+    }).toThrow('beforeFind and afterFind triggers are not allowed for _Session class.');
+    expect(() => {
+      Parse.Cloud.afterFind('_Session', () => {});
+    }).toThrow('beforeFind and afterFind triggers are not allowed for _Session class.');
+    expect(() => {
       Parse.Cloud.beforeSave('_Session', () => {});
     }).not.toThrow('Triggers are not supported for _Session class.');
     expect(() => {
@@ -1797,16 +1803,49 @@ describe('Trigger Testing', () => {
   });
 
   it('beforeSave _Session should not modify class', (done) => {
+    var hasCalled = false;
     Parse.Cloud.beforeSave('_Session', (req, res) => {
-      req.object.set("")
-      res.success();
+      req.object.set('foo', 'bing');
+      expect(() => {
+        req.object.set('createdWith', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('expiresAt', new Date())
+      }).toThrow();
+      expect(() => {
+        req.object.set('installationId', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('restricted', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('sessionToken', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('user', null)
+      }).toThrow();
 
-      expect(req.headers).toBeDefined();
+      hasCalled = true;
       res.success();
     });
 
-    const MyObject = Parse.Object.extend('MyObject');
-    const myObject = new MyObject();
-    myObject.save().then(() => done());
+    var user = new Parse.User();
+    user.set("username", "zxcv");
+    user.set("email", "asdf@example.com");
+    user.set("password", "asdf");
+    user.signUp(null, {
+      success: function() {
+        Parse.Session.current().then((result) => {
+          expect(hasCalled).toBe(true);
+          expect(result).toBeDefined();
+          expect(result.get('foo')).toBeUndefined();
+          done();
+        });
+      },
+      error: function() {
+        fail('Failed to save user');
+        done();
+      }
+    });
   });
 });
