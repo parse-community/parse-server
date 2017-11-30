@@ -605,14 +605,16 @@ export class PostgresStorageAdapter {
   }
 
   setClassLevelPermissions(className, CLPs) {
+    const self = this;
     return this._client.task('set-class-level-permissions', function * (t) {
-      yield this._ensureSchemaCollectionExists(t);
+      yield self._ensureSchemaCollectionExists(t);
       const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
       yield t.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
     });
   }
 
   setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields, conn) {
+    const self = this;
     conn = conn || this._client;
     if (submittedIndexes === undefined) {
       return Promise.resolve();
@@ -659,7 +661,7 @@ export class PostgresStorageAdapter {
       yield t.batch([
         deletePromise,
         insertPromise,
-        this._ensureSchemaCollectionExists(t),
+        self._ensureSchemaCollectionExists(t),
         t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', values)
       ]);
     });
@@ -688,6 +690,7 @@ export class PostgresStorageAdapter {
 
   // Just create a table, do not insert in schema
   createTable(className, schema, conn) {
+    const self = this;
     conn = conn || this._client;
     debug('createTable', className, schema);
     const valuesArray = [];
@@ -728,7 +731,7 @@ export class PostgresStorageAdapter {
     const values = [className, ...valuesArray];
     return conn.task(function * (t) {
       try {
-        yield this._ensureSchemaCollectionExists(t);
+        yield self._ensureSchemaCollectionExists(t);
         yield t.none(qs, values);
       } catch(error) {
         if (error.code === PostgresDuplicateRelationError) {
@@ -873,8 +876,9 @@ export class PostgresStorageAdapter {
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses() {
+    const self = this;
     return this._client.task('get-all-classes', function * (t) {
-      yield this._ensureSchemaCollectionExists(t);
+      yield self._ensureSchemaCollectionExists(t);
       const data = yield t.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema }));
       return data.map(toParseSchema);
     });
