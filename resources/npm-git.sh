@@ -9,6 +9,12 @@
 # From: https://github.com/graphql/graphql-js/blob/master/resources/npm-git.sh
 
 BUILD_DIR=latest
+BRANCH="${TRAVIS_BRANCH}"
+TARGET="latest"
+if [ "$BRANCH" != "master" ];
+then
+  TARGET="$BRANCH-preview"
+fi
 
 npm run build
 
@@ -29,5 +35,5 @@ git init
 git config user.name "Travis CI"
 git config user.email "github@fb.com"
 git add .
-git commit -m "Deploy master to LATEST branch"
-git push --force --quiet "https://${GH_TOKEN}@github.com/parse-community/parse-server.git" master:latest
+git commit -m "Deploy $BRANCH to $TARGET branch"
+git push --force --quiet "https://${GH_TOKEN}@github.com/parse-community/parse-server.git" master:$TARGET

@@ -98,10 +98,15 @@ const toParseSchema = (schema) => {
   if (schema.classLevelPermissions) {
     clps = {...emptyCLPS, ...schema.classLevelPermissions};
   }
+  let indexes = {};
+  if (schema.indexes) {
+    indexes = {...schema.indexes};
+  }
   return {
     className: schema.className,
     fields: schema.fields,
     classLevelPermissions: clps,
+    indexes,
   };
 }
 
@@ -596,9 +601,7 @@ export class PostgresStorageAdapter {
   }
 
   classExists(name) {
-    return this._client.one(`SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = $1)`, [name]).then((res) => {
-      return res.exists;
-    });
+    return this._client.one('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)', [name], a => a.exists);
   }
 
   setClassLevelPermissions(className, CLPs) {
@@ -608,12 +611,66 @@ export class PostgresStorageAdapter {
     });
   }
 
+  setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields, conn) {
+    conn = conn || this._client;
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1} };
+    }
+    const deletedIndexes = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
+      }
+      if (field.__op === 'Delete') {
+        deletedIndexes.push(name);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (!fields.hasOwnProperty(key)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
+    });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes, conn);
+    }
+    let deletePromise = Promise.resolve();
+    if (deletedIndexes.length > 0) {
+      deletePromise = this.dropIndexes(className, deletedIndexes, conn);
+    }
+    return conn.task(t => {
+      const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)];
+      return t.batch([
+        deletePromise,
+        insertPromise,
+        this._ensureSchemaCollectionExists(t),
+        t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', values)
+      ]);
+    });
+  }
+
   createClass(className, schema) {
-    return this._client.tx(t => {
+    return this._client.tx('create-class', t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
+      const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
 
-      return t.batch([q1, q2]);
+      return t.batch([q1, q2, q3]);
     })
       .then(() => {
         return toParseSchema(schema)
@@ -670,15 +727,17 @@ export class PostgresStorageAdapter {
     });
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return this._ensureSchemaCollectionExists(conn)
-      .then(() => conn.none(qs, values))
-      .catch(error => {
-        if (error.code === PostgresDuplicateRelationError) {
-        // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
-      }).then(() => {
+    return conn.task(t => {
+      return this._ensureSchemaCollectionExists(t)
+        .then(() => conn.none(qs, values))
+        .catch(error => {
+          if (error.code === PostgresDuplicateRelationError) {
+            // Table already exists, must have been created by a different request. Ignore error.
+          } else {
+            throw error;
+          }})
+    })
+      .then(() => {
         return conn.tx('create-relation-tables', t => {
           const queries = relations.map((fieldName) => {
             return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
@@ -691,7 +750,7 @@ export class PostgresStorageAdapter {
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
-    return this._client.tx("addFieldIfNotExists", t=> {
+    return this._client.tx('add-field-if-not-exists', t => {
       let promise = Promise.resolve();
       if (type.type !== 'Relation') {
         promise = t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
@@ -1547,6 +1606,25 @@ export class PostgresStorageAdapter {
         /* eslint-disable no-console */
         console.error(error);
       });
+  }
+
+  createIndexes(className, indexes, conn) {
+    return (conn || this._client).tx(t => t.batch(indexes.map(i => {
+      return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [i.name, className, i.key]);
+    })));
+  }
+
+  dropIndexes(className, indexes, conn) {
+    return (conn || this._client).tx(t => t.batch(indexes.map(i => t.none('DROP INDEX $1:name', i))));
+  }
+
+  getIndexes(className) {
+    const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
+    return this._client.any(qs, {className});
+  }
+
+  updateSchemaWithIndexes() {
+    return Promise.resolve();
   }
 }
 

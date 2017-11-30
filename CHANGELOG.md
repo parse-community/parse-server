@@ -1,7 +1,43 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.5...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...master)
+
+### 2.7.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...2.6.5)
+
+Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update your engines before updating parse-server
+
+#### New Features:
+* Aggregation endpoints, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds indexation options onto Schema endpoints, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Bug fixes:
+* Fixes sessionTokens being overridden in 'find' (#4332), thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Proper `handleShutdown()` feature to close database connections (#4361), thanks to [CHANG, TZU-YEN](https://github.com/trylovetom)
+* Fixes issue affecting state of _PushStatus objects, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Fixes issue affecting calling password reset password pages with wrong appid, thanks to [Bryan de Leon](https://github.com/bryandel)
+* Fixes issue affecting duplicates _Sessions on successive logins, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Updates contributing guides, and improves windows support, thanks to [Addison Elliott](https://github.com/addisonelliott)
+* Uses new official scoped packaged, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improves health checks responses, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Add password confirmation to choose_password, thanks to [Worathiti Manosroi](https://github.com/pungme)
+* Improve performance of relation queries, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [commander@2.12.1](https://www.npmjs.com/package/commander)
+* [ws@3.3.2](https://www.npmjs.com/package/ws)
+* [uws@9.14.0](https://www.npmjs.com/package/uws)
+* [pg-promise@7.3.2](https://www.npmjs.com/package/pg-promise)
+* [parse@1.10.2](https://www.npmjs.com/package/parse)
+* [pg-promise@7.3.1](https://www.npmjs.com/package/pg-promise)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.1.1](https://www.npmjs.com/package/cross-env)
+
+
 
 ### 2.6.5
 [Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.5...2.6.4)
