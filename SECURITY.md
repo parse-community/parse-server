@@ -18,7 +18,7 @@ We ask that:
 
 All vulnerability should be privately reported to either [Node Security](https://nodesecurity.io/report) or directly to us at the following address [security at parseplatform dot org](mailto:security@parseplatform.org)
 
-You can use our PGP public key:
+You can use our PGP public key, which is also uploaded [here](hkp://pgp.mit.edu):
 
 ```
 -----BEGIN PGP PUBLIC KEY BLOCK-----
