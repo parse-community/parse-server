@@ -1200,10 +1200,12 @@ describe('PushController', () => {
         isLocalTime: false
       })).toBe('2007-04-05T14:30:00.000Z', 'Timezone offset');
 
+      const noTimezone = new Date('2017-09-06T17:14:01.048')
+      const expectedHour = 17 + noTimezone.getTimezoneOffset() / 60;
       expect(PushController.formatPushTime({
-        date: new Date('2017-09-06T17:14:01.048'),
+        date: noTimezone,
         isLocalTime: true,
-      })).toBe('2017-09-06T17:14:01.048', 'No timezone');
+      })).toBe(`2017-09-06T${expectedHour}:14:01.048`, 'No timezone');
       expect(PushController.formatPushTime({
         date: new Date('2017-09-06'),
         isLocalTime: true
@@ -1224,6 +1226,7 @@ describe('PushController', () => {
       };
 
       const pushTime = '2017-09-06T17:14:01.048';
+      const expectedHour = 17 + new Date(pushTime).getTimezoneOffset() / 60;
 
       reconfigureServer({
         push: {adapter: pushAdapter},
@@ -1249,7 +1252,7 @@ describe('PushController', () => {
         })
         .then((pushStatus) => {
           expect(pushStatus.get('status')).toBe('scheduled');
-          expect(pushStatus.get('pushTime')).toBe('2017-09-06T17:14:01.048');
+          expect(pushStatus.get('pushTime')).toBe(`2017-09-06T${expectedHour}:14:01.048`);
         })
         .then(done, done.fail);
     });
