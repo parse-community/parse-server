@@ -2,9 +2,9 @@ const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/Postgre
 const databaseURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 
 const getColumns = (client, className) => {
-  return client.any(`SELECT column_name FROM information_schema.columns WHERE table_name = '${className}'`)
+  return client.any('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className })
     .then(columns => {
-      if (!columns) {
+      if (!columns.length) {
         return [];
       }
 
@@ -38,8 +38,8 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     const schema = {
       fields: {
         "pushTime": { type: 'String' },
-        "source": { type: 'String' }, // rest or webui
-        "query": { type: 'String' }, // the stringified JSON query
+        "source": { type: 'String' },
+        "query": { type: 'String' },
       },
     };
 
@@ -60,6 +60,38 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
         expect(columns).toContain('source');
         expect(columns).toContain('query');
         expect(columns).toContain('expiration_interval');
+        done();
+      })
+      .catch(error => done.fail(error));
+  });
+
+  it('schemaUpgrade, matain correct schema', done => {
+    const adapter = new PostgresStorageAdapter({ uri: databaseURI });
+    const client = adapter._client;
+    const className = 'Table';
+    const schema = {
+      fields: {
+        "columnA": { type: 'String' },
+        "columnB": { type: 'String' },
+        "columnC": { type: 'String' },
+      },
+    };
+
+    adapter.createTable(className, schema)
+      .then(() => getColumns(client, className))
+      .then(columns => {
+        expect(columns).toContain('columnA');
+        expect(columns).toContain('columnB');
+        expect(columns).toContain('columnC');
+
+        return adapter.schemaUpgrade(className, schema);
+      })
+      .then(() => getColumns(client, className))
+      .then(columns => {
+        expect(columns.length).toEqual(3);
+        expect(columns).toContain('columnA');
+        expect(columns).toContain('columnB');
+        expect(columns).toContain('columnC');
         done();
       })
       .catch(error => done.fail(error));

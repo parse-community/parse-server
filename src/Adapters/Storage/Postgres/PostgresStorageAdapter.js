@@ -745,28 +745,33 @@ export class PostgresStorageAdapter {
 
   schemaUpgrade(className, schema) {
     debug('schemaUpgrade', { className, schema });
-    return this._client.tx('schemaUpgrade', t =>
-      t.any(`SELECT column_name FROM information_schema.columns WHERE table_name = '${className}'`)
-    )
-      .then(columns => {
-        if (!columns) {
-          return Promise.resolve();
-        }
 
-        const currentColumns = columns.map(item => item.column_name);
-        const newColumns = Object.keys(schema.fields);
+    return this._client.tx('schemaUpgrade', t => {
+      return t.any('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className })
+        .then(columns => {
+          if (!columns.length) {
+            return Promise.resolve();
+          }
 
-        const columnsToCreate = newColumns.filter(item => currentColumns.indexOf(item) === -1);
+          const currentColumns = columns.map(item => item.column_name);
+          const newColumns = Object.keys(schema.fields);
 
-        const promise = [];
+          const columnsToCreate = newColumns.filter(item => currentColumns.indexOf(item) === -1);
 
-        columnsToCreate.forEach(fieldName => {
-          const type = schema.fields[fieldName];
-          promise.push(this.addFieldIfNotExists(className, fieldName, type));
-        });
+          const addFields = [];
 
-        return Promise.all(promise);
-      });
+          columnsToCreate.forEach(fieldName => {
+            const type = schema.fields[fieldName];
+            addFields.push(this.addFieldIfNotExists(className, fieldName, type));
+          });
+
+          if (!addFields.length) {
+            return Promise.resolve();
+          }
+
+          return t.batch(addFields);
+        })
+    });
   }
 
   addFieldIfNotExists(className, fieldName, type) {
