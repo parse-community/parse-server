@@ -749,10 +749,6 @@ export class PostgresStorageAdapter {
     return this._client.tx('schemaUpgrade', t => {
       return t.any('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className })
         .then(columns => {
-          if (!columns.length) {
-            return Promise.resolve();
-          }
-
           const currentColumns = columns.map(item => item.column_name);
           const newColumns = Object.keys(schema.fields);
 

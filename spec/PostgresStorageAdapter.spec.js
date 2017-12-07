@@ -96,4 +96,34 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       })
       .catch(error => done.fail(error));
   });
+
+  it('Create a table without columns and upgrade with columns', done => {
+    const adapter = new PostgresStorageAdapter({ uri: databaseURI });
+    const client = adapter._client;
+    const className = 'EmptyTable';
+    let schema = {};
+
+    adapter.createTable(className, schema)
+      .then(() => getColumns(client, className))
+      .then(columns => {
+        expect(columns.length).toBe(0);
+
+        schema = {
+          fields: {
+            "columnA": { type: 'String' },
+            "columnB": { type: 'String' }
+          },
+        };
+
+        return adapter.schemaUpgrade(className, schema);
+      })
+      .then(() => getColumns(client, className))
+      .then(columns => {
+        expect(columns.length).toEqual(2);
+        expect(columns).toContain('columnA');
+        expect(columns).toContain('columnB');
+        done();
+      })
+      .catch(error => done.fail(error));
+  })
 });
