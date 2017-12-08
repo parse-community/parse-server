@@ -43,6 +43,13 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     }
   }
 
+  this.handleOptions();
+}
+
+// Parses restOptions and handles the values
+RestQuery.prototype.handleOptions = function() {
+  this.isGet = (Object.keys(this.restWhere).length == 1 && this.restWhere.hasOwnProperty('objectId'));
+
   this.doCount = false;
 
   // The format for this.include is not the same as the format for the
@@ -55,8 +62,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
 
   // If we have keys, we probably want to force some includes (n-1 level)
   // See issue: https://github.com/parse-community/parse-server/issues/3185
-  if (restOptions.hasOwnProperty('keys')) {
-    const keysForInclude = restOptions.keys.split(',').filter((key) => {
+  if (this.restOptions.hasOwnProperty('keys')) {
+    const keysForInclude = this.restOptions.keys.split(',').filter((key) => {
       // At least 2 components
       return key.split(".").length > 1;
     }).map((key) => {
@@ -68,18 +75,18 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     // Concat the possibly present include string with the one from the keys
     // Dedup / sorting is handle in 'include' case.
     if (keysForInclude.length > 0) {
-      if (!restOptions.include || restOptions.include.length == 0) {
-        restOptions.include = keysForInclude;
+      if (!this.restOptions.include || this.restOptions.include.length == 0) {
+        this.restOptions.include = keysForInclude;
       } else {
-        restOptions.include += "," + keysForInclude;
+        this.restOptions.include += "," + keysForInclude;
       }
     }
   }
 
-  for (var option in restOptions) {
+  for (var option in this.restOptions) {
     switch(option) {
     case 'keys': {
-      const keys = restOptions.keys.split(',').concat(AlwaysSelectedKeys);
+      const keys = this.restOptions.keys.split(',').concat(AlwaysSelectedKeys);
       this.keys = Array.from(new Set(keys));
       break;
     }
@@ -91,10 +98,10 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'skip':
     case 'limit':
     case 'readPreference':
-      this.findOptions[option] = restOptions[option];
+      this.findOptions[option] = this.restOptions[option];
       break;
     case 'order':
-      var fields = restOptions.order.split(',');
+      var fields = this.restOptions.order.split(',');
       this.findOptions.sort = fields.reduce((sortMap, field) => {
         field = field.trim();
         if (field === '$score') {
@@ -108,7 +115,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       }, {});
       break;
     case 'include': {
-      const paths = restOptions.include.split(',');
+      const paths = this.restOptions.include.split(',');
       // Load the existing includes (from keys)
       const pathSet = paths.reduce((memo, path) => {
         // Split each paths on . (a.b.c -> [a,b,c])
@@ -128,7 +135,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
       break;
     }
     case 'redirectClassNameForKey':
-      this.redirectKey = restOptions.redirectClassNameForKey;
+      this.redirectKey = this.restOptions.redirectClassNameForKey;
       this.redirectClassName = null;
       break;
     case 'includeReadPreference':
@@ -148,6 +155,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
 // TODO: consolidate the replaceX functions
 RestQuery.prototype.execute = function(executeOptions) {
   return Promise.resolve().then(() => {
+    return this.runBeforeTrigger();
+  }).then(() => {
     return this.buildRestWhere();
   }).then(() => {
     return this.runFind(executeOptions);
@@ -500,6 +509,29 @@ RestQuery.prototype.replaceEquality = function() {
     this.restWhere[key] = replaceEqualityConstraint(this.restWhere[key]);
   }
 }
+
+// Runs any beforeFind triggers against this operation.
+RestQuery.prototype.runBeforeTrigger = function() {
+  if (this.response) {
+    return;
+  }
+
+  // Avoid doing any setup for triggers if there is no 'beforeFind' trigger for this class.
+  if (!triggers.triggerExists(this.className, triggers.Types.beforeFind, this.config.applicationId)) {
+    return Promise.resolve();
+  }
+
+  return triggers.maybeRunQueryTrigger(triggers.Types.beforeFind, this.className, this.restWhere, this.restOptions,
+    this.config, this.auth, this.isGet).then((result) => {
+    this.restWhere = result.restWhere || this.restWhere;
+    this.restOptions = result.restOptions || this.restOptions;
+
+    // // Parse the options if the trigger returned options
+    if (result.restOptions) {
+      this.handleOptions();
+    }
+  });
+};
 
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
