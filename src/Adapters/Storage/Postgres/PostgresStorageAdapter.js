@@ -601,9 +601,7 @@ export class PostgresStorageAdapter {
   }
 
   classExists(name) {
-    return this._client.one(`SELECT EXISTS (SELECT 1 FROM   information_schema.tables WHERE table_name = $1)`, [name]).then((res) => {
-      return res.exists;
-    });
+    return this._client.one('SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = $1)', [name], a => a.exists);
   }
 
   setClassLevelPermissions(className, CLPs) {
@@ -655,17 +653,19 @@ export class PostgresStorageAdapter {
     if (deletedIndexes.length > 0) {
       deletePromise = this.dropIndexes(className, deletedIndexes, conn);
     }
-    return deletePromise
-      .then(() => insertPromise)
-      .then(() => this._ensureSchemaCollectionExists())
-      .then(() => {
-        const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]
-        return conn.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
-      });
+    return conn.task(t => {
+      const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)];
+      return t.batch([
+        deletePromise,
+        insertPromise,
+        this._ensureSchemaCollectionExists(t),
+        t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', values)
+      ]);
+    });
   }
 
   createClass(className, schema) {
-    return this._client.tx(t => {
+    return this._client.tx('create-class', t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
       const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
@@ -727,15 +727,17 @@ export class PostgresStorageAdapter {
     });
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return this._ensureSchemaCollectionExists(conn)
-      .then(() => conn.none(qs, values))
-      .catch(error => {
-        if (error.code === PostgresDuplicateRelationError) {
-        // Table already exists, must have been created by a different request. Ignore error.
-        } else {
-          throw error;
-        }
-      }).then(() => {
+    return conn.task(t => {
+      return this._ensureSchemaCollectionExists(t)
+        .then(() => conn.none(qs, values))
+        .catch(error => {
+          if (error.code === PostgresDuplicateRelationError) {
+            // Table already exists, must have been created by a different request. Ignore error.
+          } else {
+            throw error;
+          }})
+    })
+      .then(() => {
         return conn.tx('create-relation-tables', t => {
           const queries = relations.map((fieldName) => {
             return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
@@ -748,7 +750,7 @@ export class PostgresStorageAdapter {
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
-    return this._client.tx("addFieldIfNotExists", t=> {
+    return this._client.tx('add-field-if-not-exists', t => {
       let promise = Promise.resolve();
       if (type.type !== 'Relation') {
         promise = t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {

@@ -3,8 +3,17 @@
 ### master
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...master)
 
+### 2.7.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.1...2.7.0)
+
+:warning: Fixes a security issue affecting Class Level Permissions
+
+* Adds support for dot notation when using matchesKeyInQuery, thanks to [Henrik](https://github.com/bohemima) and [Arthur Cinader](https://github.com/acinader)
+
 ### 2.7.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...2.6.5)
+
+:warning: This version contains an issue affecting Class Level Permissions on mongoDB. Please upgrade to 2.7.1.
 
 Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update your engines before updating parse-server
 
