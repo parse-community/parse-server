@@ -47,7 +47,7 @@ function getQueryOptions(info) {
 
 function injectClassName(className, result) {
   if (Array.isArray(result)) {
-    return result.map(injectClassName(className));
+    return result.map((res) => injectClassName(className, res));
   }
   return Object.assign({className}, result);
 }
@@ -175,15 +175,17 @@ export class GraphQLParseSchema {
       }
 
       MainSchemaMutationOptions.fields['destroy' + className] = {
-        type: GraphQLID,
+        type: objectType,
         description: `use this method to update delete an existing ${className}`,
         args: {
           objectId: { type: new GraphQLNonNull(GraphQLID), name: 'objectId' }
         },
         name: 'destroy',
-        resolve: (root, args, context) => {
-          return rest.del(context.config, context.auth, className, args.objectId).then(() => {
-            return args.objectId;
+        resolve: (root, args, context, info) => {
+          return runGet(context, info, className, args.objectId).then((object) => {
+            return rest.del(context.config, context.auth, className, args.objectId).then(() => {
+              return object;
+            });
           });
         }
       }

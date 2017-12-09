@@ -2,17 +2,17 @@ import {
   GraphQLInterfaceType,
   GraphQLObjectType,
   GraphQLInputObjectType,
-  //GraphQLString,
-  //GraphQLNonNull,
-  //GraphQLBoolean,
-  //GraphQLID,
+  // GraphQLString,
+  // GraphQLNonNull,
+  // GraphQLBoolean,
+  // GraphQLID,
 } from 'graphql'
 
 import {
   queryType,
   inputType,
   type,
-  //GraphQLGeoPoint,
+  // GraphQLGeoPoint,
   GraphQLPointer,
   GraphQLJSONObject
 } from './types'
@@ -59,7 +59,7 @@ function graphQLQueryField(fieldName, field) {
 
 const ParseClassCache = {};
 
-export function  loadClass(className, schema) {
+export function loadClass(className, schema) {
   if (!ParseClassCache[className]) {
     const c = new ParseClass(className, schema);
     const objectType = c.graphQLObjectType();
@@ -140,7 +140,7 @@ export class ParseClass {
       description: `Parse Class ${className}`,
       interfaces: [ParseObjectInterface],
       fields: () => {
-        return this.buildFields(graphQLField);
+        return this.buildFields(graphQLField, false, true);
       },
       resolve: () => {
         return;
@@ -151,25 +151,25 @@ export class ParseClass {
     };
   }
 
-  buildFields(mapper, filterReserved, defaultValues = {}) {
+  buildFields(mapper, filterReserved = false, isQuery = false) {
     const fields = this.class.fields;
     return Object.keys(fields).reduce((memo, fieldName) => {
       if (filterReserved && reservedFieldNames.indexOf(fieldName) >= 0) {
         return memo;
       }
       const field = fields[fieldName];
-      const gQLField = mapper(fieldName, field);
-      if (!gQLField) {
-        if (field.type == 'Pointer') {
-          memo[fieldName] = {
-            type: loadClass(field.targetClass, this.schema).objectType
-          }
+      let gQLField = mapper(fieldName, field);
+      if (field.type == 'Pointer' && isQuery) {
+        gQLField = {
+          type: loadClass(field.targetClass, this.schema).objectType
         }
+      }
+      if (!gQLField) {
         return memo;
       }
       memo[fieldName] = gQLField;
       return memo;
-    }, defaultValues);
+    }, {});
   }
 
   graphQLInputConfig() {
