@@ -137,7 +137,8 @@ module.exports.ParseServerOptions = {
   },
   "filesCacheControl": {
     "env": "PARSE_SERVER_FILES_CACHE_CONTROL",
-    "help": "Cache-Control header for files router"
+    "help": "Cache-Control header for files router",
+    "default": "public, max-age=86400"
   },
   "userSensitiveFields": {
     "env": "PARSE_SERVER_USER_SENSITIVE_FIELDS",

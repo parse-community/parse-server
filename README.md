@@ -52,7 +52,7 @@ $ mongodb-runner start
 $ parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --databaseURI mongodb://localhost/test
 ```
 ***Note:*** *If installation with* `-g` *fails due to permission problems* (`npm ERR! code 'EACCES'`), *please refer to [this link](https://docs.npmjs.com/getting-started/fixing-npm-permissions).*
- 
+
 
 ### Inside a Docker container
 ```
@@ -232,6 +232,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 #### Advanced options
 
 * `fileKey` - For migrated apps, this is necessary to provide access to files already hosted on Parse.
+* `filesCacheControl` - Set `Cache-Control` header when serving files with builtin files router. Defaults to `public, max-age=86400` (1 day).
 * `allowClientClassCreation` - Set to false to disable client class creation. Defaults to true.
 * `enableAnonymousUsers` - Set to false to disable anonymous users. Defaults to true.
 * `auth` - Used to configure support for [3rd party authentication](http://docs.parseplatform.org/parse-server/guide/#oauth-and-3rd-party-authentication).
@@ -313,14 +314,14 @@ var server = ParseServer({
   },
   // optional settings to enforce password policies
   passwordPolicy: {
-    // Two optional settings to enforce strong passwords. Either one or both can be specified. 
+    // Two optional settings to enforce strong passwords. Either one or both can be specified.
     // If both are specified, both checks must pass to accept the password
-    // 1. a RegExp object or a regex string representing the pattern to enforce 
+    // 1. a RegExp object or a regex string representing the pattern to enforce
     validatorPattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*[0-9])(?=.{8,})/, // enforce password with at least 8 char with at least 1 lower case, 1 upper case and 1 digit
     // 2. a callback function to be invoked to validate the password  
-    validatorCallback: (password) => { return validatePassword(password) }, 
+    validatorCallback: (password) => { return validatePassword(password) },
     doNotAllowUsername: true, // optional setting to disallow username in passwords
-    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset. 
+    maxPasswordAge: 90, // optional setting in days for password expiry. Login fails if user does not reset the password within this period after signup/last reset.
     maxPasswordHistory: 5, // optional setting to prevent reuse of previous n passwords. Maximum value that can be specified is 20. Not specifying it or specifying 0 will not enforce history.
     //optional setting to set a validity duration for password reset links (in seconds)
     resetTokenValidityDuration: 24*60*60, // expire after 24 hours
@@ -480,4 +481,3 @@ Become a sponsor and get your logo on our README on Github with a link to your s
 <a href="https://opencollective.com/parse-server/sponsor/27/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/27/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/28/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/28/avatar.svg"></a>
 <a href="https://opencollective.com/parse-server/sponsor/29/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/29/avatar.svg"></a>
-
