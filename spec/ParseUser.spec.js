@@ -3432,6 +3432,60 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('allows login when providing email as username', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'yolo',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    }).then(() => {
+      return Parse.User.logIn('yo@lo.com', 'yolopass');
+    }).then((user) => {
+      expect(user.get('username')).toBe('yolo');
+    }).then(done).catch(done.fail);
+  });
+
+  it('handles properly when 2 users share username / email pairs', (done) => {
+    const user = new Parse.User({
+      username: 'yo@loname.com',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    });
+    const user2 = new Parse.User({
+      username: 'yo@lo.com',
+      email: 'yo@loname.com',
+      password: 'yolopass2' // different passwords
+    });
+
+    Parse.Object.saveAll([user, user2]).then(() => {
+      return Parse.User.logIn('yo@loname.com', 'yolopass');
+    }).then((user) => {
+      // the username takes precedence over the email,
+      // so we get the user with username as passed in
+      expect(user.get('username')).toBe('yo@loname.com');
+    }).then(done).catch(done.fail);
+  });
+
+  it('handles properly when 2 users share username / email pairs, counterpart', (done) => {
+    const user = new Parse.User({
+      username: 'yo@loname.com',
+      password: 'yolopass',
+      email: 'yo@lo.com'
+    });
+    const user2 = new Parse.User({
+      username: 'yo@lo.com',
+      email: 'yo@loname.com',
+      password: 'yolopass2' // different passwords
+    });
+
+    Parse.Object.saveAll([user, user2]).then(() => {
+      return Parse.User.logIn('yo@loname.com', 'yolopass2');
+    }).then(done.fail).catch((err) => {
+      expect(err.message).toEqual('Invalid username/password.');
+      done();
+    });
+  });
+
   it('fails to login when password is not provided', (done) => {
     const user = new Parse.User();
     user.save({
