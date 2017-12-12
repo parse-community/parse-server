@@ -2,9 +2,6 @@
 
 // Helper functions for accessing the google API.
 var Parse = require('parse/node').Parse;
-//var verifier = require('gamecenter-identity-verifier');
-
-var _ = require('underscore');
 var crypto = require('crypto');
 var request = require('request');
 var url = require('url');
@@ -46,8 +43,8 @@ function verifyPublicKeyUrl(publicKeyUrl) {
   }
 
   var hostnameParts = parsedUrl.hostname.split('.');
-  var domainParts = _.rest(hostnameParts, hostnameParts.length - 2);
-  var domain = domainParts.join('.');
+//  var domainParts = _.rest(hostnameParts, hostnameParts.length - 2);
+  var domain = hostnameParts[hostnameParts.length - 2] + "." + hostnameParts[hostnameParts.length - 1];
   if (domain !== 'apple.com') {
     return false;
   }
