@@ -23,7 +23,6 @@ const vkontakte = require("./vkontakte");
 const qq = require("./qq");
 const wechat = require("./wechat");
 const weibo = require("./weibo");
-
 const anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
@@ -54,10 +53,14 @@ const providers = {
   weibo
 };
 
-function authDataValidator(adapter, appIds, options) {
-  return function (authData) {
-    return adapter.validateAuthData(authData, options).then(() => {
-      if (appIds) {
+function authDataValidator(adapter, appIds, options) 
+{
+  return function (authData) 
+  {
+    return adapter.validateAuthData(authData, options).then(() => 
+    {
+      if (appIds) 
+      {
         return adapter.validateAppId(appIds, authData, options);
       }
       return Promise.resolve();
@@ -69,10 +72,9 @@ function loadAuthAdapter(provider, authOptions) {
   const defaultAdapter = providers[provider];
   const adapter = Object.assign({}, defaultAdapter);
   const providerOptions = authOptions[provider];
-
-  if (!defaultAdapter && !providerOptions) {
+	  
+  if (!defaultAdapter && !providerOptions) 
     return;
-  }
 
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
@@ -95,22 +97,24 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
-module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
+module.exports = function (authOptions = {}, enableAnonymousUsers = true) 
+{
   let _enableAnonymousUsers = enableAnonymousUsers;
-  const setEnableAnonymousUsers = function (enable) {
+  const setEnableAnonymousUsers = function (enable) 
+  {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function (provider) {
-
-    if (provider === 'anonymous' && !_enableAnonymousUsers) {
+  const getValidatorForProvider = function (provider) 
+  {
+    if (provider === 'anonymous' && !_enableAnonymousUsers) 
+    {
       return;
     }
     
-    //check to make sure provider supported
-    if(providers[provider] == null)
+    if(!providers.hasOwnProperty(provider))
 	    return;
-
+    
     const {
       adapter,
       appIds,
