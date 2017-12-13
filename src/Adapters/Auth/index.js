@@ -107,6 +107,10 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true) {
       return;
     }
     
+    //check to make sure provider supported
+    if(providers[provider] == null)
+	    return;
+
     const {
       adapter,
       appIds,
