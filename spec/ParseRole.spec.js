@@ -24,7 +24,9 @@ describe('Parse Role testing', () => {
       return role.save({}, { useMasterKey: true });
     }).then(() => {
       var query = new Parse.Query('_Role');
-      return query.find({ useMasterKey: true });
+      return query
+        .equalTo('name', 'Foos')
+        .find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(1);
       var relation = x[0].relation('users').query();
@@ -120,16 +122,17 @@ describe('Parse Role testing', () => {
       getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
-    }).then ((roles) => {
-      expect(roles.length).toEqual(4);
+    }).then((roles) => {
+      expect(roles.length).toEqual(5); // +1 for the all role
 
       allRoles.forEach(function(name) {
         expect(roles.indexOf("role:" + name)).not.toBe(-1);
       });
 
+      // 1 Query for _All_Role
       // 1 Query for the initial setup
       // 1 query for the parent roles
-      expect(restExecute.calls.count()).toEqual(2);
+      expect(restExecute.calls.count()).toEqual(3);
 
       // 1 call for the 1st layer of roles
       // 1 call for the 2nd layer
@@ -163,15 +166,12 @@ describe('Parse Role testing', () => {
         return auth._loadRoles();
       })
     }).then((roles) => {
-      expect(roles.length).toEqual(3);
+      expect(roles.length).toEqual(4); // add one for _All_Role
       rolesNames.forEach((name) => {
         expect(roles.indexOf('role:' + name)).not.toBe(-1);
       });
       done();
-    }, function(){
-      fail("should succeed")
-      done();
-    });
+    }).catch(done.fail);
   });
 
   it("_Role object should not save without name.", (done) => {
@@ -329,7 +329,9 @@ describe('Parse Role testing', () => {
       customerACL.setRoleWriteAccess("Customer", true);
 
       var query = new Parse.Query('_Role');
-      return query.find({ useMasterKey: true });
+      return query
+        .notEqualTo('name', '_All_Role')
+        .find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(3);
 
@@ -526,5 +528,69 @@ describe('Parse Role testing', () => {
             });
           });
       });
+  });
+
+  describe('_All_User roll', function () {
+    it('should exist', function (done) {
+      new Parse.Query('_Role')
+        .find({ useMasterKey: true })
+        .then((results) => {
+          expect(results[0].get('name')).toBe('_All_Role');
+          done();
+        })
+        .catch(done.fail);
+    });
+
+    it('should respect for read.', function (done) {
+      let role, user;
+
+      const userP = new Parse.User()
+        .set('username', 'userA')
+        .set('password', 'password')
+        .save()
+        .then((user) => Parse.User.logIn(user.get('username'), 'password'));
+
+      const roleP = new Parse.Role('aRole', new Parse.ACL())
+        .save();
+
+      Parse.Promise.when(userP, roleP)
+        .then((newUser, newrole) => {
+          user = newUser;
+          role = newrole;
+          const acl = new Parse.ACL();
+          acl.setRoleReadAccess(role, true);
+          return new Parse.Object('Foo')
+            .setACL(acl)
+            .save();
+        })
+        .then(() => new Parse.Query('Foo').first())
+        .then((obj) => {
+          expect(obj).not.toBeDefined();
+          return new Parse.Query(Parse.Role)
+            .equalTo('name', '_All_Role')
+            .first()
+        })
+        .then((allRole) => {
+          expect(allRole).toBeDefined();
+
+          const roles = role.relation('roles');
+          roles.add(allRole);
+          return role.save(null, { useMasterKey: true });
+        })
+        .then(() => new Parse.Query('Foo').first())
+        .then((obj) => {
+          expect(obj).toBeDefined();
+          const acl = obj.getACL();
+          acl.setReadAccess(user.id, false);
+          obj.setACL(acl);
+          return obj.save();
+        })
+        .then(() => new Parse.Query('Foo').first())
+        .then(() => done.fail('query should fail with not found'))
+        .catch((e) => {
+          expect(e).toEqual(new Parse.Error(101, 'Object not found.'));
+          done();
+        });
+    });
   });
 });

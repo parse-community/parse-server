@@ -2,11 +2,14 @@
 // Parse database.
 
 import { Parse }              from 'parse/node';
+import { newObjectId }        from '../cryptoUtils';
 import _                      from 'lodash';
 import intersect              from 'intersect';
 import deepcopy               from 'deepcopy';
 import logger                 from '../logger';
 import * as SchemaController  from './SchemaController';
+
+const ALL_ROLE_NAME = '_All_Role';
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -539,7 +542,7 @@ const transformAuthData = (className, object, schema) => {
 }
 
 // Inserts an object into the database.
-// Returns a promise that resolves successfully iff the object saved.
+// Returns a promise that resolves successfully if the object saved.
 DatabaseController.prototype.create = function(className, object, { acl } = {}) {
   // Make a copy of the object, so we don't mutate the incoming data.
   const originalObject = object;
@@ -997,6 +1000,28 @@ DatabaseController.prototype.addPointerPermissions = function(schema, className,
   }
 }
 
+DatabaseController.prototype.ensureAllRole = function () {
+  const name = ALL_ROLE_NAME;
+  return this.loadSchema()
+    .then(schemaController => schemaController.getOneSchema('_Role'))
+    .then(schema => this.adapter.find('_Role', schema, { name }, { limit: 1 }))
+    .then(roles => {
+      if (roles.length < 1) {
+        const acl = new Parse.ACL();
+        acl.setPublicReadAccess(true);
+        const allRole = new Parse.Role(ALL_ROLE_NAME, acl);
+        const objectId = newObjectId(Parse.Config.current().objectIdSize);
+        allRole.set('objectId', objectId);
+        return this.create('_Role', allRole.toJSON(), {})
+          // duplicate errors occur sometimes during
+          // testing on travis.  They are safe to ignore.
+          .catch((e) => logger.warn('Failed to create _All_Role', e));
+      }
+
+      return Promise.resolve();
+    });
+}
+
 // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
 // have a Parse app without it having a _User collection.
 DatabaseController.prototype.performInitialization = function() {
@@ -1027,7 +1052,8 @@ DatabaseController.prototype.performInitialization = function() {
     .catch(error => {
       logger.warn('Unable to ensure uniqueness for role name: ', error);
       throw error;
-    });
+    })
+    .then(() => this.ensureAllRole())
 
   const indexPromise = this.adapter.updateSchemaWithIndexes();
 

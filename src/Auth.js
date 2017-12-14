@@ -132,12 +132,24 @@ Auth.prototype._loadRoles = function() {
         objectId: this.user.id
       }
     };
+
+    var allRoleWhere = {
+      name: '_All_Role',
+    }
     // First get the role ids this user is directly a member of
     var query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
-    return query.execute().then((response) => {
-      var results = response.results;
+    // FIXME: figure out how to do this as a single query.
+    var allRoleQuery = new RestQuery(this.config, master(this.config), '_Role', allRoleWhere);
+    const p = Parse.Promise.when(
+      allRoleQuery.execute(),
+      query.execute()
+    );
+
+    // only using p for now so diff doesn't have a ton of whitespace changes.
+    return p.then((allRoleResponse, response) => {
+      var results = response.results.concat(allRoleResponse.results);
       if (!results.length) {
-        this.userRoles = [];
+        this.userRoles = ['_All_Role'];
         this.fetchedRoles = true;
         this.rolePromise = null;
 

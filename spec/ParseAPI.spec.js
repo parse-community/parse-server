@@ -1456,6 +1456,7 @@ describe('miscellaneous', function() {
       return role.save({}, { useMasterKey: true });
     }).then(() => {
       const query = new Parse.Query('_Role');
+      query.notEqualTo('name', '_All_Role')
       return query.find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(1);
