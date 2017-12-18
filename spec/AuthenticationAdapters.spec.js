@@ -346,10 +346,8 @@ describe('AuthenticationProviders', function() {
     expect(providerOptions).toEqual(options.custom);
   });
   
-  it('should fail to load adapter if provider is null', () => {
-  	const authenticationHandler = authenticationLoader({
-      customAuthentication: path.resolve('./spec/support/CustomAuth.js')
-    });
+  it('should fail to load adapter if provider is not available on the list', () => {
+  	const authenticationHandler = authenticationLoader();
 
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider('unknown');
@@ -357,7 +355,9 @@ describe('AuthenticationProviders', function() {
   });
   
   it('properly verify a game center identity', () => {
-  	const authenticationHandler = authenticationLoader();
+  	const authenticationHandler = authenticationLoader({
+      gcenter: path.resolve('./src/Adapters/Auth/gcenter.js')
+    });
 
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider('gcenter');
