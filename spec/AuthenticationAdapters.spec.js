@@ -355,4 +355,24 @@ describe('AuthenticationProviders', function() {
     const validator = authenticationHandler.getValidatorForProvider('unknown');
   	expect(validator).toBeUndefined();
   });
+  
+  it('properly verify a game center identity', () => {
+  	const authenticationHandler = authenticationLoader();
+
+    validateAuthenticationHandler(authenticationHandler);
+    const validator = authenticationHandler.getValidatorForProvider('gcenter');
+    var identity = {
+  			publicKeyUrl: "https://static.gc.apple.com/public-key/gc-prod-3.cer",
+	  		timestamp: "1513067500622",
+	  		signature: "BYX5fJ59vVnj/3pdAfsfzkdSHG5kqPJ/gnhagaFJYwAYRlhR9P672sZk0N/cZoCabzTZM+AVMc6W+xwpVVSj/qxgfZi4ADvwKY7m8q8ugdw3Aec97w8zL3i5F5wKLr+HPzR6/OW4YsMQjtuumpWQCq+9bDro9JibiCVKm+x/MwvIgHS3gdi6XVD+JeBMLbd5bJk/wUmcjE9uWMoXRiY4WCREtlIy47eGWYSFQ2kinIKo4YRzpSK95E9jYEB0nOjwg1ExycvMBPDrxoxpk+maIkqPZ3FS6vESLnhq1/gojwECEmObRxv+a1ZRvzt2fwCMfjBzZVv867r+mpF7H/JrXA==",
+		  	salt: "WN97Bw==",
+  			playerId: "G:1958377822",
+		  	bundleId: "com.appxplore.apptest"
+		};
+  	verify(identity, function (err, token) 
+	{
+		expect(err).toBeNull();
+		expect(token).not.toBeNull();
+	});
+  });
 });
