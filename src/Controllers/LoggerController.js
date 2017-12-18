@@ -49,7 +49,7 @@ export class LoggerController extends AdaptableController {
     const password = url.parse(urlString, true).query.password;
 
     if (password) {
-      urlString = urlString.replace('password=' + password, 'password=********');
+      urlString = urlString.replace('password=' + encodeURIComponent(password), 'password=********');
     }
     return urlString;
   }
