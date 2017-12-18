@@ -354,6 +354,5 @@ describe('AuthenticationProviders', function() {
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
   	expect(validator).toEqual(null);
-  	done();
   });
 });
