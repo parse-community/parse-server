@@ -347,7 +347,8 @@ describe('AuthenticationProviders', function() {
   });
   
   it('should fail to load adapter if provider is null', () => {
-  	const { adapter, appIds, providerOptions } =  authenticationLoader.getValidatorForProvider('unknown')
+  	const validator =  authenticationLoader.getValidatorForProvider('unknown')
   	expect(adapter).toEqual(null);
+  	done();
   });
 });
