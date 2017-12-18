@@ -318,6 +318,42 @@ describe('rest create', () => {
         done();
       })
   });
+  
+  it('test google play games signup and login', (done) => {
+    var data = {
+      authData: {
+        facebook: {
+          id: 'g00868113165672230894',
+          access_token: 'ya29.GlwfBeFUm4_dEs2yqTSqq5Gnjuyo4p2irg46YOX-U6F3ZX6dFYopeCv8vaDd1i1t6M26O-iomZlZVdPjnKRBK39JV3zESYVGIFHiXnWkJLLGNmKduPJb3BhqzRkxVg'
+        }
+      }
+    };
+    var newUserSignedUpByGPGamesObjectId;
+    rest.create(config, auth.nobody(config), '_User', data)
+      .then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.sessionToken).toEqual('string');
+        newUserSignedUpByGPGamesObjectId = r.response.objectId;
+        return rest.create(config, auth.nobody(config), '_User', data);
+      }).then((r) => {
+        expect(typeof r.response.objectId).toEqual('string');
+        expect(typeof r.response.createdAt).toEqual('string');
+        expect(typeof r.response.username).toEqual('string');
+        expect(typeof r.response.updatedAt).toEqual('string');
+        expect(r.response.objectId).toEqual(newUserSignedUpByGPGamesObjectId);
+        return rest.find(config, auth.master(config),
+          '_Session', {sessionToken: r.response.sessionToken});
+      }).then((response) => {
+        expect(response.results.length).toEqual(1);
+        var output = response.results[0];
+        expect(output.user.objectId).toEqual(newUserSignedUpByGPGamesObjectId);
+        done();
+      }).catch(err => {
+        jfail(err);
+        done();
+      })
+  });
 
   it('stores pointers', done => {
     const obj = {
