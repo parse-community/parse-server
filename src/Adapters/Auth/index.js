@@ -112,8 +112,8 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true)
       return;
     }
     
-    /*if(!providers.hasOwnProperty(provider))
-	    return;*/
+    if(!providers.hasOwnProperty(provider))
+	    return;
     
     const {
       adapter,
