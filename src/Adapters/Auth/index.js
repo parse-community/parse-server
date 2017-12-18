@@ -113,9 +113,9 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true)
     }
     
     if(!providers.hasOwnProperty(provider) && 
-    provider !== 'myoauth' && 
-    provider !== 'customAuthentication' && 
-    provider !== 'shortLivedAuth')
+    provider != 'myoauth' && 
+    provider != 'customAuthentication' && 
+    provider != 'shortLivedAuth')
 	    return;
     
     const {
