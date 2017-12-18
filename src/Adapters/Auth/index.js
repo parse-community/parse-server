@@ -112,7 +112,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true)
       return;
     }
     
-    if(!providers.hasOwnProperty(provider) && provider !== 'myoauth')
+    if(!providers.hasOwnProperty(provider) && provider !== 'myoauth' && provider !== 'customAuthentication')
 	    return;
     
     const {
