@@ -369,7 +369,8 @@ describe('AuthenticationProviders', function() {
   			playerId: "G:1958377822",
 		  	bundleId: "com.appxplore.apptest"
 		};
-  	validator.verify(identity, function (err, token) 
+	validateValidator(validator);
+  	validator(identity, function (err, token) 
 	{
 		expect(err).toBeNull();
 		expect(token).not.toBeNull();
