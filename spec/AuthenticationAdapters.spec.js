@@ -353,6 +353,6 @@ describe('AuthenticationProviders', function() {
 
     validateAuthenticationHandler(authenticationHandler);
     const validator = authenticationHandler.getValidatorForProvider('unknown');
-  	expect(validator).toEqual(null);
+  	expect(validator).toBeUndefined();
   });
 });
