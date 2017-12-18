@@ -347,8 +347,13 @@ describe('AuthenticationProviders', function() {
   });
   
   it('should fail to load adapter if provider is null', () => {
-  	const validator =  authenticationLoader.getValidatorForProvider('unknown')
-  	expect(adapter).toEqual(null);
+  	const authenticationHandler = authenticationLoader({
+      customAuthentication: path.resolve('./spec/support/CustomAuth.js')
+    });
+
+    validateAuthenticationHandler(authenticationHandler);
+    const validator = authenticationHandler.getValidatorForProvider('customAuthentication');
+  	expect(validator).toEqual(null);
   	done();
   });
 });
