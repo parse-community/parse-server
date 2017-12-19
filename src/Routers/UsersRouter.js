@@ -274,8 +274,10 @@ export class UsersRouter extends ClassesRouter {
       }
 
       const userController = req.config.userController;
-      userController.sendVerificationEmail(user);
-      return { response: {} };
+      return userController.regenerateEmailVerifyToken(user).then(() => {
+        userController.sendVerificationEmail(user);
+        return { response: {} };
+      });
     });
   }
 
