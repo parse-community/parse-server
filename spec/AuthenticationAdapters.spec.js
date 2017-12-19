@@ -5,7 +5,7 @@ var authenticationLoader = require('../src/Adapters/Auth');
 var path = require('path');
 
 describe('AuthenticationProviders', function() {
-  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
+  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       var provider = require("../src/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -345,4 +345,17 @@ describe('AuthenticationProviders', function() {
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
   });
+
+  it('properly loads Facebook accountkit adapter with options', () => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b'],
+        appSecret: 'secret'
+      }
+    };
+    const {adapter, appIds, providerOptions} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions.appSecret).toEqual('secret');
+  })
 });
