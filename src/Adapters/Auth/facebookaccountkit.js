@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const https = require('https');
 const Parse  = require('parse/node').Parse;
 
@@ -19,7 +20,7 @@ const graphRequest = (path) => {
             resolve(data);
           }
         } catch (e) {
-          return reject(e);
+          reject(e);
         }
       });
     }).on('error', function () {
@@ -28,14 +29,22 @@ const graphRequest = (path) => {
   });
 };
 
-function validateAppId(appIds, authData) {
-  const path = `me?access_token=${authData.access_token}`;
+function getRequestPath(authData, options) {
+  const access_token = authData.access_token, appSecret = options && options.appSecret;
+  if (appSecret) {
+    const appsecret_proof = crypto.createHmac("sha256", appSecret).update(access_token).digest('hex');
+    return `me?access_token=${access_token}&appsecret_proof=${appsecret_proof}`
+  }
+  return `me?access_token=${access_token}`;
+}
+
+function validateAppId(appIds, authData, options) {
   if (!appIds.length) {
-    return new Parse.Error(
+    throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
       'Facebook app id is not configured.');
   }
-  return graphRequest(path)
+  return graphRequest(getRequestPath(authData, options))
     .then(data => {
       if (data && data.application && appIds.indexOf(data.application.id) != -1) {
         return;
@@ -46,10 +55,8 @@ function validateAppId(appIds, authData) {
     })
 }
 
-function validateAuthData(authData) {
-  const access_token = authData.access_token;
-  const path = `me?access_token=${access_token}`;
-  return graphRequest(path)
+function validateAuthData(authData, options) {
+  return graphRequest(getRequestPath(authData, options))
     .then(data => {
       if (data && data.id == authData.id) {
         return;
