@@ -28,8 +28,22 @@ const graphRequest = (path) => {
   });
 };
 
-function validateAppId() {
-  return Promise.resolve();
+function validateAppId(appIds, authData) {
+  const path = `me?access_token=${authData.access_token}`;
+  if (!appIds.length) {
+    return new Parse.Error(
+      Parse.Error.OBJECT_NOT_FOUND,
+      'Facebook app id is not configured.');
+  }
+  return graphRequest(path)
+    .then(data => {
+      if (data && data.application && appIds.indexOf(data.application.id) != -1) {
+        return;
+      }
+      throw new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Facebook app id is invalid for this user.');
+    })
 }
 
 function validateAuthData(authData) {
@@ -49,4 +63,4 @@ function validateAuthData(authData) {
 module.exports = {
   validateAppId,
   validateAuthData
-}
+};
