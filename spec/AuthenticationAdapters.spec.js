@@ -357,5 +357,44 @@ describe('AuthenticationProviders', function() {
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions.appSecret).toEqual('secret');
-  })
+  });
+
+  it('should fail to validate Facebook accountkit auth with bad token', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b']
+      }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'badtoken'
+    };
+    const {adapter} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAuthData(authData)
+      .then(done.fail, err => {
+        expect(err.code).toBe(190);
+        expect(err.type).toBe('OAuthException');
+        done();
+      })
+  });
+
+  it('should fail to validate Facebook accountkit auth with bad taken regardless of app secret proof', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b'],
+        appSecret: 'badsecret'
+      }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'badtoken'
+    };
+    const {adapter, providerOptions} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAuthData(authData, providerOptions)
+      .then(done.fail, err => {
+        expect(err.code).toBe(190);
+        expect(err.type).toBe('OAuthException');
+        done();
+      })
+  });
 });

@@ -24,7 +24,7 @@ const graphRequest = (path) => {
         }
       });
     }).on('error', function () {
-      reject('Failed to validate this access token with Facebook.');
+      reject('Failed to validate this access token with Facebook Account Kit.');
     });
   });
 };
@@ -42,7 +42,7 @@ function validateAppId(appIds, authData, options) {
   if (!appIds.length) {
     throw new Parse.Error(
       Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook app id is not configured.');
+      'Facebook app id for Account Kit is not configured.');
   }
   return graphRequest(getRequestPath(authData, options))
     .then(data => {
@@ -51,7 +51,7 @@ function validateAppId(appIds, authData, options) {
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Facebook app id is invalid for this user.');
+        'Facebook app id for Account Kit is invalid for this user.');
     })
 }
 
@@ -63,7 +63,7 @@ function validateAuthData(authData, options) {
       }
       throw new Parse.Error(
         Parse.Error.OBJECT_NOT_FOUND,
-        'Facebook auth is invalid for this user.');
+        'Facebook Account Kit auth is invalid for this user.');
     })
 }
 
