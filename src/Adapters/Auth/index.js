@@ -23,6 +23,7 @@ const vkontakte = require("./vkontakte");
 const qq = require("./qq");
 const wechat = require("./wechat");
 const weibo = require("./weibo");
+const xiaomi = require("./xiaomi");
 const anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
@@ -50,7 +51,8 @@ const providers = {
   vkontakte,
   qq,
   wechat,
-  weibo
+  weibo,
+  xiaomi
 };
 
 function authDataValidator(adapter, appIds, options) 
@@ -112,10 +114,7 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true)
       return;
     }
     
-    if(!providers.hasOwnProperty(provider) && 
-    provider != 'myoauth' && 
-    provider != 'customAuthentication' && 
-    provider != 'shortLivedAuth')
+    if(!providers.hasOwnProperty(provider))
 	    return;
     
     const {

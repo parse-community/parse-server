@@ -1,34 +1,33 @@
 'use strict';
 
 // Helper functions for accessing the google API.
-var Parse = require('parse/node').Parse;
+//var Parse = require('parse/node').Parse;
 var crypto = require('crypto');
 var request = require('request');
 var url = require('url');
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData) 
+function validateAuthData(authData)
 {
-	return new Promise(function (resolve, reject) 
-	{
-		var identity = {
-  			publicKeyUrl: authData.pKeyUrl,
-	  		timestamp: authData.timeStamp,
-	  		signature: authData.sig,
-		  	salt: authData.salt,
-  			playerId: authData.id,
-		  	bundleId: authData.bid
-		};
-		
-		return verify(identity, function (err, token) 
-		{
-			if(err)
-  				return reject('Failed to validate this access token with Game Center.');
-  			else
-  				return resolve();
-		});
-		
-	});
+  return new Promise(function (resolve, reject)
+  {
+    var identity = {
+      publicKeyUrl: authData.pKeyUrl,
+      timestamp: authData.timeStamp,
+      signature: authData.sig,
+      salt: authData.salt,
+      playerId: authData.id,
+      bundleId: authData.bid
+    };
+
+    return verify(identity, function (err, token)
+    {
+      if(err)
+        return reject('Failed to validate this access token with Game Center.');
+      else
+        return resolve(token);
+    });
+  });
 }
 
 // Returns a promise that fulfills if this app id is valid.
@@ -43,7 +42,6 @@ function verifyPublicKeyUrl(publicKeyUrl) {
   }
 
   var hostnameParts = parsedUrl.hostname.split('.');
-//  var domainParts = _.rest(hostnameParts, hostnameParts.length - 2);
   var domain = hostnameParts[hostnameParts.length - 2] + "." + hostnameParts[hostnameParts.length - 1];
   if (domain !== 'apple.com') {
     return false;
@@ -123,7 +121,7 @@ function verify(idToken, callback) {
       callback(err, null);
     }
   });
-};
+}
 
 module.exports = {
   validateAppId: validateAppId,
