@@ -6,44 +6,39 @@ var Parse = require('parse/node').Parse;
 var request = require('request');
 
 // Returns a promise that fulfills if this user id is valid.
-function validateAuthData(authData, authOptions) {
-
-      var postUrl = 
-      {
-        url: 'https://www.googleapis.com/oauth2/v3/token',
-        method: 'POST',
-        headers: 
-        {
-            'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        form:
-        {
-            'client_id': authOptions.client_id,
-            'client_secret': authOptions.client_secret,
-            'code': authData.access_token,
-            'grant_type': 'authorization_code'
-        }
-      };
-    return exchangeAccessToken(postUrl).then((authRes)=>
+function validateAuthData(authData, authOptions)
+{
+  var postUrl = {
+    url: 'https://www.googleapis.com/oauth2/v3/token',
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    form: {
+      'client_id': authOptions.client_id,
+      'client_secret': authOptions.client_secret,
+      'code': authData.access_token,
+      'grant_type': 'authorization_code'
+    }
+  };
+  return exchangeAccessToken(postUrl).then((authRes)=>
+  {
+    if(authRes.error)
     {
-        if(authRes.error)
-        {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, authRes.error);
-        }
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, authRes.error);
+    }
+    else
+    {
+      return requestHere("https://www.googleapis.com/games/v1/players/" + authData.id + "?access_token=" + authRes.access_token).then(response => {
+        if (response && (response.playerId == authData.id))
+          return;
         else
-        {
-            return requestHere("https://www.googleapis.com/games/v1/players/" + authData.id + "?access_token=" + authRes.access_token).then(response => {
-                if (response && (response.playerId == authData.id)) 
-                {
-                    return;
-                }
-                else
-                    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Google auth is invalid for this user.');
-            });
-        }
-    }).catch(error=>{
-        throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, error);
-    });
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Google auth is invalid for this user.');
+      });
+    }
+  }).catch(error=>{
+    throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, error);
+  });
 }
 
 // Returns a promise that fulfills if this app id is valid.
@@ -56,17 +51,17 @@ function exchangeAccessToken(postOptions)
   return new Promise(function (resolve, reject) {
     request(postOptions, function (error, response, body)
     {
-        if (!error && response.statusCode == 200) 
-        {
-            try {
-              body = JSON.parse(body);
-            } catch (e) {
-              return reject(e);
-            }
-            resolve(body);
+      if (!error && response.statusCode == 200)
+      {
+        try {
+          body = JSON.parse(body);
+        } catch (e) {
+          return reject(e);
         }
-        else
-            reject("Fail to Exchange Access Token for GPGames");
+        resolve(body);
+      }
+      else
+        reject("Fail to Exchange Access Token for GPGames");
     });
   });
 }

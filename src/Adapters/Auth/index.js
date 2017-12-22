@@ -55,13 +55,13 @@ const providers = {
   xiaomi
 };
 
-function authDataValidator(adapter, appIds, options) 
+function authDataValidator(adapter, appIds, options)
 {
-  return function (authData) 
+  return function (authData)
   {
-    return adapter.validateAuthData(authData, options).then(() => 
+    return adapter.validateAuthData(authData, options).then(() =>
     {
-      if (appIds) 
+      if (appIds)
       {
         return adapter.validateAppId(appIds, authData, options);
       }
@@ -74,8 +74,8 @@ function loadAuthAdapter(provider, authOptions) {
   const defaultAdapter = providers[provider];
   const adapter = Object.assign({}, defaultAdapter);
   const providerOptions = authOptions[provider];
-	  
-  if (!defaultAdapter && !providerOptions) 
+
+  if (!defaultAdapter && !providerOptions)
     return;
 
   const appIds = providerOptions ? providerOptions.appIds : undefined;
@@ -99,24 +99,25 @@ function loadAuthAdapter(provider, authOptions) {
   return { adapter, appIds, providerOptions };
 }
 
-module.exports = function (authOptions = {}, enableAnonymousUsers = true) 
+module.exports = function (authOptions = {}, enableAnonymousUsers = true)
 {
   let _enableAnonymousUsers = enableAnonymousUsers;
-  const setEnableAnonymousUsers = function (enable) 
+  const setEnableAnonymousUsers = function (enable)
   {
     _enableAnonymousUsers = enable;
   };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function (provider) 
+  const getValidatorForProvider = function (provider)
   {
-    if (provider === 'anonymous' && !_enableAnonymousUsers) 
-    {
+    if (provider === 'anonymous' && !_enableAnonymousUsers)
       return;
-    }
-    
-    if(!providers.hasOwnProperty(provider))
-	    return;
-    
+
+    if(!providers.hasOwnProperty(provider) &&
+        provider !== 'myoauth' &&
+        provider !== 'customAuthentication' &&
+        provider !== 'shortLivedAuth')
+      return;
+
     const {
       adapter,
       appIds,

@@ -5,32 +5,21 @@ var https = require('https');
 var Parse = require('parse/node').Parse;
 var crypto = require('crypto');
 
-const PRODUCT_URL = "https://cn-api.unity.com";
+const PRODUCTION_URL = "https://cn-api.unity.com";
 const DEBUG_URL = " https://cn-api-debug.unity.com";
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, authOptions) {
   var link = "";
-  var unityInfo;
-  if(authData.debug)
-  {
-    console.log("debug Mode");
+  if(authData.mode == "Debug")
     link += DEBUG_URL;
-    unityInfo = authOptions.debug;
-  }
-  else
-  {
-    console.log("Release Mode");
+  else if(authData.mode == "Release")
     link += PRODUCTION_URL;
-    unityInfo = authOptions.production;
-  }
-    
-  link += "/v1/login-attempts/verifyLogin?userLoginToken=" + authData.login_token + "&sign=" + getMD5(authData.login_token+"&"+unityInfo.client_secret);
 
-  console.log("authOption: " + JSON.stringify(unityInfo) + "\nlink: " + link);
+  link += "/v1/login-attempts/verifyLogin?userLoginToken=" + authData.login_token + "&sign=" + getMD5(authData.login_token + "&" + authOptions.client_secret);
+
   return graphRequest(link).then(data => {
-    console.log(JSON.stringify(data));
-    if (data && data.success) 
+    if (data && data.success)
     {
       return;
     }
@@ -39,7 +28,7 @@ function validateAuthData(authData, authOptions) {
 }
 
 // Returns a promise that fulfills iff this app id is valid.
-function validateAppId(appIds, authData) {
+function validateAppId() {
   return Promise.resolve();
 }
 
