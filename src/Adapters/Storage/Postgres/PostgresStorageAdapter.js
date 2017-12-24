@@ -613,6 +613,7 @@ export class PostgresStorageAdapter {
 
   setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields, conn) {
     conn = conn || this._client;
+    const self = this;
     if (submittedIndexes === undefined) {
       return Promise.resolve();
     }
@@ -645,22 +646,15 @@ export class PostgresStorageAdapter {
         });
       }
     });
-    let insertPromise = Promise.resolve();
-    if (insertedIndexes.length > 0) {
-      insertPromise = this.createIndexes(className, insertedIndexes, conn);
-    }
-    let deletePromise = Promise.resolve();
-    if (deletedIndexes.length > 0) {
-      deletePromise = this.dropIndexes(className, deletedIndexes, conn);
-    }
-    return conn.task(t => {
-      const values = [className, 'schema', 'indexes', JSON.stringify(existingIndexes)];
-      return t.batch([
-        deletePromise,
-        insertPromise,
-        this._ensureSchemaCollectionExists(t),
-        t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', values)
-      ]);
+    return conn.tx('set-indexes-with-schema-format', function * (t) {
+      if (insertedIndexes.length > 0) {
+        yield self.createIndexes(className, insertedIndexes, t);
+      }
+      if (deletedIndexes.length > 0) {
+        yield self.dropIndexes(className, deletedIndexes, t);
+      }
+      yield self._ensureSchemaCollectionExists(t);
+      yield t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]);
     });
   }
 
