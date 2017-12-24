@@ -836,35 +836,26 @@ export class PostgresStorageAdapter {
   // Returns a Promise.
   deleteFields(className, schema, fieldNames) {
     debug('deleteFields', className, fieldNames);
-    return Promise.resolve()
-      .then(() => {
-        fieldNames = fieldNames.reduce((list, fieldName) => {
-          const field = schema.fields[fieldName]
-          if (field.type !== 'Relation') {
-            list.push(fieldName);
-          }
-          delete schema.fields[fieldName];
-          return list;
-        }, []);
+    fieldNames = fieldNames.reduce((list, fieldName) => {
+      const field = schema.fields[fieldName]
+      if (field.type !== 'Relation') {
+        list.push(fieldName);
+      }
+      delete schema.fields[fieldName];
+      return list;
+    }, []);
 
-        const values = [className, ...fieldNames];
-        const columns = fieldNames.map((name, idx) => {
-          return `$${idx + 2}:name`;
-        }).join(', DROP COLUMN');
+    const values = [className, ...fieldNames];
+    const columns = fieldNames.map((name, idx) => {
+      return `$${idx + 2}:name`;
+    }).join(', DROP COLUMN');
 
-        const doBatch = (t) => {
-          const batch = [
-            t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className})
-          ];
-          if (values.length > 1) {
-            batch.push(t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values));
-          }
-          return batch;
-        }
-        return this._client.tx((t) => {
-          return t.batch(doBatch(t));
-        });
-      });
+    return this._client.tx('delete-fields', function * (t) {
+      yield t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className});
+      if (values.length > 1) {
+        yield t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values);
+      }
+    });
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
