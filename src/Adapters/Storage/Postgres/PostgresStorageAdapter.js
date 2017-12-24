@@ -726,14 +726,13 @@ export class PostgresStorageAdapter {
     return conn.tx('create-table', function * (t) {
       try {
         yield self._ensureSchemaCollectionExists(t);
+        yield t.none(qs, values);
       } catch(error) {
           if (error.code !== PostgresDuplicateRelationError) {
             throw error;
           }
         // ELSE: Table already exists, must have been created by a different request. Ignore the error.
-      }
-      yield t.none(qs, values);
-      
+      }            
       const queries = relations.map(fieldName => {
         return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       });
