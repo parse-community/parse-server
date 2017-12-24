@@ -729,7 +729,7 @@ export class PostgresStorageAdapter {
     const values = [className, ...valuesArray];
     return conn.task(t => {
       return this._ensureSchemaCollectionExists(t)
-        .then(() => conn.none(qs, values))
+        .then(() => t.none(qs, values))
         .catch(error => {
           if (error.code === PostgresDuplicateRelationError) {
             // Table already exists, must have been created by a different request. Ignore error.
