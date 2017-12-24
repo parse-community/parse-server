@@ -850,7 +850,7 @@ export class PostgresStorageAdapter {
       return `$${idx + 2}:name`;
     }).join(', DROP COLUMN');
 
-    return this._client.tx(function * (t) => {
+    return this._client.tx(function * (t) {
       yield t.none('UPDATE "_SCHEMA" SET "schema"=$<schema> WHERE "className"=$<className>', {schema, className});
       if (values.length > 1) {
         yield t.none(`ALTER TABLE $1:name DROP COLUMN ${columns}`, values);
