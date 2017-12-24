@@ -872,8 +872,7 @@ export class PostgresStorageAdapter {
   // rejection reason are TBD.
   getAllClasses() {
     return this._ensureSchemaCollectionExists()
-      .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => ({ className: row.className, ...row.schema })))
-      .then(res => res.map(toParseSchema))
+      .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => toParseSchema({ className: row.className, ...row.schema })));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -1410,7 +1409,7 @@ export class PostgresStorageAdapter {
     const constraintName = `unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
     const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join(',')})`;
-    return this._client.none(qs,[className, constraintName, ...fieldNames])
+    return this._client.none(qs, [className, constraintName, ...fieldNames])
       .catch(error => {
         if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
         // Index already exists. Ignore error.
@@ -1561,8 +1560,7 @@ export class PostgresStorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
     debug(qs, values);
-    return this._client.any(qs, values)
-      .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)))
+    return this._client.map(qs, values, a => this.postgresObjectToParseObject(className, a, schema))
       .then(results => {
         if (countField) {
           results[0][countField] = parseInt(results[0][countField], 10);
@@ -1588,7 +1586,7 @@ export class PostgresStorageAdapter {
     });
     return Promise.all(promises)
       .then(() => {
-        return this._client.tx(t => {
+        return this._client.tx('perform-initialization', t => {
           return t.batch([
             t.none(sql.misc.jsonObjectSetKeys),
             t.none(sql.array.add),
