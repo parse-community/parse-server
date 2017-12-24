@@ -736,9 +736,9 @@ export class PostgresStorageAdapter {
       yield t.tx('create-table-tx', tx => {
         return tx.batch(relations.map(fieldName => {
           return tx.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
-        });
+        }));
       });
-    });    
+    });
   }
 
   addFieldIfNotExists(className, fieldName, type) {
