@@ -723,7 +723,7 @@ export class PostgresStorageAdapter {
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
     
-    return conn.tx('create-table', function * (t) {
+    return conn.task('create-table', function * (t) {
       try {
         yield self._ensureSchemaCollectionExists(t);
         yield t.none(qs, values);
@@ -732,11 +732,12 @@ export class PostgresStorageAdapter {
             throw error;
           }
         // ELSE: Table already exists, must have been created by a different request. Ignore the error.
-      }            
-      const queries = relations.map(fieldName => {
-        return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+      }
+      yield t.tx('create-table-tx', tx => {
+        return tx.batch(relations.map(fieldName => {
+          return tx.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        });
       });
-      yield t.batch(queries);
     });    
   }
 
