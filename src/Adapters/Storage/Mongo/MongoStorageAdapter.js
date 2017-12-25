@@ -116,7 +116,13 @@ export class MongoStorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
+    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(client => {
+      // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
+      // Fortunatelu, we can get back thr options
+      // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
+      // And use them to create the DB.
+      const options = client.s.options;
+      const database = client.db(options.dbName);
       if (!database) {
         delete this.connectionPromise;
         return;
