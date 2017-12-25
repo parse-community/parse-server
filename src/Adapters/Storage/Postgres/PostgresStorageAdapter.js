@@ -802,7 +802,8 @@ export class PostgresStorageAdapter {
           return list.concat(joinTablesForSchema(schema.schema));
         }, []);
         const classes = ['_SCHEMA', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_GlobalConfig', '_Audience', ...results.map(result => result.className), ...joins];
-        return this._client.tx(t=>t.batch(classes.map(className=>t.none('DROP TABLE IF EXISTS $<className:name>', {className}))));
+        const queries = classes.map(className => ({query: 'DROP TABLE IF EXISTS $<className:name>', values: {className}}));
+        return this._client.tx(t => t.none(this._pgp.helpers.concat(queries)));
       }, error => {
         if (error.code === PostgresRelationDoesNotExistError) {
           // No _SCHEMA collection. Don't delete anything.
@@ -1598,7 +1599,8 @@ export class PostgresStorageAdapter {
   }
 
   dropIndexes(className, indexes, conn) {
-    return (conn || this._client).tx(t => t.batch(indexes.map(i => t.none('DROP INDEX $1:name', i))));
+    const queries = indexes.map(i => ({query: 'DROP INDEX $1:name', values: i}));
+    return (conn || this._client).tx(t => t.none(this._pgp.helpers.concat(queries)));
   }
 
   getIndexes(className) {
