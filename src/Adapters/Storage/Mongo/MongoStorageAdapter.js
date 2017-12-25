@@ -133,6 +133,7 @@ export class MongoStorageAdapter {
       database.on('close', () => {
         delete this.connectionPromise;
       });
+      this.client = client;
       this.database = database;
     }).catch((err) => {
       delete this.connectionPromise;
@@ -143,10 +144,10 @@ export class MongoStorageAdapter {
   }
 
   handleShutdown() {
-    if (!this.database) {
+    if (!this.client) {
       return;
     }
-    this.database.close(false);
+    this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
@@ -511,26 +512,28 @@ export class MongoStorageAdapter {
   }
 
   _parseReadPreference(readPreference) {
-    if (readPreference) {
-      switch (readPreference) {
-      case 'PRIMARY':
-        readPreference = ReadPreference.PRIMARY;
-        break;
-      case 'PRIMARY_PREFERRED':
-        readPreference = ReadPreference.PRIMARY_PREFERRED;
-        break;
-      case 'SECONDARY':
-        readPreference = ReadPreference.SECONDARY;
-        break;
-      case 'SECONDARY_PREFERRED':
-        readPreference = ReadPreference.SECONDARY_PREFERRED;
-        break;
-      case 'NEAREST':
-        readPreference = ReadPreference.NEAREST;
-        break;
-      default:
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
-      }
+    switch (readPreference) {
+    case 'PRIMARY':
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    case 'PRIMARY_PREFERRED':
+      readPreference = ReadPreference.PRIMARY_PREFERRED;
+      break;
+    case 'SECONDARY':
+      readPreference = ReadPreference.SECONDARY;
+      break;
+    case 'SECONDARY_PREFERRED':
+      readPreference = ReadPreference.SECONDARY_PREFERRED;
+      break;
+    case 'NEAREST':
+      readPreference = ReadPreference.NEAREST;
+      break;
+    case undefined:
+      // this is to match existing tests, which were failing as mongodb@3.0 don't report readPreference anymore
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    default:
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
     }
     return readPreference;
   }
