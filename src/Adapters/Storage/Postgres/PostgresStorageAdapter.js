@@ -658,8 +658,9 @@ export class PostgresStorageAdapter {
     });
   }
 
-  createClass(className, schema) {
-    return this._client.tx('create-class', t => {
+  createClass(className, schema, conn) {
+    conn = conn || this._client;
+    return conn.tx('create-class', t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
       const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
