@@ -684,6 +684,7 @@ export class PostgresStorageAdapter {
   // Just create a table, do not insert in schema
   createTable(className, schema, conn) {
     conn = conn || this._client;
+    const self = this;
     debug('createTable', className, schema);
     const valuesArray = [];
     const patternsArray = [];
@@ -721,24 +722,23 @@ export class PostgresStorageAdapter {
     });
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
     const values = [className, ...valuesArray];
-    return conn.task(t => {
-      return this._ensureSchemaCollectionExists(t)
-        .then(() => t.none(qs, values))
-        .catch(error => {
-          if (error.code === PostgresDuplicateRelationError) {
-            // Table already exists, must have been created by a different request. Ignore error.
-          } else {
+    
+    return conn.task('create-table', function * (t) {
+      try {
+        yield self._ensureSchemaCollectionExists(t);
+        yield t.none(qs, values);
+      } catch(error) {
+          if (error.code !== PostgresDuplicateRelationError) {
             throw error;
-          }})
-    })
-      .then(() => {
-        return conn.tx('create-relation-tables', t => {
-          const queries = relations.map((fieldName) => {
-            return t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
-          });
-          return t.batch(queries);
-        });
+          }
+        // ELSE: Table already exists, must have been created by a different request. Ignore the error.
+      }
+      yield t.tx('create-table-tx', tx => {
+        return tx.batch(relations.map(fieldName => {
+          return tx.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        }));
       });
+    });
   }
 
   addFieldIfNotExists(className, fieldName, type) {
