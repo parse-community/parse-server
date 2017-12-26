@@ -605,9 +605,11 @@ export class PostgresStorageAdapter {
   }
 
   setClassLevelPermissions(className, CLPs) {
-    return this._ensureSchemaCollectionExists().then(() => {
-      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)]
-      return this._client.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+    const self = this;
+    return this._client.task('set-class-level-permissions', function * (t) {
+      yield self._ensureSchemaCollectionExists(t);
+      const values = [className, 'schema', 'classLevelPermissions', JSON.stringify(CLPs)];
+      yield t.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1`, values);
     });
   }
 
