@@ -660,8 +660,9 @@ export class PostgresStorageAdapter {
     });
   }
 
-  createClass(className, schema) {
-    return this._client.tx('create-class', t => {
+  createClass(className, schema, conn) {
+    conn = conn || this._client;
+    return conn.tx('create-class', t => {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
       const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
@@ -746,40 +747,36 @@ export class PostgresStorageAdapter {
   addFieldIfNotExists(className, fieldName, type) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
-    return this._client.tx('add-field-if-not-exists', t => {
-      let promise = Promise.resolve();
+    const self = this;
+    return this._client.tx('add-field-if-not-exists', function * (t) {
       if (type.type !== 'Relation') {
-        promise = t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
-          className,
-          fieldName,
-          postgresType: parseTypeToPostgresType(type)
-        })
-          .catch(error => {
+        try {
+          yield t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
+            className,
+            fieldName,
+            postgresType: parseTypeToPostgresType(type)
+          });
+        } catch(error) {
             if (error.code === PostgresRelationDoesNotExistError) {
-              return this.createClass(className, {fields: {[fieldName]: type}})
-            } else if (error.code === PostgresDuplicateColumnError) {
-            // Column already exists, created by other request. Carry on to
-            // See if it's the right type.
-            } else {
+              return yield self.createClass(className, {fields: {[fieldName]: type}}, t);
+            }
+            if (error.code !== PostgresDuplicateColumnError) {
               throw error;
             }
-          })
+            // Column already exists, created by other request. Carry on to see if it's the right type.
+          };
       } else {
-        promise = t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`})
+        yield t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }
-      return promise.then(() => {
-        return t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null', {className, fieldName});
-      }).then(result => {
-        if (result[0]) {
-          throw "Attempted to add a field that already exists";
-        } else {
-          const path = `{fields,${fieldName}}`;
-          return t.none(
-            'UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>',
-            { path, type, className }
-          );
-        }
-      });
+
+      const result = yield t.any('SELECT "schema" FROM "_SCHEMA" WHERE "className" = $<className> and ("schema"::json->\'fields\'->$<fieldName>) is not null', {className, fieldName});
+
+      if (result[0]) {
+        throw 'Attempted to add a field that already exists';
+      } else {
+        const path = `{fields,${fieldName}}`;
+        yield t.none('UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>', {path, type, className});
+      }
     });
   }
 
