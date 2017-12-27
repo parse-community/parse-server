@@ -858,8 +858,11 @@ export class PostgresStorageAdapter {
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses() {
-    return this._ensureSchemaCollectionExists()
-      .then(() => this._client.map('SELECT * FROM "_SCHEMA"', null, row => toParseSchema({ className: row.className, ...row.schema })));
+    const self = this;
+    return this._client.task('get-all-classes', function * (t) {
+      yield self._ensureSchemaCollectionExists(t);
+      return yield t.map('SELECT * FROM "_SCHEMA"', null, row => toParseSchema({ className: row.className, ...row.schema }));
+    });    
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
