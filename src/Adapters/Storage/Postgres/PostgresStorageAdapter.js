@@ -807,14 +807,14 @@ export class PostgresStorageAdapter {
         const queries = classes.map(className => ({query: 'DROP TABLE IF EXISTS $<className:name>', values: {className}}));
         yield t.tx(tx => tx.none(helpers.concat(queries)));
       } catch(error) {
-        if (error.code !== PostgresRelationDoesNotExistError) {          
+        if (error.code !== PostgresRelationDoesNotExistError) {
           throw error;
         }
         // No _SCHEMA collection. Don't delete anything.
       }
     }).then(() => {
         debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-      });    
+      });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
