@@ -760,11 +760,10 @@ export class PostgresStorageAdapter {
             if (error.code === PostgresRelationDoesNotExistError) {
               return yield self.createClass(className, {fields: {[fieldName]: type}}, t);
             }
-            if (error.code === PostgresDuplicateColumnError) {
-              // Column already exists, created by other request. Carry on to
-              // See if it's the right type.
+            if (error.code !== PostgresDuplicateColumnError) {
+              throw error;
             }
-            throw error;
+            // Column already exists, created by other request. Carry on to see if it's the right type.
           };
       } else {
         yield t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
