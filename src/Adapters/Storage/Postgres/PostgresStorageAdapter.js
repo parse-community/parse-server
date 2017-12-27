@@ -794,25 +794,27 @@ export class PostgresStorageAdapter {
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
     const now = new Date().getTime();
+    const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
-    return this._client.any('SELECT * FROM "_SCHEMA"')
-      .then(results => {
+    
+    return this._client.task('delete-all-classes', function * (t) {
+      try {
+        const results = yield t.any('SELECT * FROM "_SCHEMA"');
         const joins = results.reduce((list, schema) => {
           return list.concat(joinTablesForSchema(schema.schema));
         }, []);
         const classes = ['_SCHEMA', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_GlobalConfig', '_Audience', ...results.map(result => result.className), ...joins];
         const queries = classes.map(className => ({query: 'DROP TABLE IF EXISTS $<className:name>', values: {className}}));
-        return this._client.tx(t => t.none(this._pgp.helpers.concat(queries)));
-      }, error => {
-        if (error.code === PostgresRelationDoesNotExistError) {
-          // No _SCHEMA collection. Don't delete anything.
-          return;
-        } else {
+        yield t.tx(tx => tx.none(helpers.concat(queries)));
+      } catch(error) {
+        if (error.code !== PostgresRelationDoesNotExistError) {          
           throw error;
         }
-      }).then(() => {
+        // No _SCHEMA collection. Don't delete anything.
+      }
+    }).then(() => {
         debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-      });
+      });    
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
