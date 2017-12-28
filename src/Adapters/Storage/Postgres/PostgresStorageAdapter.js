@@ -237,7 +237,7 @@ const buildWhereClause = ({ schema, query, index }) => {
               inPatterns.push(`${listElem}`);
             }
           });
-          patterns.push(`(${name})::jsonb @> '[${inPatterns.join(',')}]'::jsonb`);
+          patterns.push(`(${name})::jsonb @> '[${inPatterns.join()}]'::jsonb`);
         } else if (fieldValue.$regex) {
           // Handle later
         } else {
@@ -320,9 +320,9 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       });
       if (allowNull) {
-        patterns.push(`($${index}:name IS NULL OR $${index}:name && ARRAY[${inPatterns.join(',')}])`);
+        patterns.push(`($${index}:name IS NULL OR $${index}:name && ARRAY[${inPatterns.join()}])`);
       } else {
-        patterns.push(`$${index}:name && ARRAY[${inPatterns.join(',')}]`);
+        patterns.push(`$${index}:name && ARRAY[${inPatterns.join()}]`);
       }
       index = index + 1 + inPatterns.length;
     } else if (isInOrNin) {
@@ -346,7 +346,7 @@ const buildWhereClause = ({ schema, query, index }) => {
                 inPatterns.push(`$${index + 1 + listIndex}`);
               }
             });
-            patterns.push(`$${index}:name ${not} IN (${inPatterns.join(',')})`);
+            patterns.push(`$${index}:name ${not} IN (${inPatterns.join()})`);
             index = index + 1 + inPatterns.length;
           }
         } else if (!notIn) {
@@ -666,17 +666,15 @@ export class PostgresStorageAdapter {
       const q1 = this.createTable(className, schema, t);
       const q2 = t.none('INSERT INTO "_SCHEMA" ("className", "schema", "isParseClass") VALUES ($<className>, $<schema>, true)', { className, schema });
       const q3 = this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields, t);
-
       return t.batch([q1, q2, q3]);
     })
       .then(() => {
-        return toParseSchema(schema)
+        return toParseSchema(schema);
       })
-      .catch((err) => {
-        if (Array.isArray(err.data) && err.data.length > 1 && err.data[0].result.code === PostgresTransactionAbortedError) {
+      .catch(err => {
+        if (err.data[0].result.code === PostgresTransactionAbortedError) {
           err = err.data[1].result;
         }
-
         if (err.code === PostgresUniqueIndexViolationError && err.detail.includes(className)) {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, `Class ${className} already exists.`)
         }
@@ -723,7 +721,7 @@ export class PostgresStorageAdapter {
       }
       index = index + 2;
     });
-    const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join(',')})`;
+    const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
     
     return conn.task('create-table', function * (t) {
@@ -994,8 +992,8 @@ export class PostgresStorageAdapter {
       return `POINT($${l}, $${l + 1})`;
     });
 
-    const columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join(',');
-    const valuesPattern = initialValues.concat(geoPointsInjects).join(',')
+    const columnsPattern = columnsArray.map((col, index) => `$${index + 2}:name`).join();
+    const valuesPattern = initialValues.concat(geoPointsInjects).join()
 
     const qs = `INSERT INTO $1:name (${columnsPattern}) VALUES (${valuesPattern})`
     const values = [className, ...columnsArray, ...valuesArray]
@@ -1233,7 +1231,7 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `UPDATE $1:name SET ${updatePatterns.join(',')} ${whereClause} RETURNING *`;
+    const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
     debug('update: ', qs, values);
     return this._client.any(qs, values);
   }
@@ -1277,11 +1275,11 @@ export class PostgresStorageAdapter {
           return `"${key}" ASC`;
         }
         return `"${key}" DESC`;
-      }).join(',');
+      }).join();
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
     if (where.sorts && Object.keys(where.sorts).length > 0) {
-      sortPattern = `ORDER BY ${where.sorts.join(',')}`;
+      sortPattern = `ORDER BY ${where.sorts.join()}`;
     }
 
     let columns = '*';
@@ -1295,7 +1293,7 @@ export class PostgresStorageAdapter {
           return `ts_rank_cd(to_tsvector($${2}, $${3}:name), to_tsquery($${4}, $${5}), 32) as score`;
         }
         return `$${index + values.length + 1}:name`;
-      }).join(',');
+      }).join();
       values = values.concat(keys);
     }
 
@@ -1398,7 +1396,7 @@ export class PostgresStorageAdapter {
     // Will happily create the same index with multiple names.
     const constraintName = `unique_${fieldNames.sort().join('_')}`;
     const constraintPatterns = fieldNames.map((fieldName, index) => `$${index + 3}:name`);
-    const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join(',')})`;
+    const qs = `ALTER TABLE $1:name ADD CONSTRAINT $2:name UNIQUE (${constraintPatterns.join()})`;
     return this._client.none(qs, [className, constraintName, ...fieldNames])
       .catch(error => {
         if (error.code === PostgresDuplicateRelationError && error.message.includes(constraintName)) {
@@ -1502,7 +1500,7 @@ export class PostgresStorageAdapter {
             columns.push(`AVG(${transformAggregateField(value.$avg)}) AS "${field}"`);
           }
         }
-        columns.join(',');
+        columns.join();
       } else {
         columns.push('*');
       }
@@ -1543,7 +1541,7 @@ export class PostgresStorageAdapter {
             return `"${key}" ASC`;
           }
           return `"${key}" DESC`;
-        }).join(',');
+        }).join();
         sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
