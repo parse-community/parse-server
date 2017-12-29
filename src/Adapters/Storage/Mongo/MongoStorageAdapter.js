@@ -10,6 +10,7 @@ import {
   transformKey,
   transformWhere,
   transformUpdate,
+  transformPointerString,
 } from './MongoTransform';
 import Parse                 from 'parse/node';
 import _                     from 'lodash';
@@ -490,15 +491,11 @@ export class MongoStorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
       .then(objects => objects.map(object => {
-        if (!isPointerField) {
-          return mongoObjectToParseObject(className, object, schema);
+        if (isPointerField) {
+          const field = fieldName.substring(3);
+          return transformPointerString(schema, field, object);
         }
-        const objData = object.split('$');
-        return {
-          __type: 'Pointer',
-          className: objData[0],
-          objectId: objData[1]
-        };
+        return mongoObjectToParseObject(className, object, schema);
       }));
   }
 

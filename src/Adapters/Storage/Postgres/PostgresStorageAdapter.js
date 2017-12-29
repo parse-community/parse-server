@@ -6,6 +6,7 @@ import sql              from './sql';
 const PostgresRelationDoesNotExistError = '42P01';
 const PostgresDuplicateRelationError = '42P07';
 const PostgresDuplicateColumnError = '42701';
+const PostgresMissingColumnError = '42703';
 const PostgresDuplicateObjectError = '42710';
 const PostgresUniqueIndexViolationError = '23505';
 const PostgresTransactionAbortedError = '25P02';
@@ -1446,13 +1447,16 @@ export class PostgresStorageAdapter {
     values.push(...where.values);
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    let qs = `SELECT DISTINCT ON ($1:raw) $2:raw FROM $3:name ${wherePattern}`;
-    if (isArrayField) {
-      qs = `SELECT distinct jsonb_array_elements($1:raw) as $2:raw FROM $3:name ${wherePattern}`;
-    }
+    const transformer = isArrayField ? 'jsonb_array_elements' : 'ON';
+    const qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
     debug(qs, values);
     return this._client.any(qs, values)
-      .catch(() => [])
+      .catch((error) => {
+        if (error.code === PostgresMissingColumnError) {
+          return [];
+        }
+        throw error;
+      })
       .then((results) => {
         if (fieldName.indexOf('.') === -1) {
           results = results.filter((object) => object[field] !== null);
