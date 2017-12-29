@@ -254,10 +254,30 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         resp.results.forEach((result) => {
-          expect(result.name !== undefined).toBe(true);
+          expect(result.objectId).not.toBe(undefined);
+          expect(result.name).not.toBe(undefined);
           expect(result.sender).toBe(undefined);
           expect(result.size).toBe(undefined);
           expect(result.score).toBe(undefined);
+        });
+        done();
+      }).catch(done.fail);
+  });
+
+  it('multiple project query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        project: { name: 1, score: 1, sender: 1 },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        resp.results.forEach((result) => {
+          expect(result.objectId).not.toBe(undefined);
+          expect(result.name).not.toBe(undefined);
+          expect(result.score).not.toBe(undefined);
+          expect(result.sender).not.toBe(undefined);
+          expect(result.size).toBe(undefined);
         });
         done();
       }).catch(done.fail);

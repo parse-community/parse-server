@@ -723,15 +723,15 @@ export class PostgresStorageAdapter {
     });
     const qs = `CREATE TABLE IF NOT EXISTS $1:name (${patternsArray.join()})`;
     const values = [className, ...valuesArray];
-    
+
     return conn.task('create-table', function * (t) {
       try {
         yield self._ensureSchemaCollectionExists(t);
         yield t.none(qs, values);
       } catch(error) {
-          if (error.code !== PostgresDuplicateRelationError) {
-            throw error;
-          }
+        if (error.code !== PostgresDuplicateRelationError) {
+          throw error;
+        }
         // ELSE: Table already exists, must have been created by a different request. Ignore the error.
       }
       yield t.tx('create-table-tx', tx => {
@@ -755,14 +755,14 @@ export class PostgresStorageAdapter {
             postgresType: parseTypeToPostgresType(type)
           });
         } catch(error) {
-            if (error.code === PostgresRelationDoesNotExistError) {
-              return yield self.createClass(className, {fields: {[fieldName]: type}}, t);
-            }
-            if (error.code !== PostgresDuplicateColumnError) {
-              throw error;
-            }
-            // Column already exists, created by other request. Carry on to see if it's the right type.
-          };
+          if (error.code === PostgresRelationDoesNotExistError) {
+            return yield self.createClass(className, {fields: {[fieldName]: type}}, t);
+          }
+          if (error.code !== PostgresDuplicateColumnError) {
+            throw error;
+          }
+          // Column already exists, created by other request. Carry on to see if it's the right type.
+        }
       } else {
         yield t.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
       }
@@ -794,7 +794,7 @@ export class PostgresStorageAdapter {
     const now = new Date().getTime();
     const helpers = this._pgp.helpers;
     debug('deleteAllClasses');
-    
+
     return this._client.task('delete-all-classes', function * (t) {
       try {
         const results = yield t.any('SELECT * FROM "_SCHEMA"');
@@ -811,8 +811,8 @@ export class PostgresStorageAdapter {
         // No _SCHEMA collection. Don't delete anything.
       }
     }).then(() => {
-        debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-      });
+      debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
+    });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -860,7 +860,7 @@ export class PostgresStorageAdapter {
     return this._client.task('get-all-classes', function * (t) {
       yield self._ensureSchemaCollectionExists(t);
       return yield t.map('SELECT * FROM "_SCHEMA"', null, row => toParseSchema({ className: row.className, ...row.schema }));
-    });    
+    });
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -1500,7 +1500,6 @@ export class PostgresStorageAdapter {
             columns.push(`AVG(${transformAggregateField(value.$avg)}) AS "${field}"`);
           }
         }
-        columns.join();
       } else {
         columns.push('*');
       }
@@ -1546,7 +1545,7 @@ export class PostgresStorageAdapter {
       }
     }
 
-    const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
+    const qs = `SELECT ${columns.join()} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern} ${groupPattern}`;
     debug(qs, values);
     return this._client.map(qs, values, a => this.postgresObjectToParseObject(className, a, schema))
       .then(results => {
