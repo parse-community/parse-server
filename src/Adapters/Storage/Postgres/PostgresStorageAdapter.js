@@ -1305,7 +1305,7 @@ export class PostgresStorageAdapter {
         if (err.code === PostgresRelationDoesNotExistError) {
           return [];
         }
-        return Promise.reject(err);
+        throw err;
       })
       .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
