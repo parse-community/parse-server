@@ -166,7 +166,7 @@ export class MongoStorageAdapter {
   setClassLevelPermissions(className, CLPs) {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.updateSchema(className, {
-        $set: { _metadata: { class_permissions: CLPs } }
+        $set: { '_metadata.class_permissions': CLPs }
       }));
   }
 
@@ -212,7 +212,7 @@ export class MongoStorageAdapter {
       .then(() => insertPromise)
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection.updateSchema(className, {
-        $set: { _metadata: { indexes: existingIndexes } }
+        $set: { '_metadata.indexes':  existingIndexes }
       }));
   }
 
@@ -231,7 +231,7 @@ export class MongoStorageAdapter {
       }, {});
       return this._schemaCollection()
         .then(schemaCollection => schemaCollection.updateSchema(className, {
-          $set: { _metadata: { indexes: indexes } }
+          $set: { '_metadata.indexes': indexes }
         }));
     }).catch(() => {
       // Ignore if collection not found
