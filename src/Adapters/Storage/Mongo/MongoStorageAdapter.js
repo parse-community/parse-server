@@ -4,6 +4,7 @@ import MongoSchemaCollection from './MongoSchemaCollection';
 import { StorageAdapter }    from '../StorageAdapter';
 import type { SchemaType,
   QueryType,
+  StorageClass,
   QueryOptions } from '../StorageAdapter';
 import {
   parse as parseUrl,
@@ -89,6 +90,10 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
     mongoObject._metadata.indexes = indexes;
   }
 
+  if (!mongoObject._metadata) { // cleanup the unused _metadata
+    delete mongoObject._metadata;
+  }
+
   return mongoObject;
 }
 
@@ -168,7 +173,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(rawCollection => new MongoCollection(rawCollection));
   }
 
-  _schemaCollection() {
+  _schemaCollection(): Promise<MongoSchemaCollection> {
     return this.connect()
       .then(() => this._adaptiveCollection(MongoSchemaCollectionName))
       .then(collection => new MongoSchemaCollection(collection));
@@ -182,7 +187,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
   }
 
-  setClassLevelPermissions(className: string, CLPs: any) {
+  setClassLevelPermissions(className: string, CLPs: any): Promise<void> {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.updateSchema(className, {
         $set: { '_metadata.class_permissions': CLPs }
@@ -258,24 +263,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     });
   }
 
-  createClass(className: string, schema: SchemaType) {
+  createClass(className: string, schema: SchemaType): Promise<void> {
     schema = convertParseSchemaToMongoSchema(schema);
     const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
     return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
       .then(() => this._schemaCollection())
-      .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
-      .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
-      .catch(error => {
-        if (error.code === 11000) { //Mongo's duplicate key error
-          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
-        } else {
-          throw error;
-        }
-      })
+      .then(schemaCollection => schemaCollection.insertSchema(mongoObject));
   }
 
-  addFieldIfNotExists(className: string, fieldName: string, type: any) {
+  addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
       .then(() => this.createIndexesIfNeeded(className, fieldName, type));
@@ -351,14 +348,14 @@ export class MongoStorageAdapter implements StorageAdapter {
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
-  getAllClasses() {
+  getAllClasses(): Promise<StorageClass[]> {
     return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
   // this adapter doesn't know about the schema, return a promise that rejects with
   // undefined as the reason.
-  getClass(className: string) {
+  getClass(className: string): Promise<StorageClass> {
     return this._schemaCollection()
       .then(schemasCollection => schemasCollection._fetchOneSchemaFrom_SCHEMA(className))
   }
@@ -626,7 +623,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection._mongoCollection.dropIndexes());
   }
 
-  updateSchemaWithIndexes() {
+  updateSchemaWithIndexes(): Promise<any> {
     return this.getAllClasses()
       .then((classes) => {
         const promises = classes.map((schema) => {
