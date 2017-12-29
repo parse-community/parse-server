@@ -63,7 +63,11 @@ var plainOldDataSchema = {
     aGeoPoint: {type: 'GeoPoint'},
     aFile: {type: 'File'}
   },
-  classLevelPermissions: defaultClassLevelPermissions
+  classLevelPermissions: defaultClassLevelPermissions,
+  indexes: {
+    _id_: { _id: 1 },
+    aGeoPoint_2dsphere: { aGeoPoint: '2dsphere'}
+  }
 };
 
 var pointersAndRelationsSchema = {
@@ -528,52 +532,6 @@ describe('schemas', () => {
       });
   });
 
-  it('refuses to add a geopoint to a class that already has one', done => {
-    var obj = hasAllPODobject();
-    obj.save()
-      .then(() => {
-        request.put({
-          url: 'http://localhost:8378/1/schemas/HasAllPOD',
-          headers: masterKeyHeaders,
-          json: true,
-          body: {
-            fields: {
-              newGeo: {type: 'GeoPoint'}
-            }
-          }
-        }, (error, response, body) => {
-          expect(response.statusCode).toEqual(400);
-          expect(body.code).toEqual(Parse.Error.INCORRECT_TYPE);
-          expect(body.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding newGeo when aGeoPoint already exists.');
-          done();
-        });
-      });
-  });
-
-  it('refuses to add two geopoints', done => {
-    var obj = new Parse.Object('NewClass');
-    obj.set('aString', 'aString');
-    obj.save()
-      .then(() => {
-        request.put({
-          url: 'http://localhost:8378/1/schemas/NewClass',
-          headers: masterKeyHeaders,
-          json: true,
-          body: {
-            fields: {
-              newGeo1: {type: 'GeoPoint'},
-              newGeo2: {type: 'GeoPoint'},
-            }
-          }
-        }, (error, response, body) => {
-          expect(response.statusCode).toEqual(400);
-          expect(body.code).toEqual(Parse.Error.INCORRECT_TYPE);
-          expect(body.error).toEqual('currently, only one GeoPoint field may exist in an object. Adding newGeo2 when newGeo1 already exists.');
-          done();
-        });
-      });
-  });
-
   it('allows you to delete and add a geopoint in the same request', done => {
     var obj = new Parse.Object('NewClass');
     obj.set('geo1', new Parse.GeoPoint({latitude: 0, longitude: 0}));
@@ -599,7 +557,12 @@ describe('schemas', () => {
               "updatedAt": {"type": "Date"},
               "geo2": {"type": "GeoPoint"},
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              geo1_2dsphere: { geo1: '2dsphere'},
+              geo2_2dsphere: { geo2: '2dsphere'}
+            }
           })).toEqual(undefined);
           done();
         });
@@ -811,7 +774,11 @@ describe('schemas', () => {
               aNewPointer: {type: 'Pointer', targetClass: 'HasAllPOD'},
               aNewRelation: {type: 'Relation', targetClass: 'HasAllPOD'},
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              aGeoPoint_2dsphere: { aGeoPoint: '2dsphere'}
+            }
           });
           var obj2 = new Parse.Object('HasAllPOD');
           obj2.set('aNewPointer', obj1);

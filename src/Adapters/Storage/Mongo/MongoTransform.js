@@ -677,7 +677,6 @@ function transformConstraint(constraint, field) {
   // keys is the constraints in reverse alphabetical order.
   // This is a hack so that:
   //   $regex is handled before $options
-  //   $nearSphere is handled before $maxDistance
   var keys = Object.keys(constraint).sort().reverse();
   var answer = {};
   for (var key of keys) {
@@ -798,15 +797,22 @@ function transformConstraint(constraint, field) {
       }
       break;
     }
-    case '$nearSphere':
-      var point = constraint[key];
-      answer[key] = [point.longitude, point.latitude];
+    case '$nearSphere': {
+      const point = constraint[key];
+      const maxDistance = constraint['$maxDistance'];
+      answer[key] = {
+        $geometry : {
+          type: 'Point',
+          coordinates: [ point.longitude, point.latitude ]
+        }
+      }
+      if (maxDistance) {
+        answer[key].$maxDistance = (maxDistance * 3959 * 1609.344)
+      }
       break;
-
+    }
     case '$maxDistance':
-      answer[key] = constraint[key];
       break;
-
     // The SDKs don't seem to use these but they are documented in the
     // REST API docs.
     case '$maxDistanceInRadians':
@@ -1230,17 +1236,36 @@ var BytesCoder = {
 
 var GeoPointCoder = {
   databaseToJSON(object) {
-    return {
-      __type: 'GeoPoint',
-      latitude: object[1],
-      longitude: object[0]
+    if (GeoPointCoder.isValidGeoJson(object)) {
+      return {
+        __type: 'GeoPoint',
+        latitude: object.coordinates[1],
+        longitude: object.coordinates[0]
+      }
+    } else if (GeoPointCoder.isValidLegacyCoordinates(object)) {
+      return {
+        __type: 'GeoPoint',
+        latitude: object[1],
+        longitude: object[0]
+      }
     }
   },
 
-  isValidDatabaseObject(object) {
-    return (object instanceof Array &&
-      object.length == 2
+  isValidGeoJson(object) {
+    return (typeof object === 'object'
+      && object != null
+      && object.type == 'Point'
+      && 'coordinates' in object
+      && GeoPointCoder.isValidLegacyCoordinates(object.coordinates)
     );
+  },
+
+  isValidLegacyCoordinates(object) {
+    return (object instanceof Array && object.length == 2);
+  },
+
+  isValidDatabaseObject(object) {
+    return GeoPointCoder.isValidGeoJson(object) || GeoPointCoder.isValidLegacyCoordinates(object);
   },
 
   JSONToDatabase(json) {

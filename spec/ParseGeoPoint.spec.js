@@ -2,29 +2,31 @@
 // hungry/js/test/parse_geo_point_test.js
 
 const rp = require('request-promise');
-var TestObject = Parse.Object.extend('TestObject');
+const Config = require('../src/Config');
+let config;
+
+const TestObject = Parse.Object.extend('TestObject');
+
+const masterKeyHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Master-Key': 'test',
+};
 
 describe('Parse.GeoPoint testing', () => {
-
   it('geo point roundtrip', (done) => {
-    var point = new Parse.GeoPoint(44.0, -11.0);
-    var obj = new TestObject();
+    const point = new Parse.GeoPoint(44.0, -11.0);
+    const obj = new TestObject();
     obj.set('location', point);
     obj.set('name', 'Ferndale');
-    obj.save(null, {
-      success: function() {
-        var query = new Parse.Query(TestObject);
-        query.find({
-          success: function(results) {
-            equal(results.length, 1);
-            var pointAgain = results[0].get('location');
-            ok(pointAgain);
-            equal(pointAgain.latitude, 44.0);
-            equal(pointAgain.longitude, -11.0);
-            done();
-          }
-        });
-      }
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const pointAgain = result.get('location');
+      ok(pointAgain);
+      equal(pointAgain.latitude, 44.0);
+      equal(pointAgain.longitude, -11.0);
+      done();
     });
   });
 
@@ -68,35 +70,24 @@ describe('Parse.GeoPoint testing', () => {
     })
   });
 
-  it('creating geo point exception two fields', (done) => {
-    var point = new Parse.GeoPoint(20, 20);
-    var obj = new TestObject();
-    obj.set('locationOne', point);
-    obj.set('locationTwo', point);
+  it('geo point supports more than one field', (done) => {
+    const point1 = new Parse.GeoPoint(44, -11);
+    const point2 = new Parse.GeoPoint(24, 19);
+    const obj = new TestObject();
+    obj.set('location1', point1);
+    obj.set('location2', point2);
     obj.save().then(() => {
-      fail('expected error');
-    }, (err) => {
-      equal(err.code, Parse.Error.INCORRECT_TYPE);
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((result) => {
+      const location1 = result.get('location1');
+      const location2 = result.get('location2');
+      equal(location1.latitude, point1.latitude);
+      equal(location1.longitude, point1.longitude);
+      equal(location2.latitude, point2.latitude);
+      equal(location2.longitude, point2.longitude);
       done();
-    });
-  });
-
-  // TODO: This should also have support in postgres, or higher level database agnostic support.
-  it_exclude_dbs(['postgres'])('updating geo point exception two fields', (done) => {
-    var point = new Parse.GeoPoint(20, 20);
-    var obj = new TestObject();
-    obj.set('locationOne', point);
-    obj.save(null, {
-      success: (obj) => {
-        obj.set('locationTwo', point);
-        obj.save().then(() => {
-          fail('expected error');
-        }, (err) => {
-          equal(err.code, Parse.Error.INCORRECT_TYPE);
-          done();
-        })
-      }
-    });
+    }, done.fail);
   });
 
   it('geo line', (done) => {
@@ -646,3 +637,96 @@ describe('Parse.GeoPoint testing', () => {
     });
   });
 });
+
+describe_only_db('mongo')('Parse.GeoPoint testing', () => {
+  beforeEach(() => {
+    config = Config.get('test');
+  });
+
+  afterEach(() => {
+    config.database.schemaCache.clear();
+  });
+
+  it('converts geoJSON to geoPoint', (done) => {
+    const database = config.database.adapter.database;
+    const geoJSON = {type: 'Point', coordinates:[10, 20]};
+    config.database.loadSchema()
+      .then(schema => schema.addClassIfNotExists('test_TestObject', {
+        point: {type: 'GeoPoint'},
+      }))
+      .then(actualSchema => {
+        equal(actualSchema.fields.point.type, 'GeoPoint');
+        // Save GeoJSON in mongo
+        database.collection('test_TestObject').insertOne({ point: geoJSON }, {}, (error, records) => {
+          const objectId = records.ops[0]._id;
+          // Retrieve GeoJSON as GeoPoint
+          config.database.adapter.find('TestObject', actualSchema, { objectId }, {}).then((results) => {
+            equal(results[0].point.__type, 'GeoPoint');
+            done();
+          });
+        });
+      });
+  });
+
+  it('support legacy geopoints with 2dsphere', (done) => {
+    const adapter = config.database.adapter;
+    const geoPoint = new Parse.GeoPoint(10, 10);
+    const obj = new TestObject();
+    reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      return adapter.createIndex('TestObject', {location: '2d'});
+    }).then(() => {
+      return adapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      equal(indexes.length, 2);
+      equal(indexes[0].key, {_id: 1});
+      equal(indexes[1].key, {location: '2d'});
+      // Saving Object with GeoPoint will create new index
+      obj.set('location', geoPoint);
+      return obj.save();
+    }).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.get(obj.id);
+    }).then((resp) => {
+      equal(resp.get('location'), geoPoint);
+      return adapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      equal(indexes.length, 3);
+      equal(indexes[0].key, {_id: 1});
+      equal(indexes[1].key, {location: '2d'});
+      equal(indexes[2].key, {location: '2dsphere'});
+      // Schema will add new 2dsphere index
+      rp.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes._id_).toBeDefined();
+        expect(body.indexes._id_._id).toEqual(1);
+        expect(body.indexes.location_2dsphere).toBeDefined();
+        // Restarting server will update schema with old 2d index
+        reconfigureServer({
+          appId: 'test',
+          restAPIKey: 'test',
+          publicServerURL: 'http://localhost:8378/1',
+        }).then(() => {
+          rp.get({
+            url: 'http://localhost:8378/1/schemas/TestObject',
+            headers: masterKeyHeaders,
+            json: true,
+          }, (error, response, body) => {
+            expect(body.indexes._id_).toBeDefined();
+            expect(body.indexes._id_._id).toEqual(1);
+            expect(body.indexes.location_2d).toBeDefined();
+            expect(body.indexes.location_2dsphere).toBeDefined();
+            done();
+          });
+        });
+      });
+    }, done.fail);
+  });
+});
+
