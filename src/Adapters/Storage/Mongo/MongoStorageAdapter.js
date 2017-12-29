@@ -483,9 +483,23 @@ export class MongoStorageAdapter {
 
   distinct(className, schema, query, fieldName) {
     schema = convertParseSchemaToMongoSchema(schema);
+    const isPointerField = schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
+    if (isPointerField) {
+      fieldName = `_p_${fieldName}`
+    }
     return this._adaptiveCollection(className)
       .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+      .then(objects => objects.map(object => {
+        if (!isPointerField) {
+          return mongoObjectToParseObject(className, object, schema);
+        }
+        const objData = object.split('$');
+        return {
+          __type: 'Pointer',
+          className: objData[0],
+          objectId: objData[1]
+        };
+      }));
   }
 
   aggregate(className, schema, pipeline, readPreference) {

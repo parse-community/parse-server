@@ -1438,6 +1438,9 @@ export class PostgresStorageAdapter {
     const isArrayField = schema.fields
           && schema.fields[fieldName]
           && schema.fields[fieldName].type === 'Array';
+    const isPointerField = schema.fields
+          && schema.fields[fieldName]
+          && schema.fields[fieldName].type === 'Pointer';
     const values = [field, column, className];
     const where = buildWhereClause({ schema, query, index: 4 });
     values.push(...where.values);
@@ -1452,7 +1455,17 @@ export class PostgresStorageAdapter {
       .catch(() => [])
       .then((results) => {
         if (fieldName.indexOf('.') === -1) {
-          return results.map(object => object[field]);
+          results = results.filter((object) => object[field] !== null);
+          return results.map(object => {
+            if (!isPointerField) {
+              return object[field];
+            }
+            return {
+              __type: 'Pointer',
+              className:  schema.fields[fieldName].targetClass,
+              objectId: object[field]
+            };
+          });
         }
         const child = fieldName.split('.')[1];
         return results.map(object => object[column][child]);
