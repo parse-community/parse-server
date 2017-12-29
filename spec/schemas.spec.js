@@ -2,6 +2,7 @@
 
 var Parse = require('parse/node').Parse;
 var request = require('request');
+const rp = require('request-promise');
 var dd = require('deep-diff');
 var Config = require('../src/Config');
 
@@ -1720,6 +1721,35 @@ describe('schemas', () => {
       done();
     });
   });
+
+
+  it("regression test for #4409 (indexes override the clp)", done => {
+    setPermissionsOnClass('_Role', {
+      'get': {"*": true},
+      'find': {"*": true},
+      'create': {'*': true},
+    }, true).then(() => {
+      const config = Config.get('test');
+      return config.database.adapter.updateSchemaWithIndexes();
+    }).then(() => {
+      return rp.get({
+        url: 'http://localhost:8378/1/schemas/_Role',
+        headers: masterKeyHeaders,
+        json: true,
+      });
+    }).then((res) => {
+      expect(res.classLevelPermissions).toEqual({
+        'get': {"*": true},
+        'find': {"*": true},
+        'create': {'*': true},
+        'update': {},
+        'delete': {},
+        'addField': {},
+      });
+      console.log(res);
+    }).then(done).catch(done.fail);
+  });
+
 
   it('regression test for #2246', done => {
     const profile = new Parse.Object('UserProfile');
