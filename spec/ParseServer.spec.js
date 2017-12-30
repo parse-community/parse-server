@@ -8,7 +8,9 @@ describe('Server Url Checks', () => {
 
   const app = express();
   app.get('/health', function(req, res){
-    res.send('OK');
+    res.json({
+      status: 'ok'
+    });
   });
   app.listen(13376);
 
@@ -29,6 +31,37 @@ describe('Server Url Checks', () => {
         done.fail('Did not mark invalid url');
       }
       done();
+    });
+  });
+
+  it('handleShutdown, close connection', (done) => {
+    var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+    const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
+    let databaseAdapter;
+    if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
+      databaseAdapter = new PostgresStorageAdapter({
+        uri: process.env.PARSE_SERVER_TEST_DATABASE_URI || postgresURI,
+        collectionPrefix: 'test_',
+      });
+    } else {
+      databaseAdapter = new MongoStorageAdapter({
+        uri: mongoURI,
+        collectionPrefix: 'test_',
+      });
+    }
+    const newConfiguration = Object.assign({}, defaultConfiguration, { databaseAdapter });
+    const parseServer = ParseServer.start(newConfiguration, () => {
+      parseServer.handleShutdown();
+      parseServer.server.close((err) => {
+        if (err) {
+          done.fail('Close Server Error')
+        }
+        reconfigureServer({}).then(() => {
+          done();
+        });
+      });
     });
   });
 });

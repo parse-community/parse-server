@@ -10,6 +10,7 @@ import {
   transformKey,
   transformWhere,
   transformUpdate,
+  transformPointerString,
 } from './MongoTransform';
 import Parse                 from 'parse/node';
 import _                     from 'lodash';
@@ -53,7 +54,7 @@ const convertParseSchemaToMongoSchema = ({...schema}) => {
 
 // Returns { code, error } if invalid, or { result }, an object
 // suitable for inserting into _SCHEMA collection, otherwise.
-const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions) => {
+const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPermissions, indexes) => {
   const mongoObject = {
     _id: className,
     objectId: 'string',
@@ -74,6 +75,11 @@ const mongoSchemaFromFieldsAndClassNameAndCLP = (fields, className, classLevelPe
     }
   }
 
+  if (indexes && typeof indexes === 'object' && Object.keys(indexes).length > 0) {
+    mongoObject._metadata = mongoObject._metadata || {};
+    mongoObject._metadata.indexes = indexes;
+  }
+
   return mongoObject;
 }
 
@@ -86,7 +92,7 @@ export class MongoStorageAdapter {
   // Public
   connectionPromise;
   database;
-
+  canSortOnJoinTables;
   constructor({
     uri = defaults.DefaultMongoURI,
     collectionPrefix = '',
@@ -98,6 +104,7 @@ export class MongoStorageAdapter {
 
     // MaxTimeMS is not a global MongoDB client option, it is applied per operation.
     this._maxTimeMS = mongoOptions.maxTimeMS;
+    this.canSortOnJoinTables = true;
     delete mongoOptions.maxTimeMS;
   }
 
@@ -110,7 +117,12 @@ export class MongoStorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
+    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(client => {
+      // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
+      // Fortunately, we can get back the options and use them to select the proper DB.
+      // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
+      const options = client.s.options;
+      const database = client.db(options.dbName);
       if (!database) {
         delete this.connectionPromise;
         return;
@@ -121,6 +133,7 @@ export class MongoStorageAdapter {
       database.on('close', () => {
         delete this.connectionPromise;
       });
+      this.client = client;
       this.database = database;
     }).catch((err) => {
       delete this.connectionPromise;
@@ -131,10 +144,10 @@ export class MongoStorageAdapter {
   }
 
   handleShutdown() {
-    if (!this.database) {
+    if (!this.client) {
       return;
     }
-    this.database.close(false);
+    this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
@@ -160,15 +173,85 @@ export class MongoStorageAdapter {
   setClassLevelPermissions(className, CLPs) {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.updateSchema(className, {
-        $set: { _metadata: { class_permissions: CLPs } }
+        $set: { '_metadata.class_permissions': CLPs }
       }));
+  }
+
+  setIndexesWithSchemaFormat(className, submittedIndexes, existingIndexes = {}, fields) {
+    if (submittedIndexes === undefined) {
+      return Promise.resolve();
+    }
+    if (Object.keys(existingIndexes).length === 0) {
+      existingIndexes = { _id_: { _id: 1} };
+    }
+    const deletePromises = [];
+    const insertedIndexes = [];
+    Object.keys(submittedIndexes).forEach(name => {
+      const field = submittedIndexes[name];
+      if (existingIndexes[name] && field.__op !== 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
+      }
+      if (!existingIndexes[name] && field.__op === 'Delete') {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} does not exist, cannot delete.`);
+      }
+      if (field.__op === 'Delete') {
+        const promise = this.dropIndex(className, name);
+        deletePromises.push(promise);
+        delete existingIndexes[name];
+      } else {
+        Object.keys(field).forEach(key => {
+          if (!fields.hasOwnProperty(key)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
+          }
+        });
+        existingIndexes[name] = field;
+        insertedIndexes.push({
+          key: field,
+          name,
+        });
+      }
+    });
+    let insertPromise = Promise.resolve();
+    if (insertedIndexes.length > 0) {
+      insertPromise = this.createIndexes(className, insertedIndexes);
+    }
+    return Promise.all(deletePromises)
+      .then(() => insertPromise)
+      .then(() => this._schemaCollection())
+      .then(schemaCollection => schemaCollection.updateSchema(className, {
+        $set: { '_metadata.indexes':  existingIndexes }
+      }));
+  }
+
+  setIndexesFromMongo(className) {
+    return this.getIndexes(className).then((indexes) => {
+      indexes = indexes.reduce((obj, index) => {
+        if (index.key._fts) {
+          delete index.key._fts;
+          delete index.key._ftsx;
+          for (const field in index.weights) {
+            index.key[field] = 'text';
+          }
+        }
+        obj[index.name] = index.key;
+        return obj;
+      }, {});
+      return this._schemaCollection()
+        .then(schemaCollection => schemaCollection.updateSchema(className, {
+          $set: { '_metadata.indexes': indexes }
+        }));
+    }).catch(() => {
+      // Ignore if collection not found
+      return Promise.resolve();
+    });
   }
 
   createClass(className, schema) {
     schema = convertParseSchemaToMongoSchema(schema);
-    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions);
+    const mongoObject = mongoSchemaFromFieldsAndClassNameAndCLP(schema.fields, className, schema.classLevelPermissions, schema.indexes);
     mongoObject._id = className;
-    return this._schemaCollection()
+    return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
+      .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection._collection.insertOne(mongoObject))
       .then(result => MongoSchemaCollection._TESTmongoSchemaToParseSchema(result.ops[0]))
       .catch(error => {
@@ -352,7 +435,7 @@ export class MongoStorageAdapter {
     }, {});
 
     readPreference = this._parseReadPreference(readPreference);
-    return this.createTextIndexesIfNeeded(className, query)
+    return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._adaptiveCollection(className))
       .then(collection => collection.find(mongoWhere, {
         skip,
@@ -405,27 +488,62 @@ export class MongoStorageAdapter {
       }));
   }
 
+  distinct(className, schema, query, fieldName) {
+    schema = convertParseSchemaToMongoSchema(schema);
+    const isPointerField = schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
+    if (isPointerField) {
+      fieldName = `_p_${fieldName}`
+    }
+    return this._adaptiveCollection(className)
+      .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
+      .then(objects => objects.map(object => {
+        if (isPointerField) {
+          const field = fieldName.substring(3);
+          return transformPointerString(schema, field, object);
+        }
+        return mongoObjectToParseObject(className, object, schema);
+      }));
+  }
+
+  aggregate(className, schema, pipeline, readPreference) {
+    readPreference = this._parseReadPreference(readPreference);
+    return this._adaptiveCollection(className)
+      .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
+      .then(results => {
+        results.forEach(result => {
+          if (result.hasOwnProperty('_id')) {
+            result.objectId = result._id;
+            delete result._id;
+          }
+        });
+        return results;
+      })
+      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+  }
+
   _parseReadPreference(readPreference) {
-    if (readPreference) {
-      switch (readPreference) {
-      case 'PRIMARY':
-        readPreference = ReadPreference.PRIMARY;
-        break;
-      case 'PRIMARY_PREFERRED':
-        readPreference = ReadPreference.PRIMARY_PREFERRED;
-        break;
-      case 'SECONDARY':
-        readPreference = ReadPreference.SECONDARY;
-        break;
-      case 'SECONDARY_PREFERRED':
-        readPreference = ReadPreference.SECONDARY_PREFERRED;
-        break;
-      case 'NEAREST':
-        readPreference = ReadPreference.NEAREST;
-        break;
-      default:
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
-      }
+    switch (readPreference) {
+    case 'PRIMARY':
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    case 'PRIMARY_PREFERRED':
+      readPreference = ReadPreference.PRIMARY_PREFERRED;
+      break;
+    case 'SECONDARY':
+      readPreference = ReadPreference.SECONDARY;
+      break;
+    case 'SECONDARY_PREFERRED':
+      readPreference = ReadPreference.SECONDARY_PREFERRED;
+      break;
+    case 'NEAREST':
+      readPreference = ReadPreference.NEAREST;
+      break;
+    case undefined:
+      // this is to match existing tests, which were failing as mongodb@3.0 don't report readPreference anymore
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    default:
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
     }
     return readPreference;
   }
@@ -439,6 +557,11 @@ export class MongoStorageAdapter {
       .then(collection => collection._mongoCollection.createIndex(index));
   }
 
+  createIndexes(className, indexes) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.createIndexes(indexes));
+  }
+
   createIndexesIfNeeded(className, fieldName, type) {
     if (type && type.type === 'Polygon') {
       const index = {
@@ -449,20 +572,26 @@ export class MongoStorageAdapter {
     return Promise.resolve();
   }
 
-  createTextIndexesIfNeeded(className, query) {
+  createTextIndexesIfNeeded(className, query, schema) {
     for(const fieldName in query) {
       if (!query[fieldName] || !query[fieldName].$text) {
         continue;
       }
-      const index = {
-        [fieldName]: 'text'
+      const existingIndexes = schema.indexes;
+      for (const key in existingIndexes) {
+        const index = existingIndexes[key];
+        if (index.hasOwnProperty(fieldName)) {
+          return Promise.resolve();
+        }
+      }
+      const indexName = `${fieldName}_text`;
+      const textIndex = {
+        [indexName]: { [fieldName]: 'text' }
       };
-      return this.createIndex(className, index)
+      return this.setIndexesWithSchemaFormat(className, textIndex, existingIndexes, schema.fields)
         .catch((error) => {
-          if (error.code === 85) {
-            throw new Parse.Error(
-              Parse.Error.INTERNAL_SERVER_ERROR,
-              'Only one text index is supported, please delete all text indexes to use new field.');
+          if (error.code === 85) { // Index exist with different options
+            return this.setIndexesFromMongo(className);
           }
           throw error;
         });
@@ -473,6 +602,26 @@ export class MongoStorageAdapter {
   getIndexes(className) {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.indexes());
+  }
+
+  dropIndex(className, index) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndex(index));
+  }
+
+  dropAllIndexes(className) {
+    return this._adaptiveCollection(className)
+      .then(collection => collection._mongoCollection.dropIndexes());
+  }
+
+  updateSchemaWithIndexes() {
+    return this.getAllClasses()
+      .then((classes) => {
+        const promises = classes.map((schema) => {
+          return this.setIndexesFromMongo(schema.className);
+        });
+        return Promise.all(promises);
+      });
   }
 }
 

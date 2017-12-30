@@ -29,7 +29,7 @@ var path = require('path');
 var TestUtils = require('../src/TestUtils');
 var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
-const FSAdapter = require('parse-server-fs-adapter');
+const FSAdapter = require('@parse/fs-files-adapter');
 const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
 const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
 

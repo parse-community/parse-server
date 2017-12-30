@@ -16,6 +16,21 @@ export class UsersRouter extends ClassesRouter {
     return '_User';
   }
 
+  /**
+   * Removes all "_" prefixed properties from an object, except "__type"
+   * @param {Object} obj An object.
+   */
+  static removeHiddenProperties (obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        // Regexp comes from Parse.Object.prototype.validate
+        if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+          delete obj[key];
+        }
+      }
+    }
+  }
+
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
@@ -35,14 +50,7 @@ export class UsersRouter extends ClassesRouter {
           user.sessionToken = sessionToken;
 
           // Remove hidden properties.
-          for (var key in user) {
-            if (user.hasOwnProperty(key)) {
-              // Regexp comes from Parse.Object.prototype.validate
-              if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
-                delete user[key];
-              }
-            }
-          }
+          UsersRouter.removeHiddenProperties(user);
 
           return { response: user };
         }
@@ -76,13 +84,26 @@ export class UsersRouter extends ClassesRouter {
 
     let user;
     let isValidPassword = false;
-    const query = Object.assign({}, username ? { username } : {}, email ? { email } : {});
+    let query;
+    if (email && username) {
+      query = { email, username };
+    } else if (email) {
+      query = { email };
+    } else {
+      query = { $or: [{ username } , { email: username }] };
+    }
     return req.config.database.find('_User', query)
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
-        user = results[0];
+
+        if (results.length > 1) { // corner case where user1 has username == user2 email
+          req.config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
+          user = results.filter((user) =>  user.username === username)[0];
+        } else {
+          user = results[0];
+        }
 
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
@@ -124,6 +145,9 @@ export class UsersRouter extends ClassesRouter {
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
 
         // Sometimes the authData still has null on that keys
         // https://github.com/parse-community/parse-server/issues/935

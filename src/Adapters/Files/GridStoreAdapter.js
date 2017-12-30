@@ -21,7 +21,8 @@ export class GridStoreAdapter extends FilesAdapter {
 
   _connect() {
     if (!this._connectionPromise) {
-      this._connectionPromise = MongoClient.connect(this._databaseURI);
+      this._connectionPromise = MongoClient.connect(this._databaseURI)
+        .then((client) => client.db(client.s.options.dbName));
     }
     return this._connectionPromise;
   }
@@ -29,7 +30,7 @@ export class GridStoreAdapter extends FilesAdapter {
   // For a given config object, filename, and data, store a file
   // Returns a promise
   createFile(filename: string, data) {
-    return this._connect().then(database => {
+    return this._connect().then((database) => {
       const gridStore = new GridStore(database, filename, 'w');
       return gridStore.open();
     }).then(gridStore => {

@@ -599,8 +599,16 @@ DatabaseController.prototype.deleteEverything = function() {
 
 // Returns a promise for a list of related ids given an owning id.
 // className here is the owning className.
-DatabaseController.prototype.relatedIds = function(className, key, owningId) {
-  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, {})
+DatabaseController.prototype.relatedIds = function(className, key, owningId, queryOptions) {
+  const { skip, limit, sort } = queryOptions;
+  const findOptions = {};
+  if (sort && sort.createdAt && this.adapter.canSortOnJoinTables) {
+    findOptions.sort = { '_id' : sort.createdAt };
+    findOptions.limit = limit;
+    findOptions.skip = skip;
+    queryOptions.skip = 0;
+  }
+  return this.adapter.find(joinTableName(className, key), relationSchema, { owningId }, findOptions)
     .then(results => results.map(result => result.relatedId));
 };
 
@@ -693,11 +701,11 @@ DatabaseController.prototype.reduceInRelation = function(className, query, schem
 
 // Modifies query so that it no longer has $relatedTo
 // Returns a promise that resolves when query is mutated
-DatabaseController.prototype.reduceRelationKeys = function(className, query) {
+DatabaseController.prototype.reduceRelationKeys = function(className, query, queryOptions) {
 
   if (query['$or']) {
     return Promise.all(query['$or'].map((aQuery) => {
-      return this.reduceRelationKeys(className, aQuery);
+      return this.reduceRelationKeys(className, aQuery, queryOptions);
     }));
   }
 
@@ -706,11 +714,12 @@ DatabaseController.prototype.reduceRelationKeys = function(className, query) {
     return this.relatedIds(
       relatedTo.object.className,
       relatedTo.key,
-      relatedTo.object.objectId)
+      relatedTo.object.objectId,
+      queryOptions)
       .then((ids) => {
         delete query['$relatedTo'];
         this.addInObjectIdsIds(ids, query);
-        return this.reduceRelationKeys(className, query);
+        return this.reduceRelationKeys(className, query, queryOptions);
       });
   }
 };
@@ -785,6 +794,8 @@ DatabaseController.prototype.find = function(className, query, {
   count,
   keys,
   op,
+  distinct,
+  pipeline,
   readPreference
 } = {}) {
   const isMaster = acl === undefined;
@@ -829,8 +840,9 @@ DatabaseController.prototype.find = function(className, query, {
               throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
             }
           });
+          const queryOptions = { skip, limit, sort, keys, readPreference };
           return (isMaster ? Promise.resolve() : schemaController.validatePermission(className, aclGroup, op))
-            .then(() => this.reduceRelationKeys(className, query))
+            .then(() => this.reduceRelationKeys(className, query, queryOptions))
             .then(() => this.reduceInRelation(className, query, schemaController))
             .then(() => {
               if (!isMaster) {
@@ -853,11 +865,23 @@ DatabaseController.prototype.find = function(className, query, {
                 } else {
                   return this.adapter.count(className, schema, query, readPreference);
                 }
+              }  else if (distinct) {
+                if (!classExists) {
+                  return [];
+                } else {
+                  return this.adapter.distinct(className, schema, query, distinct);
+                }
+              }  else if (pipeline) {
+                if (!classExists) {
+                  return [];
+                } else {
+                  return this.adapter.aggregate(className, schema, pipeline, readPreference);
+                }
               } else {
                 if (!classExists) {
                   return [];
                 } else {
-                  return this.adapter.find(className, schema, query, { skip, limit, sort, keys, readPreference })
+                  return this.adapter.find(className, schema, query, queryOptions)
                     .then(objects => objects.map(object => {
                       object = untransformObjectACL(object);
                       return filterSensitiveData(isMaster, aclGroup, className, object)
@@ -1005,9 +1029,11 @@ DatabaseController.prototype.performInitialization = function() {
       throw error;
     });
 
+  const indexPromise = this.adapter.updateSchemaWithIndexes();
+
   // Create tables for volatile classes
   const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
-  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit]);
+  return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit, indexPromise]);
 }
 
 function joinTableName(className, key) {

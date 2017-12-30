@@ -1,11 +1,11 @@
 /**
  * Parse Server Configuration Builder
- * 
+ *
  * This module builds the definitions file (src/Options/Definitions.js)
  * from the src/Options/index.js options interfaces.
  * The Definitions.js module is responsible for the default values as well
  * as the mappings for the CLI.
- * 
+ *
  * To rebuild the definitions file, run
  * `$ node resources/buildConfigDefinitions.js`
  */

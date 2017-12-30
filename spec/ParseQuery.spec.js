@@ -3152,6 +3152,31 @@ describe('Parse.Query testing', () => {
       .then((results) => {
         expect(results.length).toBe(2);
       })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: 'now' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(1);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: 'now' });
+        q.lessThan('ttl', { $relativeTime: 'in 1 day' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(0);
+      })
+      .then(() => {
+        const q = new Parse.Query('MyCustomObject');
+        q.greaterThan('ttl', { $relativeTime: '1 year 3 weeks ago' });
+        return q.find({ useMasterKey: true });
+      })
+      .then((results) => {
+        expect(results.length).toBe(2);
+      })
       .then(done, done.fail);
   });
 
@@ -3181,4 +3206,89 @@ describe('Parse.Query testing', () => {
       .then(() => q.find({ useMasterKey: true }))
       .then(done.fail, done);
   });
+
+  it('should match complex structure with dot notation when using matchesKeyInQuery', function(done) {
+    const group1 = new Parse.Object('Group', {
+      name: 'Group #1'
+    });
+
+    const group2 = new Parse.Object('Group', {
+      name: 'Group #2'
+    });
+
+    Parse.Object.saveAll([group1, group2])
+      .then(() => {
+        const role1 = new Parse.Object('Role', {
+          name: 'Role #1',
+          type: 'x',
+          belongsTo: group1
+        });
+
+        const role2 = new Parse.Object('Role', {
+          name: 'Role #2',
+          type: 'y',
+          belongsTo: group1
+        });
+
+        return Parse.Object.saveAll([role1, role2]);
+      })
+      .then(() => {
+        const rolesOfTypeX = new Parse.Query('Role');
+        rolesOfTypeX.equalTo('type', 'x');
+
+        const groupsWithRoleX = new Parse.Query('Group');
+        groupsWithRoleX.matchesKeyInQuery('objectId', 'belongsTo.objectId', rolesOfTypeX);
+
+        groupsWithRoleX.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 1);
+            equal(results[0].get('name'), group1.get('name'));
+            done();
+          }
+        }))
+      })
+  });
+
+  it('should match complex structure with dot notation when using doesNotMatchKeyInQuery', function(done) {
+    const group1 = new Parse.Object('Group', {
+      name: 'Group #1'
+    });
+
+    const group2 = new Parse.Object('Group', {
+      name: 'Group #2'
+    });
+
+    Parse.Object.saveAll([group1, group2])
+      .then(() => {
+        const role1 = new Parse.Object('Role', {
+          name: 'Role #1',
+          type: 'x',
+          belongsTo: group1
+        });
+
+        const role2 = new Parse.Object('Role', {
+          name: 'Role #2',
+          type: 'y',
+          belongsTo: group1
+        });
+
+        return Parse.Object.saveAll([role1, role2]);
+      })
+      .then(() => {
+        const rolesOfTypeX = new Parse.Query('Role');
+        rolesOfTypeX.equalTo('type', 'x');
+
+        const groupsWithRoleX = new Parse.Query('Group');
+        groupsWithRoleX.doesNotMatchKeyInQuery('objectId', 'belongsTo.objectId', rolesOfTypeX);
+
+        groupsWithRoleX.find(expectSuccess({
+          success: function(results) {
+            equal(results.length, 1);
+            equal(results[0].get('name'), group2.get('name'));
+            done();
+          }
+        }))
+      })
+  });
+
 });
