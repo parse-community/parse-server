@@ -743,38 +743,27 @@ export class PostgresStorageAdapter {
     });
   }
 
-  schemaUpgrade(className, schema) {
+  schemaUpgrade(className, schema, conn) {
     debug('schemaUpgrade', { className, schema });
-
-    return this._client.tx('schemaUpgrade', t => {
-      return t.any('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className })
-        .then(columns => {
-          const currentColumns = columns.map(item => item.column_name);
-          const newColumns = Object.keys(schema.fields);
-
-          const columnsToCreate = newColumns.filter(item => currentColumns.indexOf(item) === -1);
-
-          const addFields = [];
-
-          columnsToCreate.forEach(fieldName => {
-            const type = schema.fields[fieldName];
-            addFields.push(this.addFieldIfNotExists(className, fieldName, type));
-          });
-
-          if (!addFields.length) {
-            return Promise.resolve();
-          }
-
-          return t.batch(addFields);
-        })
+    conn = conn || this._client;
+    const self = this;
+    
+    return conn.tx('schema-upgrade', function * (t) {
+      const columns = yield t.map('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className }, a => a.column_name);
+      const newColumns = Object.keys(schema.fields)
+        .filter(item => columns.indexOf(item) === -1)
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t));
+      
+      yield t.batch(newColumns);
     });
   }
 
-  addFieldIfNotExists(className, fieldName, type) {
+  addFieldIfNotExists(className, fieldName, type, conn) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
+    conn = conn || this._client;
     const self = this;
-    return this._client.tx('add-field-if-not-exists', function * (t) {
+    return conn.tx('add-field-if-not-exists', function * (t) {
       if (type.type !== 'Relation') {
         try {
           yield t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
@@ -1606,6 +1595,7 @@ export class PostgresStorageAdapter {
   }
 
   performInitialization({ VolatileClassesSchemas }) {
+    // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map((schema) => {
       return this.createTable(schema.className, schema)
