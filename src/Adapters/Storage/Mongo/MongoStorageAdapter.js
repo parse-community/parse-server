@@ -117,7 +117,12 @@ export class MongoStorageAdapter {
     // encoded
     const encodedUri = formatUrl(parseUrl(this._uri));
 
-    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(database => {
+    this.connectionPromise = MongoClient.connect(encodedUri, this._mongoOptions).then(client => {
+      // Starting mongoDB 3.0, the MongoClient.connect don't return a DB anymore but a client
+      // Fortunately, we can get back the options and use them to select the proper DB.
+      // https://github.com/mongodb/node-mongodb-native/blob/2c35d76f08574225b8db02d7bef687123e6bb018/lib/mongo_client.js#L885
+      const options = client.s.options;
+      const database = client.db(options.dbName);
       if (!database) {
         delete this.connectionPromise;
         return;
@@ -128,6 +133,7 @@ export class MongoStorageAdapter {
       database.on('close', () => {
         delete this.connectionPromise;
       });
+      this.client = client;
       this.database = database;
     }).catch((err) => {
       delete this.connectionPromise;
@@ -138,10 +144,10 @@ export class MongoStorageAdapter {
   }
 
   handleShutdown() {
-    if (!this.database) {
+    if (!this.client) {
       return;
     }
-    this.database.close(false);
+    this.client.close(false);
   }
 
   _adaptiveCollection(name: string) {
@@ -516,26 +522,28 @@ export class MongoStorageAdapter {
   }
 
   _parseReadPreference(readPreference) {
-    if (readPreference) {
-      switch (readPreference) {
-      case 'PRIMARY':
-        readPreference = ReadPreference.PRIMARY;
-        break;
-      case 'PRIMARY_PREFERRED':
-        readPreference = ReadPreference.PRIMARY_PREFERRED;
-        break;
-      case 'SECONDARY':
-        readPreference = ReadPreference.SECONDARY;
-        break;
-      case 'SECONDARY_PREFERRED':
-        readPreference = ReadPreference.SECONDARY_PREFERRED;
-        break;
-      case 'NEAREST':
-        readPreference = ReadPreference.NEAREST;
-        break;
-      default:
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
-      }
+    switch (readPreference) {
+    case 'PRIMARY':
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    case 'PRIMARY_PREFERRED':
+      readPreference = ReadPreference.PRIMARY_PREFERRED;
+      break;
+    case 'SECONDARY':
+      readPreference = ReadPreference.SECONDARY;
+      break;
+    case 'SECONDARY_PREFERRED':
+      readPreference = ReadPreference.SECONDARY_PREFERRED;
+      break;
+    case 'NEAREST':
+      readPreference = ReadPreference.NEAREST;
+      break;
+    case undefined:
+      // this is to match existing tests, which were failing as mongodb@3.0 don't report readPreference anymore
+      readPreference = ReadPreference.PRIMARY;
+      break;
+    default:
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
     }
     return readPreference;
   }
