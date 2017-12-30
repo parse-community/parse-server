@@ -10,6 +10,7 @@ import {
   transformKey,
   transformWhere,
   transformUpdate,
+  transformPointerString,
 } from './MongoTransform';
 import Parse                 from 'parse/node';
 import _                     from 'lodash';
@@ -483,9 +484,19 @@ export class MongoStorageAdapter {
 
   distinct(className, schema, query, fieldName) {
     schema = convertParseSchemaToMongoSchema(schema);
+    const isPointerField = schema.fields[fieldName] && schema.fields[fieldName].type === 'Pointer';
+    if (isPointerField) {
+      fieldName = `_p_${fieldName}`
+    }
     return this._adaptiveCollection(className)
       .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+      .then(objects => objects.map(object => {
+        if (isPointerField) {
+          const field = fieldName.substring(3);
+          return transformPointerString(schema, field, object);
+        }
+        return mongoObjectToParseObject(className, object, schema);
+      }));
   }
 
   aggregate(className, schema, pipeline, readPreference) {
