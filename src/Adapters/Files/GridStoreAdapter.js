@@ -6,6 +6,7 @@
  @flow weak
  */
 
+// @flow-disable-next
 import { MongoClient, GridStore, Db} from 'mongodb';
 import { FilesAdapter }              from './FilesAdapter';
 import defaults                      from '../../defaults';
