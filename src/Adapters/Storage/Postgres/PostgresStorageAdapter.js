@@ -818,9 +818,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         // No _SCHEMA collection. Don't delete anything.
       }
-    }).then(() => {
-      debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-    });
+    })
+      .then(() => {
+        debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
+      });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -882,7 +883,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw undefined;          
         }
         return result[0].schema;
-      }).then(toParseSchema);
+      })
+      .then(toParseSchema);
   }
 
   // TODO: remove the mongo format dependency in the return value
@@ -1055,7 +1057,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Return value not currently well specified.
   findOneAndUpdate(className: string, schema: SchemaType, query: QueryType, update: any): Promise<any> {
     debug('findOneAndUpdate', className, query, update);
-    return this.updateObjectsByQuery(className, schema, query, update).then((val) => val[0]);
+    return this.updateObjectsByQuery(className, schema, query, update)
+      .then((val) => val[0]);
   }
 
   // Apply the update to all objects that match the given Parse Query.
