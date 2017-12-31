@@ -2,14 +2,7 @@ const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/Postgre
 const databaseURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 
 const getColumns = (client, className) => {
-  return client.any('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className })
-    .then(columns => {
-      if (!columns.length) {
-        return [];
-      }
-
-      return columns.map(item => item.column_name);
-    });
+  return client.map('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className }, a => a.column_name);
 };
 
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
