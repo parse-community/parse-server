@@ -1317,7 +1317,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw error;
         }
         return [];
-      });
+      })
       .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
 
