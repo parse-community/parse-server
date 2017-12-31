@@ -1,5 +1,5 @@
 const TestObject = Parse.Object.extend('TestObject');
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const rp = require('request-promise');
 const defaultHeaders = {
