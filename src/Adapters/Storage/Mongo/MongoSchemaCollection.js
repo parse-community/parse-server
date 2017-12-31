@@ -137,6 +137,18 @@ class MongoSchemaCollection {
     return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []);
   }
 
+  insertSchema(schema: any) {
+    return this._collection.insertOne(schema)
+      .then(result => mongoSchemaToParseSchema(result.ops[0]))
+      .catch(error => {
+        if (error.code === 11000) { //Mongo's duplicate key error
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+        } else {
+          throw error;
+        }
+      })
+  }
+
   updateSchema(name: string, update) {
     return this._collection.updateOne(_mongoSchemaQueryFromNameQuery(name), update);
   }
