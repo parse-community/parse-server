@@ -24,7 +24,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
     done();
   });
 
-  it('schemaUpgrade, upgrade the database schema when schema change', done => {
+  it('schemaUpgrade, upgrade the database schema when schema changes', done => {
     const adapter = new PostgresStorageAdapter({ uri: databaseURI });
     const client = adapter._client;
     const className = '_PushStatus';
@@ -58,7 +58,7 @@ describe_only_db('postgres')('PostgresStorageAdapter', () => {
       .catch(error => done.fail(error));
   });
 
-  it('schemaUpgrade, matain correct schema', done => {
+  it('schemaUpgrade, maintain correct schema', done => {
     const adapter = new PostgresStorageAdapter({ uri: databaseURI });
     const client = adapter._client;
     const className = 'Table';
