@@ -1240,9 +1240,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     values.push(...where.values);
 
     const whereClause = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
-    const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause}`;
+    const qs = `UPDATE $1:name SET ${updatePatterns.join()} ${whereClause} RETURNING *`;
     debug('update: ', qs, values);
-    return this._client.none(qs, values);
+    return this._client.any(qs, values);
   }
 
   // Hopefully, we can get rid of this. It's only used for config and hooks.
