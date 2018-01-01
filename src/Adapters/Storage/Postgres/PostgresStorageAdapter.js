@@ -1432,8 +1432,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
     return this._client.one(qs, values, a => +a.count)
       .catch(error => {
-        if (err.code !== PostgresRelationDoesNotExistError) {
-          throw err;
+        if (error.code !== PostgresRelationDoesNotExistError) {
+          throw error;
         }
         return 0;
     });
