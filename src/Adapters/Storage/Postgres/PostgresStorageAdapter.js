@@ -589,7 +589,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   handleShutdown() {
     if (!this._client) {
-      return
+      return;
     }
     this._client.$pool.end();
   }
@@ -818,9 +818,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         // No _SCHEMA collection. Don't delete anything.
       }
-    }).then(() => {
-      debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
-    });
+    })
+      .then(() => {
+        debug(`deleteAllClasses done in ${new Date().getTime() - now}`);
+      });
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -878,12 +879,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('getClass', className);
     return this._client.any('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
       .then(result => {
-        if (result.length === 1) {
-          return result[0].schema;
-        } else {
-          throw undefined;
+        if (result.length !== 1) {
+          throw undefined;          
         }
-      }).then(toParseSchema);
+        return result[0].schema;
+      })
+      .then(toParseSchema);
   }
 
   // TODO: remove the mongo format dependency in the return value
@@ -1018,11 +1019,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
               err.userInfo = { duplicated_field: matches[1] };
             }
           }
-          throw err;
-        } else {
-          throw error;
+          error = err;
         }
-      })
+        throw error;
+      });
   }
 
   // Remove all objects that match the given Parse Query.
@@ -1046,18 +1046,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
         } else {
           return count;
         }
-      }).catch((error) => {
-        if (error.code === PostgresRelationDoesNotExistError) {
-          // Don't delete anything if doesn't exist
-        } else {
+      })
+      .catch(error => {
+        if (error.code !== PostgresRelationDoesNotExistError) {
           throw error;
         }
+        // ELSE: Don't delete anything if doesn't exist
       });
   }
   // Return value not currently well specified.
   findOneAndUpdate(className: string, schema: SchemaType, query: QueryType, update: any): Promise<any> {
     debug('findOneAndUpdate', className, query, update);
-    return this.updateObjectsByQuery(className, schema, query, update).then((val) => val[0]);
+    return this.updateObjectsByQuery(className, schema, query, update)
+      .then((val) => val[0]);
   }
 
   // Apply the update to all objects that match the given Parse Query.
@@ -1248,12 +1249,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
   upsertOneObject(className: string, schema: SchemaType, query: QueryType, update: any) {
     debug('upsertOneObject', {className, query, update});
     const createValue = Object.assign({}, query, update);
-    return this.createObject(className, schema, createValue).catch((err) => {
+    return this.createObject(className, schema, createValue)
+      .catch(error => {
       // ignore duplicate value errors as it's upsert
-      if (err.code === Parse.Error.DUPLICATE_VALUE) {
-        return this.findOneAndUpdate(className, schema, query, update);
+      if (error.code !== Parse.Error.DUPLICATE_VALUE) {
+        throw error;
       }
-      throw err;
+      return this.findOneAndUpdate(className, schema, query, update);
     });
   }
 
@@ -1309,12 +1311,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
     debug(qs, values);
     return this._client.any(qs, values)
-      .catch((err) => {
-      // Query on non existing table, don't crash
-        if (err.code === PostgresRelationDoesNotExistError) {
-          return [];
+      .catch(error => {
+        // Query on non existing table, don't crash
+        if (error.code !== PostgresRelationDoesNotExistError) {
+          throw error;
         }
-        throw err;
+        return [];
       })
       .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
@@ -1428,11 +1430,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const qs = `SELECT count(*) FROM $1:name ${wherePattern}`;
-    return this._client.one(qs, values, a => +a.count).catch((err) => {
-      if (err.code === PostgresRelationDoesNotExistError) {
+    return this._client.one(qs, values, a => +a.count)
+      .catch(error => {
+        if (error.code !== PostgresRelationDoesNotExistError) {
+          throw error;
+        }
         return 0;
-      }
-      throw err;
     });
   }
 
@@ -1481,7 +1484,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
         const child = fieldName.split('.')[1];
         return results.map(object => object[column][child]);
-      }).then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
+      })
+      .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
 
   aggregate(className: string, schema: any, pipeline: any) {
