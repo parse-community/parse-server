@@ -108,7 +108,7 @@ cd "${INSTALL_DIR}"
 
 if [ -f "package.json" ]; then
   echo "\n${RED}package.json exists${NC}"
-  confirm 'N' "Do you want to continue? \n${RED}this will erase your configuration${NC} (y/N): "
+  confirm 'N' "Do you want to continue? \n${RED}this will erase your existing package.json${NC} (y/N): "
 fi
 
 
