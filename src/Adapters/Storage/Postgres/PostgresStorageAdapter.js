@@ -750,11 +750,27 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
   }
 
-  addFieldIfNotExists(className: string, fieldName: string, type: any) {
+  schemaUpgrade(className: string, schema: SchemaType, conn: any) {
+    debug('schemaUpgrade', { className, schema });
+    conn = conn || this._client;
+    const self = this;
+    
+    return conn.tx('schema-upgrade', function * (t) {
+      const columns = yield t.map('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className }, a => a.column_name);
+      const newColumns = Object.keys(schema.fields)
+        .filter(item => columns.indexOf(item) === -1)
+        .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t));
+      
+      yield t.batch(newColumns);
+    });
+  }
+
+  addFieldIfNotExists(className: string, fieldName: string, type: any, conn: any) {
     // TODO: Must be revised for invalid logic...
     debug('addFieldIfNotExists', {className, fieldName, type});
+    conn = conn || this._client;
     const self = this;
-    return this._client.tx('add-field-if-not-exists', function * (t) {
+    return conn.tx('add-field-if-not-exists', function * (t) {
       if (type.type !== 'Relation') {
         try {
           yield t.none('ALTER TABLE $<className:name> ADD COLUMN $<fieldName:name> $<postgresType:raw>', {
@@ -1591,14 +1607,17 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   performInitialization({ VolatileClassesSchemas }: any) {
+    // TODO: This method needs to be rewritten to make proper use of connections (@vitaly-t)
     debug('performInitialization');
     const promises = VolatileClassesSchemas.map((schema) => {
-      return this.createTable(schema.className, schema).catch((err) => {
-        if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
-          return Promise.resolve();
-        }
-        throw err;
-      });
+      return this.createTable(schema.className, schema)
+        .catch((err) => {
+          if (err.code === PostgresDuplicateRelationError || err.code === Parse.Error.INVALID_CLASS_NAME) {
+            return Promise.resolve();
+          }
+          throw err;
+        })
+        .then(() => this.schemaUpgrade(schema.className, schema));
     });
     return Promise.all(promises)
       .then(() => {
