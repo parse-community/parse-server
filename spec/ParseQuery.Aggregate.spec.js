@@ -254,10 +254,30 @@ describe('Parse.Query Aggregate testing', () => {
     rp.get(Parse.serverURL + '/aggregate/TestObject', options)
       .then((resp) => {
         resp.results.forEach((result) => {
-          expect(result.name !== undefined).toBe(true);
+          expect(result.objectId).not.toBe(undefined);
+          expect(result.name).not.toBe(undefined);
           expect(result.sender).toBe(undefined);
           expect(result.size).toBe(undefined);
           expect(result.score).toBe(undefined);
+        });
+        done();
+      }).catch(done.fail);
+  });
+
+  it('multiple project query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        project: { name: 1, score: 1, sender: 1 },
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        resp.results.forEach((result) => {
+          expect(result.objectId).not.toBe(undefined);
+          expect(result.name).not.toBe(undefined);
+          expect(result.score).not.toBe(undefined);
+          expect(result.sender).not.toBe(undefined);
+          expect(result.size).toBe(undefined);
         });
         done();
       }).catch(done.fail);
@@ -370,6 +390,23 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results.includes('B')).toBe(true);
         done();
       }).catch(done.fail);
+  });
+
+  it('distinct pointer', (done) => {
+    const pointer1 = new TestObject();
+    const pointer2 = new TestObject();
+    const obj1 = new TestObject({ pointer: pointer1 });
+    const obj2 = new TestObject({ pointer: pointer2 });
+    const obj3 = new TestObject({ pointer: pointer1 });
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.distinct('pointer');
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
+      expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
+      done();
+    });
   });
 
   it('distinct class does not exist return empty', (done) => {

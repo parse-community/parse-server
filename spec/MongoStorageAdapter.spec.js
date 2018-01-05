@@ -1,7 +1,7 @@
 'use strict';
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-const MongoClient = require('mongodb').MongoClient;
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const { MongoClient } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
 // These tests are specific to the mongo storage adapter + mongo storage format
