@@ -744,7 +744,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       yield t.tx('create-table-tx', tx => {
         const queries = relations.map(fieldName => ({
-          query: CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId")),
+          query: 'CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId"))',
           values: {joinTable: `_Join:${fieldName}:${className}`}
         }));
         return tx.none(self._pgp.helpers.concat(queries));
