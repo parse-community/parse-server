@@ -743,9 +743,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
         // ELSE: Table already exists, must have been created by a different request. Ignore the error.
       }
       yield t.tx('create-table-tx', tx => {
-        return tx.batch(relations.map(fieldName => {
-          return tx.none('CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId") )', {joinTable: `_Join:${fieldName}:${className}`});
+        const queries = relations.map(fieldName => ({
+          query: CREATE TABLE IF NOT EXISTS $<joinTable:name> ("relatedId" varChar(120), "owningId" varChar(120), PRIMARY KEY("relatedId", "owningId")),
+          values: {joinTable: `_Join:${fieldName}:${className}`}
         }));
+        return tx.none(self._pgp.helpers.concat(queries));
       });
     });
   }
@@ -884,7 +886,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const self = this;
     return this._client.task('get-all-classes', function * (t) {
       yield self._ensureSchemaCollectionExists(t);
-      return yield t.map('SELECT * FROM "_SCHEMA"', null, row => toParseSchema({ className: row.className, ...row.schema }));
+      return yield t.map('SELECT * FROM "_SCHEMA"', [], row => toParseSchema({ className: row.className, ...row.schema }));
     });
   }
 
@@ -1642,9 +1644,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
-    return (conn || this._client).tx(t => t.batch(indexes.map(i => {
-      return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [i.name, className, i.key]);
-    })));
+    const queries = indexes.map(i => ({query: 'CREATE INDEX $1:name ON $2:name ($3:name)', values: [i.name, className, i.key]}));
+    return (conn || this._client).tx(t => t.none(this._pgp.helpers.concat(queries)));
   }
 
   createIndexesIfNeeded(className: string, fieldName: string, type: any, conn: ?any): Promise<void> {
