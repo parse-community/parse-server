@@ -515,12 +515,26 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
+    let isPointerField = false;
+    pipeline = pipeline.map((stage) => {
+      if (stage.$group && stage.$group._id) {
+        const field = stage.$group._id.substring(1);
+        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+          isPointerField = true;
+          stage.$group._id = `$_p_${field}`;
+        }
+      }
+      return stage;
+    });
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
       .then(results => {
         results.forEach(result => {
           if (result.hasOwnProperty('_id')) {
+            if (isPointerField && result._id) {
+              result._id = result._id.split('$')[1];
+            }
             result.objectId = result._id;
             delete result._id;
           }

@@ -96,6 +96,27 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('group by pointer', (done) => {
+    const pointer1 = new TestObject();
+    const pointer2 = new TestObject();
+    const obj1 = new TestObject({ pointer: pointer1 });
+    const obj2 = new TestObject({ pointer: pointer2 });
+    const obj3 = new TestObject({ pointer: pointer1 });
+    const pipeline = [
+      { group: { objectId: '$pointer' } }
+    ];
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(3);
+      expect(results.some(result => result.objectId === pointer1.id)).toEqual(true);
+      expect(results.some(result => result.objectId === pointer2.id)).toEqual(true);
+      expect(results.some(result => result.objectId === null)).toEqual(true);
+      done();
+    });
+  });
+
   it('group sum query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
