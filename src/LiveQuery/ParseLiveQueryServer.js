@@ -244,7 +244,17 @@ class ParseLiveQueryServer {
       logger.verbose('Request: %j', request);
 
       // Check whether this request is a valid request, return error directly if not
-      if (!tv4.validate(request, RequestSchema['general']) || !tv4.validate(request, RequestSchema[request.op])) {
+      var isValid;
+      try{
+        isValid = _tv2.default.validate(request, _RequestSchema2.default['general']) && _tv2.default.validate(request, _RequestSchema2.default[request.op]);
+      }
+      catch (e)
+      {
+        _Client.Client.pushError(parseWebsocket);
+        _logger2.default.error('Connect message error %s', e);
+        return;
+      }
+      if (!isValid) {
         Client.pushError(parseWebsocket, 1, tv4.error.message);
         logger.error('Connect message error %s', tv4.error.message);
         return;
