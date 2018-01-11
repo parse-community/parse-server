@@ -1563,12 +1563,21 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const patterns = [];
         for (const field in stage.$match) {
           const value = stage.$match[field];
+          let isComparator = false;
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {
+              isComparator = true;
               const pgComparator = ParseToPosgresComparator[cmp];
               patterns.push(`${field} ${pgComparator} ${value[cmp]}`);
             }
           });
+          if (schema.fields[field] && schema.fields[field].type && !isComparator) {
+            if (schema.fields[field].type == 'Number') {
+              patterns.push(`"${field}" = ${value}`);
+            } else {
+              patterns.push(`"${field}" = '${value}'`);
+            }
+          }
         }
         wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(' ')}` : '';
       }

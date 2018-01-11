@@ -252,7 +252,7 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
-  it('match query', (done) => {
+  it('match comparison query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         match: { score: { $gt: 15 }},
@@ -264,6 +264,61 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results[0].score).toBe(20);
         done();
       }).catch(done.fail);
+  });
+
+  it('match objectId query', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const pipeline = [
+        { match: { objectId: obj1.id } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0].objectId).toEqual(obj1.id);
+      done();
+    });
+  });
+
+  it('match field query', (done) => {
+    const obj1 = new TestObject({ name: 'TestObject1'});
+    const obj2 = new TestObject({ name: 'TestObject2'});
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const pipeline = [
+        { match: { name: 'TestObject1' } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0].objectId).toEqual(obj1.id);
+      done();
+    });
+  });
+
+  it('match pointer query', (done) => {
+    const pointer1 = new TestObject();
+    const pointer2 = new TestObject();
+    const obj1 = new TestObject({ pointer: pointer1 });
+    const obj2 = new TestObject({ pointer: pointer2 });
+    const obj3 = new TestObject({ pointer: pointer1 });
+
+    Parse.Object.saveAll([pointer1, pointer2, obj1, obj2, obj3]).then(() => {
+      const pipeline = [
+        { match: { pointer: pointer1.id } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      expect(results[0].pointer.objectId).toEqual(pointer1.id);
+      expect(results[1].pointer.objectId).toEqual(pointer1.id);
+      expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
+      expect(results.some(result => result.objectId === obj3.id)).toEqual(true);
+      done();
+    });
   });
 
   it('project query', (done) => {
