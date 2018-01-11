@@ -1,4 +1,4 @@
-export function numberParser(key) {
+function numberParser(key) {
   return function(opt) {
     const intOpt = parseInt(opt);
     if (!Number.isInteger(intOpt)) {
@@ -8,7 +8,7 @@ export function numberParser(key) {
   }
 }
 
-export function numberOrBoolParser(key) {
+function numberOrBoolParser(key) {
   return function(opt) {
     if (typeof opt === 'boolean') {
       return opt;
@@ -23,14 +23,14 @@ export function numberOrBoolParser(key) {
   }
 }
 
-export function objectParser(opt) {
+function objectParser(opt) {
   if (typeof opt == 'object') {
     return opt;
   }
   return JSON.parse(opt)
 }
 
-export function arrayParser(opt) {
+function arrayParser(opt) {
   if (Array.isArray(opt)) {
     return opt;
   } else if (typeof opt === 'string') {
@@ -40,7 +40,7 @@ export function arrayParser(opt) {
   }
 }
 
-export function moduleOrObjectParser(opt) {
+function moduleOrObjectParser(opt) {
   if (typeof opt == 'object')  {
     return opt;
   }
@@ -50,16 +50,26 @@ export function moduleOrObjectParser(opt) {
   return opt;
 }
 
-export function booleanParser(opt) {
+function booleanParser(opt) {
   if (opt == true || opt == 'true' || opt == '1') {
     return true;
   }
   return false;
 }
 
-export function nullParser(opt) {
+function nullParser(opt) {
   if (opt == 'null') {
     return null;
   }
   return opt;
 }
+
+module.exports = {
+  numberParser,
+  numberOrBoolParser,
+  nullParser,
+  booleanParser,
+  moduleOrObjectParser,
+  arrayParser,
+  objectParser
+};

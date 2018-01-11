@@ -5,4 +5,4 @@ allowed in hostnames. While this results in a slightly incorrect parsed result,
 as the hostname field for a mongodb should be an array of replica sets, it's 
 good enough to let us pull out and escape the auth portion of the URL.
 
-See also: https://github.com/ParsePlatform/parse-server/pull/986
+https://github.com/parse-community/parse-server/pull/986

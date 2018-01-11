@@ -5,58 +5,39 @@ var batch = require('./batch'),
   express = require('express'),
   middlewares = require('./middlewares'),
   Parse = require('parse/node').Parse,
-  path = require('path'),
-  url = require('url'),
-  authDataManager = require('./Adapters/Auth');
+  path = require('path');
 
+import { ParseServerOptions,
+  LiveQueryServerOptions }      from './Options';
 import defaults                 from './defaults';
 import * as logging             from './logger';
-import AppCache                 from './cache';
 import Config                   from './Config';
 import PromiseRouter            from './PromiseRouter';
 import requiredParameter        from './requiredParameter';
 import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
 import { ClassesRouter }        from './Routers/ClassesRouter';
 import { FeaturesRouter }       from './Routers/FeaturesRouter';
-import { InMemoryCacheAdapter } from './Adapters/Cache/InMemoryCacheAdapter';
-import { AnalyticsController }  from './Controllers/AnalyticsController';
-import { CacheController }      from './Controllers/CacheController';
-import { AnalyticsAdapter }     from './Adapters/Analytics/AnalyticsAdapter';
-import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
-import { FilesController }      from './Controllers/FilesController';
 import { FilesRouter }          from './Routers/FilesRouter';
 import { FunctionsRouter }      from './Routers/FunctionsRouter';
 import { GlobalConfigRouter }   from './Routers/GlobalConfigRouter';
-import { GridStoreAdapter }     from './Adapters/Files/GridStoreAdapter';
-import { HooksController }      from './Controllers/HooksController';
 import { HooksRouter }          from './Routers/HooksRouter';
 import { IAPValidationRouter }  from './Routers/IAPValidationRouter';
 import { InstallationsRouter }  from './Routers/InstallationsRouter';
-import { loadAdapter }          from './Adapters/AdapterLoader';
-import { LiveQueryController }  from './Controllers/LiveQueryController';
-import { LoggerController }     from './Controllers/LoggerController';
 import { LogsRouter }           from './Routers/LogsRouter';
 import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
 import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
-import { PushController }       from './Controllers/PushController';
-import { PushQueue }            from './Push/PushQueue';
-import { PushWorker }           from './Push/PushWorker';
 import { PushRouter }           from './Routers/PushRouter';
 import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
 import { RolesRouter }          from './Routers/RolesRouter';
 import { SchemasRouter }        from './Routers/SchemasRouter';
 import { SessionsRouter }       from './Routers/SessionsRouter';
-import { UserController }       from './Controllers/UserController';
 import { UsersRouter }          from './Routers/UsersRouter';
 import { PurgeRouter }          from './Routers/PurgeRouter';
-
-import DatabaseController       from './Controllers/DatabaseController';
-import SchemaCache              from './Controllers/SchemaCache';
-import ParsePushAdapter         from 'parse-server-push-adapter';
-import MongoStorageAdapter      from './Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter   from './Adapters/Storage/Postgres/PostgresStorageAdapter';
+import { AudiencesRouter }      from './Routers/AudiencesRouter';
+import { AggregateRouter }      from './Routers/AggregateRouter';
 
 import { ParseServerRESTController } from './ParseServerRESTController';
+import * as controllers from './Controllers';
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -85,189 +66,35 @@ addParseCloud();
 // "javascriptKey": optional key from Parse dashboard
 // "push": optional key from configure push
 // "sessionLength": optional length in seconds for how long Sessions should be valid for
+// "maxLimit": optional upper bound for what can be specified for the 'limit' parameter on queries
 
 class ParseServer {
 
-  constructor({
-    appId = requiredParameter('You must provide an appId!'),
-    masterKey = requiredParameter('You must provide a masterKey!'),
-    appName,
-    analyticsAdapter,
-    filesAdapter,
-    push,
-    scheduledPush = false,
-    loggerAdapter,
-    jsonLogs = defaults.jsonLogs,
-    logsFolder = defaults.logsFolder,
-    verbose = defaults.verbose,
-    logLevel = defaults.level,
-    silent = defaults.silent,
-    databaseURI = defaults.DefaultMongoURI,
-    databaseOptions,
-    databaseAdapter,
-    cloud,
-    collectionPrefix = '',
-    clientKey,
-    javascriptKey,
-    dotNetKey,
-    restAPIKey,
-    webhookKey,
-    fileKey,
-    userSensitiveFields = [],
-    enableAnonymousUsers = defaults.enableAnonymousUsers,
-    allowClientClassCreation = defaults.allowClientClassCreation,
-    oauth = {},
-    auth = {},
-    serverURL = requiredParameter('You must provide a serverURL!'),
-    maxUploadSize = defaults.maxUploadSize,
-    verifyUserEmails = defaults.verifyUserEmails,
-    preventLoginWithUnverifiedEmail = defaults.preventLoginWithUnverifiedEmail,
-    emailVerifyTokenValidityDuration,
-    accountLockout,
-    passwordPolicy,
-    cacheAdapter,
-    emailAdapter,
-    publicServerURL,
-    customPages = {
-      invalidLink: undefined,
-      verifyEmailSuccess: undefined,
-      choosePassword: undefined,
-      passwordResetSuccess: undefined
-    },
-    liveQuery = {},
-    sessionLength = defaults.sessionLength, // 1 Year in seconds
-    expireInactiveSessions = defaults.expireInactiveSessions,
-    revokeSessionOnPasswordReset = defaults.revokeSessionOnPasswordReset,
-    schemaCacheTTL = defaults.schemaCacheTTL, // cache for 5s
-    enableSingleSchemaCache = false,
-    __indexBuildCompletionCallbackForTests = () => {},
-  }) {
+  constructor(options: ParseServerOptions) {
+    injectDefaults(options);
+    const {
+      appId = requiredParameter('You must provide an appId!'),
+      masterKey = requiredParameter('You must provide a masterKey!'),
+      cloud,
+      javascriptKey,
+      serverURL = requiredParameter('You must provide a serverURL!'),
+      __indexBuildCompletionCallbackForTests = () => {},
+    } = options;
     // Initialize the node client SDK automatically
     Parse.initialize(appId, javascriptKey || 'unused', masterKey);
     Parse.serverURL = serverURL;
-    if ((databaseOptions || (databaseURI && databaseURI != defaults.DefaultMongoURI) || collectionPrefix !== '') && databaseAdapter) {
-      throw 'You cannot specify both a databaseAdapter and a databaseURI/databaseOptions/collectionPrefix.';
-    } else if (!databaseAdapter) {
-      databaseAdapter = this.getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions)
-    } else {
-      databaseAdapter = loadAdapter(databaseAdapter)
-    }
 
-    if (!filesAdapter && !databaseURI) {
-      throw 'When using an explicit database adapter, you must also use an explicit filesAdapter.';
-    }
-
-    userSensitiveFields = Array.from(new Set(userSensitiveFields.concat(
-      defaults.userSensitiveFields,
-      userSensitiveFields
-    )));
-
-    const loggerControllerAdapter = loadAdapter(loggerAdapter, WinstonLoggerAdapter, { jsonLogs, logsFolder, verbose, logLevel, silent });
-    const loggerController = new LoggerController(loggerControllerAdapter, appId);
-    logging.setLogger(loggerController);
-
-    const filesControllerAdapter = loadAdapter(filesAdapter, () => {
-      return new GridStoreAdapter(databaseURI);
-    });
-    const filesController = new FilesController(filesControllerAdapter, appId);
-
-    const pushOptions = Object.assign({}, push);
-    const pushQueueOptions = pushOptions.queueOptions || {};
-    if (pushOptions.queueOptions) {
-      delete pushOptions.queueOptions;
-    }
-    // Pass the push options too as it works with the default
-    const pushAdapter = loadAdapter(pushOptions && pushOptions.adapter, ParsePushAdapter, pushOptions);
-    // We pass the options and the base class for the adatper,
-    // Note that passing an instance would work too
-    const pushController = new PushController();
-
-    const hasPushSupport = pushAdapter && push;
-    const hasPushScheduledSupport = pushAdapter && push && scheduledPush;
+    const allControllers = controllers.getControllers(options);
 
     const {
-      disablePushWorker
-    } = pushQueueOptions;
-
-    const pushControllerQueue = new PushQueue(pushQueueOptions);
-    let pushWorker;
-    if (!disablePushWorker) {
-      pushWorker = new PushWorker(pushAdapter, pushQueueOptions);
-    }
-
-    const emailControllerAdapter = loadAdapter(emailAdapter);
-    const userController = new UserController(emailControllerAdapter, appId, { verifyUserEmails });
-
-    const cacheControllerAdapter = loadAdapter(cacheAdapter, InMemoryCacheAdapter, {appId: appId});
-    const cacheController = new CacheController(cacheControllerAdapter, appId);
-
-    const analyticsControllerAdapter = loadAdapter(analyticsAdapter, AnalyticsAdapter);
-    const analyticsController = new AnalyticsController(analyticsControllerAdapter);
-
-    const liveQueryController = new LiveQueryController(liveQuery);
-    const databaseController = new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
-    const hooksController = new HooksController(appId, databaseController, webhookKey);
-
-    const dbInitPromise = databaseController.performInitialization();
-
-    if (Object.keys(oauth).length > 0) {
-      /* eslint-disable no-console */
-      console.warn('oauth option is deprecated and will be removed in a future release, please use auth option instead');
-      if (Object.keys(auth).length > 0) {
-        console.warn('You should use only the auth option.');
-      }
-      /* eslint-enable */
-    }
-
-    auth = Object.assign({}, oauth, auth);
-
-    AppCache.put(appId, {
-      appId,
-      masterKey: masterKey,
-      serverURL: serverURL,
-      collectionPrefix: collectionPrefix,
-      clientKey: clientKey,
-      javascriptKey: javascriptKey,
-      dotNetKey: dotNetKey,
-      restAPIKey: restAPIKey,
-      webhookKey: webhookKey,
-      fileKey: fileKey,
-      analyticsController: analyticsController,
-      cacheController: cacheController,
-      filesController: filesController,
-      pushController: pushController,
-      loggerController: loggerController,
-      hooksController: hooksController,
-      userController: userController,
-      verifyUserEmails: verifyUserEmails,
-      preventLoginWithUnverifiedEmail: preventLoginWithUnverifiedEmail,
-      emailVerifyTokenValidityDuration: emailVerifyTokenValidityDuration,
-      accountLockout: accountLockout,
-      passwordPolicy: passwordPolicy,
-      allowClientClassCreation: allowClientClassCreation,
-      authDataManager: authDataManager(auth, enableAnonymousUsers),
-      appName: appName,
-      publicServerURL: publicServerURL,
-      customPages: customPages,
-      maxUploadSize: maxUploadSize,
-      liveQueryController: liveQueryController,
-      sessionLength: Number(sessionLength),
-      expireInactiveSessions: expireInactiveSessions,
-      jsonLogs,
-      revokeSessionOnPasswordReset,
+      loggerController,
       databaseController,
-      schemaCacheTTL,
-      enableSingleSchemaCache,
-      userSensitiveFields,
-      pushWorker,
-      pushControllerQueue,
-      hasPushSupport,
-      hasPushScheduledSupport
-    });
+      hooksController,
+    } = allControllers;
+    this.config = Config.put(Object.assign({}, options, allControllers));
 
-    Config.validate(AppCache.get(appId));
-    this.config = AppCache.get(appId);
-    Config.setupPasswordValidator(this.config.passwordPolicy);
+    logging.setLogger(loggerController);
+    const dbInitPromise = databaseController.performInitialization();
     hooksController.load();
 
     // Note: Tests will start to fail if any validation happens after this is called.
@@ -287,30 +114,11 @@ class ParseServer {
     }
   }
 
-  getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
-    let protocol;
-    try {
-      const parsedURI = url.parse(databaseURI);
-      protocol = parsedURI.protocol ? parsedURI.protocol.toLowerCase() : null;
-    } catch(e) { /* */ }
-    switch (protocol) {
-    case 'postgres:':
-      return new PostgresStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        databaseOptions
-      });
-    default:
-      return new MongoStorageAdapter({
-        uri: databaseURI,
-        collectionPrefix,
-        mongoOptions: databaseOptions,
-      });
-    }
-  }
-
   get app() {
-    return ParseServer.app(this.config);
+    if (!this._app) {
+      this._app = ParseServer.app(this.config);
+    }
+    return this._app;
   }
 
   handleShutdown() {
@@ -330,7 +138,11 @@ class ParseServer {
       maxUploadSize: maxUploadSize
     }));
 
-    api.use('/health', (req, res) => res.sendStatus(200));
+    api.use('/health', (function(req, res) {
+      res.json({
+        status: 'ok'
+      });
+    }));
 
     api.use('/', bodyParser.urlencoded({extended: false}), new PublicAPIRouter().expressRouter());
 
@@ -344,17 +156,22 @@ class ParseServer {
 
     api.use(middlewares.handleParseErrors);
 
-    //This causes tests to spew some useless warnings, so disable in test
+    // run the following when not testing
     if (!process.env.TESTING) {
+      //This causes tests to spew some useless warnings, so disable in test
+      /* istanbul ignore next */
       process.on('uncaughtException', (err) => {
         if (err.code === "EADDRINUSE") { // user-friendly message for this common error
-          /* eslint-disable no-console */
-          console.error(`Unable to listen on port ${err.port}. The port is already in use.`);
-          /* eslint-enable no-console */
+          process.stderr.write(`Unable to listen on port ${err.port}. The port is already in use.`);
           process.exit(0);
         } else {
           throw err;
         }
+      });
+      // verify the server url after a 'mount' event is received
+      /* istanbul ignore next */
+      api.on('mount', function() {
+        ParseServer.verifyServerUrl();
       });
     }
     if (process.env.PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS === '1') {
@@ -380,7 +197,9 @@ class ParseServer {
       new GlobalConfigRouter(),
       new PurgeRouter(),
       new HooksRouter(),
-      new CloudCodeRouter()
+      new CloudCodeRouter(),
+      new AudiencesRouter(),
+      new AggregateRouter()
     ];
 
     const routes = routers.reduce((memo, router) => {
@@ -393,8 +212,73 @@ class ParseServer {
     return appRouter;
   }
 
-  static createLiveQueryServer(httpServer, config) {
+  start(options: ParseServerOptions, callback: ?()=>void) {
+    const app = express();
+    if (options.middleware) {
+      let middleware;
+      if (typeof options.middleware == 'string') {
+        middleware = require(path.resolve(process.cwd(), options.middleware));
+      } else {
+        middleware = options.middleware; // use as-is let express fail
+      }
+      app.use(middleware);
+    }
+
+    app.use(options.mountPath, this.app);
+    const server = app.listen(options.port, options.host, callback);
+    this.server = server;
+
+    if (options.startLiveQueryServer || options.liveQueryServerOptions) {
+      this.liveQueryServer = ParseServer.createLiveQueryServer(server, options.liveQueryServerOptions);
+    }
+    /* istanbul ignore next */
+    if (!process.env.TESTING) {
+      configureListeners(this);
+    }
+    this.expressApp = app;
+    return this;
+  }
+
+  static start(options: ParseServerOptions, callback: ?()=>void) {
+    const parseServer = new ParseServer(options);
+    return parseServer.start(options, callback);
+  }
+
+  static createLiveQueryServer(httpServer, config: LiveQueryServerOptions) {
+    if (!httpServer || (config && config.port)) {
+      var app = express();
+      httpServer = require('http').createServer(app);
+      httpServer.listen(config.port);
+    }
     return new ParseLiveQueryServer(httpServer, config);
+  }
+
+  static verifyServerUrl(callback) {
+    // perform a health check on the serverURL value
+    if(Parse.serverURL) {
+      const request = require('request');
+      request(Parse.serverURL.replace(/\/$/, "") + "/health", function (error, response, body) {
+        let json;
+        try {
+          json = JSON.parse(body);
+        } catch(e) {
+          json = null;
+        }
+        if (error || response.statusCode !== 200 || !json || json && json.status !== 'ok') {
+          /* eslint-disable no-console */
+          console.warn(`\nWARNING, Unable to connect to '${Parse.serverURL}'.` +
+            ` Cloud code and push notifications may be unavailable!\n`);
+          /* eslint-enable no-console */
+          if(callback) {
+            callback(false);
+          }
+        } else {
+          if(callback) {
+            callback(true);
+          }
+        }
+      });
+    }
   }
 }
 
@@ -402,6 +286,61 @@ function addParseCloud() {
   const ParseCloud = require("./cloud-code/Parse.Cloud");
   Object.assign(Parse.Cloud, ParseCloud);
   global.Parse = Parse;
+}
+
+function injectDefaults(options: ParseServerOptions) {
+  Object.keys(defaults).forEach((key) => {
+    if (!options.hasOwnProperty(key)) {
+      options[key] = defaults[key];
+    }
+  });
+
+  if (!options.hasOwnProperty('serverURL')) {
+    options.serverURL = `http://localhost:${options.port}${options.mountPath}`;
+  }
+
+  options.userSensitiveFields = Array.from(new Set(options.userSensitiveFields.concat(
+    defaults.userSensitiveFields,
+    options.userSensitiveFields
+  )));
+
+  options.masterKeyIps = Array.from(new Set(options.masterKeyIps.concat(
+    defaults.masterKeyIps,
+    options.masterKeyIps
+  )));
+}
+
+// Those can't be tested as it requires a subprocess
+/* istanbul ignore next */
+function configureListeners(parseServer) {
+  const server = parseServer.server;
+  const sockets = {};
+  /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
+    This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
+  server.on('connection', (socket) => {
+    const socketId = socket.remoteAddress + ':' + socket.remotePort;
+    sockets[socketId] = socket;
+    socket.on('close', () => {
+      delete sockets[socketId];
+    });
+  });
+
+  const destroyAliveConnections = function() {
+    for (const socketId in sockets) {
+      try {
+        sockets[socketId].destroy();
+      } catch (e) { /* */ }
+    }
+  }
+
+  const handleShutdown = function() {
+    process.stdout.write('Termination signal received. Shutting down.');
+    destroyAliveConnections();
+    server.close();
+    parseServer.handleShutdown();
+  };
+  process.on('SIGTERM', handleShutdown);
+  process.on('SIGINT', handleShutdown);
 }
 
 export default ParseServer;

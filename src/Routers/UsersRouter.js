@@ -1,6 +1,5 @@
 // These methods handle the User-related routes.
 
-import deepcopy       from 'deepcopy';
 import Parse          from 'parse/node';
 import Config         from '../Config';
 import AccountLockout from '../AccountLockout';
@@ -12,32 +11,24 @@ import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
-  handleFind(req) {
-    req.params.className = '_User';
-    return super.handleFind(req);
+
+  className() {
+    return '_User';
   }
 
-  handleGet(req) {
-    req.params.className = '_User';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    const data = deepcopy(req.body);
-    req.body = data;
-    req.params.className = '_User';
-
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_User';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_User';
-    return super.handleDelete(req);
+  /**
+   * Removes all "_" prefixed properties from an object, except "__type"
+   * @param {Object} obj An object.
+   */
+  static removeHiddenProperties (obj) {
+    for (var key in obj) {
+      if (obj.hasOwnProperty(key)) {
+        // Regexp comes from Parse.Object.prototype.validate
+        if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
+          delete obj[key];
+        }
+      }
+    }
   }
 
   handleMe(req) {
@@ -59,14 +50,7 @@ export class UsersRouter extends ClassesRouter {
           user.sessionToken = sessionToken;
 
           // Remove hidden properties.
-          for (var key in user) {
-            if (user.hasOwnProperty(key)) {
-              // Regexp comes from Parse.Object.prototype.validate
-              if (key !== "__type" && !(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
-                delete user[key];
-              }
-            }
-          }
+          UsersRouter.removeHiddenProperties(user);
 
           return { response: user };
         }
@@ -75,35 +59,56 @@ export class UsersRouter extends ClassesRouter {
 
   handleLogIn(req) {
     // Use query parameters instead if provided in url
-    if (!req.body.username && req.query.username) {
-      req.body = req.query;
+    let payload = req.body;
+    if (!payload.username && req.query.username || !payload.email && req.query.email) {
+      payload = req.query;
     }
+    const {
+      username,
+      email,
+      password,
+    } = payload;
 
     // TODO: use the right error codes / descriptions.
-    if (!req.body.username) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username is required.');
+    if (!username && !email) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
     }
-    if (!req.body.password) {
+    if (!password) {
       throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
     }
-    if (typeof req.body.username !== 'string' || typeof req.body.password !== 'string') {
+    if (typeof password !== 'string'
+        || email && typeof email !== 'string'
+        || username && typeof username !== 'string') {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
     }
 
     let user;
     let isValidPassword = false;
-
-    return req.config.database.find('_User', { username: req.body.username })
+    let query;
+    if (email && username) {
+      query = { email, username };
+    } else if (email) {
+      query = { email };
+    } else {
+      query = { $or: [{ username } , { email: username }] };
+    }
+    return req.config.database.find('_User', query)
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
-        user = results[0];
+
+        if (results.length > 1) { // corner case where user1 has username == user2 email
+          req.config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
+          user = results.filter((user) =>  user.username === username)[0];
+        } else {
+          user = results[0];
+        }
 
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
         }
-        return passwordCrypto.compare(req.body.password, user.password);
+        return passwordCrypto.compare(password, user.password);
       })
       .then((correct) => {
         isValidPassword = correct;
@@ -141,8 +146,11 @@ export class UsersRouter extends ClassesRouter {
         user.sessionToken = token;
         delete user.password;
 
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
         // Sometimes the authData still has null on that keys
-        // https://github.com/ParsePlatform/parse-server/issues/935
+        // https://github.com/parse-community/parse-server/issues/935
         if (user.authData) {
           Object.keys(user.authData).forEach((provider) => {
             if (user.authData[provider] === null) {
@@ -280,6 +288,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('PUT', '/users/:objectId', req => { return this.handleUpdate(req); });
     this.route('DELETE', '/users/:objectId', req => { return this.handleDelete(req); });
     this.route('GET', '/login', req => { return this.handleLogIn(req); });
+    this.route('POST', '/login', req => { return this.handleLogIn(req); });
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });

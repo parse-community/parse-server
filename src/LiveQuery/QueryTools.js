@@ -90,6 +90,25 @@ function queryHash(query) {
 }
 
 /**
+ * contains -- Determines if an object is contained in a list with special handling for Parse pointers.
+ */
+function contains(haystack: Array, needle: any): boolean {
+  if (needle && needle.__type && needle.__type === 'Pointer') {
+    for (const i in haystack) {
+      const ptr = haystack[i];
+      if (typeof ptr === 'string' && ptr === needle.objectId) {
+        return true;
+      }
+      if (ptr.className === needle.className &&
+          ptr.objectId === needle.objectId) {
+        return true;
+      }
+    }
+    return false;
+  }
+  return haystack.indexOf(needle) > -1;
+}
+/**
  * matchesQuery -- Determines if an object would be returned by a Parse Query
  * It's a lightweight, where-clause only implementation of a full query engine.
  * Since we find queries that match objects, rather than objects that match
@@ -207,12 +226,12 @@ function matchesKeyConstraints(object, key, constraints) {
       }
       break;
     case '$in':
-      if (compareTo.indexOf(object[key]) < 0) {
+      if (!contains(compareTo, object[key])) {
         return false;
       }
       break;
     case '$nin':
-      if (compareTo.indexOf(object[key]) > -1) {
+      if (contains(compareTo, object[key])) {
         return false;
       }
       break;
@@ -227,8 +246,8 @@ function matchesKeyConstraints(object, key, constraints) {
       const propertyExists = typeof object[key] !== 'undefined';
       const existenceIsRequired = constraints['$exists'];
       if (typeof constraints['$exists'] !== 'boolean') {
-          // The SDK will never submit a non-boolean for $exists, but if someone
-          // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.
+        // The SDK will never submit a non-boolean for $exists, but if someone
+        // tries to submit a non-boolean for $exits outside the SDKs, just ignore it.
         break;
       }
       if ((!propertyExists && existenceIsRequired) || (propertyExists && !existenceIsRequired)) {
@@ -240,17 +259,17 @@ function matchesKeyConstraints(object, key, constraints) {
       if (typeof compareTo === 'object') {
         return compareTo.test(object[key]);
       }
-        // JS doesn't support perl-style escaping
+      // JS doesn't support perl-style escaping
       var expString = '';
       var escapeEnd = -2;
       var escapeStart = compareTo.indexOf('\\Q');
       while (escapeStart > -1) {
-          // Add the unescaped portion
+        // Add the unescaped portion
         expString += compareTo.substring(escapeEnd + 2, escapeStart);
         escapeEnd = compareTo.indexOf('\\E', escapeStart);
         if (escapeEnd > -1) {
           expString += compareTo.substring(escapeStart + 2, escapeEnd)
-              .replace(/\\\\\\\\E/g, '\\E').replace(/\W/g, '\\$&');
+            .replace(/\\\\\\\\E/g, '\\E').replace(/\W/g, '\\$&');
         }
 
         escapeStart = compareTo.indexOf('\\Q', escapeEnd);
@@ -262,30 +281,36 @@ function matchesKeyConstraints(object, key, constraints) {
       }
       break;
     case '$nearSphere':
+      if (!compareTo || !object[key]) {
+        return false;
+      }
       var distance = compareTo.radiansTo(object[key]);
       var max = constraints.$maxDistance || Infinity;
       return distance <= max;
     case '$within':
+      if (!compareTo || !object[key]) {
+        return false;
+      }
       var southWest = compareTo.$box[0];
       var northEast = compareTo.$box[1];
       if (southWest.latitude > northEast.latitude ||
             southWest.longitude > northEast.longitude) {
-          // Invalid box, crosses the date line
+        // Invalid box, crosses the date line
         return false;
       }
       return (
-          object[key].latitude > southWest.latitude &&
+        object[key].latitude > southWest.latitude &&
           object[key].latitude < northEast.latitude &&
           object[key].longitude > southWest.longitude &&
           object[key].longitude < northEast.longitude
       );
     case '$options':
-        // Not a query type, but a way to add options to $regex. Ignore and
-        // avoid the default
+      // Not a query type, but a way to add options to $regex. Ignore and
+      // avoid the default
       break;
     case '$maxDistance':
-        // Not a query type, but a way to add a cap to $nearSphere. Ignore and
-        // avoid the default
+      // Not a query type, but a way to add a cap to $nearSphere. Ignore and
+      // avoid the default
       break;
     case '$select':
       return false;

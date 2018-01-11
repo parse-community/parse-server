@@ -1,19 +1,45 @@
 ![Parse Server logo](.github/parse-server-logo.png?raw=true)
 
+[![Backers on Open Collective](https://opencollective.com/parse-server/backers/badge.svg)](#backers) [![Sponsors on Open Collective](https://opencollective.com/parse-server/sponsors/badge.svg)](#sponsors)
 [![Build Status](https://img.shields.io/travis/parse-community/parse-server/master.svg?style=flat)](https://travis-ci.org/parse-community/parse-server)
 [![Coverage Status](https://img.shields.io/codecov/c/github/parse-community/parse-server/master.svg)](https://codecov.io/github/parse-community/parse-server?branch=master)
 [![npm version](https://img.shields.io/npm/v/parse-server.svg?style=flat)](https://www.npmjs.com/package/parse-server)
-
 [![Join Chat](https://img.shields.io/badge/gitter-join%20chat%20%E2%86%92-brightgreen.svg)](https://gitter.im/ParsePlatform/Chat)
+[![Greenkeeper badge](https://badges.greenkeeper.io/parse-community/parse-server.svg)](https://greenkeeper.io/)
 
-Parse Server is an [open source version of the Parse backend](http://blog.parse.com/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
+Parse Server is an [open source version of the Parse backend](http://blog.parseplatform.org/announcements/introducing-parse-server-and-the-database-migration-tool/) that can be deployed to any infrastructure that can run Node.js.
 
 Parse Server works with the Express web application framework. It can be added to existing web applications, or run by itself.
 
+- [Getting Started](#getting-started)
+    - [Running Parse Server](#running-parse-server)
+        - [Locally](#locally)
+        - [Docker](#inside-a-docker-container)
+        - [Saving an Object](#saving-your-first-object)
+        - [Connect an SDK](#connect-your-app-to-parse-server)
+    - [Running elsewhere](#running-parse-server-elsewhere)
+        - [Sample Application](#parse-server-sample-application)
+        - [Parse Server + Express](#parse-server--express)
+    - [Logging](#logging)
+- [Documentation](#documentation)
+    - [Configuration](#configuration)
+        - [Basic Options](#basic-options)
+        - [Client Key Options](#client-key-options)
+        - [Advanced Options](#advanced-options)
+            - [Logging](#logging-1)
+            - [Email Verification & Password Reset](#email-verification-and-password-reset)
+        - [Using Environment Variables](#using-environment-variables-to-configure-parse-server)
+        - [Available Adapters](#available-adapters)
+        - [Configuring File Adapters](#configuring-file-adapters)
+- [Support](#support)
+- [Ride the Bleeding Edge](#want-to-ride-the-bleeding-edge)
+- [Contributing](#contributing)
+- [Backers](#backers)
+- [Sponsors](#sponsors)
+
 # Getting Started
 
-
-April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parse.com/learn/parse-server-video-series-april-2016/](http://blog.parse.com/learn/parse-server-video-series-april-2016/)
+April 2016 - We created a series of video screencasts, please check them out here: [http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/](http://blog.parseplatform.org/learn/parse-server-video-series-april-2016/)
 
 The fastest and easiest way to get started is to run MongoDB and Parse Server locally.
 
@@ -170,6 +196,8 @@ Logs are also be viewable in Parse Dashboard.
 
 **Want logs to be in placed in other folder?** Pass the `PARSE_SERVER_LOGS_FOLDER` environment variable when starting `parse-server`. Usage :-  `PARSE_SERVER_LOGS_FOLDER='<path-to-logs-folder>' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
+**Want to log specific levels?** Pass the `logLevel` parameter when starting `parse-server`. Usage :-  `parse-server --appId APPLICATION_ID --masterKey MASTER_KEY --logLevel LOG_LEVEL`
+
 **Want new line delimited JSON error logs (for consumption by CloudWatch, Google Cloud Logging, etc.)?** Pass the `JSON_LOGS` environment variable when starting `parse-server`. Usage :-  `JSON_LOGS='1' parse-server --appId APPLICATION_ID --masterKey MASTER_KEY`
 
 # Documentation
@@ -212,12 +240,16 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `filesAdapter` - The default behavior (GridStore) can be changed by creating an adapter class (see [`FilesAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Files/FilesAdapter.js)).
 * `maxUploadSize` - Max file size for uploads. Defaults to 20 MB.
 * `loggerAdapter` - The default behavior/transport (File) can be changed by creating an adapter class (see [`LoggerAdapter.js`](https://github.com/parse-community/parse-server/blob/master/src/Adapters/Logger/LoggerAdapter.js)).
+* `logLevel` - Set the specific level you want to log. Defaults to `info`. The default logger uses the npm log levels as defined by the underlying winston logger. Check [Winston logging levels](https://github.com/winstonjs/winston#logging-levels) for details on values to specify.
 * `sessionLength` - The length of time in seconds that a session should be valid for. Defaults to 31536000 seconds (1 year).
+* `maxLimit` - The maximum value supported for the limit option on queries. Defaults to unlimited.
 * `revokeSessionOnPasswordReset` - When a user changes their password, either through the reset password email or while logged in, all sessions are revoked if this is true. Set to false if you don't want to revoke sessions.
 * `accountLockout` - Lock account when a malicious user is attempting to determine an account password by trial and error.
 * `passwordPolicy` - Optional password policy rules to enforce.
 * `customPages` - A hash with urls to override email verification links, password reset links and specify frame url for masking user-facing pages. Available keys: `parseFrameURL`, `invalidLink`, `choosePassword`, `passwordResetSuccess`, `verifyEmailSuccess`.
 * `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
+* `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
+* `readOnlyMasterKey` -  A masterKey that has full read access to the data, but no write access. This key should be treated the same way as your masterKey, keeping it private.
 
 ##### Logging
 
@@ -262,7 +294,7 @@ var server = ParseServer({
   appName: 'Parse App',
   // The email adapter
   emailAdapter: {
-    module: 'parse-server-simple-mailgun-adapter',
+    module: '@parse/simple-mailgun-adapter',
     options: {
       // The address that your emails come from
       fromAddress: 'parse@example.com',
@@ -302,8 +334,10 @@ You can also use other email adapters contributed by the community such as:
 - [parse-server-mandrill-adapter](https://www.npmjs.com/package/parse-server-mandrill-adapter)
 - [parse-server-simple-ses-adapter](https://www.npmjs.com/package/parse-server-simple-ses-adapter)
 - [parse-server-mailgun-adapter-template](https://www.npmjs.com/package/parse-server-mailgun-adapter-template)
+- [parse-server-sendinblue-adapter](https://www.npmjs.com/package/parse-server-sendinblue-adapter)
 - [parse-server-mailjet-adapter](https://www.npmjs.com/package/parse-server-mailjet-adapter)
 - [simple-parse-smtp-adapter](https://www.npmjs.com/package/simple-parse-smtp-adapter)
+- [parse-server-generic-email-adapter](https://www.npmjs.com/package/parse-server-generic-email-adapter)
 
 ### Using environment variables to configure Parse Server
 
@@ -327,7 +361,12 @@ $ PORT=8080 parse-server --appId APPLICATION_ID --masterKey MASTER_KEY
 For the full list of configurable environment variables, run `parse-server --help`.
 
 ### Available Adapters
-[Parse Server Modules (Adapters)](https://github.com/parse-server-modules)
+
+All official adapters are distributed as scoped pacakges on [npm (@parse)](https://www.npmjs.com/search?q=scope%3Aparse).
+
+Some well maintained adapters are also available on the [Parse Server Modules](https://github.com/parse-server-modules) organization.
+
+You can also find more adapters maintained by the community by searching on [npm](https://www.npmjs.com/search?q=parse-server%20adapter&page=1&ranking=optimal).
 
 ### Configuring File Adapters
 
@@ -370,3 +409,76 @@ We really want Parse to be yours, to see it grow and thrive in the open source c
 -----
 
 As of April 5, 2017, Parse, LLC has transferred this code to the parse-community organization, and will no longer be contributing to or distributing this code.
+
+
+# Backers
+
+Support us with a monthly donation and help us continue our activities. [[Become a backer](https://opencollective.com/parse-server#backer)]
+
+<a href="https://opencollective.com/parse-server/backer/0/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/0/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/1/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/1/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/2/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/2/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/3/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/3/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/4/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/4/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/5/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/5/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/6/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/6/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/7/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/7/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/8/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/8/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/9/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/9/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/10/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/10/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/11/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/11/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/12/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/12/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/13/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/13/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/14/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/14/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/15/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/15/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/16/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/16/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/17/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/17/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/18/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/18/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/19/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/19/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/20/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/20/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/21/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/21/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/22/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/22/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/23/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/23/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/24/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/24/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/25/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/25/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/26/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/26/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/27/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/27/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/28/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/28/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/backer/29/website" target="_blank"><img src="https://opencollective.com/parse-server/backer/29/avatar.svg"></a>
+
+
+# Sponsors
+
+Become a sponsor and get your logo on our README on Github with a link to your site. [[Become a sponsor](https://opencollective.com/parse-server#sponsor)]
+
+<a href="https://opencollective.com/parse-server/sponsor/0/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/0/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/1/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/1/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/2/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/2/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/3/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/3/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/4/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/4/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/5/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/5/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/6/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/6/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/7/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/7/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/8/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/8/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/9/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/9/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/10/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/10/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/11/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/11/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/12/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/12/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/13/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/13/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/14/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/14/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/15/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/15/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/16/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/16/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/17/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/17/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/18/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/18/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/19/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/19/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/20/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/20/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/21/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/21/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/22/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/22/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/23/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/23/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/24/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/24/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/25/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/25/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/26/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/26/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/27/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/27/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/28/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/28/avatar.svg"></a>
+<a href="https://opencollective.com/parse-server/sponsor/29/website" target="_blank"><img src="https://opencollective.com/parse-server/sponsor/29/avatar.svg"></a>
+

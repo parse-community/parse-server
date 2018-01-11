@@ -5,6 +5,7 @@
 import AppCache from './cache';
 import SchemaCache from './Controllers/SchemaCache';
 import DatabaseController from './Controllers/DatabaseController';
+import net from 'net';
 
 function removeTrailingSlash(str) {
   if (!str) {
@@ -17,62 +18,34 @@ function removeTrailingSlash(str) {
 }
 
 export class Config {
-  constructor(applicationId: string, mount: string) {
+  static get(applicationId: string, mount: string) {
     const cacheInfo = AppCache.get(applicationId);
     if (!cacheInfo) {
       return;
     }
+    const config = new Config();
+    config.applicationId = applicationId;
+    Object.keys(cacheInfo).forEach((key) => {
+      if (key == 'databaseController') {
+        const schemaCache = new SchemaCache(cacheInfo.cacheController,
+          cacheInfo.schemaCacheTTL,
+          cacheInfo.enableSingleSchemaCache);
+        config.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
+      } else {
+        config[key] = cacheInfo[key];
+      }
+    });
+    config.mount = removeTrailingSlash(mount);
+    config.generateSessionExpiresAt = config.generateSessionExpiresAt.bind(config);
+    config.generateEmailVerifyTokenExpiresAt = config.generateEmailVerifyTokenExpiresAt.bind(config);
+    return config;
+  }
 
-    this.applicationId = applicationId;
-    this.jsonLogs = cacheInfo.jsonLogs;
-    this.masterKey = cacheInfo.masterKey;
-    this.clientKey = cacheInfo.clientKey;
-    this.javascriptKey = cacheInfo.javascriptKey;
-    this.dotNetKey = cacheInfo.dotNetKey;
-    this.restAPIKey = cacheInfo.restAPIKey;
-    this.webhookKey = cacheInfo.webhookKey;
-    this.fileKey = cacheInfo.fileKey;
-    this.allowClientClassCreation = cacheInfo.allowClientClassCreation;
-    this.userSensitiveFields = cacheInfo.userSensitiveFields;
-
-    // Create a new DatabaseController per request
-    if (cacheInfo.databaseController) {
-      const schemaCache = new SchemaCache(cacheInfo.cacheController, cacheInfo.schemaCacheTTL, cacheInfo.enableSingleSchemaCache);
-      this.database = new DatabaseController(cacheInfo.databaseController.adapter, schemaCache);
-    }
-
-    this.schemaCacheTTL = cacheInfo.schemaCacheTTL;
-    this.enableSingleSchemaCache = cacheInfo.enableSingleSchemaCache;
-
-    this.serverURL = cacheInfo.serverURL;
-    this.publicServerURL = removeTrailingSlash(cacheInfo.publicServerURL);
-    this.verifyUserEmails = cacheInfo.verifyUserEmails;
-    this.preventLoginWithUnverifiedEmail = cacheInfo.preventLoginWithUnverifiedEmail;
-    this.emailVerifyTokenValidityDuration = cacheInfo.emailVerifyTokenValidityDuration;
-    this.accountLockout = cacheInfo.accountLockout;
-    this.passwordPolicy = cacheInfo.passwordPolicy;
-    this.appName = cacheInfo.appName;
-
-    this.analyticsController = cacheInfo.analyticsController;
-    this.cacheController = cacheInfo.cacheController;
-    this.hooksController = cacheInfo.hooksController;
-    this.filesController = cacheInfo.filesController;
-    this.pushController = cacheInfo.pushController;
-    this.pushControllerQueue = cacheInfo.pushControllerQueue;
-    this.pushWorker = cacheInfo.pushWorker;
-    this.hasPushSupport = cacheInfo.hasPushSupport;
-    this.hasPushScheduledSupport = cacheInfo.hasPushScheduledSupport;
-    this.loggerController = cacheInfo.loggerController;
-    this.userController = cacheInfo.userController;
-    this.authDataManager = cacheInfo.authDataManager;
-    this.customPages = cacheInfo.customPages || {};
-    this.mount = removeTrailingSlash(mount);
-    this.liveQueryController = cacheInfo.liveQueryController;
-    this.sessionLength = cacheInfo.sessionLength;
-    this.expireInactiveSessions = cacheInfo.expireInactiveSessions;
-    this.generateSessionExpiresAt = this.generateSessionExpiresAt.bind(this);
-    this.generateEmailVerifyTokenExpiresAt = this.generateEmailVerifyTokenExpiresAt.bind(this);
-    this.revokeSessionOnPasswordReset = cacheInfo.revokeSessionOnPasswordReset;
+  static put(serverConfiguration) {
+    Config.validate(serverConfiguration);
+    AppCache.put(serverConfiguration.appId, serverConfiguration);
+    Config.setupPasswordValidator(serverConfiguration.passwordPolicy);
+    return serverConfiguration;
   }
 
   static validate({
@@ -83,10 +56,19 @@ export class Config {
     revokeSessionOnPasswordReset,
     expireInactiveSessions,
     sessionLength,
+    maxLimit,
     emailVerifyTokenValidityDuration,
     accountLockout,
-    passwordPolicy
+    passwordPolicy,
+    masterKeyIps,
+    masterKey,
+    readOnlyMasterKey,
   }) {
+
+    if (masterKey === readOnlyMasterKey) {
+      throw new Error('masterKey and readOnlyMasterKey should be different');
+    }
+
     const emailAdapter = userController.adapter;
     if (verifyUserEmails) {
       this.validateEmailConfiguration({emailAdapter, appName, publicServerURL, emailVerifyTokenValidityDuration});
@@ -107,6 +89,10 @@ export class Config {
     }
 
     this.validateSessionConfiguration(sessionLength, expireInactiveSessions);
+
+    this.validateMasterKeyIps(masterKeyIps);
+
+    this.validateMaxLimit(maxLimit);
   }
 
   static validateAccountLockoutPolicy(accountLockout) {
@@ -183,6 +169,14 @@ export class Config {
     }
   }
 
+  static validateMasterKeyIps(masterKeyIps) {
+    for (const ip of masterKeyIps) {
+      if(!net.isIP(ip)){
+        throw `Invalid ip in masterKeyIps: ${ip}`;
+      }
+    }
+  }
+
   get mount() {
     var mount = this._mount;
     if (this.publicServerURL) {
@@ -203,6 +197,12 @@ export class Config {
       else if (sessionLength <= 0) {
         throw 'Session length must be a value greater than 0.'
       }
+    }
+  }
+
+  static validateMaxLimit(maxLimit) {
+    if (maxLimit <= 0) {
+      throw 'Max limit must be a value greater than 0.'
     }
   }
 
