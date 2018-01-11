@@ -266,6 +266,22 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('match multiple comparison query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        match: { score: { $gt: 5, $lt: 15 }},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(3);
+        expect(resp.results[0].score).toBe(10);
+        expect(resp.results[1].score).toBe(10);
+        expect(resp.results[2].score).toBe(10);
+        done();
+      }).catch(done.fail);
+  });
+
   it('match objectId query', (done) => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();

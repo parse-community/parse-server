@@ -1578,17 +1578,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const patterns = [];
         for (const field in stage.$match) {
           const value = stage.$match[field];
-          let isComparator = false;
+          const matchPatterns = [];
           Object.keys(ParseToPosgresComparator).forEach(cmp => {
             if (value[cmp]) {
-              isComparator = true;
               const pgComparator = ParseToPosgresComparator[cmp];
-              patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
+              matchPatterns.push(`($${index}:name ${pgComparator} $${index + 1})`);
               values.push(field, toPostgresValue(value[cmp]));
               index += 2;
             }
           });
-          if (schema.fields[field] && schema.fields[field].type && !isComparator) {
+          if (matchPatterns.length > 0) {
+            patterns.push(matchPatterns.join(' AND '));
+          }
+          if (schema.fields[field] && schema.fields[field].type && matchPatterns.length === 0) {
             patterns.push(`$${index}:name = $${index + 1}`);
             values.push(field, value);
             index += 2;
@@ -1612,10 +1614,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
         const sorting = keys.map((key) => {
           const transformer = sort[key] === 1 ? 'ASC' : 'DESC';
           const order = `$${index}:name ${transformer}`;
-          values.push(key);
           index += 1;
           return order;
         }).join();
+        values.push(...keys);
         sortPattern = sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
