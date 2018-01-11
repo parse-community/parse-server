@@ -1507,6 +1507,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any) {
     debug('aggregate', className, pipeline);
     const values = [className];
+    let index = 2;
     let columns: string[] = [];
     let countField = null;
     let wherePattern = '';
@@ -1523,26 +1524,38 @@ export class PostgresStorageAdapter implements StorageAdapter {
             continue;
           }
           if (field === '_id') {
-            columns.push(`${transformAggregateField(value)} AS "objectId"`);
-            groupPattern = `GROUP BY ${transformAggregateField(value)}`;
+            columns.push(`$${index}:name AS "objectId"`);
+            groupPattern = `GROUP BY $${index}:name`;
+            values.push(transformAggregateField(value));
+            index += 1;
             continue;
           }
           if (value.$sum) {
             if (typeof value.$sum === 'string') {
-              columns.push(`SUM(${transformAggregateField(value.$sum)}) AS "${field}"`);
+              columns.push(`SUM($${index}:name) AS $${index + 1}:name`);
+              values.push(transformAggregateField(value.$sum), field);
+              index += 2;
             } else {
               countField = field;
-              columns.push(`COUNT(*) AS "${field}"`);
+              columns.push(`COUNT(*) AS $${index}:name`);
+              values.push(field);
+              index += 1;
             }
           }
           if (value.$max) {
-            columns.push(`MAX(${transformAggregateField(value.$max)}) AS "${field}"`);
+            columns.push(`MAX($${index}:name) AS $${index + 1}:name`);
+            values.push(transformAggregateField(value.$max), field);
+            index += 2;
           }
           if (value.$min) {
-            columns.push(`MIN(${transformAggregateField(value.$min)}) AS "${field}"`);
+            columns.push(`MIN($${index}:name) AS $${index + 1}:name`);
+            values.push(transformAggregateField(value.$min), field);
+            index += 2;
           }
           if (value.$avg) {
-            columns.push(`AVG(${transformAggregateField(value.$avg)}) AS "${field}"`);
+            columns.push(`AVG($${index}:name) AS $${index + 1}:name`);
+            values.push(transformAggregateField(value.$avg), field);
+            index += 2;
           }
         }
       } else {
@@ -1555,7 +1568,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
         for (const field in stage.$project) {
           const value = stage.$project[field];
           if ((value === 1 || value === true)) {
-            columns.push(field);
+            columns.push(`$${index}:name`);
+            values.push(field);
+            index += 1;
           }
         }
       }
@@ -1568,34 +1583,40 @@ export class PostgresStorageAdapter implements StorageAdapter {
             if (value[cmp]) {
               isComparator = true;
               const pgComparator = ParseToPosgresComparator[cmp];
-              patterns.push(`${field} ${pgComparator} ${value[cmp]}`);
+              patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
+              values.push(field, toPostgresValue(value[cmp]));
+              index += 2;
             }
           });
           if (schema.fields[field] && schema.fields[field].type && !isComparator) {
-            if (schema.fields[field].type == 'Number') {
-              patterns.push(`"${field}" = ${value}`);
-            } else {
-              patterns.push(`"${field}" = '${value}'`);
-            }
+            patterns.push(`$${index}:name = $${index + 1}`);
+            values.push(field, value);
+            index += 2;
           }
         }
         wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(' ')}` : '';
       }
       if (stage.$limit) {
-        limitPattern = `LIMIT ${stage.$limit}`;
+        limitPattern = `LIMIT $${index}`;
+        values.push(stage.$limit);
+        index += 1;
       }
       if (stage.$skip) {
-        skipPattern = `OFFSET ${stage.$skip}`;
+        skipPattern = `OFFSET $${index}`;
+        values.push(stage.$skip);
+        index += 1;
       }
       if (stage.$sort) {
         const sort = stage.$sort;
-        const sorting = Object.keys(sort).map((key) => {
-          if (sort[key] === 1) {
-            return `"${key}" ASC`;
-          }
-          return `"${key}" DESC`;
+        const keys = Object.keys(sort);
+        const sorting = keys.map((key) => {
+          const transformer = sort[key] === 1 ? 'ASC' : 'DESC';
+          const order = `$${index}:name ${transformer}`;
+          values.push(key);
+          index += 1;
+          return order;
         }).join();
-        sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
+        sortPattern = sort !== undefined && sorting.length > 0 ? `ORDER BY ${sorting}` : '';
       }
     }
 
