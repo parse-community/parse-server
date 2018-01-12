@@ -1576,19 +1576,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       if (stage.$match) {
         const patterns = [];
+        const orOrAnd = stage.$match.hasOwnProperty('$or') ? ' OR ' : ' AND ';
+
+        if (stage.$match.$or) {
+          const collapse = {};
+          stage.$match.$or.forEach((element) => {
+            for (const key in element) {
+              collapse[key] = element[key];
+            }
+          });
+          stage.$match = collapse;
+        }
         for (const field in stage.$match) {
           const value = stage.$match[field];
           const matchPatterns = [];
-          Object.keys(ParseToPosgresComparator).forEach(cmp => {
+          Object.keys(ParseToPosgresComparator).forEach((cmp) => {
             if (value[cmp]) {
               const pgComparator = ParseToPosgresComparator[cmp];
-              matchPatterns.push(`($${index}:name ${pgComparator} $${index + 1})`);
+              matchPatterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
               values.push(field, toPostgresValue(value[cmp]));
               index += 2;
             }
           });
           if (matchPatterns.length > 0) {
-            patterns.push(matchPatterns.join(' AND '));
+            patterns.push(`(${matchPatterns.join(' AND ')})`);
           }
           if (schema.fields[field] && schema.fields[field].type && matchPatterns.length === 0) {
             patterns.push(`$${index}:name = $${index + 1}`);
@@ -1596,7 +1607,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             index += 2;
           }
         }
-        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(' ')}` : '';
+        wherePattern = patterns.length > 0 ? `WHERE ${patterns.join(` ${orOrAnd} `)}` : '';
       }
       if (stage.$limit) {
         limitPattern = `LIMIT $${index}`;

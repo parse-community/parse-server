@@ -14,10 +14,10 @@ const masterKeyOptions = {
 }
 
 const loadTestData = () => {
-  const data1 = {score: 10, name: 'foo', sender: {group: 'A'}, size: ['S', 'M']};
-  const data2 = {score: 10, name: 'foo', sender: {group: 'A'}, size: ['M', 'L']};
-  const data3 = {score: 10, name: 'bar', sender: {group: 'B'}, size: ['S']};
-  const data4 = {score: 20, name: 'dpl', sender: {group: 'B'}, size: ['S']};
+  const data1 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 900, size: ['S', 'M']};
+  const data2 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 800, size: ['M', 'L']};
+  const data3 = {score: 10, name: 'bar', sender: {group: 'B'}, views: 700, size: ['S']};
+  const data4 = {score: 20, name: 'dpl', sender: {group: 'B'}, views: 700, size: ['S']};
   const obj1 = new TestObject(data1);
   const obj2 = new TestObject(data2);
   const obj3 = new TestObject(data3);
@@ -278,6 +278,56 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results[0].score).toBe(10);
         expect(resp.results[1].score).toBe(10);
         expect(resp.results[2].score).toBe(10);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('match complex comparison query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        match: { score: { $gt: 5, $lt: 15 }, views: { $gt: 850, $lt: 1000 }},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(1);
+        expect(resp.results[0].score).toBe(10);
+        expect(resp.results[0].views).toBe(900);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('match comparison and equality query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        match: { score: { $gt: 5, $lt: 15 }, views: 900},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(1);
+        expect(resp.results[0].score).toBe(10);
+        expect(resp.results[0].views).toBe(900);
+        done();
+      }).catch(done.fail);
+  });
+
+  it('match $or query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        match: { $or: [{ score: { $gt: 15, $lt: 25 } }, { views: { $gt: 750, $lt: 850 } }]},
+      }
+    });
+    rp.get(Parse.serverURL + '/aggregate/TestObject', options)
+      .then((resp) => {
+        expect(resp.results.length).toBe(2);
+        // Match score { $gt: 15, $lt: 25 }
+        expect(resp.results.some(result => result.score === 20)).toEqual(true);
+        expect(resp.results.some(result => result.views === 700)).toEqual(true);
+
+        // Match view { $gt: 750, $lt: 850 }
+        expect(resp.results.some(result => result.score === 10)).toEqual(true);
+        expect(resp.results.some(result => result.views === 800)).toEqual(true);
         done();
       }).catch(done.fail);
   });
