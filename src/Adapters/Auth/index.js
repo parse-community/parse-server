@@ -1,10 +1,4 @@
-'use strict';
-
-var _AdapterLoader = require('../AdapterLoader');
-
-var _AdapterLoader2 = _interopRequireDefault(_AdapterLoader);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+import loadAdapter from '../AdapterLoader';
 
 const facebook = require('./facebook');
 const instagram = require("./instagram");
@@ -55,8 +49,7 @@ const providers = {
   xiaomi
 };
 
-function authDataValidator(adapter, appIds, options)
-{
+function authDataValidator(adapter, appIds, options) {
   return function (authData)
   {
     return adapter.validateAuthData(authData, options).then(() =>
@@ -75,14 +68,15 @@ function loadAuthAdapter(provider, authOptions) {
   const adapter = Object.assign({}, defaultAdapter);
   const providerOptions = authOptions[provider];
 
-  if (!defaultAdapter && !providerOptions)
+  if (!defaultAdapter && !providerOptions) {
     return;
+  }
 
   const appIds = providerOptions ? providerOptions.appIds : undefined;
 
   // Try the configuration methods
   if (providerOptions) {
-    const optionalAdapter = (0, _AdapterLoader2.default)(providerOptions, undefined, providerOptions);
+    const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
       ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
@@ -115,8 +109,9 @@ module.exports = function (authOptions = {}, enableAnonymousUsers = true)
     if(!providers.hasOwnProperty(provider) &&
         provider !== 'myoauth' &&
         provider !== 'customAuthentication' &&
-        provider !== 'shortLivedAuth')
+        provider !== 'shortLivedAuth') {
       return;
+    }
 
     const {
       adapter,
