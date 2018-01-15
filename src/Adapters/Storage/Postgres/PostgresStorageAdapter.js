@@ -756,13 +756,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('schemaUpgrade', { className, schema });
     conn = conn || this._client;
     const self = this;
-    
+
     return conn.tx('schema-upgrade', function * (t) {
       const columns = yield t.map('SELECT column_name FROM information_schema.columns WHERE table_name = $<className>', { className }, a => a.column_name);
       const newColumns = Object.keys(schema.fields)
         .filter(item => columns.indexOf(item) === -1)
         .map(fieldName => self.addFieldIfNotExists(className, fieldName, schema.fields[fieldName], t));
-      
+
       yield t.batch(newColumns);
     });
   }
@@ -898,7 +898,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client.any('SELECT * FROM "_SCHEMA" WHERE "className"=$<className>', { className })
       .then(result => {
         if (result.length !== 1) {
-          throw undefined;          
+          throw undefined;
         }
         return result[0].schema;
       })
@@ -1269,12 +1269,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const createValue = Object.assign({}, query, update);
     return this.createObject(className, schema, createValue)
       .catch(error => {
-      // ignore duplicate value errors as it's upsert
-      if (error.code !== Parse.Error.DUPLICATE_VALUE) {
-        throw error;
-      }
-      return this.findOneAndUpdate(className, schema, query, update);
-    });
+        // ignore duplicate value errors as it's upsert
+        if (error.code !== Parse.Error.DUPLICATE_VALUE) {
+          throw error;
+        }
+        return this.findOneAndUpdate(className, schema, query, update);
+      });
   }
 
   find(className: string, schema: SchemaType, query: QueryType, { skip, limit, sort, keys }: QueryOptions) {
@@ -1454,7 +1454,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           throw error;
         }
         return 0;
-    });
+      });
   }
 
   distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
