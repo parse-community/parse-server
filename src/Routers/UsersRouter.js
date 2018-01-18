@@ -9,6 +9,7 @@ import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
+import { runLoginHookHandler } from '../triggers';
 
 export class UsersRouter extends ClassesRouter {
 
@@ -141,6 +142,8 @@ export class UsersRouter extends ClassesRouter {
               throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
           }
         }
+        // runLoginHookHandler before session creation passing just user.objectId to avoid current 'user' object mutation
+        runLoginHookHandler(user.objectId);
 
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
