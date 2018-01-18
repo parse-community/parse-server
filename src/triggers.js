@@ -1,5 +1,5 @@
 // triggers.js
-import Parse    from 'parse/node';
+import Parse from 'parse/node';
 import { logger } from './logger';
 
 export const Types = {
@@ -11,12 +11,13 @@ export const Types = {
   afterFind: 'afterFind'
 };
 
-const baseStore = function() {
+const baseStore = function () {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
-  const Triggers = Object.keys(Types).reduce(function(base, key){
+  const LoginHook = {};
+  const Triggers = Object.keys(Types).reduce(function (base, key) {
     base[key] = {};
     return base;
   }, {});
@@ -27,11 +28,12 @@ const baseStore = function() {
     Validators,
     Triggers,
     LiveQuery,
+    LoginHook
   });
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = [ '_Session' ];
+  const restrictedClassNames = ['_Session'];
   if (restrictedClassNames.indexOf(className) != -1) {
     throw `Triggers are not supported for ${className} class.`;
   }
@@ -48,28 +50,34 @@ const _triggerStore = {};
 
 export function addFunction(functionName, handler, validationHandler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Functions[functionName] = handler;
   _triggerStore[applicationId].Validators[functionName] = validationHandler;
 }
 
 export function addJob(jobName, handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Jobs[jobName] = handler;
 }
 
 export function addTrigger(type, className, handler, applicationId) {
   validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
 }
 
 export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].LiveQuery.push(handler);
+}
+
+export function addLoginHook(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LoginHook.handler = handler;
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -201,9 +209,9 @@ export function getRequestQueryObject(triggerType, auth, query, count, config, i
 // Any changes made to the object in a beforeSave will be included.
 export function getResponseObject(request, resolve, reject) {
   return {
-    success: function(response) {
+    success: function (response) {
       if (request.triggerName === Types.afterFind) {
-        if(!response){
+        if (!response) {
           response = request.objects;
         }
         response = response.map(object => {
@@ -213,7 +221,7 @@ export function getResponseObject(request, resolve, reject) {
       }
       // Use the JSON response
       if (response && !request.object.equals(response)
-          && request.triggerName === Types.beforeSave) {
+        && request.triggerName === Types.beforeSave) {
         return resolve(response);
       }
       response = {};
@@ -222,7 +230,7 @@ export function getResponseObject(request, resolve, reject) {
       }
       return resolve(response);
     },
-    error: function(code, message) {
+    error: function (code, message) {
       if (!message) {
         message = code;
         code = Parse.Error.SCRIPT_FAILED;
@@ -289,9 +297,9 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
     const triggerPromise = trigger(request, response);
     if (triggerPromise && typeof triggerPromise.then === "function") {
       return triggerPromise.then(promiseResults => {
-        if(promiseResults) {
+        if (promiseResults) {
           resolve(promiseResults);
-        }else{
+        } else {
           return reject(new Parse.Error(Parse.Error.SCRIPT_FAILED, "AfterFind expect results to be returned in the promise"));
         }
       });
@@ -414,10 +422,9 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     // If triggers do not return a promise, they can run async code parallel
     // to the RestWrite.execute() call.
     var triggerPromise = trigger(request, response);
-    if(triggerType === Types.afterSave || triggerType === Types.afterDelete)
-    {
+    if (triggerType === Types.afterSave || triggerType === Types.afterDelete) {
       logTriggerAfterHook(triggerType, parseObject.className, parseObject.toJSON(), auth);
-      if(triggerPromise && typeof triggerPromise.then === "function") {
+      if (triggerPromise && typeof triggerPromise.then === "function") {
         return triggerPromise.then(resolve, resolve);
       }
       else {
@@ -430,7 +437,7 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
 // Converts a REST-format object to a Parse.Object
 // data is either className or an object
 export function inflate(data, restObject) {
-  var copy = typeof data == 'object' ? data : {className: data};
+  var copy = typeof data == 'object' ? data : { className: data };
   for (var key in restObject) {
     copy[key] = restObject[key];
   }
@@ -440,4 +447,12 @@ export function inflate(data, restObject) {
 export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
   if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
+}
+
+export function runLoginHookHandler(user, applicationId = Parse.applicationId) {
+  if (!_triggerStore ||
+    !_triggerStore[applicationId] ||
+    !_triggerStore[applicationId].LoginHook ||
+    !_triggerStore[applicationId].LoginHook.handler) { return; }
+  _triggerStore[applicationId].LoginHook.handler(user);
 }
