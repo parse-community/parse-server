@@ -52,7 +52,7 @@ ParseCloud.onLiveQueryEvent = function(handler) {
 };
 
 ParseCloud.loginHook = function(handler){
-  triggers.addLoginHook(handler, Parse.applicationId);
+  triggers.addLoginHookHandler(handler, Parse.applicationId);
 };
 
 ParseCloud._removeAllHooks = () => {

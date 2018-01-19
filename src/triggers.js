@@ -16,6 +16,7 @@ const baseStore = function() {
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
+  const LoginHook = {};
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -27,6 +28,7 @@ const baseStore = function() {
     Validators,
     Triggers,
     LiveQuery,
+    LoginHook
   });
 };
 
@@ -70,6 +72,12 @@ export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].LiveQuery.push(handler);
+}
+
+export function addLoginHookHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LoginHook.handler =  handler;
 }
 
 export function removeFunction(functionName, applicationId) {
