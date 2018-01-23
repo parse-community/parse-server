@@ -1,7 +1,9 @@
 /** @flow weak */
 
 import * as triggers        from "../triggers";
+// @flow-disable-next
 import * as Parse           from "parse/node";
+// @flow-disable-next
 import * as request         from "request";
 import { logger }           from '../logger';
 
@@ -28,7 +30,7 @@ export class HooksController {
   }
 
   getFunction(functionName) {
-    return this._getHooks({ functionName: functionName }, 1).then(results => results[0]);
+    return this._getHooks({ functionName: functionName }).then(results => results[0]);
   }
 
   getFunctions() {
@@ -36,7 +38,7 @@ export class HooksController {
   }
 
   getTrigger(className, triggerName) {
-    return this._getHooks({ className: className, triggerName: triggerName }, 1).then(results => results[0]);
+    return this._getHooks({ className: className, triggerName: triggerName }).then(results => results[0]);
   }
 
   getTriggers() {
