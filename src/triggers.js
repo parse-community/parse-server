@@ -76,8 +76,12 @@ export function addLiveQueryEventHandler(handler, applicationId) {
 
 export function addLoginHookHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
-  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
-  _triggerStore[applicationId].LoginHook.handler =  handler;
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
+  if (_triggerStore[applicationId].LoginHook.handler) {
+    throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Only one loginHook can be configured');
+  } else {
+    _triggerStore[applicationId].LoginHook.handler = handler;
+  }
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -450,10 +454,10 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }
 
-export function runLoginHookHandler(userObjId, applicationId = Parse.applicationId) {
+export function runLoginHookHandler(userLoginData, applicationId = Parse.applicationId) {
   if (!_triggerStore ||
     !_triggerStore[applicationId] ||
     !_triggerStore[applicationId].LoginHook ||
     !_triggerStore[applicationId].LoginHook.handler) { return; }
-  _triggerStore[applicationId].LoginHook.handler(userObjId);
+  _triggerStore[applicationId].LoginHook.handler(userLoginData);
 }
