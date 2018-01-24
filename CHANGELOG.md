@@ -10,21 +10,19 @@
 * Improved match aggregate
 * Do not mark the empty pushs as failed 
 * Support pointer in aggregate query
-* Postgres: Refactoring of Postgres Storage Adapter
 * Introduces flow types for storage
-* Support pointer in distinct query
+* Postgres: Refactoring of Postgres Storage Adapter
 * Postgres: Support for multiple projection in aggregate
 * Postgres: performance optimizations
-* Postgres: Support for multiple projection in aggregate
 * Adds infos about vulnerability disclosures
 * Adds ability to login with email when provided as username
 
 #### Bug Fixes
 * Scrub Passwords with URL Encoded Characters
-* PG: Support for multiple projection in aggregate
 * Fixes issue affecting using sorting in beforeFind
 
 #### Dependency Updates:
+* [commander@2.13.0](https://www.npmjs.com/package/commander)
 * [semver@5.5.0](https://www.npmjs.com/package/semver)
 * [pg-promise@7.4.0](https://www.npmjs.com/package/pg-promise)
 * [ws@4.0.0](https://www.npmjs.com/package/ws)
@@ -33,7 +31,7 @@
 
 ##### Devevelopment Dependencies Updates:
 * [nodemon@1.14.11](https://www.npmjs.com/package/nodemon)
-* [flow-bin@0.63.1](https://www.npmjs.com/package/flow-bin)
+* [flow-bin@0.64.0](https://www.npmjs.com/package/flow-bin)
 * [jasmine@2.9.0](https://www.npmjs.com/package/jasmine)
 * [cross-env@5.1.3](https://www.npmjs.com/package/cross-env)
 
