@@ -9,6 +9,7 @@ import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
+import { runLoginHookHandler } from '../triggers';
 
 export class UsersRouter extends ClassesRouter {
 
@@ -141,6 +142,8 @@ export class UsersRouter extends ClassesRouter {
               throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
           }
         }
+        // runLoginHookHandler before session creation passing just user.objectId to avoid current 'user' object mutation
+        runLoginHookHandler(user.objectId);
 
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
@@ -160,6 +163,22 @@ export class UsersRouter extends ClassesRouter {
           if (Object.keys(user.authData).length == 0) {
             delete user.authData;
           }
+        }
+        //runLoginHookHandler before session creation passing copies of user main properties to avoid current 'user' object mutation
+        try {
+          runLoginHookHandler({
+            'objectId': user.objectId,
+            'username': user.username,
+            'email': user.email,
+            'name':user.name,
+            'createdAt':user.createdAt,
+            'updatedAt':user.updatedAt,
+            'authProvider': 'password',
+            'authData': {}
+          });
+        }
+        catch (e) {
+          throw e;
         }
 
         req.config.filesController.expandFilesInObject(req.config, user);

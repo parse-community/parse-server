@@ -51,6 +51,10 @@ ParseCloud.onLiveQueryEvent = function(handler) {
   triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
 };
 
+ParseCloud.loginHook = function(handler){
+  triggers.addLoginHookHandler(handler, Parse.applicationId);
+};
+
 ParseCloud._removeAllHooks = () => {
   triggers._unregisterAll();
 }

@@ -16,6 +16,7 @@ const baseStore = function() {
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
+  const LoginHook = {};
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -27,6 +28,7 @@ const baseStore = function() {
     Validators,
     Triggers,
     LiveQuery,
+    LoginHook
   });
 };
 
@@ -70,6 +72,16 @@ export function addLiveQueryEventHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].LiveQuery.push(handler);
+}
+
+export function addLoginHookHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
+  if (_triggerStore[applicationId].LoginHook.handler) {
+    throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Only one loginHook can be configured');
+  } else {
+    _triggerStore[applicationId].LoginHook.handler = handler;
+  }
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -440,4 +452,20 @@ export function inflate(data, restObject) {
 export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
   if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
+}
+
+<<<<<<< HEAD
+export function runLoginHookHandler(userLoginData, applicationId = Parse.applicationId) {
+=======
+export function runLoginHookHandler(userObjId, applicationId = Parse.applicationId) {
+>>>>>>> f3c660870dfc65bc5739da8a59e25b40b2829111
+  if (!_triggerStore ||
+    !_triggerStore[applicationId] ||
+    !_triggerStore[applicationId].LoginHook ||
+    !_triggerStore[applicationId].LoginHook.handler) { return; }
+<<<<<<< HEAD
+  _triggerStore[applicationId].LoginHook.handler(userLoginData);
+=======
+  _triggerStore[applicationId].LoginHook.handler(userObjId);
+>>>>>>> f3c660870dfc65bc5739da8a59e25b40b2829111
 }
