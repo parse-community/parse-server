@@ -1472,6 +1472,32 @@ describe('beforeFind hooks', () => {
     });
   });
 
+  it('should handle sorting where', (done) => {
+    Parse.Cloud.beforeFind('MyObject', (req) => {
+      const query = req.query;
+      query.ascending('score');
+      return query;
+    });
+
+    const count = 20;
+    const objects = [];
+    while (objects.length != count) {
+      const object = new Parse.Object('MyObject');
+      object.set('score', Math.floor(Math.random() * 100));
+      objects.push(object);
+    }
+    Parse.Object.saveAll(objects).then(() => {
+      const query = new Parse.Query('MyObject');
+      return query.find();
+    }).then((objects) => {
+      let lastScore = -1;
+      objects.forEach((element) => {
+        expect(element.get('score') >= lastScore).toBe(true);
+        lastScore = element.get('score');
+      });
+    }).then(done).catch(done.fail);
+  });
+
   it('should add beforeFind trigger using get API',(done) => {
     const hook = {
       method: function(req) {
