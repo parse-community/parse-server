@@ -1476,7 +1476,6 @@ describe('beforeFind hooks', () => {
     Parse.Cloud.beforeFind('MyObject', (req) => {
       const query = req.query;
       query.ascending('score');
-      console.log(query);
       return query;
     });
 
