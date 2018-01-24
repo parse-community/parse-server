@@ -524,6 +524,20 @@ export class MongoStorageAdapter implements StorageAdapter {
           stage.$group._id = `$_p_${field}`;
         }
       }
+      if (stage.$match) {
+        for (const field in stage.$match) {
+          if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+            const transformMatch = { [`_p_${field}`] : `${className}$${stage.$match[field]}` };
+            stage.$match = transformMatch;
+          }
+          if (field === 'objectId') {
+            const transformMatch = Object.assign({}, stage.$match);
+            transformMatch._id = stage.$match[field];
+            delete transformMatch.objectId;
+            stage.$match = transformMatch;
+          }
+        }
+      }
       return stage;
     });
     readPreference = this._parseReadPreference(readPreference);
