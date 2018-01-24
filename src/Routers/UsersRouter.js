@@ -142,7 +142,6 @@ export class UsersRouter extends ClassesRouter {
               throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
           }
         }
-
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
