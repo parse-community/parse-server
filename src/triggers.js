@@ -454,18 +454,10 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }
 
-<<<<<<< HEAD
 export function runLoginHookHandler(userLoginData, applicationId = Parse.applicationId) {
-=======
-export function runLoginHookHandler(userObjId, applicationId = Parse.applicationId) {
->>>>>>> f3c660870dfc65bc5739da8a59e25b40b2829111
   if (!_triggerStore ||
     !_triggerStore[applicationId] ||
     !_triggerStore[applicationId].LoginHook ||
     !_triggerStore[applicationId].LoginHook.handler) { return; }
-<<<<<<< HEAD
   _triggerStore[applicationId].LoginHook.handler(userLoginData);
-=======
-  _triggerStore[applicationId].LoginHook.handler(userObjId);
->>>>>>> f3c660870dfc65bc5739da8a59e25b40b2829111
 }
