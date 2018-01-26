@@ -9,7 +9,7 @@ import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
-import { runLoginHookHandler } from '../triggers';
+import { runBeforeLoginHandler } from '../triggers';
 
 export class UsersRouter extends ClassesRouter {
 
@@ -161,9 +161,9 @@ export class UsersRouter extends ClassesRouter {
             delete user.authData;
           }
         }
-        //runLoginHookHandler before session creation passing copies of user main properties to avoid current 'user' object mutation
+        //runBeforeLoginHandler before session creation passing copies of user main properties to avoid current 'user' object mutation
         try {
-          runLoginHookHandler({
+          runBeforeLoginHandler({
             'objectId': user.objectId,
             'username': user.username,
             'email': user.email,

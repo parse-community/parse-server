@@ -16,7 +16,7 @@ const baseStore = function() {
   const Functions = {};
   const Jobs = {};
   const LiveQuery = [];
-  const LoginHook = {};
+  const BeforeLogin = {};
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -28,7 +28,7 @@ const baseStore = function() {
     Validators,
     Triggers,
     LiveQuery,
-    LoginHook
+    BeforeLogin
   });
 };
 
@@ -74,13 +74,13 @@ export function addLiveQueryEventHandler(handler, applicationId) {
   _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
-export function addLoginHookHandler(handler, applicationId) {
+export function addBeforeLoginHandler(handler, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] = _triggerStore[applicationId] || baseStore();
-  if (_triggerStore[applicationId].LoginHook.handler) {
+  if (_triggerStore[applicationId].BeforeLogin.handler) {
     throw new Parse.Error(Parse.Error.VALIDATION_ERROR, 'Only one loginHook can be configured');
   } else {
-    _triggerStore[applicationId].LoginHook.handler = handler;
+    _triggerStore[applicationId].BeforeLogin.handler = handler;
   }
 }
 
@@ -458,10 +458,10 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }
 
-export function runLoginHookHandler(userLoginData, applicationId = Parse.applicationId) {
+export function runBeforeLoginHandler(userLoginData, applicationId = Parse.applicationId) {
   if (!_triggerStore ||
     !_triggerStore[applicationId] ||
-    !_triggerStore[applicationId].LoginHook ||
-    !_triggerStore[applicationId].LoginHook.handler) { return; }
-  _triggerStore[applicationId].LoginHook.handler(userLoginData);
+    !_triggerStore[applicationId].BeforeLogin ||
+    !_triggerStore[applicationId].BeforeLogin.handler) { return; }
+  _triggerStore[applicationId].BeforeLogin.handler(userLoginData);
 }

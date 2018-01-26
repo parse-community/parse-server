@@ -1,15 +1,17 @@
+import { setTimeout } from "timers";
+
 "use strict"
 const Parse = require("parse/node");
 
-describe('LoginHook', () => {
+describe('beforeLogin', () => {
   it('should accept only one handler', (done) => {
     expect(() => {
-      Parse.Cloud.loginHook((userLoginData) => {
+      Parse.Cloud.beforeLogin((userLoginData) => {
         console.log(userLoginData);
       });
     }).not.toThrow();
     expect(() => {
-      Parse.Cloud.loginHook((userLoginData) => {
+      Parse.Cloud.beforeLogin((userLoginData) => {
         console.log(userLoginData);
       });
     }).toThrow();
@@ -17,7 +19,7 @@ describe('LoginHook', () => {
   });
 
   it('should not be called on signUp with username/password', (done) => {
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
@@ -33,7 +35,7 @@ describe('LoginHook', () => {
   });
 
   it('should be called with valid userLoginData on login with username/password', (done) => {
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData.objectId).toBeDefined();
       expect(typeof userLoginData.objectId).toEqual('string');
       expect(userLoginData.username).toBeDefined();
@@ -69,7 +71,7 @@ describe('LoginHook', () => {
   });
 
   it("should not be called on login with wrong username", (done) => {
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
@@ -87,7 +89,7 @@ describe('LoginHook', () => {
   });
 
   it("should not be called on login with wrong password", (done) => {
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
@@ -100,7 +102,7 @@ describe('LoginHook', () => {
   });
 
   it("should not be called on 'become'", (done) => {
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
@@ -202,6 +204,7 @@ describe('LoginHook', () => {
       }
     };
   };
+
   it('should not be called on signUp with authProvider', (done) => {
     Parse.Object.enableSingleInstance();
     Parse.User.logOut();
@@ -211,7 +214,7 @@ describe('LoginHook', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       console.log(JSON.stringify(userLoginData, null, 2));
       setTimeout(() => { done.fail('should not be called on signUp with authProvider') }, 1000);
@@ -253,7 +256,7 @@ describe('LoginHook', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData.objectId).toBeDefined();
       expect(typeof userLoginData.objectId).toEqual('string');
       expect(userLoginData.username).toBeDefined();
@@ -312,7 +315,7 @@ describe('LoginHook', () => {
       user2.set('email', 'test@test.test.com');
       // it's a new login with a new and valid token
       defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('1234567');
-      //console.log("let's login (this should trigger loginHook call)");
+      //console.log("let's login (this should trigger beforeLogin call)");
       user2._linkWith('shortLivedAuth', options2).then((model2) => {
         const userQuery = new Parse.Query(Parse.User);
         userQuery.get(model2.id).then((user3) => {
@@ -341,7 +344,7 @@ describe('LoginHook', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.loginHook((userLoginData) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
       expect(userLoginData).toBeDefined();
       console.log(JSON.stringify(userLoginData, null, 2));
       setTimeout(() => { done.fail('should not be called on failed login with authProvider') }, 1000);
@@ -392,6 +395,130 @@ describe('LoginHook', () => {
       }).catch((e) => {
         ok(Parse.User.current() === null);
         done(e);
+      });
+    }).catch((e) => {
+      jfail(e);
+    });
+  });
+
+  it('should be able to block username/password login flow if cloud code throws an error', (done) => {
+    Parse.Cloud.beforeLogin((userLoginData) => {
+      expect(userLoginData.objectId).toBeDefined();
+      expect(typeof userLoginData.objectId).toEqual('string');
+      expect(userLoginData.username).toBeDefined();
+      expect(typeof userLoginData.username).toEqual('string');
+      expect(userLoginData.email).toBeDefined();
+      expect(typeof userLoginData.email).toEqual('string');
+      expect(userLoginData.createdAt).toBeDefined();
+      expect(typeof userLoginData.createdAt).toEqual('string');
+      expect(userLoginData.updatedAt).toBeDefined();
+      expect(typeof userLoginData.updatedAt).toEqual('string');
+      expect(userLoginData.authProvider).toBeDefined();
+      expect(userLoginData.authProvider).toBe('password');
+      expect(userLoginData.authData).toBeDefined();
+      expect(typeof userLoginData.authData).toEqual('object');
+      if (userLoginData.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginData.username + ' is not authorized');
+      }
+    });
+    var user = new Parse.User();
+    user.set("username", "test");
+    user.set("password", "my_pass");
+    user.set("email", "email@example.com");
+    user.set("name", "User Name");
+    user.signUp().then(() => {
+      Parse.User.logOut();
+      ok(Parse.User.current() === null);
+      var user = new Parse.User();
+      user.set("username", "test");
+      user.set("password", "my_pass");
+      user.logIn().then(() => {
+        jfail('should not complete login flow');
+      }).catch((e) => {
+        console.log(e);
+        ok(Parse.User.current() === null);
+        setTimeout(done, 1000);
+      });
+    });
+  });
+
+  it("should be able to block authProvider login flow if cloud code throws an error", (done) => {
+    Parse.Object.enableSingleInstance();
+    Parse.User.logOut();
+    ok(Parse.User.current() === null);
+
+    defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('12345');
+    var provider = getMockMyOauthProvider();
+    Parse.User._registerAuthenticationProvider(provider);
+
+    Parse.Cloud.beforeLogin((userLoginData) => {
+      expect(userLoginData.objectId).toBeDefined();
+      expect(typeof userLoginData.objectId).toEqual('string');
+      expect(userLoginData.username).toBeDefined();
+      expect(typeof userLoginData.username).toEqual('string');
+      expect(userLoginData.email).toBeDefined();
+      expect(typeof userLoginData.email).toEqual('string');
+      expect(userLoginData.createdAt).toBeDefined();
+      expect(typeof userLoginData.createdAt).toEqual('string');
+      expect(userLoginData.updatedAt).toBeDefined();
+      expect(typeof userLoginData.updatedAt).toEqual('string');
+      expect(userLoginData.authProvider).toBeDefined();
+      expect(typeof userLoginData.authProvider).toEqual('string');
+      expect(userLoginData.authData).toBeDefined();
+      expect(typeof userLoginData.authData).toEqual('object');
+      if (userLoginData.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginData.username + ' is not authorized');
+      }
+    });
+
+    const authData = {
+      id: "12345",
+      access_token: "12345",
+      expiration_date: new Date(new Date().getTime() + 10 * 60 * 1000).toJSON(), // 10 minutes
+    };
+    const options = {
+      authData: authData
+    };
+
+    const authData2 = {
+      id: "12345",
+      access_token: "1234567",
+      expiration_date: new Date(new Date().getTime() + 10 * 60 * 1000).toJSON(), // 10 minutes
+    };
+    const options2 = {
+      authData: authData2
+    };
+
+    var user = new Parse.User();
+    user.set('username', 'test');
+    user.set('email', 'test@test.test.com');
+
+    user._linkWith('shortLivedAuth', options).then((model) => {
+      ok(model instanceof Parse.User, "Model should be a Parse.User");
+      strictEqual(Parse.User.current(), model);
+      ok(model.extended(), "Should have used the subclass.");
+      strictEqual(provider.authData.id, provider.synchronizedUserId);
+      strictEqual(provider.authData.access_token, provider.synchronizedAuthToken);
+      strictEqual(Date(provider.authData.expiration_date).toLocaleString(), Date(provider.synchronizedExpiration).toLocaleString());
+      ok(model._isLinked("shortLivedAuth"), "User should be linked to shortLivedAuth");
+
+      //console.log('signUp completed');
+      model._logOutWithAll();
+      Parse.User.logOut();
+      ok(Parse.User.current() === null);
+
+      var user2 = new Parse.User();
+      user2.set('username', 'test');
+      user2.set('email', 'test@test.test.com');
+      // it's a new login with a new and valid token
+      defaultConfiguration.auth.shortLivedAuth.setValidAccessToken('1234567');
+      //console.log("let's login (this should trigger beforeLogin call)");
+      user2._linkWith('shortLivedAuth', options2).then(() => {
+        jfail('should not complete login flow');
+      }).catch((e) => {
+        console.log(e);
+        ok(Parse.User.current() === null);
+        setTimeout(done, 1000);
       });
     }).catch((e) => {
       jfail(e);

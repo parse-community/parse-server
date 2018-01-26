@@ -14,7 +14,7 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 import logger    from './logger';
-import { runLoginHookHandler } from './triggers';
+import { runBeforeLoginHandler } from './triggers';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -252,7 +252,7 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
     return validateAuthData(authData[provider]).then(() => {
       if (this.response) {
       // it is a login call
-        runLoginHookHandler({
+        runBeforeLoginHandler({
           'objectId': this.response.response.objectId,
           'username': this.response.response.username,
           'email': this.response.response.email,
