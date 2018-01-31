@@ -440,7 +440,7 @@ describe('ParseLiveQueryServer', function() {
     // Register message handlers for the parseWebSocket
     parseLiveQueryServer._onConnect(parseWebSocket);
 
-    // Check unknown request
+    // Check invalid request
     var invalidRequest = '{}';
     // Trigger message event
     parseWebSocket.emit('message', invalidRequest);
