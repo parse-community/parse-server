@@ -41,11 +41,6 @@ describe('ParseLiveQueryServer', function() {
     // Mock matchesQuery
     var mockMatchesQuery = jasmine.createSpy('matchesQuery').and.returnValue(true);
     jasmine.mockLibrary('../src/LiveQuery/QueryTools', 'matchesQuery', mockMatchesQuery);
-    // Mock tv4
-    var mockValidate = function() {
-      return true;
-    }
-    jasmine.mockLibrary('tv4', 'validate', mockValidate);
     // Mock ParsePubSub
     var mockParsePubSub = {
       createPublisher: function() {
@@ -1209,7 +1204,6 @@ describe('ParseLiveQueryServer', function() {
     jasmine.restoreLibrary('../src/LiveQuery/Subscription', 'Subscription');
     jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'queryHash');
     jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'matchesQuery');
-    jasmine.restoreLibrary('tv4', 'validate');
     jasmine.restoreLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub');
     jasmine.restoreLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache');
   });
