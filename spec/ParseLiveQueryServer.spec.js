@@ -428,6 +428,22 @@ describe('ParseLiveQueryServer', function() {
     expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
   });
 
+  it('can set missing command message handler for a parseWebSocket', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    // Make mock parseWebsocket
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Check unknown request
+    var invalidRequest = '{}';
+    // Trigger message event
+    parseWebSocket.emit('message', invalidRequest);
+    var Client = require('../src/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalled();
+  });
+
   it('can set unknown command message handler for a parseWebSocket', function() {
     var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
     // Make mock parseWebsocket
