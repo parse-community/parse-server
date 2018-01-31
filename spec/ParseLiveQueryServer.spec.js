@@ -345,7 +345,8 @@ describe('ParseLiveQueryServer', function() {
 
     // Check connect request
     var connectRequest = {
-      op: 'connect'
+      op: 'connect',
+      applicationId: '1'
     };
     // Trigger message event
     parseWebSocket.emit('message', connectRequest);
@@ -365,7 +366,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check subscribe request
-    var subscribeRequest = '{"op":"subscribe"}';
+    var subscribeRequest = JSON.stringify({
+      op: 'subscribe',
+      requestId: 1,
+      query: {className: 'Test', where: {}}
+    });
     // Trigger message event
     parseWebSocket.emit('message', subscribeRequest);
     // Make sure _handleSubscribe is called
@@ -385,7 +390,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check unsubscribe request
-    var unsubscribeRequest = '{"op":"unsubscribe"}';
+    var unsubscribeRequest = JSON.stringify({op: 'unsubscribe', requestId: 1});
     // Trigger message event
     parseWebSocket.emit('message', unsubscribeRequest);
     // Make sure _handleUnsubscribe is called
@@ -409,7 +414,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check updateRequest request
-    var updateRequest = '{"op":"update"}';
+    var updateRequest = JSON.stringify({
+      op: 'update',
+      requestId: 1,
+      query: {className: 'Test', where: {}}
+    });
     // Trigger message event
     parseWebSocket.emit('message', updateRequest);
     // Make sure _handleUnsubscribe is called
