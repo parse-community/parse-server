@@ -1,7 +1,8 @@
 'use strict';
 /* Tests for ParseServer.js */
 const express = require('express');
-
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
 import ParseServer from '../src/ParseServer';
 
 describe('Server Url Checks', () => {
@@ -35,8 +36,6 @@ describe('Server Url Checks', () => {
   });
 
   it('handleShutdown, close connection', (done) => {
-    var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-    const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
     const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
     const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
     let databaseAdapter;

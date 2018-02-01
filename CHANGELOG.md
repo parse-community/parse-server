@@ -1,7 +1,39 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...master)
+
+### 2.7.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...2.7.1)
+
+#### Improvements:
+* Improved match aggregate
+* Do not mark the empty pushs as failed 
+* Support pointer in aggregate query
+* Introduces flow types for storage
+* Postgres: Refactoring of Postgres Storage Adapter
+* Postgres: Support for multiple projection in aggregate
+* Postgres: performance optimizations
+* Adds infos about vulnerability disclosures
+* Adds ability to login with email when provided as username
+
+#### Bug Fixes
+* Scrub Passwords with URL Encoded Characters
+* Fixes issue affecting using sorting in beforeFind
+
+#### Dependency Updates:
+* [commander@2.13.0](https://www.npmjs.com/package/commander)
+* [semver@5.5.0](https://www.npmjs.com/package/semver)
+* [pg-promise@7.4.0](https://www.npmjs.com/package/pg-promise)
+* [ws@4.0.0](https://www.npmjs.com/package/ws)
+* [mime@2.2.0](https://www.npmjs.com/package/mime)
+* [parse@1.11.0](https://www.npmjs.com/package/parse)
+
+##### Devevelopment Dependencies Updates:
+* [nodemon@1.14.11](https://www.npmjs.com/package/nodemon)
+* [flow-bin@0.64.0](https://www.npmjs.com/package/flow-bin)
+* [jasmine@2.9.0](https://www.npmjs.com/package/jasmine)
+* [cross-env@5.1.3](https://www.npmjs.com/package/cross-env)
 
 ### 2.7.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.1...2.7.0)
