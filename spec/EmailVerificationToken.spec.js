@@ -487,6 +487,7 @@ describe("Email Verification Token Expiration: ", () => {
     var user = new Parse.User();
     var sendEmailOptions;
     var sendVerificationEmailCallCount = 0;
+    let userBeforeRequest;
     var emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
@@ -509,6 +510,15 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
+        const config = Config.get('test');
+        return config.database.find('_User', {username: 'resends_verification_token'}).then((results) => {
+          return results[0];
+        });
+      })
+      .then((newUser) => {
+        // store this user before we make our email request
+        userBeforeRequest = newUser;
+
         expect(sendVerificationEmailCallCount).toBe(1);
 
         return requestp.post({
@@ -523,13 +533,25 @@ describe("Email Verification Token Expiration: ", () => {
           json: true,
           resolveWithFullResponse: true,
           simple: false // this promise is only rejected if the call itself failed
-        })
-          .then((response) => {
-            expect(response.statusCode).toBe(200);
-            expect(sendVerificationEmailCallCount).toBe(2);
-            expect(sendEmailOptions).toBeDefined();
-            done();
-          });
+        });
+      })
+      .then((response) => {
+        expect(response.statusCode).toBe(200);
+        expect(sendVerificationEmailCallCount).toBe(2);
+        expect(sendEmailOptions).toBeDefined();
+
+        // query for this user again
+        const config = Config.get('test');
+        return config.database.find('_User', {username: 'resends_verification_token'}).then((results) => {
+          return results[0];
+        });
+      })
+      .then((userAfterRequest) => {
+        // verify that our token & expiration has been changed for this new request
+        expect(typeof userAfterRequest).toBe('object');
+        expect(userBeforeRequest._email_verify_token).not.toEqual(userAfterRequest._email_verify_token);
+        expect(userBeforeRequest._email_verify_token_expires_at).not.toEqual(userAfterRequest.__email_verify_token_expires_at);
+        done();
       })
       .catch(error => {
         jfail(error);
