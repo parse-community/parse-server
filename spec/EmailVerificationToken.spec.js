@@ -777,7 +777,7 @@ describe("Email Verification Token Expiration: ", () => {
       });
   });
 
-  it('When a user has verified their email, and then change it, the field emailVerified should be false and the new link will be send to the user', done => {
+  it('emailVerified should be set to false after changing from an already verified email', done => {
     var user = new Parse.User();
     var sendEmailOptions;
     var emailAdapter = {
