@@ -777,4 +777,63 @@ describe("Email Verification Token Expiration: ", () => {
       });
   });
 
+  it('emailVerified should be set to false after changing from an already verified email', done => {
+    var user = new Parse.User();
+    var sendEmailOptions;
+    var emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => { }
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: "http://localhost:8378/1"
+    })
+      .then(() => {
+        user.setUsername("testEmailVerifyTokenValidity");
+        user.setPassword("expiringToken");
+        user.set('email', 'user@parse.com');
+        return user.signUp();
+      }).then(() => {
+        request.get(sendEmailOptions.link, {
+          followRedirect: false,
+        }, (error, response) => {
+          expect(response.statusCode).toEqual(302);
+          Parse.User.logIn("testEmailVerifyTokenValidity", "expiringToken")
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('emailVerified')).toBe(true);
+
+              user.set('email', 'newEmail@parse.com');
+              return user.save();
+            })
+            .then(() => user.fetch())
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('email')).toBe('newEmail@parse.com');
+              expect(user.get('emailVerified')).toBe(false);
+
+              request.get(sendEmailOptions.link, {
+                followRedirect: false,
+              }, (error, response) => {
+                expect(response.statusCode).toEqual(302);
+                done();
+              });
+            })
+            .catch((error) => {
+              jfail(error);
+              done();
+            });
+        });
+      }).catch((error) => {
+        jfail(error);
+        done();
+      });
+  });
+
 })
