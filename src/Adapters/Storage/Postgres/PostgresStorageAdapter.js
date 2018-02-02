@@ -1200,7 +1200,11 @@ export class PostgresStorageAdapter implements StorageAdapter {
         // Gather keys to increment
         const keysToIncrement = Object.keys(originalUpdate).filter(k => {
           // choose top level fields that have a delete operation set
-          return originalUpdate[k].__op === 'Increment' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
+          // Note that Object.keys is iterating over the **original** update object
+          // and that some of the keys of the original update could be null or undefined:
+          // (See the above check `if (fieldValue === null || typeof fieldValue == "undefined")`)
+          const value = originalUpdate[k];
+          return value && value.__op === 'Increment' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
         }).map(k => k.split('.')[1]);
 
         let incrementPatterns = '';
@@ -1216,8 +1220,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
         }
 
         const keysToDelete = Object.keys(originalUpdate).filter(k => {
-          // choose top level fields that have a delete operation set
-          return originalUpdate[k].__op === 'Delete' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
+          // choose top level fields that have a delete operation set.
+          const value = originalUpdate[k];
+          return value && value.__op === 'Delete' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
         }).map(k => k.split('.')[1]);
 
         const deletePatterns = keysToDelete.reduce((p, c, i) => {
