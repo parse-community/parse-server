@@ -48,6 +48,7 @@
     "babel-cli": "6.26.0",
     "babel-core": "6.26.0",
     "babel-eslint": "^8.0.0",
+    "babel-plugin-istanbul": "^4.1.5",
     "babel-plugin-transform-flow-strip-types": "6.22.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "1.6.1",
@@ -89,5 +90,12 @@
     "type": "opencollective",
     "url": "https://opencollective.com/parse-server",
     "logo": "https://opencollective.com/parse-server/logo.txt?reverse=true&variant=binary"
+  },
+  "nyc": {
+    "require": [
+      "babel-register"
+    ],
+    "sourceMap": false,
+    "instrument": false
   }
 }
