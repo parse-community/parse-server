@@ -63,11 +63,13 @@ export class UsersRouter extends ClassesRouter {
     if (!payload.username && req.query.username || !payload.email && req.query.email) {
       payload = req.query;
     }
-    const {
+    var {
       username,
       email,
       password,
     } = payload;
+
+    username = payload.username.toLowerCase();
 
     // TODO: use the right error codes / descriptions.
     if (!username && !email) {
