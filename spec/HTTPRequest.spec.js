@@ -6,7 +6,7 @@ var httpRequest = require("../src/cloud-code/httpRequest"),
   express = require("express");
 
 var port = 13371;
-var httpRequestServer = "http://localhost:"+port;
+var httpRequestServer = "http://localhost:" + port;
 
 var app = express();
 app.use(bodyParser.json({ 'type': '*/*' }));
@@ -39,7 +39,7 @@ app.listen(13371);
 describe("httpRequest", () => {
   it("should do /hello", (done) => {
     httpRequest({
-      url: httpRequestServer+"/hello"
+      url: httpRequestServer + "/hello"
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(200);
       expect(httpResponse.buffer).toEqual(new Buffer('{"response":"OK"}'));
@@ -55,7 +55,7 @@ describe("httpRequest", () => {
   it("should do /hello with callback and promises", (done) => {
     var calls = 0;
     httpRequest({
-      url: httpRequestServer+"/hello",
+      url: httpRequestServer + "/hello",
       success: function() { calls++; },
       error: function() { calls++; }
     }).then(function(httpResponse){
@@ -74,7 +74,7 @@ describe("httpRequest", () => {
   it("should do not follow redirects by default", (done) => {
 
     httpRequest({
-      url: httpRequestServer+"/301"
+      url: httpRequestServer + "/301"
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(301);
       done();
@@ -87,7 +87,7 @@ describe("httpRequest", () => {
   it("should follow redirects when set", (done) => {
 
     httpRequest({
-      url: httpRequestServer+"/301",
+      url: httpRequestServer + "/301",
       followRedirects: true
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(200);
@@ -104,7 +104,7 @@ describe("httpRequest", () => {
   it("should fail on 404", (done) => {
     var calls = 0;
     httpRequest({
-      url: httpRequestServer+"/404",
+      url: httpRequestServer + "/404",
       success: function() {
         calls++;
         fail("should not succeed");
@@ -124,7 +124,7 @@ describe("httpRequest", () => {
 
   it("should fail on 404", (done) => {
     httpRequest({
-      url: httpRequestServer+"/404",
+      url: httpRequestServer + "/404",
     }).then(function(){
       fail("should not succeed");
       done();
@@ -141,7 +141,7 @@ describe("httpRequest", () => {
     var calls = 0;
     httpRequest({
       method: "POST",
-      url: httpRequestServer+"/echo",
+      url: httpRequestServer + "/echo",
       body: {
         foo: "bar"
       },
@@ -218,7 +218,7 @@ describe("httpRequest", () => {
 
   it("should params object to query string", (done) => {
     httpRequest({
-      url: httpRequestServer+"/qs",
+      url: httpRequestServer + "/qs",
       params: {
         foo: "bar"
       }
@@ -234,7 +234,7 @@ describe("httpRequest", () => {
 
   it("should params string to query string", (done) => {
     httpRequest({
-      url: httpRequestServer+"/qs",
+      url: httpRequestServer + "/qs",
       params: "foo=bar&foo2=bar2"
     }).then(function(httpResponse){
       expect(httpResponse.status).toBe(200);

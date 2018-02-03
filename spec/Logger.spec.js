@@ -52,7 +52,7 @@ describe('Logger', () => {
       logging.logger.info('hi', {key: 'value'});
       expect(process.stdout.write).toHaveBeenCalled();
       var firstLog = process.stdout.write.calls.first().args[0];
-      expect(firstLog).toEqual(JSON.stringify({key: 'value', level: 'info', message: 'hi' })+'\n');
+      expect(firstLog).toEqual(JSON.stringify({key: 'value', level: 'info', message: 'hi' }) + '\n');
       return reconfigureServer({
         jsonLogs: false
       });

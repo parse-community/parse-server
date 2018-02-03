@@ -10,7 +10,7 @@ export function randomHexString(size: number): string {
   if (size % 2 !== 0) {
     throw new Error('randomHexString size must be divisible by 2.')
   }
-  return randomBytes(size/2).toString('hex');
+  return randomBytes(size / 2).toString('hex');
 }
 
 // Returns a new random alphanumeric string of the given size.
@@ -35,9 +35,8 @@ export function randomString(size: number): string {
 }
 
 // Returns a new random alphanumeric string suitable for object ID.
-export function newObjectId(): string {
-  //TODO: increase length to better protect against collisions.
-  return randomString(10);
+export function newObjectId(size: number = 10): string {
+  return randomString(size);
 }
 
 // Returns a new random hex string suitable for secure tokens.

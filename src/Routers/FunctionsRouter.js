@@ -54,7 +54,8 @@ export class FunctionsRouter extends PromiseRouter {
     const request = {
       params: params,
       log: req.config.loggerController,
-      headers: req.headers,
+      headers: req.config.headers,
+      ip: req.config.ip,
       jobName
     };
     const status = {
@@ -111,7 +112,8 @@ export class FunctionsRouter extends PromiseRouter {
         user: req.auth && req.auth.user,
         installationId: req.info.installationId,
         log: req.config.loggerController,
-        headers: req.headers,
+        headers: req.config.headers,
+        ip: req.config.ip,
         functionName
       };
 
@@ -128,26 +130,29 @@ export class FunctionsRouter extends PromiseRouter {
         var response = FunctionsRouter.createResponseObject((result) => {
           try {
             const cleanResult = logger.truncateLogMessage(JSON.stringify(result.response.result));
-            logger.info(`Ran cloud function ${functionName} for user ${userString} `
-              + `with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`, {
+            logger.info(
+              `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`,
+              {
                 functionName,
                 params,
                 user: userString,
-              });
+              }
+            );
             resolve(result);
           } catch (e) {
             reject(e);
           }
         }, (error) => {
           try {
-            logger.error(`Failed running cloud function ${functionName} for `
-              + `user ${userString} with:\n  Input: ${cleanInput}\n  Error: `
-              + JSON.stringify(error), {
+            logger.error(
+              `Failed running cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput}\n  Error: ` + JSON.stringify(error),
+              {
                 functionName,
                 error,
                 params,
                 user: userString
-              });
+              }
+            );
             reject(error);
           } catch (e) {
             reject(e);

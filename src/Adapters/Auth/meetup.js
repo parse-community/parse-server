@@ -27,7 +27,7 @@ function request(path, access_token) {
       host: 'api.meetup.com',
       path: '/2/' + path,
       headers: {
-        'Authorization': 'bearer '+access_token
+        'Authorization': 'bearer ' + access_token
       }
     }, function(res) {
       var data = '';
@@ -35,7 +35,11 @@ function request(path, access_token) {
         data += chunk;
       });
       res.on('end', function() {
-        data = JSON.parse(data);
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
         resolve(data);
       });
     }).on('error', function() {

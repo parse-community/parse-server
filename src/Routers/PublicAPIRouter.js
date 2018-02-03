@@ -13,7 +13,11 @@ export class PublicAPIRouter extends PromiseRouter {
   verifyEmail(req) {
     const { token, username } = req.query;
     const appId = req.params.appId;
-    const config = new Config(appId);
+    const config = Config.get(appId);
+
+    if(!config){
+      this.invalidRequest();
+    }
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -31,13 +35,50 @@ export class PublicAPIRouter extends PromiseRouter {
         location: `${config.verifyEmailSuccessURL}?${params}`
       });
     }, ()=> {
+      return this.invalidVerificationLink(req);
+    })
+  }
+
+  resendVerificationEmail(req) {
+    const username = req.body.username;
+    const appId = req.params.appId;
+    const config = Config.get(appId);
+
+    if(!config){
+      this.invalidRequest();
+    }
+
+    if (!config.publicServerURL) {
+      return this.missingPublicServerURL();
+    }
+
+    if (!username) {
       return this.invalidLink(req);
+    }
+
+    const userController = config.userController;
+
+    return userController.resendVerificationEmail(username).then(() => {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendSuccessURL}`
+      });
+    }, ()=> {
+      return Promise.resolve({
+        status: 302,
+        location: `${config.linkSendFailURL}`
+      });
     })
   }
 
   changePassword(req) {
     return new Promise((resolve, reject) => {
-      const config = new Config(req.query.id);
+      const config = Config.get(req.query.id);
+
+      if(!config){
+        this.invalidRequest();
+      }
+
       if (!config.publicServerURL) {
         return resolve({
           status: 404,
@@ -60,6 +101,10 @@ export class PublicAPIRouter extends PromiseRouter {
   requestResetPassword(req) {
 
     const config = req.config;
+
+    if(!config){
+      this.invalidRequest();
+    }
 
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
@@ -86,6 +131,10 @@ export class PublicAPIRouter extends PromiseRouter {
 
     const config = req.config;
 
+    if(!config){
+      this.invalidRequest();
+    }
+
     if (!config.publicServerURL) {
       return this.missingPublicServerURL();
     }
@@ -107,7 +156,7 @@ export class PublicAPIRouter extends PromiseRouter {
         location: `${config.passwordResetSuccessURL}?${params}`
       });
     }, (err) => {
-      const params = qs.stringify({username: username, token: token, id: config.applicationId, error:err, app:config.appName})
+      const params = qs.stringify({username: username, token: token, id: config.applicationId, error:err, app:config.appName});
       return Promise.resolve({
         status: 302,
         location: `${config.choosePasswordURL}?${params}`
@@ -123,6 +172,19 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  invalidVerificationLink(req) {
+    const config = req.config;
+    if (req.query.username && req.params.appId) {
+      const params = qs.stringify({username: req.query.username, appId: req.params.appId});
+      return Promise.resolve({
+        status: 302,
+        location: `${config.invalidVerificationLinkURL}?${params}`
+      });
+    } else {
+      return this.invalidLink(req);
+    }
+  }
+
   missingPublicServerURL() {
     return Promise.resolve({
       text:  'Not found.',
@@ -130,8 +192,15 @@ export class PublicAPIRouter extends PromiseRouter {
     });
   }
 
+  invalidRequest() {
+    const error = new Error();
+    error.status = 403;
+    error.message = "unauthorized";
+    throw error;
+  }
+
   setConfig(req) {
-    req.config = new Config(req.params.appId);
+    req.config = Config.get(req.params.appId);
     return Promise.resolve();
   }
 
@@ -139,6 +208,10 @@ export class PublicAPIRouter extends PromiseRouter {
     this.route('GET','/apps/:appId/verify_email',
       req => { this.setConfig(req) },
       req => { return this.verifyEmail(req); });
+
+    this.route('POST', '/apps/:appId/resend_verification_email',
+      req => { this.setConfig(req); },
+      req => { return this.resendVerificationEmail(req); });
 
     this.route('GET','/apps/choose_password',
       req => { return this.changePassword(req); });

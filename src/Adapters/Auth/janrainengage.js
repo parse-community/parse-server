@@ -41,7 +41,7 @@ function request(api_key, auth_token) {
     }
   };
 
-  return new Promise(function (resolve) {
+  return new Promise(function (resolve, reject) {
     // Create the post request.
     var post_req = https.request(post_options, function (res) {
       var data = '';
@@ -52,7 +52,12 @@ function request(api_key, auth_token) {
       });
       // Once we have all the data, we can parse it and return the data we want.
       res.on('end', function () {
-        resolve(JSON.parse(data));
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
+        resolve(data);
       });
     });
 

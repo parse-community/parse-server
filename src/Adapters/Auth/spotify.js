@@ -41,7 +41,7 @@ function request(path, access_token) {
       host: 'api.spotify.com',
       path: '/v1/' + path,
       headers: {
-        'Authorization': 'Bearer '+access_token
+        'Authorization': 'Bearer ' + access_token
       }
     }, function(res) {
       var data = '';
@@ -49,7 +49,11 @@ function request(path, access_token) {
         data += chunk;
       });
       res.on('end', function() {
-        data = JSON.parse(data);
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
         resolve(data);
       });
     }).on('error', function() {

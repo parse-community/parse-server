@@ -1,9 +1,9 @@
-import AppCache   from './cache';
-import log        from './logger';
-import Parse      from 'parse/node';
-import auth       from './Auth';
-import Config     from './Config';
-import ClientSDK  from './ClientSDK';
+import AppCache from './cache';
+import log from './logger';
+import Parse from 'parse/node';
+import auth from './Auth';
+import Config from './Config';
+import ClientSDK from './ClientSDK';
 
 // Checks that the request is authorized for this app and checks user
 // auth too.
@@ -106,9 +106,17 @@ export function handleParseHeaders(req, res, next) {
     req.body = new Buffer(base64, 'base64');
   }
 
+  const clientIp = getClientIp(req);
+
   info.app = AppCache.get(info.appId);
-  req.config = new Config(info.appId, mount);
+  req.config = Config.get(info.appId, mount);
+  req.config.headers = req.headers || {};
+  req.config.ip = clientIp;
   req.info = info;
+
+  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(clientIp) === -1) {
+    return invalidRequest(req, res);
+  }
 
   var isMaster = (info.masterKey === req.config.masterKey);
 
@@ -118,14 +126,21 @@ export function handleParseHeaders(req, res, next) {
     return;
   }
 
+  var isReadOnlyMaster = (info.masterKey === req.config.readOnlyMasterKey);
+  if (typeof req.config.readOnlyMasterKey != 'undefined' && req.config.readOnlyMasterKey && isReadOnlyMaster) {
+    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true, isReadOnly: true });
+    next();
+    return;
+  }
+
   // Client keys are not required in parse-server, but if any have been configured in the server, validate them
   //  to preserve original behavior.
   const keys = ["clientKey", "javascriptKey", "dotNetKey", "restAPIKey"];
   const oneKeyConfigured = keys.some(function(key) {
-    return req.config[key];
+    return req.config[key] !== undefined;
   });
   const oneKeyMatches = keys.some(function(key){
-    return req.config[key] && info[key] == req.config[key];
+    return req.config[key] !== undefined && info[key] === req.config[key];
   });
 
   if (oneKeyConfigured && !oneKeyMatches) {
@@ -168,6 +183,25 @@ export function handleParseHeaders(req, res, next) {
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
+}
+
+function getClientIp(req){
+  if (req.headers['x-forwarded-for']) {
+    // try to get from x-forwared-for if it set (behind reverse proxy)
+    return req.headers['x-forwarded-for'].split(',')[0];
+  } else if (req.connection && req.connection.remoteAddress) {
+    // no proxy, try getting from connection.remoteAddress
+    return req.connection.remoteAddress;
+  } else if (req.socket) {
+    // try to get it from req.socket
+    return req.socket.remoteAddress;
+  } else if (req.connection && req.connection.socket) {
+    // try to get it form the connection.socket
+    return req.connection.socket.remoteAddress;
+  } else {
+    // if non above, fallback.
+    return req.ip;
+  }
 }
 
 function httpAuth(req) {
@@ -233,10 +267,8 @@ export function allowMethodOverride(req, res, next) {
 }
 
 export function handleParseErrors(err, req, res, next) {
-  // TODO: Add logging as those errors won't make it to the PromiseRouter
   if (err instanceof Parse.Error) {
-    var httpStatus;
-
+    let httpStatus;
     // TODO: fill out this mapping
     switch (err.code) {
     case Parse.Error.INTERNAL_SERVER_ERROR:
@@ -250,17 +282,22 @@ export function handleParseErrors(err, req, res, next) {
     }
 
     res.status(httpStatus);
-    res.json({code: err.code, error: err.message});
+    res.json({ code: err.code, error: err.message });
+    log.error(err.message, err);
   } else if (err.status && err.message) {
     res.status(err.status);
-    res.json({error: err.message});
+    res.json({ error: err.message });
+    next(err);
   } else {
     log.error('Uncaught internal server error.', err, err.stack);
     res.status(500);
-    res.json({code: Parse.Error.INTERNAL_SERVER_ERROR,
-      message: 'Internal server error.'});
+    res.json({
+      code: Parse.Error.INTERNAL_SERVER_ERROR,
+      message: 'Internal server error.'
+    });
+    next(err);
   }
-  next(err);
+
 }
 
 export function enforceMasterKeyAccess(req, res, next) {

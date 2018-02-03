@@ -26,13 +26,17 @@ function graphRequest(path) {
         data += chunk;
       });
       res.on('end', function () {
-        var starPos=data.indexOf("(");
-        var endPos=data.indexOf(")");
-        if(starPos==-1||endPos==-1){
+        var starPos = data.indexOf("(");
+        var endPos = data.indexOf(")");
+        if(starPos == -1 || endPos == -1){
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'qq auth is invalid for this user.');
         }
-        data=data.substring(starPos+1,endPos-1);
-        data = JSON.parse(data);
+        data = data.substring(starPos + 1,endPos - 1);
+        try {
+          data = JSON.parse(data);
+        } catch(e) {
+          return reject(e);
+        }
         resolve(data);
       });
     }).on('error', function () {

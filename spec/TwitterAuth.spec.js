@@ -9,7 +9,7 @@ describe('Twitter Auth', () => {
       consumer_key: 'hello'
     }, {
       consumer_key: 'world'
-    }]).consumer_key).toEqual('hello')
+    }]).consumer_key).toEqual('hello');
 
     // Multiple options, consumer_key not found
     expect(function(){
@@ -46,5 +46,19 @@ describe('Twitter Auth', () => {
     }, {
       consumer_key: 'hello'
     }).consumer_key).toEqual('hello');
+  });
+
+  it("Should fail with missing options", (done) => {
+    try {
+      twitter.validateAuthData({
+        consumer_key: 'key',
+        consumer_secret: 'secret',
+        auth_token: 'token',
+        auth_token_secret: 'secret'
+      }, undefined);
+    } catch (error) {
+      jequal(error.message, 'Twitter auth configuration missing');
+      done();
+    }
   });
 });

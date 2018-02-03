@@ -21,10 +21,10 @@ export default class SchemaCache {
   }
 
   put(key, value) {
-    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
+    return this.cache.get(this.prefix + ALL_KEYS).then((allKeys) => {
       allKeys = allKeys || {};
       allKeys[key] = true;
-      return Promise.all([this.cache.put(this.prefix+ALL_KEYS, allKeys, this.ttl), this.cache.put(key, value, this.ttl)]);
+      return Promise.all([this.cache.put(this.prefix + ALL_KEYS, allKeys, this.ttl), this.cache.put(key, value, this.ttl)]);
     });
   }
 
@@ -32,32 +32,32 @@ export default class SchemaCache {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.get(this.prefix+MAIN_SCHEMA);
+    return this.cache.get(this.prefix + MAIN_SCHEMA);
   }
 
   setAllClasses(schema) {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.put(this.prefix+MAIN_SCHEMA, schema);
+    return this.put(this.prefix + MAIN_SCHEMA, schema);
   }
 
   setOneSchema(className, schema) {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.put(this.prefix+className, schema);
+    return this.put(this.prefix + className, schema);
   }
 
   getOneSchema(className) {
     if (!this.ttl) {
       return Promise.resolve(null);
     }
-    return this.cache.get(this.prefix+className).then((schema) => {
+    return this.cache.get(this.prefix + className).then((schema) => {
       if (schema) {
         return Promise.resolve(schema);
       }
-      return this.cache.get(this.prefix+MAIN_SCHEMA).then((cachedSchemas) => {
+      return this.cache.get(this.prefix + MAIN_SCHEMA).then((cachedSchemas) => {
         cachedSchemas = cachedSchemas || [];
         schema = cachedSchemas.find((cachedSchema) => {
           return cachedSchema.className === className;
@@ -72,7 +72,7 @@ export default class SchemaCache {
 
   clear() {
     // That clears all caches...
-    return this.cache.get(this.prefix+ALL_KEYS).then((allKeys) => {
+    return this.cache.get(this.prefix + ALL_KEYS).then((allKeys) => {
       if (!allKeys) {
         return;
       }

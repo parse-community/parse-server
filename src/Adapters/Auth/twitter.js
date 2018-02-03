@@ -5,6 +5,9 @@ var logger = require('../../logger').default;
 
 // Returns a promise that fulfills iff this user id is valid.
 function validateAuthData(authData, options) {
+  if(!options) {
+    throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Twitter auth configuration missing');
+  }
   options = handleMultipleConfigurations(authData, options);
   var client = new OAuth(options);
   client.host = "api.twitter.com";
@@ -12,7 +15,7 @@ function validateAuthData(authData, options) {
   client.auth_token_secret = authData.auth_token_secret;
 
   return client.get("/1.1/account/verify_credentials.json").then((data) => {
-    if (data && data.id_str == ''+authData.id) {
+    if (data && data.id_str == '' + authData.id) {
       return;
     }
     throw new Parse.Error(

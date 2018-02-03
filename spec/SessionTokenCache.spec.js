@@ -4,13 +4,14 @@ describe('SessionTokenCache', function() {
 
   beforeEach(function(done) {
     var Parse = require('parse/node');
-    // Mock parse
-    var mockUser = {
-      become: jasmine.createSpy('become').and.returnValue(Parse.Promise.as({
-        id: 'userId'
-      }))
-    }
-    jasmine.mockLibrary('parse/node', 'User', mockUser);
+
+    spyOn(Parse, "Query").and.returnValue({
+      first: jasmine.createSpy("first").and.returnValue(Parse.Promise.as(new Parse.Object("_Session", {
+        user: new Parse.User({id:"userId"})
+      }))),
+      equalTo: function(){}
+    })
+
     done();
   });
 
@@ -46,7 +47,4 @@ describe('SessionTokenCache', function() {
     });
   });
 
-  afterEach(function() {
-    jasmine.restoreLibrary('parse/node', 'User');
-  });
 });
