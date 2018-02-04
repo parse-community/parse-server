@@ -28,7 +28,7 @@
     "deepcopy": "0.6.3",
     "express": "4.16.2",
     "intersect": "1.0.1",
-    "lodash": "4.17.4",
+    "lodash": "4.17.5",
     "lru-cache": "4.1.1",
     "mime": "2.2.0",
     "mongodb": "3.0.1",
