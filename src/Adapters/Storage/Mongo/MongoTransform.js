@@ -137,9 +137,13 @@ const isAllValuesRegexOrNone = values => {
     return true;
   }
 
-  var startsWith = isStartsWithRegex(values[0]);
-  for (var i = 1, length = values.length; i < length; ++i) {
-    if (startsWith != isStartsWithRegex(values[i])) {
+  const firstValuesIsRegex = isStartsWithRegex(values[0].$regex);
+  if (values.length === 1) {
+    return firstValuesIsRegex;
+  }
+
+  for (let i = 1, length = values.length; i < length; ++i) {
+    if (firstValuesIsRegex !== isStartsWithRegex(values[i].$regex)) {
       return false;
     }
   }
