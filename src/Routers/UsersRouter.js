@@ -10,7 +10,6 @@ import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
 import { runBeforeLoginHandler } from '../triggers';
-import { request } from 'https';
 import deepcopy from 'deepcopy';
 
 
@@ -178,7 +177,7 @@ export class UsersRouter extends ClassesRouter {
             authProvider: 'password',
             authData: {}
           };
-          runBeforeLoginHandler({hookRequest});
+          runBeforeLoginHandler(hookRequest);
         }
         catch (e) {
           throw e;
@@ -290,7 +289,7 @@ export class UsersRouter extends ClassesRouter {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
       }
       const user = results[0];
-      
+
       // remove password field, messes with saving on postgres
       delete user.password;
 

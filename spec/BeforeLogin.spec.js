@@ -429,8 +429,8 @@ describe('beforeLogin', () => {
       expect(typeof userLoginRequest.authProvider).toEqual('string');
       expect(userLoginRequest.authData).toBeDefined();
       expect(typeof userLoginRequest.authData).toEqual('object');
-      if (userLoginRequest.username === 'test') {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.username + ' is not authorized');
+      if (userLoginRequest.object.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.object.username + ' is not authorized');
       }
     });
     var user = new Parse.User();
@@ -482,8 +482,8 @@ describe('beforeLogin', () => {
       expect(typeof userLoginRequest.authProvider).toEqual('string');
       expect(userLoginRequest.authData).toBeDefined();
       expect(typeof userLoginRequest.authData).toEqual('object');
-      if (userLoginRequest.username === 'test') {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.username + ' is not authorized');
+      if (userLoginRequest.object.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.object.username + ' is not authorized');
       }
     });
 
