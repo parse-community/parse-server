@@ -585,6 +585,7 @@ describe('Parse.Query testing', () => {
   it('containsAllStartingWith values must be all of type starting with regex', (done) => {
 
     var object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
     object.save().then(() => {
       equal(object.isNew(), false);
@@ -609,9 +610,11 @@ describe('Parse.Query testing', () => {
         }
       });
     })
-      .then(function () {
+      .then(function (result) {
+        if (result.results.length === 0) {
+          done();
+        }
       }, function () {
-        done();
       });
   });
 
