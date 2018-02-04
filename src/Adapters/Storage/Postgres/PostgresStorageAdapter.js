@@ -1799,7 +1799,7 @@ function isStartsWithRegex(value) {
 }
 
 function isAllValuesRegexOrNone(values) {
-  if (values.length == 0) {
+  if (!values || !Array.isArray(values) || values.length === 0) {
     return true;
   }
 

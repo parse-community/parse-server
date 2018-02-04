@@ -133,7 +133,7 @@ const isStartsWithRegex = value => {
 }
 
 const isAllValuesRegexOrNone = values => {
-  if (values.length == 0) {
+  if (!values || !Array.isArray(values) || values.length === 0) {
     return true;
   }
 
