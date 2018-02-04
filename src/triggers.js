@@ -458,10 +458,10 @@ export function runLiveQueryEventHandlers(data, applicationId = Parse.applicatio
   _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }
 
-export function runBeforeLoginHandler(userLoginData, applicationId = Parse.applicationId) {
+export function runBeforeLoginHandler(userLoginRequest, applicationId = Parse.applicationId) {
   if (!_triggerStore ||
     !_triggerStore[applicationId] ||
     !_triggerStore[applicationId].BeforeLogin ||
     !_triggerStore[applicationId].BeforeLogin.handler) { return; }
-  _triggerStore[applicationId].BeforeLogin.handler(userLoginData);
+  _triggerStore[applicationId].BeforeLogin.handler(userLoginRequest);
 }

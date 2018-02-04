@@ -6,21 +6,21 @@ const Parse = require("parse/node");
 describe('beforeLogin', () => {
   it('should accept only one handler', (done) => {
     expect(() => {
-      Parse.Cloud.beforeLogin((userLoginData) => {
-        console.log(userLoginData);
+      Parse.Cloud.beforeLogin((userLoginRequest) => {
+        console.log(userLoginRequest);
       });
     }).not.toThrow();
     expect(() => {
-      Parse.Cloud.beforeLogin((userLoginData) => {
-        console.log(userLoginData);
+      Parse.Cloud.beforeLogin((userLoginRequest) => {
+        console.log(userLoginRequest);
       });
     }).toThrow();
     done();
   });
 
   it('should not be called on signUp with username/password', (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
     var user = new Parse.User();
@@ -34,22 +34,26 @@ describe('beforeLogin', () => {
     });
   });
 
-  it('should be called with valid userLoginData on login with username/password', (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData.objectId).toBeDefined();
-      expect(typeof userLoginData.objectId).toEqual('string');
-      expect(userLoginData.username).toBeDefined();
-      expect(typeof userLoginData.username).toEqual('string');
-      expect(userLoginData.email).toBeDefined();
-      expect(typeof userLoginData.email).toEqual('string');
-      expect(userLoginData.createdAt).toBeDefined();
-      expect(typeof userLoginData.createdAt).toEqual('string');
-      expect(userLoginData.updatedAt).toBeDefined();
-      expect(typeof userLoginData.updatedAt).toEqual('string');
-      expect(userLoginData.authProvider).toBeDefined();
-      expect(userLoginData.authProvider).toBe('password');
-      expect(userLoginData.authData).toBeDefined();
-      expect(typeof userLoginData.authData).toEqual('object');
+  it('should be called with valid userLoginRequest on login with username/password', (done) => {
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest.installationId).toBeDefined();
+      expect(typeof userLoginRequest.installationId).toEqual('string');
+      expect(userLoginRequest.master).toBeDefined();
+      expect(typeof userLoginRequest.master).toEqual('boolean');
+      expect(userLoginRequest.object).toBeDefined();
+      expect(typeof userLoginRequest.object).toEqual('object');
+      expect(userLoginRequest.ip).toBeDefined();
+      expect(typeof userLoginRequest.ip).toEqual('string');
+      expect(userLoginRequest.headers).toBeDefined();
+      expect(typeof userLoginRequest.headers).toEqual('object');
+      expect(userLoginRequest.triggerName).toBeDefined();
+      expect(userLoginRequest.triggerName).toBe('beforeLogin');
+      expect(userLoginRequest.log).toBeDefined();
+      expect(typeof userLoginRequest.log).toEqual('object');
+      expect(userLoginRequest.authProvider).toBeDefined();
+      expect(typeof userLoginRequest.authProvider).toEqual('string');
+      expect(userLoginRequest.authData).toBeDefined();
+      expect(typeof userLoginRequest.authData).toEqual('object');
       setTimeout(done, 1000);
     });
     var user = new Parse.User();
@@ -71,8 +75,8 @@ describe('beforeLogin', () => {
   });
 
   it("should not be called on login with wrong username", (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
     Parse.User.signUp("asdf", "zxcv", null, {
@@ -89,8 +93,8 @@ describe('beforeLogin', () => {
   });
 
   it("should not be called on login with wrong password", (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
     Parse.User.signUp("asdf", "zxcv", null, {
@@ -102,8 +106,8 @@ describe('beforeLogin', () => {
   });
 
   it("should not be called on 'become'", (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
       setTimeout(() => { done.fail('should not be called on signUp') }, 1000);
     });
     var user = null;
@@ -214,9 +218,9 @@ describe('beforeLogin', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
-      console.log(JSON.stringify(userLoginData, null, 2));
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
+      console.log(JSON.stringify(userLoginRequest, null, 2));
       setTimeout(() => { done.fail('should not be called on signUp with authProvider') }, 1000);
     });
 
@@ -247,7 +251,7 @@ describe('beforeLogin', () => {
     });
   });
 
-  it("should be called with valid userLoginData on login with authProvider", (done) => {
+  it("should be called with valid userLoginRequest on login with authProvider", (done) => {
     Parse.Object.enableSingleInstance();
     Parse.User.logOut();
     ok(Parse.User.current() === null);
@@ -256,21 +260,25 @@ describe('beforeLogin', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData.objectId).toBeDefined();
-      expect(typeof userLoginData.objectId).toEqual('string');
-      expect(userLoginData.username).toBeDefined();
-      expect(typeof userLoginData.username).toEqual('string');
-      expect(userLoginData.email).toBeDefined();
-      expect(typeof userLoginData.email).toEqual('string');
-      expect(userLoginData.createdAt).toBeDefined();
-      expect(typeof userLoginData.createdAt).toEqual('string');
-      expect(userLoginData.updatedAt).toBeDefined();
-      expect(typeof userLoginData.updatedAt).toEqual('string');
-      expect(userLoginData.authProvider).toBeDefined();
-      expect(typeof userLoginData.authProvider).toEqual('string');
-      expect(userLoginData.authData).toBeDefined();
-      expect(typeof userLoginData.authData).toEqual('object');
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest.installationId).toBeDefined();
+      expect(typeof userLoginRequest.installationId).toEqual('string');
+      expect(userLoginRequest.master).toBeDefined();
+      expect(typeof userLoginRequest.master).toEqual('boolean');
+      expect(userLoginRequest.object).toBeDefined();
+      expect(typeof userLoginRequest.object).toEqual('object');
+      expect(userLoginRequest.ip).toBeDefined();
+      expect(typeof userLoginRequest.ip).toEqual('string');
+      expect(userLoginRequest.headers).toBeDefined();
+      expect(typeof userLoginRequest.headers).toEqual('object');
+      expect(userLoginRequest.triggerName).toBeDefined();
+      expect(userLoginRequest.triggerName).toBe('beforeLogin');
+      expect(userLoginRequest.log).toBeDefined();
+      expect(typeof userLoginRequest.log).toEqual('object');
+      expect(userLoginRequest.authProvider).toBeDefined();
+      expect(typeof userLoginRequest.authProvider).toEqual('string');
+      expect(userLoginRequest.authData).toBeDefined();
+      expect(typeof userLoginRequest.authData).toEqual('object');
       setTimeout(done, 1000);
     });
 
@@ -344,9 +352,9 @@ describe('beforeLogin', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData).toBeDefined();
-      console.log(JSON.stringify(userLoginData, null, 2));
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest).toBeDefined();
+      console.log(JSON.stringify(userLoginRequest, null, 2));
       setTimeout(() => { done.fail('should not be called on failed login with authProvider') }, 1000);
     });
     const authData = {
@@ -402,23 +410,27 @@ describe('beforeLogin', () => {
   });
 
   it('should be able to block username/password login flow if cloud code throws an error', (done) => {
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData.objectId).toBeDefined();
-      expect(typeof userLoginData.objectId).toEqual('string');
-      expect(userLoginData.username).toBeDefined();
-      expect(typeof userLoginData.username).toEqual('string');
-      expect(userLoginData.email).toBeDefined();
-      expect(typeof userLoginData.email).toEqual('string');
-      expect(userLoginData.createdAt).toBeDefined();
-      expect(typeof userLoginData.createdAt).toEqual('string');
-      expect(userLoginData.updatedAt).toBeDefined();
-      expect(typeof userLoginData.updatedAt).toEqual('string');
-      expect(userLoginData.authProvider).toBeDefined();
-      expect(userLoginData.authProvider).toBe('password');
-      expect(userLoginData.authData).toBeDefined();
-      expect(typeof userLoginData.authData).toEqual('object');
-      if (userLoginData.username === 'test') {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginData.username + ' is not authorized');
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest.installationId).toBeDefined();
+      expect(typeof userLoginRequest.installationId).toEqual('string');
+      expect(userLoginRequest.master).toBeDefined();
+      expect(typeof userLoginRequest.master).toEqual('boolean');
+      expect(userLoginRequest.object).toBeDefined();
+      expect(typeof userLoginRequest.object).toEqual('object');
+      expect(userLoginRequest.ip).toBeDefined();
+      expect(typeof userLoginRequest.ip).toEqual('string');
+      expect(userLoginRequest.headers).toBeDefined();
+      expect(typeof userLoginRequest.headers).toEqual('object');
+      expect(userLoginRequest.triggerName).toBeDefined();
+      expect(userLoginRequest.triggerName).toBe('beforeLogin');
+      expect(userLoginRequest.log).toBeDefined();
+      expect(typeof userLoginRequest.log).toEqual('object');
+      expect(userLoginRequest.authProvider).toBeDefined();
+      expect(typeof userLoginRequest.authProvider).toEqual('string');
+      expect(userLoginRequest.authData).toBeDefined();
+      expect(typeof userLoginRequest.authData).toEqual('object');
+      if (userLoginRequest.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.username + ' is not authorized');
       }
     });
     var user = new Parse.User();
@@ -451,23 +463,27 @@ describe('beforeLogin', () => {
     var provider = getMockMyOauthProvider();
     Parse.User._registerAuthenticationProvider(provider);
 
-    Parse.Cloud.beforeLogin((userLoginData) => {
-      expect(userLoginData.objectId).toBeDefined();
-      expect(typeof userLoginData.objectId).toEqual('string');
-      expect(userLoginData.username).toBeDefined();
-      expect(typeof userLoginData.username).toEqual('string');
-      expect(userLoginData.email).toBeDefined();
-      expect(typeof userLoginData.email).toEqual('string');
-      expect(userLoginData.createdAt).toBeDefined();
-      expect(typeof userLoginData.createdAt).toEqual('string');
-      expect(userLoginData.updatedAt).toBeDefined();
-      expect(typeof userLoginData.updatedAt).toEqual('string');
-      expect(userLoginData.authProvider).toBeDefined();
-      expect(typeof userLoginData.authProvider).toEqual('string');
-      expect(userLoginData.authData).toBeDefined();
-      expect(typeof userLoginData.authData).toEqual('object');
-      if (userLoginData.username === 'test') {
-        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginData.username + ' is not authorized');
+    Parse.Cloud.beforeLogin((userLoginRequest) => {
+      expect(userLoginRequest.installationId).toBeDefined();
+      expect(typeof userLoginRequest.installationId).toEqual('string');
+      expect(userLoginRequest.master).toBeDefined();
+      expect(typeof userLoginRequest.master).toEqual('boolean');
+      expect(userLoginRequest.object).toBeDefined();
+      expect(typeof userLoginRequest.object).toEqual('object');
+      expect(userLoginRequest.ip).toBeDefined();
+      expect(typeof userLoginRequest.ip).toEqual('string');
+      expect(userLoginRequest.headers).toBeDefined();
+      expect(typeof userLoginRequest.headers).toEqual('object');
+      expect(userLoginRequest.triggerName).toBeDefined();
+      expect(userLoginRequest.triggerName).toBe('beforeLogin');
+      expect(userLoginRequest.log).toBeDefined();
+      expect(typeof userLoginRequest.log).toEqual('object');
+      expect(userLoginRequest.authProvider).toBeDefined();
+      expect(typeof userLoginRequest.authProvider).toEqual('string');
+      expect(userLoginRequest.authData).toBeDefined();
+      expect(typeof userLoginRequest.authData).toEqual('object');
+      if (userLoginRequest.username === 'test') {
+        throw new Parse.Error(Parse.Error.OTHER_CAUSE, 'user ' + userLoginRequest.username + ' is not authorized');
       }
     });
 

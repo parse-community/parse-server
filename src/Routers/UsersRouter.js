@@ -10,6 +10,9 @@ import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
 import { runBeforeLoginHandler } from '../triggers';
+import { request } from 'https';
+import deepcopy from 'deepcopy';
+
 
 export class UsersRouter extends ClassesRouter {
 
@@ -163,16 +166,19 @@ export class UsersRouter extends ClassesRouter {
         }
         //runBeforeLoginHandler before session creation passing copies of user main properties to avoid current 'user' object mutation
         try {
-          runBeforeLoginHandler({
-            'objectId': user.objectId,
-            'username': user.username,
-            'email': user.email,
-            'name':user.name,
-            'createdAt':user.createdAt,
-            'updatedAt':user.updatedAt,
-            'authProvider': 'password',
-            'authData': {}
-          });
+          var requestUser = deepcopy(user);
+          var hookRequest = {
+            master: req.auth.isMaster,
+            triggerName: 'beforeLogin',
+            log: req.config.loggerController,
+            headers: req.config.headers,
+            ip: req.config.ip,
+            installationId: req.auth.installationId,
+            object: requestUser,
+            authProvider: 'password',
+            authData: {}
+          };
+          runBeforeLoginHandler({hookRequest});
         }
         catch (e) {
           throw e;
