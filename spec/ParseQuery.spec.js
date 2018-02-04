@@ -610,11 +610,9 @@ describe('Parse.Query testing', () => {
         }
       });
     })
-      .then(function (result) {
-        if (result.results.length === 0) {
-          done();
-        }
+      .then(function () {
       }, function () {
+        done();
       });
   });
 
