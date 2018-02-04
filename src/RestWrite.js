@@ -251,17 +251,29 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
     }
     return validateAuthData(authData[provider]).then(() => {
       if (this.response) {
-      // it is a login call
-        runBeforeLoginHandler({
-          'objectId': this.response.response.objectId,
-          'username': this.response.response.username,
-          'email': this.response.response.email,
-          'name': this.response.response.name,
-          'createdAt': this.response.response.createdAt,
-          'updatedAt': this.response.response.updatedAt,
-          'authProvider': Object.keys(authData)[0],
-          'authData': Object.assign({}, authData)
-        });
+        // it is a login call
+        var user = new Parse.User();
+        user.name = this.response.response.name;
+        user.email = this.response.response.email;
+        user.objectId = this.response.response.objectId;
+        user.username = this.response.response.username;
+        var createdAt = this.response.response.createdAt.split(/\D+/);
+        user.createdAt = new Date(Date.UTC(createdAt[0], --createdAt[1], createdAt[2], createdAt[3], createdAt[4], createdAt[5], createdAt[6]));
+        var updatedAt = this.response.response.updatedAt.split(/\D+/);
+        user.updatedAt = new Date(Date.UTC(updatedAt[0], --updatedAt[1], updatedAt[2], updatedAt[3], updatedAt[4], updatedAt[5], updatedAt[6]));
+        var req = {
+          master: this.auth.isMaster,
+          triggerName: 'beforeLogin',
+          log: this.config.loggerController,
+          headers: this.config.headers,
+          ip: this.config.ip,
+          installationId: this.auth.installationId,
+          object: user,
+          authProvider: Object.keys(authData)[0],
+          authData: Object.assign({}, authData)
+        };
+        req.response = this.response;
+        runBeforeLoginHandler(req);
       }
     }).catch((e) => { return Promise.reject(e); });
   });
