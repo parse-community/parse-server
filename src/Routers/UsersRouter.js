@@ -284,14 +284,19 @@ export class UsersRouter extends ClassesRouter {
         throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, `No user found with email ${email}`);
       }
       const user = results[0];
+      
+      // remove password field, messes with saving on postgres
+      delete user.password;
 
       if (user.emailVerified) {
         throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
       }
 
       const userController = req.config.userController;
-      userController.sendVerificationEmail(user);
-      return { response: {} };
+      return userController.regenerateEmailVerifyToken(user).then(() => {
+        userController.sendVerificationEmail(user);
+        return { response: {} };
+      });
     });
   }
 
