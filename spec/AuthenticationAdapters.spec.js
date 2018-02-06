@@ -359,6 +359,20 @@ describe('AuthenticationProviders', function() {
     expect(providerOptions.appSecret).toEqual('secret');
   });
 
+  it('should fail if Facebook appIds is not configured properly', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: []
+      }
+    };
+    const {adapter, appIds} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAppId(appIds)
+      .then(done.fail, err => {
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      })
+  });
+
   it('should fail to validate Facebook accountkit auth with bad token', (done) => {
     const options = {
       facebookaccountkit: {
@@ -378,7 +392,7 @@ describe('AuthenticationProviders', function() {
       })
   });
 
-  it('should fail to validate Facebook accountkit auth with bad taken regardless of app secret proof', (done) => {
+  it('should fail to validate Facebook accountkit auth with bad token regardless of app secret proof', (done) => {
     const options = {
       facebookaccountkit: {
         appIds: ['a', 'b'],

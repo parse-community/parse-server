@@ -40,9 +40,11 @@ function getRequestPath(authData, options) {
 
 function validateAppId(appIds, authData, options) {
   if (!appIds.length) {
-    throw new Parse.Error(
-      Parse.Error.OBJECT_NOT_FOUND,
-      'Facebook app id for Account Kit is not configured.');
+    return Promise.reject(
+      new Parse.Error(
+        Parse.Error.OBJECT_NOT_FOUND,
+        'Facebook app id for Account Kit is not configured.')
+    )
   }
   return graphRequest(getRequestPath(authData, options))
     .then(data => {
