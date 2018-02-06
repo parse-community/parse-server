@@ -27,10 +27,10 @@ var cache = require('../src/cache').default;
 var ParseServer = require('../src/index').ParseServer;
 var path = require('path');
 var TestUtils = require('../src/TestUtils');
-var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';

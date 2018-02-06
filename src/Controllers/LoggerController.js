@@ -46,12 +46,25 @@ export class LoggerController extends AdaptableController {
   }
 
   maskSensitiveUrl(urlString) {
-    const password = url.parse(urlString, true).query.password;
+    const urlObj = url.parse(urlString, true);
+    const query = urlObj.query;
+    let sanitizedQuery = '?';
 
-    if (password) {
-      urlString = urlString.replace('password=' + password, 'password=********');
+    for(const key in query) {
+      if(key !== 'password') {
+        // normal value
+        sanitizedQuery += key + '=' + query[key] + '&';
+      } else {
+        // password value, redact it
+        sanitizedQuery += key + '=' + '********' + '&';
+      }
     }
-    return urlString;
+
+    // trim last character, ? or &
+    sanitizedQuery = sanitizedQuery.slice(0, -1);
+
+    // return original path name with sanitized params attached
+    return urlObj.pathname + sanitizedQuery;
   }
 
   maskSensitive(argArray) {
