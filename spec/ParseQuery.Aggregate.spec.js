@@ -153,9 +153,9 @@ describe('Parse.Query Aggregate testing', () => {
       return query.aggregate(pipeline);
     }).then((results) => {
       const createdAt = new Date(obj1.createdAt);
-      expect(results[0].objectId.day).toEqual(createdAt.getDate());
+      expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
       expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
-      expect(results[0].objectId.year).toEqual(createdAt.getFullYear());
+      expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
       done();
     });
   });

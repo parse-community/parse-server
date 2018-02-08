@@ -1565,7 +1565,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
                 if (!groupByFields.includes(`"${source}"`)) {
                   groupByFields.push(`"${source}"`);
                 }
-                columns.push(`EXTRACT(${mongoAggregateToPostgres[operation]} FROM $${index}:name) AS $${index + 1}:name`);
+                columns.push(`EXTRACT(${mongoAggregateToPostgres[operation]} FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`);
                 values.push(source, alias);
                 index += 2;
               }
