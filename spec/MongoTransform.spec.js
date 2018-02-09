@@ -145,13 +145,25 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('geopoint', (done) => {
-    var input = {location: [180, -180]};
+    var input = {location: [45, -45]};
     var output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'GeoPoint' }},
     });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'GeoPoint', longitude: 180, latitude: -180}
+      {__type: 'GeoPoint', longitude: 45, latitude: -45}
+    );
+    done();
+  });
+
+  it('polygon', (done) => {
+    var input = {location: { type: 'Polygon', coordinates: [[[45, -45],[45, -45]]]}};
+    var output = transform.mongoObjectToParseObject(null, input, {
+      fields: { location: { type: 'Polygon' }},
+    });
+    expect(typeof output.location).toEqual('object');
+    expect(output.location).toEqual(
+      {__type: 'Polygon', coordinates: [[45, -45],[45, -45]]}
     );
     done();
   });
@@ -335,3 +347,128 @@ describe('transformUpdate', () => {
     done();
   });
 });
+
+describe('transformConstraint', () => {
+  describe('$relativeTime', () => {
+    it('should error on $eq, $ne, and $exists', () => {
+      expect(() => {
+        transform.transformConstraint({
+          $eq: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $ne: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $exists: {
+            $relativeTime: '12 days ago',
+          }
+        });
+      }).toThrow();
+    });
+  })
+});
+
+describe('relativeTimeToDate', () => {
+  const now = new Date('2017-09-26T13:28:16.617Z');
+
+  describe('In the future', () => {
+    it('should parse valid natural time', () => {
+      const text = 'in 1 year 2 weeks 12 days 10 hours 24 minutes 30 seconds';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2018-10-22T23:52:46.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('future');
+    });
+  });
+
+  describe('In the past', () => {
+    it('should parse valid natural time', () => {
+      const text = '2 days 12 hours 1 minute 12 seconds ago';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-09-24T01:27:04.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('past');
+    });
+  });
+
+  describe('From now', () => {
+    it('should equal current time', () => {
+      const text = 'now';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-09-26T13:28:16.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('present');
+    });
+  });
+
+  describe('Error cases', () => {
+    it('should error if string is completely gibberish', () => {
+      expect(transform.relativeTimeToDate('gibberishasdnklasdnjklasndkl123j123')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
+    it('should error if string contains neither `ago` nor `in`', () => {
+      expect(transform.relativeTimeToDate('12 hours 1 minute')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
+    it('should error if there are missing units or numbers', () => {
+      expect(transform.relativeTimeToDate('in 12 hours 1')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+
+      expect(transform.relativeTimeToDate('12 hours minute ago')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+    });
+
+    it('should error on floating point numbers', () => {
+      expect(transform.relativeTimeToDate('in 12.3 hours')).toEqual({
+        status: 'error',
+        info: "'12.3' is not an integer.",
+      });
+    });
+
+    it('should error if numbers are invalid', () => {
+      expect(transform.relativeTimeToDate('12 hours 123a minute ago')).toEqual({
+        status: 'error',
+        info: "'123a' is not an integer.",
+      });
+    });
+
+    it('should error on invalid interval units', () => {
+      expect(transform.relativeTimeToDate('4 score 7 years ago')).toEqual({
+        status: 'error',
+        info: "Invalid interval: 'score'",
+      });
+    });
+
+    it("should error when string contains 'ago' and 'in'", () => {
+      expect(transform.relativeTimeToDate('in 1 day 2 minutes ago')).toEqual({
+        status: 'error',
+        info: "Time cannot have both 'in' and 'ago'",
+      });
+    });
+  });
+});
+

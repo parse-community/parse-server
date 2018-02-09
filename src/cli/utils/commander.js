@@ -20,13 +20,6 @@ Command.prototype.loadDefinitions = function(definitions) {
     return program.option(`--${opt} [${opt}]`);
   }, this);
 
-  _defaults = Object.keys(definitions).reduce((defs, opt) => {
-    if(_definitions[opt].default) {
-      defs[opt] = _definitions[opt].default;
-    }
-    return defs;
-  }, {});
-
   _reverseDefinitions = Object.keys(definitions).reduce((object, key) => {
     let value = definitions[key];
     if (typeof value == "object") {
@@ -38,7 +31,14 @@ Command.prototype.loadDefinitions = function(definitions) {
     return object;
   }, {});
 
-   /* istanbul ignore next */
+  _defaults = Object.keys(definitions).reduce((defs, opt) => {
+    if(_definitions[opt].default) {
+      defs[opt] = _definitions[opt].default;
+    }
+    return defs;
+  }, {});
+
+  /* istanbul ignore next */
   this.on('--help', function(){
     console.log('  Configure From Environment:');
     console.log('');

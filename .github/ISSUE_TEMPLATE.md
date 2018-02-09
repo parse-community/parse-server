@@ -4,7 +4,9 @@ If you have a non-bug question, ask on Stack Overflow or Server Fault:
 - https://stackoverflow.com/questions/tagged/parse.com 
 - https://serverfault.com/tags/parse
 
-You may also search through existing issues before opening a new one: https://github.com/ParsePlatform/Parse-Server/issues?utf8=%E2%9C%93&q=is%3Aissue 
+If you have a vulnerability disclosure, please follow our policy available here https://github.com/parse-community/parse-server/blob/master/SECURITY.md
+
+You may also search through existing issues before opening a new one: https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=is%3Aissue 
 
 --- Please use this template. If you don't use this template, your issue may be closed without comment. ---
 

@@ -1,24 +1,21 @@
-import {InMemoryCache} from './InMemoryCache';
+import {LRUCache} from './LRUCache';
 
 export class InMemoryCacheAdapter {
 
   constructor(ctx) {
-    this.cache = new InMemoryCache(ctx)
+    this.cache = new LRUCache(ctx)
   }
 
   get(key) {
-    return new Promise((resolve) => {
-      const record = this.cache.get(key);
-      if (record == null) {
-        return resolve(null);
-      }
-
-      return resolve(JSON.parse(record));
-    })
+    const record = this.cache.get(key);
+    if (record === null) {
+      return Promise.resolve(null);
+    }
+    return Promise.resolve(record);
   }
 
   put(key, value, ttl) {
-    this.cache.put(key, JSON.stringify(value), ttl);
+    this.cache.put(key, value, ttl);
     return Promise.resolve();
   }
 

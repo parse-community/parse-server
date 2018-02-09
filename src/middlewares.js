@@ -106,14 +106,29 @@ export function handleParseHeaders(req, res, next) {
     req.body = new Buffer(base64, 'base64');
   }
 
+  const clientIp = getClientIp(req);
+
   info.app = AppCache.get(info.appId);
-  req.config = new Config(info.appId, mount);
+  req.config = Config.get(info.appId, mount);
+  req.config.headers = req.headers || {};
+  req.config.ip = clientIp;
   req.info = info;
+
+  if (info.masterKey && req.config.masterKeyIps && req.config.masterKeyIps.length !== 0 && req.config.masterKeyIps.indexOf(clientIp) === -1) {
+    return invalidRequest(req, res);
+  }
 
   var isMaster = (info.masterKey === req.config.masterKey);
 
   if (isMaster) {
     req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true });
+    next();
+    return;
+  }
+
+  var isReadOnlyMaster = (info.masterKey === req.config.readOnlyMasterKey);
+  if (typeof req.config.readOnlyMasterKey != 'undefined' && req.config.readOnlyMasterKey && isReadOnlyMaster) {
+    req.auth = new auth.Auth({ config: req.config, installationId: info.installationId, isMaster: true, isReadOnly: true });
     next();
     return;
   }
@@ -168,6 +183,25 @@ export function handleParseHeaders(req, res, next) {
         throw new Parse.Error(Parse.Error.UNKNOWN_ERROR, error);
       }
     });
+}
+
+function getClientIp(req){
+  if (req.headers['x-forwarded-for']) {
+    // try to get from x-forwared-for if it set (behind reverse proxy)
+    return req.headers['x-forwarded-for'].split(',')[0];
+  } else if (req.connection && req.connection.remoteAddress) {
+    // no proxy, try getting from connection.remoteAddress
+    return req.connection.remoteAddress;
+  } else if (req.socket) {
+    // try to get it from req.socket
+    return req.socket.remoteAddress;
+  } else if (req.connection && req.connection.socket) {
+    // try to get it form the connection.socket
+    return req.connection.socket.remoteAddress;
+  } else {
+    // if non above, fallback.
+    return req.ip;
+  }
 }
 
 function httpAuth(req) {

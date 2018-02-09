@@ -15,6 +15,7 @@ const baseStore = function() {
   const Validators = {};
   const Functions = {};
   const Jobs = {};
+  const LiveQuery = [];
   const Triggers = Object.keys(Types).reduce(function(base, key){
     base[key] = {};
     return base;
@@ -24,9 +25,24 @@ const baseStore = function() {
     Functions,
     Jobs,
     Validators,
-    Triggers
+    Triggers,
+    LiveQuery,
   });
 };
+
+function validateClassNameForTriggers(className, type) {
+  const restrictedClassNames = [ '_Session' ];
+  if (restrictedClassNames.indexOf(className) != -1) {
+    throw `Triggers are not supported for ${className} class.`;
+  }
+  if (type == Types.beforeSave && className === '_PushStatus') {
+    // _PushStatus uses undocumented nested key increment ops
+    // allowing beforeSave would mess up the objects big time
+    // TODO: Allow proper documented way of using nested increment ops
+    throw 'Only afterSave is allowed on _PushStatus';
+  }
+  return className;
+}
 
 const _triggerStore = {};
 
@@ -44,9 +60,16 @@ export function addJob(jobName, handler, applicationId) {
 }
 
 export function addTrigger(type, className, handler, applicationId) {
+  validateClassNameForTriggers(className, type);
   applicationId = applicationId || Parse.applicationId;
   _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
   _triggerStore[applicationId].Triggers[type][className] = handler;
+}
+
+export function addLiveQueryEventHandler(handler, applicationId) {
+  applicationId = applicationId || Parse.applicationId;
+  _triggerStore[applicationId] =  _triggerStore[applicationId] || baseStore();
+  _triggerStore[applicationId].LiveQuery.push(handler);
 }
 
 export function removeFunction(functionName, applicationId) {
@@ -54,23 +77,9 @@ export function removeFunction(functionName, applicationId) {
   delete _triggerStore[applicationId].Functions[functionName]
 }
 
-export function removeJob(jobName, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  delete _triggerStore[applicationId].Jobs[jobName]
-}
-
 export function removeTrigger(type, className, applicationId) {
   applicationId = applicationId || Parse.applicationId;
   delete _triggerStore[applicationId].Triggers[type][className]
-}
-
-export function _unregister(appId,category,className,type) {
-  if (type) {
-    removeTrigger(className,type,appId);
-    delete _triggerStore[appId][category][className][type];
-  } else {
-    delete _triggerStore[appId][category][className];
-  }
 }
 
 export function _unregisterAll() {
@@ -133,7 +142,9 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
     triggerName: triggerType,
     object: parseObject,
     master: false,
-    log: config.loggerController
+    log: config.loggerController,
+    headers: config.headers,
+    ip: config.ip,
   };
 
   if (originalParseObject) {
@@ -155,12 +166,18 @@ export function getRequestObject(triggerType, auth, parseObject, originalParseOb
   return request;
 }
 
-export function getRequestQueryObject(triggerType, auth, query, config) {
+export function getRequestQueryObject(triggerType, auth, query, count, config, isGet) {
+  isGet = !!isGet;
+
   var request = {
     triggerName: triggerType,
-    query: query,
+    query,
     master: false,
-    log: config.loggerController
+    count,
+    log: config.loggerController,
+    isGet,
+    headers: config.headers,
+    ip: config.ip,
   };
 
   if (!auth) {
@@ -285,7 +302,7 @@ export function maybeRunAfterFindTrigger(triggerType, auth, className, objects, 
   });
 }
 
-export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth) {
+export function maybeRunQueryTrigger(triggerType, className, restWhere, restOptions, config, auth, isGet) {
   const trigger = getTrigger(className, triggerType, config.applicationId);
   if (!trigger) {
     return Promise.resolve({
@@ -298,6 +315,7 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
   if (restWhere) {
     parseQuery._where = restWhere;
   }
+  let count = false;
   if (restOptions) {
     if (restOptions.include && restOptions.include.length > 0) {
       parseQuery._include = restOptions.include.split(',');
@@ -308,8 +326,9 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (restOptions.limit) {
       parseQuery._limit = restOptions.limit;
     }
+    count = !!restOptions.count;
   }
-  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, config);
+  const requestObject = getRequestQueryObject(triggerType, auth, parseQuery, count, config, isGet);
   return Promise.resolve().then(() => {
     return trigger(requestObject);
   }).then((result) => {
@@ -336,6 +355,22 @@ export function maybeRunQueryTrigger(triggerType, className, restWhere, restOpti
     if (jsonQuery.keys) {
       restOptions = restOptions || {};
       restOptions.keys = jsonQuery.keys;
+    }
+    if (jsonQuery.order) {
+      restOptions = restOptions || {};
+      restOptions.order = jsonQuery.order;
+    }
+    if (requestObject.readPreference) {
+      restOptions = restOptions || {};
+      restOptions.readPreference = requestObject.readPreference;
+    }
+    if (requestObject.includeReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.includeReadPreference = requestObject.includeReadPreference;
+    }
+    if (requestObject.subqueryReadPreference) {
+      restOptions = restOptions || {};
+      restOptions.subqueryReadPreference = requestObject.subqueryReadPreference;
     }
     return {
       restWhere,
@@ -365,11 +400,11 @@ export function maybeRunTrigger(triggerType, auth, parseObject, originalParseObj
     var request = getRequestObject(triggerType, auth, parseObject, originalParseObject, config);
     var response = getResponseObject(request, (object) => {
       logTriggerSuccessBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), object, auth);
+        triggerType, parseObject.className, parseObject.toJSON(), object, auth);
       resolve(object);
     }, (error) => {
       logTriggerErrorBeforeHook(
-          triggerType, parseObject.className, parseObject.toJSON(), auth, error);
+        triggerType, parseObject.className, parseObject.toJSON(), auth, error);
       reject(error);
     });
     // Force the current Parse app before the trigger
@@ -404,4 +439,9 @@ export function inflate(data, restObject) {
     copy[key] = restObject[key];
   }
   return Parse.Object.fromJSON(copy);
+}
+
+export function runLiveQueryEventHandlers(data, applicationId = Parse.applicationId) {
+  if (!_triggerStore || !_triggerStore[applicationId] || !_triggerStore[applicationId].LiveQuery) { return; }
+  _triggerStore[applicationId].LiveQuery.forEach((handler) => handler(data));
 }

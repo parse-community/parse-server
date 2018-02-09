@@ -142,12 +142,13 @@ function makeExpressHandler(appId, promiseHandler) {
     try {
       const url = maskSensitiveUrl(req);
       const body = Object.assign({}, req.body);
-      const stringifiedBody = JSON.stringify(body, null, 2);
-      log.verbose(`REQUEST for [${req.method}] ${url}: ${stringifiedBody}`, {
-        method: req.method,
-        url: url,
-        headers: req.headers,
-        body: body
+      const method = req.method;
+      const headers = req.headers;
+      log.logRequest({
+        method,
+        url,
+        headers,
+        body
       });
       promiseHandler(req).then((result) => {
         if (!result.response && !result.location && !result.text) {
@@ -155,11 +156,7 @@ function makeExpressHandler(appId, promiseHandler) {
           throw 'control should not get here';
         }
 
-        const stringifiedResponse = JSON.stringify(result, null, 2);
-        log.verbose(
-          `RESPONSE from [${req.method}] ${url}: ${stringifiedResponse}`,
-          {result: result}
-        );
+        log.logResponse({ method, url, result });
 
         var status = result.status || 200;
         res.status(status);

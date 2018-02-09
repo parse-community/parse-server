@@ -13,8 +13,13 @@ export default class MongoCollection {
   // none, then build the geoindex.
   // This could be improved a lot but it's not clear if that's a good
   // idea. Or even if this behavior is a good idea.
-  find(query, { skip, limit, sort, keys, maxTimeMS } = {}) {
-    return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS })
+  find(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
+    // Support for Full Text Search - $text
+    if(keys && keys.$score) {
+      delete keys.$score;
+      keys.score = {$meta: 'textScore'};
+    }
+    return this._rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference })
       .catch(error => {
         // Check for "no geoindex" error
         if (error.code != 17007 && !error.message.match(/unable to find index for .geoNear/)) {
@@ -30,13 +35,13 @@ export default class MongoCollection {
         index[key] = '2d';
         return this._mongoCollection.createIndex(index)
           // Retry, but just once.
-          .then(() => this._rawFind(query, { skip, limit, sort, keys, maxTimeMS }));
+          .then(() => this._rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference }));
       });
   }
 
-  _rawFind(query, { skip, limit, sort, keys, maxTimeMS } = {}) {
+  _rawFind(query, { skip, limit, sort, keys, maxTimeMS, readPreference } = {}) {
     let findOperation = this._mongoCollection
-      .find(query, { skip, limit, sort })
+      .find(query, { skip, limit, sort, readPreference })
 
     if (keys) {
       findOperation = findOperation.project(keys);
@@ -49,10 +54,18 @@ export default class MongoCollection {
     return findOperation.toArray();
   }
 
-  count(query, { skip, limit, sort, maxTimeMS } = {}) {
-    const countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS });
+  count(query, { skip, limit, sort, maxTimeMS, readPreference } = {}) {
+    const countOperation = this._mongoCollection.count(query, { skip, limit, sort, maxTimeMS, readPreference });
 
     return countOperation;
+  }
+
+  distinct(field, query) {
+    return this._mongoCollection.distinct(field, query);
+  }
+
+  aggregate(pipeline, { maxTimeMS, readPreference } = {}) {
+    return this._mongoCollection.aggregate(pipeline, { maxTimeMS, readPreference }).toArray();
   }
 
   insertOne(object) {
@@ -72,10 +85,6 @@ export default class MongoCollection {
 
   updateMany(query, update) {
     return this._mongoCollection.updateMany(query, update);
-  }
-
-  deleteOne(query) {
-    return this._mongoCollection.deleteOne(query);
   }
 
   deleteMany(query) {

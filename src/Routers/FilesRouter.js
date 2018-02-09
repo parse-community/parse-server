@@ -8,7 +8,7 @@ import logger              from '../logger';
 
 export class FilesRouter {
 
-  expressRouter(options = {}) {
+  expressRouter({ maxUploadSize = '20Mb' } = {}) {
     var router = express.Router();
     router.get('/files/:appId/:filename', this.getHandler);
 
@@ -19,7 +19,7 @@ export class FilesRouter {
 
     router.post('/files/:filename',
       Middlewares.allowCrossDomain,
-      BodyParser.raw({type: () => { return true; }, limit: options.maxUploadSize || '20mb'}), // Allow uploads without Content-Type, or with any Content-Type.
+      BodyParser.raw({type: () => { return true; }, limit: maxUploadSize }), // Allow uploads without Content-Type, or with any Content-Type.
       Middlewares.handleParseHeaders,
       this.createHandler
     );
@@ -34,10 +34,10 @@ export class FilesRouter {
   }
 
   getHandler(req, res) {
-    const config = new Config(req.params.appId);
+    const config = Config.get(req.params.appId);
     const filesController = config.filesController;
     const filename = req.params.filename;
-    const contentType = mime.lookup(filename);
+    const contentType = mime.getType(filename);
     if (isFileStreamable(req, filesController)) {
       filesController.getFileStream(config, filename).then((stream) => {
         handleFileStream(stream, req, res, contentType);
@@ -108,87 +108,74 @@ export class FilesRouter {
 }
 
 function isFileStreamable(req, filesController){
-  if (req.get('Range')) {
-    if (!(typeof filesController.adapter.getFileStream === 'function')) {
-      return false;
-    }
-    if (typeof filesController.adapter.constructor.name !== 'undefined') {
-      if (filesController.adapter.constructor.name == 'GridStoreAdapter') {
-        return true;
-      }
-    }
-  }
-  return false;
+  return  req.get('Range') && typeof filesController.adapter.getFileStream === 'function';
+}
+
+function getRange(req) {
+  const parts = req.get('Range').replace(/bytes=/, "").split("-");
+  return { start: parseInt(parts[0], 10), end: parseInt(parts[1], 10) };
 }
 
 // handleFileStream is licenced under Creative Commons Attribution 4.0 International License (https://creativecommons.org/licenses/by/4.0/).
 // Author: LEROIB at weightingformypizza (https://weightingformypizza.wordpress.com/2015/06/24/stream-html5-media-content-like-video-audio-from-mongodb-using-express-and-gridstore/).
 function handleFileStream(stream, req, res, contentType) {
-  var buffer_size = 1024 * 1024;//1024Kb
+  const buffer_size = 1024 * 1024; //1024Kb
   // Range request, partiall stream the file
-  var parts = req.get('Range').replace(/bytes=/, "").split("-");
-  var partialstart = parts[0];
-  var partialend = parts[1];
-  var start = partialstart ? parseInt(partialstart, 10) : 0;
-  var end = partialend ? parseInt(partialend, 10) : stream.length - 1;
-  var chunksize = (end - start) + 1;
+  let {
+    start, end
+  } = getRange(req);
 
-  if (chunksize == 1) {
-    start = 0;
-    partialend = false;
+  const notEnded = (!end && end !== 0);
+  const notStarted = (!start && start !== 0);
+  // No end provided, we want all bytes
+  if (notEnded) {
+    end = stream.length - 1;
+  }
+  // No start provided, we're reading backwards
+  if (notStarted) {
+    start = stream.length - end;
+    end = start + end - 1;
   }
 
-  if (!partialend) {
-    if (((stream.length - 1) - start) < (buffer_size)) {
-      end = stream.length - 1;
-    }else{
-      end = start + (buffer_size);
-    }
-    chunksize = (end - start) + 1;
+  // Data exceeds the buffer_size, cap
+  if (end - start >= buffer_size) {
+    end = start + buffer_size - 1;
   }
 
-  if (start == 0 && end == 2) {
-    chunksize = 1;
-  }
+  const contentLength = (end - start) + 1;
 
   res.writeHead(206, {
     'Content-Range': 'bytes ' + start + '-' + end + '/' + stream.length,
     'Accept-Ranges': 'bytes',
-    'Content-Length': chunksize,
+    'Content-Length': contentLength,
     'Content-Type': contentType,
   });
 
   stream.seek(start, function () {
     // get gridFile stream
-    var gridFileStream = stream.stream(true);
-    var bufferAvail = 0;
-    var range = (end - start) + 1;
-    var totalbyteswanted = (end - start) + 1;
-    var totalbyteswritten = 0;
+    const gridFileStream = stream.stream(true);
+    let bufferAvail = 0;
+    let remainingBytesToWrite = contentLength;
+    let totalBytesWritten = 0;
     // write to response
-    gridFileStream.on('data', function (buff) {
-      bufferAvail += buff.length;
-      //Ok check if we have enough to cover our range
-      if (bufferAvail < range) {
-        //Not enough bytes to satisfy our full range
-        if (bufferAvail > 0) {
-          //Write full buffer
-          res.write(buff);
-          totalbyteswritten += buff.length;
-          range -= buff.length;
-          bufferAvail -= buff.length;
-        }
-      } else {
-        //Enough bytes to satisfy our full range!
-        if (bufferAvail > 0) {
-          const buffer = buff.slice(0,range);
-          res.write(buffer);
-          totalbyteswritten += buffer.length;
-          bufferAvail -= range;
-        }
+    gridFileStream.on('data', function (data) {
+      bufferAvail += data.length;
+      if (bufferAvail > 0) {
+        // slice returns the same buffer if overflowing
+        // safe to call in any case
+        const buffer = data.slice(0, remainingBytesToWrite);
+        // write the buffer
+        res.write(buffer);
+        // increment total
+        totalBytesWritten += buffer.length;
+        // decrement remaining
+        remainingBytesToWrite -= data.length;
+        // decrement the avaialbe buffer
+        bufferAvail -= buffer.length;
       }
-      if (totalbyteswritten >= totalbyteswanted) {
-        //totalbytes = 0;
+      // in case of small slices, all values will be good at that point
+      // we've written enough, end...
+      if (totalBytesWritten >= contentLength) {
         stream.close();
         res.end();
         this.destroy();
