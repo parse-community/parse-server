@@ -1464,7 +1464,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('distinct', className, query);
     let field = fieldName;
     let column = fieldName;
-    if (fieldName.indexOf('.') >= 0) {
+    const isNested = fieldName.indexOf('.') >= 0;
+    if (isNested) {
       field = transformDotFieldToComponents(fieldName).join('->');
       column = fieldName.split('.')[0];
     }
@@ -1480,7 +1481,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const transformer = isArrayField ? 'jsonb_array_elements' : 'ON';
-    const qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    let qs = `SELECT DISTINCT ${transformer}($1:name) $2:name FROM $3:name ${wherePattern}`;
+    if (isNested) {
+      qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    }
     debug(qs, values);
     return this._client.any(qs, values)
       .catch((error) => {
@@ -1490,7 +1494,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw error;
       })
       .then((results) => {
-        if (fieldName.indexOf('.') === -1) {
+        if (!isNested) {
           results = results.filter((object) => object[field] !== null);
           return results.map(object => {
             if (!isPointerField) {
