@@ -421,7 +421,13 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, { new: true }))
-      .then(result => mongoObjectToParseObject(className, result.value, schema));
+      .then(result => mongoObjectToParseObject(className, result.value, schema))
+      .catch(error => {
+        if (error.code === 11000) {
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+        }
+        throw error;
+      });
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
