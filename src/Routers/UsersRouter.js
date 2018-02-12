@@ -9,6 +9,9 @@ import Auth           from '../Auth';
 import passwordCrypto from '../password';
 import RestWrite      from '../RestWrite';
 const cryptoUtils = require('../cryptoUtils');
+import { runBeforeLoginHandler } from '../triggers';
+import deepcopy from 'deepcopy';
+
 
 export class UsersRouter extends ClassesRouter {
 
@@ -141,7 +144,6 @@ export class UsersRouter extends ClassesRouter {
               throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
           }
         }
-
         const token = 'r:' + cryptoUtils.newToken();
         user.sessionToken = token;
         delete user.password;
@@ -160,6 +162,25 @@ export class UsersRouter extends ClassesRouter {
           if (Object.keys(user.authData).length == 0) {
             delete user.authData;
           }
+        }
+        //runBeforeLoginHandler before session creation passing copies of user main properties to avoid current 'user' object mutation
+        try {
+          var requestUser = deepcopy(user);
+          var hookRequest = {
+            master: req.auth.isMaster,
+            triggerName: 'beforeLogin',
+            log: req.config.loggerController,
+            headers: req.config.headers,
+            ip: req.config.ip,
+            installationId: req.auth.installationId,
+            object: requestUser,
+            authProvider: 'password',
+            authData: {}
+          };
+          runBeforeLoginHandler(hookRequest);
+        }
+        catch (e) {
+          throw e;
         }
 
         req.config.filesController.expandFilesInObject(req.config, user);

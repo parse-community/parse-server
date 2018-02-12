@@ -14,6 +14,7 @@ var ClientSDK = require('./ClientSDK');
 import RestQuery from './RestQuery';
 import _         from 'lodash';
 import logger    from './logger';
+import { runBeforeLoginHandler } from './triggers';
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -248,7 +249,24 @@ RestWrite.prototype.handleAuthDataValidation = function(authData) {
       throw new Parse.Error(Parse.Error.UNSUPPORTED_SERVICE,
         'This authentication method is unsupported.');
     }
-    return validateAuthData(authData[provider]);
+    return validateAuthData(authData[provider]).then(() => {
+      if (this.response) {
+        // it is a login call
+        var requestUser = deepcopy(this.response.response);
+        var hookRequest = {
+          master: this.auth.isMaster,
+          triggerName: 'beforeLogin',
+          log: this.config.loggerController,
+          headers: this.config.headers,
+          ip: this.config.ip,
+          installationId: this.auth.installationId,
+          object: requestUser,
+          authProvider: Object.keys(authData)[0],
+          authData: Object.assign({}, authData)
+        };
+        runBeforeLoginHandler(hookRequest);
+      }
+    }).catch((e) => { return Promise.reject(e); });
   });
   return Promise.all(validations);
 }
