@@ -11,6 +11,8 @@ import * as utils             from './utils';
 import { ParseMessageQueue }  from '../ParseMessageQueue';
 import { PushQueue }          from './PushQueue';
 import logger                 from '../logger';
+import RestQuery              from '../RestQuery';
+import RestWrite              from '../RestWrite';
 
 function groupByBadge(installations) {
   return installations.reduce((map, installation) => {
@@ -85,6 +87,22 @@ export class PushWorker {
       logger.verbose(`Sending push to ${installations.length}`);
       return this.adapter.send(body, installations, pushStatus.objectId).then((results) => {
         return pushStatus.trackSent(results, UTCOffset).then(() => results);
+      }).then(() => {
+        if (body.data && body.data.badge) {
+          // Increment update has been changed to a specific value now, so just set the value.
+          const restUpdate = { badge: body.data.badge }
+
+          // Build a real RestQuery so we can use it in RestWrite
+          const badgeWhere = {objectId: {"$in": installations.map((installation) => {return installation.objectId})}};
+          const restQuery = new RestQuery(config, master(config), '_Installation', badgeWhere);
+
+          // Don't make the system wait for the installation updates. Just run and forget.
+          restQuery.buildRestWhere().then(() => {
+            const write = new RestWrite(config, master(config), '_Installation', restQuery.restWhere, restUpdate);
+            write.runOptions.many = true;
+            write.execute();
+          });
+        }
       });
     }
 
@@ -94,7 +112,8 @@ export class PushWorker {
     // Map the on the badges count and return the send result
     const promises = Object.keys(badgeInstallationsMap).map((badge) => {
       const payload = deepcopy(body);
-      payload.data.badge = parseInt(badge);
+      // Update the payload value to the new value.
+      payload.data.badge = parseInt(badge) + 1;
       const installations = badgeInstallationsMap[badge];
       return this.sendToAdapter(payload, installations, pushStatus, config, UTCOffset);
     });

@@ -1,9 +1,7 @@
 import { Parse }              from 'parse/node';
-import RestQuery              from '../RestQuery';
 import RestWrite              from '../RestWrite';
 import { master }             from '../Auth';
 import { pushStatusHandler }  from '../StatusHandler';
-import { applyDeviceTokenExists } from '../Push/utils';
 
 export class PushController {
 
@@ -35,39 +33,11 @@ export class PushController {
 
     // TODO: If the req can pass the checking, we return immediately instead of waiting
     // pushes to be sent. We probably change this behaviour in the future.
-    let badgeUpdate = () => {
-      return Promise.resolve();
-    }
-
-    if (body.data && body.data.badge) {
-      const badge = body.data.badge;
-      let restUpdate = {};
-      if (typeof badge == 'string' && badge.toLowerCase() === 'increment') {
-        restUpdate = { badge: { __op: 'Increment', amount: 1 } }
-      } else if (Number(badge)) {
-        restUpdate = { badge: badge }
-      } else {
-        throw "Invalid value for badge, expected number or 'Increment'";
-      }
-
-      // Force filtering on only valid device tokens
-      const updateWhere = applyDeviceTokenExists(where);
-      badgeUpdate = () => {
-        // Build a real RestQuery so we can use it in RestWrite
-        const restQuery = new RestQuery(config, master(config), '_Installation', updateWhere);
-        return restQuery.buildRestWhere().then(() => {
-          const write = new RestWrite(config, master(config), '_Installation', restQuery.restWhere, restUpdate);
-          write.runOptions.many = true;
-          return write.execute();
-        });
-      }
-    }
     const pushStatus = pushStatusHandler(config);
     return Promise.resolve().then(() => {
       return pushStatus.setInitial(body, where);
     }).then(() => {
       onPushStatusSaved(pushStatus.objectId);
-      return badgeUpdate();
     }).then(() => {
       // Update audience lastUsed and timesUsed
       if (body.audience_id) {
