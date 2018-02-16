@@ -589,6 +589,30 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('distinct null field', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: { distinct: 'distinctField' }
+    });
+    const user1 = new Parse.User();
+    user1.setUsername('distinct_1');
+    user1.setPassword('password');
+    user1.set('distinctField', 'one');
+
+    const user2 = new Parse.User();
+    user2.setUsername('distinct_2');
+    user2.setPassword('password');
+    user2.set('distinctField', null);
+    user1.signUp().then(() => {
+      return user2.signUp();
+    }).then(() => {
+      return rp.get(Parse.serverURL + '/aggregate/_User', options);
+    }).then((resp) => {
+      expect(resp.results.length).toEqual(1);
+      expect(resp.results).toEqual(['one']);
+      done();
+    }).catch(done.fail);
+  });
+
   it('does not return sensitive hidden properties', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
