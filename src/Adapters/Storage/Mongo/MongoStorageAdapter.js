@@ -526,7 +526,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
     let isPointerField = false;
     pipeline = pipeline.map((stage) => {
-      if (stage.$group && stage.$group._id) {
+      if (stage.$group && stage.$group._id && (typeof stage.$group._id === 'string')) {
         const field = stage.$group._id.substring(1);
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
           isPointerField = true;
@@ -552,11 +552,20 @@ export class MongoStorageAdapter implements StorageAdapter {
     readPreference = this._parseReadPreference(readPreference);
     return this._adaptiveCollection(className)
       .then(collection => collection.aggregate(pipeline, { readPreference, maxTimeMS: this._maxTimeMS }))
+      .catch(error => {
+        if (error.code === 16006) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, error.message);
+        }
+        throw error;
+      })
       .then(results => {
         results.forEach(result => {
           if (result.hasOwnProperty('_id')) {
             if (isPointerField && result._id) {
               result._id = result._id.split('$')[1];
+            }
+            if (result._id == null || _.isEmpty(result._id)) {
+              result._id = null;
             }
             result.objectId = result._id;
             delete result._id;
