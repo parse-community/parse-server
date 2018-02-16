@@ -26,9 +26,9 @@ describe('Installations', () => {
   });
 
   it('creates an android installation with ids', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var device = 'android';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const device = 'android';
+    const input = {
       'installationId': installId,
       'deviceType': device
     };
@@ -36,7 +36,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         done();
@@ -44,9 +44,9 @@ describe('Installations', () => {
   });
 
   it('creates an ios installation with ids', (done) => {
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var device = 'ios';
-    var input = {
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const device = 'ios';
+    const input = {
       'deviceToken': t,
       'deviceType': device
     };
@@ -54,7 +54,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.deviceToken).toEqual(t);
         expect(obj.deviceType).toEqual(device);
         done();
@@ -62,9 +62,9 @@ describe('Installations', () => {
   });
 
   it('creates an embedded installation with ids', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var device = 'embedded';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const device = 'embedded';
+    const input = {
       'installationId': installId,
       'deviceType': device
     };
@@ -72,7 +72,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         done();
@@ -80,9 +80,9 @@ describe('Installations', () => {
   });
 
   it('creates an android installation with all fields', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var device = 'android';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const device = 'android';
+    const input = {
       'installationId': installId,
       'deviceType': device,
       'channels': ['foo', 'bar']
@@ -91,7 +91,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         expect(typeof obj.channels).toEqual('object');
@@ -103,9 +103,9 @@ describe('Installations', () => {
   });
 
   it('creates an ios installation with all fields', (done) => {
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var device = 'ios';
-    var input = {
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const device = 'ios';
+    const input = {
       'deviceToken': t,
       'deviceType': device,
       'channels': ['foo', 'bar']
@@ -114,7 +114,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.deviceToken).toEqual(t);
         expect(obj.deviceType).toEqual(device);
         expect(typeof obj.channels).toEqual('object');
@@ -126,9 +126,9 @@ describe('Installations', () => {
   });
 
   it('should properly fail queying installations', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var device = 'android';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const device = 'android';
+    const input = {
       'installationId': installId,
       'deviceType': device
     };
@@ -147,9 +147,9 @@ describe('Installations', () => {
   });
 
   it('should properly queying installations with masterKey', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var device = 'android';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const device = 'android';
+    const input = {
       'installationId': installId,
       'deviceType': device
     };
@@ -159,7 +159,7 @@ describe('Installations', () => {
         return query.find({useMasterKey: true});
       }).then((results) => {
         expect(results.length).toEqual(1);
-        var obj = results[0].toJSON();
+        const obj = results[0].toJSON();
         expect(obj.installationId).toEqual(installId);
         expect(obj.deviceType).toEqual(device);
         done();
@@ -170,7 +170,7 @@ describe('Installations', () => {
   });
 
   it('fails with missing ids', (done) => {
-    var input = {
+    const input = {
       'deviceType': 'android',
       'channels': ['foo', 'bar']
     };
@@ -185,8 +185,8 @@ describe('Installations', () => {
   });
 
   it('fails for android with missing type', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const input = {
       'installationId': installId,
       'channels': ['foo', 'bar']
     };
@@ -201,8 +201,8 @@ describe('Installations', () => {
   });
 
   it('creates an object with custom fields', (done) => {
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var input = {
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
       'deviceToken': t,
       'deviceType': 'ios',
       'channels': ['foo', 'bar'],
@@ -212,7 +212,7 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj.custom).toEqual('allowed');
         done();
       }).catch((error) => { console.log(error); });
@@ -221,16 +221,16 @@ describe('Installations', () => {
   // Note: did not port test 'TestObjectIDForIdentifiers'
 
   it('merging when installationId already exists', (done) => {
-    var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var input = {
+    const installId1 = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const input = {
       'deviceToken': t,
       'deviceType': 'ios',
       'installationId': installId1,
       'channels': ['foo', 'bar']
     };
-    var firstObject;
-    var secondObject;
+    let firstObject;
+    let secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input)
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
@@ -253,23 +253,23 @@ describe('Installations', () => {
   });
 
   it('merging when two objects both only have one id', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input1 = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const input1 = {
       'installationId': installId,
       'deviceType': 'ios'
     };
-    var input2 = {
+    const input2 = {
       'deviceToken': t,
       'deviceType': 'ios'
     };
-    var input3 = {
+    const input3 = {
       'deviceToken': t,
       'installationId': installId,
       'deviceType': 'ios'
     };
-    var firstObject;
-    var secondObject;
+    let firstObject;
+    let secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input1)
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
@@ -299,11 +299,11 @@ describe('Installations', () => {
   });
 
   xit('creating multiple devices with same device token works', (done) => {
-    var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
-    var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    var installId3 = '33333333-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
+    const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
+    const installId3 = '33333333-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const input = {
       'installationId': installId1,
       'deviceType': 'ios',
       'deviceToken': t
@@ -330,7 +330,7 @@ describe('Installations', () => {
   });
 
   it('updating with new channels', (done) => {
-    var input = {
+    const input = {
       installationId: '12345678-abcd-abcd-abcd-123456789abc',
       deviceType: 'android',
       channels: ['foo', 'bar']
@@ -339,8 +339,8 @@ describe('Installations', () => {
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var objectId = results[0].objectId;
-        var update = {
+        const objectId = results[0].objectId;
+        const update = {
           'channels': ['baz']
         };
         return rest.update(config, auth.nobody(config), '_Installation', { objectId }, update);
@@ -358,9 +358,9 @@ describe('Installations', () => {
   });
 
   it('update android fails with new installation id', (done) => {
-    var installId1 = '12345678-abcd-abcd-abcd-123456789abc';
-    var installId2 = '87654321-abcd-abcd-abcd-123456789abc';
-    var input = {
+    const installId1 = '12345678-abcd-abcd-abcd-123456789abc';
+    const installId2 = '87654321-abcd-abcd-abcd-123456789abc';
+    let input = {
       'installationId': installId1,
       'deviceType': 'android',
       'channels': ['foo', 'bar']
@@ -381,9 +381,9 @@ describe('Installations', () => {
   });
 
   it('update ios fails with new deviceToken and no installationId', (done) => {
-    var a = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var b = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var input = {
+    const a = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const b = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    let input = {
       'deviceToken': a,
       'deviceType': 'ios',
       'channels': ['foo', 'bar']
@@ -403,10 +403,10 @@ describe('Installations', () => {
   });
 
   it('update ios updates device token', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var u = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '11433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    const u = '91433856eed2f1285fb3aa11136718c1198ed5647875096952c66bf8cb976306';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios',
       'deviceToken': t,
@@ -435,8 +435,8 @@ describe('Installations', () => {
   });
 
   it('update fails to change deviceType', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let input = {
       'installationId': installId,
       'deviceType': 'android',
       'channels': ['foo', 'bar']
@@ -459,8 +459,8 @@ describe('Installations', () => {
   });
 
   it('update android with custom field', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let input = {
       'installationId': installId,
       'deviceType': 'android',
       'channels': ['foo', 'bar']
@@ -483,16 +483,16 @@ describe('Installations', () => {
   });
 
   it('update android device token with duplicate device token', (done) => {
-    var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
-    var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
+    const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId1,
       'deviceToken': t,
       'deviceType': 'android'
     };
-    var firstObject;
-    var secondObject;
+    let firstObject;
+    let secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input)
       .then(() => {
         input = {
@@ -528,16 +528,16 @@ describe('Installations', () => {
   });
 
   it('update ios device token with duplicate device token', (done) => {
-    var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
-    var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
+    const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId1,
       'deviceToken': t,
       'deviceType': 'ios'
     };
-    var firstObject;
-    var secondObject;
+    let firstObject;
+    let secondObject;
     rest.create(config, auth.nobody(config), '_Installation', input)
       .then(() => {
         input = {
@@ -577,10 +577,10 @@ describe('Installations', () => {
   });
 
   xit('update ios device token with duplicate token different app', (done) => {
-    var installId1 = '11111111-abcd-abcd-abcd-123456789abc';
-    var installId2 = '22222222-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId1 = '11111111-abcd-abcd-abcd-123456789abc';
+    const installId2 = '22222222-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const input = {
       'installationId': installId1,
       'deviceToken': t,
       'deviceType': 'ios',
@@ -605,9 +605,9 @@ describe('Installations', () => {
   });
 
   it('update ios token and channels', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios'
     };
@@ -635,9 +635,9 @@ describe('Installations', () => {
   });
 
   it('update ios linking two existing objects', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios'
     };
@@ -673,9 +673,9 @@ describe('Installations', () => {
   });
 
   it('update is linking two existing objects w/ increment', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios'
     };
@@ -716,14 +716,14 @@ describe('Installations', () => {
   });
 
   it('update is linking two existing with installation id', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios'
     };
-    var installObj;
-    var tokenObj;
+    let installObj;
+    let tokenObj;
     rest.create(config, auth.nobody(config), '_Installation', input)
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
@@ -759,14 +759,14 @@ describe('Installations', () => {
   });
 
   it('update is linking two existing with installation id w/ op', (done) => {
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var input = {
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    let input = {
       'installationId': installId,
       'deviceType': 'ios'
     };
-    var installObj;
-    var tokenObj;
+    let installObj;
+    let tokenObj;
     rest.create(config, auth.nobody(config), '_Installation', input)
       .then(() => database.adapter.find('_Installation', installationSchema, {}, {}))
       .then(results => {
@@ -817,9 +817,9 @@ describe('Installations', () => {
     // imported installation, then we should reuse the existing installation
     // object in case the developer already added additional fields via Data
     // Browser or REST API (e.g. channel targeting info).
-    var t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
-    var installId = '12345678-abcd-abcd-abcd-123456789abc';
-    var input = {
+    const t = '0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef';
+    const installId = '12345678-abcd-abcd-abcd-123456789abc';
+    let input = {
       'deviceToken': t,
       'deviceType': 'ios'
     };

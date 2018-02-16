@@ -1,11 +1,11 @@
-var request = require("request");
+const request = require("request");
 
 function createProduct() {
   const file = new Parse.File("name", {
     base64: new Buffer("download_file", "utf-8").toString("base64")
   }, "text");
   return file.save().then(function(){
-    var product = new Parse.Object("_Product");
+    const product = new Parse.Object("_Product");
     product.set({
       download: file,
       icon: file,
@@ -160,7 +160,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should not create a _Product", (done) => {
-    var product = new Parse.Object("_Product");
+    const product = new Parse.Object("_Product");
     product.save().then(function(){
       fail("Should not be able to save");
       done();
@@ -171,7 +171,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should be able to update a _Product", (done) => {
-    var query = new Parse.Query("_Product");
+    const query = new Parse.Query("_Product");
     query.first().then(function(product) {
       if (!product) {
         return Promise.reject(new Error('Product should be found'));
@@ -189,7 +189,7 @@ describe("test validate_receipt endpoint", () => {
   });
 
   it("should not be able to remove a require key in a _Product", (done) => {
-    var query = new Parse.Query("_Product");
+    const query = new Parse.Query("_Product");
     query.first().then(function(product){
       if (!product) {
         return Promise.reject(new Error('Product should be found'));

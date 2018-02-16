@@ -1,13 +1,13 @@
-var PushWorker = require('../src').PushWorker;
-var PushUtils = require('../src/Push/utils');
-var Config = require('../src/Config');
-var { pushStatusHandler } = require('../src/StatusHandler');
-var rest = require('../src/rest');
+const PushWorker = require('../src').PushWorker;
+const PushUtils = require('../src/Push/utils');
+const Config = require('../src/Config');
+const { pushStatusHandler } = require('../src/StatusHandler');
+const rest = require('../src/rest');
 
 describe('PushWorker', () => {
   it('should run with small batch', (done) => {
     const batchSize = 3;
-    var sendCount = 0;
+    let sendCount = 0;
     reconfigureServer({
       push: {
         queueOptions: {
@@ -27,9 +27,9 @@ describe('PushWorker', () => {
           return ['ios', 'android']
         }
       });
-      var installations = [];
+      const installations = [];
       while(installations.length != 10) {
-        var installation = new Parse.Object("_Installation");
+        const installation = new Parse.Object("_Installation");
         installation.set("installationId", "installation_" + installations.length);
         installation.set("deviceToken","device_token_" + installations.length)
         installation.set("badge", 1);

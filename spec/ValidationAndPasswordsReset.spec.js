@@ -18,7 +18,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       publicServerURL: "https://my.public.server.com/1"
     })
       .then(() => {
-        var config = Config.get("test");
+        const config = Config.get("test");
         expect(config.invalidLinkURL).toEqual("myInvalidLink");
         expect(config.verifyEmailSuccessURL).toEqual("myVerifyEmailSuccess");
         expect(config.choosePasswordURL).toEqual("myChoosePassword");
@@ -31,7 +31,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('sends verification email if email verification is enabled', done => {
-    var emailAdapter = {
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
@@ -44,7 +44,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     })
       .then(() => {
         spyOn(emailAdapter, 'sendVerificationEmail');
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.setEmail('testIfEnabled@parse.com');
@@ -66,7 +66,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does not send verification email when verification is enabled and email is not set', done => {
-    var emailAdapter = {
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
@@ -79,7 +79,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     })
       .then(() => {
         spyOn(emailAdapter, 'sendVerificationEmail');
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.signUp(null, {
@@ -100,7 +100,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does send a validation email when updating the email', done => {
-    var emailAdapter = {
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
@@ -113,7 +113,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     })
       .then(() => {
         spyOn(emailAdapter, 'sendVerificationEmail');
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.signUp(null, {
@@ -143,7 +143,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does send a validation email with valid verification link when updating the email', done => {
-    var emailAdapter = {
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
@@ -160,7 +160,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
           expect(options.link).not.toMatch(/token=undefined/);
           Promise.resolve();
         });
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.signUp(null, {
@@ -190,8 +190,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does send with a simple adapter', done => {
-    var calls = 0;
-    var emailAdapter = {
+    let calls = 0;
+    const emailAdapter = {
       sendMail: function(options){
         expect(options.to).toBe('testSendSimpleAdapter@parse.com');
         if (calls == 0) {
@@ -212,7 +212,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       publicServerURL: "http://localhost:8378/1"
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.set("email", "testSendSimpleAdapter@parse.com");
@@ -277,9 +277,9 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('allows user to login only after user clicks on the link to confirm email address if preventLoginWithUnverifiedEmail is set to true', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -524,7 +524,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does not send verification email if email verification is disabled', done => {
-    var emailAdapter = {
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => Promise.resolve()
@@ -537,7 +537,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
     })
       .then(() => {
         spyOn(emailAdapter, 'sendVerificationEmail');
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.signUp(null, {
@@ -558,8 +558,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('receives the app name and user in the adapter', done => {
-    var emailSent = false;
-    var emailAdapter = {
+    let emailSent = false;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         expect(options.appName).toEqual('emailing app');
         expect(options.user.get('email')).toEqual('user@parse.com');
@@ -575,7 +575,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
       publicServerURL: "http://localhost:8378/1"
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setPassword("asdf");
         user.setUsername("zxcv");
         user.set('email', 'user@parse.com');
@@ -593,9 +593,9 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   })
 
   it('when you click the link in the email it sets emailVerified to true and redirects you', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -706,8 +706,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('does not update email verified if you use an invalid token', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => {
         request.get('http://localhost:8378/1/apps/test/verify_email?token=invalid&username=zxcv', {
           followRedirect: false,
@@ -745,8 +745,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('should send a password reset link', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         request.get(options.link, {
@@ -758,7 +758,7 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             return;
           }
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=zxcv%2Bzxcv/;
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=[a-zA-Z0-9]+\&id=test\&username=zxcv%2Bzxcv/;
           expect(response.body.match(re)).not.toBe(null);
           done();
         });
@@ -810,8 +810,8 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
   });
 
   it('should programatically reset password', done => {
-    var user = new Parse.User();
-    var emailAdapter = {
+    const user = new Parse.User();
+    const emailAdapter = {
       sendVerificationEmail: () => Promise.resolve(),
       sendPasswordResetEmail: options => {
         request.get(options.link, {
@@ -823,14 +823,14 @@ describe("Custom Pages, Email Verification, Password Reset", () => {
             return;
           }
           expect(response.statusCode).toEqual(302);
-          var re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
-          var match = response.body.match(re);
+          const re = /http:\/\/localhost:8378\/1\/apps\/choose_password\?token=([a-zA-Z0-9]+)\&id=test\&username=zxcv/;
+          const match = response.body.match(re);
           if (!match) {
             fail("should have a token");
             done();
             return;
           }
-          var token = match[1];
+          const token = match[1];
 
           request.post({
             url: "http://localhost:8378/1/apps/test/request_password_reset" ,

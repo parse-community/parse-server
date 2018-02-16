@@ -1,9 +1,9 @@
-var cryptoUtils = require('../src/cryptoUtils');
+const cryptoUtils = require('../src/cryptoUtils');
 
 function givesUniqueResults(fn, iterations) {
-  var results = {};
-  for (var i = 0; i < iterations; i++) {
-    var s = fn();
+  const results = {};
+  for (let i = 0; i < iterations; i++) {
+    const s = fn();
     if (results[s]) {
       return false;
     }

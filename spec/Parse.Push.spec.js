@@ -9,12 +9,12 @@ const delayPromise = (delay) => {
 }
 
 describe('Parse.Push', () => {
-  var setup = function() {
-    var sendToInstallationSpy = jasmine.createSpy();
+  const setup = function() {
+    const sendToInstallationSpy = jasmine.createSpy();
 
-    var pushAdapter = {
+    const pushAdapter = {
       send: function(body, installations) {
-        var badge = body.data.badge;
+        const badge = body.data.badge;
         const promises = installations.map((installation) => {
           sendToInstallationSpy(installation);
 
@@ -46,9 +46,9 @@ describe('Parse.Push', () => {
       }
     })
       .then(() => {
-        var installations = [];
+        const installations = [];
         while(installations.length != 10) {
-          var installation = new Parse.Object("_Installation");
+          const installation = new Parse.Object("_Installation");
           installation.set("installationId", "installation_" + installations.length);
           installation.set("deviceToken","device_token_" + installations.length)
           installation.set("badge", installations.length);

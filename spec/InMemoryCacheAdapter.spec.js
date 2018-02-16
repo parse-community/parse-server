@@ -1,8 +1,8 @@
-var InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').default;
+const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').default;
 
 describe('InMemoryCacheAdapter', function() {
-  var KEY = 'hello';
-  var VALUE = 'world';
+  const KEY = 'hello';
+  const VALUE = 'world';
 
   function wait(sleep) {
     return new Promise(function(resolve) {
@@ -11,7 +11,7 @@ describe('InMemoryCacheAdapter', function() {
   }
 
   it('should expose promisifyed methods', (done) => {
-    var cache = new InMemoryCacheAdapter({
+    const cache = new InMemoryCacheAdapter({
       ttl: NaN
     });
 
@@ -27,7 +27,7 @@ describe('InMemoryCacheAdapter', function() {
   });
 
   it('should get/set/clear', (done) => {
-    var cache = new InMemoryCacheAdapter({
+    const cache = new InMemoryCacheAdapter({
       ttl: NaN
     });
 
@@ -41,7 +41,7 @@ describe('InMemoryCacheAdapter', function() {
   });
 
   it('should expire after ttl', (done) => {
-    var cache = new InMemoryCacheAdapter({
+    const cache = new InMemoryCacheAdapter({
       ttl: 10
     });
 

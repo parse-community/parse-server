@@ -1,12 +1,12 @@
 "use strict";
 // These tests check the "create" / "update" functionality of the REST API.
-var auth = require('../src/Auth');
-var Config = require('../src/Config');
-var Parse = require('parse/node').Parse;
-var rest = require('../src/rest');
-var RestWrite = require('../src/RestWrite');
-var request = require('request');
-var rp = require('request-promise');
+const auth = require('../src/Auth');
+const Config = require('../src/Config');
+const Parse = require('parse/node').Parse;
+const rest = require('../src/rest');
+const RestWrite = require('../src/RestWrite');
+const request = require('request');
+const rp = require('request-promise');
 
 let config;
 let database;
@@ -23,7 +23,7 @@ describe('rest create', () => {
       .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
         expect(obj.objectId.length).toEqual(10);
         expect(obj._id).toBeUndefined();
@@ -37,7 +37,7 @@ describe('rest create', () => {
       .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
       .then((results) => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
         expect(obj.objectId.length).toEqual(20);
         done();
@@ -76,7 +76,7 @@ describe('rest create', () => {
 
   it('handles array, object, date', (done) => {
     const now = new Date();
-    var obj = {
+    const obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
       date: Parse._encode(now),
@@ -89,7 +89,7 @@ describe('rest create', () => {
       } }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var mob = results[0];
+        const mob = results[0];
         expect(mob.array instanceof Array).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
@@ -135,7 +135,7 @@ describe('rest create', () => {
   });
 
   it('handles create on non-existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');
@@ -149,7 +149,7 @@ describe('rest create', () => {
   });
 
   it('handles create on existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
       .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
       .then(actualSchema => {
@@ -164,7 +164,7 @@ describe('rest create', () => {
   });
 
   it('handles user signup', (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
@@ -180,21 +180,21 @@ describe('rest create', () => {
   });
 
   it('handles anonymous user signup', (done) => {
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
         }
       }
     };
-    var data2 = {
+    const data2 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000002'
         }
       }
     };
-    var username1;
+    let username1;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -225,7 +225,7 @@ describe('rest create', () => {
   });
 
   it('handles anonymous user signup and upgrade to new user', (done) => {
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -233,12 +233,12 @@ describe('rest create', () => {
       }
     };
 
-    var updatedData = {
+    const updatedData = {
       authData: { anonymous: null },
       username: 'hello',
       password: 'world'
     }
-    var objectId;
+    let objectId;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -263,9 +263,9 @@ describe('rest create', () => {
   });
 
   it('handles no anonymous users config', (done) => {
-    var NoAnnonConfig = Object.assign({}, config);
+    const NoAnnonConfig = Object.assign({}, config);
     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -284,7 +284,7 @@ describe('rest create', () => {
   });
 
   it('test facebook signup and login', (done) => {
-    var data = {
+    const data = {
       authData: {
         facebook: {
           id: '8675309',
@@ -292,7 +292,7 @@ describe('rest create', () => {
         }
       }
     };
-    var newUserSignedUpByFacebookObjectId;
+    let newUserSignedUpByFacebookObjectId;
     rest.create(config, auth.nobody(config), '_User', data)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -310,7 +310,7 @@ describe('rest create', () => {
           '_Session', {sessionToken: r.response.sessionToken});
       }).then((response) => {
         expect(response.results.length).toEqual(1);
-        var output = response.results[0];
+        const output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
       }).catch(err => {
@@ -349,7 +349,7 @@ describe('rest create', () => {
   });
 
   it("cannot set objectId", (done) => {
-    var headers = {
+    const headers = {
       'Content-Type': 'application/octet-stream',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
@@ -362,7 +362,7 @@ describe('rest create', () => {
         'objectId': 'hello'
       })
     }, (error, response, body) => {
-      var b = JSON.parse(body);
+      const b = JSON.parse(body);
       expect(b.code).toEqual(105);
       expect(b.error).toEqual('objectId is an invalid field name.');
       done();
@@ -370,12 +370,12 @@ describe('rest create', () => {
   });
 
   it("test default session length", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    var now = new Date();
+    const now = new Date();
 
     rest.create(config, auth.nobody(config), '_User', user)
       .then((r) => {
@@ -389,9 +389,9 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
-        var actual = new Date(session.expiresAt.iso);
-        var expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
+        const session = r.results[0];
+        const actual = new Date(session.expiresAt.iso);
+        const expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
 
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());
@@ -404,12 +404,12 @@ describe('rest create', () => {
   });
 
   it("test specified session length", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    var sessionLength = 3600, // 1 Hour ahead
+    const sessionLength = 3600, // 1 Hour ahead
       now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
@@ -425,9 +425,9 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
-        var actual = new Date(session.expiresAt.iso);
-        var expected = new Date(now.getTime() + (sessionLength * 1000));
+        const session = r.results[0];
+        const actual = new Date(session.expiresAt.iso);
+        const expected = new Date(now.getTime() + (sessionLength * 1000));
 
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());
@@ -443,7 +443,7 @@ describe('rest create', () => {
   });
 
   it("can create a session with no expiration", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar'
@@ -462,7 +462,7 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
+        const session = r.results[0];
         expect(session.expiresAt).toBeUndefined();
 
         done();
@@ -491,7 +491,7 @@ describe('rest create', () => {
   it("cannot create object in volatileClasses if not masterKey", (done) =>{
     Promise.resolve()
       .then(() => {
-        rest.create(config, auth.nobody(config), '_PushStatus', {})
+        return rest.create(config, auth.nobody(config), '_PushStatus', {})
       })
       .then((r) => {
         console.log(r);
@@ -502,12 +502,12 @@ describe('rest create', () => {
       })
   });
 
-  it ('locks down session', (done) => {
+  it('locks down session', (done) => {
     let currentUser;
     Parse.User.signUp('foo', 'bar').then((user) => {
       currentUser = user;
       const sessionToken = user.getSessionToken();
-      var headers = {
+      const headers = {
         'Content-Type': 'application/octet-stream',
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest',
