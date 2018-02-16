@@ -511,13 +511,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     }
     return this._adaptiveCollection(className)
       .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
-      .then(objects => objects.map(object => {
-        if (isPointerField) {
-          const field = fieldName.substring(3);
-          return transformPointerString(schema, field, object);
-        }
-        return mongoObjectToParseObject(className, object, schema);
-      }));
+      .then(objects => {
+        objects = objects.filter((obj) => obj != null);
+        return objects.map(object => {
+          if (isPointerField) {
+            const field = fieldName.substring(3);
+            return transformPointerString(schema, field, object);
+          }
+          return mongoObjectToParseObject(className, object, schema);
+        });
+      });
   }
 
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
