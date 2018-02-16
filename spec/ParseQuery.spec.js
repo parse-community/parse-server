@@ -616,7 +616,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it('containsAllStartingWith empty array values should return empty results', (done) => {
+  it_exclude_dbs(['postgres'])('containsAllStartingWith empty array values should return empty results', (done) => {
 
     var object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
@@ -646,7 +646,43 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it('containsAllStartingWith single empty values must throw an error', (done) => {
+  it_only_db('postgres')('containsAllStartingWith empty array values should return empty results', (done) => {
+
+    var object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    var object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    var object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    var objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: []
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, objectList.length);
+        done();
+      }, function () {
+      });
+  });
+
+  it_exclude_dbs(['postgres'])('containsAllStartingWith single empty value must throw an exception', (done) => {
 
     var object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
@@ -672,6 +708,36 @@ describe('Parse.Query testing', () => {
       .then(function () {
       }, function () {
         done();
+      });
+  });
+
+  it_only_db('postgres')('containsAllStartingWith single empty value must throw an exception', (done) => {
+
+    var object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
       });
   });
 
@@ -711,19 +777,13 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it('containsAllStartingWith single invalid regex should throw an exception', (done) => {
+  it_exclude_dbs(['postgres'])('containsAllStartingWith single invalid regex should throw an exception', (done) => {
 
     var object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-    var object2 = new Parse.Object('Object');
-    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
-    var object3 = new Parse.Object('Object');
-    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
 
-    var objectList = [object, object2, object3];
-
-    Parse.Object.saveAll(objectList).then((results) => {
-      equal(objectList.length, results.length);
+    object.save().then(() => {
+      equal(object.isNew(), false);
 
       return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
@@ -743,6 +803,36 @@ describe('Parse.Query testing', () => {
       .then(function () {
       }, function () {
         done();
+      });
+  });
+
+  it_only_db('postgres')('containsAllStartingWith single invalid regex should throw an exception', (done) => {
+
+    var object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {$unknown: '\^\\Qlazy\\E'} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
       });
   });
 
