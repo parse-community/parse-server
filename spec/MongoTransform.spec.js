@@ -339,8 +339,31 @@ describe('parseObjectToMongoObjectForCreate', () => {
     var outputValue = {
       arrayField: {'$all': [/^\Qone\E/, /^\Qtwo\E/, /^\Qthree\E/]},
     };
+
     var output = transform.transformWhere(null, input);
     jequal(outputValue.arrayField, output.arrayField);
+    done();
+  });
+
+  it('$regex in $all list must be { $regex: "string" }', (done) => {
+    var input = {
+      arrayField: {'$all': [{$regex: 1}]},
+    };
+
+    expect(() => {
+      transform.transformWhere(null, input)
+    }).toThrow();
+    done();
+  });
+
+  it('all values in $all must be $regex (start with string) or non $regex (start with string)', (done) => {
+    var input = {
+      arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$unknown: '^\\Qtwo\\E'}]},
+    };
+
+    expect(() => {
+      transform.transformWhere(null, input)
+    }).toThrow();
     done();
   });
 });
