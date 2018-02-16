@@ -41,11 +41,6 @@ describe('ParseLiveQueryServer', function() {
     // Mock matchesQuery
     var mockMatchesQuery = jasmine.createSpy('matchesQuery').and.returnValue(true);
     jasmine.mockLibrary('../src/LiveQuery/QueryTools', 'matchesQuery', mockMatchesQuery);
-    // Mock tv4
-    var mockValidate = function() {
-      return true;
-    }
-    jasmine.mockLibrary('tv4', 'validate', mockValidate);
     // Mock ParsePubSub
     var mockParsePubSub = {
       createPublisher: function() {
@@ -350,7 +345,8 @@ describe('ParseLiveQueryServer', function() {
 
     // Check connect request
     var connectRequest = {
-      op: 'connect'
+      op: 'connect',
+      applicationId: '1'
     };
     // Trigger message event
     parseWebSocket.emit('message', connectRequest);
@@ -370,7 +366,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check subscribe request
-    var subscribeRequest = '{"op":"subscribe"}';
+    var subscribeRequest = JSON.stringify({
+      op: 'subscribe',
+      requestId: 1,
+      query: {className: 'Test', where: {}}
+    });
     // Trigger message event
     parseWebSocket.emit('message', subscribeRequest);
     // Make sure _handleSubscribe is called
@@ -390,7 +390,7 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check unsubscribe request
-    var unsubscribeRequest = '{"op":"unsubscribe"}';
+    var unsubscribeRequest = JSON.stringify({op: 'unsubscribe', requestId: 1});
     // Trigger message event
     parseWebSocket.emit('message', unsubscribeRequest);
     // Make sure _handleUnsubscribe is called
@@ -414,7 +414,11 @@ describe('ParseLiveQueryServer', function() {
     parseLiveQueryServer._onConnect(parseWebSocket);
 
     // Check updateRequest request
-    var updateRequest = '{"op":"update"}';
+    var updateRequest = JSON.stringify({
+      op: 'update',
+      requestId: 1,
+      query: {className: 'Test', where: {}}
+    });
     // Trigger message event
     parseWebSocket.emit('message', updateRequest);
     // Make sure _handleUnsubscribe is called
@@ -426,6 +430,22 @@ describe('ParseLiveQueryServer', function() {
     expect(unsubArgs.length).toBe(3);
     expect(unsubArgs[2]).toBe(false);
     expect(parseLiveQueryServer._handleSubscribe).toHaveBeenCalled();
+  });
+
+  it('can set missing command message handler for a parseWebSocket', function() {
+    var parseLiveQueryServer = new ParseLiveQueryServer(10, 10, {});
+    // Make mock parseWebsocket
+    var EventEmitter = require('events');
+    var parseWebSocket = new EventEmitter();
+    // Register message handlers for the parseWebSocket
+    parseLiveQueryServer._onConnect(parseWebSocket);
+
+    // Check invalid request
+    var invalidRequest = '{}';
+    // Trigger message event
+    parseWebSocket.emit('message', invalidRequest);
+    var Client = require('../src/LiveQuery/Client').Client;
+    expect(Client.pushError).toHaveBeenCalled();
   });
 
   it('can set unknown command message handler for a parseWebSocket', function() {
@@ -1193,7 +1213,6 @@ describe('ParseLiveQueryServer', function() {
     jasmine.restoreLibrary('../src/LiveQuery/Subscription', 'Subscription');
     jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'queryHash');
     jasmine.restoreLibrary('../src/LiveQuery/QueryTools', 'matchesQuery');
-    jasmine.restoreLibrary('tv4', 'validate');
     jasmine.restoreLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub');
     jasmine.restoreLibrary('../src/LiveQuery/SessionTokenCache', 'SessionTokenCache');
   });

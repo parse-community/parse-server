@@ -421,7 +421,13 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.findAndModify(mongoWhere, [], mongoUpdate, { new: true }))
-      .then(result => mongoObjectToParseObject(className, result.value, schema));
+      .then(result => mongoObjectToParseObject(className, result.value, schema))
+      .catch(error => {
+        if (error.code === 11000) {
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
+        }
+        throw error;
+      });
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
@@ -505,13 +511,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     }
     return this._adaptiveCollection(className)
       .then(collection => collection.distinct(fieldName, transformWhere(className, query, schema)))
-      .then(objects => objects.map(object => {
-        if (isPointerField) {
-          const field = fieldName.substring(3);
-          return transformPointerString(schema, field, object);
-        }
-        return mongoObjectToParseObject(className, object, schema);
-      }));
+      .then(objects => {
+        objects = objects.filter((obj) => obj != null);
+        return objects.map(object => {
+          if (isPointerField) {
+            const field = fieldName.substring(3);
+            return transformPointerString(schema, field, object);
+          }
+          return mongoObjectToParseObject(className, object, schema);
+        });
+      });
   }
 
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {

@@ -2387,4 +2387,28 @@ describe('schemas', () => {
       });
     });
   });
+
+  it_exclude_dbs(['postgres'])('cannot update to duplicate value on unique index', (done) => {
+    const index = {
+      code: 1
+    };
+    const obj1 = new Parse.Object('UniqueIndexClass');
+    obj1.set('code', 1);
+    const obj2 = new Parse.Object('UniqueIndexClass');
+    obj2.set('code', 2);
+    const adapter = config.database.adapter;
+    adapter._adaptiveCollection('UniqueIndexClass').then(collection => {
+      return collection._ensureSparseUniqueIndexInBackground(index);
+    }).then(() => {
+      return obj1.save();
+    }).then(() => {
+      return obj2.save();
+    }).then(() => {
+      obj1.set('code', 2);
+      return obj1.save();
+    }).then(done.fail).catch((error) => {
+      expect(error.code).toEqual(Parse.Error.DUPLICATE_VALUE);
+      done();
+    });
+  });
 });
