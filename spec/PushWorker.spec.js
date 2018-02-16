@@ -164,7 +164,7 @@ describe('PushWorker', () => {
       const config = Config.get('test');
       const handler = pushStatusHandler(config);
       const spy = spyOn(config.database, "update").and.callFake(() => {
-        return Promise.resolve();
+        return Promise.resolve({});
       });
       const toAwait = handler.trackSent([
         {

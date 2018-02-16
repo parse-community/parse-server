@@ -3327,7 +3327,7 @@ describe('Parse.User testing', () => {
         json: { email: "yo@lo.com", password: 'yolopass2'}
       }
       return rp.get(options);
-    }).then(done.fail).catch(done);
+    }).then(done.fail).catch(() => done());
   });
 
   it('can login with email through query string', (done) => {
