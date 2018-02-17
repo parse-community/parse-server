@@ -1,14 +1,14 @@
 'use strict';
 
-var httpRequest = require("../src/cloud-code/httpRequest"),
+const httpRequest = require("../src/cloud-code/httpRequest"),
   HTTPResponse = require('../src/cloud-code/HTTPResponse').default,
   bodyParser = require('body-parser'),
   express = require("express");
 
-var port = 13371;
-var httpRequestServer = "http://localhost:" + port;
+const port = 13371;
+const httpRequestServer = "http://localhost:" + port;
 
-var app = express();
+const app = express();
 app.use(bodyParser.json({ 'type': '*/*' }));
 app.get("/hello", function(req, res){
   res.json({response: "OK"});
@@ -53,7 +53,7 @@ describe("httpRequest", () => {
   });
 
   it("should do /hello with callback and promises", (done) => {
-    var calls = 0;
+    let calls = 0;
     httpRequest({
       url: httpRequestServer + "/hello",
       success: function() { calls++; },
@@ -102,7 +102,7 @@ describe("httpRequest", () => {
   });
 
   it("should fail on 404", (done) => {
-    var calls = 0;
+    let calls = 0;
     httpRequest({
       url: httpRequestServer + "/404",
       success: function() {
@@ -138,7 +138,7 @@ describe("httpRequest", () => {
   })
 
   it("should post on echo", (done) => {
-    var calls = 0;
+    let calls = 0;
     httpRequest({
       method: "POST",
       url: httpRequestServer + "/echo",
@@ -307,7 +307,7 @@ describe("httpRequest", () => {
     const httpResponse = new HTTPResponse({}, new Buffer(json));
     const encoded = Parse._encode(httpResponse);
     let foundData, foundText, foundBody = false;
-    for(var key in encoded) {
+    for(const key in encoded) {
       if (key == 'data') {
         foundData = true;
       }

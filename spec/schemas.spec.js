@@ -1,15 +1,15 @@
 'use strict';
 
-var Parse = require('parse/node').Parse;
-var request = require('request');
+const Parse = require('parse/node').Parse;
+const request = require('request');
 const rp = require('request-promise');
-var dd = require('deep-diff');
-var Config = require('../src/Config');
+const dd = require('deep-diff');
+const Config = require('../src/Config');
 
-var config;
+let config;
 
-var hasAllPODobject = () => {
-  var obj = new Parse.Object('HasAllPOD');
+const hasAllPODobject = () => {
+  const obj = new Parse.Object('HasAllPOD');
   obj.set('aNumber', 5);
   obj.set('aString', 'string');
   obj.set('aBool', true);
@@ -18,7 +18,7 @@ var hasAllPODobject = () => {
   obj.set('aArray', ['contents', true, 5]);
   obj.set('aGeoPoint', new Parse.GeoPoint({latitude: 0, longitude: 0}));
   obj.set('aFile', new Parse.File('f.txt', { base64: 'V29ya2luZyBhdCBQYXJzZSBpcyBncmVhdCE=' }));
-  var objACL = new Parse.ACL();
+  const objACL = new Parse.ACL();
   objACL.setPublicWriteAccess(false);
   obj.setACL(objACL);
   return obj;
@@ -45,7 +45,7 @@ const defaultClassLevelPermissions = {
   }
 }
 
-var plainOldDataSchema = {
+const plainOldDataSchema = {
   className: 'HasAllPOD',
   fields: {
     //Default fields
@@ -66,7 +66,7 @@ var plainOldDataSchema = {
   classLevelPermissions: defaultClassLevelPermissions
 };
 
-var pointersAndRelationsSchema = {
+const pointersAndRelationsSchema = {
   className: 'HasPointersAndRelations',
   fields: {
     //Default fields
@@ -117,16 +117,16 @@ const roleSchema = {
   "classLevelPermissions": defaultClassLevelPermissions,
 }
 
-var noAuthHeaders = {
+const noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
 };
 
-var restKeyHeaders = {
+const restKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-REST-API-Key': 'rest',
 };
 
-var masterKeyHeaders = {
+const masterKeyHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Master-Key': 'test',
 };
@@ -184,7 +184,7 @@ describe('schemas', () => {
       json: true,
       headers: masterKeyHeaders,
     }, (error, response, body) => {
-      var expected = {
+      const expected = {
         results: [userSchema,roleSchema]
       };
       expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
@@ -193,11 +193,11 @@ describe('schemas', () => {
   });
 
   it('responds with a list of schemas after creating objects', done => {
-    var obj1 = hasAllPODobject();
+    const obj1 = hasAllPODobject();
     obj1.save().then(savedObj1 => {
-      var obj2 = new Parse.Object('HasPointersAndRelations');
+      const obj2 = new Parse.Object('HasPointersAndRelations');
       obj2.set('aPointer', savedObj1);
-      var relation = obj2.relation('aRelation');
+      const relation = obj2.relation('aRelation');
       relation.add(obj1);
       return obj2.save();
     }).then(() => {
@@ -206,7 +206,7 @@ describe('schemas', () => {
         json: true,
         headers: masterKeyHeaders,
       }, (error, response, body) => {
-        var expected = {
+        const expected = {
           results: [userSchema,roleSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
         expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
@@ -216,7 +216,7 @@ describe('schemas', () => {
   });
 
   it('responds with a single schema', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save().then(() => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HasAllPOD',
@@ -230,7 +230,7 @@ describe('schemas', () => {
   });
 
   it('treats class names case sensitively', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save().then(() => {
       request.get({
         url: 'http://localhost:8378/1/schemas/HASALLPOD',
@@ -485,7 +485,7 @@ describe('schemas', () => {
   });
 
   it('refuses to put to existing fields, even if it would not be a change', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.put({
@@ -507,7 +507,7 @@ describe('schemas', () => {
   });
 
   it('refuses to delete non-existent fields', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.put({
@@ -529,7 +529,7 @@ describe('schemas', () => {
   });
 
   it('refuses to add a geopoint to a class that already has one', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.put({
@@ -551,7 +551,7 @@ describe('schemas', () => {
   });
 
   it('refuses to add two geopoints', done => {
-    var obj = new Parse.Object('NewClass');
+    const obj = new Parse.Object('NewClass');
     obj.set('aString', 'aString');
     obj.save()
       .then(() => {
@@ -575,7 +575,7 @@ describe('schemas', () => {
   });
 
   it('allows you to delete and add a geopoint in the same request', done => {
-    var obj = new Parse.Object('NewClass');
+    const obj = new Parse.Object('NewClass');
     obj.set('geo1', new Parse.GeoPoint({latitude: 0, longitude: 0}));
     obj.save()
       .then(() => {
@@ -607,7 +607,7 @@ describe('schemas', () => {
   });
 
   it('put with no modifications returns all fields', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.put({
@@ -732,8 +732,8 @@ describe('schemas', () => {
   });
 
   it('lets you delete multiple fields and check schema', done => {
-    var simpleOneObject = () => {
-      var obj = new Parse.Object('SimpleOne');
+    const simpleOneObject = () => {
+      const obj = new Parse.Object('SimpleOne');
       obj.set('aNumber', 5);
       obj.set('aString', 'string');
       obj.set('aBool', true);
@@ -773,7 +773,7 @@ describe('schemas', () => {
   });
 
   it('lets you delete multiple fields and add fields', done => {
-    var obj1 = hasAllPODobject();
+    const obj1 = hasAllPODobject();
     obj1.save()
       .then(() => {
         request.put({
@@ -813,9 +813,9 @@ describe('schemas', () => {
             },
             classLevelPermissions: defaultClassLevelPermissions
           });
-          var obj2 = new Parse.Object('HasAllPOD');
+          const obj2 = new Parse.Object('HasAllPOD');
           obj2.set('aNewPointer', obj1);
-          var relation = obj2.relation('aNewRelation');
+          const relation = obj2.relation('aNewRelation');
           relation.add(obj1);
           obj2.save().then(done); //Just need to make sure saving works on the new object.
         });
@@ -823,7 +823,7 @@ describe('schemas', () => {
   });
 
   it('will not delete any fields if the additions are invalid', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.put({
@@ -864,7 +864,7 @@ describe('schemas', () => {
   });
 
   it('refuses to delete non-empty collection', done => {
-    var obj = hasAllPODobject();
+    const obj = hasAllPODobject();
     obj.save()
       .then(() => {
         request.del({
@@ -907,12 +907,12 @@ describe('schemas', () => {
   });
 
   it('deletes collections including join tables', done => {
-    var obj = new Parse.Object('MyClass');
+    const obj = new Parse.Object('MyClass');
     obj.set('data', 'data');
     obj.save()
       .then(() => {
-        var obj2 = new Parse.Object('MyOtherClass');
-        var relation = obj2.relation('aRelation');
+        const obj2 = new Parse.Object('MyOtherClass');
+        const relation = obj2.relation('aRelation');
         relation.add(obj);
         return obj2.save();
       })
@@ -1642,7 +1642,7 @@ describe('schemas', () => {
     setPermissionsOnClass('AClass', {
       'addField': {}
     }).then(() => {
-      var obj = new Parse.Object('AClass');
+      const obj = new Parse.Object('AClass');
       obj.set('key', 'value');
       return obj.save(null, {useMasterKey: true})
     }).then((obj) => {

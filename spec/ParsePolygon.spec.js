@@ -180,7 +180,7 @@ describe('Parse.Polygon testing', () => {
           'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
-    }).then(done.fail, done);
+    }).then(done.fail, () => done());
   });
 
   it('polygonContain invalid geoPoint', (done) => {
@@ -203,7 +203,7 @@ describe('Parse.Polygon testing', () => {
           'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
-    }).then(done.fail, done);
+    }).then(done.fail, () => done());
   });
 });
 

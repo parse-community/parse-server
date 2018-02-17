@@ -1,4 +1,4 @@
-var ClientSDK = require('../src/ClientSDK');
+const ClientSDK = require('../src/ClientSDK');
 
 describe('ClientSDK', () => {
   it('should properly parse the SDK versions', () => {

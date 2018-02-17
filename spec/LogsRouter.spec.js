@@ -1,16 +1,16 @@
 'use strict';
 
 const request = require('request');
-var LogsRouter = require('../src/Routers/LogsRouter').LogsRouter;
-var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LogsRouter = require('../src/Routers/LogsRouter').LogsRouter;
+const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
 describe('LogsRouter', () => {
   it('can check valid master key of request', (done) => {
     // Make mock request
-    var request = {
+    const request = {
       auth: {
         isMaster: true
       },
@@ -20,7 +20,7 @@ describe('LogsRouter', () => {
       }
     };
 
-    var router = new LogsRouter();
+    const router = new LogsRouter();
 
     expect(() => {
       router.validateRequest(request);
@@ -30,7 +30,7 @@ describe('LogsRouter', () => {
 
   it('can check invalid construction of controller', (done) => {
     // Make mock request
-    var request = {
+    const request = {
       auth: {
         isMaster: true
       },
@@ -40,7 +40,7 @@ describe('LogsRouter', () => {
       }
     };
 
-    var router = new LogsRouter();
+    const router = new LogsRouter();
 
     expect(() => {
       router.validateRequest(request);

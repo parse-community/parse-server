@@ -38,7 +38,7 @@ function createParseServer(options) {
           promise
             .then(() => {
               expect(Parse.applicationId).toEqual("test");
-              var app = express();
+              const app = express();
               app.use('/parse', parseServer.app);
 
               const server = app.listen(12666);
@@ -66,7 +66,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
 
     createParseServer({ databaseAdapter: adapter }).then((newServer) => {
       server = newServer;
-      var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
+      const score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
       return score.save();
     }).then(done, done.fail);
   });
@@ -77,6 +77,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
       databaseOptions: databaseOptions2
     })
 
-    createParseServer({ databaseAdapter: adapter }).then(done.fail, done);
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
   });
 });
