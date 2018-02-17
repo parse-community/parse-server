@@ -1,12 +1,12 @@
-var LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 describe('LoggerController', () => {
   it('can check process a query without throwing', (done) => {
     // Make mock request
-    var query = {};
+    const query = {};
 
-    var loggerController = new LoggerController(new WinstonLoggerAdapter());
+    const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
     expect(() => {
       loggerController.getLogs(query).then(function(res) {
@@ -29,7 +29,7 @@ describe('LoggerController', () => {
 
   it('can set the proper default values', (done) => {
     // Make mock request
-    var result = LoggerController.parseOptions();
+    const result = LoggerController.parseOptions();
     expect(result.size).toEqual(10);
     expect(result.order).toEqual('desc');
     expect(result.level).toEqual('info');
@@ -39,7 +39,7 @@ describe('LoggerController', () => {
 
   it('can process a query without throwing', (done) => {
     // Make mock request
-    var query = {
+    const query = {
       from: "2016-01-01Z00:00:00",
       until: "2016-01-01Z00:00:00",
       size: 5,
@@ -47,7 +47,7 @@ describe('LoggerController', () => {
       level: 'error'
     };
 
-    var result = LoggerController.parseOptions(query);
+    const result = LoggerController.parseOptions(query);
 
     expect(result.from.getTime()).toEqual(1451606400000);
     expect(result.until.getTime()).toEqual(1451606400000);
@@ -60,7 +60,7 @@ describe('LoggerController', () => {
 
   it('can check process a query without throwing', (done) => {
     // Make mock request
-    var query = {
+    const query = {
       from: "2016-01-01",
       until: "2016-01-30",
       size: 5,
@@ -68,7 +68,7 @@ describe('LoggerController', () => {
       level: 'error'
     };
 
-    var loggerController = new LoggerController(new WinstonLoggerAdapter());
+    const loggerController = new LoggerController(new WinstonLoggerAdapter());
 
     expect(() => {
       loggerController.getLogs(query).then(function(res) {

@@ -1,8 +1,8 @@
-var PromiseRouter = require("../src/PromiseRouter").default;
+const PromiseRouter = require("../src/PromiseRouter").default;
 
 describe("PromiseRouter", () => {
   it("should properly handle rejects", (done) => {
-    var router = new PromiseRouter();
+    const router = new PromiseRouter();
     router.route("GET", "/dummy", ()=> {
       return Promise.reject({
         error: "an error",
