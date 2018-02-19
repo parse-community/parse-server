@@ -864,7 +864,7 @@ export default class SchemaController {
     return SchemaController.testBaseCLP(this.perms[className], aclGroup, operation);
   }
 
-  static testBaseCLP(classPermissions: ?any, className: string, aclGroup: string[], operation: string) {
+  static testBaseCLP(classPermissions: ?any, aclGroup: string[], operation: string) {
     if (!classPermissions || !classPermissions[operation]) {
       return true;
     }
@@ -924,7 +924,7 @@ export default class SchemaController {
   }
 
   // Validates an operation passes class-level-permissions set in the schema
-  validatePermission(className, aclGroup, operation) {
+  validatePermission(className: string, aclGroup: string[], operation: string) {
     return SchemaController.validatePermission(this.perms[className], className, aclGroup, operation);
   }
 

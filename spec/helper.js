@@ -127,7 +127,7 @@ const reconfigureServer = changedConfiguration => {
       });
     }
     try {
-      var parseServer;
+      let parseServer = undefined;
       const newConfiguration = Object.assign({}, defaultConfiguration, changedConfiguration, {
         __indexBuildCompletionCallbackForTests: indexBuildPromise => indexBuildPromise.then(() => {
           resolve(parseServer);
