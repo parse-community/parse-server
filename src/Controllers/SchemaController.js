@@ -315,7 +315,11 @@ const convertAdapterSchemaToParseSchema = ({...schema}) => {
 const injectDefaultSchema = ({className, fields, classLevelPermissions, indexes}: Schema) => {
   const defaultSchema: Schema = {
     className,
-    fields: Object.assign(fields || {}, defaultColumns._Default, defaultColumns[className] || {}),
+    fields: {
+      ...defaultColumns._Default,
+      ...(defaultColumns[className] || {}),
+      ...fields,
+    },
     classLevelPermissions
   };
   if (indexes && Object.keys(indexes).length !== 0) {
@@ -403,7 +407,7 @@ export default class SchemaController {
         const perms = {};
         const indexes = {};
         allSchemas.forEach(schema => {
-          data[schema.className] = injectDefaultSchema(schema).fields;
+          data[schema.className] = schema.fields;
           perms[schema.className] = schema.classLevelPermissions;
           indexes[schema.className] = schema.indexes;
         });
