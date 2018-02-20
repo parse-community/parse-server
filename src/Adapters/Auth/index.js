@@ -5,6 +5,8 @@ const instagram = require("./instagram");
 const linkedin = require("./linkedin");
 const meetup = require("./meetup");
 const google = require("./google");
+const gcenter = require("./gcenter");
+const gpgames = require("./gpgames");
 const github = require("./github");
 const twitter = require("./twitter");
 const spotify = require("./spotify");
@@ -15,7 +17,7 @@ const vkontakte = require("./vkontakte");
 const qq = require("./qq");
 const wechat = require("./wechat");
 const weibo = require("./weibo");
-
+const xiaomi = require("./xiaomi");
 const anonymous = {
   validateAuthData: () => {
     return Promise.resolve();
@@ -23,7 +25,7 @@ const anonymous = {
   validateAppId: () => {
     return Promise.resolve();
   }
-}
+};
 
 const providers = {
   facebook,
@@ -31,6 +33,8 @@ const providers = {
   linkedin,
   meetup,
   google,
+  gcenter,
+  gpgames,
   github,
   twitter,
   spotify,
@@ -41,18 +45,22 @@ const providers = {
   vkontakte,
   qq,
   wechat,
-  weibo
-}
+  weibo,
+  xiaomi
+};
 
 function authDataValidator(adapter, appIds, options) {
-  return function(authData) {
-    return adapter.validateAuthData(authData, options).then(() => {
-      if (appIds) {
+  return function (authData)
+  {
+    return adapter.validateAuthData(authData, options).then(() =>
+    {
+      if (appIds)
+      {
         return adapter.validateAppId(appIds, authData, options);
       }
       return Promise.resolve();
     });
-  }
+  };
 }
 
 function loadAuthAdapter(provider, authOptions) {
@@ -70,7 +78,7 @@ function loadAuthAdapter(provider, authOptions) {
   if (providerOptions) {
     const optionalAdapter = loadAdapter(providerOptions, undefined, providerOptions);
     if (optionalAdapter) {
-      ['validateAuthData', 'validateAppId'].forEach((key) => {
+      ['validateAuthData', 'validateAppId'].forEach(key => {
         if (optionalAdapter[key]) {
           adapter[key] = optionalAdapter[key];
         }
@@ -82,18 +90,26 @@ function loadAuthAdapter(provider, authOptions) {
     return;
   }
 
-  return {adapter, appIds, providerOptions};
+  return { adapter, appIds, providerOptions };
 }
 
-module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
+module.exports = function (authOptions = {}, enableAnonymousUsers = true)
+{
   let _enableAnonymousUsers = enableAnonymousUsers;
-  const setEnableAnonymousUsers = function(enable) {
+  const setEnableAnonymousUsers = function (enable)
+  {
     _enableAnonymousUsers = enable;
-  }
+  };
   // To handle the test cases on configuration
-  const getValidatorForProvider = function(provider) {
+  const getValidatorForProvider = function (provider)
+  {
+    if (provider === 'anonymous' && !_enableAnonymousUsers)
+      return;
 
-    if (provider === 'anonymous' && !_enableAnonymousUsers) {
+    if(!providers.hasOwnProperty(provider) &&
+        provider !== 'myoauth' &&
+        provider !== 'customAuthentication' &&
+        provider !== 'shortLivedAuth') {
       return;
     }
 
@@ -104,12 +120,12 @@ module.exports = function(authOptions = {}, enableAnonymousUsers = true) {
     } = loadAuthAdapter(provider, authOptions);
 
     return authDataValidator(adapter, appIds, providerOptions);
-  }
+  };
 
   return Object.freeze({
     getValidatorForProvider,
     setEnableAnonymousUsers
-  })
-}
+  });
+};
 
 module.exports.loadAuthAdapter = loadAuthAdapter;
