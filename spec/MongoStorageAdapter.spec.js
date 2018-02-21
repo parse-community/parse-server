@@ -53,7 +53,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       .then(() => adapter._rawFind('Foo', {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj._id).toEqual('abcde');
         expect(obj.objectId).toBeUndefined();
         done();

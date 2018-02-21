@@ -55,6 +55,21 @@ const ParseToPosgresComparator = {
   '$lte': '<='
 }
 
+const mongoAggregateToPostgres = {
+  $dayOfMonth: 'DAY',
+  $dayOfWeek: 'DOW',
+  $dayOfYear: 'DOY',
+  $isoDayOfWeek: 'ISODOW',
+  $isoWeekYear:'ISOYEAR',
+  $hour: 'HOUR',
+  $minute: 'MINUTE',
+  $second: 'SECOND',
+  $millisecond: 'MILLISECONDS',
+  $month: 'MONTH',
+  $week: 'WEEK',
+  $year: 'YEAR',
+};
+
 const toPostgresValue = value => {
   if (typeof value === 'object') {
     if (value.__type === 'Date') {
@@ -179,6 +194,15 @@ const transformDotField = (fieldName) => {
 }
 
 const transformAggregateField = (fieldName) => {
+  if (typeof fieldName !== 'string') {
+    return fieldName;
+  }
+  if (fieldName === '$_created_at') {
+    return 'createdAt';
+  }
+  if (fieldName === '$_updated_at') {
+    return 'updatedAt';
+  }
   return fieldName.substr(1);
 }
 
@@ -1464,7 +1488,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug('distinct', className, query);
     let field = fieldName;
     let column = fieldName;
-    if (fieldName.indexOf('.') >= 0) {
+    const isNested = fieldName.indexOf('.') >= 0;
+    if (isNested) {
       field = transformDotFieldToComponents(fieldName).join('->');
       column = fieldName.split('.')[0];
     }
@@ -1480,7 +1505,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const wherePattern = where.pattern.length > 0 ? `WHERE ${where.pattern}` : '';
     const transformer = isArrayField ? 'jsonb_array_elements' : 'ON';
-    const qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    let qs = `SELECT DISTINCT ${transformer}($1:name) $2:name FROM $3:name ${wherePattern}`;
+    if (isNested) {
+      qs = `SELECT DISTINCT ${transformer}($1:raw) $2:raw FROM $3:name ${wherePattern}`;
+    }
     debug(qs, values);
     return this._client.any(qs, values)
       .catch((error) => {
@@ -1490,7 +1518,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         throw error;
       })
       .then((results) => {
-        if (fieldName.indexOf('.') === -1) {
+        if (!isNested) {
           results = results.filter((object) => object[field] !== null);
           return results.map(object => {
             if (!isPointerField) {
@@ -1515,6 +1543,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     let index = 2;
     let columns: string[] = [];
     let countField = null;
+    let groupValues = null;
     let wherePattern = '';
     let limitPattern = '';
     let skipPattern = '';
@@ -1528,10 +1557,30 @@ export class PostgresStorageAdapter implements StorageAdapter {
           if (value === null || value === undefined) {
             continue;
           }
-          if (field === '_id') {
+          if (field === '_id' && (typeof value === 'string') && value !== '') {
             columns.push(`$${index}:name AS "objectId"`);
             groupPattern = `GROUP BY $${index}:name`;
             values.push(transformAggregateField(value));
+            index += 1;
+            continue;
+          }
+          if (field === '_id' && (typeof value === 'object') && Object.keys(value).length !== 0) {
+            groupValues = value;
+            const groupByFields = [];
+            for (const alias in value) {
+              const operation = Object.keys(value[alias])[0];
+              const source = transformAggregateField(value[alias][operation]);
+              if (mongoAggregateToPostgres[operation]) {
+                if (!groupByFields.includes(`"${source}"`)) {
+                  groupByFields.push(`"${source}"`);
+                }
+                columns.push(`EXTRACT(${mongoAggregateToPostgres[operation]} FROM $${index}:name AT TIME ZONE 'UTC') AS $${index + 1}:name`);
+                values.push(source, alias);
+                index += 2;
+              }
+            }
+            groupPattern = `GROUP BY $${index}:raw`;
+            values.push(groupByFields.join());
             index += 1;
             continue;
           }
@@ -1642,12 +1691,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
     debug(qs, values);
     return this._client.map(qs, values, a => this.postgresObjectToParseObject(className, a, schema))
       .then(results => {
-        if (countField) {
-          results[0][countField] = parseInt(results[0][countField], 10);
-        }
         results.forEach(result => {
           if (!result.hasOwnProperty('objectId')) {
             result.objectId = null;
+          }
+          if (groupValues) {
+            result.objectId = {};
+            for (const key in groupValues) {
+              result.objectId[key] = result[key];
+              delete result[key];
+            }
+          }
+          if (countField) {
+            result[countField] = parseInt(result[countField], 10);
           }
         });
         return results;

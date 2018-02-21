@@ -7,8 +7,6 @@ import ClassesRouter  from './ClassesRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
-import RestWrite      from '../RestWrite';
-const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
 
@@ -142,8 +140,6 @@ export class UsersRouter extends ClassesRouter {
           }
         }
 
-        const token = 'r:' + cryptoUtils.newToken();
-        user.sessionToken = token;
         delete user.password;
 
         // Remove hidden properties.
@@ -161,31 +157,19 @@ export class UsersRouter extends ClassesRouter {
             delete user.authData;
           }
         }
+        const {
+          sessionData,
+          createSession
+        } = Auth.createSession(req.config, { userId: user.objectId, createdWith: {
+          'action': 'login',
+          'authProvider': 'password'
+        }, installationId: req.info.installationId });
+
+        user.sessionToken = sessionData.sessionToken;
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        const expiresAt = req.config.generateSessionExpiresAt();
-        const sessionData = {
-          sessionToken: token,
-          user: {
-            __type: 'Pointer',
-            className: '_User',
-            objectId: user.objectId
-          },
-          createdWith: {
-            'action': 'login',
-            'authProvider': 'password'
-          },
-          restricted: false,
-          expiresAt: Parse._encode(expiresAt)
-        };
-
-        if (req.info.installationId) {
-          sessionData.installationId = req.info.installationId
-        }
-
-        const create = new RestWrite(req.config, Auth.master(req.config), '_Session', null, sessionData);
-        return create.execute();
+        return createSession();
       }).then(() => {
         return { response: user };
       });

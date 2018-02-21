@@ -1,5 +1,5 @@
-var logging = require('../src/Adapters/Logger/WinstonLogger');
-var winston = require('winston');
+const logging = require('../src/Adapters/Logger/WinstonLogger');
+const winston = require('winston');
 
 class TestTransport extends winston.Transport {
   log(level, msg, meta, callback) {
@@ -51,7 +51,7 @@ describe('Logger', () => {
       spyOn(process.stdout, 'write');
       logging.logger.info('hi', {key: 'value'});
       expect(process.stdout.write).toHaveBeenCalled();
-      var firstLog = process.stdout.write.calls.first().args[0];
+      const firstLog = process.stdout.write.calls.first().args[0];
       expect(firstLog).toEqual(JSON.stringify({key: 'value', level: 'info', message: 'hi' }) + '\n');
       return reconfigureServer({
         jsonLogs: false

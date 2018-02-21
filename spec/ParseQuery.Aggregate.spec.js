@@ -96,6 +96,89 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('group by empty object', (done) => {
+    const obj = new TestObject();
+    const pipeline = [{
+      group: { objectId: {} }
+    }];
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results[0].objectId).toEqual(null);
+      done();
+    });
+  });
+
+  it('group by empty string', (done) => {
+    const obj = new TestObject();
+    const pipeline = [{
+      group: { objectId: '' }
+    }];
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results[0].objectId).toEqual(null);
+      done();
+    });
+  });
+
+  it('group by empty array', (done) => {
+    const obj = new TestObject();
+    const pipeline = [{
+      group: { objectId: [] }
+    }];
+    obj.save().then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results[0].objectId).toEqual(null);
+      done();
+    });
+  });
+
+  it('group by date object', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    const obj3 = new TestObject();
+    const pipeline = [{
+      group: {
+        objectId: { day: { $dayOfMonth: "$_updated_at" }, month: { $month: "$_created_at" }, year: { $year: "$_created_at" } },
+        count: { $sum: 1 }
+      }
+    }];
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      const createdAt = new Date(obj1.createdAt);
+      expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
+      expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+      expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('cannot group by date field (excluding createdAt and updatedAt)', (done) => {
+    const obj1 = new TestObject({ dateField: new Date(1990, 11, 1) });
+    const obj2 = new TestObject({ dateField: new Date(1990, 5, 1) });
+    const obj3 = new TestObject({ dateField: new Date(1990, 11, 1) });
+    const pipeline = [{
+      group: {
+        objectId: { day: { $dayOfMonth: "$dateField" }, month: { $month: "$dateField" }, year: { $year: "$dateField" } },
+        count: { $sum: 1 }
+      }
+    }];
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then(done.fail).catch((error) => {
+      expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
   it('group by pointer', (done) => {
     const pointer1 = new TestObject();
     const pointer2 = new TestObject();
@@ -587,6 +670,30 @@ describe('Parse.Query Aggregate testing', () => {
         expect(resp.results.includes('L')).toBe(true);
         done();
       }).catch(done.fail);
+  });
+
+  it('distinct null field', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: { distinct: 'distinctField' }
+    });
+    const user1 = new Parse.User();
+    user1.setUsername('distinct_1');
+    user1.setPassword('password');
+    user1.set('distinctField', 'one');
+
+    const user2 = new Parse.User();
+    user2.setUsername('distinct_2');
+    user2.setPassword('password');
+    user2.set('distinctField', null);
+    user1.signUp().then(() => {
+      return user2.signUp();
+    }).then(() => {
+      return rp.get(Parse.serverURL + '/aggregate/_User', options);
+    }).then((resp) => {
+      expect(resp.results.length).toEqual(1);
+      expect(resp.results).toEqual(['one']);
+      done();
+    }).catch(done.fail);
   });
 
   it('does not return sensitive hidden properties', (done) => {
