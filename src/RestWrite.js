@@ -484,7 +484,19 @@ RestWrite.prototype._validatePasswordPolicy = function() {
 
 RestWrite.prototype._validatePasswordRequirements = function() {
   // check if the password conforms to the defined password policy if configured
-  const policyError = 'Password does not meet the Password Policy requirements.';
+  let containsUsernameError = 'Password cannot contain your username.';
+  let policyError = 'Password does not meet the Password Policy requirements.';
+
+  if(this.config.passwordPolicy.passwordRequirementsHumanErrorMessage){
+    // If we specified a custom error in our configuration use it.
+    // Example: "Passwords must include a Capital Letter, Lowercase Letter, and a number."
+    //
+    // This is expesially useful on the generic "password reset" page, 
+    // as it allows the programmer to communicate specific requirements instead of:
+    // a. making the user guess whats wrong
+    // b. making a custom password reset page that shows the requirements
+    policyError = this.config.passwordPolicy.passwordRequirementsHumanErrorMessage;
+  }
 
   // check whether the password meets the password strength requirements
   if (this.config.passwordPolicy.patternValidator && !this.config.passwordPolicy.patternValidator(this.data.password) ||
@@ -496,7 +508,7 @@ RestWrite.prototype._validatePasswordRequirements = function() {
   if (this.config.passwordPolicy.doNotAllowUsername === true) {
     if (this.data.username) { // username is not passed during password reset
       if (this.data.password.indexOf(this.data.username) >= 0)
-        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+        return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError));
     } else { // retrieve the User object using objectId during password reset
       return this.config.database.find('_User', {objectId: this.objectId()})
         .then(results => {
@@ -504,7 +516,7 @@ RestWrite.prototype._validatePasswordRequirements = function() {
             throw undefined;
           }
           if (this.data.password.indexOf(results[0].username) >= 0)
-            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, policyError));
+            return Promise.reject(new Parse.Error(Parse.Error.VALIDATION_ERROR, containsUsernameError));
           return Promise.resolve();
         });
     }
