@@ -31,11 +31,10 @@ const baseStore = function() {
 };
 
 function validateClassNameForTriggers(className, type) {
-  const restrictedClassNames = [ '_Session' ];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
+  if ((type == Types.beforeFind || type == Types.afterFind) && className === '_Session') {
+    throw 'beforeFind and afterFind triggers are not allowed for _Session class.';
   }
-  if (type == Types.beforeSave && className === '_PushStatus') {
+  else if (type == Types.beforeSave && className === '_PushStatus') {
     // _PushStatus uses undocumented nested key increment ops
     // allowing beforeSave would mess up the objects big time
     // TODO: Allow proper documented way of using nested increment ops
@@ -203,7 +202,7 @@ export function getResponseObject(request, resolve, reject) {
   return {
     success: function(response) {
       if (request.triggerName === Types.afterFind) {
-        if(!response){
+        if(!response) {
           response = request.objects;
         }
         response = response.map(object => {

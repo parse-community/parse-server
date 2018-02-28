@@ -167,7 +167,7 @@ RestWrite.prototype.runBeforeTrigger = function() {
   return Promise.resolve().then(() => {
     return triggers.maybeRunTrigger(triggers.Types.beforeSave, this.auth, updatedObject, originalObject, this.config);
   }).then((response) => {
-    if (response && response.object) {
+    if (this.className !== '_Session' && response && response.object) {
       this.storage.fieldsChangedByTrigger = _.reduce(response.object, (result, value, key) => {
         if (!_.isEqual(this.data[key], value)) {
           result.push(key);
@@ -1150,19 +1150,24 @@ RestWrite.prototype.objectId = function() {
 };
 
 // Returns a copy of the data and delete bad keys (_auth_data, _hashed_password...)
-RestWrite.prototype.sanitizedData = function() {
-  const data = Object.keys(this.data).reduce((data, key) => {
+RestWrite.prototype.sanitizeData = function() {
+  Object.keys(this.data).reduce((data, key) => {
     // Regexp comes from Parse.Object.prototype.validate
     if (!(/^[A-Za-z][0-9A-Za-z_]*$/).test(key)) {
       delete data[key];
     }
     return data;
   }, deepcopy(this.data));
-  return Parse._decode(undefined, data);
+
+  return this.data;
 }
 
 // Returns an updated copy of the object
 RestWrite.prototype.buildUpdatedObject = function (extraData) {
+  if (extraData.className == '_Session') {
+    return triggers.inflate(extraData, this.sanitizeData());
+  }
+
   const updatedObject = triggers.inflate(extraData, this.originalData);
   Object.keys(this.data).reduce(function (data, key) {
     if (key.indexOf(".") > 0) {
@@ -1180,7 +1185,7 @@ RestWrite.prototype.buildUpdatedObject = function (extraData) {
     return data;
   }, deepcopy(this.data));
 
-  updatedObject.set(this.sanitizedData());
+  updatedObject.set(Parse._decode(undefined, this.sanitizeData()));
   return updatedObject;
 };
 

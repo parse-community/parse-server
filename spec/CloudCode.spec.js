@@ -181,12 +181,12 @@ describe('Cloud Code', () => {
   it('test afterSave ran on created object and returned a promise', function(done) {
     Parse.Cloud.afterSave('AfterSaveTest2', function(req) {
       const obj = req.object;
-      if(!obj.existed())
+      if (!obj.existed())
       {
         const promise = new Parse.Promise();
-        setTimeout(function(){
+        setTimeout(function() {
           obj.set('proof', obj.id);
-          obj.save().then(function(){
+          obj.save().then(function() {
             promise.resolve();
           });
         }, 1000);
@@ -196,7 +196,7 @@ describe('Cloud Code', () => {
     });
 
     const obj = new Parse.Object('AfterSaveTest2');
-    obj.save().then(function(){
+    obj.save().then(function() {
       const query = new Parse.Query('AfterSaveTest2');
       query.equalTo('proof', obj.id);
       query.find().then(function(results) {
@@ -1804,19 +1804,74 @@ describe('afterFind hooks', () => {
       })
       .then(() => done());
   });
+});
 
+describe('Trigger Testing', () => {
   it('should validate triggers correctly', () => {
     expect(() => {
+      Parse.Cloud.beforeFind('_Session', () => {});
+    }).toThrow('beforeFind and afterFind triggers are not allowed for _Session class.');
+    expect(() => {
+      Parse.Cloud.afterFind('_Session', () => {});
+    }).toThrow('beforeFind and afterFind triggers are not allowed for _Session class.');
+    expect(() => {
       Parse.Cloud.beforeSave('_Session', () => {});
-    }).toThrow('Triggers are not supported for _Session class.');
+    }).not.toThrow('Triggers are not supported for _Session class.');
     expect(() => {
       Parse.Cloud.afterSave('_Session', () => {});
-    }).toThrow('Triggers are not supported for _Session class.');
+    }).not.toThrow('Triggers are not supported for _Session class.');
     expect(() => {
       Parse.Cloud.beforeSave('_PushStatus', () => {});
     }).toThrow('Only afterSave is allowed on _PushStatus');
     expect(() => {
       Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
+  });
+
+  it('beforeSave _Session should not modify class', (done) => {
+    var hasCalled = false;
+    Parse.Cloud.beforeSave('_Session', (req, res) => {
+      req.object.set('foo', 'bing');
+      expect(() => {
+        req.object.set('createdWith', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('expiresAt', new Date())
+      }).toThrow();
+      expect(() => {
+        req.object.set('installationId', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('restricted', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('sessionToken', 'test')
+      }).toThrow();
+      expect(() => {
+        req.object.set('user', null)
+      }).toThrow();
+
+      hasCalled = true;
+      res.success();
+    });
+
+    var user = new Parse.User();
+    user.set("username", "zxcv");
+    user.set("email", "asdf@example.com");
+    user.set("password", "asdf");
+    user.signUp(null, {
+      success: function() {
+        Parse.Session.current().then((result) => {
+          expect(hasCalled).toBe(true);
+          expect(result).toBeDefined();
+          expect(result.get('foo')).toBeUndefined();
+          done();
+        });
+      },
+      error: function() {
+        fail('Failed to save user');
+        done();
+      }
+    });
   });
 });
