@@ -7,8 +7,6 @@ import ClassesRouter  from './ClassesRouter';
 import rest           from '../rest';
 import Auth           from '../Auth';
 import passwordCrypto from '../password';
-import RestWrite      from '../RestWrite';
-const cryptoUtils = require('../cryptoUtils');
 
 export class UsersRouter extends ClassesRouter {
 
@@ -84,13 +82,26 @@ export class UsersRouter extends ClassesRouter {
 
     let user;
     let isValidPassword = false;
-    const query = Object.assign({}, username ? { username } : {}, email ? { email } : {});
+    let query;
+    if (email && username) {
+      query = { email, username };
+    } else if (email) {
+      query = { email };
+    } else {
+      query = { $or: [{ username } , { email: username }] };
+    }
     return req.config.database.find('_User', query)
       .then((results) => {
         if (!results.length) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
-        user = results[0];
+
+        if (results.length > 1) { // corner case where user1 has username == user2 email
+          req.config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
+          user = results.filter((user) =>  user.username === username)[0];
+        } else {
+          user = results[0];
+        }
 
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
@@ -129,8 +140,6 @@ export class UsersRouter extends ClassesRouter {
           }
         }
 
-        const token = 'r:' + cryptoUtils.newToken();
-        user.sessionToken = token;
         delete user.password;
 
         // Remove hidden properties.
@@ -148,31 +157,19 @@ export class UsersRouter extends ClassesRouter {
             delete user.authData;
           }
         }
+        const {
+          sessionData,
+          createSession
+        } = Auth.createSession(req.config, { userId: user.objectId, createdWith: {
+          'action': 'login',
+          'authProvider': 'password'
+        }, installationId: req.info.installationId });
+
+        user.sessionToken = sessionData.sessionToken;
 
         req.config.filesController.expandFilesInObject(req.config, user);
 
-        const expiresAt = req.config.generateSessionExpiresAt();
-        const sessionData = {
-          sessionToken: token,
-          user: {
-            __type: 'Pointer',
-            className: '_User',
-            objectId: user.objectId
-          },
-          createdWith: {
-            'action': 'login',
-            'authProvider': 'password'
-          },
-          restricted: false,
-          expiresAt: Parse._encode(expiresAt)
-        };
-
-        if (req.info.installationId) {
-          sessionData.installationId = req.info.installationId
-        }
-
-        const create = new RestWrite(req.config, Auth.master(req.config), '_Session', null, sessionData);
-        return create.execute();
+        return createSession();
       }).then(() => {
         return { response: user };
       });
@@ -256,13 +253,18 @@ export class UsersRouter extends ClassesRouter {
       }
       const user = results[0];
 
+      // remove password field, messes with saving on postgres
+      delete user.password;
+
       if (user.emailVerified) {
         throw new Parse.Error(Parse.Error.OTHER_CAUSE, `Email ${email} is already verified.`);
       }
 
       const userController = req.config.userController;
-      userController.sendVerificationEmail(user);
-      return { response: {} };
+      return userController.regenerateEmailVerifyToken(user).then(() => {
+        userController.sendVerificationEmail(user);
+        return { response: {} };
+      });
     });
   }
 

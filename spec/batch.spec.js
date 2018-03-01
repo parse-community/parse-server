@@ -1,4 +1,4 @@
-var batch = require('../src/batch');
+const batch = require('../src/batch');
 
 const originalURL = '/parse/batch';
 const serverURL = 'http://localhost:1234/parse';

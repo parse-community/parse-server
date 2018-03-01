@@ -24,7 +24,7 @@ describe("Cloud Code Logger", () => {
   // see helpers.js:afterEach
 
   it("should expose log to functions", done => {
-    var logController = new LoggerController(new WinstonLoggerAdapter());
+    const logController = new LoggerController(new WinstonLoggerAdapter());
 
     Parse.Cloud.define("loggerTest", (req, res) => {
       req.log.info('logTest', 'info log', { info: 'some log' });
@@ -73,7 +73,7 @@ describe("Cloud Code Logger", () => {
   });
 
   it("should expose log to trigger", (done) => {
-    var logController = new LoggerController(new WinstonLoggerAdapter());
+    const logController = new LoggerController(new WinstonLoggerAdapter());
 
     Parse.Cloud.beforeSave("MyObject", (req, res) => {
       req.log.info('beforeSave MyObject', 'info log', { info: 'some log' });

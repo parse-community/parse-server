@@ -2,7 +2,7 @@
 
 const Config = require("../src/Config");
 
-var loginWithWrongCredentialsShouldFail = function(username, password) {
+const loginWithWrongCredentialsShouldFail = function(username, password) {
   return new Promise((resolve, reject) => {
     Parse.User.logIn(username, password)
       .then(() => reject('login should have failed'))
@@ -16,7 +16,7 @@ var loginWithWrongCredentialsShouldFail = function(username, password) {
   });
 };
 
-var isAccountLockoutError = function(username, password, duration, waitTime) {
+const isAccountLockoutError = function(username, password, duration, waitTime) {
   return new Promise((resolve, reject) => {
     setTimeout(() => {
       Parse.User.logIn(username, password)
@@ -40,7 +40,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: 'http://localhost:1337/1',
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setUsername('username1');
         user.setPassword('password');
         return user.signUp(null);
@@ -215,7 +215,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "http://localhost:8378/1"
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setUsername("username2");
         user.setPassword("failedLoginAttemptsThreshold");
         return user.signUp();
@@ -248,7 +248,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "http://localhost:8378/1"
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setUsername("username3");
         user.setPassword("failedLoginAttemptsThreshold");
         return user.signUp();
@@ -285,7 +285,7 @@ describe("Account Lockout Policy: ", () => {
       publicServerURL: "http://localhost:8378/1"
     })
       .then(() => {
-        var user = new Parse.User();
+        const user = new Parse.User();
         user.setUsername("username4");
         user.setPassword("correct password");
         return user.signUp();

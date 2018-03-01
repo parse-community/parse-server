@@ -1,5 +1,5 @@
 const TestObject = Parse.Object.extend('TestObject');
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const rp = require('request-promise');
 const defaultHeaders = {
@@ -180,7 +180,7 @@ describe('Parse.Polygon testing', () => {
           'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
-    }).then(done.fail, done);
+    }).then(done.fail, () => done());
   });
 
   it('polygonContain invalid geoPoint', (done) => {
@@ -203,7 +203,7 @@ describe('Parse.Polygon testing', () => {
           'X-Parse-Javascript-Key': Parse.javaScriptKey
         }
       });
-    }).then(done.fail, done);
+    }).then(done.fail, () => done());
   });
 });
 

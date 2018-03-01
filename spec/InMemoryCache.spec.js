@@ -2,16 +2,16 @@ const InMemoryCache = require('../src/Adapters/Cache/InMemoryCache').default;
 
 
 describe('InMemoryCache', function() {
-  var BASE_TTL = {
+  const BASE_TTL = {
     ttl: 100
   };
-  var NO_EXPIRE_TTL = {
+  const NO_EXPIRE_TTL = {
     ttl: NaN
   };
-  var KEY = 'hello';
-  var KEY_2 = KEY + '_2';
+  const KEY = 'hello';
+  const KEY_2 = KEY + '_2';
 
-  var VALUE = 'world';
+  const VALUE = 'world';
 
 
   function wait(sleep) {
@@ -21,11 +21,11 @@ describe('InMemoryCache', function() {
   }
 
   it('should destroy a expire items in the cache', (done) => {
-    var cache = new InMemoryCache(BASE_TTL);
+    const cache = new InMemoryCache(BASE_TTL);
 
     cache.put(KEY, VALUE);
 
-    var value = cache.get(KEY);
+    let value = cache.get(KEY);
     expect(value).toEqual(VALUE);
 
     wait(BASE_TTL.ttl * 2).then(() => {
@@ -36,7 +36,7 @@ describe('InMemoryCache', function() {
   });
 
   it('should delete items', (done) => {
-    var cache = new InMemoryCache(NO_EXPIRE_TTL);
+    const cache = new InMemoryCache(NO_EXPIRE_TTL);
     cache.put(KEY, VALUE);
     cache.put(KEY_2, VALUE);
     expect(cache.get(KEY)).toEqual(VALUE);
@@ -53,7 +53,7 @@ describe('InMemoryCache', function() {
   });
 
   it('should clear all items', (done) => {
-    var cache = new InMemoryCache(NO_EXPIRE_TTL);
+    const cache = new InMemoryCache(NO_EXPIRE_TTL);
     cache.put(KEY, VALUE);
     cache.put(KEY_2, VALUE);
 
@@ -67,7 +67,7 @@ describe('InMemoryCache', function() {
   });
 
   it('should deafult TTL to 5 seconds', () => {
-    var cache = new InMemoryCache({});
+    const cache = new InMemoryCache({});
     expect(cache.ttl).toEqual(5 * 1000);
   });
 

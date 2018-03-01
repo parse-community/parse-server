@@ -6,5 +6,6 @@
   "helpers": [
     "../node_modules/babel-core/register.js",
     "helper.js"
-  ]
+  ],
+  "random": false
 }

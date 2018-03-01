@@ -1014,6 +1014,18 @@ const nestedMongoObjectToNestedParseObject = mongoObject => {
   }
 }
 
+const transformPointerString = (schema, field, pointerString) => {
+  const objData = pointerString.split('$');
+  if (objData[0] !== schema.fields[field].targetClass) {
+    throw 'pointer to incorrect className';
+  }
+  return {
+    __type: 'Pointer',
+    className: objData[0],
+    objectId: objData[1]
+  };
+}
+
 // Converts from a mongo-format object to a REST-format object.
 // Does not strip out anything based on a lack of authentication.
 const mongoObjectToParseObject = (className, mongoObject, schema) => {
@@ -1126,15 +1138,7 @@ const mongoObjectToParseObject = (className, mongoObject, schema) => {
           if (mongoObject[key] === null) {
             break;
           }
-          var objData = mongoObject[key].split('$');
-          if (objData[0] !== schema.fields[newKey].targetClass) {
-            throw 'pointer to incorrect className';
-          }
-          restObject[newKey] = {
-            __type: 'Pointer',
-            className: objData[0],
-            objectId: objData[1]
-          };
+          restObject[newKey] = transformPointerString(schema, newKey, mongoObject[key]);
           break;
         } else if (key[0] == '_' && key != '__type') {
           throw ('bad key in untransform: ' + key);
@@ -1345,4 +1349,5 @@ module.exports = {
   mongoObjectToParseObject,
   relativeTimeToDate,
   transformConstraint,
+  transformPointerString,
 };

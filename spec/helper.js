@@ -23,14 +23,14 @@ if (global._babelPolyfill) {
   process.exit(1);
 }
 
-var cache = require('../src/cache').default;
-var ParseServer = require('../src/index').ParseServer;
-var path = require('path');
-var TestUtils = require('../src/TestUtils');
-var MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+const cache = require('../src/cache').default;
+const ParseServer = require('../src/index').ParseServer;
+const path = require('path');
+const TestUtils = require('../src/TestUtils');
 const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
@@ -58,7 +58,7 @@ if (process.env.PARSE_SERVER_TEST_DB === 'postgres') {
   });
 }
 
-var port = 8378;
+const port = 8378;
 
 let filesAdapter;
 
@@ -79,7 +79,7 @@ if (process.env.PARSE_SERVER_LOG_LEVEL) {
   logLevel = process.env.PARSE_SERVER_LOG_LEVEL;
 }
 // Default server configuration for tests.
-var defaultConfiguration = {
+const defaultConfiguration = {
   filesAdapter,
   serverURL: 'http://localhost:' + port + '/1',
   databaseAdapter,
@@ -116,7 +116,7 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 const openConnections = {};
 
 // Set up a default API server for testing with default configuration.
-var server;
+let server;
 
 // Allows testing specific configurations of Parse Server
 const reconfigureServer = changedConfiguration => {
@@ -153,7 +153,7 @@ const reconfigureServer = changedConfiguration => {
 }
 
 // Set up a Parse client to talk to our test API server
-var Parse = require('parse/node');
+const Parse = require('parse/node');
 Parse.serverURL = 'http://localhost:' + port + '/1';
 
 // This is needed because we ported a bunch of tests from the non-A+ way.
@@ -204,7 +204,7 @@ afterEach(function(done) {
   databaseAdapter.getAllClasses()
     .then(allSchemas => {
       allSchemas.forEach((schema) => {
-        var className = schema.className;
+        const className = schema.className;
         expect(className).toEqual({ asymmetricMatch: className => {
           if (!className.startsWith('_')) {
             return true;
@@ -220,27 +220,27 @@ afterEach(function(done) {
     .then(afterLogOut, afterLogOut)
 });
 
-var TestObject = Parse.Object.extend({
+const TestObject = Parse.Object.extend({
   className: "TestObject"
 });
-var Item = Parse.Object.extend({
+const Item = Parse.Object.extend({
   className: "Item"
 });
-var Container = Parse.Object.extend({
+const Container = Parse.Object.extend({
   className: "Container"
 });
 
 // Convenience method to create a new TestObject with a callback
 function create(options, callback) {
-  var t = new TestObject(options);
+  const t = new TestObject(options);
   t.save(null, { success: callback });
 }
 
 function createTestUser(success, error) {
-  var user = new Parse.User();
+  const user = new Parse.User();
   user.set('username', 'test');
   user.set('password', 'moon-y');
-  var promise = user.signUp();
+  const promise = user.signUp();
   if (success || error) {
     promise.then(function(user) {
       if (success) {
@@ -312,8 +312,8 @@ function normalize(obj) {
   if (obj instanceof Array) {
     return '[' + obj.map(normalize).join(', ') + ']';
   }
-  var answer = '{';
-  for (var key of Object.keys(obj).sort()) {
+  let answer = '{';
+  for (const key of Object.keys(obj).sort()) {
     answer += key + ': ';
     answer += normalize(obj[key]);
     answer += ', ';
@@ -328,15 +328,15 @@ function jequal(o1, o2) {
 }
 
 function range(n) {
-  var answer = [];
-  for (var i = 0; i < n; i++) {
+  const answer = [];
+  for (let i = 0; i < n; i++) {
     answer.push(i);
   }
   return answer;
 }
 
 function mockFacebookAuthenticator(id, token) {
-  var facebook = {};
+  const facebook = {};
   facebook.validateAuthData = function(authData) {
     if (authData.id === id && authData.access_token.startsWith(token)) {
       return Promise.resolve();
@@ -444,9 +444,9 @@ global.describe_only = (validator) =>{
 };
 
 
-var libraryCache = {};
+const libraryCache = {};
 jasmine.mockLibrary = function(library, name, mock) {
-  var original = require(library)[name];
+  const original = require(library)[name];
   if (!libraryCache[library]) {
     libraryCache[library] = {};
   }

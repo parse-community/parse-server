@@ -1,9 +1,9 @@
-var UserController = require('../src/Controllers/UserController').UserController;
-var emailAdapter = require('./MockEmailAdapter')
-var AppCache = require('../src/cache').AppCache;
+const UserController = require('../src/Controllers/UserController').UserController;
+const emailAdapter = require('./MockEmailAdapter')
+const AppCache = require('../src/cache').AppCache;
 
 describe('UserController', () => {
-  var user = {
+  const user = {
     _email_verify_token: 'testToken',
     username: 'testUser',
     email: 'test@example.com'
@@ -25,7 +25,7 @@ describe('UserController', () => {
           done()
         }
 
-        var userController = new UserController(emailAdapter, 'test', {
+        const userController = new UserController(emailAdapter, 'test', {
           verifyUserEmails: true
         })
 
@@ -48,7 +48,7 @@ describe('UserController', () => {
           done()
         }
 
-        var userController = new UserController(emailAdapter, 'test', {
+        const userController = new UserController(emailAdapter, 'test', {
           verifyUserEmails: true
         })
 

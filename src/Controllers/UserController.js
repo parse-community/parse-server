@@ -135,13 +135,23 @@ export class UserController extends AdaptableController {
     });
   }
 
+  /**
+   * Regenerates the given user's email verification token
+   *
+   * @param user
+   * @returns {*}
+   */
+  regenerateEmailVerifyToken(user) {
+    this.setEmailVerifyToken(user);
+    return this.config.database.update('_User', { username: user.username }, user);
+  }
+
   resendVerificationEmail(username) {
     return this.getUserIfNeeded({username: username}).then((aUser) => {
       if (!aUser || aUser.emailVerified) {
         throw undefined;
       }
-      this.setEmailVerifyToken(aUser);
-      return this.config.database.update('_User', {username}, aUser).then(() => {
+      return this.regenerateEmailVerifyToken(aUser).then(() => {
         this.sendVerificationEmail(aUser);
       });
     });
