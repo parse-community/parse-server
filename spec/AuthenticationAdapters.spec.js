@@ -5,7 +5,7 @@ const authenticationLoader = require('../src/Adapters/Auth');
 const path = require('path');
 
 describe('AuthenticationProviders', function() {
-  ["facebook", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
+  ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
       const provider = require("../src/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
@@ -344,5 +344,71 @@ describe('AuthenticationProviders', function() {
     validateAuthenticationAdapter(adapter);
     expect(appIds).toEqual(['a', 'b']);
     expect(providerOptions).toEqual(options.custom);
+  });
+
+  it('properly loads Facebook accountkit adapter with options', () => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b'],
+        appSecret: 'secret'
+      }
+    };
+    const {adapter, appIds, providerOptions} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    validateAuthenticationAdapter(adapter);
+    expect(appIds).toEqual(['a', 'b']);
+    expect(providerOptions.appSecret).toEqual('secret');
+  });
+
+  it('should fail if Facebook appIds is not configured properly', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: []
+      }
+    };
+    const {adapter, appIds} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAppId(appIds)
+      .then(done.fail, err => {
+        expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+        done();
+      })
+  });
+
+  it('should fail to validate Facebook accountkit auth with bad token', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b']
+      }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'badtoken'
+    };
+    const {adapter} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAuthData(authData)
+      .then(done.fail, err => {
+        expect(err.code).toBe(190);
+        expect(err.type).toBe('OAuthException');
+        done();
+      })
+  });
+
+  it('should fail to validate Facebook accountkit auth with bad token regardless of app secret proof', (done) => {
+    const options = {
+      facebookaccountkit: {
+        appIds: ['a', 'b'],
+        appSecret: 'badsecret'
+      }
+    };
+    const authData = {
+      id: 'fakeid',
+      access_token: 'badtoken'
+    };
+    const {adapter, providerOptions} = authenticationLoader.loadAuthAdapter('facebookaccountkit', options);
+    adapter.validateAuthData(authData, providerOptions)
+      .then(done.fail, err => {
+        expect(err.code).toBe(190);
+        expect(err.type).toBe('OAuthException');
+        done();
+      })
   });
 });
