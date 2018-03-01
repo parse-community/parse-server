@@ -584,6 +584,10 @@ RestQuery.prototype.runAfterFindTrigger = function() {
   if (!hasAfterFindHook) {
     return Promise.resolve();
   }
+  // Skip Aggregate and Distinct Queries
+  if (this.findOptions.pipeline || this.findOptions.distinct) {
+    return Promise.resolve();
+  }
   // Run afterFind trigger and set the new results
   return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className,this.response.results, this.config).then((results) => {
     this.response.results = results;
