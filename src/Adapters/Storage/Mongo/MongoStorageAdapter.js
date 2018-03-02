@@ -23,6 +23,7 @@ import Parse                 from 'parse/node';
 // @flow-disable-next
 import _                     from 'lodash';
 import defaults              from '../../../defaults';
+import logger                from '../../../logger';
 
 // @flow-disable-next
 const mongodb = require('mongodb');
@@ -160,6 +161,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.connectionPromise;
   }
 
+  handleError<T>(error: ?Error): Promise<T> {
+    if (error && error.code === 13) { // Unauthorized error
+      delete this.client;
+      delete this.database;
+      delete this.connectionPromise;
+      logger.error('Received unauthorized error', { error: error });
+    }
+    throw error;
+  }
+
   handleShutdown() {
     if (!this.client) {
       return;
@@ -170,7 +181,8 @@ export class MongoStorageAdapter implements StorageAdapter {
   _adaptiveCollection(name: string) {
     return this.connect()
       .then(() => this.database.collection(this._collectionPrefix + name))
-      .then(rawCollection => new MongoCollection(rawCollection));
+      .then(rawCollection => new MongoCollection(rawCollection))
+      .catch(err => this.handleError(err));
   }
 
   _schemaCollection(): Promise<MongoSchemaCollection> {
@@ -184,14 +196,14 @@ export class MongoStorageAdapter implements StorageAdapter {
       return this.database.listCollections({ name: this._collectionPrefix + name }).toArray();
     }).then(collections => {
       return collections.length > 0;
-    });
+    }).catch(err => this.handleError(err));
   }
 
   setClassLevelPermissions(className: string, CLPs: any): Promise<void> {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.updateSchema(className, {
         $set: { '_metadata.class_permissions': CLPs }
-      }));
+      })).catch(err => this.handleError(err));
   }
 
   setIndexesWithSchemaFormat(className: string, submittedIndexes: any, existingIndexes: any = {}, fields: any): Promise<void> {
@@ -237,7 +249,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection.updateSchema(className, {
         $set: { '_metadata.indexes':  existingIndexes }
-      }));
+      }))
+      .catch(err => this.handleError(err));
   }
 
   setIndexesFromMongo(className: string) {
@@ -257,10 +270,12 @@ export class MongoStorageAdapter implements StorageAdapter {
         .then(schemaCollection => schemaCollection.updateSchema(className, {
           $set: { '_metadata.indexes': indexes }
         }));
-    }).catch(() => {
-      // Ignore if collection not found
-      return Promise.resolve();
-    });
+    })
+      .catch(err => this.handleError(err))
+      .catch(() => {
+        // Ignore if collection not found
+        return Promise.resolve();
+      });
   }
 
   createClass(className: string, schema: SchemaType): Promise<void> {
@@ -269,13 +284,15 @@ export class MongoStorageAdapter implements StorageAdapter {
     mongoObject._id = className;
     return this.setIndexesWithSchemaFormat(className, schema.indexes, {}, schema.fields)
       .then(() => this._schemaCollection())
-      .then(schemaCollection => schemaCollection.insertSchema(mongoObject));
+      .then(schemaCollection => schemaCollection.insertSchema(mongoObject))
+      .catch(err => this.handleError(err));
   }
 
   addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void> {
     return this._schemaCollection()
       .then(schemaCollection => schemaCollection.addFieldIfNotExists(className, fieldName, type))
-      .then(() => this.createIndexesIfNeeded(className, fieldName, type));
+      .then(() => this.createIndexesIfNeeded(className, fieldName, type))
+      .catch(err => this.handleError(err));
   }
 
   // Drops a collection. Resolves with true if it was a Parse Schema (eg. _User, Custom, etc.)
@@ -293,12 +310,14 @@ export class MongoStorageAdapter implements StorageAdapter {
     // We've dropped the collection, now remove the _SCHEMA document
       .then(() => this._schemaCollection())
       .then(schemaCollection => schemaCollection.findAndDeleteSchema(className))
+      .catch(err => this.handleError(err));
   }
 
   // Delete all data known to this adapter. Used for testing.
   deleteAllClasses() {
     return storageAdapterAllCollections(this)
-      .then(collections => Promise.all(collections.map(collection => collection.drop())));
+      .then(collections => Promise.all(collections.map(collection => collection.drop())))
+      .catch(err => this.handleError(err));
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
@@ -342,14 +361,16 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this._adaptiveCollection(className)
       .then(collection => collection.updateMany({}, collectionUpdate))
       .then(() => this._schemaCollection())
-      .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate));
+      .then(schemaCollection => schemaCollection.updateSchema(className, schemaUpdate))
+      .catch(err => this.handleError(err));
   }
 
   // Return a promise for all schemas known to this adapter, in Parse format. In case the
   // schemas cannot be retrieved, returns a promise that rejects. Requirements for the
   // rejection reason are TBD.
   getAllClasses(): Promise<StorageClass[]> {
-    return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA());
+    return this._schemaCollection().then(schemasCollection => schemasCollection._fetchAllSchemasFrom_SCHEMA())
+      .catch(err => this.handleError(err));
   }
 
   // Return a promise for the schema with the given name, in Parse format. If
@@ -358,6 +379,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   getClass(className: string): Promise<StorageClass> {
     return this._schemaCollection()
       .then(schemasCollection => schemasCollection._fetchOneSchemaFrom_SCHEMA(className))
+      .catch(err => this.handleError(err));
   }
 
   // TODO: As yet not particularly well specified. Creates an object. Maybe shouldn't even need the schema,
@@ -381,7 +403,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           throw err;
         }
         throw error;
-      });
+      })
+      .catch(err => this.handleError(err));
   }
 
   // Remove all objects that match the given Parse Query.
@@ -394,6 +417,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         const mongoWhere = transformWhere(className, query, schema);
         return collection.deleteMany(mongoWhere)
       })
+      .catch(err => this.handleError(err))
       .then(({ result }) => {
         if (result.n === 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
@@ -410,7 +434,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.updateMany(mongoWhere, mongoUpdate));
+      .then(collection => collection.updateMany(mongoWhere, mongoUpdate))
+      .catch(err => this.handleError(err));
   }
 
   // Atomically finds and updates an object based on query.
@@ -427,7 +452,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'A duplicate value for a field with unique values was provided');
         }
         throw error;
-      });
+      })
+      .catch(err => this.handleError(err));
   }
 
   // Hopefully we can get rid of this. It's only used for config and hooks.
@@ -436,7 +462,8 @@ export class MongoStorageAdapter implements StorageAdapter {
     const mongoUpdate = transformUpdate(className, update, schema);
     const mongoWhere = transformWhere(className, query, schema);
     return this._adaptiveCollection(className)
-      .then(collection => collection.upsertOne(mongoWhere, mongoUpdate));
+      .then(collection => collection.upsertOne(mongoWhere, mongoUpdate))
+      .catch(err => this.handleError(err));
   }
 
   // Executes a find. Accepts: className, query in Parse format, and { skip, limit, sort }.
@@ -461,6 +488,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         readPreference,
       }))
       .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+      .catch(err => this.handleError(err));
   }
 
   // Create a unique index. Unique indexes on nullable fields are not allowed. Since we don't
@@ -482,14 +510,15 @@ export class MongoStorageAdapter implements StorageAdapter {
           throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Tried to ensure field uniqueness for a class that already has duplicates.');
         }
         throw error;
-      });
+      })
+      .catch(err => this.handleError(err));
   }
 
   // Used in tests
   _rawFind(className: string, query: QueryType) {
     return this._adaptiveCollection(className).then(collection => collection.find(query, {
       maxTimeMS: this._maxTimeMS,
-    }));
+    })).catch(err => this.handleError(err));
   }
 
   // Executes a count.
@@ -500,7 +529,8 @@ export class MongoStorageAdapter implements StorageAdapter {
       .then(collection => collection.count(transformWhere(className, query, schema), {
         maxTimeMS: this._maxTimeMS,
         readPreference,
-      }));
+      }))
+      .catch(err => this.handleError(err));
   }
 
   distinct(className: string, schema: SchemaType, query: QueryType, fieldName: string) {
@@ -520,7 +550,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           }
           return mongoObjectToParseObject(className, object, schema);
         });
-      });
+      })
+      .catch(err => this.handleError(err));
   }
 
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
@@ -573,7 +604,8 @@ export class MongoStorageAdapter implements StorageAdapter {
         });
         return results;
       })
-      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)));
+      .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
+      .catch(err => this.handleError(err));
   }
 
   _parseReadPreference(readPreference: ?string): ?string {
@@ -609,12 +641,14 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   createIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
-      .then(collection => collection._mongoCollection.createIndex(index));
+      .then(collection => collection._mongoCollection.createIndex(index))
+      .catch(err => this.handleError(err));
   }
 
   createIndexes(className: string, indexes: any) {
     return this._adaptiveCollection(className)
-      .then(collection => collection._mongoCollection.createIndexes(indexes));
+      .then(collection => collection._mongoCollection.createIndexes(indexes))
+      .catch(err => this.handleError(err));
   }
 
   createIndexesIfNeeded(className: string, fieldName: string, type: any) {
@@ -656,17 +690,20 @@ export class MongoStorageAdapter implements StorageAdapter {
 
   getIndexes(className: string) {
     return this._adaptiveCollection(className)
-      .then(collection => collection._mongoCollection.indexes());
+      .then(collection => collection._mongoCollection.indexes())
+      .catch(err => this.handleError(err));
   }
 
   dropIndex(className: string, index: any) {
     return this._adaptiveCollection(className)
-      .then(collection => collection._mongoCollection.dropIndex(index));
+      .then(collection => collection._mongoCollection.dropIndex(index))
+      .catch(err => this.handleError(err));
   }
 
   dropAllIndexes(className: string) {
     return this._adaptiveCollection(className)
-      .then(collection => collection._mongoCollection.dropIndexes());
+      .then(collection => collection._mongoCollection.dropIndexes())
+      .catch(err => this.handleError(err));
   }
 
   updateSchemaWithIndexes(): Promise<any> {
@@ -676,7 +713,8 @@ export class MongoStorageAdapter implements StorageAdapter {
           return this.setIndexesFromMongo(schema.className);
         });
         return Promise.all(promises);
-      });
+      })
+      .catch(err => this.handleError(err));
   }
 }
 
