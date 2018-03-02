@@ -1819,4 +1819,46 @@ describe('afterFind hooks', () => {
       Parse.Cloud.afterSave('_PushStatus', () => {});
     }).not.toThrow();
   });
+
+  it('should skip afterFind hooks for aggregate', (done) => {
+    const hook = {
+      method: function() {
+        return Promise.reject();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.afterFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject')
+    const pipeline = [{
+      group: { objectId: {} }
+    }];
+    obj.save().then(() => {
+      const query = new Parse.Query('MyObject');
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results[0].objectId).toEqual(null);
+      expect(hook.method).not.toHaveBeenCalled();
+      done();
+    });
+  });
+
+  it('should skip afterFind hooks for distinct', (done) => {
+    const hook = {
+      method: function() {
+        return Promise.reject();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.afterFind('MyObject', hook.method);
+    const obj = new Parse.Object('MyObject')
+    obj.set('score', 10);
+    obj.save().then(() => {
+      const query = new Parse.Query('MyObject');
+      return query.distinct('score');
+    }).then((results) => {
+      expect(results[0]).toEqual(10);
+      expect(hook.method).not.toHaveBeenCalled();
+      done();
+    });
+  });
 });
