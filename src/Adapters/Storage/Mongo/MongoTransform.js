@@ -1288,7 +1288,7 @@ var PolygonCoder = {
 
   JSONToDatabase(json) {
     let coords = json.coordinates;
-    // Add first point to end if not exist
+    // Add first point to the end to close polygon
     if (coords[0][0] !== coords[coords.length - 1][0] ||
         coords[0][1] !== coords[coords.length - 1][1]) {
       coords.push(coords[0]);

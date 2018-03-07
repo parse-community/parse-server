@@ -159,7 +159,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
   it('polygon', (done) => {
     const lat = -45;
     const lng = 45;
-    // Mongo stores polygon in WGS64 lng/lat
+    // Mongo stores polygon in WGS84 lng/lat
     const input = {location: { type: 'Polygon', coordinates: [[[lng, lat],[lng, lat]]]}};
     const output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'Polygon' }},
