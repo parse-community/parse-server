@@ -157,13 +157,16 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('polygon', (done) => {
-    const input = {location: { type: 'Polygon', coordinates: [[[45, -45],[45, -45]]]}};
+    const lat = -45;
+    const lng = 45;
+    // Mongo stores polygon in WGS64 lng/lat
+    const input = {location: { type: 'Polygon', coordinates: [[[lng, lat],[lng, lat]]]}};
     const output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'Polygon' }},
     });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'Polygon', coordinates: [[45, -45],[45, -45]]}
+      {__type: 'Polygon', coordinates: [[lat, lng],[lat, lng]]}
     );
     done();
   });

@@ -160,6 +160,38 @@ describe('Parse.Polygon testing', () => {
     }, done.fail);
   });
 
+  it('polygonContain query no reverse input (Regression test for #4608)', (done) => {
+    const points1 = [[.25,0],[.25,1.25],[.75,1.25],[.75,0]];
+    const points2 = [[0,0],[0,2],[2,2],[2,0]];
+    const points3 = [[10,10],[10,15],[15,15],[15,10],[10,10]];
+    const polygon1 = new Parse.Polygon(points1);
+    const polygon2 = new Parse.Polygon(points2);
+    const polygon3 = new Parse.Polygon(points3);
+    const obj1 = new TestObject({location: polygon1});
+    const obj2 = new TestObject({location: polygon2});
+    const obj3 = new TestObject({location: polygon3});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const where = {
+        location: {
+          $geoIntersects: {
+            $point: { __type: 'GeoPoint', latitude: 0.5, longitude:1.0 }
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(2);
+      done();
+    }, done.fail);
+  });
+
   it('polygonContain invalid input', (done) => {
     const points = [[0,0],[0,1],[1,1],[1,0]];
     const polygon = new Parse.Polygon(points);
