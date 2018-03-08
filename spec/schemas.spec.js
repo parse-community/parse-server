@@ -1669,7 +1669,7 @@ describe('schemas', () => {
     })
   });
 
-  fit('unset field in beforeSave should not stop object creation', (done) => {
+  it('unset field in beforeSave should not stop object creation', (done) => {
     const hook = {
       method: function(req, res) {
         if (req.object.get('undesiredField')) {
@@ -1710,7 +1710,7 @@ describe('schemas', () => {
     });
   });
 
-  fit('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
+  it('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
     new Parse.Object('MyClass').save({ data: 'foo'})
       .then(obj => obj.destroy())
       .then(() => setPermissionsOnClass('MyClass', { find: {}, get: {} }, true))
