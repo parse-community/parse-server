@@ -1667,9 +1667,50 @@ describe('schemas', () => {
       fail(JSON.stringify(error));
       done();
     })
-  })
+  });
 
-  it('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
+  fit('unset field in beforeSave should not stop object creation', (done) => {
+    const hook = {
+      method: function(req, res) {
+        if (req.object.get('undesiredField')) {
+          req.object.unset('undesiredField');
+        }
+        return res.success();
+      }
+    };
+    spyOn(hook, 'method').and.callThrough();
+    Parse.Cloud.beforeSave('AnObject', hook.method);
+    setPermissionsOnClass('AnObject', {
+      get: {"*": true},
+      find: {"*": true},
+      create: {'*': true},
+      update: {'*': true},
+      delete: {'*': true},
+      addField:{}
+    }).then(() => {
+      const obj = new Parse.Object('AnObject');
+      obj.set('desiredField', 'createMe');
+      return obj.save(null, {useMasterKey: true});
+    }).then(() => {
+      const obj = new Parse.Object('AnObject');
+      obj.set('desiredField', 'This value should be kept');
+      obj.set('undesiredField', 'This value should be IGNORED');
+      return obj.save();
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      return query.find();
+    }).then((results) => {
+      expect(results.length).toBe(2);
+      expect(results[0].has('desiredField')).toBe(true);
+      expect(results[1].has('desiredField')).toBe(true);
+      expect(results[0].has('undesiredField')).toBe(false);
+      expect(results[1].has('undesiredField')).toBe(false);
+      expect(hook.method).toHaveBeenCalled();
+      done();
+    });
+  });
+
+  fit('gives correct response when deleting a schema with CLPs (regression test #1919)', done => {
     new Parse.Object('MyClass').save({ data: 'foo'})
       .then(obj => obj.destroy())
       .then(() => setPermissionsOnClass('MyClass', { find: {}, get: {} }, true))

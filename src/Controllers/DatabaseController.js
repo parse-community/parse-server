@@ -622,8 +622,12 @@ class DatabaseController {
     const fields = Object.keys(object);
     const schemaFields = Object.keys(classSchema);
     const newKeys = fields.filter((field) => {
+      // Skip fields that are unset
+      if (object[field].__op && object[field].__op === 'Delete') {
+        return false;
+      }
       return schemaFields.indexOf(field) < 0;
-    })
+    });
     if (newKeys.length > 0) {
       return schema.validatePermission(className, aclGroup, 'addField');
     }
