@@ -623,7 +623,7 @@ class DatabaseController {
     const schemaFields = Object.keys(classSchema);
     const newKeys = fields.filter((field) => {
       // Skip fields that are unset
-      if (object[field].__op && object[field].__op === 'Delete') {
+      if (object[field] && object[field].__op && object[field].__op === 'Delete') {
         return false;
       }
       return schemaFields.indexOf(field) < 0;
