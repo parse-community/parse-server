@@ -192,6 +192,32 @@ describe('Parse.Polygon testing', () => {
     }, done.fail);
   });
 
+  it('polygonContain query real data (Regression test for #4608)', (done) => {
+    const detroit = [[42.631655189280224,-83.78406753121705],[42.633047793854814,-83.75333640366955],[42.61625254348911,-83.75149921669944],[42.61526926650296,-83.78161794858735],[42.631655189280224,-83.78406753121705]];
+    const polygon = new Parse.Polygon(detroit);
+    const obj = new TestObject({location: polygon});
+    obj.save().then(() => {
+      const where = {
+        location: {
+          $geoIntersects: {
+            $point: { __type: 'GeoPoint', latitude: 42.624599, longitude:-83.770162 }
+          }
+        }
+      };
+      return rp.post({
+        url: Parse.serverURL + '/classes/TestObject',
+        json: { where, '_method': 'GET' },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    }).then((resp) => {
+      expect(resp.results.length).toBe(1);
+      done();
+    }, done.fail);
+  });
+
   it('polygonContain invalid input', (done) => {
     const points = [[0,0],[0,1],[1,1],[1,0]];
     const polygon = new Parse.Polygon(points);
