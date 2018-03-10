@@ -63,12 +63,29 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('plain', (done) => {
-    const geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+  it('parse geopoint to mongo', (done) => {
+    const lat = -45;
+    const lng = 45;
+    const geoPoint = {__type: 'GeoPoint', latitude: lat, longitude: lng};
     const out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
       fields: {location: {type: 'GeoPoint'}}
     });
-    expect(out.location).toEqual([180, -180]);
+    expect(out.location).toEqual([lng, lat]);
+    done();
+  });
+
+  it('parse polygon to mongo', (done) => {
+    const lat1 = -45;
+    const lng1 = 45;
+    const lat2 = -55;
+    const lng2 = 55;
+    const lat3 = -65;
+    const lng3 = 65;
+    const polygon = {__type: 'Polygon', coordinates: [[lat1, lng1],[lat2, lng2],[lat3, lng3]]}
+    const out = transform.parseObjectToMongoObjectForCreate(null, {location: polygon},{
+      fields: {location: {type: 'Polygon'}}
+    });
+    expect(out.location.coordinates).toEqual([[[lng1, lat1],[lng2, lat2],[lng3, lat3],[lng1, lat1]]]);
     done();
   });
 
@@ -144,29 +161,31 @@ describe('parseObjectToMongoObjectForCreate', () => {
     done();
   });
 
-  it('geopoint', (done) => {
-    const input = {location: [45, -45]};
+  it('mongo geopoint to parse', (done) => {
+    const lat = -45;
+    const lng = 45;
+    const input = {location: [lng, lat]};
     const output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'GeoPoint' }},
     });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'GeoPoint', longitude: 45, latitude: -45}
+      {__type: 'GeoPoint', latitude: lat, longitude: lng}
     );
     done();
   });
 
-  it('polygon', (done) => {
+  it('mongo polygon to parse', (done) => {
     const lat = -45;
     const lng = 45;
     // Mongo stores polygon in WGS84 lng/lat
-    const input = {location: { type: 'Polygon', coordinates: [[[lng, lat],[lng, lat]]]}};
+    const input = {location: { type: 'Polygon', coordinates: [[[lat, lng],[lat, lng]]]}};
     const output = transform.mongoObjectToParseObject(null, input, {
       fields: { location: { type: 'Polygon' }},
     });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'Polygon', coordinates: [[lat, lng],[lat, lng]]}
+      {__type: 'Polygon', coordinates: [[lng, lat],[lng, lat]]}
     );
     done();
   });

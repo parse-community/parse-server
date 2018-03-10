@@ -313,6 +313,24 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
     }, done.fail);
   });
 
+  it('polygon coordinates reverse input', (done) => {
+    const Config = require('../src/Config');
+    const config = Config.get('test');
+
+    // When stored the first point should be the last point
+    const input = [[12,11],[14,13],[16,15],[18,17]];
+    const output = [[[11,12],[13,14],[15,16],[17,18],[11,12]]];
+    const obj = new TestObject();
+    obj.set('polygon', new Parse.Polygon(input));
+    obj.save().then(() => {
+      return config.database.adapter._rawFind('TestObject', {_id: obj.id});
+    }).then((results) => {
+      expect(results.length).toBe(1);
+      expect(results[0].polygon.coordinates).toEqual(output);
+      done();
+    });
+  });
+
   it('polygon loop is not valid', (done) => {
     const coords = [[0,0],[0,1],[1,0],[1,1]];
     const obj = new TestObject();
