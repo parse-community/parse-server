@@ -25,13 +25,13 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - NODE_VERSION=8.9.3
+  - NODE_VERSION=8.10
   matrix:
   - MONGODB_VERSION=3.2.13
   - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=9.3.0
+  - NODE_VERSION=9.8
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
@@ -50,7 +50,7 @@ jobs:
   include:
     # release on github latest branch
     - stage: release
-      node_js: '8.9.3'
+      node_js: '8.10'
       env: 
       before_script: skip
       after_script: skip
