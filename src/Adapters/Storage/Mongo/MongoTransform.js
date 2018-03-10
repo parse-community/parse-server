@@ -1261,9 +1261,13 @@ var GeoPointCoder = {
 
 var PolygonCoder = {
   databaseToJSON(object) {
+    // Convert lng/lat -> lat/lng
+    const coords = object.coordinates[0].map((coord) => {
+      return [coord[1], coord[0]];
+    });
     return {
       __type: 'Polygon',
-      coordinates: object['coordinates'][0]
+      coordinates: coords
     }
   },
 
@@ -1283,7 +1287,8 @@ var PolygonCoder = {
   },
 
   JSONToDatabase(json) {
-    const coords = json.coordinates;
+    let coords = json.coordinates;
+    // Add first point to the end to close polygon
     if (coords[0][0] !== coords[coords.length - 1][0] ||
         coords[0][1] !== coords[coords.length - 1][1]) {
       coords.push(coords[0]);
@@ -1306,6 +1311,10 @@ var PolygonCoder = {
         'GeoJSON: Loop must have at least 3 different vertices'
       );
     }
+    // Convert lat/long -> long/lat
+    coords = coords.map((coord) => {
+      return [coord[1], coord[0]];
+    });
     return { type: 'Polygon', coordinates: [coords] };
   },
 
