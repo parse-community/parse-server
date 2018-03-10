@@ -1,7 +1,19 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...master)
+
+### 2.7.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...2.7.3)
+
+#### Bug Fixes:
+* Fixes an issue affecting polygon queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Dependency Updates:
+* [pg-promise@8.2.1](https://www.npmjs.com/package/pg-promise)
+
+##### Development Dependencies Updates:
+* [nodemon@1.17.1](https://www.npmjs.com/package/nodemon)
 
 ### 2.7.3
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.3...2.7.2)
