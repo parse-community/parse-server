@@ -338,7 +338,11 @@ function configureListeners(parseServer) {
     destroyAliveConnections();
     server.close();
     parseServer.handleShutdown();
+    setImmediate(() => { // give anything that might need it a tick
+      process.exit(0)
+    });
   };
+
   process.on('SIGTERM', handleShutdown);
   process.on('SIGINT', handleShutdown);
 }
