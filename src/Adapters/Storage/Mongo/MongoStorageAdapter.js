@@ -638,7 +638,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  createIndexes(className: string, indexes: any) {
+  createIndexes(className: string, indexes: any): Promise<void> {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.createIndexes(indexes))
       .catch(err => this.handleError(err));
@@ -675,13 +675,13 @@ export class MongoStorageAdapter implements StorageAdapter {
           if (error.code === 85) { // Index exist with different options
             return this.setIndexesFromDB(className);
           }
-          return this.handleError(err);
+          return this.handleError(error);
         });
     }
     return Promise.resolve();
   }
 
-  getIndexes(className: string) {
+  getIndexes(className: string): Promise<any> {
     return this._adaptiveCollection(className)
       .then(collection => collection._mongoCollection.indexes())
       .then((indexes) => transformIndexes(indexes))

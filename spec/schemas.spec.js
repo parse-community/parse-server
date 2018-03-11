@@ -1958,7 +1958,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, (error, response, body) => {
+    }, () => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,

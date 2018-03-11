@@ -1852,7 +1852,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     });
   }
 
-  getIndexes(className: string, conn: ?any) {
+  getIndexes(className: string, conn: ?any): Promise<any> {
     const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
     return (conn || this._client).any(qs, {className}).then((indexes) => {
       return indexes.reduce((obj, index) => {
