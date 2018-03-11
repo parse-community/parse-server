@@ -2390,7 +2390,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('get indexes on startup', (done) => {
+  it('get indexes on startup', (done) => {
     const obj = new Parse.Object('TestObject');
     obj.save().then(() => {
       return reconfigureServer({
@@ -2410,7 +2410,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('get compound indexes on startup', (done) => {
+  it('get compound indexes on startup', (done) => {
     const obj = new Parse.Object('TestObject');
     obj.set('subject', 'subject');
     obj.set('comment', 'comment');
