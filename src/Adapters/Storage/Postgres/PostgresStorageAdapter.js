@@ -1763,7 +1763,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  createIndex(className: string, index: any, type: string = 'btree', conn: ?any) {
+  createIndex(className: string, index: any, type: string = 'btree', conn: ?any): Promise<void> {
     conn = conn || this._client;
     const indexNames = [];
     for (const key in index) {
