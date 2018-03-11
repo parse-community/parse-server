@@ -699,8 +699,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
     conn = conn || this._client;
     return this.getIndexes(className, conn).then((indexes) => {
       return this._ensureSchemaCollectionExists(conn).then(() => {
-        const values = [className, 'schema', 'indexes', JSON.stringify(indexes)]
-        return conn.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+        const params = {className, json: 'schema', key: 'indexes', value: indexes}
+        return conn.none(`UPDATE "_SCHEMA" SET $<json:name> = json_object_set_key($<json:name>, $<key>, $<value:json>::jsonb) WHERE "className"=$<className> `, params);
       });
     }).catch(() => {
       // Ignore if collection not found
