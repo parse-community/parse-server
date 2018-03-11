@@ -112,7 +112,9 @@ describe('ParseLiveQueryServer', function() {
       liveQuery: {
         classNames: ['Yolo']
       },
-      startLiveQueryServer: true
+      startLiveQueryServer: true,
+      databaseAdapter: global.defaultConfiguration.databaseAdapter,
+      filesAdapter: global.defaultConfiguration.filesAdapter,
     });
 
     expect(parseServer.liveQueryServer).not.toBeUndefined();
@@ -132,7 +134,9 @@ describe('ParseLiveQueryServer', function() {
       },
       liveQueryServerOptions: {
         port: 22347,
-      }
+      },
+      databaseAdapter: global.defaultConfiguration.databaseAdapter,
+      filesAdapter: global.defaultConfiguration.filesAdapter,
     });
 
     expect(parseServer.liveQueryServer).not.toBeUndefined();
