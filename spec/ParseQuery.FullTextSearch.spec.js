@@ -287,12 +287,13 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
     }).then(() => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(1);
+      expect(indexes._id_).toBeDefined();
       return databaseAdapter.createIndex('TestObject', {subject: 'text', comment: 'text'});
     }).then(() => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(2);
+      expect(indexes._id_).toBeDefined();
+      expect(indexes.subject_text_comment_text).toBeDefined();
       const where = {
         subject: {
           $text: {
@@ -314,7 +315,8 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
       expect(resp.results.length).toEqual(3);
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(2);
+      expect(indexes._id_).toBeDefined();
+      expect(indexes.subject_text_comment_text).toBeDefined();
       rp.get({
         url: 'http://localhost:8378/1/schemas/TestObject',
         headers: {
@@ -324,10 +326,7 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
         json: true,
       }, (error, response, body) => {
         expect(body.indexes._id_).toBeDefined();
-        expect(body.indexes._id_._id).toEqual(1);
         expect(body.indexes.subject_text_comment_text).toBeDefined();
-        expect(body.indexes.subject_text_comment_text.subject).toEqual('text');
-        expect(body.indexes.subject_text_comment_text.comment).toEqual('text');
         done();
       });
     }).catch(done.fail);
@@ -339,7 +338,7 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
     }).then(() => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(1);
+      expect(indexes._id_).toBeDefined();
       return rp.put({
         url: 'http://localhost:8378/1/schemas/TestObject',
         json: true,
@@ -357,7 +356,8 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
     }).then(() => {
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(2);
+      expect(indexes._id_).toBeDefined();
+      expect(indexes.text_test).toBeDefined();
       const where = {
         subject: {
           $text: {
@@ -379,7 +379,8 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
       expect(resp.results.length).toEqual(3);
       return databaseAdapter.getIndexes('TestObject');
     }).then((indexes) => {
-      expect(indexes.length).toEqual(2);
+      expect(indexes._id_).toBeDefined();
+      expect(indexes.text_test).toBeDefined();
       rp.get({
         url: 'http://localhost:8378/1/schemas/TestObject',
         headers: {
@@ -389,10 +390,7 @@ describe_only_db('mongo')('Parse.Query Full Text Search testing', () => {
         json: true,
       }, (error, response, body) => {
         expect(body.indexes._id_).toBeDefined();
-        expect(body.indexes._id_._id).toEqual(1);
         expect(body.indexes.text_test).toBeDefined();
-        expect(body.indexes.text_test.subject).toEqual('text');
-        expect(body.indexes.text_test.comment).toEqual('text');
         done();
       });
     }).catch(done.fail);
