@@ -657,6 +657,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const deletedIndexes = [];
     const insertedIndexes = [];
     Object.keys(submittedIndexes).forEach(name => {
+      if (name === '_id_') {
+        return;
+      }
       const field = submittedIndexes[name];
       if (existingIndexes[name] && field.__op !== 'Delete') {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
@@ -689,6 +692,19 @@ export class PostgresStorageAdapter implements StorageAdapter {
       }
       yield self._ensureSchemaCollectionExists(t);
       yield t.none('UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1', [className, 'schema', 'indexes', JSON.stringify(existingIndexes)]);
+    });
+  }
+
+  setIndexesFromDB(className: string, conn: any) {
+    conn = conn || this._client;
+    return this.getIndexes(className, conn).then((indexes) => {
+      return this._ensureSchemaCollectionExists(conn).then(() => {
+        const values = [className, 'schema', 'indexes', JSON.stringify(indexes)]
+        return conn.none(`UPDATE "_SCHEMA" SET $2:name = json_object_set_key($2:name, $3::text, $4::jsonb) WHERE "className"=$1 `, values);
+      });
+    }).catch(() => {
+      // Ignore if collection not found
+      return Promise.resolve();
     });
   }
 
@@ -822,6 +838,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       } else {
         const path = `{fields,${fieldName}}`;
         yield t.none('UPDATE "_SCHEMA" SET "schema"=jsonb_set("schema", $<path>, $<type>)  WHERE "className"=$<className>', {path, type, className});
+        return yield self.createIndexesIfNeeded(className, fieldName, type, t);
       }
     });
   }
@@ -1355,13 +1372,15 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
     debug(qs, values);
-    return this._client.any(qs, values)
-      .catch(error => {
+    // @flow-disable-next
+    return this.createTextIndexesIfNeeded(className, query, schema)
+      .then(() => this._client.any(qs, values))
+      .catch(err => {
         // Query on non existing table, don't crash
-        if (error.code !== PostgresRelationDoesNotExistError) {
-          throw error;
+        if (err.code === PostgresRelationDoesNotExistError) {
+          return [];
         }
-        return [];
+        return Promise.reject(err);
       })
       .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
@@ -1745,6 +1764,25 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
+  createIndex(className: string, index: any, type: string = 'btree', conn: ?any) {
+    conn = conn || this._client;
+    const indexNames = [];
+    for (const key in index) {
+      indexNames.push(`${key}_${index[key]}`);
+    }
+    const values = [indexNames.join('_'), className, type, index];
+    return conn.none('CREATE INDEX $1:name ON $2:name USING $3:name ($4:name)', values)
+      .then(() => this.setIndexesFromDB(className, conn))
+      .catch((error) => {
+        if (error.code === PostgresDuplicateRelationError) {
+        // Index already exists, Ignore error.
+          return Promise.resolve();
+        } else {
+          throw error;
+        }
+      });
+  }
+
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
     return (conn || this._client).tx(t => t.batch(indexes.map(i => {
       return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [i.name, className, i.key]);
@@ -1752,7 +1790,49 @@ export class PostgresStorageAdapter implements StorageAdapter {
   }
 
   createIndexesIfNeeded(className: string, fieldName: string, type: any, conn: ?any): Promise<void> {
-    return (conn || this._client).none('CREATE INDEX $1:name ON $2:name ($3:name)', [fieldName, className, type]);
+    conn = conn || this._client;
+    const self = this;
+    return conn.tx('create-indexes-if-needed', function * (t) {
+      if (type && (type.type === 'Polygon')) {
+        const index = {
+          [fieldName]: '2dsphere'
+        };
+
+        yield self.createIndex(className, index, 'gist', t);
+      }
+    });
+  }
+
+  createTextIndexesIfNeeded(className: string, query: QueryType, schema: SchemaType): Promise<any> {
+    for(const fieldName in query) {
+      if (!query[fieldName] || !query[fieldName].$text) {
+        continue;
+      }
+      let promise = Promise.resolve();
+      let existingIndexes = schema.indexes;
+      if (!existingIndexes) {
+        promise = this.setIndexesFromDB(className).then(() => {
+          return this.getClass(className);
+        });
+      }
+      return promise.then((dbSchema) => {
+        if (dbSchema) {
+          existingIndexes = dbSchema.indexes;
+        }
+        for (const key in existingIndexes) {
+          const index = existingIndexes[key];
+          if (index.hasOwnProperty(fieldName)) {
+            return Promise.resolve();
+          }
+        }
+        const indexName = `${fieldName}_text`;
+        const textIndex = {
+          [indexName]: { [fieldName]: 'text' }
+        };
+        return this.setIndexesWithSchemaFormat(className, textIndex, existingIndexes, schema.fields);
+      });
+    }
+    return Promise.resolve();
   }
 
   dropIndexes(className: string, indexes: any, conn: any): Promise<void> {
@@ -1760,13 +1840,56 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return (conn || this._client).tx(t => t.none(this._pgp.helpers.concat(queries)));
   }
 
-  getIndexes(className: string) {
-    const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
-    return this._client.any(qs, {className});
+  dropAllIndexes(className: string) {
+    return this.getClass(className).then((schema) => {
+      const batch = [];
+      return this._client.tx(t => {
+        for (const key in schema.indexes) {
+          batch.push(t.none('DROP INDEX $1:name', key));
+        }
+        return t.batch(batch);
+      });
+    });
   }
 
-  updateSchemaWithIndexes(): Promise<void> {
-    return Promise.resolve();
+  getIndexes(className: string, conn: ?any) {
+    const qs = 'SELECT * FROM pg_indexes WHERE tablename = ${className}';
+    return (conn || this._client).any(qs, {className}).then((indexes) => {
+      return indexes.reduce((obj, index) => {
+        // Get field from index definition
+        const indexdef = index.indexdef.replace(/[\"]/g, "");
+        const regExp = /\(([^)]+)\)/;
+        let name = index.indexname;
+        const value = regExp.exec(indexdef)[1];
+        const fields = value.split(', ');
+        let key = {};
+        fields.forEach((field) => {
+          if (field === 'objectId') {
+            key = { _id: 1 };
+            name = '_id_';
+            return;
+          }
+          const textIndex = `${field}_text`;
+          if (name.includes(textIndex)) {
+            key[field] = 'text';
+          } else {
+            key[field] = 1;
+          }
+        });
+        obj[name] = key;
+        return obj;
+      }, {});
+    });
+  }
+
+  updateSchemaWithIndexes() {
+    return this.getAllClasses()
+      .then((classes) => {
+        const promises = classes.map((schema) => {
+          return this.setIndexesFromDB(schema.className);
+        });
+        return Promise.all(promises);
+      });
   }
 }
 

@@ -48,8 +48,11 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
+  const indexes = req.body.indexes || {};
+  indexes._id_ = { _id: 1 };
+
   return req.config.database.loadSchema({ clearCache: true})
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions, req.body.indexes))
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions, indexes))
     .then(schema => ({ response: schema }));
 }
 

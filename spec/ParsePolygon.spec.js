@@ -1,7 +1,14 @@
 const TestObject = Parse.Object.extend('TestObject');
 import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+const Config = require('../src/Config');
 const rp = require('request-promise');
+
+const masterKeyHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Master-Key': 'test',
+};
+
 const defaultHeaders = {
   'X-Parse-Application-Id': 'test',
   'X-Parse-Rest-API-Key': 'rest'
@@ -262,6 +269,39 @@ describe('Parse.Polygon testing', () => {
         }
       });
     }).then(done.fail, () => done());
+  });
+});
+
+describe_only_db('postgres')('schemas', () => {
+  it('can create polygon index', (done) => {
+    const adapter = Config.get('test').database.adapter;
+    const coords = [[0,0],[0,1],[1,1],[1,0],[0,0]];
+    const polygon = new Parse.Polygon(coords);
+    const obj = new TestObject();
+    obj.set('polygon', polygon);
+    reconfigureServer({
+      appId: 'test',
+      restAPIKey: 'test',
+      publicServerURL: 'http://localhost:8378/1',
+    }).then(() => {
+      return obj.save();
+    }).then(() => {
+      return adapter.getIndexes('TestObject');
+    }).then((indexes) => {
+      rp.get({
+        url: 'http://localhost:8378/1/schemas/TestObject',
+        headers: masterKeyHeaders,
+        json: true,
+      }, (error, response, body) => {
+        expect(body.indexes).toEqual(indexes);
+        expect(indexes._id_._id).toEqual(1);
+        expect(indexes.polygon_2dsphere.polygon).toEqual(1);
+        done();
+      });
+    }).catch(error => {
+      console.log(error);
+      done();
+    });
   });
 });
 

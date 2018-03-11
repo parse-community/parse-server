@@ -45,6 +45,10 @@ const defaultClassLevelPermissions = {
   }
 }
 
+const defaultIndex = {
+  _id_: { _id: 1 },
+}
+
 const plainOldDataSchema = {
   className: 'HasAllPOD',
   fields: {
@@ -362,7 +366,8 @@ describe('schemas', () => {
           foo: {type: 'Number'},
           ptr: {type: 'Pointer', targetClass: 'SomeClass'},
         },
-        classLevelPermissions: defaultClassLevelPermissions
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: defaultIndex,
       });
       done();
     });
@@ -426,7 +431,8 @@ describe('schemas', () => {
           updatedAt: {type: 'Date'},
           objectId: {type: 'String'},
         },
-        classLevelPermissions: defaultClassLevelPermissions
+        classLevelPermissions: defaultClassLevelPermissions,
+        indexes: defaultIndex,
       });
       done();
     });
@@ -648,7 +654,8 @@ describe('schemas', () => {
             "updatedAt": {"type": "Date"},
             "newField": {"type": "String"},
           },
-          classLevelPermissions: defaultClassLevelPermissions
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: defaultIndex,
         })).toEqual(undefined);
         request.get({
           url: 'http://localhost:8378/1/schemas/NewClass',
@@ -664,7 +671,8 @@ describe('schemas', () => {
               objectId: {type: 'String'},
               newField: {type: 'String'},
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: defaultIndex,
           });
           done();
         });
@@ -1787,7 +1795,6 @@ describe('schemas', () => {
         'delete': {},
         'addField': {},
       });
-      console.log(res);
     }).then(done).catch(done.fail);
   });
 
@@ -1905,17 +1912,18 @@ describe('schemas', () => {
         },
         classLevelPermissions: defaultClassLevelPermissions,
         indexes: {
+          _id_: { _id: 1 },
           name1: { aString: 1},
         },
       });
       config.database.adapter.getIndexes('NewClass').then((indexes) => {
-        expect(indexes.length).toBe(2);
+        expect(indexes).toEqual(body.indexes);
         done();
       });
     });
   });
 
-  it('empty index returns nothing', done => {
+  it('empty index returns default', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas',
       headers: masterKeyHeaders,
@@ -1938,6 +1946,7 @@ describe('schemas', () => {
           aString: {type: 'String'}
         },
         classLevelPermissions: defaultClassLevelPermissions,
+        indexes: defaultIndex,
       });
       done();
     });
@@ -1949,7 +1958,7 @@ describe('schemas', () => {
       headers: masterKeyHeaders,
       json: true,
       body: {},
-    }, () => {
+    }, (error, response, body) => {
       request.put({
         url: 'http://localhost:8378/1/schemas/NewClass',
         headers: masterKeyHeaders,
@@ -1999,7 +2008,7 @@ describe('schemas', () => {
             }
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
-            expect(indexes.length).toEqual(2);
+            expect(indexes).toEqual(body.indexes);
             done();
           });
         });
@@ -2078,7 +2087,7 @@ describe('schemas', () => {
             },
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
-            expect(indexes.length).toEqual(4);
+            expect(indexes).toEqual(body.indexes);
             done();
           });
         });
@@ -2146,7 +2155,7 @@ describe('schemas', () => {
             }
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
-            expect(indexes.length).toEqual(1);
+            expect(indexes).toEqual(body.indexes);
             done();
           });
         });
@@ -2226,7 +2235,7 @@ describe('schemas', () => {
             }
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
-            expect(indexes.length).toEqual(2);
+            expect(indexes).toEqual(body.indexes);
             done();
           });
         });
@@ -2311,7 +2320,7 @@ describe('schemas', () => {
             }
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
-            expect(indexes.length).toEqual(3);
+            expect(indexes).toEqual(body.indexes);
             done();
           });
         });

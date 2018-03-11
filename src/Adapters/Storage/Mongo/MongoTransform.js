@@ -123,6 +123,20 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
+const transformIndexes = indexes => {
+  return indexes.reduce((obj, index) => {
+    if (index.key._fts) {
+      delete index.key._fts;
+      delete index.key._ftsx;
+      for (const field in index.weights) {
+        index.key[field] = 'text';
+      }
+    }
+    obj[index.name] = index.key;
+    return obj;
+  }, {});
+}
+
 const transformInteriorValue = restValue => {
   if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -1359,4 +1373,5 @@ module.exports = {
   relativeTimeToDate,
   transformConstraint,
   transformPointerString,
+  transformIndexes,
 };
