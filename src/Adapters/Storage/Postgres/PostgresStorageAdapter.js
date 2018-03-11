@@ -1321,7 +1321,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
-  find(className: string, schema: SchemaType, query: QueryType, { skip, limit, sort, keys }: QueryOptions) {
+  find(className: string, schema: SchemaType, query: QueryType, { skip, limit, sort, keys }: QueryOptions): Promise<any> {
     debug('find', className, query, {skip, limit, sort, keys });
     const hasLimit = limit !== undefined;
     const hasSkip = skip !== undefined;
@@ -1372,7 +1372,6 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
     const qs = `SELECT ${columns} FROM $1:name ${wherePattern} ${sortPattern} ${limitPattern} ${skipPattern}`;
     debug(qs, values);
-    // @flow-disable-next
     return this.createTextIndexesIfNeeded(className, query, schema)
       .then(() => this._client.any(qs, values))
       .catch(err => {
@@ -1380,7 +1379,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
         if (err.code === PostgresRelationDoesNotExistError) {
           return [];
         }
-        return Promise.reject(err);
+        throw err;
       })
       .then(results => results.map(object => this.postgresObjectToParseObject(className, object, schema)));
   }
