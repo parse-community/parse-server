@@ -4,14 +4,14 @@ import * as middlewares from '../src/middlewares';
 import { ParseServer }  from '../src/index';
 import { Parse }        from 'parse/node';
 
-var express = require('express'),
+const express = require('express'),
   cryptoUtils = require('../src/cryptoUtils');
 
-var router = express.Router();
+const router = express.Router();
 
 // creates a unique app in the cache, with a collection prefix
 function createApp(req, res) {
-  var appId = cryptoUtils.randomHexString(32);
+  const appId = cryptoUtils.randomHexString(32);
 
   ParseServer({
     databaseURI: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
@@ -20,7 +20,7 @@ function createApp(req, res) {
     serverURL: Parse.serverURL,
     collectionPrefix: appId
   });
-  var keys = {
+  const keys = {
     'application_id': appId,
     'client_key'    : 'unused',
     'windows_key'   : 'unused',

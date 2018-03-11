@@ -1,5 +1,5 @@
 'use strict';
-var Config = require('../src/Config');
+const Config = require('../src/Config');
 
 describe('Pointer Permissions', () => {
 

@@ -250,6 +250,7 @@ The client keys used with Parse are no longer necessary with Parse Server. If yo
 * `middleware` - (CLI only), a module name, function that is an express middleware. When using the CLI, the express app will load it just **before** mounting parse-server on the mount path. This option is useful for injecting a monitoring middleware.
 * `masterKeyIps` - The array of ip addresses where masterKey usage will be restricted to only these ips. (Default to [] which means allow all ips). If you're using this feature and have `useMasterKey: true` in cloudcode, make sure that you put your own ip in this list.
 * `readOnlyMasterKey` -  A masterKey that has full read access to the data, but no write access. This key should be treated the same way as your masterKey, keeping it private.
+* `objectIdSize` - The string length of the newly generated object's ids.
 
 ##### Logging
 
@@ -349,7 +350,7 @@ PARSE_SERVER_APPLICATION_ID
 PARSE_SERVER_MASTER_KEY
 PARSE_SERVER_DATABASE_URI
 PARSE_SERVER_URL
-PARSE_SERVER_CLOUD_CODE_MAIN
+PARSE_SERVER_CLOUD
 ```
 
 The default port is 1337, to use a different port set the PORT environment variable:

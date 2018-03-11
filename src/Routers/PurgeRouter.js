@@ -4,6 +4,9 @@ import * as middleware from '../middlewares';
 export class PurgeRouter extends PromiseRouter {
 
   handlePurge(req) {
+    if (req.auth.isReadOnly) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to purge a schema.');
+    }
     return req.config.database.purgeCollection(req.params.className)
       .then(() => {
         var cacheAdapter = req.config.cacheController;

@@ -171,7 +171,7 @@ export interface LiveQueryServerOptions {
   cacheTimeout: ?number,
   /* This string defines the log level of the LiveQuery server. We support VERBOSE, INFO, ERROR, NONE. Defaults to INFO.*/
   logLevel: ?string,
-  /* The port to run the ParseServer. defaults to 1337.*/
+  /* The port to run the LiveQuery server. Defaults to 1337.*/
   port: ?number, // = 1337
   /* parse-server's LiveQuery redisURL */
   redisURL: ?string,

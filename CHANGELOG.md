@@ -1,7 +1,54 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...master)
+
+### 2.7.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...2.7.3)
+
+#### Bug Fixes:
+* Fixes an issue affecting polygon queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Dependency Updates:
+* [pg-promise@8.2.1](https://www.npmjs.com/package/pg-promise)
+
+##### Development Dependencies Updates:
+* [nodemon@1.17.1](https://www.npmjs.com/package/nodemon)
+
+### 2.7.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.3...2.7.2)
+
+#### Improvements:
+* Improve documentation for LiveQuery options, thanks to [Arthur Cinader](https://github.com/acinader)
+* Improve documentation for using cloud code with docker, thanks to [Stephen Tuso](https://github.com/stephentuso)
+* Adds support for Facebook's AccountKit, thanks to [6thfdwp](https://github.com/6thfdwp)
+* Disable afterFind routines when running aggregates, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Improve support for distinct aggregations of nulls, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Regenreate the email verification token when requesting a new email, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+
+#### Bug Fixes:
+* Fix issue affecting readOnly masterKey and purge command, thanks to [AreyouHappy](https://github.com/AreyouHappy)
+* Fixes Issue unsetting in beforeSave doesn't allow object creation, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Fixes issue crashing server on invalid live query payload, thanks to [fridays](https://github.com/fridays)
+* Fixes issue affecting postgres storage adapter "undefined property '__op'", thanks to [Tyson Andre](https://github,com/TysonAndre)
+
+#### Dependency Updates:
+* [winston@2.4.1](https://www.npmjs.com/package/winston)
+* [pg-promise@8.2.0](https://www.npmjs.com/package/pg-promise)
+* [commander@2.15.0](https://www.npmjs.com/package/commander)
+* [lru-cache@4.1.2](https://www.npmjs.com/package/lru-cache)
+* [parse@1.11.1](https://www.npmjs.com/package/parse)
+* [ws@5.0.0](https://www.npmjs.com/package/ws)
+* [mongodb@3.0.4](https://www.npmjs.com/package/mongodb)
+* [lodash@4.17.5](https://www.npmjs.com/package/lodash)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.1.4](https://www.npmjs.com/package/cross-env)
+* [flow-bin@0.67.1](https://www.npmjs.com/package/flow-bin)
+* [jasmine@3.1.0](https://www.npmjs.com/package/jasmine)
+* [parse@1.11.1](https://www.npmjs.com/package/parse)
+* [babel-eslint@8.2.2](https://www.npmjs.com/package/babel-eslint)
+* [nodemon@1.15.0](https://www.npmjs.com/package/nodemon)
 
 ### 2.7.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...2.7.1)

@@ -1,6 +1,6 @@
 'use strict';
 
-var request = require('request');
+const request = require('request');
 const Config = require('../src/Config');
 
 describe('a GlobalConfig', () => {
