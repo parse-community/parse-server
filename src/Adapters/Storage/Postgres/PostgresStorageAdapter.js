@@ -1739,7 +1739,8 @@ export class PostgresStorageAdapter implements StorageAdapter {
           }
           throw err;
         })
-        .then(() => this.schemaUpgrade(schema.className, schema));
+        .then(() => this.schemaUpgrade(schema.className, schema))
+        .then(() => this.updateSchemaWithIndexes());
     });
     return Promise.all(promises)
       .then(() => {

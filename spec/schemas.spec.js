@@ -47,7 +47,7 @@ const defaultClassLevelPermissions = {
 
 const defaultIndex = {
   _id_: { _id: 1 },
-}
+};
 
 const plainOldDataSchema = {
   className: 'HasAllPOD',
@@ -105,7 +105,12 @@ const userSchema = {
     "authData": {"type": "Object"}
   },
   "classLevelPermissions": defaultClassLevelPermissions,
-}
+  indexes: {
+    _id_: { _id: 1 },
+    email_1: { email: 1 },
+    username_1: { username: 1 }
+  },
+};
 
 const roleSchema = {
   "className": "_Role",
@@ -119,7 +124,50 @@ const roleSchema = {
     "roles": {"type":"Relation", "targetClass":"_Role"}
   },
   "classLevelPermissions": defaultClassLevelPermissions,
-}
+  indexes: {
+    _id_: { _id: 1 },
+    name_1: { name: 1 },
+  },
+};
+
+const pgUserSchema = {
+  "className": "_User",
+  "fields": {
+    "objectId": {"type": "String"},
+    "createdAt": {"type": "Date"},
+    "updatedAt": {"type": "Date"},
+    "ACL": {"type": "ACL"},
+    "username": {"type": "String"},
+    "password": {"type": "String"},
+    "email": {"type": "String"},
+    "emailVerified": {"type": "Boolean"},
+    "authData": {"type": "Object"}
+  },
+  "classLevelPermissions": defaultClassLevelPermissions,
+  indexes: {
+    _id_: { _id: 1 },
+    unique_email: { email: 1 },
+    unique_username: { username: 1 }
+  },
+};
+
+const pgRoleSchema = {
+  "className": "_Role",
+  "fields": {
+    "objectId": {"type": "String"},
+    "createdAt": {"type": "Date"},
+    "updatedAt": {"type": "Date"},
+    "ACL": {"type": "ACL"},
+    "name":  {"type":"String"},
+    "users": {"type":"Relation", "targetClass":"_User"},
+    "roles": {"type":"Relation", "targetClass":"_Role"}
+  },
+  "classLevelPermissions": defaultClassLevelPermissions,
+  indexes: {
+    _id_: { _id: 1 },
+    unique_name: { name: 1 },
+  },
+};
 
 const noAuthHeaders = {
   'X-Parse-Application-Id': 'test',
@@ -182,21 +230,35 @@ describe('schemas', () => {
     });
   });
 
-  it('creates _User schema when server starts', done => {
+  it_exclude_dbs(['postgres'])('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
       headers: masterKeyHeaders,
     }, (error, response, body) => {
       const expected = {
-        results: [userSchema,roleSchema]
+        results: [userSchema, roleSchema]
       };
       expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
       done();
     });
   });
 
-  it('responds with a list of schemas after creating objects', done => {
+  it_exclude_dbs(['mongo'])('creates _User schema when server starts', done => {
+    request.get({
+      url: 'http://localhost:8378/1/schemas',
+      json: true,
+      headers: masterKeyHeaders,
+    }, (error, response, body) => {
+      const expected = {
+        results: [pgUserSchema, pgRoleSchema]
+      };
+      expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
+      done();
+    });
+  });
+
+  it_exclude_dbs(['postgres'])('responds with a list of schemas after creating objects', done => {
     const obj1 = hasAllPODobject();
     obj1.save().then(savedObj1 => {
       const obj2 = new Parse.Object('HasPointersAndRelations');
@@ -212,6 +274,29 @@ describe('schemas', () => {
       }, (error, response, body) => {
         const expected = {
           results: [userSchema,roleSchema,plainOldDataSchema,pointersAndRelationsSchema]
+        };
+        expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
+        done();
+      })
+    });
+  });
+
+  it_exclude_dbs(['mongo'])('responds with a list of schemas after creating objects', done => {
+    const obj1 = hasAllPODobject();
+    obj1.save().then(savedObj1 => {
+      const obj2 = new Parse.Object('HasPointersAndRelations');
+      obj2.set('aPointer', savedObj1);
+      const relation = obj2.relation('aRelation');
+      relation.add(obj1);
+      return obj2.save();
+    }).then(() => {
+      request.get({
+        url: 'http://localhost:8378/1/schemas',
+        json: true,
+        headers: masterKeyHeaders,
+      }, (error, response, body) => {
+        const expected = {
+          results: [pgUserSchema,pgRoleSchema,plainOldDataSchema,pointersAndRelationsSchema]
         };
         expect(dd(body.results.sort((s1, s2) => s1.className > s2.className), expected.results.sort((s1, s2) => s1.className > s2.className))).toEqual(undefined);
         done();
@@ -680,7 +765,7 @@ describe('schemas', () => {
     })
   });
 
-  it('lets you add fields to system schema', done => {
+  it_exclude_dbs(['postgres'])('lets you add fields to system schema', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
@@ -710,7 +795,12 @@ describe('schemas', () => {
             newField: {type: 'String'},
             ACL: {type: 'ACL'}
           },
-          classLevelPermissions: defaultClassLevelPermissions
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            email_1: { email: 1 },
+            username_1: { username: 1 }
+          },
         })).toBeUndefined();
         request.get({
           url: 'http://localhost:8378/1/schemas/_User',
@@ -731,7 +821,81 @@ describe('schemas', () => {
               newField: {type: 'String'},
               ACL: {type: 'ACL'}
             },
-            classLevelPermissions: defaultClassLevelPermissions
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              email_1: { email: 1 },
+              username_1: { username: 1 }
+            },
+          })).toBeUndefined();
+          done();
+        });
+      });
+    })
+  });
+
+  it_exclude_dbs(['mongo'])('lets you add fields to system schema', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/_User',
+      headers: masterKeyHeaders,
+      json: true
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/_User',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            newField: {type: 'String'}
+          }
+        }
+      }, (error, response, body) => {
+        expect(dd(body,{
+          className: '_User',
+          fields: {
+            objectId: {type: 'String'},
+            updatedAt: {type: 'Date'},
+            createdAt: {type: 'Date'},
+            username: {type: 'String'},
+            password: {type: 'String'},
+            email: {type: 'String'},
+            emailVerified: {type: 'Boolean'},
+            authData: {type: 'Object'},
+            newField: {type: 'String'},
+            ACL: {type: 'ACL'}
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            unique_email: { email: 1 },
+            unique_username: { username: 1 }
+          },
+        })).toBeUndefined();
+        request.get({
+          url: 'http://localhost:8378/1/schemas/_User',
+          headers: masterKeyHeaders,
+          json: true
+        }, (error, response, body) => {
+          expect(dd(body,{
+            className: '_User',
+            fields: {
+              objectId: {type: 'String'},
+              updatedAt: {type: 'Date'},
+              createdAt: {type: 'Date'},
+              username: {type: 'String'},
+              password: {type: 'String'},
+              email: {type: 'String'},
+              emailVerified: {type: 'Boolean'},
+              authData: {type: 'Object'},
+              newField: {type: 'String'},
+              ACL: {type: 'ACL'}
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              unique_email: { email: 1 },
+              unique_username: { username: 1 }
+            },
           })).toBeUndefined();
           done();
         });

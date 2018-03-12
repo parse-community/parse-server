@@ -629,7 +629,7 @@ export class MongoStorageAdapter implements StorageAdapter {
   }
 
   performInitialization(): Promise<void> {
-    return Promise.resolve();
+    return this.updateSchemaWithIndexes();
   }
 
   createIndex(className: string, index: any) {

@@ -1027,7 +1027,7 @@ class DatabaseController {
 
   // TODO: create indexes on first creation of a _User object. Otherwise it's impossible to
   // have a Parse app without it having a _User collection.
-  performInitialization() {
+  performInitialization(): Promise<any> {
     const requiredUserFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._User } };
     const requiredRoleFields = { fields: { ...SchemaController.defaultColumns._Default, ...SchemaController.defaultColumns._Role } };
 
@@ -1057,11 +1057,11 @@ class DatabaseController {
         throw error;
       });
 
-    const indexPromise = this.adapter.updateSchemaWithIndexes();
 
-    // Create tables for volatile classes
-    const adapterInit = this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
-    return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness, adapterInit, indexPromise]);
+    return Promise.all([usernameUniqueness, emailUniqueness, roleUniqueness]).then(() => {
+      // Create tables for volatile classes
+      return this.adapter.performInitialization({ VolatileClassesSchemas: SchemaController.VolatileClassesSchemas });
+    });
   }
 
   static _validateQuery: ((any) => void)
