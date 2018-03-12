@@ -230,7 +230,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('creates _User schema when server starts', done => {
+  it_only_db('mongo')('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -244,7 +244,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['mongo'])('creates _User schema when server starts', done => {
+  it_only_db('postgres')('creates _User schema when server starts', done => {
     request.get({
       url: 'http://localhost:8378/1/schemas',
       json: true,
@@ -258,7 +258,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('responds with a list of schemas after creating objects', done => {
+  it_only_db('mongo')('responds with a list of schemas after creating objects', done => {
     const obj1 = hasAllPODobject();
     obj1.save().then(savedObj1 => {
       const obj2 = new Parse.Object('HasPointersAndRelations');
@@ -281,7 +281,7 @@ describe('schemas', () => {
     });
   });
 
-  it_exclude_dbs(['mongo'])('responds with a list of schemas after creating objects', done => {
+  it_only_db('postgres')('responds with a list of schemas after creating objects', done => {
     const obj1 = hasAllPODobject();
     obj1.save().then(savedObj1 => {
       const obj2 = new Parse.Object('HasPointersAndRelations');
@@ -765,7 +765,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['postgres'])('lets you add fields to system schema', done => {
+  it_only_db('mongo')('lets you add fields to system schema', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,
@@ -834,7 +834,7 @@ describe('schemas', () => {
     })
   });
 
-  it_exclude_dbs(['mongo'])('lets you add fields to system schema', done => {
+  it_only_db('postgres')('lets you add fields to system schema', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/_User',
       headers: masterKeyHeaders,

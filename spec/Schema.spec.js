@@ -606,7 +606,7 @@ describe('SchemaController', () => {
       });
   });
 
-  it('creates non-custom classes which include relation field', done => {
+  it_only_db('mongo')('creates non-custom classes which include relation field', done => {
     config.database.loadSchema()
     //as `_Role` is always created by default, we only get it here
       .then(schema => schema.getOneSchema('_Role'))
@@ -629,6 +629,44 @@ describe('SchemaController', () => {
             update: { '*': true },
             delete: { '*': true },
             addField: { '*': true },
+          },
+          indexes: {
+            _id_: { _id: 1 },
+            name_1: { name: 1 },
+          },
+        };
+        expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
+        done();
+      });
+  });
+
+  it_only_db('postgres')('creates non-custom classes which include relation field', done => {
+    config.database.loadSchema()
+    //as `_Role` is always created by default, we only get it here
+      .then(schema => schema.getOneSchema('_Role'))
+      .then(actualSchema => {
+        const expectedSchema = {
+          className: '_Role',
+          fields: {
+            objectId: { type: 'String' },
+            updatedAt: { type: 'Date' },
+            createdAt: { type: 'Date' },
+            ACL: { type: 'ACL' },
+            name: { type: 'String' },
+            users: { type: 'Relation', targetClass: '_User' },
+            roles: { type: 'Relation', targetClass: '_Role' },
+          },
+          classLevelPermissions: {
+            find: { '*': true },
+            get: { '*': true },
+            create: { '*': true },
+            update: { '*': true },
+            delete: { '*': true },
+            addField: { '*': true },
+          },
+          indexes: {
+            _id_: { _id: 1 },
+            unique_name: { name: 1 },
           },
         };
         expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
