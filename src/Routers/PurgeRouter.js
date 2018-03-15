@@ -1,5 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import Parse from 'parse/node';
 
 export class PurgeRouter extends PromiseRouter {
 
