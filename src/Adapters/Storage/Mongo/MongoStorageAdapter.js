@@ -567,7 +567,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (stage.$match) {
         for (const field in stage.$match) {
           if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-            const transformMatch = { [`_p_${field}`] : `${className}$${stage.$match[field]}` };
+            const transformMatch = { [`_p_${field}`] : `${schema.fields[field].targetClass}$${stage.$match[field]}` };
             stage.$match = transformMatch;
           }
           if (field === 'objectId') {
