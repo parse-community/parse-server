@@ -1916,13 +1916,10 @@ describe('afterFind hooks', () => {
           'X-Parse-REST-API-Key': 'rest'
         }
       }).then(body => {
-        expect(body.result).not().toEqual([]);
+        expect(body.result).not.toEqual([]);
+        expect(body.result.length).toBe(1);
         done();
-      }).catch(error => {
-        fail(JSON.stringify(error));
-        done();
-      });
-
+      }).catch(done.fail);
     });
   });
 
