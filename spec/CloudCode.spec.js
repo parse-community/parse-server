@@ -1861,4 +1861,66 @@ describe('afterFind hooks', () => {
       done();
     });
   });
+
+  describe('Queries', () => {
+    //Add default data
+    beforeEach(async function(done) {
+      const objects = [];
+      for(let i = 0; i < 5; i++){
+        const obj = new Parse.Object('InnerQuery');
+        obj.set('year', `201${i}`);
+        objects.push(obj);
+      }
+      await Parse.Object.saveAll(objects);
+
+      const data = new Parse.Object('OuterQuery');
+      data.set('year', objects[2]);
+      data.set('name', "MyName");
+      await data.save();
+
+      done();
+    });
+
+    it('MatchesQuery Returns Results', async(done) => {
+
+      const yearQuery = new Parse.Query("InnerQuery");
+      yearQuery.equalTo("year", '2012');
+
+      const query = new Parse.Query("OuterQuery");
+      query.matchesQuery("year", yearQuery)
+      query.find().then(results => {
+        if(!results.length) fail("No results found");
+        done()
+      });
+    });
+
+    it('MatchesQuery Returns Results In cloud Function', (done) => {
+
+      Parse.Cloud.define("years", function(request, response) {
+        const yearQuery = new Parse.Query("InnerQuery");
+        yearQuery.equalTo("year", '2012');
+
+        const query = new Parse.Query("OuterQuery");
+        query.matchesQuery("year", yearQuery)
+        query.find().then(results => {
+          response.success(results);
+        });
+      });
+
+      rp({
+        method: 'POST',
+        uri: 'http://localhost:8378/1/functions/years',
+        json: true,
+        headers: {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest'
+        }
+      }).then(body => {
+        expect(body.result).not.toEqual([]);
+        expect(body.result.length).toBe(1);
+        done();
+      }).catch(done.fail);
+    });
+  });
+
 });
