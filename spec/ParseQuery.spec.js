@@ -1494,9 +1494,6 @@ describe('Parse.Query testing', () => {
         success: function(results) {
           equal(results.length, 2);
           done();
-        }, error: function(error) {
-          console.log(error);
-          done();
         }
       });
     });
