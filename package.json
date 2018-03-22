@@ -5,7 +5,7 @@
   "main": "lib/index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/ParsePlatform/parse-server"
+    "url": "https://github.com/parse-community/parse-server"
   },
   "files": [
     "bin/",
@@ -42,7 +42,7 @@
     "uuid": "^3.1.0",
     "winston": "2.4.1",
     "winston-daily-rotate-file": "1.7.2",
-    "ws": "5.0.0"
+    "ws": "5.1.0"
   },
   "devDependencies": {
     "babel-cli": "6.26.0",
