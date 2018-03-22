@@ -400,17 +400,15 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       }
       if (fieldValue.$in) {
-        if (!(fieldValue.$in instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
-        }
         createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
       }
       if (fieldValue.$nin) {
-        if (!(fieldValue.$nin instanceof Array)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
-        }
         createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
+    } else if(fieldValue.$in !== undefined) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
+    } else if (fieldValue.$nin != undefined) {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {

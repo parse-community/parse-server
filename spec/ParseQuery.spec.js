@@ -844,7 +844,11 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(BoxedNumber);
       query.containedIn('number', false);
       return query.find();
-    }).then(done.fail).catch(done);
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $in value');
+      done();
+    });
   });
 
   it("notContainedIn false queries", (done) => {
@@ -857,7 +861,11 @@ describe('Parse.Query testing', () => {
       const query = new Parse.Query(BoxedNumber);
       query.notContainedIn('number', false);
       return query.find();
-    }).then(done.fail).catch(done);
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $nin value');
+      done();
+    });
   });
 
   it("notContainedIn queries", function(done) {
