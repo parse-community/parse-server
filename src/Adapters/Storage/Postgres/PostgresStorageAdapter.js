@@ -287,7 +287,15 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     } else if (typeof fieldValue === 'boolean') {
       patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue);
+
+      // Can't cast boolean to number
+      if (schema.fields[fieldName].type === 'Number') {
+        // Should always return zero
+        const MAX_INT_PLUS_ONE = 9223372036854775808;
+        values.push(fieldName, MAX_INT_PLUS_ONE);
+      } else {
+        values.push(fieldName, fieldValue);
+      }
       index += 2;
     } else if (typeof fieldValue === 'number') {
       patterns.push(`$${index}:name = $${index + 1}`);
@@ -329,11 +337,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue.$ne);
       index += 2;
     }
-
-    if (fieldValue.$eq) {
-      patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue.$eq);
-      index += 2;
+    if (fieldValue.$eq !== undefined) {
+      if (fieldValue.$eq === null) {
+        patterns.push(`$${index}:name IS NULL`);
+        values.push(fieldName);
+        index += 1;
+      } else {
+        patterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.$eq);
+        index += 2;
+      }
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (Array.isArray(fieldValue.$in) &&
@@ -388,9 +401,15 @@ const buildWhereClause = ({ schema, query, index }) => {
         }
       }
       if (fieldValue.$in) {
+        if (!(fieldValue.$in instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
+        }
         createConstraint(_.flatMap(fieldValue.$in, elt => elt), false);
       }
       if (fieldValue.$nin) {
+        if (!(fieldValue.$nin instanceof Array)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
+        }
         createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
     }
@@ -578,11 +597,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
-      /* eslint-disable */
-      console.log(fieldValue);
-      console.log(cmp);
       if (fieldValue[cmp] || fieldValue[cmp] === 0) {
-        console.log('here');
         const pgComparator = ParseToPosgresComparator[cmp];
         patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue[cmp]));
