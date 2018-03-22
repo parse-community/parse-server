@@ -288,7 +288,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     } else if (typeof fieldValue === 'boolean') {
       patterns.push(`$${index}:name = $${index + 1}`);
       // Can't cast boolean to double precision
-      if (schema.fields[fieldName].type === 'Number') {
+      if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Number') {
         // Should always return zero
         const MAX_INT_PLUS_ONE = 9223372036854775808;
         values.push(fieldName, MAX_INT_PLUS_ONE);
