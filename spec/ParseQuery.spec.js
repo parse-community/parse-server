@@ -570,6 +570,41 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it("lessThan zero queries", function(done) {
+    const makeBoxedNumber = function(i) {
+      return new BoxedNumber({ number: i });
+    };
+    Parse.Object.saveAll([0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
+      function() {
+        const query = new Parse.Query(BoxedNumber);
+        query.lessThan('number', 0);
+        query.find({
+          success: function(results) {
+            equal(results.length, 0);
+            done();
+          }
+        });
+      });
+  });
+
+  it("lessThanOrEqualTo zero queries", function(done) {
+    const makeBoxedNumber = function(i) {
+      return new BoxedNumber({ number: i });
+    };
+    Parse.Object.saveAll(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
+      function() {
+        const query = new Parse.Query(BoxedNumber);
+        query.lessThanOrEqualTo('number', 0);
+        query.find({
+          success: function(results) {
+            equal(results.length, 1);
+            done();
+          }
+        });
+      });
+  });
+
   it("greaterThan queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
@@ -600,6 +635,42 @@ describe('Parse.Query testing', () => {
         query.find({
           success: function(results) {
             equal(results.length, 3);
+            done();
+          }
+        });
+      });
+  });
+
+  it("greaterThan zero queries", function(done) {
+    const makeBoxedNumber = function(i) {
+      return new BoxedNumber({ number: i });
+    };
+    Parse.Object.saveAll(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
+      function() {
+        const query = new Parse.Query(BoxedNumber);
+        query.greaterThan('number', 0);
+        query.find({
+          success: function(results) {
+            equal(results.length, 9);
+            done();
+          }
+        });
+      });
+  });
+
+  it("greaterThanOrEqualTo zero queries", function(done) {
+    const makeBoxedNumber = function(i) {
+      return new BoxedNumber({ number: i });
+    };
+    Parse.Object.saveAll(
+      [0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(makeBoxedNumber),
+      function() {
+        const query = new Parse.Query(BoxedNumber);
+        query.greaterThanOrEqualTo('number', 0);
+        query.find({
+          success: function(results) {
+            equal(results.length, 10);
             done();
           }
         });

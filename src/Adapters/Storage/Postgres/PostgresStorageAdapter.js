@@ -578,7 +578,11 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
-      if (fieldValue[cmp]) {
+      /* eslint-disable */
+      console.log(fieldValue);
+      console.log(cmp);
+      if (fieldValue[cmp] || fieldValue[cmp] === 0) {
+        console.log('here');
         const pgComparator = ParseToPosgresComparator[cmp];
         patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue[cmp]));

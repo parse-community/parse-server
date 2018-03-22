@@ -1,7 +1,7 @@
 const pkg = require('./package.json');
 
-const version = parseFloat( process.version.substr(1) );
-const minimum = parseFloat( pkg.engines.node.match(/\d+/g).join('.') );
+const version = parseFloat(process.version.substr(1));
+const minimum = parseFloat(pkg.engines.node.match(/\d+/g).join('.'));
 
 module.exports = function () {
   const openCollective = `
