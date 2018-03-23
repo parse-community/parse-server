@@ -816,6 +816,23 @@ describe('Parse.Query testing', () => {
     })
   });
 
+  it("where $eq null queries (rest)", (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { field: { $eq: null } },
+      }
+    });
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: null });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      rp.get(Parse.serverURL + '/classes/TestObject', options)
+        .then((resp) => {
+          equal(resp.results.length, 1);
+          done();
+        });
+    })
+  });
+
   it("containedIn queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
