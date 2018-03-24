@@ -1493,7 +1493,7 @@ describe('miscellaneous', function() {
     });
   });
 
-  fit('purge empty class', (done) => {
+  it('purge empty class', (done) => {
     const testSchema = new Parse.Schema('UnknownClass');
     testSchema.purge().then(done).catch(done.fail);
   });
