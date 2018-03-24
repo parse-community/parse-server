@@ -1493,6 +1493,11 @@ describe('miscellaneous', function() {
     });
   });
 
+  fit('purge empty class', (done) => {
+    const testSchema = new Parse.Schema('UnknownClass');
+    testSchema.purge().then(done).catch(done.fail);
+  });
+
   it('should not update schema beforeSave #2672', (done) => {
     Parse.Cloud.beforeSave('MyObject', (request, response) => {
       if (request.object.get('secret')) {
