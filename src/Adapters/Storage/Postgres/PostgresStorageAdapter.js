@@ -405,9 +405,9 @@ const buildWhereClause = ({ schema, query, index }) => {
       if (fieldValue.$nin) {
         createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
-    } else if(fieldValue.$in !== undefined) {
+    } else if(typeof fieldValue.$in !== 'undefined') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
-    } else if (fieldValue.$nin != undefined) {
+    } else if (typeof fieldValue.$nin !== 'undefined') {
       throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
     }
 
