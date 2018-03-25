@@ -236,6 +236,21 @@ export class MongoStorageAdapter implements StorageAdapter {
           if (!fields.hasOwnProperty(key)) {
             throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
           }
+          const value = field[key];
+          const type = fields[key].type;
+          if (type === 'String') {
+            if (value !== 1 && value !== -1 && value !== 'text') {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          } else if (type === 'GeoPoint' || type === 'Polygon') {
+            if (value !== '2d' && value !== '2dsphere') {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          } else {
+            if (value !== 1 && value !== -1) {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          }
         });
         existingIndexes[name] = field;
         insertedIndexes.push({

@@ -2625,4 +2625,70 @@ describe('schemas', () => {
       done();
     });
   });
+
+  it('invalid string index', (done) => {
+    const obj = new Parse.Object('TestObject');
+    obj.set('name', 'parse');
+    obj.save().then(() => {
+      const index = {
+        name: 'invalid'
+      };
+      const schema = new Parse.Schema('TestObject');
+      schema.addIndex('string_index', index);
+      return schema.update();
+    }).then(done.fail).catch((error) => {
+      expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
+  it('invalid geopoint index', (done) => {
+    const obj = new Parse.Object('TestObject');
+    const geoPoint = new Parse.GeoPoint(22, 11);
+    obj.set('location', geoPoint);
+    obj.save().then(() => {
+      const index = {
+        location: 'invalid'
+      };
+      const schema = new Parse.Schema('TestObject');
+      schema.addIndex('geo_index', index);
+      return schema.update();
+    }).then(done.fail).catch((error) => {
+      expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
+  it('invalid polygon index', (done) => {
+    const points = [[0,0],[0,1],[1,1],[1,0]];
+    const polygon = new Parse.Polygon(points);
+    const obj = new Parse.Object('TestObject');
+    obj.set('bounds', polygon);
+    obj.save().then(() => {
+      const index = {
+        bounds: 'invalid'
+      };
+      const schema = new Parse.Schema('TestObject');
+      schema.addIndex('poly_index', index);
+      return schema.update();
+    }).then(done.fail).catch((error) => {
+      expect(error.code).toEqual(Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
+  it('valid polygon index', (done) => {
+    const points = [[0,0],[0,1],[1,1],[1,0]];
+    const polygon = new Parse.Polygon(points);
+    const obj = new Parse.Object('TestObject');
+    obj.set('bounds', polygon);
+    obj.save().then(() => {
+      const index = {
+        bounds: '2dsphere'
+      };
+      const schema = new Parse.Schema('TestObject');
+      schema.addIndex('valid_index', index);
+      return schema.update();
+    }).then(done).catch(done.fail);
+  });
 });

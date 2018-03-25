@@ -671,15 +671,33 @@ export class PostgresStorageAdapter implements StorageAdapter {
         deletedIndexes.push(name);
         delete existingIndexes[name];
       } else {
+        let indexType = 'btree';
         Object.keys(field).forEach(key => {
           if (!fields.hasOwnProperty(key)) {
             throw new Parse.Error(Parse.Error.INVALID_QUERY, `Field ${key} does not exist, cannot add index.`);
           }
+          const value = field[key];
+          const type = fields[key].type;
+          if (type === 'String') {
+            if (value !== 1 && value !== -1 && value !== 'text') {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          } else if (type === 'GeoPoint' || type === 'Polygon') {
+            indexType = 'gist';
+            if (value !== '2d' && value !== '2dsphere') {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          } else {
+            if (value !== 1 && value !== -1) {
+              throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
+            }
+          }
         });
         existingIndexes[name] = field;
         insertedIndexes.push({
-          key: field,
           name,
+          type: indexType,
+          key: field,
         });
       }
     });
@@ -1785,7 +1803,9 @@ export class PostgresStorageAdapter implements StorageAdapter {
 
   createIndexes(className: string, indexes: any, conn: ?any): Promise<void> {
     return (conn || this._client).tx(t => t.batch(indexes.map(i => {
-      return t.none('CREATE INDEX $1:name ON $2:name ($3:name)', [i.name, className, i.key]);
+      const type = i.type || 'btree';
+      const values = [i.name, className, type, i.key];
+      return t.none('CREATE INDEX $1:name ON $2:name USING $3:name ($4:name)', values);
     })));
   }
 
