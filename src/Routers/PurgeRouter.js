@@ -17,6 +17,11 @@ export class PurgeRouter extends PromiseRouter {
           cacheAdapter.role.clear();
         }
         return {response: {}};
+      }).catch((error) => {
+        if (!error || (error && error.code === Parse.Error.OBJECT_NOT_FOUND)) {
+          return {response: {}};
+        }
+        throw error;
       });
   }
 
