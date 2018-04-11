@@ -33,7 +33,11 @@ export class UsersRouter extends ClassesRouter {
 
   handleMe(req) {
     if (!req.info || !req.info.sessionToken) {
-      throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+      if(req.info){
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token - SESSION TOKEN: ' + req.info.sessionToken);
+      } else {
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token - no req info');
+      }
     }
     const sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
@@ -43,7 +47,7 @@ export class UsersRouter extends ClassesRouter {
         if (!response.results ||
           response.results.length == 0 ||
           !response.results[0].user) {
-          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+          throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token!');
         } else {
           const user = response.results[0].user;
           // Send token back on the login, because SDKs expect that.
