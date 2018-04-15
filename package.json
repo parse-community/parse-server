@@ -19,7 +19,7 @@
   "license": "BSD-3-Clause",
   "dependencies": {
     "@parse/fs-files-adapter": "1.0.1",
-    "@parse/push-adapter": "2.0.2",
+    "@parse/push-adapter": "2.0.3",
     "@parse/s3-files-adapter": "1.2.1",
     "@parse/simple-mailgun-adapter": "1.0.1",
     "bcryptjs": "2.4.3",
