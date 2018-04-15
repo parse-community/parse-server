@@ -34,7 +34,7 @@
     "mongodb": "3.0.6",
     "multer": "1.3.0",
     "parse": "1.11.1",
-    "pg-promise": "8.2.1",
+    "pg-promise": "8.2.3",
     "redis": "2.8.0",
     "request": "2.83.0",
     "semver": "5.5.0",
