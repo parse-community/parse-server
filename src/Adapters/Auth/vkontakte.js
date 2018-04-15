@@ -10,7 +10,7 @@ var logger = require('../../logger').default;
 function validateAuthData(authData, params) {
   return vkOAuth2Request(params).then(function (response) {
     if (response && response.access_token) {
-      return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token).then(function (response) {
+      return request("api.vk.com", "method/secure.checkToken?token=" + authData.access_token + "&client_secret=" + params.appSecret + "&access_token=" + response.access_token + "&v=5.59").then(function (response) {
         if (response && response.response && response.response.user_id == authData.id) {
           return;
         }
