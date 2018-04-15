@@ -233,7 +233,13 @@ const joinTablesForSchema = (schema) => {
   return list;
 }
 
-const buildWhereClause = ({ schema, query, index }) => {
+interface WhereClause {
+  pattern: string;
+  values: Array<any>;
+  sorts: Array<any>;
+}
+
+const buildWhereClause = ({ schema, query, index }): WhereClause => {
   const patterns = [];
   let values = [];
   const sorts = [];
@@ -1263,7 +1269,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
         }
 
-        const keysToDelete = Object.keys(originalUpdate).filter(k => {
+        const keysToDelete: Array<string> = Object.keys(originalUpdate).filter(k => {
           // choose top level fields that have a delete operation set.
           const value = originalUpdate[k];
           return value && value.__op === 'Delete' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
@@ -1560,7 +1566,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any) {
     debug('aggregate', className, pipeline);
     const values = [className];
-    let index = 2;
+    let index: number = 2;
     let columns: string[] = [];
     let countField = null;
     let groupValues = null;
