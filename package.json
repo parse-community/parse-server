@@ -53,7 +53,7 @@
     "babel-preset-env": "1.6.1",
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "5.1.4",
-    "deep-diff": "0.3.8",
+    "deep-diff": "1.0.0",
     "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.39.1",
     "flow-bin": "^0.69.0",
