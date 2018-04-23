@@ -1,7 +1,6 @@
 // schemas.js
 
-var express = require('express'),
-  Parse = require('parse/node').Parse,
+var Parse = require('parse/node').Parse,
   SchemaController = require('../Controllers/SchemaController');
 
 import PromiseRouter   from '../PromiseRouter';
@@ -15,26 +14,29 @@ function classNameMismatchResponse(bodyClass, pathClass) {
 }
 
 function getAllSchemas(req) {
-  return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getAllSchemas())
-  .then(schemas => ({ response: { results: schemas } }));
+  return req.config.database.loadSchema({ clearCache: true})
+    .then(schemaController => schemaController.getAllClasses(true))
+    .then(schemas => ({ response: { results: schemas } }));
 }
 
 function getOneSchema(req) {
   const className = req.params.className;
-  return req.config.database.loadSchema()
-  .then(schemaController => schemaController.getOneSchema(className))
-  .then(schema => ({ response: schema }))
-  .catch(error => {
-    if (error === undefined) {
-      throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
-    } else {
-      throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
-    }
-  });
+  return req.config.database.loadSchema({ clearCache: true})
+    .then(schemaController => schemaController.getOneSchema(className, true))
+    .then(schema => ({ response: schema }))
+    .catch(error => {
+      if (error === undefined) {
+        throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, `Class ${className} does not exist.`);
+      } else {
+        throw new Parse.Error(Parse.Error.INTERNAL_SERVER_ERROR, 'Database adapter error.');
+      }
+    });
 }
 
 function createSchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to create a schema.');
+  }
   if (req.params.className && req.body.className) {
     if (req.params.className != req.body.className) {
       return classNameMismatchResponse(req.body.className, req.params.className);
@@ -46,52 +48,36 @@ function createSchema(req) {
     throw new Parse.Error(135, `POST ${req.path} needs a class name.`);
   }
 
-  return req.config.database.loadSchema()
-    .then(schema => schema.addClassIfNotExists(className, req.body.fields,  req.body.classLevelPermissions))
+  return req.config.database.loadSchema({ clearCache: true})
+    .then(schema => schema.addClassIfNotExists(className, req.body.fields, req.body.classLevelPermissions, req.body.indexes))
     .then(schema => ({ response: schema }));
 }
 
 function modifySchema(req) {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to update a schema.');
+  }
   if (req.body.className && req.body.className != req.params.className) {
     return classNameMismatchResponse(req.body.className, req.params.className);
   }
 
-  let submittedFields = req.body.fields || {};
-  let className = req.params.className;
+  const submittedFields = req.body.fields || {};
+  const className = req.params.className;
 
-  return req.config.database.loadSchema()
-  .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.config.database))
-  .then(result => ({response: result}));
+  return req.config.database.loadSchema({ clearCache: true})
+    .then(schema => schema.updateClass(className, submittedFields, req.body.classLevelPermissions, req.body.indexes, req.config.database))
+    .then(result => ({response: result}));
 }
 
-// A helper function that removes all join tables for a schema. Returns a promise.
-var removeJoinTables = (database, mongoSchema) => {
-  return Promise.all(Object.keys(mongoSchema)
-    .filter(field => mongoSchema[field].startsWith('relation<'))
-    .map(field => {
-      let collectionName = `_Join:${field}:${mongoSchema._id}`;
-      return database.adapter.deleteOneSchema(collectionName);
-    })
-  );
-};
-
-function deleteSchema(req) {
+const deleteSchema = req => {
+  if (req.auth.isReadOnly) {
+    throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to delete a schema.');
+  }
   if (!SchemaController.classNameIsValid(req.params.className)) {
     throw new Parse.Error(Parse.Error.INVALID_CLASS_NAME, SchemaController.invalidClassNameMessage(req.params.className));
   }
   return req.config.database.deleteSchema(req.params.className)
-  .then(() => req.config.database.schemaCollection())
-  // We've dropped the collection now, so delete the item from _SCHEMA
-  // and clear the _Join collections
-  .then(coll => coll.findAndDeleteSchema(req.params.className))
-  .then(document => {
-    if (document === null) {
-      //tried to delete non-existent class
-      return Promise.resolve();
-    }
-    return removeJoinTables(req.config.database, document);
-  })
-  .then(() => ({ response: {} }));
+    .then(() => ({ response: {} }));
 }
 
 export class SchemasRouter extends PromiseRouter {

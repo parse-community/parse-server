@@ -1,36 +1,24 @@
 // Tools for encrypting and decrypting passwords.
 // Basically promise-friendly wrappers for bcrypt.
-var bcrypt = require('bcrypt-nodejs');
+var bcrypt = require('bcryptjs');
+
+try {
+  bcrypt = require('bcrypt');
+} catch(e) { /* */ }
 
 // Returns a promise for a hashed password string.
 function hash(password) {
-  return new Promise(function(fulfill, reject) {
-    bcrypt.hash(password, null, null, function(err, hashedPassword) {
-      if (err) {
-        reject(err);
-      } else {
-        fulfill(hashedPassword);
-      }
-    });
-  });
+  return bcrypt.hash(password, 10);
 }
 
 // Returns a promise for whether this password compares to equal this
 // hashed password.
 function compare(password, hashedPassword) {
-  return new Promise(function(fulfill, reject) {
-    // Cannot bcrypt compare when one is undefined
-    if (!password || !hashedPassword) {
-      return fulfill(false);
-    }
-    bcrypt.compare(password, hashedPassword, function(err, success) {
-      if (err) {
-        reject(err);
-      } else {
-        fulfill(success);
-      }
-    });
-  });
+  // Cannot bcrypt compare when one is undefined
+  if (!password || !hashedPassword) {
+    return Promise.resolve(false);
+  }
+  return bcrypt.compare(password, hashedPassword);
 }
 
 module.exports = {

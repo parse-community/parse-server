@@ -1,9 +1,9 @@
-var cryptoUtils = require('../src/cryptoUtils');
+const cryptoUtils = require('../src/cryptoUtils');
 
 function givesUniqueResults(fn, iterations) {
-  var results = {};
-  for (var i = 0; i < iterations; i++) {
-    var s = fn();
+  const results = {};
+  for (let i = 0; i < iterations; i++) {
+    const s = fn();
     if (results[s]) {
       return false;
     }
@@ -61,6 +61,10 @@ describe('newObjectId', () => {
 
   it('returns result with at least 10 characters', () => {
     expect(cryptoUtils.newObjectId().length).toBeGreaterThan(9);
+  });
+
+  it('returns result with required number of characters', () => {
+    expect(cryptoUtils.newObjectId(42).length).toBe(42);
   });
 
   it('returns unique results', () => {

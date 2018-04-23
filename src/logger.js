@@ -1,75 +1,34 @@
-import winston from 'winston';
-import fs from 'fs';
-import path from 'path';
-import DailyRotateFile from 'winston-daily-rotate-file';
+'use strict';
+import defaults from './defaults';
+import { WinstonLoggerAdapter } from './Adapters/Logger/WinstonLoggerAdapter';
+import { LoggerController }     from './Controllers/LoggerController';
 
-let LOGS_FOLDER = './logs/';
-
-if (typeof process !== 'undefined' && process.env.NODE_ENV === 'test') {
-  LOGS_FOLDER = './test_logs/'
+function defaultLogger() {
+  const options = {
+    logsFolder: defaults.logsFolder,
+    jsonLogs: defaults.jsonLogs,
+    verbose: defaults.verbose,
+    silent: defaults.silent };
+  const adapter = new WinstonLoggerAdapter(options);
+  return new LoggerController(adapter, null, options);
 }
 
-let currentLogsFolder = LOGS_FOLDER;
+let logger = defaultLogger();
 
-function generateTransports(level) {
-  let transports = [
-    new (DailyRotateFile)({
-      filename: 'parse-server.info',
-      dirname: currentLogsFolder,
-      name: 'parse-server',
-      level: level
-    }),
-    new (DailyRotateFile)({
-      filename: 'parse-server.err',
-      dirname: currentLogsFolder,
-      name: 'parse-server-error',
-      level: 'error'
-    })
-  ]
-  if (!process.env.TESTING || process.env.VERBOSE) {
-    transports = [new (winston.transports.Console)({
-      colorize: true,
-      level:level
-    })].concat(transports);
-  }
-  return transports;
+export function setLogger(aLogger) {
+  logger = aLogger;
 }
 
-const logger = new winston.Logger();
-
-export function configureLogger({logsFolder, level = winston.level}) {
-  winston.level = level;
-  logsFolder = logsFolder || currentLogsFolder;
-
-  if (!path.isAbsolute(logsFolder)) {
-    logsFolder = path.resolve(process.cwd(), logsFolder);
-  }
-  if (!fs.existsSync(logsFolder)) {
-    fs.mkdirSync(logsFolder);
-  }
-  currentLogsFolder = logsFolder;
-
-  logger.configure({
-    transports:  generateTransports(level)
-  })
+export function getLogger() {
+  return logger;
 }
 
-configureLogger({logsFolder: LOGS_FOLDER});
+// for: `import logger from './logger'`
+Object.defineProperty(module.exports, 'default', {
+  get: getLogger
+});
 
-export function addGroup(groupName) {
-  let level = winston.level;
-  let transports =  generateTransports().concat(new (DailyRotateFile)({
-    filename: groupName,
-    dirname: currentLogsFolder,
-    name: groupName,
-    level: level
-  }));
-
-  winston.loggers.add(groupName, {
-    transports: transports
-  });
-  return winston.loggers.get(groupName);
-}
-
-export { logger };
-export default logger;
+// for: `import { logger } from './logger'`
+Object.defineProperty(module.exports, 'logger', {
+  get: getLogger
+});

@@ -1,32 +1,31 @@
-import { Parse } from 'parse/node';
-import PromiseRouter from '../PromiseRouter';
-import { HooksController } from '../Controllers/HooksController';
+import { Parse }       from 'parse/node';
+import PromiseRouter   from '../PromiseRouter';
 import * as middleware from "../middlewares";
 
 export class HooksRouter extends PromiseRouter {
   createHook(aHook, config) {
-    return config.hooksController.createHook(aHook).then( (hook) => ({response: hook}));
-  };
+    return config.hooksController.createHook(aHook).then((hook) => ({response: hook}));
+  }
 
   updateHook(aHook, config) {
     return  config.hooksController.updateHook(aHook).then((hook) => ({response: hook}));
-  };
+  }
 
   handlePost(req) {
     return this.createHook(req.body, req.config);
-  };
+  }
 
   handleGetFunctions(req) {
     var hooksController = req.config.hooksController;
     if (req.params.functionName) {
-      return hooksController.getFunction(req.params.functionName).then( (foundFunction) => {
+      return hooksController.getFunction(req.params.functionName).then((foundFunction) => {
         if (!foundFunction) {
           throw new Parse.Error(143, `no function named: ${req.params.functionName} is defined`);
         }
         return Promise.resolve({response: foundFunction});
       });
     }
-    
+
     return hooksController.getFunctions().then((functions) => {
       return { response: functions || [] };
     }, (err) => {
@@ -37,7 +36,7 @@ export class HooksRouter extends PromiseRouter {
   handleGetTriggers(req) {
     var hooksController = req.config.hooksController;
     if (req.params.className && req.params.triggerName) {
-      
+
       return hooksController.getTrigger(req.params.className, req.params.triggerName).then((foundTrigger) => {
         if (!foundTrigger) {
           throw new Parse.Error(143,`class ${req.params.className} does not exist`);
@@ -45,7 +44,7 @@ export class HooksRouter extends PromiseRouter {
         return Promise.resolve({response: foundTrigger});
       });
     }
-    
+
     return hooksController.getTriggers().then((triggers) => ({ response: triggers || [] }));
   }
 
@@ -73,10 +72,10 @@ export class HooksRouter extends PromiseRouter {
       hook.url = req.body.url
     } else {
       throw new Parse.Error(143, "invalid hook declaration");
-    } 
+    }
     return this.updateHook(hook, req.config);
   }
-  
+
   handlePut(req) {
     var body = req.body;
     if (body.__op == "Delete") {
@@ -85,7 +84,7 @@ export class HooksRouter extends PromiseRouter {
       return this.handleUpdate(req);
     }
   }
-  
+
   mountRoutes() {
     this.route('GET',  '/hooks/functions', middleware.promiseEnforceMasterKeyAccess, this.handleGetFunctions.bind(this));
     this.route('GET',  '/hooks/triggers', middleware.promiseEnforceMasterKeyAccess, this.handleGetTriggers.bind(this));

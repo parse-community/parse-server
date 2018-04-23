@@ -1,30 +1,45 @@
-Check out https://github.com/ParsePlatform/parse-server/issues/1271 for an ideal bug report. The closer your issue report is to that one, the more likely we are to be able to help, and the more likely we will be to fix the issue quickly!
+We use GitHub Issues for bugs.
 
-Many members of the community use Stack Overflow and Server Fault to ask questions. Read through the existing questions or ask your own!
+If you have a non-bug question, ask on Stack Overflow or Server Fault: 
+- https://stackoverflow.com/questions/tagged/parse.com 
+- https://serverfault.com/tags/parse
 
-- Stack Overflow: http://stackoverflow.com/questions/tagged/parse.com 
-- Server Fault: https://serverfault.com/tags/parse
+If you have a vulnerability disclosure, please follow our policy available here https://github.com/parse-community/parse-server/blob/master/SECURITY.md
 
-For database migration help, please file a bug report at https://parse.com/help#report
+You may also search through existing issues before opening a new one: https://github.com/parse-community/parse-server/issues?utf8=%E2%9C%93&q=is%3Aissue 
 
-Make sure these boxes are checked before submitting your issue -- thanks for reporting issues back to Parse Server!
+--- Please use this template. If you don't use this template, your issue may be closed without comment. ---
 
-- [ ] You've met the prerequisites: https://github.com/ParsePlatform/parse-server/wiki/Parse-Server-Guide#prerequisites.
+### Issue Description
 
-- [ ] You're running the latest version of Parse Server: https://github.com/ParsePlatform/parse-server/releases
+Describe your issue in as much detail as possible.
 
-- [ ] You've searched through existing issues: https://github.com/ParsePlatform/Parse-Server/issues?utf8=%E2%9C%93&q=is%3Aissue Chances are that your issue has been reported or resolved before.
+### Steps to reproduce
 
-#### Environment Setup
+Please include a detailed list of steps that reproduce the issue. Include curl commands when applicable.
 
-- Server: parse-server version, operating system, hardware, local or remote?
-- Database: version, storage engine, hardware, local or remote?
+#### Expected Results
 
-#### Steps to reproduce
+What you expected to happen.
 
-- Can this issue be reproduced using the Parse Server REST API? Include curl commands when applicable.
-- What was the expected result? What is the actual outcome?
+#### Actual Outcome
 
-#### Logs/Trace
+What is happening instead.
 
-- You can turn on additional logging by configuring VERBOSE=1 in your environment.
+### Environment Setup
+
+- **Server**
+  - parse-server version (Be specific! Don't say 'latest'.) : [FILL THIS OUT]
+  - Operating System:     [FILL THIS OUT]
+  - Hardware:             [FILL THIS OUT]
+  - Localhost or remote server? (AWS, Heroku, Azure, Digital Ocean, etc): [FILL THIS OUT]
+
+- **Database**
+  - MongoDB version: [FILL THIS OUT]
+  - Storage engine:  [FILL THIS OUT]
+  - Hardware:        [FILL THIS OUT]
+  - Localhost or remote server? (AWS, mLab, ObjectRocket, Digital Ocean, etc): [FILL THIS OUT]
+
+### Logs/Trace
+
+Include all relevant logs. You can turn on additional logging by configuring VERBOSE=1 in your environment.

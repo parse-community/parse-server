@@ -1,24 +1,20 @@
-import { Parse } from 'parse/node';
+import { Parse }     from 'parse/node';
 import * as triggers from '../triggers';
-
-function validateClassNameForTriggers(className) {
-  const restrictedClassNames = [ '_Session' ];
-  if (restrictedClassNames.indexOf(className) != -1) {
-    throw `Triggers are not supported for ${className} class.`;
-  }
-  return className;
-}
 
 function getClassName(parseClass) {
   if (parseClass && parseClass.className) {
-    return validateClassNameForTriggers(parseClass.className);
+    return parseClass.className;
   }
-  return validateClassNameForTriggers(parseClass);
+  return parseClass;
 }
 
 var ParseCloud = {};
 ParseCloud.define = function(functionName, handler, validationHandler) {
   triggers.addFunction(functionName, handler, validationHandler, Parse.applicationId);
+};
+
+ParseCloud.job = function(functionName, handler) {
+  triggers.addJob(functionName, handler, Parse.applicationId);
 };
 
 ParseCloud.beforeSave = function(parseClass, handler) {
@@ -40,11 +36,29 @@ ParseCloud.afterDelete = function(parseClass, handler) {
   var className = getClassName(parseClass);
   triggers.addTrigger(triggers.Types.afterDelete, className, handler, Parse.applicationId);
 };
-  
-ParseCloud._removeHook = function(category, name, type, applicationId) {
-  applicationId = applicationId || Parse.applicationId;
-  triggers._unregister(applicationId, category, name, type);
+
+ParseCloud.beforeFind = function(parseClass, handler) {
+  var className = getClassName(parseClass);
+  triggers.addTrigger(triggers.Types.beforeFind, className, handler, Parse.applicationId);
 };
+
+ParseCloud.afterFind = function(parseClass, handler) {
+  const className = getClassName(parseClass);
+  triggers.addTrigger(triggers.Types.afterFind, className, handler, Parse.applicationId);
+};
+
+ParseCloud.onLiveQueryEvent = function(handler) {
+  triggers.addLiveQueryEventHandler(handler, Parse.applicationId);
+};
+
+ParseCloud._removeAllHooks = () => {
+  triggers._unregisterAll();
+}
+
+ParseCloud.useMasterKey = () => {
+  // eslint-disable-next-line
+  console.warn("Parse.Cloud.useMasterKey is deprecated (and has no effect anymore) on parse-server, please refer to the cloud code migration notes: http://docs.parseplatform.org/parse-server/guide/#master-key-must-be-passed-explicitly")
+}
 
 ParseCloud.httpRequest = require("./httpRequest");
 

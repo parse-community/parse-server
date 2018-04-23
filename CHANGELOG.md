@@ -1,5 +1,836 @@
 ## Parse Server Changelog
 
+### master
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...master)
+
+### 2.7.4
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.4...2.7.3)
+
+#### Bug Fixes:
+* Fixes an issue affecting polygon queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Dependency Updates:
+* [pg-promise@8.2.1](https://www.npmjs.com/package/pg-promise)
+
+##### Development Dependencies Updates:
+* [nodemon@1.17.1](https://www.npmjs.com/package/nodemon)
+
+### 2.7.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.3...2.7.2)
+
+#### Improvements:
+* Improve documentation for LiveQuery options, thanks to [Arthur Cinader](https://github.com/acinader)
+* Improve documentation for using cloud code with docker, thanks to [Stephen Tuso](https://github.com/stephentuso)
+* Adds support for Facebook's AccountKit, thanks to [6thfdwp](https://github.com/6thfdwp)
+* Disable afterFind routines when running aggregates, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Improve support for distinct aggregations of nulls, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Regenreate the email verification token when requesting a new email, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+
+#### Bug Fixes:
+* Fix issue affecting readOnly masterKey and purge command, thanks to [AreyouHappy](https://github.com/AreyouHappy)
+* Fixes Issue unsetting in beforeSave doesn't allow object creation, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Fixes issue crashing server on invalid live query payload, thanks to [fridays](https://github.com/fridays)
+* Fixes issue affecting postgres storage adapter "undefined property '__op'", thanks to [Tyson Andre](https://github,com/TysonAndre)
+
+#### Dependency Updates:
+* [winston@2.4.1](https://www.npmjs.com/package/winston)
+* [pg-promise@8.2.0](https://www.npmjs.com/package/pg-promise)
+* [commander@2.15.0](https://www.npmjs.com/package/commander)
+* [lru-cache@4.1.2](https://www.npmjs.com/package/lru-cache)
+* [parse@1.11.1](https://www.npmjs.com/package/parse)
+* [ws@5.0.0](https://www.npmjs.com/package/ws)
+* [mongodb@3.0.4](https://www.npmjs.com/package/mongodb)
+* [lodash@4.17.5](https://www.npmjs.com/package/lodash)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.1.4](https://www.npmjs.com/package/cross-env)
+* [flow-bin@0.67.1](https://www.npmjs.com/package/flow-bin)
+* [jasmine@3.1.0](https://www.npmjs.com/package/jasmine)
+* [parse@1.11.1](https://www.npmjs.com/package/parse)
+* [babel-eslint@8.2.2](https://www.npmjs.com/package/babel-eslint)
+* [nodemon@1.15.0](https://www.npmjs.com/package/nodemon)
+
+### 2.7.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.2...2.7.1)
+
+#### Improvements:
+* Improved match aggregate
+* Do not mark the empty pushs as failed 
+* Support pointer in aggregate query
+* Introduces flow types for storage
+* Postgres: Refactoring of Postgres Storage Adapter
+* Postgres: Support for multiple projection in aggregate
+* Postgres: performance optimizations
+* Adds infos about vulnerability disclosures
+* Adds ability to login with email when provided as username
+
+#### Bug Fixes
+* Scrub Passwords with URL Encoded Characters
+* Fixes issue affecting using sorting in beforeFind
+
+#### Dependency Updates:
+* [commander@2.13.0](https://www.npmjs.com/package/commander)
+* [semver@5.5.0](https://www.npmjs.com/package/semver)
+* [pg-promise@7.4.0](https://www.npmjs.com/package/pg-promise)
+* [ws@4.0.0](https://www.npmjs.com/package/ws)
+* [mime@2.2.0](https://www.npmjs.com/package/mime)
+* [parse@1.11.0](https://www.npmjs.com/package/parse)
+
+##### Devevelopment Dependencies Updates:
+* [nodemon@1.14.11](https://www.npmjs.com/package/nodemon)
+* [flow-bin@0.64.0](https://www.npmjs.com/package/flow-bin)
+* [jasmine@2.9.0](https://www.npmjs.com/package/jasmine)
+* [cross-env@5.1.3](https://www.npmjs.com/package/cross-env)
+
+### 2.7.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.1...2.7.0)
+
+:warning: Fixes a security issue affecting Class Level Permissions
+
+* Adds support for dot notation when using matchesKeyInQuery, thanks to [Henrik](https://github.com/bohemima) and [Arthur Cinader](https://github.com/acinader)
+
+### 2.7.0
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.7.0...2.6.5)
+
+:warning: This version contains an issue affecting Class Level Permissions on mongoDB. Please upgrade to 2.7.1.
+
+Starting parse-server 2.7.0, the minimun nodejs version is 6.11.4, please update your engines before updating parse-server
+
+#### New Features:
+* Aggregation endpoints, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds indexation options onto Schema endpoints, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Bug fixes:
+* Fixes sessionTokens being overridden in 'find' (#4332), thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Proper `handleShutdown()` feature to close database connections (#4361), thanks to [CHANG, TZU-YEN](https://github.com/trylovetom)
+* Fixes issue affecting state of _PushStatus objects, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Fixes issue affecting calling password reset password pages with wrong appid, thanks to [Bryan de Leon](https://github.com/bryandel)
+* Fixes issue affecting duplicates _Sessions on successive logins, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Updates contributing guides, and improves windows support, thanks to [Addison Elliott](https://github.com/addisonelliott)
+* Uses new official scoped packaged, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improves health checks responses, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Add password confirmation to choose_password, thanks to [Worathiti Manosroi](https://github.com/pungme)
+* Improve performance of relation queries, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [commander@2.12.1](https://www.npmjs.com/package/commander)
+* [ws@3.3.2](https://www.npmjs.com/package/ws)
+* [uws@9.14.0](https://www.npmjs.com/package/uws)
+* [pg-promise@7.3.2](https://www.npmjs.com/package/pg-promise)
+* [parse@1.10.2](https://www.npmjs.com/package/parse)
+* [pg-promise@7.3.1](https://www.npmjs.com/package/pg-promise)
+
+##### Devevelopment Dependencies Updates:
+* [cross-env@5.1.1](https://www.npmjs.com/package/cross-env)
+
+
+
+### 2.6.5
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.5...2.6.4)
+
+#### New Features:
+* Adds support for read-only masterKey, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Adds support for relative time queries (mongodb only), thanks to [Marvel Mathew](https://github.com/marvelm)
+
+#### Improvements:
+* Handle possible afterSave exception, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Add support for expiration interval in Push, thanks to [Marvel Mathew](https://github.com/marvelm)
+
+#### Bug Fixes:
+* The REST API key was improperly inferred from environment when using the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.6.4
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.4...2.6.3)
+
+#### Improvements:
+* Improves management of configurations and default values, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Adds ability to start ParseServer with `ParseServer.start(options)`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Adds request original IP to cloud code hooks, thanks to [Gustav Ahlberg](https://github.com/Gyran)
+* Corrects some outdated links, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Adds serverURL validation on startup, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Adds ability to login with POST requests alongside GET, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+* Adds ability to login with email, instead of username, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes:
+* Fixes issue affecting beforeSaves and increments, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+
+#### Dependency Updates:
+* [parse-server-push-adapter@2.0.2](https://www.npmjs.com/package/parse-server-push-adapter)
+* [semver@5.4.1](https://www.npmjs.com/package/semver)
+* [pg-promise@7.0.3](https://www.npmjs.com/package/pg-promise)
+* [mongodb@2.2.33](https://www.npmjs.com/package/mongodb)
+* [parse@1.10.1](https://www.npmjs.com/package/parse)
+* [express@4.16.0](https://www.npmjs.com/package/express)
+* [mime@1.4.1](https://www.npmjs.com/package/mime)
+* [parse-server-simple-mailgun-adapter@1.0.1](https://www.npmjs.com/package/parse-server-simple-mailgun-adapter)
+
+##### Devevelopment Dependencies Updates:
+* [babel-preset-env@1.6.1](https://www.npmjs.com/package/babel-preset-env)
+* [cross-env@5.1.0](https://www.npmjs.com/package/cross-env)
+* [mongodb-runner@3.6.1](https://www.npmjs.com/package/mongodb-runner)
+* [eslint-plugin-flowtype@2.39.1](https://www.npmjs.com/package/eslint-plugin-flowtype)
+* [eslint@4.9.0](https://www.npmjs.com/package/eslint)
+
+### 2.6.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.2...2.6.3)
+
+#### Improvements:
+* Queries on Pointer fields with `$in` and `$nin` now supports list of objectId's, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* LiveQueries on `$in` and `$nin` for pointer fields work as expected thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Also remove device token when APNS error is BadDeviceToken, thanks to [Mauricio Tollin](https://github.com/)
+* LRU cache is not available on the ParseServer object, thanks to [Tyler Brock](https://github.com/tbrock)
+* Error messages are more expressive, thanks to [Tyler Brock](https://github.com/tbrock)
+* Postgres: Properly handle undefined field values, thanks to [Diamond Lewis](https://github.com/dlewis)
+* Updating with two GeoPoints fails correctly, thanks to [Anthony Mosca](https://github.com/aontas)
+
+#### New Features:
+* Adds ability to set a maxLimit on server configuration for queries, thanks to [Chris Norris](https://github.com/)
+
+#### Bug fixes:
+* Fixes issue affecting reporting `_PushStatus` with misconfigured serverURL, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting deletion of class that doesn't exist, thanks to [Diamond Lewis](https://github.com/dlewis)
+
+#### Dependency Updates:
+* [winston@2.4.0](https://www.npmjs.com/package/winston)
+* [pg-promise@6.10.2](https://www.npmjs.com/package/pg-promise)
+* [winston-daily-rotate-file@1.6.0](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [request@2.83.0](https://www.npmjs.com/package/request)
+* [body-parser@1.18.2](https://www.npmjs.com/package/body-parser)
+
+##### Devevelopment Dependencies Updates:
+* [request-promise@4.2.2](https://www.npmjs.com/package/request-promise)
+* [eslint@4.7.1](https://www.npmjs.com/package/eslint)
+
+### 2.6.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.1...2.6.2)
+
+#### Improvements:
+* PushWorker/PushQueue channels are properly prefixed with the Parse applicationId, thanks to [Marvel Mathew](https://github.com/marvelm)
+* You can use Parse.Cloud.afterSave hooks on _PushStatus
+* You can use Parse.Cloud.onLiveQueryEvent to track the number of clients and subscriptions
+* Adds support for more fields from the Audience class.
+
+#### New Features:
+* Push: Adds ability to track sentPerUTC offset if your push scheduler supports it.
+* Push: Adds support for cleaning up invalid deviceTokens from _Installation (PARSE_SERVER_CLEANUP_INVALID_INSTALLATIONS=1).
+
+#### Dependency Updates:
+* [ws@3.2.0](https://www.npmjs.com/package/ws)
+* [pg-promise@6.5.3](https://www.npmjs.com/package/pg-promise)
+* [winston-daily-rotate-file@1.5.0](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [body-parser@1.18.1](https://www.npmjs.com/package/body-parser)
+
+##### Devevelopment Dependencies Updates:
+* [nodemon@1.12.1](https://www.npmjs.com/package/nodemon)
+* [mongodb-runner@3.6.0](https://www.npmjs.com/package/mongodb-runner)
+* [babel-eslint@8.0.0](https://www.npmjs.com/package/babel-eslint)
+
+### 2.6.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.6.0...2.6.1)
+
+#### Improvements:
+* Improves overall performance of the server, more particularly with large query results.
+* Improves performance of InMemoryCacheAdapter by removing serialization.
+* Improves logging performance by skipping necessary log calls.
+* Refactors object routers to simplify logic.
+* Adds automatic indexing on $text indexes, thanks to [Diamon Lewis](https://github.com/dplewis)
+
+#### New Features:
+* Push: Adds ability to send localized pushes according to the _Installation localeIdentifier
+* Push: proper support for scheduling push in user's locale time, thanks to [Marvel Mathew](https://github.com/marvelm)
+* LiveQuery: Adds ability to use LiveQuery with a masterKey, thanks to [Jeremy May](https://github.com/kenishi)
+
+#### Bug Fixes:
+* Fixes an issue that would duplicate Session objects per userId-installationId pair.
+* Fixes an issue affecting pointer permissions introduced in this release.
+* Fixes an issue that would prevent displaying audiences correctly in dashboard.
+* Fixes an issue affecting preventLoginWithUnverifiedEmail upon signups.
+
+#### Dependency Updates:
+* [pg-promise@6.3.2](https://www.npmjs.com/package/pg-promise)
+* [body-parser@1.18.0](https://www.npmjs.com/package/body-parser)
+* [nodemon@1.11.1](https://www.npmjs.com/package/nodemon)
+
+##### Devevelopment Dependencies Updates:
+* [babel-cli@6.26.0](https://www.npmjs.com/package/babel-cli)
+
+### 2.6.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.3...2.6.0)
+
+#### Breaking Changes:
+* [parse-server-s3-adapter@1.2.0](https://www.npmjs.com/package/parse-server-s3-adapter): A new deprecation notice is introduced with parse-server-s3-adapter's version 1.2.0.  An upcoming release will remove passing key and password arguments.  AWS credentials should be set using AWS best practices.  See the [Deprecation Notice for AWS credentials]( https://github.com/parse-server-modules/parse-server-s3-adapter/blob/master/README.md#deprecation-notice----aws-credentials) section of the adapter's README.
+
+#### New Features
+* Polygon is fully supported as a type, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Query supports PolygonContains, thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements
+* Postgres: Adds support nested contains and containedIn, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Postgres: Adds support for `null` in containsAll queries, thanks to [Diamond Lewis](https://github.com/dplewis)
+* Cloud Code: Request headers are passed to the cloud functions, thanks to [miguel-s](https://github.com/miguel-s)
+* Push: All push queries now filter only where deviceToken exists
+
+#### Bug Fixes:
+* Fixes issue affecting updates of _User objects when authData was passed.
+* Push: Pushing to an empty audience should now properly report a failed _PushStatus
+* Linking Users: Fixes issue affecting linking users with sessionToken only
+
+#### Dependency Updates:
+* [ws@3.1.0](https://www.npmjs.com/package/ws)
+* [mime@1.4.0](https://www.npmjs.com/package/mime)
+* [semver@5.4.0](https://www.npmjs.com/package/semver)
+* [uws@8.14.1](https://www.npmjs.com/package/uws)
+* [bcrypt@1.0.3](https://www.npmjs.com/package/bcrypt)
+* [mongodb@2.2.31](https://www.npmjs.com/package/mongodb)
+* [redis@2.8.0](https://www.npmjs.com/package/redis)
+* [pg-promise@6.3.1](https://www.npmjs.com/package/pg-promise)
+* [commander@2.11.0](https://www.npmjs.com/package/commander)
+
+##### Devevelopment Dependencies Updates:
+* [jasmine@2.8.0](https://www.npmjs.com/package/jasmine)
+* [babel-register@6.26.0](https://www.npmjs.com/package/babel-register)
+* [babel-core@6.26.0](https://www.npmjs.com/package/babel-core)
+* [cross-env@5.0.2](https://www.npmjs.com/package/cross-env)
+
+### 2.5.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.2...2.5.3)
+
+#### New Features:
+* badge property on android installations will now be set as on iOS (#3970), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes:
+* Fixes incorrect number parser for cache options
+
+### 2.5.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.1...2.5.2)
+
+#### Improvements:
+* Restores ability to run on node >= 4.6
+* Adds ability to configure cache from CLI
+* Removes runtime check for node >= 4.6
+
+### 2.5.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.5.0...2.5.1)
+
+#### New Features:
+* Adds ability to set default objectId size (#3950), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements:
+* Uses LRU cache instead of InMemoryCache by default (#3979), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* iOS pushes are now using HTTP/2.0 instead of binary API  (#3983), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [parse@1.10.0](https://www.npmjs.com/package/parse)
+* [pg-promise@6.3.0](https://www.npmjs.com/package/pg-promise)
+* [parse-server-s3-adapter@1.1.0](https://www.npmjs.com/package/parse-server-s3-adapter)
+* [parse-server-push-adapter@2.0.0](https://www.npmjs.com/package/parse-server-push-adapter)
+
+### 2.5.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.2...2.5.0)
+
+#### New Features:
+* Adds ability to run full text search (#3904), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds ability to run `$withinPolygon` queries (#3889), thanks to [Diamond Lewis](https://github.com/dplewis)
+* Adds ability to pass read preference per query with mongodb (#3865), thanks to [davimacedo](https://github.com/davimacedo)
+* beforeFind trigger now includes `isGet` for get queries (#3862), thanks to [davimacedo](https://github.com/davimacedo)
+* Adds endpoints for dashboard's audience API (#3861), thanks to [davimacedo](https://github.com/davimacedo)
+* Restores the job scheduling endpoints (#3927), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Removes unnecessary warning when using maxTimeMs with mongodb, thanks to [Tyler Brock](https://github.com/tbrock)
+* Improves access control on system classes (#3916), thanks to [Worathiti Manosroi](https://github.com/pungme)
+* Adds bytes support in postgres (#3894), thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Bug Fixes:
+* Fixes issue with vkontakte adapter that would hang the request, thanks to [Denis Trofimov](https://github.com/denistrofimov)
+* Fixes issue affecting null relational data (#3924), thanks to [davimacedo](https://github.com/davimacedo)
+* Fixes issue affecting session token deletion (#3937), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting the serverInfo endpoint (#3933), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting beforeSave with dot-noted sub-documents (#3912), thanks to [IlyaDiallo](https://github.com/IlyaDiallo)
+* Fixes issue affecting emails being sent when using a 3rd party auth (#3882), thanks to [davimacedo](https://github.com/davimacedo)
+
+#### Dependency Updates:
+* [commander@2.10.0](https://www.npmjs.com/package/commander)
+* [pg-promise@5.9.7](https://www.npmjs.com/package/pg-promise)
+* [lru-cache@4.1.0](https://www.npmjs.com/package/lru-cache)
+* [mongodb@2.2.28](https://www.npmjs.com/package/mongodb)
+
+##### Devevelopment dependencies
+* [babel-core@6.25.0](https://www.npmjs.com/package/babel-core)
+* [cross-env@5.0.1](https://www.npmjs.com/package/cross-env)
+* [nyc@11.0.2](https://www.npmjs.com/package/nyc)
+
+### 2.4.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.1...2.4.2)
+
+#### New Features:
+* ParseQuery: Support for withinPolygon [#3866](https://github.com/parse-community/parse-server/pull/3866), thanks to [Diamond Lewis](https://github.com/dplewis)
+
+#### Improvements:
+* Postgres: Use transactions when deleting a class, [#3869](https://github.com/parse-community/parse-server/pull/3836), thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+* Postgres: Proper support for GeoPoint equality query, [#3874](https://github.com/parse-community/parse-server/pull/3836), thanks to [Diamond Lewis](https://github.com/dplewis)
+* beforeSave and liveQuery will be correctly triggered on email verification [#3851](https://github.com/parse-community/parse-server/pull/3851), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes:
+* Skip authData validation if it hasn't changed, on PUT requests [#3872](https://github.com/parse-community/parse-server/pull/3872), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [mongodb@2.2.27](https://www.npmjs.com/package/mongodb)
+* [pg-promise@5.7.2](https://www.npmjs.com/package/pg-promise)
+
+
+### 2.4.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.4.0...2.4.1)
+
+#### Bug fixes:
+* Fixes issue affecting relation updates ([#3835](https://github.com/parse-community/parse-server/pull/3835), [#3836](https://github.com/parse-community/parse-server/pull/3836)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issue affecting sending push notifications, thanks to [Felipe Andrade](https://github.com/felipemobile)
+* Session are always cleared when updating the passwords ([#3289](https://github.com/parse-community/parse-server/pull/3289), [#3821](https://github.com/parse-community/parse-server/pull/3821), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Dependency Updates:
+* [body-parser@1.17.2](https://www.npmjs.com/package/body-parser)
+* [pg-promise@5.7.1](https://www.npmjs.com/package/pg-promise)
+* [ws@3.0.0](https://www.npmjs.com/package/ws)
+
+
+### 2.4.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.8...2.4.0)
+
+Starting 2.4.0, parse-server is tested against node 6.10 and 7.10, mongodb 3.2 and 3.4.
+If you experience issues with older versions, please [open a issue](https://github.com/parse-community/parse-server/issues).
+
+#### New Features:
+* Adds `count` Class Level Permission ([#3814](https://github.com/parse-community/parse-server/pull/3814)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Proper graceful shutdown support ([#3786](https://github.com/parse-community/parse-server/pull/3786)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Let parse-server store as `scheduled` Push Notifications with push_time (#3717, #3722), thanks to [Felipe Andrade](https://github.com/felipemobile)
+
+#### Improvements
+* Parse-Server images are built through docker hub, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Skip authData validation if it hasn't changed, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* [postgres] Improve performance when adding many new fields to the Schema ([#3740](https://github.com/parse-community/parse-server/pull/3740)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Test maintenance, wordsmithing and nits ([#3744](https://github.com/parse-community/parse-server/pull/3744)), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Bug Fixes:
+* [postgres] Fixes issue affecting deleting multiple fields of a Schema ([#3734](https://github.com/parse-community/parse-server/pull/3734), [#3735](https://github.com/parse-community/parse-server/pull/3735)), thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+* Fix issue affecting _PushStatus state ([#3808](https://github.com/parse-community/parse-server/pull/3808)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* requiresAuthentication Class Level Permission behaves correctly, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Email Verification related fields are not exposed ([#3681](https://github.com/parse-community/parse-server/pull/3681), [#3393](https://github.com/parse-community/parse-server/pull/3393), [#3432](https://github.com/parse-community/parse-server/pull/3432)), thanks to [Anthony Mosca](https://github.com/aontas)
+* HTTP query parameters are properly obfuscated in logs ([#3793](https://github.com/parse-community/parse-server/pull/3793), [#3789](https://github.com/parse-community/parse-server/pull/3789)), thanks to [@youngerong](https://github.com/youngerong)
+* Improve handling of `$near` operators in `$or` queries ([#3767](https://github.com/parse-community/parse-server/pull/3767), [#3798](https://github.com/parse-community/parse-server/pull/3798)), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Fix issue affecting arrays of pointers ([#3169](https://github.com/parse-community/parse-server/pull/3169)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix issue affecting overloaded query constraints ([#3723](https://github.com/parse-community/parse-server/pull/3723), [#3678](https://github.com/parse-community/parse-server/pull/3678)), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Properly catch unhandled rejections in _Installation updates ([#3795](https://github.com/parse-community/parse-server/pull/3795)), thanks to [kahoona77](https://github.com/kahoona77)
+
+#### Dependency Updates:
+
+* [uws@0.14.5](https://www.npmjs.com/package/uws)
+* [mime@1.3.6](https://www.npmjs.com/package/mime)
+* [mongodb@2.2.26](https://www.npmjs.com/package/mongodb)
+* [pg-promise@5.7.0](https://www.npmjs.com/package/pg-promise)
+* [semver@5.3.0](https://www.npmjs.com/package/semver)
+
+##### Devevelopment dependencies
+* [babel-cli@6.24.1](https://www.npmjs.com/package/babel-cli)
+* [babel-core@6.24.1](https://www.npmjs.com/package/babel-core)
+* [babel-preset-es2015@6.24.1](https://www.npmjs.com/package/babel-preset-es2015)
+* [babel-preset-stage-0@6.24.1](https://www.npmjs.com/package/babel-preset-stage-0)
+* [babel-register@6.24.1](https://www.npmjs.com/package/babel-register)
+* [cross-env@5.0.0](https://www.npmjs.com/package/cross-env)
+* [deep-diff@0.3.8](https://www.npmjs.com/package/deep-diff)
+* [gaze@1.1.2](https://www.npmjs.com/package/gaze)
+* [jasmine@2.6.0](https://www.npmjs.com/package/jasmine)
+* [jasmine-spec-reporter@4.1.0](https://www.npmjs.com/package/jasmine-spec-reporter)
+* [mongodb-runner@3.5.0](https://www.npmjs.com/package/mongodb-runner)
+* [nyc@10.3.2](https://www.npmjs.com/package/nyc)
+* [request-promise@4.2.1](https://www.npmjs.com/package/request-promise)
+
+
+### 2.3.8
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.7...2.3.8)
+
+#### New Features
+* Support for PG-Promise options, thanks to [ren dong](https://github.com/rendongsc)
+
+#### Improvements
+* Improves support for graceful shutdown, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improves configuration validation for Twitter Authentication, thanks to [Benjamin Wilson Friedman](https://github.com/montymxb)
+
+#### Bug Fixes
+* Fixes issue affecting GeoPoint __type with Postgres, thanks to [zhoul-HS](https://github.com/zhoul-HS)
+* Prevent user creation if username or password is empty, thanks to [Wissam Abirached](https://github.com/wabirached)
+
+#### Dependency Updates:
+* [cross-env@4.0.0 ](https://www.npmjs.com/package/cross-env)
+* [ws@2.2.3](https://www.npmjs.com/package/ws)
+* [babel-core@6.24.0](https://www.npmjs.com/package/babel-core)
+* [uws@0.14.0](https://www.npmjs.com/package/uws)
+* [babel-preset-es2015@6.24.0](https://www.npmjs.com/package/babel-preset-es2015)
+* [babel-plugin-syntax-flow@6.18.0](https://www.npmjs.com/package/babel-plugin-syntax-flow)
+* [babel-cli@6.24.0](https://www.npmjs.com/package/babel-cli)
+* [babel-register@6.24.0](https://www.npmjs.com/package/babel-register)
+* [winston-daily-rotate-file@1.4.6](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [mongodb@2.2.25](https://www.npmjs.com/package/mongodb)
+* [redis@2.7.0](https://www.npmjs.com/package/redis)
+* [pg-promise@5.6.4](https://www.npmjs.com/package/pg-promise)
+* [parse-server-push-adapter@1.3.0](https://www.npmjs.com/package/parse-server-push-adapter)
+
+### 2.3.7
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.6...2.3.7)
+
+#### New Features
+* New endpoint to resend verification email, thanks to [Xy Ziemba](https://github.com/xyziemba)
+
+#### Improvements
+* Add TTL option for Redis Cache Adapter, thanks to [Ryan Foster](https://github.com/f0ster)
+* Update Postgres Storage Adapter, thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+
+#### Bug Fixes
+* Add index on Role.name, fixes (#3579), thanks to [Natan Rolnik](https://github.com/natanrolnik)
+* Fix default value of userSensitiveFields, fixes (#3593), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Dependency Updates:
+* [body-parser@1.17.1](https://www.npmjs.com/package/body-parser)
+* [express@4.15.2](https://www.npmjs.com/package/express)
+* [request@2.81.0](https://www.npmjs.com/package/request)
+* [winston-daily-rotate-file@1.4.5](https://www.npmjs.com/package/winston-daily-rotate-file)
+* [ws@2.2.0](https://www.npmjs.com/package/ws)
+
+
+### 2.3.6
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.5...2.3.6)
+
+#### Improvements
+* Adds support for injecting a middleware for instumentation in the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Alleviate mongodb bug with $or queries [SERVER-13732](https://jira.mongodb.org/browse/SERVER-13732), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+
+#### Bug Fixes
+* Fix issue affecting password policy and empty passwords, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* Fix issue when logging url in non string objects, thanks to [Paulo Vítor S Reis](https://github.com/paulovitin)
+
+#### Dependencies updates:
+* [ws@2.1.0](https://npmjs.com/package/ws)
+* [uws@0.13.0](https://npmjs.com/package/uws)
+* [pg-promise@5.6.2](https://npmjs.com/package/pg-promise)
+
+
+### 2.3.5
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.3...2.3.5)
+
+#### Bug Fixes
+* Allow empty client key
+(#3497), thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix LiveQuery unsafe user
+(#3525), thanks to [David Starke](https://github.com/dstarke)
+* Use `flushdb` instead of `flushall` in RedisCacheAdapter
+(#3523), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix saving GeoPoints and Files in `_GlobalConfig` (Make sure we don't treat
+dot notation keys as topLevel atoms)
+(#3531), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.3.3
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.2...2.3.3)
+
+#### Breaking Changes
+* **Minimum Node engine bumped to 4.6** (#3480), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug Fixes
+* Add logging on failure to create file (#3424), thanks to [Arthur Cinader](https://github.com/acinader)
+* Log Parse Errors so they are intelligible (#3431), thanks to [Arthur Cinader](https://github.com/acinader)
+* MongoDB $or Queries avoid SERVER-13732 bug (#3476), thanks to [Jack Wearden](https://github.com/NotBobTheBuilder)
+* Mongo object to Parse object date serialization - avoid re-serialization of iso of type Date (#3389), thanks to [nodechefMatt](https://github.com/nodechefMatt)
+
+#### Improvements
+* Ground preparations for push scalability (#3080), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Use uWS as optional dependency for ws server (#3231), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.3.2
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.1...2.3.2)
+
+#### New features
+* Add parseFrameURL for masking user-facing pages (#3267), thanks to  [Lenart Rudel](https://github.com/lenart)
+
+#### Bug fixes
+* Fix Parse-Server to work with winston-daily-rotate-1.4.2 (#3335), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Improvements
+* Add support for regex string for password policy validatorPattern setting (#3331), thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* LiveQuery should match subobjects with dot notation (#3322), thanks to [David Starke](https://github.com/dstarke)
+* Reduce time to process high number of installations for push (#3264), thanks to [jeacott1](https://github.com/jeacott1)
+* Fix trivial typo in error message (#3238), thanks to [Arthur Cinader](https://github.com/acinader)
+
+### 2.3.1
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.3.0...2.3.1)
+
+A major issue was introduced when refactoring the authentication modules.
+This release addresses only that issue.
+
+### 2.3.0
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.25...2.3.0)
+
+#### Breaking changes
+* Parse.Cloud.useMasterKey() is a no-op, please refer to (Cloud Code migration guide)[https://github.com/ParsePlatform/parse-server/wiki/Compatibility-with-Hosted-Parse#cloud-code]
+* Authentication helpers are now proper adapters, deprecates oauth option in favor of auth.
+* DEPRECATES: facebookAppIds, use `auth: { facebook: { appIds: ["AAAAAAAAA" ] } }`
+* `email` field is not returned anymore for `Parse.User` queries. (Provided only on the user itself if provided).
+
+#### New Features
+* Adds ability to restrict access through Class Level Permissions to only authenticated users [see docs](http://parseplatform.github.io/docs/ios/guide/#requires-authentication-permission-requires-parse-server---230)
+* Adds ability to strip sensitive data from `_User` responses, strips emails by default, thanks to [Arthur Cinader](https://github.com/acinader)
+* Adds password history support for password policies, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+
+#### Improvements
+* Bump parse-server-s3-adapter to 1.0.6, thanks to [Arthur Cinader](https://github.com/acinader)
+* Using PARSE_SERVER_ENABLE_EXPERIMENTAL_DIRECT_ACCESS let you create user sessions when passing {installationId: "xxx-xxx"} on signup in cloud code, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Add CLI option to pass `host` parameter when creating parse-server from CLI, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
+#### Bug fixes
+* Ensure batch routes are only using posix paths, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Ensure falsy options from CLI are properly taken into account, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Fixes issues affecting calls to `matchesKeyInQuery` with pointers.
+* Ensure that `select` keys can be changed in triggers (beforeFind...), thanks to [Arthur Cinader](https://github.com/acinader)
+
+#### Housekeeping
+* Enables and enforces linting with eslint, thanks to [Arthur Cinader](https://github.com/acinader)
+
+### 2.2.25
+
+Postgres support requires v9.5
+
+#### New Features
+* Dockerizing Parse Server, thanks to [Kirill Kravinsky](https://github.com/woyorus)
+* Login with qq, wechat, weibo, thanks to [haifeizhang]()
+* Password policy, validation and expiration, thanks to [Bhaskar Reddy Yasa](https://github.com/bhaskaryasa)
+* Health check on /health, thanks to [Kirill Kravinsky](https://github.com/woyorus)
+* Reuse SchemaCache across requests option, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+#### Improvements
+* Better support for CLI options, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Specity a database timeout with maxTimeMS, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Adds the username to reset password success pages, thanks to [Halim Qarroum](https://github.com/HQarroum)
+* Better support for Redis cache adapter, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Better coverage of Postgres, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+
+#### Bug Fixes
+* Fixes issue when sending push to multiple installations, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fixes issues with twitter authentication, thanks to [jonas-db](https://github.com/jonas-db)
+* Ignore createdAt fields update, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
+* Improve support for array equality with LiveQuery, thanks to [David Poetzsch-Heffter](https://github.com/dpoetzsch)
+* Improve support for batch endpoint when serverURL and publicServerURL have different paths, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Support saving relation objects, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
+
+### 2.2.24
+
+#### New Features
+* LiveQuery: Bring your own adapter (#2902), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* LiveQuery: Adds "update" operator to update a query subscription (#2935), thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements
+* Better Postgres support, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Logs the function name when failing (#2963), thanks to [Michael Helvey](https://github.com/michaelhelvey)
+* CLI: forces closing the connections with SIGINT/SIGTERM (#2964), thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Reduce the number of calls to the `_SCHEMA` table (#2912), thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* LiveQuery: Support for Role ACL's, thanks to [Aaron Blondeau](https://github.com/aaron-blondeau-dose)
+
+#### Bug Fixes
+* Better support for checking application and client keys, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Google OAuth, better support for android and web logins, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.23
+
+* Run liveQuery server from CLI with a different port, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Support for Postgres databaseURI, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Support for Postgres options, thanks to [Kulshekhar Kabra](https://github.com/kulshekhar)
+* Improved support for google login (id_token and access_token), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improvements with VKontakte login, thanks to [Eugene Antropov](https://github.com/antigp)
+* Improved support for `select` and `include`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+
+* Fix error when updating installation with useMasterKey (#2888), thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Fix bug affecting usage of multiple `notEqualTo`, thanks to [Jeremy Louie](https://github.com/JeremyPlease)
+* Improved support for null values in arrays, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.22
+
+* Minimum nodejs engine is now 4.5
+
+#### New Features
+* New: CLI for parse-live-query-server, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Start parse-live-query-server for parse-server CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Bug fixes
+* Fix: Include with pointers are not conflicting with get CLP anymore, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes dependency on babel-polyfill, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Support nested select calls, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Use native column selection instead of runtime, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: installationId header is properly used when updating `_Installation` objects, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: don't crash parse-server on improperly formatted live-query messages, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Passwords are properly stripped out of logs, thanks to [Arthur Cinader](https://github.com/acinader)
+* Fix: Lookup for email in username if email is not set, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.21
+
+* Fix: Reverts removal of babel-polyfill
+
+### 2.2.20
+
+* New: Adds CloudCode handler for `beforeFind`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: RedisCacheAdapter for syncing schema, role and user caches across servers, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Latest master build available at `ParsePlatform/parse-server#latest`, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Better support for upgradeToRevocableSession with missing session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Removes babel-polyfill runtime dependency, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Cluster option now support a boolean value for automatically choosing the right number of processes, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Filenames now appear correctly, thanks to [Lama Chandrasena](https://github.com/lama-buddy)
+* Fix: `_acl` is properly updated, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+
+Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
+
+### 2.2.19
+
+* New: support for upgrading to revocable sessions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: NullCacheAdapter for disabling caching, thanks to [Yuki Takeichi](https://github.com/yuki-takeichi)
+* New: Account lockout policy [#2601](https://github.com/ParsePlatform/parse-server/pull/2601), thanks to [Diwakar Cherukumilli](https://github.com/cherukumilli)
+* New: Jobs endpoint for defining and run jobs (no scheduling), thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Add --cluster option to the CLI, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Support for login with vk.com, thanks to [Nurdaulet Bolatov](https://github.com/nbolatov)
+* New: experimental support for postgres databases, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: parse-server doesn't call next() after successful responses, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Nested objects are properly includeed with Pointer Permissions on, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: null values in include calls are properly handled, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Schema validations now runs after beforeSave hooks, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: usersname and passwords are properly type checked, thanks to [Bam Wang](https://github.com/bamwang)
+* Fix: logging in info log would log also in error log, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: removes extaneous logging from ParseLiveQueryServer, thanks to [Flavio Torres](https://github.com/flavionegrao)
+* Fix: support for Range requests for files, thanks to [Brage G. Staven](https://github.com/Bragegs)
+
+### 2.2.18
+
+* Fix: Improve support for objects in push alert, thanks to [Antoine Lenoir](https://github.com/alenoir)
+* Fix; Prevent pointed from getting clobbered when they are changed in a beforeSave, thanks to [sud](https://github.com/sud80)
+* Fix: Improve support for "Bytes" type, thanks to [CongHoang](https://github.com/conghoang)
+* Fix: Better logging compatability with Parse.com, thanks to [Arthur Cinader](https://github.com/acinader)
+* New: Add Janrain Capture and Janrain Engage auth provider, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improved: Include content length header in files response, thanks to [Steven Van Bael](https://github.com/vbsteven)
+* Improved: Support byte range header for files, thanks to [Brage G. Staven](https://github.com/Bragegs)
+* Improved: Validations for LinkedIn access_tokens, thanks to [Felix Dumit](https://github.com/felix-dumit)
+* Improved: Experimental postgres support, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Perf: Use native bcrypt implementation if available, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+
+### [2.2.17](https://github.com/ParsePlatform/parse-server/tree/2.2.17) (07/23/2016)
+[Full Changelog](https://github.com/ParsePlatform/parse-server/compare/2.2.16...2.2.17)
+
+* Cloud code logs [\#2370](https://github.com/ParsePlatform/parse-server/pull/2370) ([flovilmart](https://github.com/flovilmart))
+* Make sure \_PushStatus operations are run in order [\#2367](https://github.com/ParsePlatform/parse-server/pull/2367) ([flovilmart](https://github.com/flovilmart))
+* Typo fix for error message when can't ensure uniqueness of user email addresses [\#2360](https://github.com/ParsePlatform/parse-server/pull/2360) ([AndrewLane](https://github.com/AndrewLane))
+* LiveQuery constrains matching fix [\#2357](https://github.com/ParsePlatform/parse-server/pull/2357) ([simonas-notcat](https://github.com/simonas-notcat))
+* Fix typo in logging for commander parseConfigFile [\#2352](https://github.com/ParsePlatform/parse-server/pull/2352) ([AndrewLane](https://github.com/AndrewLane))
+* Fix minor typos in test names [\#2351](https://github.com/ParsePlatform/parse-server/pull/2351) ([acinader](https://github.com/acinader))
+* Makes sure we don't strip authData or session token from users using masterKey [\#2348](https://github.com/ParsePlatform/parse-server/pull/2348) ([flovilmart](https://github.com/flovilmart))
+* Run coverage with istanbul [\#2340](https://github.com/ParsePlatform/parse-server/pull/2340) ([flovilmart](https://github.com/flovilmart))
+* Run next\(\) after successfully sending data to the client [\#2338](https://github.com/ParsePlatform/parse-server/pull/2338) ([blacha](https://github.com/blacha))
+* Cache all the mongodb/version folder [\#2336](https://github.com/ParsePlatform/parse-server/pull/2336) ([flovilmart](https://github.com/flovilmart))
+* updates usage of setting: emailVerifyTokenValidityDuration [\#2331](https://github.com/ParsePlatform/parse-server/pull/2331) ([cherukumilli](https://github.com/cherukumilli))
+* Update Mongodb client to 2.2.4 [\#2329](https://github.com/ParsePlatform/parse-server/pull/2329) ([flovilmart](https://github.com/flovilmart))
+* Allow usage of analytics adapter [\#2327](https://github.com/ParsePlatform/parse-server/pull/2327) ([deashay](https://github.com/deashay))
+* Fix flaky tests [\#2324](https://github.com/ParsePlatform/parse-server/pull/2324) ([flovilmart](https://github.com/flovilmart))
+* don't serve null authData values [\#2320](https://github.com/ParsePlatform/parse-server/pull/2320) ([yuzeh](https://github.com/yuzeh))
+* Fix null relation problem [\#2319](https://github.com/ParsePlatform/parse-server/pull/2319) ([flovilmart](https://github.com/flovilmart))
+* Clear the connectionPromise upon close or error [\#2314](https://github.com/ParsePlatform/parse-server/pull/2314) ([flovilmart](https://github.com/flovilmart))
+* Report validation errors with correct error code [\#2299](https://github.com/ParsePlatform/parse-server/pull/2299) ([flovilmart](https://github.com/flovilmart))
+* Parses correctly Parse.Files and Dates when sent to Cloud Code Functions [\#2297](https://github.com/ParsePlatform/parse-server/pull/2297) ([flovilmart](https://github.com/flovilmart))
+* Adding proper generic Not Implemented. [\#2292](https://github.com/ParsePlatform/parse-server/pull/2292) ([vitaly-t](https://github.com/vitaly-t))
+* Adds schema caching capabilities \(5s by default\) [\#2286](https://github.com/ParsePlatform/parse-server/pull/2286) ([flovilmart](https://github.com/flovilmart))
+* add digits oauth provider [\#2284](https://github.com/ParsePlatform/parse-server/pull/2284) ([ranhsd](https://github.com/ranhsd))
+* Improve installations query [\#2281](https://github.com/ParsePlatform/parse-server/pull/2281) ([flovilmart](https://github.com/flovilmart))
+* Adding request headers to cloud functions fixes \#1461 [\#2274](https://github.com/ParsePlatform/parse-server/pull/2274) ([blacha](https://github.com/blacha))
+* Creates a new sessionToken when updating password [\#2266](https://github.com/ParsePlatform/parse-server/pull/2266) ([flovilmart](https://github.com/flovilmart))
+* Add Gitter chat link to the README. [\#2264](https://github.com/ParsePlatform/parse-server/pull/2264) ([nlutsenko](https://github.com/nlutsenko))
+* Restores ability to include non pointer keys [\#2263](https://github.com/ParsePlatform/parse-server/pull/2263) ([flovilmart](https://github.com/flovilmart))
+* Allow next middleware handle error in handleParseErrors [\#2260](https://github.com/ParsePlatform/parse-server/pull/2260) ([mejcz](https://github.com/mejcz))
+* Exposes the ClientSDK infos if available [\#2259](https://github.com/ParsePlatform/parse-server/pull/2259) ([flovilmart](https://github.com/flovilmart))
+* Adds support for multiple twitter auths options [\#2256](https://github.com/ParsePlatform/parse-server/pull/2256) ([flovilmart](https://github.com/flovilmart))
+* validate\_purchase fix for SANDBOX requests [\#2253](https://github.com/ParsePlatform/parse-server/pull/2253) ([valeryvaskabovich](https://github.com/valeryvaskabovich))
+
+### 2.2.16 (7/10/2016)
+
+* New: Expose InMemoryCacheAdapter publicly, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* New: Add ability to prevent login with unverified email, thanks to [Diwakar Cherukumilli](https://github.com/cherukumilli)
+* Improved: Better error message for incorrect type, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improved: Better error message for permission denied, thanks to [Blayne Chard](https://github.com/blacha)
+* Improved: Update authData on login, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Improved: Ability to not check for old files on Parse.com, thanks to [OzgeAkin](https://github.com/OzgeAkin)
+* Fix: Issues with email adapter validation, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Issues with nested $or queries, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+### 2.2.15 (6/30/2016)
+
+* Fix: Type in description for Parse.Error.INVALID_QUERY, thanks to [Andrew Lane](https://github.com/AndrewLane)
+* Improvement: Stop requiring verifyUserEmails for password reset functionality, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Improvement: Kill without validation, thanks to [Drew Gross](https://github.com/drew-gross)
+* Fix: Deleting a file does not delete from fs.files, thanks to [David Keita](https://github.com/maninga)
+* Fix: Postgres stoage adapter fix, thanks to [Vitaly Tomilov](https://github.com/vitaly-t)
+* Fix: Results invalid session when providing an invalid session token, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: issue creating an anonymous user, thanks to [Hussam Moqhim](https://github.com/hmoqhim)
+* Fix: make http response serializable, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* New: Add postmark email adapter alternative [Glenn Reyes](https://github.com/glennreyes)
+
+### 2.2.14 (6/25/2016)
+
+* Hotfix: Fix Parse.Cloud.HTTPResponse serialization
+
+### 2.2.13 (6/12/2016)
+
+* Hotfix: Pin version of deepcopy
+
+### 2.2.12 (6/9/2016)
+
+* New: Custom error codes in cloud code response.error, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Crash in beforeSave when response is not an object, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Allow "get" on installations
+* Fix: Fix overly restrictive Class Level Permissions, thanks to [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Fix nested date parsing in Cloud Code, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Support very old file formats from Parse.com
+
+### 2.2.11 (5/31/2016)
+
+* Security: Censor user password in logs, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Add PARSE_SERVER_LOGS_FOLDER env var for setting log folder, thanks to [KartikeyaRokde](https://github.com/KartikeyaRokde)
+* New: Webhook key support, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Perf: Add cache adapter and default caching of certain objects, thanks to [Blayne Chard](https://github.com/blacha)
+* Improvement: Better error messages for schema type mismatches, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Improvement: Better error messages for reset password emails
+* Improvement: Webhook key support in CLI, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Remove read only fields when using beforeSave, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Use content type provided by JS SDK, thanks to [Blayne Chard](https://github.com/blacha) and [Florent Vilmart](https://github.com/flovilmart)
+* Fix: Tell the dashboard the stored push data is available, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Add support for HTTP Basic Auth, thanks to [Hussam Moqhim](https://github.com/hmoqhim)
+* Fix: Support for MongoDB version 3.2.6, (note: do not use MongoDB 3.2 with migrated apps that still have traffic on Parse.com), thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Prevent `pm2` from crashing when push notifications fail, thanks to [benishak](https://github.com/benishak)
+* Fix: Add full list of default _Installation fields, thanks to [Jeremy Pease](https://github.com/JeremyPlease)
+* Fix: Strip objectId out of hooks responses, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix external webhook response format, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Fix: Fix beforeSave when object is passed to `success`, thanks to [Madhav Bhagat](https://github.com/codebreach)
+* Fix: Remove use of deprecated APIs, thanks to [Emad Ehsan](https://github.com/emadehsan)
+* Fix: Crash when multiple Parse Servers on the same machine try to write to the same logs folder, thanks to [Steven Shipton](https://github.com/steven-supersolid)
+* Fix: Various issues with key names in `Parse.Object`s
+* Fix: Treat Bytes type properly
+* Fix: Caching bugs that caused writes by masterKey or other session token to not show up to users reading with a different session token
+* Fix: Pin mongo driver version, preventing a regression in version 2.1.19
+* Fix: Various issues with pointer fields not being treated properly
+* Fix: Issues with pointed getting un-fetched due to changes in beforeSave
+* Fix: Fixed crash when deleting classes that have CLPs
+
+### 2.2.10 (5/15/2016)
+
+* Fix: Write legacy ACLs to Mongo so that clients that still go through Parse.com can read them, thanks to [Tyler Brock](https://github.com/TylerBrock) and [carmenlau](https://github.com/carmenlau)
+* Fix: Querying installations with limit = 0 and count = 1 now works, thanks to [ssk7833](https://github.com/ssk7833)
+* Fix: Return correct error when violating unique index, thanks to [Marco Cheung](https://github.com/Marco129)
+* Fix: Allow unsetting user's email, thanks to [Marco Cheung](https://github.com/Marco129)
+* New: Support for Node 6.1
+
 ### 2.2.9 (5/9/2016)
 
 * Fix: Fix a regression that caused Parse Server to crash when a null parameter is passed to a Cloud function
@@ -303,5 +1134,3 @@
 * Fix: Various files related bugs
 * Fix: Force minimum node version 4.3 due to security issues in earlier version
 * Performance Improvement: Improved caching
-
-

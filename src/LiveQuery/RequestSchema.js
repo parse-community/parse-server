@@ -1,15 +1,16 @@
-let general = {
+const general = {
   'title': 'General request schema',
   'type': 'object',
   'properties': {
     'op': {
       'type': 'string',
-      'enum': ['connect', 'subscribe', 'unsubscribe']
+      'enum': ['connect', 'subscribe', 'unsubscribe', 'update']
     },
   },
+  'required': ['op']
 };
 
-let connect =  {
+const connect =  {
   'title': 'Connect operation schema',
   'type': 'object',
   'properties': {
@@ -40,7 +41,7 @@ let connect =  {
   "additionalProperties": false
 };
 
-let subscribe = {
+const subscribe = {
   'title': 'Subscribe operation schema',
   'type': 'object',
   'properties': {
@@ -61,7 +62,7 @@ let subscribe = {
         'fields': {
           "type": "array",
           "items": {
-              "type": "string"
+            "type": "string"
           },
           "minItems": 1,
           "uniqueItems": true
@@ -78,7 +79,45 @@ let subscribe = {
   'additionalProperties': false
 };
 
-let unsubscribe = {
+const update = {
+  'title': 'Update operation schema',
+  'type': 'object',
+  'properties': {
+    'op': 'update',
+    'requestId': {
+      'type': 'number'
+    },
+    'query': {
+      'title': 'Query field schema',
+      'type': 'object',
+      'properties': {
+        'className': {
+          'type': 'string'
+        },
+        'where': {
+          'type': 'object'
+        },
+        'fields': {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        }
+      },
+      'required': ['where', 'className'],
+      'additionalProperties': false
+    },
+    'sessionToken': {
+      'type': 'string'
+    }
+  },
+  'required': ['op', 'requestId', 'query'],
+  'additionalProperties': false
+};
+
+const unsubscribe = {
   'title': 'Unsubscribe operation schema',
   'type': 'object',
   'properties': {
@@ -91,10 +130,11 @@ let unsubscribe = {
   "additionalProperties": false
 }
 
-let RequestSchema = {
+const RequestSchema = {
   'general': general,
   'connect': connect,
   'subscribe': subscribe,
+  'update': update,
   'unsubscribe': unsubscribe
 }
 

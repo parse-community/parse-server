@@ -9,17 +9,22 @@ export class PushRouter extends PromiseRouter {
   }
 
   static handlePOST(req) {
+    if (req.auth.isReadOnly) {
+      throw new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'read-only masterKey isn\'t allowed to send push notifications.');
+    }
     const pushController = req.config.pushController;
     if (!pushController) {
       throw new Parse.Error(Parse.Error.PUSH_MISCONFIGURED, 'Push controller is not set');
     }
 
-    let where = PushRouter.getQueryCondition(req);
+    const where = PushRouter.getQueryCondition(req);
     let resolve;
-    let promise = new Promise((_resolve) => {
+    const promise = new Promise((_resolve) => {
       resolve = _resolve;
     });
-    pushController.sendPush(req.body, where, req.config, req.auth, (pushStatusId) => {
+    let pushStatusId;
+    pushController.sendPush(req.body, where, req.config, req.auth, (objectId) => {
+      pushStatusId = objectId;
       resolve({
         headers: {
           'X-Parse-Push-Status-Id': pushStatusId
@@ -28,6 +33,8 @@ export class PushRouter extends PromiseRouter {
           result: true
         }
       });
+    }).catch((err) => {
+      req.config.loggerController.error(`_PushStatus ${pushStatusId}: error while sending push`, err);
     });
     return promise;
   }
@@ -38,9 +45,9 @@ export class PushRouter extends PromiseRouter {
    * @returns {Object} The query condition, the where field in a query api call
    */
   static getQueryCondition(req) {
-    let body = req.body || {};
-    let hasWhere = typeof body.where !== 'undefined';
-    let hasChannels = typeof body.channels !== 'undefined';
+    const body = req.body || {};
+    const hasWhere = typeof body.where !== 'undefined';
+    const hasChannels = typeof body.channels !== 'undefined';
 
     let where;
     if (hasWhere && hasChannels) {

@@ -1,21 +1,23 @@
 /** @flow weak */
 
-import * as DatabaseAdapter from "../DatabaseAdapter";
-import * as triggers from "../triggers";
-import * as Parse from "parse/node";
-import * as request from "request";
+import * as triggers        from "../triggers";
+// @flow-disable-next
+import * as Parse           from "parse/node";
+// @flow-disable-next
+import * as request         from "request";
+import { logger }           from '../logger';
 
 const DefaultHooksCollectionName = "_Hooks";
 
 export class HooksController {
   _applicationId:string;
-  _collectionPrefix:string;
-  _collection;
+  _webhookKey:string;
+  database: any;
 
-  constructor(applicationId:string, collectionPrefix:string = '') {
+  constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
-    this._collectionPrefix = collectionPrefix;
-    this.database = DatabaseAdapter.getDatabaseConnection(this._applicationId, this._collectionPrefix).WithoutValidation();
+    this._webhookKey = webhookKey;
+    this.database = databaseController;
   }
 
   load() {
@@ -28,7 +30,7 @@ export class HooksController {
   }
 
   getFunction(functionName) {
-    return this._getHooks({ functionName: functionName }, 1).then(results => results[0]);
+    return this._getHooks({ functionName: functionName }).then(results => results[0]);
   }
 
   getFunctions() {
@@ -36,7 +38,7 @@ export class HooksController {
   }
 
   getTrigger(className, triggerName) {
-    return this._getHooks({ className: className, triggerName: triggerName }, 1).then(results => results[0]);
+    return this._getHooks({ className: className, triggerName: triggerName }).then(results => results[0]);
   }
 
   getTriggers() {
@@ -53,9 +55,13 @@ export class HooksController {
     return this._removeHooks({ className: className, triggerName: triggerName });
   }
 
-  _getHooks(query = {}, limit) {
-    let options = limit ? { limit: limit } : undefined;
-    return this.database.find(DefaultHooksCollectionName, query);
+  _getHooks(query = {}) {
+    return this.database.find(DefaultHooksCollectionName, query).then((results) => {
+      return results.map((result) => {
+        delete result.objectId;
+        return result;
+      });
+    });
   }
 
   _removeHooks(query) {
@@ -79,7 +85,7 @@ export class HooksController {
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook);
+    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
@@ -110,7 +116,7 @@ export class HooksController {
     }
 
     return this.addHook(hook);
-  };
+  }
 
   createHook(aHook) {
     if (aHook.functionName) {
@@ -131,7 +137,7 @@ export class HooksController {
     }
 
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 
   updateHook(aHook) {
     if (aHook.functionName) {
@@ -150,12 +156,12 @@ export class HooksController {
       });
     }
     throw new Parse.Error(143, "invalid hook declaration");
-  };
+  }
 }
 
-function wrapToHTTPRequest(hook) {
+function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
-    let jsonBody = {};
+    const jsonBody = {};
     for (var i in req) {
       jsonBody[i] = req[i];
     }
@@ -167,21 +173,31 @@ function wrapToHTTPRequest(hook) {
       jsonBody.original = req.original.toJSON();
       jsonBody.original.className = req.original.className;
     }
-    let jsonRequest = {
+    const jsonRequest: any = {
       headers: {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(jsonBody)
     };
 
+    if (key) {
+      jsonRequest.headers['X-Parse-Webhook-Key'] = key;
+    } else {
+      logger.warn('Making outgoing webhook request without webhookKey being set!');
+    }
+
     request.post(hook.url, jsonRequest, function (err, httpResponse, body) {
       var result;
       if (body) {
-        if (typeof body == "string") {
+        if (typeof body === "string") {
           try {
             body = JSON.parse(body);
           } catch (e) {
-            err = { error: "Malformed response", code: -1 };
+            err = {
+              error: "Malformed response",
+              code: -1,
+              partialResponse: body.substring(0, 100)
+            };
           }
         }
         if (!err) {
@@ -189,8 +205,15 @@ function wrapToHTTPRequest(hook) {
           err = body.error;
         }
       }
+
       if (err) {
         return res.error(err);
+      } else if (hook.triggerName === 'beforeSave') {
+        if (typeof result === 'object') {
+          delete result.createdAt;
+          delete result.updatedAt;
+        }
+        return res.success({object: result});
       } else {
         return res.success(result);
       }

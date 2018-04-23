@@ -21,6 +21,9 @@ describe('MongoSchemaCollection', () => {
           "create":{"*":true},
           "delete":{"*":true},
           "addField":{"*":true},
+        },
+        "indexes": {
+          "name1":{"deviceToken":1}
         }
       },
       "installationId":"string",
@@ -28,6 +31,15 @@ describe('MongoSchemaCollection', () => {
       "deviceType":"string",
       "channels":"array",
       "user":"*_User",
+      "pushType":"string",
+      "GCMSenderId":"string",
+      "timeZone":"string",
+      "localeIdentifier":"string",
+      "badge":"number",
+      "appVersion":"string",
+      "appName":"string",
+      "appIdentifier":"string",
+      "parseVersion":"string",
     })).toEqual({
       className: '_Installation',
       fields: {
@@ -36,6 +48,15 @@ describe('MongoSchemaCollection', () => {
         deviceType: { type: 'String' },
         channels: { type: 'Array' },
         user: { type: 'Pointer', targetClass: '_User' },
+        pushType: { type: 'String' },
+        GCMSenderId: { type: 'String' },
+        timeZone: { type: 'String' },
+        localeIdentifier: { type: 'String' },
+        badge: { type: 'Number' },
+        appVersion: { type: 'String' },
+        appName: { type: 'String' },
+        appIdentifier: { type: 'String' },
+        parseVersion: { type: 'String' },
         ACL: { type: 'ACL' },
         createdAt: { type: 'Date' },
         updatedAt: { type: 'Date' },
@@ -48,7 +69,10 @@ describe('MongoSchemaCollection', () => {
         update: { '*': true },
         delete: { '*': true },
         addField: { '*': true },
-      }
+      },
+      indexes: {
+        name1: {deviceToken: 1}
+      },
     });
     done();
   });

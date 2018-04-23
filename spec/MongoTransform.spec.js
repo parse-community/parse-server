@@ -1,57 +1,47 @@
 // These tests are unit tests designed to only test transform.js.
 "use strict";
 
-let transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
-let dd = require('deep-diff');
-let mongodb = require('mongodb');
-
-var dummySchema = {
-    data: {},
-    getExpectedType: function(className, key) {
-      if (key == 'userPointer') {
-        return { type: 'Pointer', targetClass: '_User' };
-      } else if (key == 'picture') {
-        return { type: 'File' };
-      } else if (key == 'location') {
-        return { type: 'GeoPoint' };
-      }
-      return;
-    },
-    getRelationFields: function() {
-      return {}
-    }
-};
-
+const transform = require('../src/Adapters/Storage/Mongo/MongoTransform');
+const dd = require('deep-diff');
+const mongodb = require('mongodb');
 
 describe('parseObjectToMongoObjectForCreate', () => {
-
   it('a basic number', (done) => {
-    var input = {five: 5};
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, {
+    const input = {five: 5};
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {five: {type: 'Number'}}
     });
     jequal(input, output);
     done();
   });
 
+  it('an object with null values', (done) => {
+    const input = {objectWithNullValues: {isNull: null, notNull: 3}};
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, {
+      fields: {objectWithNullValues: {type: 'object'}}
+    });
+    jequal(input, output);
+    done();
+  });
+
   it('built-in timestamps', (done) => {
-    var input = {
+    const input = {
       createdAt: "2015-10-06T21:24:50.332Z",
       updatedAt: "2015-10-06T21:24:50.332Z"
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
     expect(output._created_at instanceof Date).toBe(true);
     expect(output._updated_at instanceof Date).toBe(true);
     done();
   });
 
   it('array of pointers', (done) => {
-    var pointer = {
+    const pointer = {
       __type: 'Pointer',
       objectId: 'myId',
       className: 'Blah',
     };
-    var out = transform.parseObjectToMongoObjectForCreate(dummySchema, null, {pointers: [pointer]},{
+    const out = transform.parseObjectToMongoObjectForCreate(null, {pointers: [pointer]},{
       fields: {pointers: {type: 'Array'}}
     });
     jequal([pointer], out.pointers);
@@ -60,79 +50,91 @@ describe('parseObjectToMongoObjectForCreate', () => {
 
   //TODO: object creation requests shouldn't be seeing __op delete, it makes no sense to
   //have __op delete in a new object. Figure out what this should actually be testing.
-  notWorking('a delete op', (done) => {
-    var input = {deleteMe: {__op: 'Delete'}};
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
+  xit('a delete op', (done) => {
+    const input = {deleteMe: {__op: 'Delete'}};
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
     jequal(output, {});
     done();
   });
 
-  it('basic ACL', (done) => {
-    var input = {ACL: {'0123': {'read': true, 'write': true}}};
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
-    // This just checks that it doesn't crash, but it should check format.
+  it('Doesnt allow ACL, as Parse Server should tranform ACL to _wperm + _rperm', done => {
+    const input = {ACL: {'0123': {'read': true, 'write': true}}};
+    expect(() => transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} })).toThrow();
     done();
   });
 
-  describe('GeoPoints', () => {
-    it('plain', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(dummySchema, null, {location: geoPoint},{
-        fields: {location: {type: 'GeoPoint'}}
-      });
-      expect(out.location).toEqual([180, -180]);
-      done();
+  it('parse geopoint to mongo', (done) => {
+    const lat = -45;
+    const lng = 45;
+    const geoPoint = {__type: 'GeoPoint', latitude: lat, longitude: lng};
+    const out = transform.parseObjectToMongoObjectForCreate(null, {location: geoPoint},{
+      fields: {location: {type: 'GeoPoint'}}
     });
-
-    it('in array', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(dummySchema, null, {locations: [geoPoint, geoPoint]},{
-        fields: {locations: {type: 'Array'}}
-      });
-      expect(out.locations).toEqual([geoPoint, geoPoint]);
-      done();
-    });
-
-    it('in sub-object', (done) => {
-      var geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
-      var out = transform.parseObjectToMongoObjectForCreate(dummySchema, null, { locations: { start: geoPoint }},{
-        fields: {locations: {type: 'Object'}}
-      });
-      expect(out).toEqual({ locations: { start: geoPoint } });
-      done();
-    });
+    expect(out.location).toEqual([lng, lat]);
+    done();
   });
-});
 
-describe('transformWhere', () => {
+  it('parse polygon to mongo', (done) => {
+    const lat1 = -45;
+    const lng1 = 45;
+    const lat2 = -55;
+    const lng2 = 55;
+    const lat3 = -65;
+    const lng3 = 65;
+    const polygon = {__type: 'Polygon', coordinates: [[lat1, lng1],[lat2, lng2],[lat3, lng3]]}
+    const out = transform.parseObjectToMongoObjectForCreate(null, {location: polygon},{
+      fields: {location: {type: 'Polygon'}}
+    });
+    expect(out.location.coordinates).toEqual([[[lng1, lat1],[lng2, lat2],[lng3, lat3],[lng1, lat1]]]);
+    done();
+  });
+
+  it('in array', (done) => {
+    const geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    const out = transform.parseObjectToMongoObjectForCreate(null, {locations: [geoPoint, geoPoint]},{
+      fields: {locations: {type: 'Array'}}
+    });
+    expect(out.locations).toEqual([geoPoint, geoPoint]);
+    done();
+  });
+
+  it('in sub-object', (done) => {
+    const geoPoint = {__type: 'GeoPoint', longitude: 180, latitude: -180};
+    const out = transform.parseObjectToMongoObjectForCreate(null, { locations: { start: geoPoint }},{
+      fields: {locations: {type: 'Object'}}
+    });
+    expect(out).toEqual({ locations: { start: geoPoint } });
+    done();
+  });
+
   it('objectId', (done) => {
-    var out = transform.transformWhere(null, {objectId: 'foo'});
+    const out = transform.transformWhere(null, {objectId: 'foo'});
     expect(out._id).toEqual('foo');
     done();
   });
 
   it('objectId in a list', (done) => {
-    var input = {
+    const input = {
       objectId: {'$in': ['one', 'two', 'three']},
     };
-    var output = transform.transformWhere(null, input);
+    const output = transform.transformWhere(null, input);
     jequal(input.objectId, output._id);
     done();
   });
-});
 
-describe('untransformObject', () => {
   it('built-in timestamps', (done) => {
-    var input = {createdAt: new Date(), updatedAt: new Date()};
-    var output = transform.untransformObject(dummySchema, null, input);
+    const input = {createdAt: new Date(), updatedAt: new Date()};
+    const output = transform.mongoObjectToParseObject(null, input, { fields: {} });
     expect(typeof output.createdAt).toEqual('string');
     expect(typeof output.updatedAt).toEqual('string');
     done();
   });
 
   it('pointer', (done) => {
-    var input = {_p_userPointer: '_User$123'};
-    var output = transform.untransformObject(dummySchema, null, input);
+    const input = {_p_userPointer: '_User$123'};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
+    });
     expect(typeof output.userPointer).toEqual('object');
     expect(output.userPointer).toEqual(
       {__type: 'Pointer', className: '_User', objectId: '123'}
@@ -141,40 +143,77 @@ describe('untransformObject', () => {
   });
 
   it('null pointer', (done) => {
-    var input = {_p_userPointer: null};
-    var output = transform.untransformObject(dummySchema, null, input);
+    const input = {_p_userPointer: null};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { userPointer: { type: 'Pointer', targetClass: '_User' } },
+    });
     expect(output.userPointer).toBeUndefined();
     done();
   });
 
   it('file', (done) => {
-    var input = {picture: 'pic.jpg'};
-    var output = transform.untransformObject(dummySchema, null, input);
+    const input = {picture: 'pic.jpg'};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { picture: { type: 'File' }},
+    });
     expect(typeof output.picture).toEqual('object');
     expect(output.picture).toEqual({__type: 'File', name: 'pic.jpg'});
     done();
   });
 
-  it('geopoint', (done) => {
-    var input = {location: [180, -180]};
-    var output = transform.untransformObject(dummySchema, null, input);
+  it('mongo geopoint to parse', (done) => {
+    const lat = -45;
+    const lng = 45;
+    const input = {location: [lng, lat]};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { location: { type: 'GeoPoint' }},
+    });
     expect(typeof output.location).toEqual('object');
     expect(output.location).toEqual(
-      {__type: 'GeoPoint', longitude: 180, latitude: -180}
+      {__type: 'GeoPoint', latitude: lat, longitude: lng}
+    );
+    done();
+  });
+
+  it('mongo polygon to parse', (done) => {
+    const lat = -45;
+    const lng = 45;
+    // Mongo stores polygon in WGS84 lng/lat
+    const input = {location: { type: 'Polygon', coordinates: [[[lat, lng],[lat, lng]]]}};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { location: { type: 'Polygon' }},
+    });
+    expect(typeof output.location).toEqual('object');
+    expect(output.location).toEqual(
+      {__type: 'Polygon', coordinates: [[lng, lat],[lng, lat]]}
+    );
+    done();
+  });
+
+  it('bytes', (done) => {
+    const input = {binaryData: "aGVsbG8gd29ybGQ="};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { binaryData: { type: 'Bytes' }},
+    });
+    expect(typeof output.binaryData).toEqual('object');
+    expect(output.binaryData).toEqual(
+      {__type: 'Bytes', base64: "aGVsbG8gd29ybGQ="}
     );
     done();
   });
 
   it('nested array', (done) => {
-    var input = {arr: [{_testKey: 'testValue' }]};
-    var output = transform.untransformObject(dummySchema, null, input);
+    const input = {arr: [{_testKey: 'testValue' }]};
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { arr: { type: 'Array' } },
+    });
     expect(Array.isArray(output.arr)).toEqual(true);
     expect(output.arr).toEqual([{ _testKey: 'testValue'}]);
     done();
   });
 
   it('untransforms objects containing nested special keys', done => {
-    let input = {array: [{
+    const input = {array: [{
       _id: "Test ID",
       _hashed_password: "I Don't know why you would name a key this, but if you do it should work",
       _tombstone: {
@@ -185,19 +224,18 @@ describe('untransformObject', () => {
       },
       regularKey: "some data",
     }]}
-    let output = transform.untransformObject(dummySchema, null, input);
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: { array: { type: 'Array' }},
+    });
     expect(dd(output, input)).toEqual(undefined);
     done();
   });
-});
-
-describe('transform schema key changes', () => {
 
   it('changes new pointer key', (done) => {
-    var input = {
+    const input = {
       somePointer: {__type: 'Pointer', className: 'Micro', objectId: 'oft'}
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, {
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {somePointer: {type: 'Pointer'}}
     });
     expect(typeof output._p_somePointer).toEqual('string');
@@ -206,10 +244,10 @@ describe('transform schema key changes', () => {
   });
 
   it('changes existing pointer keys', (done) => {
-    var input = {
+    const input = {
       userPointer: {__type: 'Pointer', className: '_User', objectId: 'qwerty'}
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input, {
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, {
       fields: {userPointer: {type: 'Pointer'}}
     });
     expect(typeof output._p_userPointer).toEqual('string');
@@ -217,45 +255,242 @@ describe('transform schema key changes', () => {
     done();
   });
 
-  it('changes ACL storage to _rperm and _wperm', (done) => {
-    var input = {
-      ACL: {
-        "*": { "read": true },
-        "Kevin": { "write": true }
-      }
+  it('writes the old ACL format in addition to rperm and wperm on create', (done) => {
+    const input = {
+      _rperm: ['*'],
+      _wperm: ['Kevin'],
     };
-    var output = transform.parseObjectToMongoObjectForCreate(dummySchema, null, input);
-    expect(typeof output._rperm).toEqual('object');
-    expect(typeof output._wperm).toEqual('object');
-    expect(output.ACL).toBeUndefined();
-    expect(output._rperm[0]).toEqual('*');
-    expect(output._wperm[0]).toEqual('Kevin');
+
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, { fields: {} });
+    expect(typeof output._acl).toEqual('object');
+    expect(output._acl['Kevin'].w).toBeTruthy();
+    expect(output._acl['Kevin'].r).toBeUndefined();
+    expect(output._rperm).toEqual(input._rperm);
+    expect(output._wperm).toEqual(input._wperm);
+    done();
+  });
+
+  it('removes Relation types', (done) => {
+    const input = {
+      aRelation: { __type: 'Relation', className: 'Stuff' },
+    };
+    const output = transform.parseObjectToMongoObjectForCreate(null, input, {
+      fields: {
+        aRelation: { __type: 'Relation', className: 'Stuff' },
+      },
+    });
+    expect(output).toEqual({});
+    done();
+  });
+
+  it('writes the old ACL format in addition to rperm and wperm on update', (done) => {
+    const input = {
+      _rperm: ['*'],
+      _wperm: ['Kevin']
+    };
+
+    const output = transform.transformUpdate(null, input, { fields: {} });
+    const set = output.$set;
+    expect(typeof set).toEqual('object');
+    expect(typeof set._acl).toEqual('object');
+    expect(set._acl['Kevin'].w).toBeTruthy();
+    expect(set._acl['Kevin'].r).toBeUndefined();
+    expect(set._rperm).toEqual(input._rperm);
+    expect(set._wperm).toEqual(input._wperm);
     done();
   });
 
   it('untransforms from _rperm and _wperm to ACL', (done) => {
-    var input = {
+    const input = {
       _rperm: ["*"],
       _wperm: ["Kevin"]
     };
-    var output = transform.untransformObject(dummySchema, null, input);
-    expect(typeof output.ACL).toEqual('object');
-    expect(output._rperm).toBeUndefined();
-    expect(output._wperm).toBeUndefined();
-    expect(output.ACL['*']['read']).toEqual(true);
-    expect(output.ACL['Kevin']['write']).toEqual(true);
+    const output = transform.mongoObjectToParseObject(null, input, { fields: {} });
+    expect(output._rperm).toEqual(['*']);
+    expect(output._wperm).toEqual(['Kevin']);
+    expect(output.ACL).toBeUndefined()
     done();
   });
 
-  it('untransforms mongodb number types', (done) => {
-    var input = {
+  it('untransforms mongodb number types', (done) => {
+    const input = {
       long: mongodb.Long.fromNumber(Number.MAX_SAFE_INTEGER),
       double: new mongodb.Double(Number.MAX_VALUE)
     }
-    var output = transform.untransformObject(dummySchema, null, input);
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields: {
+        long: { type: 'Number' },
+        double: { type: 'Number' },
+      },
+    });
     expect(output.long).toBe(Number.MAX_SAFE_INTEGER);
     expect(output.double).toBe(Number.MAX_VALUE);
     done();
   });
 
+  it('Date object where iso attribute is of type Date', (done) => {
+    const input = {
+      ts : { __type: 'Date', iso: new Date('2017-01-18T00:00:00.000Z') }
+    }
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields : {
+        ts : { type : 'Date' }
+      }
+    });
+    expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
+    done();
+  });
+
+  it('Date object where iso attribute is of type String', (done) => {
+    const input = {
+      ts : { __type: 'Date', iso: '2017-01-18T00:00:00.000Z' }
+    }
+    const output = transform.mongoObjectToParseObject(null, input, {
+      fields : {
+        ts : { type : 'Date' }
+      }
+    });
+    expect(output.ts.iso).toEqual('2017-01-18T00:00:00.000Z');
+    done();
+  });
 });
+
+describe('transformUpdate', () => {
+  it('removes Relation types', (done) => {
+    const input = {
+      aRelation: { __type: 'Relation', className: 'Stuff' },
+    };
+    const output = transform.transformUpdate(null, input, {
+      fields: {
+        aRelation: { __type: 'Relation', className: 'Stuff' },
+      },
+    });
+    expect(output).toEqual({});
+    done();
+  });
+});
+
+describe('transformConstraint', () => {
+  describe('$relativeTime', () => {
+    it('should error on $eq, $ne, and $exists', () => {
+      expect(() => {
+        transform.transformConstraint({
+          $eq: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $ne: {
+            ttl: {
+              $relativeTime: '12 days ago',
+            }
+          }
+        });
+      }).toThrow();
+
+      expect(() => {
+        transform.transformConstraint({
+          $exists: {
+            $relativeTime: '12 days ago',
+          }
+        });
+      }).toThrow();
+    });
+  })
+});
+
+describe('relativeTimeToDate', () => {
+  const now = new Date('2017-09-26T13:28:16.617Z');
+
+  describe('In the future', () => {
+    it('should parse valid natural time', () => {
+      const text = 'in 1 year 2 weeks 12 days 10 hours 24 minutes 30 seconds';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2018-10-22T23:52:46.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('future');
+    });
+  });
+
+  describe('In the past', () => {
+    it('should parse valid natural time', () => {
+      const text = '2 days 12 hours 1 minute 12 seconds ago';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-09-24T01:27:04.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('past');
+    });
+  });
+
+  describe('From now', () => {
+    it('should equal current time', () => {
+      const text = 'now';
+      const { result, status, info } = transform.relativeTimeToDate(text, now);
+      expect(result.toISOString()).toBe('2017-09-26T13:28:16.617Z');
+      expect(status).toBe('success');
+      expect(info).toBe('present');
+    });
+  });
+
+  describe('Error cases', () => {
+    it('should error if string is completely gibberish', () => {
+      expect(transform.relativeTimeToDate('gibberishasdnklasdnjklasndkl123j123')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
+    it('should error if string contains neither `ago` nor `in`', () => {
+      expect(transform.relativeTimeToDate('12 hours 1 minute')).toEqual({
+        status: 'error',
+        info: "Time should either start with 'in' or end with 'ago'",
+      });
+    });
+
+    it('should error if there are missing units or numbers', () => {
+      expect(transform.relativeTimeToDate('in 12 hours 1')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+
+      expect(transform.relativeTimeToDate('12 hours minute ago')).toEqual({
+        status: 'error',
+        info: 'Invalid time string. Dangling unit or number.',
+      });
+    });
+
+    it('should error on floating point numbers', () => {
+      expect(transform.relativeTimeToDate('in 12.3 hours')).toEqual({
+        status: 'error',
+        info: "'12.3' is not an integer.",
+      });
+    });
+
+    it('should error if numbers are invalid', () => {
+      expect(transform.relativeTimeToDate('12 hours 123a minute ago')).toEqual({
+        status: 'error',
+        info: "'123a' is not an integer.",
+      });
+    });
+
+    it('should error on invalid interval units', () => {
+      expect(transform.relativeTimeToDate('4 score 7 years ago')).toEqual({
+        status: 'error',
+        info: "Invalid interval: 'score'",
+      });
+    });
+
+    it("should error when string contains 'ago' and 'in'", () => {
+      expect(transform.relativeTimeToDate('in 1 day 2 minutes ago')).toEqual({
+        status: 'error',
+        info: "Time cannot have both 'in' and 'ago'",
+      });
+    });
+  });
+});
+

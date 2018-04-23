@@ -1,5 +1,6 @@
 import { ParsePubSub } from './ParsePubSub';
-import PLog from './PLog';
+import Parse  from 'parse/node';
+import logger from '../logger';
 
 class ParseCloudCodePublisher {
   parsePublisher: Object;
@@ -11,18 +12,18 @@ class ParseCloudCodePublisher {
   }
 
   onCloudCodeAfterSave(request: any): void {
-    this._onCloudCodeMessage('afterSave', request);
+    this._onCloudCodeMessage(Parse.applicationId + 'afterSave', request);
   }
 
   onCloudCodeAfterDelete(request: any): void {
-    this._onCloudCodeMessage('afterDelete', request);
+    this._onCloudCodeMessage(Parse.applicationId + 'afterDelete', request);
   }
 
   // Request is the request object from cloud code functions. request.object is a ParseObject.
   _onCloudCodeMessage(type: string, request: any): void {
-    PLog.verbose('Raw request from cloud code current : %j | original : %j', request.object, request.original);
+    logger.verbose('Raw request from cloud code current : %j | original : %j', request.object, request.original);
     // We need the full JSON which includes className
-    let message = {
+    const message = {
       currentParseObject: request.object._toFullJSON()
     }
     if (request.original) {

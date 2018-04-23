@@ -1,11 +1,10 @@
 import { ParseCloudCodePublisher } from '../LiveQuery/ParseCloudCodePublisher';
-
+import { LiveQueryOptions } from '../Options';
 export class LiveQueryController {
   classNames: any;
   liveQueryPublisher: any;
 
-  constructor(config: any) {
-    let classNames;
+  constructor(config: ?LiveQueryOptions) {
     // If config is empty, we just assume no classs needs to be registered as LiveQuery
     if (!config || !config.classNames) {
       this.classNames = new Set();
@@ -21,7 +20,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    let req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject);
     this.liveQueryPublisher.onCloudCodeAfterSave(req);
   }
 
@@ -29,7 +28,7 @@ export class LiveQueryController {
     if (!this.hasLiveQuery(className)) {
       return;
     }
-    let req = this._makePublisherRequest(currentObject, originalObject);
+    const req = this._makePublisherRequest(currentObject, originalObject);
     this.liveQueryPublisher.onCloudCodeAfterDelete(req);
   }
 
@@ -38,7 +37,7 @@ export class LiveQueryController {
   }
 
   _makePublisherRequest(currentObject: any, originalObject: any): any {
-    let req = {
+    const req = {
       object: currentObject
     };
     if (currentObject) {
