@@ -407,6 +407,7 @@ export default class SchemaController {
         const perms = {};
         const indexes = {};
         allSchemas.forEach(schema => {
+          Object.freeze(schema.fields);
           data[schema.className] = schema.fields;
           perms[schema.className] = schema.classLevelPermissions;
           indexes[schema.className] = schema.indexes;
