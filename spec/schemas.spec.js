@@ -1869,19 +1869,7 @@ describe('schemas', () => {
           }
         }
       }, (error, response, body) => {
-      expect(body).toEqual({
-        className: 'NewClass',
-        fields: {
-          ACL: {type: 'ACL'},
-          createdAt: {type: 'Date'},
-          updatedAt: {type: 'Date'},
-          objectId: {type: 'String'}
-        },
-        classLevelPermissions: defaultClassLevelPermissions,
-        indexes: {
-          name1: { createdAt: 1},
-        },
-      });
+        expect(body.indexes.name1).toEqual({ createdAt: 1});
         done();
       });
     })
