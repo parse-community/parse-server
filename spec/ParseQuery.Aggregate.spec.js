@@ -474,6 +474,60 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
+  it('match date query - createdAt', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const pipeline = [
+        { match: { 'createdAt': today } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      done();
+    });
+  });
+
+  it('match date query - updatedAt', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const now = new Date();
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const pipeline = [
+        { match: { 'updatedAt': today } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      done();
+    });
+  });
+
+  it('match date query - empty', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const now = new Date();
+      const future = new Date(now.getFullYear(), now.getMonth()+1, now.getDate());
+      const pipeline = [
+        { match: { 'createdAt': future } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(0);
+      done();
+    });
+  });
+
   it('project query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
