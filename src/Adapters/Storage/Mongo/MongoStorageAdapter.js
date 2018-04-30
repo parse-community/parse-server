@@ -570,10 +570,26 @@ export class MongoStorageAdapter implements StorageAdapter {
             const transformMatch = { [`_p_${field}`] : `${schema.fields[field].targetClass}$${stage.$match[field]}` };
             stage.$match = transformMatch;
           }
+          else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+            const transformMatch = { [`${field}`]: new Date(stage.$match[field]) };
+            stage.$match = transformMatch;
+          }
           if (field === 'objectId') {
             const transformMatch = Object.assign({}, stage.$match);
             transformMatch._id = stage.$match[field];
             delete transformMatch.objectId;
+            stage.$match = transformMatch;
+          }
+          else if (field === 'createdAt') {
+            const transformMatch = Object.assign({}, stage.$match);
+            transformMatch._created_at = stage.$match[field];
+            delete transformMatch.createdAt;
+            stage.$match = transformMatch;
+          }
+          else if (field === 'updatedAt') {
+            const transformMatch = Object.assign({}, stage.$match);
+            transformMatch._updated_at = stage.$match[field];
+            delete transformMatch.updatedAt;
             stage.$match = transformMatch;
           }
         }
