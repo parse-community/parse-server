@@ -13,6 +13,10 @@ const masterKeyOptions = {
   json: true
 }
 
+const PointerObject = Parse.Object.extend({
+  className: "PointerObject"
+});
+
 const loadTestData = () => {
   const data1 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 900, size: ['S', 'M']};
   const data2 = {score: 10, name: 'foo', sender: {group: 'A'}, views: 800, size: ['M', 'L']};
@@ -448,8 +452,8 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('match pointer query', (done) => {
-    const pointer1 = new TestObject();
-    const pointer2 = new TestObject();
+    const pointer1 = new PointerObject();
+    const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });
@@ -618,8 +622,8 @@ describe('Parse.Query Aggregate testing', () => {
   });
 
   it('distinct pointer', (done) => {
-    const pointer1 = new TestObject();
-    const pointer2 = new TestObject();
+    const pointer1 = new PointerObject();
+    const pointer2 = new PointerObject();
     const obj1 = new TestObject({ pointer: pointer1 });
     const obj2 = new TestObject({ pointer: pointer2 });
     const obj3 = new TestObject({ pointer: pointer1 });

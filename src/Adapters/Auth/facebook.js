@@ -37,7 +37,7 @@ function validateAppId(appIds, authData) {
 // A promisey wrapper for FB graph requests.
 function graphRequest(path) {
   return new Promise(function(resolve, reject) {
-    https.get('https://graph.facebook.com/v2.5/' + path, function(res) {
+    https.get('https://graph.facebook.com/' + path, function(res) {
       var data = '';
       res.on('data', function(chunk) {
         data += chunk;
