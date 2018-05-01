@@ -565,34 +565,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
       }
       if (stage.$match) {
-        for (const field in stage.$match) {
-          if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-            const transformMatch = { [`_p_${field}`] : `${schema.fields[field].targetClass}$${stage.$match[field]}` };
-            stage.$match = transformMatch;
-          }
-          else if (schema.fields[field] && schema.fields[field].type === 'Date') {
-            const transformMatch = { [`${field}`]: new Date(stage.$match[field]) };
-            stage.$match = transformMatch;
-          }
-          if (field === 'objectId') {
-            const transformMatch = Object.assign({}, stage.$match);
-            transformMatch._id = stage.$match[field];
-            delete transformMatch.objectId;
-            stage.$match = transformMatch;
-          }
-          else if (field === 'createdAt') {
-            const transformMatch = Object.assign({}, stage.$match);
-            transformMatch._created_at = stage.$match[field];
-            delete transformMatch.createdAt;
-            stage.$match = transformMatch;
-          }
-          else if (field === 'updatedAt') {
-            const transformMatch = Object.assign({}, stage.$match);
-            transformMatch._updated_at = stage.$match[field];
-            delete transformMatch.updatedAt;
-            stage.$match = transformMatch;
-          }
-        }
+        this._parseAggregateArgs(schema, stage.$match);
       }
       return stage;
     });
@@ -622,6 +595,55 @@ export class MongoStorageAdapter implements StorageAdapter {
       })
       .then(objects => objects.map(object => mongoObjectToParseObject(className, object, schema)))
       .catch(err => this.handleError(err));
+  }
+
+  _parseAggregateArgs(schema: any, pipeline: any): any {
+    var rtnval = {};
+    if (Array.isArray(pipeline)) {
+      rtnval = [];
+      for (const field in pipeline) {
+        rtnval.push(this._parseAggregateArgs(schema, pipeline[field]));
+      }
+    }
+    else if (typeof pipeline === 'object') {
+      for (const field in pipeline) {
+        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+          rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+        }
+        else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+          rtnval[field] = this._convertToDate(pipeline[field]);
+        }
+        else {
+          rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
+        }
+
+        if (field === 'objectId') {
+          rtnval['_id'] = rtnval[field];
+          delete rtnval[field];
+        }
+        else if (field === 'createdAt') {
+          rtnval['_created_at'] = rtnval[field];
+          delete rtnval[field];
+        }
+        else if (field === 'updatedAt') {
+          rtnval['_updated_at'] = rtnval[field];
+          delete rtnval[field];
+        }
+      }
+    }
+    return rtnval;
+  }
+
+  _convertToDate(value: any): any {
+    if (typeof value === 'string') {
+      return new Date(value);
+    }
+
+    var rtnval = {}
+    for (const field in value) {
+      rtnval[field] = this._convertToDate(value[field])
+    }
+    return rtnval;
   }
 
   _parseReadPreference(readPreference: ?string): ?string {

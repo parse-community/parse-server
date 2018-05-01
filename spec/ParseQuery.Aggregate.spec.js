@@ -482,7 +482,7 @@ describe('Parse.Query Aggregate testing', () => {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const pipeline = [
-        { match: { 'createdAt': today } }
+        { match: { 'createdAt': { $gte: today } } }
       ];
       const query = new Parse.Query(TestObject);
       return query.aggregate(pipeline);
@@ -500,7 +500,7 @@ describe('Parse.Query Aggregate testing', () => {
       const now = new Date();
       const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const pipeline = [
-        { match: { 'updatedAt': today } }
+        { match: { 'updatedAt': { $gte: today } } }
       ];
       const query = new Parse.Query(TestObject);
       return query.aggregate(pipeline);
@@ -516,7 +516,7 @@ describe('Parse.Query Aggregate testing', () => {
 
     Parse.Object.saveAll([obj1, obj2]).then(() => {
       const now = new Date();
-      const future = new Date(now.getFullYear(), now.getMonth()+1, now.getDate());
+      const future = new Date(now.getFullYear(), now.getMonth() + 1, now.getDate());
       const pipeline = [
         { match: { 'createdAt': future } }
       ];
