@@ -103,9 +103,6 @@ export class UsersRouter extends ClassesRouter {
           user = results[0];
         }
 
-        if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
-          throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
-        }
         return passwordCrypto.compare(password, user.password);
       })
       .then((correct) => {
@@ -117,7 +114,9 @@ export class UsersRouter extends ClassesRouter {
         if (!isValidPassword) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
-
+        if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
+          throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+        }
         // handle password expiry policy
         if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
           let changedAt = user._password_changed_at;

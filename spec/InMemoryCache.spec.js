@@ -28,7 +28,7 @@ describe('InMemoryCache', function() {
     let value = cache.get(KEY);
     expect(value).toEqual(VALUE);
 
-    wait(BASE_TTL.ttl * 2).then(() => {
+    wait(BASE_TTL.ttl * 10).then(() => {
       value = cache.get(KEY)
       expect(value).toEqual(null);
       done();
