@@ -2023,7 +2023,7 @@ describe('schemas', () => {
     })
   });
 
-  it('can create index on default field', done => {
+  it_only_db('mongo')('can create index on default field', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',
       headers: masterKeyHeaders,
@@ -2036,12 +2036,49 @@ describe('schemas', () => {
         json: true,
         body: {
           indexes: {
-            name1: { createdAt: 1},
+            name1: { createdAt: 1 },
+            name2: { updatedAt: 1 },
           }
         }
       }, (error, response, body) => {
-        expect(body.indexes.name1).toEqual({ createdAt: 1});
-        done();
+        expect(body.indexes.name1).toEqual({ createdAt: 1 });
+        expect(body.indexes.name2).toEqual({ updatedAt: 1 });
+        config.database.adapter.getIndexes('NewClass').then((indexes) => {
+          expect(indexes._id_).toEqual({ _id: 1 });
+          expect(indexes.name1).toEqual({ _created_at: 1 });
+          expect(indexes.name2).toEqual({ _updated_at: 1 });
+          done();
+        });
+      });
+    })
+  });
+
+  it_only_db('postgres')('can create index on default field', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { createdAt: 1 },
+            name2: { updatedAt: 1 },
+          }
+        }
+      }, (error, response, body) => {
+        expect(body.indexes.name1).toEqual({ createdAt: 1 });
+        expect(body.indexes.name2).toEqual({ updatedAt: 1 });
+        config.database.adapter.getIndexes('NewClass').then((indexes) => {
+          expect(indexes._id_).toEqual({ _id: 1 });
+          expect(indexes.name1).toEqual({ createdAt: 1 });
+          expect(indexes.name2).toEqual({ updatedAt: 1 });
+          done();
+        });
       });
     })
   });
@@ -2196,6 +2233,136 @@ describe('schemas', () => {
           });
           config.database.adapter.getIndexes('NewClass').then((indexes) => {
             expect(indexes).toEqual(body.indexes);
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_only_db('mongo')('lets you add pointer index', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+          },
+          indexes: {
+            aPointer_1: { aPointer: 1 },
+          },
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+            aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            aPointer_1: { aPointer: 1},
+          }
+        })).toEqual(undefined);
+        request.get({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+              aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              aPointer_1: { aPointer: 1 },
+            }
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes._id_).toEqual({ _id: 1 });
+            expect(indexes.aPointer_1).toEqual({ _p_aPointer: 1 });
+            done();
+          });
+        });
+      });
+    })
+  });
+
+  it_only_db('postgres')('lets you add pointer index', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          fields: {
+            aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+          },
+          indexes: {
+            aPointer_1: { aPointer: 1 },
+          },
+        }
+      }, (error, response, body) => {
+        expect(dd(body, {
+          className: 'NewClass',
+          fields: {
+            ACL: {type: 'ACL'},
+            createdAt: {type: 'Date'},
+            updatedAt: {type: 'Date'},
+            objectId: {type: 'String'},
+            aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+          },
+          classLevelPermissions: defaultClassLevelPermissions,
+          indexes: {
+            _id_: { _id: 1 },
+            aPointer_1: { aPointer: 1},
+          }
+        })).toEqual(undefined);
+        request.get({
+          url: 'http://localhost:8378/1/schemas/NewClass',
+          headers: masterKeyHeaders,
+          json: true,
+        }, (error, response, body) => {
+          expect(body).toEqual({
+            className: 'NewClass',
+            fields: {
+              ACL: {type: 'ACL'},
+              createdAt: {type: 'Date'},
+              updatedAt: {type: 'Date'},
+              objectId: {type: 'String'},
+              aPointer: { type: 'Pointer', targetClass: 'NewClass' }
+            },
+            classLevelPermissions: defaultClassLevelPermissions,
+            indexes: {
+              _id_: { _id: 1 },
+              aPointer_1: { aPointer: 1 },
+            }
+          });
+          config.database.adapter.getIndexes('NewClass').then((indexes) => {
+            expect(indexes._id_).toEqual({ _id: 1 });
+            expect(indexes.aPointer_1).toEqual({ aPointer: 1 });
             done();
           });
         });

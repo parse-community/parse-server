@@ -220,7 +220,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (name === '_id_') {
         return;
       }
-      const field = submittedIndexes[name];
+      const field = Object.assign({}, submittedIndexes[name]);
       if (existingIndexes[name] && field.__op !== 'Delete') {
         throw new Parse.Error(Parse.Error.INVALID_QUERY, `Index ${name} exists, cannot update.`);
       }
@@ -251,8 +251,11 @@ export class MongoStorageAdapter implements StorageAdapter {
               throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid index: ${value} for field ${key}`);
             }
           }
+          const transformedKey = transformKey(className, key, { fields });
+          delete field[key];
+          field[transformedKey] = value;
         });
-        existingIndexes[name] = field;
+        existingIndexes[name] = submittedIndexes[name];
         insertedIndexes.push({
           key: field,
           name,
