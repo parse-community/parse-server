@@ -565,7 +565,7 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
       }
       if (stage.$match) {
-        this._parseAggregateArgs(schema, stage.$match);
+        stage.$match = this._parseAggregateArgs(schema, stage.$match);
       }
       return stage;
     });
