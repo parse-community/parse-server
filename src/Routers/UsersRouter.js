@@ -267,6 +267,90 @@ export class UsersRouter extends ClassesRouter {
     });
   }
 
+  handleVerifyPassword(req) {
+    // Use query parameters instead if provided in url
+    let payload = req.body;
+    if (!payload.username && req.query.username || !payload.email && req.query.email) {
+      payload = req.query;
+    }
+    const {
+      username,
+      email,
+      password,
+    } = payload;
+
+    // TODO: use the right error codes / descriptions.
+    if (!username && !email) {
+      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
+    }
+    if (!password) {
+      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
+    }
+    if (typeof password !== 'string'
+        || email && typeof email !== 'string'
+        || username && typeof username !== 'string') {
+      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+    }
+
+    let user;
+    let isValidPassword = false;
+    let query;
+    if (email && username) {
+      query = { email, username };
+    } else if (email) {
+      query = { email };
+    } else {
+      query = { $or: [{ username } , { email: username }] };
+    }
+    return req.config.database.find('_User', query)
+      .then((results) => {
+        if (!results.length) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+        }
+
+        if (results.length > 1) { // corner case where user1 has username == user2 email
+          req.config.loggerController.warn('There is a user which email is the same as another user\'s username, logging in based on username');
+          user = results.filter((user) =>  user.username === username)[0];
+        } else {
+          user = results[0];
+        }
+
+        return passwordCrypto.compare(password, user.password);
+      })
+      .then((correct) => {
+        isValidPassword = correct;
+        const accountLockoutPolicy = new AccountLockout(user, req.config);
+        return accountLockoutPolicy.handleLoginAttempt(isValidPassword);
+      })
+      .then(() => {
+        if (!isValidPassword) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+        }
+        if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
+          throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
+        }
+
+        delete user.password;
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
+        // Sometimes the authData still has null on that keys
+        // https://github.com/parse-community/parse-server/issues/935
+        if (user.authData) {
+          Object.keys(user.authData).forEach((provider) => {
+            if (user.authData[provider] === null) {
+              delete user.authData[provider];
+            }
+          });
+          if (Object.keys(user.authData).length == 0) {
+            delete user.authData;
+          }
+        }
+
+        return { response: user };
+      });
+  }
 
   mountRoutes() {
     this.route('GET', '/users', req => { return this.handleFind(req); });
@@ -280,6 +364,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });
+    this.route('POST', '/verifyPassword', req => { return this.handleVerifyPassword(req); });
   }
 }
 
