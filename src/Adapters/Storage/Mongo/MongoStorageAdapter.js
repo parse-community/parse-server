@@ -162,7 +162,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.connectionPromise;
   }
 
-  handleError<T>(error: ?Error): Promise<T> {
+  handleError<T>(error: ?(Error | Parse.Error)): Promise<T> {
     if (error && error.code === 13) { // Unauthorized error
       delete this.client;
       delete this.database;
@@ -575,7 +575,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (stage.$match) {
         for (const field in stage.$match) {
           if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-            const transformMatch = { [`_p_${field}`] : `${className}$${stage.$match[field]}` };
+            const transformMatch = { [`_p_${field}`] : `${schema.fields[field].targetClass}$${stage.$match[field]}` };
             stage.$match = transformMatch;
           }
           if (field === 'objectId') {

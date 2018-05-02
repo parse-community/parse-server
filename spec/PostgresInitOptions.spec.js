@@ -6,22 +6,14 @@ const express = require('express');
 //public schema
 const databaseOptions1 = {
   initOptions: {
-    connect: function (client, dc, isFresh) {
-      if (isFresh) {
-        client.query('SET search_path = public');
-      }
-    }
+    schema: 'public'
   }
 };
 
 //not exists schema
 const databaseOptions2 = {
   initOptions: {
-    connect: function (client, dc, isFresh) {
-      if (isFresh) {
-        client.query('SET search_path = not_exists_schema');
-      }
-    }
+    schema: 'not_exists_schema'
   }
 };
 

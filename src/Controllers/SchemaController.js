@@ -530,6 +530,8 @@ export default class SchemaController {
         delete existingFields._rperm;
         delete existingFields._wperm;
         const newSchema = buildMergedSchemaObject(existingFields, submittedFields);
+        const defaultFields = defaultColumns[className] || defaultColumns._Default;
+        const fullNewSchema = Object.assign({}, newSchema, defaultFields);
         const validationError = this.validateSchemaData(className, newSchema, classLevelPermissions, Object.keys(existingFields));
         if (validationError) {
           throw new Parse.Error(validationError.code, validationError.error);
@@ -561,7 +563,7 @@ export default class SchemaController {
             return Promise.all(promises);
           })
           .then(() => this.setPermissions(className, classLevelPermissions, newSchema))
-          .then(() => this._dbAdapter.setIndexesWithSchemaFormat(className, indexes, schema.indexes, newSchema))
+          .then(() => this._dbAdapter.setIndexesWithSchemaFormat(className, indexes, schema.indexes, fullNewSchema))
           .then(() => this.reloadData({ clearCache: true }))
         //TODO: Move this logic into the database adapter
           .then(() => {

@@ -233,7 +233,13 @@ const joinTablesForSchema = (schema) => {
   return list;
 }
 
-const buildWhereClause = ({ schema, query, index }) => {
+interface WhereClause {
+  pattern: string;
+  values: Array<any>;
+  sorts: Array<any>;
+}
+
+const buildWhereClause = ({ schema, query, index }): WhereClause => {
   const patterns = [];
   let values = [];
   const sorts = [];
@@ -287,7 +293,14 @@ const buildWhereClause = ({ schema, query, index }) => {
       index += 2;
     } else if (typeof fieldValue === 'boolean') {
       patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue);
+      // Can't cast boolean to double precision
+      if (schema.fields[fieldName] && schema.fields[fieldName].type === 'Number') {
+        // Should always return zero results
+        const MAX_INT_PLUS_ONE = 9223372036854775808;
+        values.push(fieldName, MAX_INT_PLUS_ONE);
+      } else {
+        values.push(fieldName, fieldValue);
+      }
       index += 2;
     } else if (typeof fieldValue === 'number') {
       patterns.push(`$${index}:name = $${index + 1}`);
@@ -329,11 +342,16 @@ const buildWhereClause = ({ schema, query, index }) => {
       values.push(fieldName, fieldValue.$ne);
       index += 2;
     }
-
-    if (fieldValue.$eq) {
-      patterns.push(`$${index}:name = $${index + 1}`);
-      values.push(fieldName, fieldValue.$eq);
-      index += 2;
+    if (fieldValue.$eq !== undefined) {
+      if (fieldValue.$eq === null) {
+        patterns.push(`$${index}:name IS NULL`);
+        values.push(fieldName);
+        index += 1;
+      } else {
+        patterns.push(`$${index}:name = $${index + 1}`);
+        values.push(fieldName, fieldValue.$eq);
+        index += 2;
+      }
     }
     const isInOrNin = Array.isArray(fieldValue.$in) || Array.isArray(fieldValue.$nin);
     if (Array.isArray(fieldValue.$in) &&
@@ -393,6 +411,10 @@ const buildWhereClause = ({ schema, query, index }) => {
       if (fieldValue.$nin) {
         createConstraint(_.flatMap(fieldValue.$nin, elt => elt), true);
       }
+    } else if(typeof fieldValue.$in !== 'undefined') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $in value');
+    } else if (typeof fieldValue.$nin !== 'undefined') {
+      throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $nin value');
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
@@ -578,7 +600,7 @@ const buildWhereClause = ({ schema, query, index }) => {
     }
 
     Object.keys(ParseToPosgresComparator).forEach(cmp => {
-      if (fieldValue[cmp]) {
+      if (fieldValue[cmp] || fieldValue[cmp] === 0) {
         const pgComparator = ParseToPosgresComparator[cmp];
         patterns.push(`$${index}:name ${pgComparator} $${index + 1}`);
         values.push(fieldName, toPostgresValue(fieldValue[cmp]));
@@ -595,6 +617,9 @@ const buildWhereClause = ({ schema, query, index }) => {
 }
 
 export class PostgresStorageAdapter implements StorageAdapter {
+
+  canSortOnJoinTables: boolean;
+
   // Private
   _collectionPrefix: string;
   _client: any;
@@ -609,6 +634,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     const { client, pgp } = createClient(uri, databaseOptions);
     this._client = client;
     this._pgp = pgp;
+    this.canSortOnJoinTables = false;
   }
 
   handleShutdown() {
@@ -881,7 +907,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
     return this._client.task('delete-all-classes', function * (t) {
       try {
         const results = yield t.any('SELECT * FROM "_SCHEMA"');
-        const joins = results.reduce((list, schema) => {
+        const joins = results.reduce((list: Array<string>, schema: any) => {
           return list.concat(joinTablesForSchema(schema.schema));
         }, []);
         const classes = ['_SCHEMA', '_PushStatus', '_JobStatus', '_JobSchedule', '_Hooks', '_GlobalConfig', '_Audience', ...results.map(result => result.className), ...joins];
@@ -914,7 +940,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   // Returns a Promise.
   deleteFields(className: string, schema: SchemaType, fieldNames: string[]): Promise<void> {
     debug('deleteFields', className, fieldNames);
-    fieldNames = fieldNames.reduce((list, fieldName) => {
+    fieldNames = fieldNames.reduce((list: Array<string>, fieldName: string) => {
       const field = schema.fields[fieldName]
       if (field.type !== 'Relation') {
         list.push(fieldName);
@@ -1168,14 +1194,14 @@ export class PostgresStorageAdapter implements StorageAdapter {
       } else if (fieldName == 'authData') {
         // This recursively sets the json_object
         // Only 1 level deep
-        const generate = (jsonb, key, value) => {
+        const generate = (jsonb: string, key: string, value: any) => {
           return `json_object_set_key(COALESCE(${jsonb}, '{}'::jsonb), ${key}, ${value})::jsonb`;
         }
         const lastKey = `$${index}:name`;
         const fieldNameIndex = index;
         index += 1;
         values.push(fieldName);
-        const update = Object.keys(fieldValue).reduce((lastKey, key) => {
+        const update = Object.keys(fieldValue).reduce((lastKey: string, key: string) => {
           const str = generate(lastKey, `$${index}::text`, `$${index + 1}::jsonb`)
           index += 2;
           let value = fieldValue[key];
@@ -1278,13 +1304,13 @@ export class PostgresStorageAdapter implements StorageAdapter {
           });
         }
 
-        const keysToDelete = Object.keys(originalUpdate).filter(k => {
+        const keysToDelete: Array<string> = Object.keys(originalUpdate).filter(k => {
           // choose top level fields that have a delete operation set.
           const value = originalUpdate[k];
           return value && value.__op === 'Delete' && k.split('.').length === 2 && k.split(".")[0] === fieldName;
         }).map(k => k.split('.')[1]);
 
-        const deletePatterns = keysToDelete.reduce((p, c, i) => {
+        const deletePatterns = keysToDelete.reduce((p: string, c: string, i: number) => {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
@@ -1576,7 +1602,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any) {
     debug('aggregate', className, pipeline);
     const values = [className];
-    let index = 2;
+    let index: number = 2;
     let columns: string[] = [];
     let countField = null;
     let groupValues = null;

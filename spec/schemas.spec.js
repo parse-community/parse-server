@@ -2023,6 +2023,29 @@ describe('schemas', () => {
     })
   });
 
+  it('can create index on default field', done => {
+    request.post({
+      url: 'http://localhost:8378/1/schemas/NewClass',
+      headers: masterKeyHeaders,
+      json: true,
+      body: {},
+    }, () => {
+      request.put({
+        url: 'http://localhost:8378/1/schemas/NewClass',
+        headers: masterKeyHeaders,
+        json: true,
+        body: {
+          indexes: {
+            name1: { createdAt: 1},
+          }
+        }
+      }, (error, response, body) => {
+        expect(body.indexes.name1).toEqual({ createdAt: 1});
+        done();
+      });
+    })
+  });
+
   it('cannot create compound index if field does not exist', done => {
     request.post({
       url: 'http://localhost:8378/1/schemas/NewClass',

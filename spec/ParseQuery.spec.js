@@ -5,6 +5,18 @@
 'use strict';
 
 const Parse = require('parse/node');
+const rp = require('request-promise');
+
+const masterKeyHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Rest-API-Key': 'test',
+  'X-Parse-Master-Key': 'test'
+}
+
+const masterKeyOptions = {
+  headers: masterKeyHeaders,
+  json: true
+}
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -570,6 +582,38 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it("lessThan zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.lessThan('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 3);
+      done();
+    });
+  });
+
+  it("lessThanOrEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.lessThanOrEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 4);
+      done();
+    });
+  });
+
   it("greaterThan queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
@@ -604,6 +648,38 @@ describe('Parse.Query testing', () => {
           }
         });
       });
+  });
+
+  it("greaterThan zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.greaterThan('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("greaterThanOrEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.greaterThanOrEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    });
   });
 
   it("lessThanOrEqualTo greaterThanOrEqualTo queries", function(done) {
@@ -662,6 +738,101 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it("notEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.notEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 4);
+      done();
+    });
+  });
+
+  it("equalTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.equalTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("number equalTo boolean queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.equalTo('number', false);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 0);
+      done();
+    });
+  });
+
+  it("equalTo false queries", (done) => {
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: true });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.equalTo('field', false);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("where $eq false queries (rest)", (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { field: { $eq: false } },
+      }
+    });
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: true });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      rp.get(Parse.serverURL + '/classes/TestObject', options)
+        .then((resp) => {
+          equal(resp.results.length, 1);
+          done();
+        });
+    })
+  });
+
+  it("where $eq null queries (rest)", (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { field: { $eq: null } },
+      }
+    });
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: null });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      rp.get(Parse.serverURL + '/classes/TestObject', options)
+        .then((resp) => {
+          equal(resp.results.length, 1);
+          done();
+        });
+    })
+  });
+
   it("containedIn queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
@@ -678,6 +849,40 @@ describe('Parse.Query testing', () => {
           }
         });
       });
+  });
+
+  it("containedIn false queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.containedIn('number', false);
+      return query.find();
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $in value');
+      done();
+    });
+  });
+
+  it("notContainedIn false queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.notContainedIn('number', false);
+      return query.find();
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $nin value');
+      done();
+    });
   });
 
   it("notContainedIn queries", function(done) {
