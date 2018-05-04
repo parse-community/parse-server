@@ -224,6 +224,28 @@ describe("Verify User Password", () => {
       done();
     });
   });
+  it('fails to verify password when username cannot be found REST API', (done) => {
+    verifyPassword('mytestuser', 'mypass')
+      .then((res) => {
+        expect(res.statusCode).toBe(404);
+        expect(JSON.stringify(res.error)).toMatch('{"code":101,"error":"Invalid username/password."}');
+        done();
+      }).catch((err) => {
+        fail(err);
+        done();
+      });
+  });
+  it('fails to verify password when email cannot be found REST API', (done) => {
+    verifyPassword('my@user.com', 'mypass', true)
+      .then((res) => {
+        expect(res.statusCode).toBe(404);
+        expect(JSON.stringify(res.error)).toMatch('{"code":101,"error":"Invalid username/password."}');
+        done();
+      }).catch((err) => {
+        fail(err);
+        done();
+      });
+  });
   it('fails to verify password when preventLoginWithUnverifiedEmail is set to true REST API', (done) => {
     reconfigureServer({
       publicServerURL: "http://localhost:8378/",
@@ -346,6 +368,83 @@ describe("Verify User Password", () => {
       email: 'my@user.com'
     }).then(() => {
       return verifyPassword('my@user.com', 'mypass', true);
+    }).then((res) => {
+      expect(typeof res).toBe('object');
+      expect(typeof res['objectId']).toEqual('string');
+      expect(res.hasOwnProperty('sessionToken')).toEqual(false);
+      expect(res.hasOwnProperty('password')).toEqual(false);
+      done();
+    });
+  });
+  it('succeed to verify password when username and password provided in query string REST API', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'testuser',
+      password: 'mypass',
+      email: 'my@user.com'
+    }).then(() => {
+      return rp.get({
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        qs: {
+          username: 'testuser',
+          password: 'mypass',
+        }
+      });
+    }).then((res) => {
+      expect(typeof res).toBe('string');
+      const body = JSON.parse(res);
+      expect(typeof body['objectId']).toEqual('string');
+      expect(body.hasOwnProperty('sessionToken')).toEqual(false);
+      expect(body.hasOwnProperty('password')).toEqual(false);
+      done();
+    });
+  });
+  it('succeed to verify password when email and password provided in query string REST API', (done) => {
+    const user = new Parse.User();
+    user.save({
+      username: 'testuser',
+      password: 'mypass',
+      email: 'my@user.com'
+    }).then(() => {
+      return rp.get({
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        qs: {
+          email: 'my@user.com',
+          password: 'mypass',
+        }
+      });
+    }).then((res) => {
+      expect(typeof res).toBe('string');
+      const body = JSON.parse(res);
+      expect(typeof body['objectId']).toEqual('string');
+      expect(body.hasOwnProperty('sessionToken')).toEqual(false);
+      expect(body.hasOwnProperty('password')).toEqual(false);
+      done();
+    });
+  });
+  it('succeed to verify password with username when user1 has username === user2 email REST API', (done) => {
+    const user1 = new Parse.User();
+    user1.save({
+      username: 'email@user.com',
+      password: 'mypass1',
+      email: '1@user.com'
+    }).then(() => {
+      const user2 = new Parse.User();
+      return user2.save({
+        username: 'user2',
+        password: 'mypass2',
+        email: 'email@user.com'
+      });
+    }).then(() => {
+      return verifyPassword('email@user.com', 'mypass1');
     }).then((res) => {
       expect(typeof res).toBe('object');
       expect(typeof res['objectId']).toEqual('string');

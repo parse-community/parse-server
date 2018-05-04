@@ -335,19 +335,6 @@ export class UsersRouter extends ClassesRouter {
         // Remove hidden properties.
         UsersRouter.removeHiddenProperties(user);
 
-        // Sometimes the authData still has null on that keys
-        // https://github.com/parse-community/parse-server/issues/935
-        if (user.authData) {
-          Object.keys(user.authData).forEach((provider) => {
-            if (user.authData[provider] === null) {
-              delete user.authData[provider];
-            }
-          });
-          if (Object.keys(user.authData).length == 0) {
-            delete user.authData;
-          }
-        }
-
         return { response: user };
       });
   }
