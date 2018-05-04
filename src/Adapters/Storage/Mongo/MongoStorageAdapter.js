@@ -597,49 +597,66 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
+  // This function will recursively traverse the pipeline and convert any Pointer or Date columns.
+  // If we detect a pointer column we will rename the column being queried for to match the column
+  // in the database. We also modify the value to what we expect the value to be in the database
+  // as well.
+  // For dates, the driver expects a Date object, but we have a string coming in. So we'll convert
+  // the string to a Date so the driver can perform the necessary comparison.
+  //
+  // The goal of this method is to look for the "leaves" of the pipeline and determine if it needs
+  // to be converted. The pipeline can have a few different forms. For more details, see:
+  //     https://docs.mongodb.com/manual/reference/operator/aggregation/
+  //
+  // If the pipeline is an array, it means we are probably parsing an '$and' or '$or' operator. In
+  // that case we need to loop through all of it's children to find the columns being operated on.
+  // If the pipeline is an object, then we'll loop through the keys checking to see if the key name
+  // matches one of the schema columns. If it does match a column and the column is a Pointer or
+  // a Date, then we'll convert the value as described above.
+  //
+  // As much as I hate recursion...this seemed like a good fit for it. We're essentially traversing
+  // down a tree to find a "leaf node" and checking to see if it needs to be converted.
   _parseAggregateArgs(schema: any, pipeline: any): any {
-    var rtnval = {};
     if (Array.isArray(pipeline)) {
-      rtnval = [];
-      for (const field in pipeline) {
-        rtnval.push(this._parseAggregateArgs(schema, pipeline[field]));
-      }
+      return pipeline.map((value) => this._parseAggregateArgs(schema, value));
     }
     else if (typeof pipeline === 'object') {
+      const rtnval = {};
       for (const field in pipeline) {
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
           rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
-        }
-        else if (schema.fields[field] && schema.fields[field].type === 'Date') {
+        } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
           rtnval[field] = this._convertToDate(pipeline[field]);
-        }
-        else {
+        } else {
           rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
 
         if (field === 'objectId') {
           rtnval['_id'] = rtnval[field];
           delete rtnval[field];
-        }
-        else if (field === 'createdAt') {
+        } else if (field === 'createdAt') {
           rtnval['_created_at'] = rtnval[field];
           delete rtnval[field];
-        }
-        else if (field === 'updatedAt') {
+        } else if (field === 'updatedAt') {
           rtnval['_updated_at'] = rtnval[field];
           delete rtnval[field];
         }
       }
+      return rtnval;
     }
-    return rtnval;
+    return pipeline;
   }
 
+  // This function will attempt to convert the provided value to a Date object. Since this is part
+  // of an aggregation pipeline, the value can either be a string or it can be another object with
+  // an operator in it (like $gt, $lt, etc). Because of this I felt it was easier to make this a
+  // recursive method to traverse down to the "leaf node" which is going to be the string.
   _convertToDate(value: any): any {
     if (typeof value === 'string') {
       return new Date(value);
     }
 
-    var rtnval = {}
+    const rtnval = {}
     for (const field in value) {
       rtnval[field] = this._convertToDate(value[field])
     }

@@ -487,7 +487,8 @@ describe('Parse.Query Aggregate testing', () => {
       const query = new Parse.Query(TestObject);
       return query.aggregate(pipeline);
     }).then((results) => {
-      expect(results.length).toEqual(2);
+      // Four objects were created initially, we added two more.
+      expect(results.length).toEqual(6);
       done();
     });
   });
@@ -505,7 +506,8 @@ describe('Parse.Query Aggregate testing', () => {
       const query = new Parse.Query(TestObject);
       return query.aggregate(pipeline);
     }).then((results) => {
-      expect(results.length).toEqual(2);
+      // Four objects were added initially, we added two more.
+      expect(results.length).toEqual(6);
       done();
     });
   });
