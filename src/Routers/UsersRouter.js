@@ -364,6 +364,7 @@ export class UsersRouter extends ClassesRouter {
     this.route('POST', '/logout', req => { return this.handleLogOut(req); });
     this.route('POST', '/requestPasswordReset', req => { return this.handleResetRequest(req); });
     this.route('POST', '/verificationEmailRequest', req => { return this.handleVerificationEmailRequest(req); });
+    this.route('GET', '/verifyPassword', req => { return this.handleVerifyPassword(req); });
     this.route('POST', '/verifyPassword', req => { return this.handleVerifyPassword(req); });
   }
 }
