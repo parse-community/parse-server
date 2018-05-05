@@ -1,5 +1,6 @@
 import PromiseRouter from '../PromiseRouter';
 import * as middleware from '../middlewares';
+import Parse from 'parse/node';
 
 export class PurgeRouter extends PromiseRouter {
 
@@ -16,6 +17,11 @@ export class PurgeRouter extends PromiseRouter {
           cacheAdapter.role.clear();
         }
         return {response: {}};
+      }).catch((error) => {
+        if (!error || (error && error.code === Parse.Error.OBJECT_NOT_FOUND)) {
+          return {response: {}};
+        }
+        throw error;
       });
   }
 
