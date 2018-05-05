@@ -123,8 +123,12 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
+const isRegex = value => {
+  return value && (value instanceof RegExp)
+}
+
 const isStartsWithRegex = value => {
-  if (!value || !(value instanceof RegExp)) {
+  if (!isRegex(value)) {
     return false;
   }
 
@@ -151,9 +155,9 @@ const isAllValuesRegexOrNone = values => {
   return true;
 }
 
-const isAnyValueRegexStartsWith = values => {
+const isAnyValueRegex = values => {
   return values.some(function (value) {
-    return isStartsWithRegex(value);
+    return isRegex(value);
   });
 }
 
@@ -777,9 +781,10 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = arr.map(transformInteriorAtom);
 
-      if (isAnyValueRegexStartsWith(answer[key]) && !isAllValuesRegexOrNone(answer[key])) {
+      const values = answer[key];
+      if (isAnyValueRegex(values) && !isAllValuesRegexOrNone(values)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
-          + answer[key]);
+          + values);
       }
 
       break;
