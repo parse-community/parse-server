@@ -682,36 +682,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('containsAllStartingWith single empty value must throw an exception', (done) => {
-
-    var object = new Parse.Object('Object');
-    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-
-    object.save().then(() => {
-      equal(object.isNew(), false);
-
-      return require('request-promise').get({
-        url: Parse.serverURL + "/classes/Object",
-        json: {
-          where: {
-            strings: {
-              $all: [ {} ]
-            }
-          }
-        },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    })
-      .then(function () {
-      }, function () {
-        done();
-      });
-  });
-
-  it_only_db('postgres')('containsAllStartingWith single empty value must throw an exception', (done) => {
+  it('containsAllStartingWith single empty value returns empty results', (done) => {
 
     var object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
@@ -777,36 +748,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('containsAllStartingWith single invalid regex should throw an exception', (done) => {
-
-    var object = new Parse.Object('Object');
-    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-
-    object.save().then(() => {
-      equal(object.isNew(), false);
-
-      return require('request-promise').get({
-        url: Parse.serverURL + "/classes/Object",
-        json: {
-          where: {
-            strings: {
-              $all: [ {$unknown: '\^\\Qlazy\\E'} ]
-            }
-          }
-        },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    })
-      .then(function () {
-      }, function () {
-        done();
-      });
-  });
-
-  it_only_db('postgres')('containsAllStartingWith single invalid regex should throw an exception', (done) => {
+  it('containsAllStartingWith single invalid regex returns empty results', (done) => {
 
     var object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);

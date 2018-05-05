@@ -151,6 +151,12 @@ const isAllValuesRegexOrNone = values => {
   return true;
 }
 
+const isAnyValueRegexStartsWith = values => {
+  return values.some(function (value) {
+    return isStartsWithRegex(value);
+  });
+}
+
 const transformInteriorValue = restValue => {
   if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -771,7 +777,7 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = arr.map(transformInteriorAtom);
 
-      if (!isAllValuesRegexOrNone(answer[key])) {
+      if (isAnyValueRegexStartsWith(answer[key]) && !isAllValuesRegexOrNone(answer[key])) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
           + answer[key]);
       }
