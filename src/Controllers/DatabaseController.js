@@ -511,7 +511,7 @@ class DatabaseController {
   addRelation(key: string, fromClassName: string, fromId: string, toId: string) {
     const doc = {
       relatedId: toId,
-      owningId : fromId
+      owningId: fromId
     };
     return this.adapter.upsertOneObject(`_Join:${key}:${fromClassName}`, relationSchema, doc, doc);
   }
@@ -622,8 +622,12 @@ class DatabaseController {
     const fields = Object.keys(object);
     const schemaFields = Object.keys(classSchema);
     const newKeys = fields.filter((field) => {
+      // Skip fields that are unset
+      if (object[field] && object[field].__op && object[field].__op === 'Delete') {
+        return false;
+      }
       return schemaFields.indexOf(field) < 0;
-    })
+    });
     if (newKeys.length > 0) {
       return schema.validatePermission(className, aclGroup, 'addField');
     }
@@ -658,7 +662,7 @@ class DatabaseController {
 
   // Returns a promise for a list of owning ids given some related ids.
   // className here is the owning className.
-  owningIds(className: string, key: string, relatedIds: string): Promise<string[]> {
+  owningIds(className: string, key: string, relatedIds: string[]): Promise<string[]> {
     return this.adapter.find(joinTableName(className, key), relationSchema, { relatedId: { '$in': relatedIds } }, {})
       .then(results => results.map(result => result.owningId));
   }

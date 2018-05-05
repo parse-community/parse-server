@@ -1,9 +1,9 @@
-var middlewares = require('../src/middlewares');
-var AppCache = require('../src/cache').AppCache;
+const middlewares = require('../src/middlewares');
+const AppCache = require('../src/cache').AppCache;
 
 describe('middlewares', () => {
 
-  var fakeReq, fakeRes;
+  let fakeReq, fakeRes;
 
   beforeEach(() => {
     fakeReq = {
@@ -27,7 +27,7 @@ describe('middlewares', () => {
 
   it('should use _ContentType if provided', (done) => {
     expect(fakeReq.headers['content-type']).toEqual(undefined);
-    var contentType = 'image/jpeg';
+    const contentType = 'image/jpeg';
     fakeReq.body._ContentType = contentType;
     middlewares.handleParseHeaders(fakeReq, fakeRes, () => {
       expect(fakeReq.headers['content-type']).toEqual(contentType);

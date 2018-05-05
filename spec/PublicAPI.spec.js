@@ -1,5 +1,5 @@
 
-var request = require('request');
+const request = require('request');
 
 describe("public API", () => {
   it("should get invalid_link.html", (done) => {

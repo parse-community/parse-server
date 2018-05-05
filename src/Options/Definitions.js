@@ -372,7 +372,7 @@ module.exports.LiveQueryServerOptions = {
   },
   "port": {
     "env": "PARSE_LIVE_QUERY_SERVER_PORT",
-    "help": "The port to run the ParseServer. defaults to 1337.",
+    "help": "The port to run the LiveQuery server. Defaults to 1337.",
     "action": parsers.numberParser("port"),
     "default": 1337
   },

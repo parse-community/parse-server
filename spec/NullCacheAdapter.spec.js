@@ -1,11 +1,11 @@
-var NullCacheAdapter = require('../src/Adapters/Cache/NullCacheAdapter').default;
+const NullCacheAdapter = require('../src/Adapters/Cache/NullCacheAdapter').default;
 
 describe('NullCacheAdapter', function() {
-  var KEY = 'hello';
-  var VALUE = 'world';
+  const KEY = 'hello';
+  const VALUE = 'world';
 
   it('should expose promisifyed methods', (done) => {
-    var cache = new NullCacheAdapter({
+    const cache = new NullCacheAdapter({
       ttl: NaN
     });
 
@@ -21,7 +21,7 @@ describe('NullCacheAdapter', function() {
   });
 
   it('should get/set/clear', (done) => {
-    var cache = new NullCacheAdapter({
+    const cache = new NullCacheAdapter({
       ttl: NaN
     });
 
