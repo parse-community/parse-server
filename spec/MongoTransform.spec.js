@@ -355,20 +355,20 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('$regex in $all list', (done) => {
-    var input = {
+    const input = {
       arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$regex: '^\\Qtwo\\E'}, {$regex: '^\\Qthree\\E'}]},
     };
-    var outputValue = {
+    const outputValue = {
       arrayField: {'$all': [/^\Qone\E/, /^\Qtwo\E/, /^\Qthree\E/]},
     };
 
-    var output = transform.transformWhere(null, input);
+    const output = transform.transformWhere(null, input);
     jequal(outputValue.arrayField, output.arrayField);
     done();
   });
 
   it('$regex in $all list must be { $regex: "string" }', (done) => {
-    var input = {
+    const input = {
       arrayField: {'$all': [{$regex: 1}]},
     };
 
@@ -379,7 +379,7 @@ describe('parseObjectToMongoObjectForCreate', () => {
   });
 
   it('all values in $all must be $regex (start with string) or non $regex (start with string)', (done) => {
-    var input = {
+    const input = {
       arrayField: {'$all': [{$regex: '^\\Qone\\E'}, {$unknown: '^\\Qtwo\\E'}]},
     };
 

@@ -499,14 +499,14 @@ describe('Parse.Query testing', () => {
 
   it('containsAllStartingWith should match all strings that starts with string', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-    var object2 = new Parse.Object('Object');
+    const object2 = new Parse.Object('Object');
     object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
-    var object3 = new Parse.Object('Object');
+    const object3 = new Parse.Object('Object');
     object3.set('strings', ['over', 'the', 'lazy', 'dog']);
 
-    var objectList = [object, object2, object3];
+    const objectList = [object, object2, object3];
 
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
@@ -584,7 +584,7 @@ describe('Parse.Query testing', () => {
 
   it('containsAllStartingWith values must be all of type starting with regex', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
     object.save().then(() => {
@@ -618,7 +618,7 @@ describe('Parse.Query testing', () => {
 
   it_exclude_dbs(['postgres'])('containsAllStartingWith empty array values should return empty results', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
     object.save().then(() => {
@@ -648,14 +648,14 @@ describe('Parse.Query testing', () => {
 
   it_only_db('postgres')('containsAllStartingWith empty array values should return empty results', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-    var object2 = new Parse.Object('Object');
+    const object2 = new Parse.Object('Object');
     object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
-    var object3 = new Parse.Object('Object');
+    const object3 = new Parse.Object('Object');
     object3.set('strings', ['over', 'the', 'lazy', 'dog']);
 
-    var objectList = [object, object2, object3];
+    const objectList = [object, object2, object3];
 
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
@@ -684,7 +684,7 @@ describe('Parse.Query testing', () => {
 
   it('containsAllStartingWith single empty value returns empty results', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
     object.save().then(() => {
@@ -714,14 +714,14 @@ describe('Parse.Query testing', () => {
 
   it('containsAllStartingWith single regex value should return corresponding matching results', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-    var object2 = new Parse.Object('Object');
+    const object2 = new Parse.Object('Object');
     object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
-    var object3 = new Parse.Object('Object');
+    const object3 = new Parse.Object('Object');
     object3.set('strings', ['over', 'the', 'lazy', 'dog']);
 
-    var objectList = [object, object2, object3];
+    const objectList = [object, object2, object3];
 
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
@@ -750,7 +750,7 @@ describe('Parse.Query testing', () => {
 
   it('containsAllStartingWith single invalid regex returns empty results', (done) => {
 
-    var object = new Parse.Object('Object');
+    const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
 
     object.save().then(() => {
