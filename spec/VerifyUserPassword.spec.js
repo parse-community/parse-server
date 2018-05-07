@@ -5,7 +5,7 @@ const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 
 const verifyPassword = function (login, password, isEmail = false) {
   const body = (!isEmail) ? { username: login, password } : { email: login, password };
-  return rp.post({
+  return rp.get({
     url: Parse.serverURL + '/verifyPassword',
     headers: {
       'X-Parse-Application-Id': Parse.applicationId,
@@ -319,7 +319,7 @@ describe("Verify User Password", () => {
       password: 'mypass',
       email: 'my@user.com'
     }).then(() => {
-      return rp.post({
+      return rp.get({
         url: Parse.serverURL + '/verifyPassword',
         headers: {
           'X-Parse-Application-Id': Parse.applicationId,
