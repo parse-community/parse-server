@@ -282,7 +282,9 @@ RestWrite.prototype.findUsersWithAuthData = function(authData) {
 RestWrite.prototype.handleAuthData = function(authData) {
   let results;
   return this.findUsersWithAuthData(authData).then((r) => {
-    results = r;
+    results = r.filter((user) => {
+      return !this.auth.isMaster && user.ACL && Object.keys(user.ACL).length > 0;
+    });
     if (results.length > 1) {
       // More than 1 user with the passed id's
       throw new Parse.Error(Parse.Error.ACCOUNT_ALREADY_LINKED,

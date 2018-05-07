@@ -239,6 +239,45 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('should be let masterKey lock user out with authData', (done) => {
+    let objectId;
+    let sessionToken;
+
+    rp.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: { key: "value", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((body) => {
+      objectId = body.objectId;
+      sessionToken = body.sessionToken;
+      expect(sessionToken).toBeDefined();
+      expect(objectId).toBeDefined();
+      const user = new Parse.User();
+      user.id = objectId;
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      // update the user
+      const options = {
+        url: `http://localhost:8378/1/classes/_User/`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { key: "otherValue", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }
+      return rp.post(options);
+    }).then((res) => {
+      // Because the user is locked out, this should behave as creating a new user
+      expect(res.objectId).not.toEqual(objectId);
+    }).then(done)
+      .catch(done.fail);
+  });
+
   it("user login with files", (done) => {
     const file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
