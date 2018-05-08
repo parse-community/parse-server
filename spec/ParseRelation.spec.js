@@ -829,7 +829,6 @@ describe('Parse.Relation testing', () => {
       return otherParent.relation('children').query().find();
     }).then((children) => {
       children.forEach((child) => {
-
         expect(child.className).toBe('Child');
         expect(child.get('afterFound')).toBe(true);
       });
