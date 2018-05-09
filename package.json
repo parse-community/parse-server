@@ -52,7 +52,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "1.6.1",
     "bcrypt-nodejs": "0.0.3",
-    "cross-env": "5.1.4",
+    "cross-env": "5.1.5",
     "deep-diff": "1.0.0",
     "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.39.1",
