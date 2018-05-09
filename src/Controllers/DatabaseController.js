@@ -147,6 +147,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   delete object._failed_login_count;
   delete object._account_lockout_expires_at;
   delete object._password_changed_at;
+  delete object._password_history;
 
   if ((aclGroup.indexOf(object.objectId) > -1)) {
     return object;
