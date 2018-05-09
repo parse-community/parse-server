@@ -36,46 +36,46 @@ export class UsersRouter extends ClassesRouter {
    * @private
    */
   _handleValidatePassword(req) {
-    // Use query parameters instead if provided in url
-    let payload = req.body;
-    if (!payload.username && req.query.username || !payload.email && req.query.email) {
-      payload = req.query;
-    }
-    const {
-      username,
-      email,
-      password,
-    } = payload;
+    return new Promise((resolve, reject) => {
+      // Use query parameters instead if provided in url
+      let payload = req.body;
+      if (!payload.username && req.query.username || !payload.email && req.query.email) {
+        payload = req.query;
+      }
+      const {
+        username,
+        email,
+        password,
+      } = payload;
 
-    // TODO: use the right error codes / descriptions.
-    if (!username && !email) {
-      throw new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.');
-    }
-    if (!password) {
-      throw new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.');
-    }
-    if (typeof password !== 'string'
-      || email && typeof email !== 'string'
-      || username && typeof username !== 'string') {
-      throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
-    }
+      // TODO: use the right error codes / descriptions.
+      if (!username && !email) {
+        return reject(new Parse.Error(Parse.Error.USERNAME_MISSING, 'username/email is required.'));
+      }
+      if (!password) {
+        return reject(new Parse.Error(Parse.Error.PASSWORD_MISSING, 'password is required.'));
+      }
+      if (typeof password !== 'string'
+        || email && typeof email !== 'string'
+        || username && typeof username !== 'string') {
+        return reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.'));
+      }
 
-    let user;
-    let isValidPassword = false;
-    let query;
-    if (email && username) {
-      query = { email, username };
-    } else if (email) {
-      query = { email };
-    } else {
-      query = { $or: [{ username }, { email: username }] };
-    }
+      let user;
+      let isValidPassword = false;
+      let query;
+      if (email && username) {
+        query = { email, username };
+      } else if (email) {
+        query = { email };
+      } else {
+        query = { $or: [{ username }, { email: username }] };
+      }
 
-    try {
       return req.config.database.find('_User', query)
         .then((results) => {
           if (!results.length) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            return reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.'));
           }
 
           if (results.length > 1) { // corner case where user1 has username == user2 email
@@ -94,56 +94,19 @@ export class UsersRouter extends ClassesRouter {
         })
         .then(() => {
           if (!isValidPassword) {
-            throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+            return reject(new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.'));
           }
           if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
-            throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
-          }
-          // handle password expiry policy
-          if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
-            let changedAt = user._password_changed_at;
-
-            if (!changedAt) {
-              // password was created before expiry policy was enabled.
-              // simply update _User object so that it will start enforcing from now
-              changedAt = new Date();
-              req.config.database.update('_User', { username: user.username },
-                { _password_changed_at: Parse._encode(changedAt) });
-            } else {
-              // check whether the password has expired
-              if (changedAt.__type == 'Date') {
-                changedAt = new Date(changedAt.iso);
-              }
-              // Calculate the expiry time.
-              const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge);
-              if (expiresAt < new Date()) // fail of current time is past password expiry time
-                throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
-            }
+            return reject(new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.'));
           }
 
           delete user.password;
 
-          // Remove hidden properties.
-          UsersRouter.removeHiddenProperties(user);
-
-          // Sometimes the authData still has null on that keys
-          // https://github.com/parse-community/parse-server/issues/935
-          if (user.authData) {
-            Object.keys(user.authData).forEach((provider) => {
-              if (user.authData[provider] === null) {
-                delete user.authData[provider];
-              }
-            });
-            if (Object.keys(user.authData).length == 0) {
-              delete user.authData;
-            }
-          }
-
-          return user;
+          return resolve(user);
+        }).catch((error) => {
+          return reject(error);
         });
-    } catch (error) {
-      return error;
-    }
+    });
   }
 
   handleMe(req) {
@@ -173,45 +136,84 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleLogIn(req) {
-    try {
-      let user;
-      return this._handleValidatePassword(req)
-        .then((res) => {
+    let user;
+    return this._handleValidatePassword(req)
+      .then((res) => {
 
-          user = res;
+        user = res;
 
-          const {
-            sessionData,
-            createSession
-          } = Auth.createSession(req.config, {
-            userId: user.objectId, createdWith: {
-              'action': 'login',
-              'authProvider': 'password'
-            }, installationId: req.info.installationId
+        // handle password expiry policy
+        if (req.config.passwordPolicy && req.config.passwordPolicy.maxPasswordAge) {
+          let changedAt = user._password_changed_at;
+
+          if (!changedAt) {
+            // password was created before expiry policy was enabled.
+            // simply update _User object so that it will start enforcing from now
+            changedAt = new Date();
+            req.config.database.update('_User', { username: user.username },
+              { _password_changed_at: Parse._encode(changedAt) });
+          } else {
+            // check whether the password has expired
+            if (changedAt.__type == 'Date') {
+              changedAt = new Date(changedAt.iso);
+            }
+            // Calculate the expiry time.
+            const expiresAt = new Date(changedAt.getTime() + 86400000 * req.config.passwordPolicy.maxPasswordAge);
+            if (expiresAt < new Date()) // fail of current time is past password expiry time
+              throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Your password has expired. Please reset your password.');
+          }
+        }
+
+        // Sometimes the authData still has null on that keys
+        // https://github.com/parse-community/parse-server/issues/935
+        if (user.authData) {
+          Object.keys(user.authData).forEach((provider) => {
+            if (user.authData[provider] === null) {
+              delete user.authData[provider];
+            }
           });
+          if (Object.keys(user.authData).length == 0) {
+            delete user.authData;
+          }
+        }
 
-          user.sessionToken = sessionData.sessionToken;
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
 
-          req.config.filesController.expandFilesInObject(req.config, user);
-
-          return createSession();
-        }).then(() => {
-          return { response: user };
+        // Create the user session
+        const {
+          sessionData,
+          createSession
+        } = Auth.createSession(req.config, {
+          userId: user.objectId, createdWith: {
+            'action': 'login',
+            'authProvider': 'password'
+          }, installationId: req.info.installationId
         });
-    } catch (error) {
-      throw error;
-    }
+
+        user.sessionToken = sessionData.sessionToken;
+
+        req.config.filesController.expandFilesInObject(req.config, user);
+
+        return createSession();
+      }).then(() => {
+        return { response: user };
+      }).catch((error) => {
+        throw error
+      });
   }
 
   handleVerifyPassword(req) {
-    try {
-      return this._handleValidatePassword(req)
-        .then((user) => {
-          return { response: user };
-        });
-    } catch (error) {
-      throw error;
-    }
+    return this._handleValidatePassword(req)
+      .then((user) => {
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
+        return { response: user };
+      }).catch((error) => {
+        throw error;
+      });
   }
 
   handleLogOut(req) {
