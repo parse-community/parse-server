@@ -3558,4 +3558,36 @@ describe('Parse.Query testing', () => {
       expect(result.length).toBe(2);
     }).then(done).catch(done.fail);
   });
+
+  it('should repro issue #4762 with multiple results and $in operator', (done) => {
+    const objects = [1,2,3,4,5,6,7,8].map((idx) => {
+      const obj = new Parse.Object('Object');
+      obj.set('key', idx);
+      return obj;
+    });
+
+    Parse.Object.saveAll(objects).then(() => {
+      const parent = new Parse.Object('Parent');
+      parent.set('objects', objects.slice(0, 3));
+
+      const parent2 = new Parse.Object('Parent');
+      parent2.set('objects', [objects[1]]);
+
+      const parent3 = new Parse.Object('Parent');
+      parent3.set('objects', objects.slice(1, 4));
+
+      const parent4 = new Parse.Object('Parent');
+
+      return Parse.Object.saveAll([parent, parent2, parent3, parent4]);
+    }).then(() => {
+      const query = new Parse.Query('Parent');
+      query.containedIn('objects', objects);
+      return query.find();
+    }).then((result) => {
+      expect(result[0].id).not.toBeUndefined();
+      expect(result[1].id).not.toBeUndefined();
+      expect(result[2].id).not.toBeUndefined();
+      expect(result.length).toBe(3);
+    }).then(done).catch(done.fail);
+  })
 });
