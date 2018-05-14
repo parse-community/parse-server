@@ -1079,7 +1079,7 @@ Other fixes by [Mathias Rangel Wulff](https://github.com/mathiasrw)
 * Fix: Improve compatability of cloud code beforeSave hook for newly created object
 * Fix: ACL creation for master key only objects
 * Fix: Allow uploading files without Content-Type
-* Fix: Add features to http requrest to match Parse.com
+* Fix: Add features to http request to match Parse.com
 * Fix: Bugs in development script when running from locations other than project root
 * Fix: Can pass query constraints in URL
 * Fix: Objects with legacy "_tombstone" key now don't cause issues.
