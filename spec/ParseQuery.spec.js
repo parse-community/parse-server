@@ -3524,4 +3524,38 @@ describe('Parse.Query testing', () => {
       expect(result.length).toBe(1);
     }).then(done).catch(done.fail);
   });
+
+  it('should repro issue #4762 with multiple results', (done) => {
+    const objects = [1,2,3,4,5,6,7,8].map((idx) => {
+      const obj = new Parse.Object('Object');
+      obj.set('key', idx);
+      return obj;
+    });
+    let parent;
+    let parent3;
+    Parse.Object.saveAll(objects).then(() => {
+      parent = new Parse.Object('Parent');
+      parent.set('objects', objects.slice(0, 3));
+
+      const parent2 = new Parse.Object('Parent');
+      parent2.set('objects', [objects[1]]);
+
+      parent3 = new Parse.Object('Parent');
+      parent3.set('objects', objects.slice(1, 4));
+
+      return Parse.Object.saveAll([parent, parent2, parent3]);
+    }).then(() => {
+      const query = new Parse.Query('Parent');
+      query.containsAll('objects', objects.slice(1,3));
+      return query.find();
+    }).then((result) => {
+      const has0 = [parent.id, parent3.id].indexOf(result[0].id) >= 0;
+      const has1 = [parent.id, parent3.id].indexOf(result[1].id) >= 1;
+      expect(result[0].id).not.toBeUndefined();
+      expect(result[1].id).not.toBeUndefined();
+      expect(has1).toBeTruthy();
+      expect(has0).toBeTruthy();
+      expect(result.length).toBe(2);
+    }).then(done).catch(done.fail);
+  });
 });
