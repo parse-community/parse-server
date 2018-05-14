@@ -3496,4 +3496,32 @@ describe('Parse.Query testing', () => {
       })
   });
 
+  it('should repro issue #4762', (done) => {
+    const objects = [1,2,3,4,5].map((idx) => {
+      const obj = new Parse.Object('Object');
+      obj.set('key', idx);
+      return obj;
+    });
+    let parent;
+    Parse.Object.saveAll(objects).then(() => {
+      parent = new Parse.Object('Parent');
+      parent.set('objects', objects.slice(0, 3));
+
+      const parent2 = new Parse.Object('Parent');
+      parent2.set('objects', [objects[1]]);
+
+      const parent3 = new Parse.Object('Parent');
+      parent3.set('objects', []);
+
+      return Parse.Object.saveAll([parent, parent2, parent3]);
+    }).then(() => {
+      const query = new Parse.Query('Parent');
+      query.containsAll('objects', objects.slice(0,2));
+      return query.find();
+    }).then((result) => {
+      expect(result[0].id).not.toBeUndefined();
+      expect(result[0].id).toBe(parent.id);
+      expect(result.length).toBe(1);
+    }).then(done).catch(done.fail);
+  });
 });
