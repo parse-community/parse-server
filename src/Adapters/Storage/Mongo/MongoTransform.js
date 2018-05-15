@@ -749,22 +749,22 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = s;
       break;
-      case '$elemMatch': {
-        const match = constraint[key];
-        if (typeof match !== 'object') {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad match: $elemMatch, should be object`);
-        }
-        answer[key] = _.mapValues(match, value => {
-          return (atom => {
-            if (Array.isArray(atom)) {
-              return value.map(transformer);
-            } else {
-              return transformer(atom);
-            }
-          })(value);
-        });
-        break;
+    case '$elemMatch': {
+      const match = constraint[key];
+      if (typeof match !== 'object') {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad match: $elemMatch, should be object`);
       }
+      answer[key] = _.mapValues(match, value => {
+        return (atom => {
+          if (Array.isArray(atom)) {
+            return value.map(transformer);
+          } else {
+            return transformer(atom);
+          }
+        })(value);
+      });
+      break;
+    }
     case '$options':
       answer[key] = constraint[key];
       break;
