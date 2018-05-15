@@ -37,14 +37,49 @@ describe('DatabaseController', function() {
     });
 
     it('should reject invalid queries', (done) => {
-      expect(() => validateQuery({$or: {'a': 1}})).toThrow();
+      const objectQuery = {'a': 1};
+      expect(() => validateQuery({$or: objectQuery})).toThrow();
+      expect(() => validateQuery({$nor: objectQuery})).toThrow();
+      expect(() => validateQuery({$and: objectQuery})).toThrow();
+
+      const array = [1, 2, 3, 4];
+      expect(() => validateQuery({
+        $and: [
+          { 'a' : { $elemMatch :  array  }},
+        ]
+      })).toThrow();
+
+      expect(() => validateQuery({
+        $nor: [
+          { 'a' : { $elemMatch :  1  }},
+        ]
+      })).toThrow();
+
       done();
     });
 
     it('should accept valid queries', (done) => {
-      expect(() => validateQuery({$or: [{'a': 1}, {'b': 2}]})).not.toThrow();
+      const arrayQuery = [{'a': 1}, {'b': 2}];
+      expect(() => validateQuery({$or: arrayQuery})).not.toThrow();
+      expect(() => validateQuery({$nor: arrayQuery})).not.toThrow();
+      expect(() => validateQuery({$and: arrayQuery})).not.toThrow();
+
+      const array = [1, 2, 3, 4];
+      expect(() => validateQuery({
+        $nor: [
+          { 'a' : { $elemMatch : { $nin : array } }}
+        ]
+      })).not.toThrow();
+
+      expect(() => validateQuery({
+        $and: [
+          { 'a' : { $elemMatch : { $nin : array } }},
+          { 'b' : { $elemMatch : { $all : array } }}
+        ]
+      })).not.toThrow();
       done();
     });
+
 
   });
 

@@ -751,7 +751,7 @@ function transformConstraint(constraint, field) {
       break;
     case '$elemMatch': {
       const match = constraint[key];
-      if (typeof match !== 'object') {
+      if (typeof match !== 'object' || Array.isArray(match)) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, `bad match: $elemMatch, should be object`);
       }
       answer[key] = _.mapValues(match, value => {

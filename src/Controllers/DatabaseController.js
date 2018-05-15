@@ -50,7 +50,7 @@ const transformObjectACL = ({ ACL, ...result }) => {
   return result;
 }
 
-const specialQuerykeys = ['$and', '$or', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
+const specialQuerykeys = ['$and', '$or', '$nor', '_rperm', '_wperm', '_perishable_token', '_email_verify_token', '_email_verify_token_expires_at', '_account_lockout_expires_at', '_failed_login_count'];
 
 const isSpecialQueryKey = key => {
   return specialQuerykeys.indexOf(key) >= 0;
@@ -103,6 +103,14 @@ const validateQuery = (query: any): void => {
     }
   }
 
+  if (query.$nor) {
+    if (query.$nor instanceof Array) {
+      query.$nor.forEach(validateQuery);
+    } else {
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $nor format - use an array value.');
+    }
+  }
+
   if (query.$and) {
     if (query.$and instanceof Array) {
       query.$and.forEach(validateQuery);
@@ -112,13 +120,20 @@ const validateQuery = (query: any): void => {
   }
 
   Object.keys(query).forEach(key => {
-    if (query && query[key] && query[key].$regex) {
-      if (typeof query[key].$options === 'string') {
-        if (!query[key].$options.match(/^[imxs]+$/)) {
-          throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
+    if (query && query[key]) {
+      if (query[key].$regex) {
+        if (typeof query[key].$options === 'string') {
+          if (!query[key].$options.match(/^[imxs]+$/)) {
+            throw new Parse.Error(Parse.Error.INVALID_QUERY, `Bad $options value for query: ${query[key].$options}`);
+          }
+        }
+      } else if (query[key].$elemMatch) {
+        if (typeof query[key].$elemMatch !== 'object' || Array.isArray(query[key].$elemMatch)) {
+          throw new Parse.Error(Parse.Error.INVALID_QUERY, `bad match: $elemMatch, should be object`);
         }
       }
     }
+
     if (!isSpecialQueryKey(key) && !key.match(/^[a-zA-Z][a-zA-Z0-9_\.]*$/)) {
       throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid key name: ${key}`);
     }
