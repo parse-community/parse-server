@@ -208,10 +208,10 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_wperm':
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
-  case '$or':
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case '$or':
+  case '$nor':
+    return { key: key, value: value.map(subQuery => transformWhere(className, subQuery, schema)) };
   case 'lastUsed':
     if (valueAsDate(value)) {
       return {key: '_last_used', value: valueAsDate(value)}
@@ -749,7 +749,22 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = s;
       break;
-
+      case '$elemMatch': {
+        const match = constraint[key];
+        if (typeof match !== 'object') {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, `bad match: $elemMatch, should be object`);
+        }
+        answer[key] = _.mapValues(match, value => {
+          return (atom => {
+            if (Array.isArray(atom)) {
+              return value.map(transformer);
+            } else {
+              return transformer(atom);
+            }
+          })(value);
+        });
+        break;
+      }
     case '$options':
       answer[key] = constraint[key];
       break;
