@@ -123,6 +123,44 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
+const isRegex = value => {
+  return value && (value instanceof RegExp)
+}
+
+const isStartsWithRegex = value => {
+  if (!isRegex(value)) {
+    return false;
+  }
+
+  const matches = value.toString().match(/\/\^\\Q.*\\E\//);
+  return !!matches;
+}
+
+const isAllValuesRegexOrNone = values => {
+  if (!values || !Array.isArray(values) || values.length === 0) {
+    return true;
+  }
+
+  const firstValuesIsRegex = isStartsWithRegex(values[0]);
+  if (values.length === 1) {
+    return firstValuesIsRegex;
+  }
+
+  for (let i = 1, length = values.length; i < length; ++i) {
+    if (firstValuesIsRegex !== isStartsWithRegex(values[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const isAnyValueRegex = values => {
+  return values.some(function (value) {
+    return isRegex(value);
+  });
+}
+
 const transformInteriorValue = restValue => {
   if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -469,6 +507,8 @@ const transformInteriorAtom = (atom) => {
     return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
+  } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
+    return new RegExp(atom.$regex);
   } else {
     return atom;
   }
@@ -740,6 +780,13 @@ function transformConstraint(constraint, field) {
           'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
+
+      const values = answer[key];
+      if (isAnyValueRegex(values) && !isAllValuesRegexOrNone(values)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+          + values);
+      }
+
       break;
     }
     case '$regex':
