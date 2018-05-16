@@ -5,6 +5,18 @@
 'use strict';
 
 const Parse = require('parse/node');
+const rp = require('request-promise');
+
+const masterKeyHeaders = {
+  'X-Parse-Application-Id': 'test',
+  'X-Parse-Rest-API-Key': 'test',
+  'X-Parse-Master-Key': 'test'
+}
+
+const masterKeyOptions = {
+  headers: masterKeyHeaders,
+  json: true
+}
 
 describe('Parse.Query testing', () => {
   it("basic query", function(done) {
@@ -497,6 +509,251 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containsAllStartingWith should match all strings that starts with string', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    const object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    const object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    const objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$regex: '\^\\Qlazy\\E'}
+              ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      })
+        .then(function (results) {
+          equal(results.results.length, 1);
+          arrayContains(results.results, object);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qthe\\E'},
+                    {$regex: '\^\\Qlazy\\E'}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 2);
+          arrayContains(results.results, object);
+          arrayContains(results.results, object3);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qhe\\E'},
+                    {$regex: '\^\\Qlazy\\E'}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 0);
+
+          done();
+        });
+    });
+  });
+
+  it('containsAllStartingWith values must be all of type starting with regex', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qlazy\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$unknown: /unknown/}
+              ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function () {
+      }, function () {
+        done();
+      });
+  });
+
+  it('containsAllStartingWith empty array values should return empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: []
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single empty value returns empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single regex value should return corresponding matching results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    const object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    const object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    const objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {$regex: '\^\\Qlazy\\E'} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 2);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single invalid regex returns empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {$unknown: '\^\\Qlazy\\E'} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
   const BoxedNumber = Parse.Object.extend({
     className: "BoxedNumber"
   });
@@ -570,6 +827,38 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it("lessThan zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.lessThan('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 3);
+      done();
+    });
+  });
+
+  it("lessThanOrEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.lessThanOrEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 4);
+      done();
+    });
+  });
+
   it("greaterThan queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
@@ -604,6 +893,38 @@ describe('Parse.Query testing', () => {
           }
         });
       });
+  });
+
+  it("greaterThan zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.greaterThan('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("greaterThanOrEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.greaterThanOrEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 2);
+      done();
+    });
   });
 
   it("lessThanOrEqualTo greaterThanOrEqualTo queries", function(done) {
@@ -662,6 +983,101 @@ describe('Parse.Query testing', () => {
       });
   });
 
+  it("notEqualTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.notEqualTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 4);
+      done();
+    });
+  });
+
+  it("equalTo zero queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.equalTo('number', 0);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("number equalTo boolean queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.equalTo('number', false);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 0);
+      done();
+    });
+  });
+
+  it("equalTo false queries", (done) => {
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: true });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const query = new Parse.Query(TestObject);
+      query.equalTo('field', false);
+      return query.find();
+    }).then((results) => {
+      equal(results.length, 1);
+      done();
+    });
+  });
+
+  it("where $eq false queries (rest)", (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { field: { $eq: false } },
+      }
+    });
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: true });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      rp.get(Parse.serverURL + '/classes/TestObject', options)
+        .then((resp) => {
+          equal(resp.results.length, 1);
+          done();
+        });
+    })
+  });
+
+  it("where $eq null queries (rest)", (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { field: { $eq: null } },
+      }
+    });
+    const obj1 = new TestObject({ field: false });
+    const obj2 = new TestObject({ field: null });
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      rp.get(Parse.serverURL + '/classes/TestObject', options)
+        .then((resp) => {
+          equal(resp.results.length, 1);
+          done();
+        });
+    })
+  });
+
   it("containedIn queries", function(done) {
     const makeBoxedNumber = function(i) {
       return new BoxedNumber({ number: i });
@@ -678,6 +1094,40 @@ describe('Parse.Query testing', () => {
           }
         });
       });
+  });
+
+  it("containedIn false queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.containedIn('number', false);
+      return query.find();
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $in value');
+      done();
+    });
+  });
+
+  it("notContainedIn false queries", (done) => {
+    const makeBoxedNumber = (i) => {
+      return new BoxedNumber({ number: i });
+    };
+    const numbers = [-3, -2, -1, 0, 1];
+    const boxedNumbers = numbers.map(makeBoxedNumber);
+    Parse.Object.saveAll(boxedNumbers).then(() => {
+      const query = new Parse.Query(BoxedNumber);
+      query.notContainedIn('number', false);
+      return query.find();
+    }).then(done.fail).catch((error) => {
+      equal(error.code, Parse.Error.INVALID_JSON);
+      equal(error.message, 'bad $nin value');
+      done();
+    });
   });
 
   it("notContainedIn queries", function(done) {

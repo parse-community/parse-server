@@ -161,7 +161,7 @@ export class MongoStorageAdapter implements StorageAdapter {
     return this.connectionPromise;
   }
 
-  handleError<T>(error: ?Error): Promise<T> {
+  handleError<T>(error: ?(Error | Parse.Error)): Promise<T> {
     if (error && error.code === 13) { // Unauthorized error
       delete this.client;
       delete this.database;
