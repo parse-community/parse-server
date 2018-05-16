@@ -23,7 +23,7 @@
     "@parse/s3-files-adapter": "1.2.1",
     "@parse/simple-mailgun-adapter": "1.0.2",
     "bcryptjs": "2.4.3",
-    "body-parser": "1.18.2",
+    "body-parser": "1.18.3",
     "commander": "2.15.0",
     "deepcopy": "0.6.3",
     "express": "4.16.2",
