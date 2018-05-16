@@ -628,7 +628,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it_exclude_dbs(['postgres'])('containsAllStartingWith empty array values should return empty results', (done) => {
+  it('containsAllStartingWith empty array values should return empty results', (done) => {
 
     const object = new Parse.Object('Object');
     object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
@@ -653,42 +653,6 @@ describe('Parse.Query testing', () => {
     })
       .then(function (results) {
         equal(results.results.length, 0);
-        done();
-      }, function () {
-      });
-  });
-
-  it_only_db('postgres')('containsAllStartingWith empty array values should return empty results', (done) => {
-
-    const object = new Parse.Object('Object');
-    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
-    const object2 = new Parse.Object('Object');
-    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
-    const object3 = new Parse.Object('Object');
-    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
-
-    const objectList = [object, object2, object3];
-
-    Parse.Object.saveAll(objectList).then((results) => {
-      equal(objectList.length, results.length);
-
-      return require('request-promise').get({
-        url: Parse.serverURL + "/classes/Object",
-        json: {
-          where: {
-            strings: {
-              $all: []
-            }
-          }
-        },
-        headers: {
-          'X-Parse-Application-Id': Parse.applicationId,
-          'X-Parse-Javascript-Key': Parse.javaScriptKey
-        }
-      });
-    })
-      .then(function (results) {
-        equal(results.results.length, objectList.length);
         done();
       }, function () {
       });
