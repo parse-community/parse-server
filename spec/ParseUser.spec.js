@@ -213,6 +213,71 @@ describe('Parse.User testing', () => {
     })
   });
 
+  it('should let masterKey lockout user', (done) => {
+    const user = new Parse.User();
+    const ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('asdf');
+    user.setPassword('zxcv');
+    user.setACL(ACL);
+    user.signUp().then(() => {
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then((user) => {
+      equal(user.get("username"), "asdf");
+      // Lock the user down
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      expect(user.getACL().getPublicReadAccess()).toBe(false);
+      return Parse.User.logIn("asdf", "zxcv");
+    }).then(done.fail).catch((err) => {
+      expect(err.message).toBe('Invalid username/password.');
+      expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+      done();
+    });
+  });
+
+  it('should be let masterKey lock user out with authData', (done) => {
+    let objectId;
+    let sessionToken;
+
+    rp.post({
+      url: 'http://localhost:8378/1/classes/_User',
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-REST-API-Key': 'rest',
+      },
+      json: { key: "value", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+    }).then((body) => {
+      objectId = body.objectId;
+      sessionToken = body.sessionToken;
+      expect(sessionToken).toBeDefined();
+      expect(objectId).toBeDefined();
+      const user = new Parse.User();
+      user.id = objectId;
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      // update the user
+      const options = {
+        url: `http://localhost:8378/1/classes/_User/`,
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: { key: "otherValue", authData: {anonymous: {id: '00000000-0000-0000-0000-000000000001'}}}
+      }
+      return rp.post(options);
+    }).then((res) => {
+      // Because the user is locked out, this should behave as creating a new user
+      expect(res.objectId).not.toEqual(objectId);
+    }).then(done)
+      .catch(done.fail);
+  });
+
   it("user login with files", (done) => {
     const file = new Parse.File("yolo.txt", [1,2,3], "text/plain");
     file.save().then((file) => {
