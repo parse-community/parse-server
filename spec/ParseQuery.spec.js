@@ -509,6 +509,251 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containsAllStartingWith should match all strings that starts with string', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    const object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    const object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    const objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$regex: '\^\\Qlazy\\E'}
+              ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      })
+        .then(function (results) {
+          equal(results.results.length, 1);
+          arrayContains(results.results, object);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qthe\\E'},
+                    {$regex: '\^\\Qlazy\\E'}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 2);
+          arrayContains(results.results, object);
+          arrayContains(results.results, object3);
+
+          return require('request-promise').get({
+            url: Parse.serverURL + "/classes/Object",
+            json: {
+              where: {
+                strings: {
+                  $all: [
+                    {$regex: '\^\\Qhe\\E'},
+                    {$regex: '\^\\Qlazy\\E'}
+                  ]
+                }
+              }
+            },
+            headers: {
+              'X-Parse-Application-Id': Parse.applicationId,
+              'X-Parse-Javascript-Key': Parse.javaScriptKey
+            }
+          });
+        })
+        .then(function (results) {
+          equal(results.results.length, 0);
+
+          done();
+        });
+    });
+  });
+
+  it('containsAllStartingWith values must be all of type starting with regex', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [
+                {$regex: '\^\\Qthe\\E'},
+                {$regex: '\^\\Qlazy\\E'},
+                {$regex: '\^\\Qfox\\E'},
+                {$unknown: /unknown/}
+              ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function () {
+      }, function () {
+        done();
+      });
+  });
+
+  it('containsAllStartingWith empty array values should return empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: []
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single empty value returns empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single regex value should return corresponding matching results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+    const object2 = new Parse.Object('Object');
+    object2.set('strings', ['the', 'brown', 'fox', 'jumps']);
+    const object3 = new Parse.Object('Object');
+    object3.set('strings', ['over', 'the', 'lazy', 'dog']);
+
+    const objectList = [object, object2, object3];
+
+    Parse.Object.saveAll(objectList).then((results) => {
+      equal(objectList.length, results.length);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {$regex: '\^\\Qlazy\\E'} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 2);
+        done();
+      }, function () {
+      });
+  });
+
+  it('containsAllStartingWith single invalid regex returns empty results', (done) => {
+
+    const object = new Parse.Object('Object');
+    object.set('strings', ['the', 'brown', 'lazy', 'fox', 'jumps']);
+
+    object.save().then(() => {
+      equal(object.isNew(), false);
+
+      return require('request-promise').get({
+        url: Parse.serverURL + "/classes/Object",
+        json: {
+          where: {
+            strings: {
+              $all: [ {$unknown: '\^\\Qlazy\\E'} ]
+            }
+          }
+        },
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Javascript-Key': Parse.javaScriptKey
+        }
+      });
+    })
+      .then(function (results) {
+        equal(results.results.length, 0);
+        done();
+      }, function () {
+      });
+  });
+
   const BoxedNumber = Parse.Object.extend({
     className: "BoxedNumber"
   });

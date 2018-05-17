@@ -23,7 +23,7 @@
     "@parse/s3-files-adapter": "1.2.1",
     "@parse/simple-mailgun-adapter": "1.0.2",
     "bcryptjs": "2.4.3",
-    "body-parser": "1.18.2",
+    "body-parser": "1.18.3",
     "commander": "2.15.0",
     "deepcopy": "0.6.3",
     "express": "4.16.2",
@@ -52,7 +52,7 @@
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "1.6.1",
     "bcrypt-nodejs": "0.0.3",
-    "cross-env": "5.1.4",
+    "cross-env": "5.1.5",
     "deep-diff": "1.0.0",
     "eslint": "^4.9.0",
     "eslint-plugin-flowtype": "^2.39.1",
@@ -84,7 +84,7 @@
   },
   "optionalDependencies": {
     "bcrypt": "2.0.1",
-    "uws": "^9.14.0"
+    "uws": "^10.148.0"
   },
   "collective": {
     "type": "opencollective",
