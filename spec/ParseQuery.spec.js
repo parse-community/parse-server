@@ -2591,8 +2591,20 @@ describe('Parse.Query testing', () => {
       expect(results.results.length).toBe(highValue - lowValue);
       expect(results.results.every(res => res.rating > lowValue && res.rating <= highValue)).toBe(true);
       done();
-    }, (error) => {
-      jfail(error);
+    });
+  });
+
+  it('$nor invalid query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { $nor: [] },
+      }
+    });
+    const obj = new TestObject();
+    obj.save().then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then(done.fail).catch((error) => {
+      equal(error.error.code, Parse.Error.INVALID_JSON);
       done();
     });
   });
