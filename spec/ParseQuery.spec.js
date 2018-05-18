@@ -824,6 +824,23 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('containedBy empty array', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { numbers: { $containedBy: [] } },
+      }
+    });
+    const obj1 = new TestObject({ numbers: [0, 1, 2] });
+    const obj2 = new TestObject({ numbers: [2, 0] });
+    const obj3 = new TestObject({ numbers: [1, 2, 3, 4] });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then((results) => {
+      expect(results.results.length).toBe(0);
+      done();
+    });
+  });
+
   it('containedBy invalid query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {

@@ -799,6 +799,7 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = s;
       break;
+
     case '$containedBy': {
       const arr = constraint[key];
       if (!(arr instanceof Array)) {
