@@ -54,7 +54,8 @@ export class FunctionsRouter extends PromiseRouter {
     const request = {
       params: params,
       log: req.config.loggerController,
-      headers: req.headers,
+      headers: req.config.headers,
+      ip: req.config.ip,
       jobName
     };
     const status = {
@@ -88,6 +89,9 @@ export class FunctionsRouter extends PromiseRouter {
       },
       error: function(code, message) {
         if (!message) {
+          if (code instanceof Parse.Error) {
+            return reject(code)
+          }
           message = code;
           code = Parse.Error.SCRIPT_FAILED;
         }
@@ -111,7 +115,8 @@ export class FunctionsRouter extends PromiseRouter {
         user: req.auth && req.auth.user,
         installationId: req.info.installationId,
         log: req.config.loggerController,
-        headers: req.headers,
+        headers: req.config.headers,
+        ip: req.config.ip,
         functionName
       };
 

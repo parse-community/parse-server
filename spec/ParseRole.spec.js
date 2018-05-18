@@ -2,14 +2,14 @@
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
-var RestQuery = require("../src/RestQuery");
-var Auth = require("../src/Auth").Auth;
-var Config = require("../src/Config");
+const RestQuery = require("../src/RestQuery");
+const Auth = require("../src/Auth").Auth;
+const Config = require("../src/Config");
 
 describe('Parse Role testing', () => {
   it('Do a bunch of basic role testing', done => {
-    var user;
-    var role;
+    let user;
+    let role;
 
     createTestUser().then((x) => {
       user = x;
@@ -19,23 +19,23 @@ describe('Parse Role testing', () => {
       role = new Parse.Object('_Role');
       role.set('name', 'Foos');
       role.setACL(acl);
-      var users = role.relation('users');
+      const users = role.relation('users');
       users.add(user);
       return role.save({}, { useMasterKey: true });
     }).then(() => {
-      var query = new Parse.Query('_Role');
+      const query = new Parse.Query('_Role');
       return query.find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(1);
-      var relation = x[0].relation('users').query();
+      const relation = x[0].relation('users').query();
       return relation.first({ useMasterKey: true });
     }).then((x) => {
       expect(x.id).toEqual(user.id);
       // Here we've got a valid role and a user assigned.
       // Lets create an object only the role can read/write and test
       // the different scenarios.
-      var obj = new Parse.Object('TestObject');
-      var acl = new Parse.ACL();
+      const obj = new Parse.Object('TestObject');
+      const acl = new Parse.ACL();
       acl.setPublicReadAccess(false);
       acl.setPublicWriteAccess(false);
       acl.setRoleReadAccess('Foos', true);
@@ -43,11 +43,11 @@ describe('Parse Role testing', () => {
       obj.setACL(acl);
       return obj.save();
     }).then(() => {
-      var query = new Parse.Query('TestObject');
+      const query = new Parse.Query('TestObject');
       return query.find({ sessionToken: user.getSessionToken() });
     }).then((x) => {
       expect(x.length).toEqual(1);
-      var objAgain = x[0];
+      const objAgain = x[0];
       objAgain.set('foo', 'bar');
       // This should succeed:
       return objAgain.save({}, {sessionToken: user.getSessionToken()});
@@ -64,10 +64,10 @@ describe('Parse Role testing', () => {
 
   });
 
-  var createRole = function(name, sibling, user) {
-    var role = new Parse.Role(name, new Parse.ACL());
+  const createRole = function(name, sibling, user) {
+    const role = new Parse.Role(name, new Parse.ACL());
     if (user) {
-      var users = role.relation('users');
+      const users = role.relation('users');
       users.add(user);
     }
     if (sibling) {
@@ -77,13 +77,13 @@ describe('Parse Role testing', () => {
   };
 
   it("should not recursively load the same role multiple times", (done) => {
-    var rootRole = "RootRole";
-    var roleNames = ["FooRole", "BarRole", "BazRole"];
-    var allRoles = [rootRole].concat(roleNames);
+    const rootRole = "RootRole";
+    const roleNames = ["FooRole", "BarRole", "BazRole"];
+    const allRoles = [rootRole].concat(roleNames);
 
-    var roleObjs = {};
-    var createAllRoles = function(user) {
-      var promises = allRoles.map(function(roleName) {
+    const roleObjs = {};
+    const createAllRoles = function(user) {
+      const promises = allRoles.map(function(roleName) {
         return createRole(roleName, null, user)
           .then(function(roleObj) {
             roleObjs[roleName] = roleObj;
@@ -93,16 +93,16 @@ describe('Parse Role testing', () => {
       return Promise.all(promises);
     };
 
-    var restExecute = spyOn(RestQuery.prototype, "execute").and.callThrough();
+    const restExecute = spyOn(RestQuery.prototype, "execute").and.callThrough();
 
-    var user,
+    let user,
       auth,
       getAllRolesSpy;
     createTestUser().then((newUser) => {
       user = newUser;
       return createAllRoles(user);
     }).then ((roles) => {
-      var rootRoleObj = roleObjs[rootRole];
+      const rootRoleObj = roleObjs[rootRole];
       roles.forEach(function(role, i) {
         // Add all roles to the RootRole
         if (role.id !== rootRoleObj.id) {
@@ -116,7 +116,7 @@ describe('Parse Role testing', () => {
 
       return Parse.Object.saveAll(roles, { useMasterKey: true });
     }).then(() => {
-      auth = new Auth({config: new Config("test"), isMaster: true, user: user});
+      auth = new Auth({config: Config.get("test"), isMaster: true, user: user});
       getAllRolesSpy = spyOn(auth, "_getAllRolesNamesForRoleIds").and.callThrough();
 
       return auth._loadRoles();
@@ -143,8 +143,8 @@ describe('Parse Role testing', () => {
   });
 
   it("should recursively load roles", (done) => {
-    var rolesNames = ["FooRole", "BarRole", "BazRole"];
-    var roleIds = {};
+    const rolesNames = ["FooRole", "BarRole", "BazRole"];
+    const roleIds = {};
     createTestUser().then((user) => {
       // Put the user on the 1st role
       return createRole(rolesNames[0], null, user).then((aRole) => {
@@ -159,7 +159,7 @@ describe('Parse Role testing', () => {
         return createRole(rolesNames[2], anotherRole, null);
       }).then((lastRole) => {
         roleIds[lastRole.get("name")] = lastRole.id;
-        var auth = new Auth({ config: new Config("test"), isMaster: true, user: user });
+        const auth = new Auth({ config: Config.get("test"), isMaster: true, user: user });
         return auth._loadRoles();
       })
     }).then((roles) => {
@@ -175,7 +175,7 @@ describe('Parse Role testing', () => {
   });
 
   it("_Role object should not save without name.", (done) => {
-    var role = new Parse.Role();
+    const role = new Parse.Role();
     role.save(null,{useMasterKey:true})
       .then(() => {
         fail("_Role object should not save without name.");
@@ -222,7 +222,7 @@ describe('Parse Role testing', () => {
       superContentManager.getRoles().add(superModerator);
       return Parse.Object.saveAll([admin, moderator, contentManager, superModerator, superContentManager], {useMasterKey: true});
     }).then(() => {
-      var auth = new Auth({ config: new Config("test"), isMaster: true });
+      const auth = new Auth({ config: Config.get("test"), isMaster: true });
       // For each role, fetch their sibling, what they inherit
       // return with result and roleId for later comparison
       const promises = [admin, moderator, contentManager, superModerator].map((role) => {
@@ -264,12 +264,12 @@ describe('Parse Role testing', () => {
   });
 
   it('can create role and query empty users', (done)=> {
-    var roleACL = new Parse.ACL();
+    const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
-    var role = new Parse.Role('subscribers', roleACL);
+    const role = new Parse.Role('subscribers', roleACL);
     role.save({}, {useMasterKey : true})
       .then(()=>{
-        var query = role.relation('users').query();
+        const query = role.relation('users').query();
         query.find({useMasterKey : true})
           .then(()=>{
             done();
@@ -284,13 +284,13 @@ describe('Parse Role testing', () => {
 
   // Based on various scenarios described in issues #827 and #683,
   it('should properly handle role permissions on objects', (done) => {
-    var user, user2, user3;
-    var role, role2, role3;
-    var obj, obj2;
+    let user, user2, user3;
+    let role, role2, role3;
+    let obj, obj2;
 
-    var prACL = new Parse.ACL();
+    const prACL = new Parse.ACL();
     prACL.setPublicReadAccess(true);
-    var adminACL, superACL, customerACL;
+    let adminACL, superACL, customerACL;
 
     createTestUser().then((x) => {
       user = x;
@@ -328,7 +328,7 @@ describe('Parse Role testing', () => {
       customerACL.setRoleReadAccess("Customer", true);
       customerACL.setRoleWriteAccess("Customer", true);
 
-      var query = new Parse.Query('_Role');
+      const query = new Parse.Query('_Role');
       return query.find({ useMasterKey: true });
     }).then((x) => {
       expect(x.length).toEqual(3);
@@ -366,11 +366,11 @@ describe('Parse Role testing', () => {
   });
 
   it('should add multiple users to a role and remove users', (done) => {
-    var user, user2, user3;
-    var role;
-    var obj;
+    let user, user2, user3;
+    let role;
+    let obj;
 
-    var prACL = new Parse.ACL();
+    const prACL = new Parse.ACL();
     prACL.setPublicReadAccess(true);
     prACL.setPublicWriteAccess(true);
 
@@ -383,19 +383,19 @@ describe('Parse Role testing', () => {
       return user3.save({ username: 'user3', password: 'omgbbq' });
     }).then(() => {
       role = new Parse.Role('sharedRole', prACL);
-      var users = role.relation('users');
+      const users = role.relation('users');
       users.add(user);
       users.add(user2);
       users.add(user3);
       return role.save({}, { useMasterKey: true });
     }).then(() => {
       // query for saved role and get 3 users
-      var query = new Parse.Query('_Role');
+      const query = new Parse.Query('_Role');
       query.equalTo('name', 'sharedRole');
       return query.find({ useMasterKey: true });
     }).then((role) => {
       expect(role.length).toEqual(1);
-      var users = role[0].relation('users').query();
+      const users = role[0].relation('users').query();
       return users.find({ useMasterKey: true });
     }).then((users) => {
       expect(users.length).toEqual(3);
@@ -409,17 +409,17 @@ describe('Parse Role testing', () => {
       return obj.save(null, { sessionToken: user.getSessionToken() });
     }).then(() => {
       // query for saved role and get 3 users
-      var query = new Parse.Query('_Role');
+      const query = new Parse.Query('_Role');
       query.equalTo('name', 'sharedRole');
       return query.find({ useMasterKey: true });
     }).then((role) => {
       expect(role.length).toEqual(1);
-      var users = role[0].relation('users');
+      const users = role[0].relation('users');
       users.remove(user);
       users.remove(user3);
       return role[0].save({}, { useMasterKey: true });
     }).then((role) =>{
-      var users = role.relation('users').query();
+      const users = role.relation('users').query();
       return users.find({ useMasterKey: true });
     }).then((users) => {
       expect(users.length).toEqual(1);
@@ -449,20 +449,20 @@ describe('Parse Role testing', () => {
   });
 
   it('should match when matching in users relation', (done) => {
-    var user = new Parse.User();
+    const user = new Parse.User();
     user
       .save({ username: 'admin', password: 'admin' })
       .then((user) => {
-        var aCL = new Parse.ACL();
+        const aCL = new Parse.ACL();
         aCL.setPublicReadAccess(true);
         aCL.setPublicWriteAccess(true);
-        var role = new Parse.Role('admin', aCL);
-        var users = role.relation('users');
+        const role = new Parse.Role('admin', aCL);
+        const users = role.relation('users');
         users.add(user);
         role
           .save({}, { useMasterKey: true })
           .then(() => {
-            var query = new Parse.Query(Parse.Role);
+            const query = new Parse.Query(Parse.Role);
             query.equalTo('name', 'admin');
             query.equalTo('users', user);
             query.find().then(function (roles) {
@@ -474,24 +474,24 @@ describe('Parse Role testing', () => {
   });
 
   it('should not match any entry when not matching in users relation', (done) => {
-    var user = new Parse.User();
+    const user = new Parse.User();
     user
       .save({ username: 'admin', password: 'admin' })
       .then((user) => {
-        var aCL = new Parse.ACL();
+        const aCL = new Parse.ACL();
         aCL.setPublicReadAccess(true);
         aCL.setPublicWriteAccess(true);
-        var role = new Parse.Role('admin', aCL);
-        var users = role.relation('users');
+        const role = new Parse.Role('admin', aCL);
+        const users = role.relation('users');
         users.add(user);
         role
           .save({}, { useMasterKey: true })
           .then(() => {
-            var otherUser = new Parse.User();
+            const otherUser = new Parse.User();
             otherUser
               .save({ username: 'otherUser', password: 'otherUser' })
               .then((otherUser) => {
-                var query = new Parse.Query(Parse.Role);
+                const query = new Parse.Query(Parse.Role);
                 query.equalTo('name', 'admin');
                 query.equalTo('users', otherUser);
                 query.find().then(function(roles) {
@@ -504,20 +504,20 @@ describe('Parse Role testing', () => {
   });
 
   it('should not match any entry when searching for null in users relation', (done) => {
-    var user = new Parse.User();
+    const user = new Parse.User();
     user
       .save({ username: 'admin', password: 'admin' })
       .then((user) => {
-        var aCL = new Parse.ACL();
+        const aCL = new Parse.ACL();
         aCL.setPublicReadAccess(true);
         aCL.setPublicWriteAccess(true);
-        var role = new Parse.Role('admin', aCL);
-        var users = role.relation('users');
+        const role = new Parse.Role('admin', aCL);
+        const users = role.relation('users');
         users.add(user);
         role
           .save({}, { useMasterKey: true })
           .then(() => {
-            var query = new Parse.Query(Parse.Role);
+            const query = new Parse.Query(Parse.Role);
             query.equalTo('name', 'admin');
             query.equalTo('users', null);
             query.find().then(function (roles) {

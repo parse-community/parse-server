@@ -63,13 +63,20 @@ const defaultCLPS = Object.freeze({
 
 function mongoSchemaToParseSchema(mongoSchema) {
   let clps = defaultCLPS;
-  if (mongoSchema._metadata && mongoSchema._metadata.class_permissions) {
-    clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
+  let indexes = {}
+  if (mongoSchema._metadata) {
+    if (mongoSchema._metadata.class_permissions) {
+      clps = {...emptyCLPS, ...mongoSchema._metadata.class_permissions};
+    }
+    if (mongoSchema._metadata.indexes) {
+      indexes = {...mongoSchema._metadata.indexes};
+    }
   }
   return {
     className: mongoSchema._id,
     fields: mongoSchemaFieldsToParseSchemaFields(mongoSchema),
     classLevelPermissions: clps,
+    indexes: indexes,
   };
 }
 
@@ -115,7 +122,7 @@ class MongoSchemaCollection {
       .then(schemas => schemas.map(mongoSchemaToParseSchema));
   }
 
-  _fechOneSchemaFrom_SCHEMA(name: string) {
+  _fetchOneSchemaFrom_SCHEMA(name: string) {
     return this._collection._rawFind(_mongoSchemaQueryFromNameQuery(name), { limit: 1 }).then(results => {
       if (results.length === 1) {
         return mongoSchemaToParseSchema(results[0]);
@@ -128,6 +135,18 @@ class MongoSchemaCollection {
   // Atomically find and delete an object based on query.
   findAndDeleteSchema(name: string) {
     return this._collection._mongoCollection.findAndRemove(_mongoSchemaQueryFromNameQuery(name), []);
+  }
+
+  insertSchema(schema: any) {
+    return this._collection.insertOne(schema)
+      .then(result => mongoSchemaToParseSchema(result.ops[0]))
+      .catch(error => {
+        if (error.code === 11000) { //Mongo's duplicate key error
+          throw new Parse.Error(Parse.Error.DUPLICATE_VALUE, 'Class already exists.');
+        } else {
+          throw error;
+        }
+      })
   }
 
   updateSchema(name: string, update) {
@@ -150,9 +169,13 @@ class MongoSchemaCollection {
 
   // TODO: don't spend an extra query on finding the schema if the type we are trying to add isn't a GeoPoint.
   addFieldIfNotExists(className: string, fieldName: string, type: string) {
-    return this._fechOneSchemaFrom_SCHEMA(className)
+    return this._fetchOneSchemaFrom_SCHEMA(className)
       .then(schema => {
-      // The schema exists. Check for existing GeoPoints.
+        // If a field with this name already exists, it will be handled elsewhere.
+        if (schema.fields[fieldName] != undefined) {
+          return;
+        }
+        // The schema exists. Check for existing GeoPoints.
         if (type.type === 'GeoPoint') {
         // Make sure there are not other geopoint fields
           if (Object.keys(schema.fields).some(existingField => schema.fields[existingField].type === 'GeoPoint')) {

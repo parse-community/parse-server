@@ -54,7 +54,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   this.include = [];
 
   // If we have keys, we probably want to force some includes (n-1 level)
-  // See issue: https://github.com/ParsePlatform/parse-server/issues/3185
+  // See issue: https://github.com/parse-community/parse-server/issues/3185
   if (restOptions.hasOwnProperty('keys')) {
     const keysForInclude = restOptions.keys.split(',').filter((key) => {
       // At least 2 components
@@ -86,6 +86,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     case 'count':
       this.doCount = true;
       break;
+    case 'distinct':
+    case 'pipeline':
     case 'skip':
     case 'limit':
     case 'readPreference':
@@ -335,7 +337,7 @@ RestQuery.prototype.replaceNotInQuery = function() {
 const transformSelect = (selectObject, key ,objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(result[key]);
+    values.push(key.split('.').reduce((o,i)=>o[i], result));
   }
   delete selectObject['$select'];
   if (Array.isArray(selectObject['$in'])) {
@@ -390,7 +392,7 @@ RestQuery.prototype.replaceSelect = function() {
 const transformDontSelect = (dontSelectObject, key, objects) => {
   var values = [];
   for (var result of objects) {
-    values.push(result[key]);
+    values.push(key.split('.').reduce((o,i)=>o[i], result));
   }
   delete dontSelectObject['$dontSelect'];
   if (Array.isArray(dontSelectObject['$nin'])) {
@@ -582,9 +584,24 @@ RestQuery.prototype.runAfterFindTrigger = function() {
   if (!hasAfterFindHook) {
     return Promise.resolve();
   }
+  // Skip Aggregate and Distinct Queries
+  if (this.findOptions.pipeline || this.findOptions.distinct) {
+    return Promise.resolve();
+  }
   // Run afterFind trigger and set the new results
   return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className,this.response.results, this.config).then((results) => {
-    this.response.results = results;
+    // Ensure we properly set the className back
+    if (this.redirectClassName) {
+      this.response.results = results.map((object) => {
+        if (object instanceof Parse.Object) {
+          object = object.toJSON();
+        }
+        object.className = this.redirectClassName;
+        return object;
+      });
+    } else {
+      this.response.results = results;
+    }
   });
 };
 
@@ -635,7 +652,13 @@ function includePath(config, auth, response, path, restOptions = {}) {
   }
 
   const queryPromises = Object.keys(pointersHash).map((className) => {
-    const where = {'objectId': {'$in': Array.from(pointersHash[className])}};
+    const objectIds = Array.from(pointersHash[className]);
+    let where;
+    if (objectIds.length === 1) {
+      where = {'objectId': objectIds[0]};
+    } else {
+      where = {'objectId': {'$in': objectIds}};
+    }
     var query = new RestQuery(config, auth, className, where, includeRestOptions);
     return query.execute({op: 'get'}).then((results) => {
       results.className = className;

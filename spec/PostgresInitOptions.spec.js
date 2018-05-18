@@ -1,27 +1,19 @@
 const Parse = require('parse/node').Parse;
-const PostgresStorageAdapter = require('../src/Adapters/Storage/Postgres/PostgresStorageAdapter');
+import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
 const ParseServer = require("../src/index");
 const express = require('express');
 //public schema
 const databaseOptions1 = {
   initOptions: {
-    connect: function (client, dc, isFresh) {
-      if (isFresh) {
-        client.query('SET search_path = public');
-      }
-    }
+    schema: 'public'
   }
 };
 
 //not exists schema
 const databaseOptions2 = {
   initOptions: {
-    connect: function (client, dc, isFresh) {
-      if (isFresh) {
-        client.query('SET search_path = not_exists_schema');
-      }
-    }
+    schema: 'not_exists_schema'
   }
 };
 
@@ -38,7 +30,7 @@ function createParseServer(options) {
           promise
             .then(() => {
               expect(Parse.applicationId).toEqual("test");
-              var app = express();
+              const app = express();
               app.use('/parse', parseServer.app);
 
               const server = app.listen(12666);
@@ -66,7 +58,7 @@ describe_only_db('postgres')('Postgres database init options', () => {
 
     createParseServer({ databaseAdapter: adapter }).then((newServer) => {
       server = newServer;
-      var score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
+      const score = new GameScore({ "score": 1337, "playerName": "Sean Plott", "cheatMode": false });
       return score.save();
     }).then(done, done.fail);
   });
@@ -77,6 +69,6 @@ describe_only_db('postgres')('Postgres database init options', () => {
       databaseOptions: databaseOptions2
     })
 
-    createParseServer({ databaseAdapter: adapter }).then(done.fail, done);
+    createParseServer({ databaseAdapter: adapter }).then(done.fail, () => done());
   });
 });

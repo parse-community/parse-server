@@ -7,9 +7,9 @@ const Config = require('../src/Config');
 describe("Email Verification Token Expiration: ", () => {
 
   it('show the invalid verification link page, if the user clicks on the verify email link after the email verify token expires', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -48,9 +48,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('emailVerified should set to false, if the user does not verify their email before the email verify token expires', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -96,9 +96,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('if user clicks on the email verify link before email verification token expiration then show the verify email success page', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -132,9 +132,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('if user clicks on the email verify link before email verification token expiration then emailVerified should be true', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -175,9 +175,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('if user clicks on the email verify link before email verification token expiration then user should be able to login', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -219,9 +219,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('sets the _email_verify_token_expires_at and _email_verify_token fields after user SignUp', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -242,7 +242,7 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'sets_email_verify_token_expires_at'});
       })
       .then(results => {
@@ -262,9 +262,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('unsets the _email_verify_token_expires_at and _email_verify_token fields in the User class if email verification is successful', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -289,7 +289,7 @@ describe("Email Verification Token Expiration: ", () => {
           followRedirect: false,
         }, (error, response) => {
           expect(response.statusCode).toEqual(302);
-          const config = new Config('test');
+          const config = Config.get('test');
           return config.database.find('_User', {username: 'unsets_email_verify_token_expires_at'}).then((results) => {
             expect(results.length).toBe(1);
             return results[0];
@@ -314,16 +314,16 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show email verify email success', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
-    var serverConfig = {
+    const serverConfig = {
       appName: 'emailVerifyToken',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -370,16 +370,16 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('clicking on the email verify link by an email UNVERIFIED user that was setup before enabling the expire email verify token should show invalid verficiation link page', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
       sendPasswordResetEmail: () => Promise.resolve(),
       sendMail: () => {}
     }
-    var serverConfig = {
+    const serverConfig = {
       appName: 'emailVerifyToken',
       verifyUserEmails: true,
       emailAdapter: emailAdapter,
@@ -448,7 +448,7 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
           return results[0];
         });
@@ -465,7 +465,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .then(() => {
-        const config = new Config('test');
+        const config = Config.get('test');
         return config.database.find('_User', {username: 'newEmailVerifyTokenOnEmailReset'}).then((results) => {
           return results[0];
         });
@@ -484,10 +484,11 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('should send a new verification email when a resend is requested and the user is UNVERIFIED', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var sendVerificationEmailCallCount = 0;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    let userBeforeRequest;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
         sendVerificationEmailCallCount++;
@@ -509,6 +510,15 @@ describe("Email Verification Token Expiration: ", () => {
         return user.signUp();
       })
       .then(() => {
+        const config = Config.get('test');
+        return config.database.find('_User', {username: 'resends_verification_token'}).then((results) => {
+          return results[0];
+        });
+      })
+      .then((newUser) => {
+        // store this user before we make our email request
+        userBeforeRequest = newUser;
+
         expect(sendVerificationEmailCallCount).toBe(1);
 
         return requestp.post({
@@ -523,13 +533,25 @@ describe("Email Verification Token Expiration: ", () => {
           json: true,
           resolveWithFullResponse: true,
           simple: false // this promise is only rejected if the call itself failed
-        })
-          .then((response) => {
-            expect(response.statusCode).toBe(200);
-            expect(sendVerificationEmailCallCount).toBe(2);
-            expect(sendEmailOptions).toBeDefined();
-            done();
-          });
+        });
+      })
+      .then((response) => {
+        expect(response.statusCode).toBe(200);
+        expect(sendVerificationEmailCallCount).toBe(2);
+        expect(sendEmailOptions).toBeDefined();
+
+        // query for this user again
+        const config = Config.get('test');
+        return config.database.find('_User', {username: 'resends_verification_token'}).then((results) => {
+          return results[0];
+        });
+      })
+      .then((userAfterRequest) => {
+        // verify that our token & expiration has been changed for this new request
+        expect(typeof userAfterRequest).toBe('object');
+        expect(userBeforeRequest._email_verify_token).not.toEqual(userAfterRequest._email_verify_token);
+        expect(userBeforeRequest._email_verify_token_expires_at).not.toEqual(userAfterRequest.__email_verify_token_expires_at);
+        done();
       })
       .catch(error => {
         jfail(error);
@@ -538,10 +560,10 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var sendVerificationEmailCallCount = 0;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
         sendVerificationEmailCallCount++;
@@ -602,9 +624,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('should not send a new verification email if this user does not exist', done => {
-    var sendEmailOptions;
-    var sendVerificationEmailCallCount = 0;
-    var emailAdapter = {
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
         sendVerificationEmailCallCount++;
@@ -647,9 +669,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('should fail if no email is supplied', done => {
-    var sendEmailOptions;
-    var sendVerificationEmailCallCount = 0;
-    var emailAdapter = {
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
         sendVerificationEmailCallCount++;
@@ -691,9 +713,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('should fail if email is not a string', done => {
-    var sendEmailOptions;
-    var sendVerificationEmailCallCount = 0;
-    var emailAdapter = {
+    let sendEmailOptions;
+    let sendVerificationEmailCallCount = 0;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
         sendVerificationEmailCallCount++;
@@ -735,9 +757,9 @@ describe("Email Verification Token Expiration: ", () => {
   });
 
   it('client should not see the _email_verify_token_expires_at field', done => {
-    var user = new Parse.User();
-    var sendEmailOptions;
-    var emailAdapter = {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
       sendVerificationEmail: options => {
         sendEmailOptions = options;
       },
@@ -771,6 +793,65 @@ describe("Email Verification Token Expiration: ", () => {
             done();
           });
 
+      }).catch((error) => {
+        jfail(error);
+        done();
+      });
+  });
+
+  it('emailVerified should be set to false after changing from an already verified email', done => {
+    const user = new Parse.User();
+    let sendEmailOptions;
+    const emailAdapter = {
+      sendVerificationEmail: options => {
+        sendEmailOptions = options;
+      },
+      sendPasswordResetEmail: () => Promise.resolve(),
+      sendMail: () => { }
+    }
+    reconfigureServer({
+      appName: 'emailVerifyToken',
+      verifyUserEmails: true,
+      emailAdapter: emailAdapter,
+      emailVerifyTokenValidityDuration: 5, // 5 seconds
+      publicServerURL: "http://localhost:8378/1"
+    })
+      .then(() => {
+        user.setUsername("testEmailVerifyTokenValidity");
+        user.setPassword("expiringToken");
+        user.set('email', 'user@parse.com');
+        return user.signUp();
+      }).then(() => {
+        request.get(sendEmailOptions.link, {
+          followRedirect: false,
+        }, (error, response) => {
+          expect(response.statusCode).toEqual(302);
+          Parse.User.logIn("testEmailVerifyTokenValidity", "expiringToken")
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('emailVerified')).toBe(true);
+
+              user.set('email', 'newEmail@parse.com');
+              return user.save();
+            })
+            .then(() => user.fetch())
+            .then(user => {
+              expect(typeof user).toBe('object');
+              expect(user.get('email')).toBe('newEmail@parse.com');
+              expect(user.get('emailVerified')).toBe(false);
+
+              request.get(sendEmailOptions.link, {
+                followRedirect: false,
+              }, (error, response) => {
+                expect(response.statusCode).toEqual(302);
+                done();
+              });
+            })
+            .catch((error) => {
+              jfail(error);
+              done();
+            });
+        });
       }).catch((error) => {
         jfail(error);
         done();

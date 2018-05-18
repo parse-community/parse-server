@@ -1,16 +1,16 @@
 "use strict";
 /* global describe, it, expect, fail, Parse */
-var request = require('request');
-var triggers = require('../src/triggers');
-var HooksController = require('../src/Controllers/HooksController').default;
-var express = require("express");
-var bodyParser = require('body-parser');
+const request = require('request');
+const triggers = require('../src/triggers');
+const HooksController = require('../src/Controllers/HooksController').default;
+const express = require("express");
+const bodyParser = require('body-parser');
 
-var port = 12345;
-var hookServerURL = "http://localhost:" + port;
+const port = 12345;
+const hookServerURL = "http://localhost:" + port;
 const AppCache = require('../src/cache').AppCache;
 
-var app = express();
+const app = express();
 app.use(bodyParser.json({ 'type': '*/*' }))
 app.listen(12345);
 
@@ -273,14 +273,14 @@ describe('Hooks', () => {
 
   it("should create hooks and properly preload them", (done) => {
 
-    var promises = [];
-    for (var i = 0; i < 5; i++) {
+    const promises = [];
+    for (let  i = 0; i < 5; i++) {
       promises.push(Parse.Hooks.createTrigger("MyClass" + i, "beforeSave", "http://url.com/beforeSave/" + i));
       promises.push(Parse.Hooks.createFunction("AFunction" + i, "http://url.com/function" + i));
     }
 
     Parse.Promise.when(promises).then(function(){
-      for (var i = 0; i < 5; i++) {
+      for (let  i = 0; i < 5; i++) {
         // Delete everything from memory, as the server just started
         triggers.removeTrigger("beforeSave", "MyClass" + i, Parse.applicationId);
         triggers.removeFunction("AFunction" + i, Parse.applicationId);
@@ -294,7 +294,7 @@ describe('Hooks', () => {
       fail('Should properly create all hooks');
       done();
     }).then(function() {
-      for (var i = 0; i < 5; i++) {
+      for (let  i = 0; i < 5; i++) {
         expect(triggers.getTrigger("MyClass" + i, "beforeSave", Parse.applicationId)).not.toBeUndefined();
         expect(triggers.getFunction("AFunction" + i, Parse.applicationId)).not.toBeUndefined();
       }
@@ -414,10 +414,10 @@ describe('Hooks', () => {
 
 
   it("should run the beforeSave hook on the test server", (done) => {
-    var triggerCount = 0;
+    let triggerCount = 0;
     app.post("/BeforeSaveSome", function(req, res) {
       triggerCount++;
-      var object = req.body.object;
+      const object = req.body.object;
       object.hello = "world";
       // Would need parse cloud express to set much more
       // But this should override the key upon return
@@ -442,7 +442,7 @@ describe('Hooks', () => {
 
   it("beforeSave hooks should correctly handle responses containing entire object", (done) => {
     app.post("/BeforeSaveSome2", function(req, res) {
-      var object = Parse.Object.fromJSON(req.body.object);
+      const object = Parse.Object.fromJSON(req.body.object);
       object.set('hello', "world");
       res.json({success: object});
     });
@@ -461,11 +461,11 @@ describe('Hooks', () => {
   });
 
   it("should run the afterSave hook on the test server", (done) => {
-    var triggerCount = 0;
-    var newObjectId;
+    let triggerCount = 0;
+    let newObjectId;
     app.post("/AfterSaveSome", function(req, res) {
       triggerCount++;
-      var obj = new Parse.Object("AnotherObject");
+      const obj = new Parse.Object("AnotherObject");
       obj.set("foo", "bar");
       obj.save().then(function(obj){
         newObjectId = obj.id;
@@ -477,7 +477,7 @@ describe('Hooks', () => {
       const obj = new Parse.Object("SomeRandomObject");
       return obj.save();
     }).then(function() {
-      var promise = new Parse.Promise();
+      const promise = new Parse.Promise();
       // Wait a bit here as it's an after save
       setTimeout(() => {
         expect(triggerCount).toBe(1);

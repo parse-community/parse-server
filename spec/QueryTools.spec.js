@@ -1,27 +1,27 @@
-var Parse = require('parse/node');
+const Parse = require('parse/node');
 
-var Id = require('../src/LiveQuery/Id');
-var QueryTools = require('../src/LiveQuery/QueryTools');
-var queryHash = QueryTools.queryHash;
-var matchesQuery = QueryTools.matchesQuery;
+const Id = require('../src/LiveQuery/Id');
+const QueryTools = require('../src/LiveQuery/QueryTools');
+const queryHash = QueryTools.queryHash;
+const matchesQuery = QueryTools.matchesQuery;
 
-var Item = Parse.Object.extend('Item');
+const Item = Parse.Object.extend('Item');
 
 describe('queryHash', function() {
 
   it('should always hash a query to the same string', function() {
-    var q = new Parse.Query(Item);
+    const q = new Parse.Query(Item);
     q.equalTo('field', 'value');
     q.exists('name');
     q.ascending('createdAt');
     q.limit(10);
-    var firstHash = queryHash(q);
-    var secondHash = queryHash(q);
+    const firstHash = queryHash(q);
+    const secondHash = queryHash(q);
     expect(firstHash).toBe(secondHash);
   });
 
   it('should return equivalent hashes for equivalent queries', function() {
-    var q1 = new Parse.Query(Item);
+    let q1 = new Parse.Query(Item);
     q1.equalTo('field', 'value');
     q1.exists('name');
     q1.lessThan('age', 30);
@@ -30,7 +30,7 @@ describe('queryHash', function() {
     q1.include(['name', 'age']);
     q1.limit(10);
 
-    var q2 = new Parse.Query(Item);
+    let q2 = new Parse.Query(Item);
     q2.limit(10);
     q2.greaterThan('age', 3);
     q2.lessThan('age', 30);
@@ -39,8 +39,8 @@ describe('queryHash', function() {
     q2.exists('name');
     q2.equalTo('field', 'value');
 
-    var firstHash = queryHash(q1);
-    var secondHash = queryHash(q2);
+    let firstHash = queryHash(q1);
+    let secondHash = queryHash(q2);
     expect(firstHash).toBe(secondHash);
 
     q1.containedIn('fruit', ['apple', 'banana', 'cherry']);
@@ -70,10 +70,10 @@ describe('queryHash', function() {
   });
 
   it('should not let fields of different types appear similar', function() {
-    var q1 = new Parse.Query(Item);
+    let q1 = new Parse.Query(Item);
     q1.lessThan('age', 30);
 
-    var q2 = new Parse.Query(Item);
+    const q2 = new Parse.Query(Item);
     q2.equalTo('age', '{$lt:30}');
 
     expect(queryHash(q1)).not.toBe(queryHash(q2));
@@ -89,11 +89,11 @@ describe('queryHash', function() {
 
 describe('matchesQuery', function() {
   it('matches blanket queries', function() {
-    var obj = {
+    const obj = {
       id: new Id('Klass', 'O1'),
       value: 12
     };
-    var q = new Parse.Query('Klass');
+    const q = new Parse.Query('Klass');
     expect(matchesQuery(obj, q)).toBe(true);
 
     obj.id = new Id('Other', 'O1');
@@ -101,11 +101,11 @@ describe('matchesQuery', function() {
   });
 
   it('matches existence queries', function() {
-    var obj = {
+    const obj = {
       id: new Id('Item', 'O1'),
       count: 15
     };
-    var q = new Parse.Query('Item');
+    const q = new Parse.Query('Item');
     q.exists('count');
     expect(matchesQuery(obj, q)).toBe(true);
     q.exists('name');
@@ -113,11 +113,11 @@ describe('matchesQuery', function() {
   });
 
   it('matches queries with doesNotExist constraint', function() {
-    var obj = {
+    const obj = {
       id: new Id('Item', 'O1'),
       count: 15
     };
-    var q = new Parse.Query('Item');
+    let q = new Parse.Query('Item');
     q.doesNotExist('name');
     expect(matchesQuery(obj, q)).toBe(true);
 
@@ -127,12 +127,12 @@ describe('matchesQuery', function() {
   });
 
   it('matches on equality queries', function() {
-    var day = new Date();
-    var location = new Parse.GeoPoint({
+    const day = new Date();
+    const location = new Parse.GeoPoint({
       latitude: 37.484815,
       longitude: -122.148377
     });
-    var obj = {
+    const obj = {
       id: new Id('Person', 'O1'),
       score: 12,
       name: 'Bill',
@@ -140,7 +140,7 @@ describe('matchesQuery', function() {
       lastLocation: location
     };
 
-    var q = new Parse.Query('Person');
+    let q = new Parse.Query('Person');
     q.equalTo('score', 12);
     expect(matchesQuery(obj, q)).toBe(true);
 
@@ -192,7 +192,7 @@ describe('matchesQuery', function() {
     q.equalTo('name', 'bill');
     expect(matchesQuery(obj, q)).toBe(false);
 
-    var img = {
+    let img = {
       id: new Id('Image', 'I1'),
       tags: ['nofilter', 'latergram', 'tbt']
     };
@@ -203,13 +203,13 @@ describe('matchesQuery', function() {
     q.equalTo('tags', 'tbt');
     expect(matchesQuery(img, q)).toBe(true);
 
-    var q2 = new Parse.Query('Image');
+    const q2 = new Parse.Query('Image');
     q2.containsAll('tags', ['latergram', 'nofilter']);
     expect(matchesQuery(img, q2)).toBe(true);
     q2.containsAll('tags', ['latergram', 'selfie']);
     expect(matchesQuery(img, q2)).toBe(false);
 
-    var u = new Parse.User();
+    const u = new Parse.User();
     u.id = 'U2';
     q = new Parse.Query('Image');
     q.equalTo('owner', u);
@@ -246,13 +246,13 @@ describe('matchesQuery', function() {
   });
 
   it('matches on inequalities', function() {
-    var player = {
+    const player = {
       id: new Id('Person', 'O1'),
       score: 12,
       name: 'Bill',
       birthday: new Date(1980, 2, 4),
     };
-    var q = new Parse.Query('Person');
+    let q = new Parse.Query('Person');
     q.lessThan('score', 15);
     expect(matchesQuery(player, q)).toBe(true);
     q.lessThan('score', 10);
@@ -288,29 +288,29 @@ describe('matchesQuery', function() {
   });
 
   it('matches an $or query', function() {
-    var player = {
+    const player = {
       id: new Id('Player', 'P1'),
       name: 'Player 1',
       score: 12
     };
-    var q = new Parse.Query('Player');
+    const q = new Parse.Query('Player');
     q.equalTo('name', 'Player 1');
-    var q2 = new Parse.Query('Player');
+    const q2 = new Parse.Query('Player');
     q2.equalTo('name', 'Player 2');
-    var orQuery = Parse.Query.or(q, q2);
+    const orQuery = Parse.Query.or(q, q2);
     expect(matchesQuery(player, q)).toBe(true);
     expect(matchesQuery(player, q2)).toBe(false);
     expect(matchesQuery(player, orQuery)).toBe(true);
   });
 
   it('matches $regex queries', function() {
-    var player = {
+    const player = {
       id: new Id('Player', 'P1'),
       name: 'Player 1',
       score: 12
     };
 
-    var q = new Parse.Query('Player');
+    let q = new Parse.Query('Player');
     q.startsWith('name', 'Play');
     expect(matchesQuery(player, q)).toBe(true);
     q.startsWith('name', 'Ploy');
@@ -353,14 +353,23 @@ describe('matchesQuery', function() {
   });
 
   it('matches $nearSphere queries', function() {
-    var q = new Parse.Query('Checkin');
+    let q = new Parse.Query('Checkin');
     q.near('location', new Parse.GeoPoint(20, 20));
     // With no max distance, any GeoPoint is 'near'
-    var pt = {
+    const pt = {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(40, 40)
     };
+    const ptUndefined = {
+      id: new Id('Checkin', 'C1')
+    };
+    const ptNull = {
+      id: new Id('Checkin', 'C1'),
+      location: null
+    };
     expect(matchesQuery(pt, q)).toBe(true);
+    expect(matchesQuery(ptUndefined, q)).toBe(false);
+    expect(matchesQuery(ptNull, q)).toBe(false);
 
     q = new Parse.Query('Checkin');
     pt.location = new Parse.GeoPoint(40, 40);
@@ -372,19 +381,30 @@ describe('matchesQuery', function() {
   });
 
   it('matches $within queries', function() {
-    var caltrainStation = {
+    const caltrainStation = {
       id: new Id('Checkin', 'C1'),
       location: new Parse.GeoPoint(37.776346, -122.394218),
       name: 'Caltrain'
     };
 
-    var santaClara = {
+    const santaClara = {
       id: new Id('Checkin', 'C2'),
       location: new Parse.GeoPoint(37.325635, -121.945753),
       name: 'Santa Clara'
     };
 
-    var q = new Parse.Query('Checkin').withinGeoBox(
+    const noLocation = {
+      id: new Id('Checkin', 'C2'),
+      name: 'Santa Clara'
+    };
+
+    const nullLocation = {
+      id: new Id('Checkin', 'C2'),
+      location: null,
+      name: 'Santa Clara'
+    };
+
+    let q = new Parse.Query('Checkin').withinGeoBox(
       'location',
       new Parse.GeoPoint(37.708813, -122.526398),
       new Parse.GeoPoint(37.822802, -122.373962)
@@ -392,7 +412,8 @@ describe('matchesQuery', function() {
 
     expect(matchesQuery(caltrainStation, q)).toBe(true);
     expect(matchesQuery(santaClara, q)).toBe(false);
-
+    expect(matchesQuery(noLocation, q)).toBe(false);
+    expect(matchesQuery(nullLocation, q)).toBe(false);
     // Invalid rectangles
     q = new Parse.Query('Checkin').withinGeoBox(
       'location',
@@ -414,13 +435,13 @@ describe('matchesQuery', function() {
   });
 
   it('matches on subobjects with dot notation', function() {
-    var message = {
+    const message = {
       id: new Id('Message', 'O1'),
       text: "content",
       status: {x: "read", y: "delivered"}
     };
 
-    var q = new Parse.Query('Message');
+    let q = new Parse.Query('Message');
     q.equalTo("status.x", "read");
     expect(matchesQuery(message, q)).toBe(true);
 
@@ -473,5 +494,80 @@ describe('matchesQuery', function() {
     q.doesNotExist("status.y");
     expect(matchesQuery(message, q)).toBe(false);
 
+  });
+
+  function pointer(className, objectId) {
+    return { __type: 'Pointer', className, objectId };
+  }
+
+  it('should support containedIn with pointers', () => {
+    const message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    let q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'abc' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    q = new Parse.Query('Message');
+    q.containedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn with pointers', () => {
+    let message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    let q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' })]);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'def')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', [Parse.Object.fromJSON({ className: 'Profile', objectId: 'ghi' }),
+      Parse.Object.fromJSON({ className: 'Profile', objectId: 'def' })]);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support containedIn queries with [objectId]', () => {
+    let message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'abc')
+    };
+    let q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.containedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(false);
+  });
+
+  it('should support notContainedIn queries with [objectId]', () => {
+    let message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    let q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def']);
+    expect(matchesQuery(message, q)).toBe(true);
+    message = {
+      id: new Id('Message', 'O1'),
+      profile: pointer('Profile', 'ghi')
+    };
+    q = new Parse.Query('Message');
+    q.notContainedIn('profile', ['abc', 'def', 'ghi']);
+    expect(matchesQuery(message, q)).toBe(false);
   });
 });

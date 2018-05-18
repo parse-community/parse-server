@@ -6,11 +6,16 @@ We really want Parse to be yours, to see it grow and thrive in the open source c
 
 ##### Please Do's
 
-* Take testing seriously! Aim to increase the test coverage with every pull request.
-* Run the tests for the file you are working on with `npm test spec/MyFile.spec.js`
-* Run the tests for the whole project and look at the coverage report to make sure your tests are exhaustive by running `npm test` and looking at (project-root)/lcov-report/parse-server/FileUnderTest.js.html
-* Lint your code by running `npm run lint` to make sure all your code is not gonna be rejected by the CI.
-* Never publish the lib folder.
+* Begin by reading the [Development Guide](http://docs.parseplatform.org/parse-server/guide/#development-guide) to learn how to get started running the parse-server.
+* Take testing seriously! Aim to increase the test coverage with every pull request. To obtain the test coverage of the project, run:
+    * **Windows**: `npm run coverage:win`
+    * **Unix**: `npm run coverage`
+* Run the tests for the file you are working on with the following command:
+    * **Windows**: `npm run test:win spec/MyFile.spec.js`
+    * **Unix**: `npm test spec/MyFile.spec.js`
+* Run the tests for the whole project to make sure the code passes all tests. This can be done by running the test command for a single file but removing the test file argument. The results can be seen at *<PROJECT_ROOT>/coverage/lcov-report/index.html*.
+* Lint your code by running `npm run lint` to make sure the code is not going to be rejected by the CI.
+* **Do not** publish the *lib* folder.
 
 ##### Run your tests against Postgres (optional)
 

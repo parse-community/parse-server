@@ -1,12 +1,12 @@
 "use strict"
-var request = require('request');
-var parseServerPackage = require('../package.json');
-var MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
-var ParseServer = require("../src/index");
-var Config = require('../src/Config');
-var express = require('express');
+const request = require('request');
+const parseServerPackage = require('../package.json');
+const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
+const ParseServer = require("../src/index");
+const Config = require('../src/Config');
+const express = require('express');
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 
 describe('server', () => {
   it('requires a master key and app id', done => {
@@ -108,7 +108,7 @@ describe('server', () => {
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: {
-        module: 'parse-server-simple-mailgun-adapter',
+        module: '@parse/simple-mailgun-adapter',
         options: {
           fromAddress: 'parse@example.com',
           apiKey: 'k',
@@ -123,7 +123,7 @@ describe('server', () => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
-      emailAdapter: 'parse-server-simple-mailgun-adapter',
+      emailAdapter: '@parse/simple-mailgun-adapter',
       publicServerURL: 'http://localhost:8378/1'
     })
       .catch(error => {
@@ -132,12 +132,12 @@ describe('server', () => {
       });
   });
 
-  it('throws if you initialize email adapter incorrecly', done => {
+  it('throws if you initialize email adapter incorrectly', done => {
     reconfigureServer({
       appName: 'unused',
       verifyUserEmails: true,
       emailAdapter: {
-        module: 'parse-server-simple-mailgun-adapter',
+        module: '@parse/simple-mailgun-adapter',
         options: {
           domain: 'd',
         }
@@ -166,7 +166,7 @@ describe('server', () => {
 
   it('can properly sets the push support', done => {
     // default config passes push options
-    const config = new Config('test');
+    const config = Config.get('test');
     expect(config.hasPushSupport).toEqual(true);
     expect(config.hasPushScheduledSupport).toEqual(false);
     request.get({
@@ -187,7 +187,7 @@ describe('server', () => {
     reconfigureServer({
       push: undefined // force no config
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(false);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -214,7 +214,7 @@ describe('server', () => {
         }
       }
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(false);
       request.get({
@@ -242,7 +242,7 @@ describe('server', () => {
       },
       scheduledPush: true,
     }).then(() => {
-      const config = new Config('test');
+      const config = Config.get('test');
       expect(config.hasPushSupport).toEqual(true);
       expect(config.hasPushScheduledSupport).toEqual(true);
       request.get({
@@ -270,7 +270,7 @@ describe('server', () => {
   });
 
   it('can create a parse-server v1', done => {
-    var parseServer = new ParseServer.default(Object.assign({},
+    const parseServer = new ParseServer.default(Object.assign({},
       defaultConfiguration, {
         appId: "aTestApp",
         masterKey: "aTestMasterKey",
@@ -279,15 +279,15 @@ describe('server', () => {
           promise
             .then(() => {
               expect(Parse.applicationId).toEqual("aTestApp");
-              var app = express();
+              const app = express();
               app.use('/parse', parseServer.app);
 
-              var server = app.listen(12666);
-              var obj  = new Parse.Object("AnObject");
-              var objId;
+              const server = app.listen(12666);
+              const obj  = new Parse.Object("AnObject");
+              let objId;
               obj.save().then((obj) => {
                 objId = obj.id;
-                var q = new Parse.Query("AnObject");
+                const q = new Parse.Query("AnObject");
                 return q.first();
               }).then((obj) => {
                 expect(obj.id).toEqual(objId);
@@ -350,7 +350,7 @@ describe('server', () => {
 
   it('exposes correct adapters', done => {
     expect(ParseServer.S3Adapter).toThrow();
-    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install parse-server-gcs-adapter');
+    expect(ParseServer.GCSAdapter).toThrow('GCSAdapter is not provided by parse-server anymore; please install @parse/gcs-files-adapter');
     expect(ParseServer.FileSystemAdapter).toThrow();
     expect(ParseServer.InMemoryCacheAdapter).toThrow();
     expect(ParseServer.NullCacheAdapter).toThrow();
@@ -360,7 +360,7 @@ describe('server', () => {
   it('properly gives publicServerURL when set', done => {
     reconfigureServer({ publicServerURL: 'https://myserver.com/1' })
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1');
+        const config = Config.get('test', 'http://localhost:8378/1');
         expect(config.mount).toEqual('https://myserver.com/1');
         done();
       });
@@ -369,7 +369,7 @@ describe('server', () => {
   it('properly removes trailing slash in mount', done => {
     reconfigureServer({})
       .then(() => {
-        var config = new Config('test', 'http://localhost:8378/1/');
+        const config = Config.get('test', 'http://localhost:8378/1/');
         expect(config.mount).toEqual('http://localhost:8378/1');
         done();
       });
@@ -385,6 +385,7 @@ describe('server', () => {
 
   it('fails if the session length is not a number', done => {
     reconfigureServer({ sessionLength: 'test' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a valid number.');
         done();
@@ -393,6 +394,7 @@ describe('server', () => {
 
   it('fails if the session length is less than or equal to 0', done => {
     reconfigureServer({ sessionLength: '-33' })
+      .then(done.fail)
       .catch(error => {
         expect(error).toEqual('Session length must be a value greater than 0.');
         return reconfigureServer({ sessionLength: '0' })
@@ -415,6 +417,14 @@ describe('server', () => {
       .then(done);
   })
 
+  it('fails if maxLimit is negative', (done) => {
+    reconfigureServer({ maxLimit: -100 })
+      .catch(error => {
+        expect(error).toEqual('Max limit must be a value greater than 0.');
+        done();
+      });
+  });
+
   it('fails if you try to set revokeSessionOnPasswordReset to non-boolean', done => {
     reconfigureServer({ revokeSessionOnPasswordReset: 'non-bool' })
       .catch(done);
@@ -428,9 +438,38 @@ describe('server', () => {
       })
   });
 
-  it('should suceed if you provide valid ip in masterKeyIps', done => {
+  it('should succeed if you provide valid ip in masterKeyIps', done => {
     reconfigureServer({ masterKeyIps: ['1.2.3.4','2001:0db8:0000:0042:0000:8a2e:0370:7334'] })
       .then(done)
   });
 
+  it('should load a middleware', (done) => {
+    const obj = {
+      middleware: function(req, res, next) {
+        next();
+      }
+    }
+    const spy = spyOn(obj, 'middleware').and.callThrough();
+    reconfigureServer({
+      middleware: obj.middleware
+    }).then(() => {
+      const query = new Parse.Query('AnObject');
+      return query.find();
+    }).then(() => {
+      expect(spy).toHaveBeenCalled();
+      done();
+    }).catch(done.fail);
+  });
+
+  it('should load a middleware from string', (done) => {
+    reconfigureServer({
+      middleware: 'spec/support/CustomMiddleware'
+    }).then(() => {
+      return request.get('http://localhost:8378/1', (err, res) => {
+        // Just check that the middleware set the header
+        expect(res.headers['x-yolo']).toBe('1');
+        done();
+      });
+    }).catch(done.fail);
+  });
 });

@@ -9,10 +9,11 @@ import { matchesQuery, queryHash } from './QueryTools';
 import { ParsePubSub } from './ParsePubSub';
 import { SessionTokenCache } from './SessionTokenCache';
 import _ from 'lodash';
+import uuid from 'uuid';
+import { runLiveQueryEventHandlers } from '../triggers';
 
 class ParseLiveQueryServer {
-  clientId: number;
-  clients: Object;
+  clients: Map;
   // className -> (queryHash -> subscription)
   subscriptions: Object;
   parseWebSocketServer: Object;
@@ -21,7 +22,7 @@ class ParseLiveQueryServer {
   subscriber: Object;
 
   constructor(server: any, config: any) {
-    this.clientId = 0;
+    this.server = server;
     this.clients = new Map();
     this.subscriptions = new Map();
 
@@ -269,10 +270,16 @@ class ParseLiveQueryServer {
     });
 
     parseWebsocket.on('disconnect', () => {
-      logger.info('Client disconnect: %d', parseWebsocket.clientId);
+      logger.info(`Client disconnect: ${parseWebsocket.clientId}`);
       const clientId = parseWebsocket.clientId;
       if (!this.clients.has(clientId)) {
-        logger.error('Can not find client %d on disconnect', clientId);
+        runLiveQueryEventHandlers({
+          event: 'ws_disconnect_error',
+          clients: this.clients.size,
+          subscriptions: this.subscriptions.size,
+          error: `Unable to find client ${clientId}`
+        });
+        logger.error(`Can not find client ${clientId} on disconnect`);
         return;
       }
 
@@ -298,6 +305,17 @@ class ParseLiveQueryServer {
 
       logger.verbose('Current clients %d', this.clients.size);
       logger.verbose('Current subscriptions %d', this.subscriptions.size);
+      runLiveQueryEventHandlers({
+        event: 'ws_disconnect',
+        clients: this.clients.size,
+        subscriptions: this.subscriptions.size
+      });
+    });
+
+    runLiveQueryEventHandlers({
+      event: 'ws_connect',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size
     });
   }
 
@@ -310,8 +328,8 @@ class ParseLiveQueryServer {
   }
 
   _matchesACL(acl: any, client: any, requestId: number): any {
-    // If ACL is undefined or null, or ACL has public read access, return true directly
-    if (!acl || acl.getPublicReadAccess()) {
+    // Return true directly if ACL isn't present, ACL is public read, or client has master key
+    if (!acl || acl.getPublicReadAccess() || client.hasMasterKey) {
       return Parse.Promise.as(true);
     }
     // Check subscription sessionToken matches ACL first
@@ -403,12 +421,29 @@ class ParseLiveQueryServer {
       logger.error('Key in request is not valid');
       return;
     }
-    const client = new Client(this.clientId, parseWebsocket);
-    parseWebsocket.clientId = this.clientId;
-    this.clientId += 1;
+    const hasMasterKey = this._hasMasterKey(request, this.keyPairs);
+    const clientId = uuid();
+    const client = new Client(clientId, parseWebsocket, hasMasterKey);
+    parseWebsocket.clientId = clientId;
     this.clients.set(parseWebsocket.clientId, client);
-    logger.info('Create new client: %d', parseWebsocket.clientId);
+    logger.info(`Create new client: ${parseWebsocket.clientId}`);
     client.pushConnect();
+    runLiveQueryEventHandlers({
+      event: 'connect',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size
+    });
+  }
+
+  _hasMasterKey(request: any, validKeyPairs: any): boolean {
+    if(!validKeyPairs || validKeyPairs.size == 0 ||
+      !validKeyPairs.has("masterKey")) {
+      return false;
+    }
+    if(!request || !request.hasOwnProperty("masterKey")) {
+      return false;
+    }
+    return request.masterKey === validKeyPairs.get("masterKey");
   }
 
   _validateKeys(request: any, validKeyPairs: any): boolean {
@@ -469,8 +504,13 @@ class ParseLiveQueryServer {
 
     client.pushSubscribe(request.requestId);
 
-    logger.verbose('Create client %d new subscription: %d', parseWebsocket.clientId, request.requestId);
+    logger.verbose(`Create client ${parseWebsocket.clientId} new subscription: ${request.requestId}`);
     logger.verbose('Current client number: %d', this.clients.size);
+    runLiveQueryEventHandlers({
+      event: 'subscribe',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size
+    });
   }
 
   _handleUpdateSubscription(parseWebsocket: any, request: any): any {
@@ -517,6 +557,11 @@ class ParseLiveQueryServer {
     if (classSubscriptions.size === 0) {
       this.subscriptions.delete(className);
     }
+    runLiveQueryEventHandlers({
+      event: 'unsubscribe',
+      clients: this.clients.size,
+      subscriptions: this.subscriptions.size
+    });
 
     if (!notifyClient) {
       return;
@@ -524,7 +569,7 @@ class ParseLiveQueryServer {
 
     client.pushUnsubscribe(request.requestId);
 
-    logger.verbose('Delete client: %d | subscription: %d', parseWebsocket.clientId, request.requestId);
+    logger.verbose(`Delete client: ${parseWebsocket.clientId} | subscription: ${request.requestId}`);
   }
 }
 

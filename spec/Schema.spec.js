@@ -1,13 +1,13 @@
 'use strict';
 
-var Config = require('../src/Config');
-var SchemaController = require('../src/Controllers/SchemaController');
-var dd = require('deep-diff');
+const Config = require('../src/Config');
+const SchemaController = require('../src/Controllers/SchemaController');
+const dd = require('deep-diff');
 
-var config;
+let config;
 
-var hasAllPODobject = () => {
-  var obj = new Parse.Object('HasAllPOD');
+const hasAllPODobject = () => {
+  const obj = new Parse.Object('HasAllPOD');
   obj.set('aNumber', 5);
   obj.set('aString', 'string');
   obj.set('aBool', true);
@@ -21,7 +21,7 @@ var hasAllPODobject = () => {
 
 describe('SchemaController', () => {
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   it('can validate one object', (done) => {
@@ -104,7 +104,7 @@ describe('SchemaController', () => {
         'find': {}
       });
     }).then(() => {
-      var query = new Parse.Query('Stuff');
+      const query = new Parse.Query('Stuff');
       return query.find();
     }).then(() => {
       fail('Class permissions should have rejected this query.');
@@ -115,7 +115,7 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test user', (done) => {
-    var user;
+    let user;
     createTestUser().then((u) => {
       user = u;
       return config.database.loadSchema();
@@ -123,13 +123,13 @@ describe('SchemaController', () => {
       // Just to create a valid class
       return schema.validateObject('Stuff', {foo: 'bar'});
     }).then((schema) => {
-      var find = {};
+      const find = {};
       find[user.id] = true;
       return schema.setPermissions('Stuff', {
         'find': find
       });
     }).then(() => {
-      var query = new Parse.Query('Stuff');
+      const query = new Parse.Query('Stuff');
       return query.find();
     }).then(() => {
       done();
@@ -140,15 +140,15 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test get', (done) => {
-    var obj;
+    let obj;
     createTestUser()
       .then(user => {
         return config.database.loadSchema()
         // Create a valid class
           .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
           .then(schema => {
-            var find = {};
-            var get = {};
+            const find = {};
+            const get = {};
             get[user.id] = true;
             return schema.setPermissions('Stuff', {
               'create': {'*': true},
@@ -161,13 +161,13 @@ describe('SchemaController', () => {
             return obj.save();
           }).then((o) => {
             obj = o;
-            var query = new Parse.Query('Stuff');
+            const query = new Parse.Query('Stuff');
             return query.find();
           }).then(() => {
             fail('Class permissions should have rejected this query.');
             done();
           }, () => {
-            var query = new Parse.Query('Stuff');
+            const query = new Parse.Query('Stuff');
             return query.get(obj.id).then(() => {
               done();
             }, () => {
@@ -179,12 +179,12 @@ describe('SchemaController', () => {
   });
 
   it('class-level permissions test count', (done) => {
-    var obj;
+    let obj;
     return config.database.loadSchema()
       // Create a valid class
       .then(schema => schema.validateObject('Stuff', {foo: 'bar'}))
       .then(schema => {
-        var count = {};
+        const count = {};
         return schema.setPermissions('Stuff', {
           'create': {'*': true},
           'find': {'*': true},
@@ -196,11 +196,11 @@ describe('SchemaController', () => {
         return obj.save();
       }).then((o) => {
         obj = o;
-        var query = new Parse.Query('Stuff');
+        const query = new Parse.Query('Stuff');
         return query.find();
       }).then((results) => {
         expect(results.length).toBe(1);
-        var query = new Parse.Query('Stuff');
+        const query = new Parse.Query('Stuff');
         return query.count();
       }).then(() => {
         fail('Class permissions should have rejected this query.');
@@ -274,7 +274,7 @@ describe('SchemaController', () => {
             fooSixteen: {type: 'String'},
             fooEighteen: {type: 'String'},
             fooNineteen: {type: 'String'},
-          }, levelPermissions, config.database))
+          }, levelPermissions, {}, config.database))
           .then(actualSchema => {
             const expectedSchema = {
               className: 'NewClass',
@@ -304,6 +304,9 @@ describe('SchemaController', () => {
                 fooNineteen: {type: 'String'},
               },
               classLevelPermissions: { ...levelPermissions },
+              indexes: {
+                _id_: { _id: 1 }
+              }
             };
 
             expect(dd(actualSchema, expectedSchema)).toEqual(undefined);
@@ -338,8 +341,8 @@ describe('SchemaController', () => {
     // race loser should be the same as if they hadn't been racing.
     config.database.loadSchema()
       .then(schema => {
-        var p1 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
-        var p2 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
+        const p1 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
+        const p2 = schema.addClassIfNotExists('NewClass', {foo: {type: 'String'}});
         Promise.race([p1, p2])
           .then(actualSchema => {
             const expectedSchema = {
@@ -755,12 +758,12 @@ describe('SchemaController', () => {
   });
 
   it('drops related collection when deleting relation field', done => {
-    var obj1 = hasAllPODobject();
+    const obj1 = hasAllPODobject();
     obj1.save()
       .then(savedObj1 => {
-        var obj2 = new Parse.Object('HasPointersAndRelations');
+        const obj2 = new Parse.Object('HasPointersAndRelations');
         obj2.set('aPointer', savedObj1);
-        var relation = obj2.relation('aRelation');
+        const relation = obj2.relation('aRelation');
         relation.add(obj1);
         return obj2.save();
       })
@@ -839,8 +842,8 @@ describe('SchemaController', () => {
 
   it('can delete string fields and resave as number field', done => {
     Parse.Object.disableSingleInstance();
-    var obj1 = hasAllPODobject();
-    var obj2 = hasAllPODobject();
+    const obj1 = hasAllPODobject();
+    const obj2 = hasAllPODobject();
     Parse.Object.saveAll([obj1, obj2])
       .then(() => config.database.loadSchema())
       .then(schema => schema.deleteField('aString', 'HasAllPOD', config.database))
@@ -867,7 +870,7 @@ describe('SchemaController', () => {
 
   it('can delete pointer fields and resave as string', done => {
     Parse.Object.disableSingleInstance();
-    var obj1 = new Parse.Object('NewClass');
+    const obj1 = new Parse.Object('NewClass');
     obj1.save()
       .then(() => {
         obj1.set('aPointer', obj1);
@@ -1029,7 +1032,7 @@ describe('SchemaController', () => {
 describe('Class Level Permissions for requiredAuth', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
   });
 
   function createUser() {
@@ -1050,7 +1053,7 @@ describe('Class Level Permissions for requiredAuth', () => {
         }
       });
     }).then(() => {
-      var query = new Parse.Query('Stuff');
+      const query = new Parse.Query('Stuff');
       return query.find();
     }).then(() => {
       fail('Class permissions should have rejected this query.');
@@ -1074,7 +1077,7 @@ describe('Class Level Permissions for requiredAuth', () => {
     }).then(() => {
       return createUser();
     }).then(() => {
-      var query = new Parse.Query('Stuff');
+      const query = new Parse.Query('Stuff');
       return query.find();
     }).then((results) => {
       expect(results.length).toEqual(0);

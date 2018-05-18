@@ -1,6 +1,7 @@
 import loadAdapter from '../AdapterLoader';
 
 const facebook = require('./facebook');
+const facebookaccountkit = require('./facebookaccountkit');
 const instagram = require("./instagram");
 const linkedin = require("./linkedin");
 const meetup = require("./meetup");
@@ -27,6 +28,7 @@ const anonymous = {
 
 const providers = {
   facebook,
+  facebookaccountkit,
   instagram,
   linkedin,
   meetup,
@@ -43,7 +45,6 @@ const providers = {
   wechat,
   weibo
 }
-
 function authDataValidator(adapter, appIds, options) {
   return function(authData) {
     return adapter.validateAuthData(authData, options).then(() => {

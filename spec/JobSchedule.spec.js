@@ -35,23 +35,23 @@ describe('JobSchedule', () => {
       'jobName': 'SomeJob'
     });
     jobSchedule.save(null).then(done.fail)
-      .catch(done);
+      .catch(() => done());
   });
 
   it('should reject access when not using masterKey (/jobs)', (done) => {
-    rp.get(Parse.serverURL + '/cloud_code/jobs', defaultOptions).then(done.fail, done);
+    rp.get(Parse.serverURL + '/cloud_code/jobs', defaultOptions).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (/jobs/data)', (done) => {
-    rp.get(Parse.serverURL + '/cloud_code/jobs/data', defaultOptions).then(done.fail, done);
+    rp.get(Parse.serverURL + '/cloud_code/jobs/data', defaultOptions).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (PUT /jobs/id)', (done) => {
-    rp.put(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, done);
+    rp.put(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, () => done());
   });
 
   it('should reject access when not using masterKey (PUT /jobs/id)', (done) => {
-    rp.del(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, done);
+    rp.del(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, () => done());
   });
 
   it('should allow access when using masterKey (/jobs)', (done) => {
@@ -90,7 +90,7 @@ describe('JobSchedule', () => {
     });
     rp.post(Parse.serverURL + '/cloud_code/jobs', options)
       .then(done.fail)
-      .catch(done);
+      .catch(() => done());
   });
 
   it('should update a job', (done) => {
@@ -144,7 +144,7 @@ describe('JobSchedule', () => {
       }));
     })
       .then(done.fail)
-      .catch(done);
+      .catch(() => done());
   });
 
   it('should destroy a job', (done) => {

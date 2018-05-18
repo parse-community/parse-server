@@ -8,37 +8,16 @@ const ALLOWED_GET_QUERY_KEYS = ['keys', 'include'];
 
 export class ClassesRouter extends PromiseRouter {
 
+  className(req) {
+    return req.params.className;
+  }
+
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
-    const options = {};
-    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
-      'include', 'redirectClassNameForKey', 'where'];
-
-    for (const key of Object.keys(body)) {
-      if (allowConstraints.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
-      }
-    }
-
-    if (body.skip) {
-      options.skip = Number(body.skip);
-    }
-    if (body.limit || body.limit === 0) {
-      options.limit = Number(body.limit);
-    } else {
-      options.limit = Number(100);
-    }
-    if (body.order) {
-      options.order = String(body.order);
-    }
-    if (body.count) {
-      options.count = true;
-    }
-    if (typeof body.keys == 'string') {
-      options.keys = body.keys;
-    }
-    if (body.include) {
-      options.include = String(body.include);
+    const options = ClassesRouter.optionsFromBody(body);
+    if (req.config.maxLimit && (body.limit > req.config.maxLimit)) {
+      // Silently replace the limit on the query with the max configured
+      options.limit = Number(req.config.maxLimit);
     }
     if (body.redirectClassNameForKey) {
       options.redirectClassNameForKey = String(body.redirectClassNameForKey);
@@ -46,15 +25,8 @@ export class ClassesRouter extends PromiseRouter {
     if (typeof body.where === 'string') {
       body.where = JSON.parse(body.where);
     }
-    return rest.find(req.config, req.auth, req.params.className, body.where, options, req.info.clientSDK)
+    return rest.find(req.config, req.auth, this.className(req), body.where, options, req.info.clientSDK)
       .then((response) => {
-        if (response && response.results) {
-          for (const result of response.results) {
-            if (result.sessionToken) {
-              result.sessionToken = req.info.sessionToken || result.sessionToken;
-            }
-          }
-        }
         return { response: response };
       });
   }
@@ -77,13 +49,13 @@ export class ClassesRouter extends PromiseRouter {
       options.include = String(body.include);
     }
 
-    return rest.get(req.config, req.auth, req.params.className, req.params.objectId, options, req.info.clientSDK)
+    return rest.get(req.config, req.auth, this.className(req), req.params.objectId, options, req.info.clientSDK)
       .then((response) => {
         if (!response.results || response.results.length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Object not found.');
         }
 
-        if (req.params.className === "_User") {
+        if (this.className(req) === "_User") {
 
           delete response.results[0].sessionToken;
 
@@ -99,16 +71,16 @@ export class ClassesRouter extends PromiseRouter {
   }
 
   handleCreate(req) {
-    return rest.create(req.config, req.auth, req.params.className, req.body, req.info.clientSDK);
+    return rest.create(req.config, req.auth, this.className(req), req.body, req.info.clientSDK);
   }
 
   handleUpdate(req) {
     const where = { objectId: req.params.objectId }
-    return rest.update(req.config, req.auth, req.params.className, where, req.body, req.info.clientSDK);
+    return rest.update(req.config, req.auth, this.className(req), where, req.body, req.info.clientSDK);
   }
 
   handleDelete(req) {
-    return rest.del(req.config, req.auth, req.params.className, req.params.objectId, req.info.clientSDK)
+    return rest.del(req.config, req.auth, this.className(req), req.params.objectId, req.info.clientSDK)
       .then(() => {
         return {response: {}};
       });
@@ -124,6 +96,39 @@ export class ClassesRouter extends PromiseRouter {
       }
     }
     return json
+  }
+
+  static optionsFromBody(body) {
+    const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
+      'include', 'redirectClassNameForKey', 'where'];
+
+    for (const key of Object.keys(body)) {
+      if (allowConstraints.indexOf(key) === -1) {
+        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+      }
+    }
+    const options = {};
+    if (body.skip) {
+      options.skip = Number(body.skip);
+    }
+    if (body.limit || body.limit === 0) {
+      options.limit = Number(body.limit);
+    } else {
+      options.limit = Number(100);
+    }
+    if (body.order) {
+      options.order = String(body.order);
+    }
+    if (body.count) {
+      options.count = true;
+    }
+    if (typeof body.keys == 'string') {
+      options.keys = body.keys;
+    }
+    if (body.include) {
+      options.include = String(body.include);
+    }
+    return options;
   }
 
   mountRoutes() {

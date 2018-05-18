@@ -1,16 +1,16 @@
 
-var loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
-var FilesAdapter = require("parse-server-fs-adapter").default;
-var S3Adapter = require("parse-server-s3-adapter").default;
-var ParsePushAdapter = require("parse-server-push-adapter").default;
+const loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
+const FilesAdapter = require("@parse/fs-files-adapter").default;
+const S3Adapter = require("@parse/s3-files-adapter").default;
+const ParsePushAdapter = require("@parse/push-adapter").default;
 const Config = require('../src/Config');
 
 describe("AdapterLoader", ()=>{
 
   it("should instantiate an adapter from string in object", (done) => {
-    var adapterPath = require('path').resolve("./spec/MockAdapter");
+    const adapterPath = require('path').resolve("./spec/MockAdapter");
 
-    var adapter = loadAdapter({
+    const adapter = loadAdapter({
       adapter: adapterPath,
       options: {
         key: "value",
@@ -25,16 +25,16 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should instantiate an adapter from string", (done) => {
-    var adapterPath = require('path').resolve("./spec/MockAdapter");
-    var adapter = loadAdapter(adapterPath);
+    const adapterPath = require('path').resolve("./spec/MockAdapter");
+    const adapter = loadAdapter(adapterPath);
 
     expect(adapter instanceof Object).toBe(true);
     done();
   });
 
   it("should instantiate an adapter from string that is module", (done) => {
-    var adapterPath = require('path').resolve("./src/Adapters/Files/FilesAdapter");
-    var adapter = loadAdapter({
+    const adapterPath = require('path').resolve("./src/Adapters/Files/FilesAdapter");
+    const adapter = loadAdapter({
       adapter: adapterPath
     });
 
@@ -47,8 +47,8 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should instantiate an adapter from npm module", (done) => {
-    var adapter = loadAdapter({
-      module: 'parse-server-fs-adapter'
+    const adapter = loadAdapter({
+      module: '@parse/fs-files-adapter'
     });
 
     expect(typeof adapter).toBe('object');
@@ -60,7 +60,7 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should instantiate an adapter from function/Class", (done) => {
-    var adapter = loadAdapter({
+    const adapter = loadAdapter({
       adapter: FilesAdapter
     });
     expect(adapter instanceof FilesAdapter).toBe(true);
@@ -68,52 +68,52 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should instantiate the default adapter from Class", (done) => {
-    var adapter = loadAdapter(null, FilesAdapter);
+    const adapter = loadAdapter(null, FilesAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
 
   it("should use the default adapter", (done) => {
-    var defaultAdapter = new FilesAdapter();
-    var adapter = loadAdapter(null, defaultAdapter);
+    const defaultAdapter = new FilesAdapter();
+    const adapter = loadAdapter(null, defaultAdapter);
     expect(adapter instanceof FilesAdapter).toBe(true);
     done();
   });
 
   it("should use the provided adapter", (done) => {
-    var originalAdapter = new FilesAdapter();
-    var adapter = loadAdapter(originalAdapter);
+    const originalAdapter = new FilesAdapter();
+    const adapter = loadAdapter(originalAdapter);
     expect(adapter).toBe(originalAdapter);
     done();
   });
 
   it("should fail loading an improperly configured adapter", (done) => {
-    var Adapter = function(options) {
+    const Adapter = function(options) {
       if (!options.foo) {
         throw "foo is required for that adapter";
       }
     }
-    var adapterOptions = {
+    const adapterOptions = {
       param: "key",
       doSomething: function() {}
     };
 
     expect(() => {
-      var adapter = loadAdapter(adapterOptions, Adapter);
+      const adapter = loadAdapter(adapterOptions, Adapter);
       expect(adapter).toEqual(adapterOptions);
     }).not.toThrow("foo is required for that adapter");
     done();
   });
 
   it("should load push adapter from options", (done) => {
-    var options = {
+    const options = {
       android: {
         senderId: 'yolo',
         apiKey: 'yolo'
       }
     }
     expect(() => {
-      var adapter = loadAdapter(undefined, ParsePushAdapter, options);
+      const adapter = loadAdapter(undefined, ParsePushAdapter, options);
       expect(adapter.constructor).toBe(ParsePushAdapter);
       expect(adapter).not.toBe(undefined);
     }).not.toThrow();
@@ -121,8 +121,8 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should load custom push adapter from string (#3544)", (done) => {
-    var adapterPath = require('path').resolve("./spec/MockPushAdapter");
-    var options = {
+    const adapterPath = require('path').resolve("./spec/MockPushAdapter");
+    const options = {
       ios: {
         bundleId: 'bundle.id'
       }
@@ -135,7 +135,7 @@ describe("AdapterLoader", ()=>{
       reconfigureServer({
         push: pushAdapterOptions,
       }).then(() => {
-        const config = new Config(Parse.applicationId);
+        const config = Config.get(Parse.applicationId);
         const pushAdapter = config.pushWorker.adapter;
         expect(pushAdapter.getValidPushTypes()).toEqual(['ios']);
         expect(pushAdapter.options).toEqual(pushAdapterOptions);
@@ -145,9 +145,9 @@ describe("AdapterLoader", ()=>{
   });
 
   it("should load S3Adapter from direct passing", (done) => {
-    var s3Adapter = new S3Adapter("key", "secret", "bucket")
+    const s3Adapter = new S3Adapter("key", "secret", "bucket")
     expect(() => {
-      var adapter = loadAdapter(s3Adapter, FilesAdapter);
+      const adapter = loadAdapter(s3Adapter, FilesAdapter);
       expect(adapter).toBe(s3Adapter);
     }).not.toThrow();
     done();

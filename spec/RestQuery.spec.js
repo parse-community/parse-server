@@ -1,20 +1,20 @@
 'use strict'
 // These tests check the "find" functionality of the REST API.
-var auth = require('../src/Auth');
-var Config = require('../src/Config');
-var rest = require('../src/rest');
+const auth = require('../src/Auth');
+const Config = require('../src/Config');
+const rest = require('../src/rest');
 
-var querystring = require('querystring');
-var rp = require('request-promise');
+const querystring = require('querystring');
+const rp = require('request-promise');
 
-var config;
+let config;
 let database;
-var nobody = auth.nobody(config);
+const nobody = auth.nobody(config);
 
 describe('rest query', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
     database = config.database;
   });
 
@@ -42,7 +42,7 @@ describe('rest query', () => {
     });
   });
 
-  var data = {
+  const data = {
     username: 'blah',
     password: 'pass',
     sessionToken: 'abc123',
@@ -52,7 +52,7 @@ describe('rest query', () => {
     database.create('_User', data).then(() => {
       return rest.find(config, nobody, '_User')
     }).then((result) => {
-      var user = result.results[0];
+      const user = result.results[0];
       expect(user.username).toEqual('blah');
       expect(user.sessionToken).toBeUndefined();
       expect(user.password).toBeUndefined();
@@ -64,7 +64,7 @@ describe('rest query', () => {
     database.create('_User', data).then(() => {
       return rest.find(config, {isMaster: true}, '_User')
     }).then((result) => {
-      var user = result.results[0];
+      const user = result.results[0];
       expect(user.username).toEqual('blah');
       expect(user.sessionToken).toBeUndefined();
       expect(user.password).toBeUndefined();
@@ -74,14 +74,14 @@ describe('rest query', () => {
 
   // Created to test a scenario in AnyPic
   it_exclude_dbs(['postgres'])('query with include', (done) => {
-    var photo = {
+    let photo = {
       foo: 'bar'
     };
-    var user = {
+    let user = {
       username: 'aUsername',
       password: 'aPassword'
     };
-    var activity = {
+    const activity = {
       type: 'comment',
       photo: {
         __type: 'Pointer',
@@ -94,7 +94,7 @@ describe('rest query', () => {
         objectId: ''
       }
     };
-    var queryWhere = {
+    const queryWhere = {
       photo: {
         __type: 'Pointer',
         className: 'TestPhoto',
@@ -102,7 +102,7 @@ describe('rest query', () => {
       },
       type: 'comment'
     };
-    var queryOptions = {
+    const queryOptions = {
       include: 'fromUser',
       order: 'createdAt',
       limit: 30
@@ -122,7 +122,7 @@ describe('rest query', () => {
       return rest.find(config, nobody,
         'TestActivity', queryWhere, queryOptions);
     }).then((response) => {
-      var results = response.results;
+      const results = response.results;
       expect(results.length).toEqual(1);
       expect(typeof results[0].objectId).toEqual('string');
       expect(typeof results[0].photo).toEqual('object');
@@ -133,7 +133,7 @@ describe('rest query', () => {
   });
 
   it('query non-existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.find(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');
@@ -147,7 +147,7 @@ describe('rest query', () => {
   });
 
   it('query existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
       .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
       .then(actualSchema => {
@@ -168,7 +168,7 @@ describe('rest query', () => {
       return rest.create(config, nobody,
         'TestParameterEncode', {foo: 'baz'});
     }).then(() => {
-      var headers = {
+      const headers = {
         'X-Parse-Application-Id': 'test',
         'X-Parse-REST-API-Key': 'rest'
       };
@@ -182,7 +182,7 @@ describe('rest query', () => {
       })
         .then(fail, (response) => {
           const error = response.error;
-          var b = JSON.parse(error);
+          const b = JSON.parse(error);
           expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
         });
 
@@ -194,7 +194,7 @@ describe('rest query', () => {
       })
         .then(fail, (response) => {
           const error = response.error;
-          var b = JSON.parse(error);
+          const b = JSON.parse(error);
           expect(b.code).toEqual(Parse.Error.INVALID_QUERY);
         });
       return Promise.all([p0, p1]);

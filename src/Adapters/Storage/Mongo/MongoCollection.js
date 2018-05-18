@@ -60,6 +60,14 @@ export default class MongoCollection {
     return countOperation;
   }
 
+  distinct(field, query) {
+    return this._mongoCollection.distinct(field, query);
+  }
+
+  aggregate(pipeline, { maxTimeMS, readPreference } = {}) {
+    return this._mongoCollection.aggregate(pipeline, { maxTimeMS, readPreference }).toArray();
+  }
+
   insertOne(object) {
     return this._mongoCollection.insertOne(object);
   }
@@ -77,10 +85,6 @@ export default class MongoCollection {
 
   updateMany(query, update) {
     return this._mongoCollection.updateMany(query, update);
-  }
-
-  deleteOne(query) {
-    return this._mongoCollection.deleteOne(query);
   }
 
   deleteMany(query) {

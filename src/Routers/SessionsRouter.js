@@ -3,33 +3,11 @@ import ClassesRouter from './ClassesRouter';
 import Parse         from 'parse/node';
 import rest          from '../rest';
 import Auth          from '../Auth';
-import RestWrite     from '../RestWrite';
-import { newToken }  from '../cryptoUtils';
 
 export class SessionsRouter extends ClassesRouter {
-  handleFind(req) {
-    req.params.className = '_Session';
-    return super.handleFind(req);
-  }
 
-  handleGet(req) {
-    req.params.className = '_Session';
-    return super.handleGet(req);
-  }
-
-  handleCreate(req) {
-    req.params.className = '_Session';
-    return super.handleCreate(req);
-  }
-
-  handleUpdate(req) {
-    req.params.className = '_Session';
-    return super.handleUpdate(req);
-  }
-
-  handleDelete(req) {
-    req.params.className = '_Session';
-    return super.handleDelete(req);
+  className() {
+    return '_Session';
   }
 
   handleMe(req) {
@@ -52,30 +30,24 @@ export class SessionsRouter extends ClassesRouter {
 
   handleUpdateToRevocableSession(req) {
     const config = req.config;
-    const masterAuth = Auth.master(config)
     const user = req.auth.user;
     // Issue #2720
     // Calling without a session token would result in a not found user
     if (!user) {
       throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'invalid session');
     }
-    const expiresAt = config.generateSessionExpiresAt();
-    const sessionData = {
-      sessionToken: 'r:' + newToken(),
-      user: {
-        __type: 'Pointer',
-        className: '_User',
-        objectId: user.id
-      },
+    const {
+      sessionData,
+      createSession
+    } = Auth.createSession(config, {
+      userId: user.id,
       createdWith: {
         'action': 'upgrade',
       },
-      restricted: false,
       installationId: req.auth.installationId,
-      expiresAt: Parse._encode(expiresAt)
-    };
-    const create = new RestWrite(config, masterAuth, '_Session', null, sessionData);
-    return create.execute().then(() => {
+    });
+
+    return createSession().then(() => {
       // delete the session token, use the db to skip beforeSave
       return config.database.update('_User', {
         objectId: user.id

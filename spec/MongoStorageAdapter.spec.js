@@ -1,7 +1,7 @@
 'use strict';
 
-const MongoStorageAdapter = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
-const MongoClient = require('mongodb').MongoClient;
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const { MongoClient } = require('mongodb');
 const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 
 // These tests are specific to the mongo storage adapter + mongo storage format
@@ -35,7 +35,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
     );
   });
 
-  // https://github.com/ParsePlatform/parse-server/pull/148#issuecomment-180407057
+  // https://github.com/parse-community/parse-server/pull/148#issuecomment-180407057
   it('preserves replica sets', () => {
     spyOn(MongoClient, 'connect').and.returnValue(Promise.resolve(null));
     new MongoStorageAdapter({
@@ -53,7 +53,7 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
       .then(() => adapter._rawFind('Foo', {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(obj._id).toEqual('abcde');
         expect(obj.objectId).toBeUndefined();
         done();
@@ -236,5 +236,24 @@ describe_only_db('mongo')('MongoStorageAdapter', () => {
         fail();
         done();
       });
+  });
+
+  it('handleShutdown, close connection', (done) => {
+    const adapter = new MongoStorageAdapter({ uri: databaseURI });
+
+    const schema = {
+      fields: {
+        array: { type: 'Array' },
+        object: { type: 'Object' },
+        date: { type: 'Date' },
+      }
+    };
+
+    adapter.createObject('MyClass', schema, {}).then(() => {
+      expect(adapter.database.serverConfig.isConnected()).toEqual(true);
+      adapter.handleShutdown()
+      expect(adapter.database.serverConfig.isConnected()).toEqual(false);
+      done();
+    });
   });
 });

@@ -1,12 +1,12 @@
 'use strict';
 
-var WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-var request = require('request');
+const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const request = require('request');
 
 describe('info logs', () => {
 
   it("Verify INFO logs", (done) => {
-    var winstonLoggerAdapter = new WinstonLoggerAdapter();
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
     winstonLoggerAdapter.log('info', 'testing info logs', () => {
       winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
@@ -35,7 +35,7 @@ describe('info logs', () => {
 
 describe('error logs', () => {
   it("Verify ERROR logs", (done) => {
-    var winstonLoggerAdapter = new WinstonLoggerAdapter();
+    const winstonLoggerAdapter = new WinstonLoggerAdapter();
     winstonLoggerAdapter.log('error', 'testing error logs', () => {
       winstonLoggerAdapter.query({
         from: new Date(Date.now() - 500),
@@ -71,7 +71,7 @@ describe('verbose logs', () => {
         expect(logString.match(/\*\*\*\*\*\*\*\*/g).length).not.toBe(0);
         expect(logString.match(/moon-y/g)).toBe(null);
 
-        var headers = {
+        const headers = {
           'X-Parse-Application-Id': 'test',
           'X-Parse-REST-API-Key': 'rest'
         };

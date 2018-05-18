@@ -1,10 +1,12 @@
 "use strict";
 // These tests check the "create" / "update" functionality of the REST API.
-var auth = require('../src/Auth');
-var Config = require('../src/Config');
-var Parse = require('parse/node').Parse;
-var rest = require('../src/rest');
-var request = require('request');
+const auth = require('../src/Auth');
+const Config = require('../src/Config');
+const Parse = require('parse/node').Parse;
+const rest = require('../src/rest');
+const RestWrite = require('../src/RestWrite');
+const request = require('request');
+const rp = require('request-promise');
 
 let config;
 let database;
@@ -12,7 +14,7 @@ let database;
 describe('rest create', () => {
 
   beforeEach(() => {
-    config = new Config('test');
+    config = Config.get('test');
     database = config.database;
   });
 
@@ -21,7 +23,7 @@ describe('rest create', () => {
       .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
         expect(obj.objectId.length).toEqual(10);
         expect(obj._id).toBeUndefined();
@@ -35,7 +37,7 @@ describe('rest create', () => {
       .then(() => database.adapter.find('Foo', { fields: {} }, {}, {}))
       .then((results) => {
         expect(results.length).toEqual(1);
-        var obj = results[0];
+        const obj = results[0];
         expect(typeof obj.objectId).toEqual('string');
         expect(obj.objectId.length).toEqual(20);
         done();
@@ -74,7 +76,7 @@ describe('rest create', () => {
 
   it('handles array, object, date', (done) => {
     const now = new Date();
-    var obj = {
+    const obj = {
       array: [1, 2, 3],
       object: {foo: 'bar'},
       date: Parse._encode(now),
@@ -87,7 +89,7 @@ describe('rest create', () => {
       } }, {}, {}))
       .then(results => {
         expect(results.length).toEqual(1);
-        var mob = results[0];
+        const mob = results[0];
         expect(mob.array instanceof Array).toBe(true);
         expect(typeof mob.object).toBe('object');
         expect(mob.date.__type).toBe('Date');
@@ -133,7 +135,7 @@ describe('rest create', () => {
   });
 
   it('handles create on non-existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     rest.create(customConfig, auth.nobody(customConfig), 'ClientClassCreation', {})
       .then(() => {
         fail('Should throw an error');
@@ -147,7 +149,7 @@ describe('rest create', () => {
   });
 
   it('handles create on existent class when disabled client class creation', (done) => {
-    var customConfig = Object.assign({}, config, {allowClientClassCreation: false});
+    const customConfig = Object.assign({}, config, {allowClientClassCreation: false});
     config.database.loadSchema()
       .then(schema => schema.addClassIfNotExists('ClientClassCreation', {}))
       .then(actualSchema => {
@@ -162,7 +164,7 @@ describe('rest create', () => {
   });
 
   it('handles user signup', (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
@@ -178,21 +180,21 @@ describe('rest create', () => {
   });
 
   it('handles anonymous user signup', (done) => {
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
         }
       }
     };
-    var data2 = {
+    const data2 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000002'
         }
       }
     };
-    var username1;
+    let username1;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -223,7 +225,7 @@ describe('rest create', () => {
   });
 
   it('handles anonymous user signup and upgrade to new user', (done) => {
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -231,12 +233,12 @@ describe('rest create', () => {
       }
     };
 
-    var updatedData = {
+    const updatedData = {
       authData: { anonymous: null },
       username: 'hello',
       password: 'world'
     }
-    var objectId;
+    let objectId;
     rest.create(config, auth.nobody(config), '_User', data1)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -261,9 +263,9 @@ describe('rest create', () => {
   });
 
   it('handles no anonymous users config', (done) => {
-    var NoAnnonConfig = Object.assign({}, config);
+    const NoAnnonConfig = Object.assign({}, config);
     NoAnnonConfig.authDataManager.setEnableAnonymousUsers(false);
-    var data1 = {
+    const data1 = {
       authData: {
         anonymous: {
           id: '00000000-0000-0000-0000-000000000001'
@@ -282,7 +284,7 @@ describe('rest create', () => {
   });
 
   it('test facebook signup and login', (done) => {
-    var data = {
+    const data = {
       authData: {
         facebook: {
           id: '8675309',
@@ -290,7 +292,7 @@ describe('rest create', () => {
         }
       }
     };
-    var newUserSignedUpByFacebookObjectId;
+    let newUserSignedUpByFacebookObjectId;
     rest.create(config, auth.nobody(config), '_User', data)
       .then((r) => {
         expect(typeof r.response.objectId).toEqual('string');
@@ -308,7 +310,7 @@ describe('rest create', () => {
           '_Session', {sessionToken: r.response.sessionToken});
       }).then((response) => {
         expect(response.results.length).toEqual(1);
-        var output = response.results[0];
+        const output = response.results[0];
         expect(output.user.objectId).toEqual(newUserSignedUpByFacebookObjectId);
         done();
       }).catch(err => {
@@ -347,7 +349,7 @@ describe('rest create', () => {
   });
 
   it("cannot set objectId", (done) => {
-    var headers = {
+    const headers = {
       'Content-Type': 'application/octet-stream',
       'X-Parse-Application-Id': 'test',
       'X-Parse-REST-API-Key': 'rest'
@@ -360,7 +362,7 @@ describe('rest create', () => {
         'objectId': 'hello'
       })
     }, (error, response, body) => {
-      var b = JSON.parse(body);
+      const b = JSON.parse(body);
       expect(b.code).toEqual(105);
       expect(b.error).toEqual('objectId is an invalid field name.');
       done();
@@ -368,12 +370,12 @@ describe('rest create', () => {
   });
 
   it("test default session length", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    var now = new Date();
+    const now = new Date();
 
     rest.create(config, auth.nobody(config), '_User', user)
       .then((r) => {
@@ -387,9 +389,9 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
-        var actual = new Date(session.expiresAt.iso);
-        var expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
+        const session = r.results[0];
+        const actual = new Date(session.expiresAt.iso);
+        const expected = new Date(now.getTime() + (1000 * 3600 * 24 * 365));
 
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());
@@ -402,12 +404,12 @@ describe('rest create', () => {
   });
 
   it("test specified session length", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar',
     };
-    var sessionLength = 3600, // 1 Hour ahead
+    const sessionLength = 3600, // 1 Hour ahead
       now = new Date(); // For reference later
     config.sessionLength = sessionLength;
 
@@ -423,9 +425,9 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
-        var actual = new Date(session.expiresAt.iso);
-        var expected = new Date(now.getTime() + (sessionLength * 1000));
+        const session = r.results[0];
+        const actual = new Date(session.expiresAt.iso);
+        const expected = new Date(now.getTime() + (sessionLength * 1000));
 
         expect(actual.getFullYear()).toEqual(expected.getFullYear());
         expect(actual.getMonth()).toEqual(expected.getMonth());
@@ -441,7 +443,7 @@ describe('rest create', () => {
   });
 
   it("can create a session with no expiration", (done) => {
-    var user = {
+    const user = {
       username: 'asdf',
       password: 'zxcv',
       foo: 'bar'
@@ -460,7 +462,7 @@ describe('rest create', () => {
       .then((r) => {
         expect(r.results.length).toEqual(1);
 
-        var session = r.results[0];
+        const session = r.results[0];
         expect(session.expiresAt).toBeUndefined();
 
         done();
@@ -489,7 +491,7 @@ describe('rest create', () => {
   it("cannot create object in volatileClasses if not masterKey", (done) =>{
     Promise.resolve()
       .then(() => {
-        rest.create(config, auth.nobody(config), '_PushStatus', {})
+        return rest.create(config, auth.nobody(config), '_PushStatus', {})
       })
       .then((r) => {
         console.log(r);
@@ -498,12 +500,106 @@ describe('rest create', () => {
         expect(error.code).toEqual(119);
         done();
       })
+  });
+
+  it('locks down session', (done) => {
+    let currentUser;
+    Parse.User.signUp('foo', 'bar').then((user) => {
+      currentUser = user;
+      const sessionToken = user.getSessionToken();
+      const headers = {
+        'Content-Type': 'application/octet-stream',
+        'X-Parse-Application-Id': 'test',
+        'X-Parse-REST-API-Key': 'rest',
+        'X-Parse-Session-Token': sessionToken,
+      };
+      let sessionId;
+      return rp.get({
+        headers: headers,
+        url: 'http://localhost:8378/1/sessions/me',
+        json: true,
+      }).then(body => {
+        sessionId = body.objectId;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            installationId: 'yolo'
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            sessionToken: 'yolo'
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        return Parse.User.signUp('other', 'user');
+      }).then((otherUser) => {
+        const user = new Parse.User();
+        user.id = otherUser.id;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            user: Parse._encode(user)
+          }
+        })
+      }).then(done.fail, (res) => {
+        expect(res.statusCode).toBe(400);
+        expect(res.error.code).toBe(105);
+        const user = new Parse.User();
+        user.id = currentUser.id;
+        return rp.put({
+          headers,
+          url: 'http://localhost:8378/1/sessions/' + sessionId,
+          json: {
+            user: Parse._encode(user)
+          }
+        })
+      }).then(done).catch(done.fail);
+    }).catch(done.fail);
+  });
+
+  it ('sets current user in new sessions', (done) => {
+    let currentUser;
+    Parse.User.signUp('foo', 'bar')
+      .then((user) => {
+        currentUser = user;
+        const sessionToken = user.getSessionToken();
+        const headers = {
+          'X-Parse-Application-Id': 'test',
+          'X-Parse-REST-API-Key': 'rest',
+          'X-Parse-Session-Token': sessionToken,
+        };
+        return rp.post({
+          headers,
+          url: 'http://localhost:8378/1/sessions',
+          json: true,
+          body: { 'user': { '__type': 'Pointer', 'className':'_User', 'objectId': 'fakeId' } },
+        })
+      })
+      .then((body) => {
+        if (body.user.objectId === currentUser.id) {
+          return done();
+        } else {
+          return done.fail();
+        }
+      })
+      .catch(done.fail);
   })
 });
 
 describe('rest update', () => {
 
   it('ignores createdAt', done => {
+    const config = Config.get('test');
     const nobody = auth.nobody(config);
     const className = 'Foo';
     const newCreatedAt = new Date('1970-01-01T00:00:00.000Z');
@@ -524,10 +620,141 @@ describe('rest update', () => {
       const updatedObject = res2.results[0];
       expect(new Date(updatedObject.createdAt)).not.toEqual(newCreatedAt);
       done();
-    }).then(done).catch(err => {
-      fail(err);
+    }).then(done).catch(done.fail);
+  });
+});
+
+describe('read-only masterKey', () => {
+  it('properly throws on rest.create, rest.update and rest.del', () => {
+    const config = Config.get('test');
+    const readOnly = auth.readOnly(config);
+    expect(() => {
+      rest.create(config, readOnly, 'AnObject', {})
+    }).toThrow(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, `read-only masterKey isn't allowed to perform the create operation.`));
+    expect(() => {
+      rest.update(config, readOnly, 'AnObject', {})
+    }).toThrow();
+    expect(() => {
+      rest.del(config, readOnly, 'AnObject', {})
+    }).toThrow();
+  });
+
+  it('properly blocks writes', (done) => {
+    reconfigureServer({
+      readOnlyMasterKey: 'yolo-read-only'
+    }).then(() => {
+      return rp.post(`${Parse.serverURL}/classes/MyYolo`, {
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-Master-Key': 'yolo-read-only',
+        },
+        json: { foo: 'bar' }
+      });
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to perform the create operation.');
       done();
     });
   });
 
+  it('should throw when masterKey and readOnlyMasterKey are the same', (done) => {
+    reconfigureServer({
+      masterKey: 'yolo',
+      readOnlyMasterKey: 'yolo'
+    }).then(done.fail).catch((err) => {
+      expect(err).toEqual(new Error('masterKey and readOnlyMasterKey should be different'));
+      done();
+    });
+  });
+
+  it('should throw when trying to create RestWrite', () => {
+    const config = Config.get('test');
+    expect(() => {
+      new RestWrite(config, auth.readOnly(config));
+    }).toThrow(new Parse.Error(Parse.Error.OPERATION_FORBIDDEN, 'Cannot perform a write operation when using readOnlyMasterKey'));
+  });
+
+  it('should throw when trying to create schema', (done) => {
+    return rp.post(`${Parse.serverURL}/schemas`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to create a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to create schema with a name', (done) => {
+    return rp.post(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to create a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to update schema', (done) => {
+    return rp.put(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to update a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to delete schema', (done) => {
+    return rp.del(`${Parse.serverURL}/schemas/MyClass`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to delete a schema.');
+      done();
+    });
+  });
+
+  it('should throw when trying to update the global config', (done) => {
+    return rp.put(`${Parse.serverURL}/config`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to update the config.');
+      done();
+    });
+  });
+
+  it('should throw when trying to send push', (done) => {
+    return rp.post(`${Parse.serverURL}/push`, {
+      headers: {
+        'X-Parse-Application-Id': Parse.applicationId,
+        'X-Parse-Master-Key': 'read-only-test',
+      },
+      json: {}
+    }).then(done.fail).catch((res) => {
+      expect(res.error.code).toBe(Parse.Error.OPERATION_FORBIDDEN);
+      expect(res.error.error).toBe('read-only masterKey isn\'t allowed to send push notifications.');
+      done();
+    });
+  });
 });

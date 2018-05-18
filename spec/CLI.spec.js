@@ -3,7 +3,7 @@ import commander from '../src/cli/utils/commander';
 import definitions from '../src/cli/definitions/parse-server';
 import liveQueryDefinitions from '../src/cli/definitions/parse-live-query-server';
 
-var testDefinitions = {
+const testDefinitions = {
   'arg0': 'PROGRAM_ARG_0',
   'arg1': {
     env: 'PROGRAM_ARG_1',
@@ -12,7 +12,7 @@ var testDefinitions = {
   'arg2': {
     env: 'PROGRAM_ARG_2',
     action: function(value) {
-      var intValue = parseInt(value);
+      const intValue = parseInt(value);
       if (!Number.isInteger(intValue)) {
         throw 'arg2 is invalid';
       }
@@ -156,6 +156,12 @@ describe('definitions', () => {
         expect(typeof definition.action).toBe('function');
       }
     }
+  });
+
+  it('should throw when using deprecated facebookAppIds', () => {
+    expect(() => {
+      definitions.facebookAppIds.action()
+    }).toThrow();
   });
 });
 
