@@ -217,7 +217,14 @@ afterEach(function(done) {
       });
     })
     .then(() => Parse.User.logOut())
-    .then(afterLogOut, afterLogOut)
+    .then(() => {}, () => {}) // swallow errors
+    .then(() => {
+      // Connection close events are not immediate on node 10+... wait a bit
+      return new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      });
+    })
+    .then(afterLogOut)
 });
 
 const TestObject = Parse.Object.extend({
