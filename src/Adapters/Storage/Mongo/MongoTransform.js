@@ -247,9 +247,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
   case '$or':
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case '$nor':
+    return {key: key, value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case 'lastUsed':
     if (valueAsDate(value)) {
       return {key: '_last_used', value: valueAsDate(value)}
