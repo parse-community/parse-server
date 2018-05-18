@@ -34,6 +34,44 @@ const isAccountLockoutError = function (username, password, duration, waitTime) 
 };
 
 describe("Verify User Password", () => {
+  it('fails to verify password when masterKey has locked out user', (done) => {
+    const user = new Parse.User();
+    const ACL = new Parse.ACL();
+    ACL.setPublicReadAccess(false);
+    ACL.setPublicWriteAccess(false);
+    user.setUsername('testuser');
+    user.setPassword('mypass');
+    user.setACL(ACL);
+    user.signUp().then(() => {
+      return Parse.User.logIn('testuser', 'mypass');
+    }).then((user) => {
+      equal(user.get('username'), 'testuser');
+      // Lock the user down
+      const ACL = new Parse.ACL();
+      user.setACL(ACL);
+      return user.save(null, { useMasterKey: true });
+    }).then(() => {
+      expect(user.getACL().getPublicReadAccess()).toBe(false);
+      return rp.get({
+        url: Parse.serverURL + '/verifyPassword',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest'
+        },
+        qs: {
+          username: '',
+          password: 'mypass',
+        }
+      });
+    }).then((res) => {
+      fail(res);
+      done();
+    }).catch((err) => {
+      expect(err.statusCode).toBe(400);
+      expect(err.error).toMatch('{"code":101,"error":"Invalid username/password."}');
+      done();
+    });
+  });
   it('fails to verify password when username is not provided in query string REST API', (done) => {
     const user = new Parse.User();
     user.save({
