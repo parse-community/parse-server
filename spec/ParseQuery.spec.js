@@ -2567,6 +2567,36 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('$select inside $nor', (done) => {
+    const objects = Array.from(Array(10).keys()).map((rating) => {
+      return new TestObject({ 'rating': rating });
+    });
+
+    const highValue = 5;
+    const lowValue = 3;
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: {
+          $nor: [
+            { rating : { $gt : highValue } },
+            { rating : { $lte : lowValue } },
+          ]
+        },
+      }
+    });
+
+    Parse.Object.saveAll(objects).then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then((results) => {
+      expect(results.results.length).toBe(highValue - lowValue);
+      expect(results.results.every(res => res.rating > lowValue && res.rating <= highValue)).toBe(true);
+      done();
+    }, (error) => {
+      jfail(error);
+      done();
+    });
+  });
+
   it("dontSelect query", function(done) {
     const RestaurantObject = Parse.Object.extend("Restaurant");
     const PersonObject = Parse.Object.extend("Person");
