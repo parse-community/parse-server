@@ -3580,14 +3580,18 @@ describe('Parse.User testing', () => {
       email: 'yo@lo.com'
     }).then(() => {
       const token = user.getSessionToken();
-      const promises = [];
-      while(promises.length != 5) {
-        promises.push(Parse.User.logIn('yolo', 'yolo').then((res) => {
-          // ensure a new session token is generated at each login
-          expect(res.getSessionToken()).not.toBe(token);
-        }));
+      let promise = Promise.resolve();
+      let count = 0;
+      while(count < 5) {
+        promise = promise.then(() => {
+          return Parse.User.logIn('yolo', 'yolo').then((res) => {
+            // ensure a new session token is generated at each login
+            expect(res.getSessionToken()).not.toBe(token);
+          });
+        });
+        count++;
       }
-      return Promise.all(promises);
+      return promise;
     }).then(() => {
       // wait because session destruction is not synchronous
       return new Promise((resolve) => {
