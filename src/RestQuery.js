@@ -590,7 +590,18 @@ RestQuery.prototype.runAfterFindTrigger = function() {
   }
   // Run afterFind trigger and set the new results
   return triggers.maybeRunAfterFindTrigger(triggers.Types.afterFind, this.auth, this.className,this.response.results, this.config).then((results) => {
-    this.response.results = results;
+    // Ensure we properly set the className back
+    if (this.redirectClassName) {
+      this.response.results = results.map((object) => {
+        if (object instanceof Parse.Object) {
+          object = object.toJSON();
+        }
+        object.className = this.redirectClassName;
+        return object;
+      });
+    } else {
+      this.response.results = results;
+    }
   });
 };
 
