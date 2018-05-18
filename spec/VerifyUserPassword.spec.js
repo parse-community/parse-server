@@ -59,7 +59,7 @@ describe("Verify User Password", () => {
           'X-Parse-REST-API-Key': 'rest'
         },
         qs: {
-          username: '',
+          username: 'testuser',
           password: 'mypass',
         }
       });
@@ -67,7 +67,7 @@ describe("Verify User Password", () => {
       fail(res);
       done();
     }).catch((err) => {
-      expect(err.statusCode).toBe(400);
+      expect(err.statusCode).toBe(404);
       expect(err.error).toMatch('{"code":101,"error":"Invalid username/password."}');
       done();
     });
