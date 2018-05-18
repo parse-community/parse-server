@@ -446,6 +446,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index += 1;
     }
 
+    if (fieldValue.$containedBy) {
+      const arr = fieldValue.$containedBy;
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
+      }
+
+      patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
+      values.push(fieldName, JSON.stringify(arr));
+      index += 2;
+    }
+
     if (fieldValue.$text) {
       const search = fieldValue.$text.$search;
       let language = 'english';
