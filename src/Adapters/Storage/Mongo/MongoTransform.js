@@ -290,6 +290,9 @@ function transformQueryKeyValue(className, key, value, schema) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
     }
+    if (transformedConstraint.$elemMatch) {
+      return { key: '$nor', value: [{ [key]: transformedConstraint }] };
+    }
     return {key, value: transformedConstraint};
   }
 
@@ -797,6 +800,19 @@ function transformConstraint(constraint, field) {
       answer[key] = s;
       break;
 
+    case '$containedBy': {
+      const arr = constraint[key];
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
+      }
+      answer.$elemMatch = {
+        $nin: arr.map(transformer)
+      };
+      break;
+    }
     case '$options':
       answer[key] = constraint[key];
       break;
