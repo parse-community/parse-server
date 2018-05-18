@@ -62,7 +62,7 @@ const validateQuery = (query: any): void => {
   }
 
   if (query.$or) {
-    if (query.$or instanceof Array && query.$or.length > 1) {
+    if (query.$or instanceof Array) {
       query.$or.forEach(validateQuery);
 
       /* In MongoDB, $or queries which are not alone at the top level of the
@@ -99,15 +99,15 @@ const validateQuery = (query: any): void => {
       });
       query.$or.forEach(validateQuery);
     } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array of at least 2 values.');
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $or format - use an array value.');
     }
   }
 
   if (query.$and) {
-    if (query.$and instanceof Array && query.$and.length > 1) {
+    if (query.$and instanceof Array) {
       query.$and.forEach(validateQuery);
     } else {
-      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array of at least 2 values.');
+      throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Bad $and format - use an array value.');
     }
   }
 

@@ -2567,7 +2567,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('$select inside $nor', (done) => {
+  it('$nor valid query', (done) => {
     const objects = Array.from(Array(10).keys()).map((rating) => {
       return new TestObject({ 'rating': rating });
     });
@@ -2594,7 +2594,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('$nor invalid query', (done) => {
+  it('$nor invalid query - empty array', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
         where: { $nor: [] },
@@ -2604,7 +2604,22 @@ describe('Parse.Query testing', () => {
     obj.save().then(() => {
       return rp.get(Parse.serverURL + "/classes/TestObject", options);
     }).then(done.fail).catch((error) => {
-      equal(error.error.code, Parse.Error.INVALID_JSON);
+      equal(error.error.code, Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
+  it('$nor invalid query - wrong type', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { $nor: 1337 },
+      }
+    });
+    const obj = new TestObject();
+    obj.save().then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then(done.fail).catch((error) => {
+      equal(error.error.code, Parse.Error.INVALID_QUERY);
       done();
     });
   });
