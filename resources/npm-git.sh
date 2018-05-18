@@ -25,6 +25,7 @@ cp README.md $BUILD_DIR/
 cp LICENSE $BUILD_DIR/
 cp PATENTS $BUILD_DIR/
 cp CHANGELOG.md $BUILD_DIR/
+cp postinstall.js $BUILD_DIR/
 cp -R lib $BUILD_DIR
 cp -R bin $BUILD_DIR
 cp -R public_html $BUILD_DIR
