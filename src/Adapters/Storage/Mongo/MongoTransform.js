@@ -290,6 +290,9 @@ function transformQueryKeyValue(className, key, value, schema) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
     }
+    if (transformedConstraint.$elemMatch) {
+      return { key: '$nor', value: [{ [key]: transformedConstraint }] };
+    }
     return {key, value: transformedConstraint};
   }
 
@@ -796,20 +799,17 @@ function transformConstraint(constraint, field) {
       }
       answer[key] = s;
       break;
-    case '$elemMatch': {
-      const match = constraint[key];
-      if (typeof match !== 'object' || Array.isArray(match)) {
-        throw new Parse.Error(Parse.Error.INVALID_JSON, `bad match: $elemMatch, should be object`);
+    case '$containedBy': {
+      const arr = constraint[key];
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
       }
-      answer[key] = _.mapValues(match, value => {
-        return (atom => {
-          if (Array.isArray(atom)) {
-            return value.map(transformer);
-          } else {
-            return transformer(atom);
-          }
-        })(value);
-      });
+      answer.$elemMatch = {
+        $nin: arr.map(transformer)
+      };
       break;
     }
     case '$options':

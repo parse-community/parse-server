@@ -523,7 +523,7 @@ describe('Parse.Query testing', () => {
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -545,7 +545,7 @@ describe('Parse.Query testing', () => {
           equal(results.results.length, 1);
           arrayContains(results.results, object);
 
-          return rp.get({
+          return require('request-promise').get({
             url: Parse.serverURL + "/classes/Object",
             json: {
               where: {
@@ -568,7 +568,7 @@ describe('Parse.Query testing', () => {
           arrayContains(results.results, object);
           arrayContains(results.results, object3);
 
-          return rp.get({
+          return require('request-promise').get({
             url: Parse.serverURL + "/classes/Object",
             json: {
               where: {
@@ -602,7 +602,7 @@ describe('Parse.Query testing', () => {
     object.save().then(() => {
       equal(object.isNew(), false);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -636,7 +636,7 @@ describe('Parse.Query testing', () => {
     object.save().then(() => {
       equal(object.isNew(), false);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -666,7 +666,7 @@ describe('Parse.Query testing', () => {
     object.save().then(() => {
       equal(object.isNew(), false);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -702,7 +702,7 @@ describe('Parse.Query testing', () => {
     Parse.Object.saveAll(objectList).then((results) => {
       equal(objectList.length, results.length);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -732,7 +732,7 @@ describe('Parse.Query testing', () => {
     object.save().then(() => {
       equal(object.isNew(), false);
 
-      return rp.get({
+      return require('request-promise').get({
         url: Parse.serverURL + "/classes/Object",
         json: {
           where: {
@@ -754,8 +754,7 @@ describe('Parse.Query testing', () => {
       });
   });
 
-  it('containsExclusivelySome number array queries', (done) => {
-
+  it('containedBy pointer array', (done) => {
     const objects = Array.from(Array(10).keys()).map((idx) => {
       const obj = new Parse.Object('Object');
       obj.set('key', idx);
@@ -787,13 +786,9 @@ describe('Parse.Query testing', () => {
         url: Parse.serverURL + "/classes/Parent",
         json: {
           where: {
-            $nor : [{
-              objects : {
-                $elemMatch : {
-                  $nin : pointers
-                }
-              }
-            }]
+            objects: {
+              $containedBy: pointers
+            }
           }
         },
         headers: {
@@ -806,9 +801,44 @@ describe('Parse.Query testing', () => {
       expect(results.results[0].objectId).toBe(parent3.id);
       expect(results.results.length).toBe(1);
       done();
-    }).catch((error) => { console.log(error); });
-  })
+    });
+  });
 
+
+  it('containedBy number array', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { numbers: { $containedBy: [1, 2, 3, 4, 5, 6, 7, 8, 9] } },
+      }
+    });
+    const obj1 = new TestObject({ numbers: [0, 1, 2] });
+    const obj2 = new TestObject({ numbers: [2, 0] });
+    const obj3 = new TestObject({ numbers: [1, 2, 3, 4] });
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then((results) => {
+      expect(results.results[0].objectId).not.toBeUndefined();
+      expect(results.results[0].objectId).toBe(obj3.id);
+      expect(results.results.length).toBe(1);
+      done();
+    });
+  });
+
+  it('containedBy invalid query', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { objects: { $containedBy: 1234 } },
+      }
+    });
+    const obj = new TestObject();
+    obj.save().then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then(done.fail).catch((error) => {
+      equal(error.error.code, Parse.Error.INVALID_JSON);
+      equal(error.error.error, 'bad $containedBy: should be an array');
+      done();
+    });
+  });
 
   const BoxedNumber = Parse.Object.extend({
     className: "BoxedNumber"
@@ -3579,7 +3609,7 @@ describe('Parse.Query testing', () => {
           __type: 'Pointer',
         }
       }
-      return rp.post({
+      return require('request-promise').post({
         url: Parse.serverURL + "/classes/Game",
         json: { where, "_method": "GET" },
         headers: {
