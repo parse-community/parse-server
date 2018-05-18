@@ -89,6 +89,9 @@ export class FunctionsRouter extends PromiseRouter {
       },
       error: function(code, message) {
         if (!message) {
+          if (code instanceof Parse.Error) {
+            return reject(code)
+          }
           message = code;
           code = Parse.Error.SCRIPT_FAILED;
         }
