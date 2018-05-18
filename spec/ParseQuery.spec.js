@@ -2567,6 +2567,63 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('$nor valid query', (done) => {
+    const objects = Array.from(Array(10).keys()).map((rating) => {
+      return new TestObject({ 'rating': rating });
+    });
+
+    const highValue = 5;
+    const lowValue = 3;
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: {
+          $nor: [
+            { rating : { $gt : highValue } },
+            { rating : { $lte : lowValue } },
+          ]
+        },
+      }
+    });
+
+    Parse.Object.saveAll(objects).then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then((results) => {
+      expect(results.results.length).toBe(highValue - lowValue);
+      expect(results.results.every(res => res.rating > lowValue && res.rating <= highValue)).toBe(true);
+      done();
+    });
+  });
+
+  it('$nor invalid query - empty array', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { $nor: [] },
+      }
+    });
+    const obj = new TestObject();
+    obj.save().then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then(done.fail).catch((error) => {
+      equal(error.error.code, Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
+  it('$nor invalid query - wrong type', (done) => {
+    const options = Object.assign({}, masterKeyOptions, {
+      body: {
+        where: { $nor: 1337 },
+      }
+    });
+    const obj = new TestObject();
+    obj.save().then(() => {
+      return rp.get(Parse.serverURL + "/classes/TestObject", options);
+    }).then(done.fail).catch((error) => {
+      equal(error.error.code, Parse.Error.INVALID_QUERY);
+      done();
+    });
+  });
+
   it("dontSelect query", function(done) {
     const RestaurantObject = Parse.Object.extend("Restaurant");
     const PersonObject = Parse.Object.extend("Person");

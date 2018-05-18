@@ -306,7 +306,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
-    } else if (fieldName === '$or' || fieldName === '$and') {
+    } else if (['$or', '$nor', '$and'].includes(fieldName)) {
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach((subQuery) =>  {
@@ -317,8 +317,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           index += clause.values.length;
         }
       });
-      const orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
-      patterns.push(`(${clauses.join(orOrAnd)})`);
+
+      const orOrAnd = fieldName === '$and' ? ' AND ' : ' OR ';
+      const not = fieldName === '$nor' ? ' NOT ' : '';
+
+      patterns.push(`${not}(${clauses.join(orOrAnd)})`);
       values.push(...clauseValues);
     }
 
