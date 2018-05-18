@@ -1,7 +1,12 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.0...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...master)
+
+### 2.8.1
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...2.8.0)
+
+Ensure all the files are properly exported to the final package.
 
 ### 2.8.0
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.0...2.7.4)

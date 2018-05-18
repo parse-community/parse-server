@@ -58,7 +58,7 @@ jobs:
       deploy:
         - provider: script
           skip_cleanup: true
-          script: ./resources/npm-git.sh
+          script: ./resources/npm-git.sh && npm install -g https://github.com/parse-community/parse-server#latest
           on:
            branch:
             - master
