@@ -164,6 +164,32 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
+  it('group by date object transform', (done) => {
+    const obj1 = new TestObject();
+    const obj2 = new TestObject();
+    const obj3 = new TestObject();
+    const pipeline = [{
+      group: {
+        objectId: { day: { $dayOfMonth: "$updatedAt" }, month: { $month: "$createdAt" }, year: { $year: "$createdAt" } },
+        count: { $sum: 1 }
+      }
+    }];
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      const createdAt = new Date(obj1.createdAt);
+      expect(results[0].objectId.day).toEqual(createdAt.getUTCDate());
+      expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
+      expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
+      done();
+    }).catch((error) => {
+      console.log(error);
+      console.log('error');
+      done();
+    });
+  });
+
   it_exclude_dbs(['postgres'])('cannot group by date field (excluding createdAt and updatedAt)', (done) => {
     const obj1 = new TestObject({ dateField: new Date(1990, 11, 1) });
     const obj2 = new TestObject({ dateField: new Date(1990, 5, 1) });
@@ -339,6 +365,27 @@ describe('Parse.Query Aggregate testing', () => {
       }).catch(done.fail);
   });
 
+  it('match comparison date query', (done) => {
+    const today = new Date();
+    const yesterday = new Date();
+    const tomorrow = new Date();
+    yesterday.setDate(today.getDate() - 1);
+    tomorrow.setDate(today.getDate() + 1);
+    const obj1 = new TestObject({ dateField: yesterday });
+    const obj2 = new TestObject({ dateField: today });
+    const obj3 = new TestObject({ dateField: tomorrow });
+    const pipeline = [
+      { match: { dateField: { $lt: tomorrow } } }
+    ];
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toBe(2);
+      done();
+    });
+  });
+
   it('match comparison query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -474,6 +521,17 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
+  it('match exists query', (done) => {
+    const pipeline = [
+      { match: { score: { $exists: true } } }
+    ];
+    const query = new Parse.Query(TestObject);
+    query.aggregate(pipeline).then((results) => {
+      expect(results.length).toEqual(4);
+      done();
+    });
+  });
+
   it('match date query - createdAt', (done) => {
     const obj1 = new TestObject();
     const obj2 = new TestObject();
@@ -530,6 +588,29 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
+  it_exclude_dbs(['postgres'])('match pointer with operator query', (done) => {
+    const pointer = new PointerObject();
+
+    const obj1 = new TestObject({ pointer });
+    const obj2 = new TestObject({ pointer });
+    const obj3 = new TestObject();
+
+    Parse.Object.saveAll([pointer, obj1, obj2, obj3]).then(() => {
+      const pipeline = [
+        { match: { pointer: { $exists: true } } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      expect(results[0].pointer.objectId).toEqual(pointer.id);
+      expect(results[1].pointer.objectId).toEqual(pointer.id);
+      expect(results.some(result => result.objectId === obj1.id)).toEqual(true);
+      expect(results.some(result => result.objectId === obj2.id)).toEqual(true);
+      done();
+    });
+  });
+
   it('project query', (done) => {
     const options = Object.assign({}, masterKeyOptions, {
       body: {
@@ -566,6 +647,26 @@ describe('Parse.Query Aggregate testing', () => {
         });
         done();
       }).catch(done.fail);
+  });
+
+  it('project pointer query', (done) => {
+    const pointer = new PointerObject();
+    const obj = new TestObject({ pointer, name: 'hello' });
+
+    obj.save().then(() => {
+      const pipeline = [
+        { match: { objectId: obj.id } },
+        { project: { pointer: 1, name: 1, createdAt: 1 } }
+      ];
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0].name).toEqual('hello');
+      expect(results[0].createdAt).not.toBe(undefined);
+      expect(results[0].pointer.objectId).toEqual(pointer.id);
+      done();
+    });
   });
 
   it('project with group query', (done) => {
