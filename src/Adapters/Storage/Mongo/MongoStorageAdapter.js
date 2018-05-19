@@ -567,6 +567,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (stage.$match) {
         stage.$match = this._parseAggregateArgs(schema, stage.$match);
       }
+      if (stage.$project) {
+        stage.$project = this._parseAggregateProjectArgs(schema, stage.$project);
+      }
       return stage;
     });
     readPreference = this._parseReadPreference(readPreference);
@@ -624,10 +627,51 @@ export class MongoStorageAdapter implements StorageAdapter {
       const rtnval = {};
       for (const field in pipeline) {
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-          rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+          if (typeof pipeline[field] === 'object') {
+            //
+            // Pass objects down to MongoDB...this is more than likely an $exists operator.
+            //
+            rtnval[`_p_${field}`] = pipeline[field];
+          }
+          else {
+            rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+          }
         } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
           rtnval[field] = this._convertToDate(pipeline[field]);
         } else {
+          rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
+        }
+
+        if (field === 'objectId') {
+          rtnval['_id'] = rtnval[field];
+          delete rtnval[field];
+        } else if (field === 'createdAt') {
+          rtnval['_created_at'] = rtnval[field];
+          delete rtnval[field];
+        } else if (field === 'updatedAt') {
+          rtnval['_updated_at'] = rtnval[field];
+          delete rtnval[field];
+        }
+      }
+      return rtnval;
+    }
+    return pipeline;
+  }
+
+  // This function is slightly different than the one above. Rather than trying to combine these
+  // two functions and making the code even harder to understand, I decided to split it up. The
+  // difference with this function is we are not transforming the values, only the keys of the
+  // pipeline.
+  _parseAggregateProjectArgs(schema: any, pipeline: any): any {
+    if (Array.isArray(pipeline)) {
+      return pipeline.map((value) => this._parseAggregateProjectArgs(schema, value));
+    }
+    else if (typeof pipeline === 'object') {
+      const rtnval = {};
+      for (const field in pipeline) {
+        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+          rtnval[`_p_${field}`] = pipeline[field];
+        }  else {
           rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
 
