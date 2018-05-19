@@ -6,7 +6,7 @@
     "presets": [
         ["env", {
             "targets": {
-                "node": "6.11.4"
+                "node": "8"
             }
         }]
     ]

@@ -306,7 +306,7 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       patterns.push(`$${index}:name = $${index + 1}`);
       values.push(fieldName, fieldValue);
       index += 2;
-    } else if (fieldName === '$or' || fieldName === '$and') {
+    } else if (['$or', '$nor', '$and'].includes(fieldName)) {
       const clauses = [];
       const clauseValues = [];
       fieldValue.forEach((subQuery) =>  {
@@ -317,8 +317,11 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
           index += clause.values.length;
         }
       });
-      const orOrAnd = fieldName === '$or' ? ' OR ' : ' AND ';
-      patterns.push(`(${clauses.join(orOrAnd)})`);
+
+      const orOrAnd = fieldName === '$and' ? ' AND ' : ' OR ';
+      const not = fieldName === '$nor' ? ' NOT ' : '';
+
+      patterns.push(`${not}(${clauses.join(orOrAnd)})`);
       values.push(...clauseValues);
     }
 
@@ -418,7 +421,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
     }
 
     if (Array.isArray(fieldValue.$all) && isArrayField) {
-      patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      if (isAnyValueRegexStartsWith(fieldValue.$all)) {
+        if (!isAllValuesRegexOrNone(fieldValue.$all)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+            + fieldValue.$all);
+        }
+
+        for (let i = 0; i < fieldValue.$all.length; i += 1) {
+          const value = processRegexPattern(fieldValue.$all[i].$regex);
+          fieldValue.$all[i] = value.substring(1) + '%';
+        }
+        patterns.push(`array_contains_all_regex($${index}:name, $${index + 1}::jsonb)`);
+      } else {
+        patterns.push(`array_contains_all($${index}:name, $${index + 1}::jsonb)`);
+      }
       values.push(fieldName, JSON.stringify(fieldValue.$all));
       index += 2;
     }
@@ -431,6 +447,20 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       }
       values.push(fieldName);
       index += 1;
+    }
+
+    if (fieldValue.$containedBy) {
+      const arr = fieldValue.$containedBy;
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
+      }
+
+      patterns.push(`$${index}:name <@ $${index + 1}::jsonb`);
+      values.push(fieldName, JSON.stringify(arr));
+      index += 2;
     }
 
     if (fieldValue.$text) {
@@ -1758,6 +1788,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
             t.none(sql.array.addUnique),
             t.none(sql.array.remove),
             t.none(sql.array.containsAll),
+            t.none(sql.array.containsAllRegex),
             t.none(sql.array.contains)
           ]);
         });
@@ -1860,6 +1891,40 @@ function processRegexPattern(s) {
 
   // regex for contains
   return literalizeRegexPart(s);
+}
+
+function isStartsWithRegex(value) {
+  if (!value || typeof value !== 'string' || !value.startsWith('^')) {
+    return false;
+  }
+
+  const matches = value.match(/\^\\Q.*\\E/);
+  return !!matches;
+}
+
+function isAllValuesRegexOrNone(values) {
+  if (!values || !Array.isArray(values) || values.length === 0) {
+    return true;
+  }
+
+  const firstValuesIsRegex = isStartsWithRegex(values[0].$regex);
+  if (values.length === 1) {
+    return firstValuesIsRegex;
+  }
+
+  for (let i = 1, length = values.length; i < length; ++i) {
+    if (firstValuesIsRegex !== isStartsWithRegex(values[i].$regex)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+function isAnyValueRegexStartsWith(values) {
+  return values.some(function (value) {
+    return isStartsWithRegex(value.$regex);
+  });
 }
 
 function createLiteralRegex(remaining) {

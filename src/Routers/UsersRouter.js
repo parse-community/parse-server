@@ -114,6 +114,12 @@ export class UsersRouter extends ClassesRouter {
         if (!isValidPassword) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
+        // Ensure the user isn't locked out
+        // A locked out user won't be able to login
+        // To lock a user out, just set the ACL to `masterKey` only  ({}).
+        if (!req.auth.isMaster && (!user.ACL || Object.keys(user.ACL).length == 0)) {
+          throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
+        }
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
           throw new Parse.Error(Parse.Error.EMAIL_NOT_FOUND, 'User email is not verified.');
         }
