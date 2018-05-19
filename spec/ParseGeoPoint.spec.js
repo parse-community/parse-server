@@ -565,7 +565,7 @@ describe('Parse.GeoPoint testing', () => {
       fail(`no request should succeed: ${JSON.stringify(resp)}`);
       done();
     }).catch((err) => {
-      expect(err.error.code).toEqual(1);
+      expect(err.error.code).toEqual(Parse.Error.INVALID_JSON);
       done();
     });
   });

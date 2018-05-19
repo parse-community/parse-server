@@ -905,9 +905,9 @@ function transformConstraint(constraint, field) {
 
     case '$geoWithin': {
       const polygon = constraint[key]['$polygon'];
-      let points
+      let points;
       if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
-        if (!polygon.coordinates && polygon.coordinates.length < 3) {
+        if (!polygon.coordinates || polygon.coordinates.length < 3) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
             'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
