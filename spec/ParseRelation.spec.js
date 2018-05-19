@@ -801,4 +801,37 @@ describe('Parse.Relation testing', () => {
         done();
       });
   });
+
+  it('ensures beforeFind on relation doesnt side effect', (done) => {
+    const parent = new Parse.Object('Parent');
+    const child = new Parse.Object('Child');
+    child.save().then(() => {
+      parent.relation('children').add(child);
+      return parent.save();
+    }).then(() => {
+      // We need to use a new reference otherwise the JS SDK remembers the className for a relation
+      // After saves or finds
+      const otherParent = new Parse.Object('Parent');
+      otherParent.id = parent.id;
+      return otherParent.relation('children').query().find();
+    }).then((children) => {
+      // Without an after find all is good, all results have been redirected with proper className
+      children.forEach((child) => expect(child.className).toBe('Child'));
+      // Setup the afterFind
+      Parse.Cloud.afterFind('Child', (req) => {
+        return Promise.resolve(req.objects.map((child) => {
+          child.set('afterFound', true);
+          return child;
+        }));
+      });
+      const otherParent = new Parse.Object('Parent');
+      otherParent.id = parent.id;
+      return otherParent.relation('children').query().find();
+    }).then((children) => {
+      children.forEach((child) => {
+        expect(child.className).toBe('Child');
+        expect(child.get('afterFound')).toBe(true);
+      });
+    }).then(done).catch(done.fail);
+  });
 });
