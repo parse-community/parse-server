@@ -521,7 +521,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('match exists query', (done) => {
+  it_exclude_dbs(['postgres'])('match exists query', (done) => {
     const pipeline = [
       { match: { score: { $exists: true } } }
     ];
