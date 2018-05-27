@@ -131,6 +131,8 @@ export interface ParseServerOptions {
   startLiveQueryServer: ?boolean;
   /* Live query server configuration options (will start the liveQuery server) */
   liveQueryServerOptions: ?LiveQueryServerOptions;
+  /* Keep hook HTTP connections alive */
+  hookKeepAlive: ?boolean;
 
   __indexBuildCompletionCallbackForTests: ?()=>void;
 }
