@@ -25,32 +25,35 @@ stage: test
 env:
   global:
   - COVERAGE_OPTION='./node_modules/.bin/nyc'
-  - NODE_VERSION=6.11.4
+  - NODE_VERSION=8.11.2
   matrix:
   - MONGODB_VERSION=3.2.13
   - MONGODB_VERSION=3.4.4
   - PARSE_SERVER_TEST_DB=postgres
   - PARSE_SERVER_TEST_CACHE=redis
-  - NODE_VERSION=8.7
+  - NODE_VERSION=stable
 before_install:
 - nvm install $NODE_VERSION
 - nvm use $NODE_VERSION
+- npm install -g greenkeeper-lockfile@1
 before_script:
 - node -e 'require("./lib/index.js")'
 - psql -c 'create database parse_server_postgres_adapter_test_database;' -U postgres
 - psql -c 'CREATE EXTENSION postgis;' -U postgres -d parse_server_postgres_adapter_test_database
 - psql -c 'CREATE EXTENSION postgis_topology;' -U postgres -d parse_server_postgres_adapter_test_database
 - silent=1 mongodb-runner --start
+- greenkeeper-lockfile-update
 script:
 - npm run coverage
 after_script:
+- greenkeeper-lockfile-upload
 - bash <(curl -s https://codecov.io/bash)
 
 jobs:
   include:
     # release on github latest branch
     - stage: release
-      node_js: '6.11.4'
+      node_js: '8.10'
       env: 
       before_script: skip
       after_script: skip
@@ -58,7 +61,7 @@ jobs:
       deploy:
         - provider: script
           skip_cleanup: true
-          script: ./resources/npm-git.sh
+          script: ./resources/npm-git.sh && npm install -g https://github.com/parse-community/parse-server#latest
           on:
            branch:
             - master

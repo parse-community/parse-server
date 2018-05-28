@@ -123,6 +123,44 @@ const transformKeyValueForUpdate = (className, restKey, restValue, parseFormatSc
   return {key, value};
 }
 
+const isRegex = value => {
+  return value && (value instanceof RegExp)
+}
+
+const isStartsWithRegex = value => {
+  if (!isRegex(value)) {
+    return false;
+  }
+
+  const matches = value.toString().match(/\/\^\\Q.*\\E\//);
+  return !!matches;
+}
+
+const isAllValuesRegexOrNone = values => {
+  if (!values || !Array.isArray(values) || values.length === 0) {
+    return true;
+  }
+
+  const firstValuesIsRegex = isStartsWithRegex(values[0]);
+  if (values.length === 1) {
+    return firstValuesIsRegex;
+  }
+
+  for (let i = 1, length = values.length; i < length; ++i) {
+    if (firstValuesIsRegex !== isStartsWithRegex(values[i])) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+const isAnyValueRegex = values => {
+  return values.some(function (value) {
+    return isRegex(value);
+  });
+}
+
 const transformInteriorValue = restValue => {
   if (restValue !== null && typeof restValue === 'object' && Object.keys(restValue).some(key => key.includes('$') || key.includes('.'))) {
     throw new Parse.Error(Parse.Error.INVALID_NESTED_KEY, "Nested keys should not contain the '$' or '.' characters");
@@ -209,9 +247,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   case '_perishable_token':
   case '_email_verify_token': return {key, value}
   case '$or':
-    return {key: '$or', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case '$and':
-    return {key: '$and', value: value.map(subQuery => transformWhere(className, subQuery, schema))};
+  case '$nor':
+    return {key: key, value: value.map(subQuery => transformWhere(className, subQuery, schema))};
   case 'lastUsed':
     if (valueAsDate(value)) {
       return {key: '_last_used', value: valueAsDate(value)}
@@ -251,6 +289,9 @@ function transformQueryKeyValue(className, key, value, schema) {
   if (transformedConstraint !== CannotTransform) {
     if (transformedConstraint.$text) {
       return {key: '$text', value: transformedConstraint.$text};
+    }
+    if (transformedConstraint.$elemMatch) {
+      return { key: '$nor', value: [{ [key]: transformedConstraint }] };
     }
     return {key, value: transformedConstraint};
   }
@@ -469,6 +510,8 @@ const transformInteriorAtom = (atom) => {
     return DateCoder.JSONToDatabase(atom);
   } else if (BytesCoder.isValidJSON(atom)) {
     return BytesCoder.JSONToDatabase(atom);
+  } else if (typeof atom === 'object' && atom && atom.$regex !== undefined) {
+    return new RegExp(atom.$regex);
   } else {
     return atom;
   }
@@ -740,6 +783,13 @@ function transformConstraint(constraint, field) {
           'bad ' + key + ' value');
       }
       answer[key] = arr.map(transformInteriorAtom);
+
+      const values = answer[key];
+      if (isAnyValueRegex(values) && !isAllValuesRegexOrNone(values)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'All $all values must be of regex type or none: '
+          + values);
+      }
+
       break;
     }
     case '$regex':
@@ -750,6 +800,19 @@ function transformConstraint(constraint, field) {
       answer[key] = s;
       break;
 
+    case '$containedBy': {
+      const arr = constraint[key];
+      if (!(arr instanceof Array)) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_JSON,
+          `bad $containedBy: should be an array`
+        );
+      }
+      answer.$elemMatch = {
+        $nin: arr.map(transformer)
+      };
+      break;
+    }
     case '$options':
       answer[key] = constraint[key];
       break;
@@ -842,19 +905,34 @@ function transformConstraint(constraint, field) {
 
     case '$geoWithin': {
       const polygon = constraint[key]['$polygon'];
-      if (!(polygon instanceof Array)) {
+      let points;
+      if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
+        if (!polygon.coordinates || polygon.coordinates.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
+          );
+        }
+        points = polygon.coordinates;
+      } else if (polygon instanceof Array) {
+        if (polygon.length < 3) {
+          throw new Parse.Error(
+            Parse.Error.INVALID_JSON,
+            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          );
+        }
+        points = polygon;
+      } else {
         throw new Parse.Error(
           Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+          'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
         );
       }
-      if (polygon.length < 3) {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
-        );
-      }
-      const points = polygon.map((point) => {
+      points = points.map((point) => {
+        if (point instanceof Array && point.length === 2) {
+          Parse.GeoPoint._validate(point[1], point[0]);
+          return point;
+        }
         if (!GeoPointCoder.isValidJSON(point)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
         } else {
