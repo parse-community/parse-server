@@ -393,7 +393,7 @@ describe('Parse.User testing', () => {
                 equal(userAgain, user);
                 userNotAuthed.set("username", "changed");
                 userNotAuthed.save().then(fail, (err) => {
-                  expect(err.code).toEqual(Parse.Error.SESSION_MISSING);
+                  expect(err.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
                   done();
                 });
               },
@@ -430,7 +430,7 @@ describe('Parse.User testing', () => {
                 equal(userAgain, user);
                 userNotAuthed.set("username", "changed");
                 userNotAuthed.destroy(expectError(
-                  Parse.Error.SESSION_MISSING, done));
+                  Parse.Error.OBJECT_NOT_FOUND, done));
               }
             });
           }
@@ -474,7 +474,7 @@ describe('Parse.User testing', () => {
                             item2.set("number", 2);
                             Parse.Object.saveAll(
                               [item1, item2, userNotAuthed],
-                              expectError(Parse.Error.SESSION_MISSING, done));
+                              expectError(Parse.Error.OBJECT_NOT_FOUND, done));
                           }
                         });
                       }
