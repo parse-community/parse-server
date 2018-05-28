@@ -54,11 +54,6 @@ function del(config, auth, className, objectId) {
       'bad objectId');
   }
 
-  if (className === '_User' && !auth.couldUpdateUserId(objectId)) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING,
-      'insufficient auth to delete user');
-  }
-
   enforceRoleSecurity('delete', className, auth);
 
   var inflatedObject;

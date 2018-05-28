@@ -963,12 +963,6 @@ RestWrite.prototype.runDatabaseOperation = function() {
     this.config.cacheController.role.clear();
   }
 
-  if (this.className === '_User' &&
-      this.query &&
-      !this.auth.couldUpdateUserId(this.query.objectId)) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, `Cannot modify user ${this.query.objectId}.`);
-  }
-
   if (this.className === '_Product' && this.data.download) {
     this.data.downloadName = this.data.download.name;
   }
@@ -982,7 +976,10 @@ RestWrite.prototype.runDatabaseOperation = function() {
   if (this.query) {
     // Force the user to not lockout
     // Matched with parse.com
-    if (this.className === '_User' && this.data.ACL && this.auth.isMaster !== true) {
+    if (
+      this.className === '_User' && this.data.ACL && this.auth.isMaster !== true &&
+      this.auth.user && this.auth.user.id === this.query.objectId
+    ) {
       this.data.ACL[this.query.objectId] = { read: true, write: true };
     }
     // update password timestamp if user password is being changed
