@@ -6,18 +6,26 @@ import * as Parse           from "parse/node";
 // @flow-disable-next
 import * as request         from "request";
 import { logger }           from '../logger';
+import http                 from 'http';
+import https                from 'https';
 
 const DefaultHooksCollectionName = "_Hooks";
+const HTTPAgents = {
+  http: new http.Agent({ keepAlive: true }),
+  https: new https.Agent({ keepAlive: true }),
+}
 
 export class HooksController {
   _applicationId:string;
   _webhookKey:string;
   database: any;
+  keepAlive: boolean;
 
-  constructor(applicationId:string, databaseController, webhookKey) {
+  constructor(applicationId:string, databaseController, webhookKey, keepAlive) {
     this._applicationId = applicationId;
     this._webhookKey = webhookKey;
     this.database = databaseController;
+    this.keepAlive = keepAlive;
   }
 
   load() {
@@ -85,7 +93,7 @@ export class HooksController {
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
+    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey, this.keepAlive);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
@@ -159,7 +167,7 @@ export class HooksController {
   }
 }
 
-function wrapToHTTPRequest(hook, key) {
+function wrapToHTTPRequest(hook, key, keepAlive) {
   return (req, res) => {
     const jsonBody = {};
     for (var i in req) {
@@ -177,8 +185,13 @@ function wrapToHTTPRequest(hook, key) {
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(jsonBody)
+      body: JSON.stringify(jsonBody),
     };
+
+    if (keepAlive) {
+      const agent = hook.url.startsWith('https') ? HTTPAgents['https'] : HTTPAgents['http'];
+      jsonRequest.agent = agent;
+    }
 
     if (key) {
       jsonRequest.headers['X-Parse-Webhook-Key'] = key;
