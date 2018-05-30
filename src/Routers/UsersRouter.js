@@ -117,7 +117,8 @@ export class UsersRouter extends ClassesRouter {
         // Ensure the user isn't locked out
         // A locked out user won't be able to login
         // To lock a user out, just set the ACL to `masterKey` only  ({}).
-        if (!req.auth.isMaster && (!user.ACL || Object.keys(user.ACL).length == 0)) {
+        // Empty ACL is OK
+        if (!req.auth.isMaster && user.ACL && Object.keys(user.ACL).length == 0) {
           throw new Parse.Error(Parse.Error.OBJECT_NOT_FOUND, 'Invalid username/password.');
         }
         if (req.config.verifyUserEmails && req.config.preventLoginWithUnverifiedEmail && !user.emailVerified) {
