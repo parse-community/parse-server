@@ -1538,6 +1538,27 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  fit('can order an on an object field', function (done) {
+    const testSet = [
+      { sortField: { value: 10 } },
+      { sortField: { value: 1 } },
+      { sortField: { value: 5 } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
+      .then((result) => {
+        expect(result.get('sortField').value).toBe(10);
+        return new Parse.Query('Test').addAscending('sortField.value').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value).toBe(1);
+        done();
+      })
+      .catch(done.fail);
+  });
+
   it("order by ascending number then descending string", function(done) {
     const strings = ["a", "b", "c", "d"];
     const makeBoxedNumber = function(num, i) {
