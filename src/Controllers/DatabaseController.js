@@ -900,6 +900,7 @@ class DatabaseController {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
               }
+              fieldName = fieldName.split('.')[0];
               if (!SchemaController.fieldNameIsValid(fieldName)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
               }
