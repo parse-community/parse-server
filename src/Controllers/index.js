@@ -150,9 +150,8 @@ export function getHooksController(options: ParseServerOptions, databaseControll
   const {
     appId,
     webhookKey,
-    hookKeepAlive,
   } = options;
-  return new HooksController(appId, databaseController, webhookKey, hookKeepAlive);
+  return new HooksController(appId, databaseController, webhookKey);
 }
 
 interface PushControlling {
