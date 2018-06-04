@@ -1,7 +1,30 @@
 ## Parse Server Changelog
 
 ### master
-[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...master)
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...master)
+
+### 2.8.2
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...2.8.1)
+
+##### Bug Fixes:
+* Ensure legacy users without ACL's are not locked out, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+#### Improvements:
+* Use common HTTP agent to increase webhooks performance, thanks to [Tyler Brock](https://github.com/TylerBrock)
+* Adds withinPolygon support for Polygon objects, thanks to [Mads Bjerre](https://github.com/madsb)
+
+#### Dependency Updates:
+* [ws@5.2.0](https://www.npmjs.com/package/ws)
+* [commander@2.15.1](https://www.npmjs.com/package/commander)
+* [nodemon@1.17.5](https://www.npmjs.com/package/nodemon)
+
+##### Devevelopment Dependencies Updates:
+* [flow-bin@0.73.0](https://www.npmjs.com/package/flow-bin)
+* [cross-env@5.1.6](https://www.npmjs.com/package/cross-env)
+* [gaze@1.1.3](https://www.npmjs.com/package/gaze)
+* [deepcopy@1.0.0](https://www.npmjs.com/package/deepcopy)
+* [deep-diff@1.0.1](https://www.npmjs.com/package/deep-diff)
+
 
 ### 2.8.1
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.1...2.8.0)
