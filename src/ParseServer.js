@@ -231,10 +231,7 @@ class ParseServer {
     if (options.startLiveQueryServer || options.liveQueryServerOptions) {
       this.liveQueryServer = ParseServer.createLiveQueryServer(server, options.liveQueryServerOptions);
     }
-    /* istanbul ignore next */
-    if (!process.env.TESTING) {
-      configureListeners(this);
-    }
+
     this.expressApp = app;
     return this;
   }
@@ -308,39 +305,6 @@ function injectDefaults(options: ParseServerOptions) {
     defaults.masterKeyIps,
     options.masterKeyIps
   )));
-}
-
-// Those can't be tested as it requires a subprocess
-/* istanbul ignore next */
-function configureListeners(parseServer) {
-  const server = parseServer.server;
-  const sockets = {};
-  /* Currently, express doesn't shut down immediately after receiving SIGINT/SIGTERM if it has client connections that haven't timed out. (This is a known issue with node - https://github.com/nodejs/node/issues/2642)
-    This function, along with `destroyAliveConnections()`, intend to fix this behavior such that parse server will close all open connections and initiate the shutdown process as soon as it receives a SIGINT/SIGTERM signal. */
-  server.on('connection', (socket) => {
-    const socketId = socket.remoteAddress + ':' + socket.remotePort;
-    sockets[socketId] = socket;
-    socket.on('close', () => {
-      delete sockets[socketId];
-    });
-  });
-
-  const destroyAliveConnections = function() {
-    for (const socketId in sockets) {
-      try {
-        sockets[socketId].destroy();
-      } catch (e) { /* */ }
-    }
-  }
-
-  const handleShutdown = function() {
-    process.stdout.write('Termination signal received. Shutting down.');
-    destroyAliveConnections();
-    server.close();
-    parseServer.handleShutdown();
-  };
-  process.on('SIGTERM', handleShutdown);
-  process.on('SIGINT', handleShutdown);
 }
 
 export default ParseServer;
