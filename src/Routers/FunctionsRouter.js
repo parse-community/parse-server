@@ -137,7 +137,6 @@ export class FunctionsRouter extends PromiseRouter {
               `Ran cloud function ${functionName} for user ${userString} with:\n  Input: ${cleanInput }\n  Result: ${cleanResult }`,
               {
                 functionName,
-                params,
                 user: userString,
               }
             );
