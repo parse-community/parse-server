@@ -295,12 +295,12 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
 }
 
 /**
- * When querying, the fieldName may be compound, extract the base fieldName
+ * When querying, the fieldName may be compound, extract the root fieldName
  *     `temperature.celsius` becomes `temperature`
  * @param {string} fieldName that may be a compound field name
- * @returns {string} the basename of the field
+ * @returns {string} the root name of the field
  */
-const getBaseFieldName = (fieldName: string): string => {
+const getRootFieldName = (fieldName: string): string => {
   return fieldName.split('.')[0]
 }
 
@@ -421,8 +421,8 @@ class DatabaseController {
                   if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
-                  const baseFieldName = getBaseFieldName(fieldName);
-                  if (!SchemaController.fieldNameIsValid(baseFieldName) && !isSpecialUpdateKey(baseFieldName)) {
+                  const rootFieldName = getRootFieldName(fieldName);
+                  if (!SchemaController.fieldNameIsValid(rootFieldName) && !isSpecialUpdateKey(rootFieldName)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
                 });
@@ -910,8 +910,8 @@ class DatabaseController {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
               }
-              const baseFieldName = getBaseFieldName(fieldName);
-              if (!SchemaController.fieldNameIsValid(baseFieldName)) {
+              const rootFieldName = getRootFieldName(fieldName);
+              if (!SchemaController.fieldNameIsValid(rootFieldName)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
               }
             });
