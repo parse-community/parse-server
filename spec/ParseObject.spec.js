@@ -1980,4 +1980,31 @@ describe('Parse.Object testing', () => {
       done();
     })
   });
+
+  it ('Update object field should store exactly same sent object', async (done) => {
+    let object = new TestObject();
+
+    // Set initial data
+    object.set("jsonData", { a: "b" });
+    object = await object.save();
+    equal(object.get('jsonData'), { a: "b" });
+
+    // Set empty JSON
+    object.set("jsonData", {});
+    object = await object.save();
+    equal(object.get('jsonData'), {});
+
+    // Set new JSON data
+    object.unset('jsonData')
+    object.set("jsonData", { c: "d" });
+    object = await object.save();
+    equal(object.get('jsonData'), { c: "d" });
+
+    // Fetch object from server
+    object = await object.fetch()
+    console.log(object.id, object.get('jsonData'))
+    equal(object.get('jsonData'), { c: "d" });
+
+    done();
+  });
 });
