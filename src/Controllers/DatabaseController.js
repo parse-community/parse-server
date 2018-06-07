@@ -297,7 +297,7 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
 /**
  * When querying, the fieldName may be compound, extract the base fieldName
  *     `temperature.celsius` becomes `temperature`
- * @param {string} fieldName to extract the base name from
+ * @param {string} fieldName that may be a compound field name
  * @returns {string} the basename of the field
  */
 const getBaseFieldName = (fieldName: string): string => {
