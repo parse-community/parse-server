@@ -19,13 +19,11 @@ export class HooksController {
   _applicationId:string;
   _webhookKey:string;
   database: any;
-  keepAlive: boolean;
 
-  constructor(applicationId:string, databaseController, webhookKey, keepAlive) {
+  constructor(applicationId:string, databaseController, webhookKey) {
     this._applicationId = applicationId;
     this._webhookKey = webhookKey;
     this.database = databaseController;
-    this.keepAlive = keepAlive;
   }
 
   load() {
@@ -93,7 +91,7 @@ export class HooksController {
   }
 
   addHookToTriggers(hook) {
-    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey, this.keepAlive);
+    var wrappedFunction = wrapToHTTPRequest(hook, this._webhookKey);
     wrappedFunction.url = hook.url;
     if (hook.className) {
       triggers.addTrigger(hook.triggerName, hook.className, wrappedFunction, this._applicationId)
@@ -167,7 +165,7 @@ export class HooksController {
   }
 }
 
-function wrapToHTTPRequest(hook, key, keepAlive) {
+function wrapToHTTPRequest(hook, key) {
   return (req, res) => {
     const jsonBody = {};
     for (var i in req) {
@@ -188,10 +186,8 @@ function wrapToHTTPRequest(hook, key, keepAlive) {
       body: JSON.stringify(jsonBody),
     };
 
-    if (keepAlive) {
-      const agent = hook.url.startsWith('https') ? HTTPAgents['https'] : HTTPAgents['http'];
-      jsonRequest.agent = agent;
-    }
+    const agent = hook.url.startsWith('https') ? HTTPAgents['https'] : HTTPAgents['http'];
+    jsonRequest.agent = agent;
 
     if (key) {
       jsonRequest.headers['X-Parse-Webhook-Key'] = key;

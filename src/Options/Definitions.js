@@ -308,11 +308,6 @@ module.exports.ParseServerOptions = {
     "env": "PARSE_SERVER_LIVE_QUERY_SERVER_OPTIONS",
     "help": "Live query server configuration options (will start the liveQuery server)",
     "action": parsers.objectParser
-  },
-  "hookKeepAlive": {
-    "env": "PARSE_SERVER_HOOK_KEEP_ALIVE",
-    "help": "Keep hook HTTP connections alive",
-    "action": parsers.booleanParser
   }
 };
 module.exports.CustomPagesOptions = {
