@@ -1538,7 +1538,28 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it_only_db('mongo')('can order on an object field', function (done) {
+  it('can order on an object string field', function (done) {
+    const testSet = [
+      { sortField: { value: "Z" } },
+      { sortField: { value: "A" } },
+      { sortField: { value: "M" } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
+      .then((result) => {
+        expect(result.get('sortField').value).toBe("Z");
+        return new Parse.Query('Test').addAscending('sortField.value').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value).toBe("A");
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it('can order on an object number field', function (done) {
     const testSet = [
       { sortField: { value: 10 } },
       { sortField: { value: 1 } },
