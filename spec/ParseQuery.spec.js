@@ -1559,6 +1559,27 @@ describe('Parse.Query testing', () => {
       .catch(done.fail);
   });
 
+  it('can order on an object string field (level 2)', function (done) {
+    const testSet = [
+      { sortField: { value: { field: "Z" } } },
+      { sortField: { value: { field: "A" } } },
+      { sortField: { value: { field: "M" } } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe("Z");
+        return new Parse.Query('Test').addAscending('sortField.value.field').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe("A");
+        done();
+      })
+      .catch(done.fail);
+  });
+
   it('can order on an object number field', function (done) {
     const testSet = [
       { sortField: { value: 10 } },
@@ -1575,6 +1596,27 @@ describe('Parse.Query testing', () => {
       })
       .then((result) => {
         expect(result.get('sortField').value).toBe(1);
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it('can order on an object number field (level 2)', function (done) {
+    const testSet = [
+      { sortField: { value: { field: 10 } } },
+      { sortField: { value: { field: 1 } } },
+      { sortField: { value: { field: 5 } } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe(10);
+        return new Parse.Query('Test').addAscending('sortField.value.field').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe(1);
         done();
       })
       .catch(done.fail);
