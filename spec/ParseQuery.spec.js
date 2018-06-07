@@ -1538,7 +1538,7 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it('can order on an object field', function (done) {
+  it_only_db('mongo')('can order on an object field', function (done) {
     const testSet = [
       { sortField: { value: 10 } },
       { sortField: { value: 1 } },
