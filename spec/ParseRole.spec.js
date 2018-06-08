@@ -528,7 +528,7 @@ describe('Parse Role testing', () => {
       });
   });
 
-  it('should be able to create an active role', (done) => {
+  it('should be able to create an active role (#4591)', (done) => {
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
     const role = new Parse.Role('some_active_role', roleACL);
@@ -546,7 +546,7 @@ describe('Parse Role testing', () => {
       });
   });
 
-  it('should be able to create an inactive role', (done) => {
+  it('should be able to create an inactive role (#4591)', (done) => {
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
     const role = new Parse.Role('some_active_role', roleACL);
@@ -562,5 +562,127 @@ describe('Parse Role testing', () => {
         expect(role.get('active')).toEqual(false);
         done();
       });
+  });
+
+  it('should properly handle active/inactive role state permissions across multiple role levels (#4591)', (done) => {
+    // Owners inherit from Collaborators
+    // Collaborators inherit from members
+    // Members doe not inherit from any role
+    const owner = new Parse.User();
+    const collaborator = new Parse.User();
+    const member = new Parse.User();
+    let ownerRole, collaboratorRole, memberRole;
+    let objectOnlyForOwners; // Acl access by owners only
+    let objectOnlyForCollaborators; // Acl access by collaborators only
+    let objectOnlyForMembers; // Acl access by members only
+    let ownerACL, collaboratorACL, memberACL;
+
+    return owner.save({ username: 'owner', password: 'pass' })
+      .then(() => {
+        return collaborator.save({ username: 'collaborator', password: 'pass' });
+      }).then(() => {
+        return member.save({ username: 'member', password: 'pass' });
+      }).then(() => {
+        ownerACL = new Parse.ACL();
+        ownerACL.setRoleReadAccess("ownerRole", true);
+        ownerACL.setRoleWriteAccess("ownerRole", true);
+        ownerRole = new Parse.Role('ownerRole', ownerACL);
+        ownerRole.getUsers().add(owner);
+        return ownerRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        collaboratorACL = new Parse.ACL();
+        collaboratorACL.setRoleReadAccess('collaboratorRole', true);
+        collaboratorACL.setRoleWriteAccess('collaboratorRole', true);
+        collaboratorRole = new Parse.Role('collaboratorRole', collaboratorACL);
+        collaboratorRole.getUsers().add(collaborator);
+        // owners inherit from collaborators
+        collaboratorRole.getRoles().add(ownerRole);
+        return collaboratorRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        memberACL = new Parse.ACL();
+        memberACL.setRoleReadAccess('memberRole', true);
+        memberRole = new Parse.Role('memberRole', memberACL);
+        memberRole.set('active', false);
+        memberRole.getUsers().add(member);
+        // collaborators inherit from members
+        memberRole.getRoles().add(collaboratorRole);
+        return memberRole.save({}, { useMasterKey: true });
+      }).then(() => {
+        // routine check
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((x) => {
+        expect(x.length).toEqual(3);
+
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("memberRole", true);
+        acl.setRoleWriteAccess("memberRole", true);
+        objectOnlyForMembers = new Parse.Object('TestObjectRoles');
+        objectOnlyForMembers.setACL(acl);
+        return objectOnlyForMembers.save(null, { useMasterKey: true });
+      }).then(() => {
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("collaboratorRole", true);
+        acl.setRoleWriteAccess("collaboratorRole", true);
+        objectOnlyForCollaborators = new Parse.Object('TestObjectRoles');
+        objectOnlyForCollaborators.setACL(acl);
+        return objectOnlyForCollaborators.save(null, { useMasterKey: true });
+      }).then(() => {
+        const acl = new Parse.ACL();
+        acl.setRoleReadAccess("ownerRole", true);
+        acl.setRoleWriteAccess("ownerRole", true);
+        objectOnlyForOwners = new Parse.Object('TestObjectRoles');
+        objectOnlyForOwners.setACL(acl);
+        return objectOnlyForOwners.save(null, { useMasterKey: true });
+      })
+
+      .then(() => {
+        // First level role - members should not be able to edit object when role is inactive
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: member.getSessionToken() });
+      }).then(() => {
+        fail('Operation should not have succeeded (Level-0)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Second level role - collaborators should not be able to edit object when role is inactive
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: collaborator.getSessionToken() });
+      }).then(() => {
+        fail('Operation should not have succeeded (Level-1)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Third level role - admins should not be able to edit object when role is inactive
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        fail('Operation should not have succeeded (Level-2)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        // Set members to active and collaborators to inactive
+        // Members should be abel to edit. Collaborators and Owners should not.
+        objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        fail('Operation should not have succeeded (Level-2)');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
   });
 });
