@@ -1,7 +1,7 @@
 {
   "spec_dir": "spec",
   "spec_files": [
-    "*spec.js"
+    "ParseRole.spec.js"
   ],
   "helpers": [
     "../node_modules/babel-core/register.js",

@@ -62,7 +62,8 @@ const defaultColumns: {[string]: SchemaFields} = Object.freeze({
   _Role: {
     "name":  {type:'String'},
     "users": {type:'Relation', targetClass:'_User'},
-    "roles": {type:'Relation', targetClass:'_Role'}
+    "roles": {type:'Relation', targetClass:'_Role'},
+    "active": {type:'Boolean'}
   },
   // The additional default columns for the _Session collection (in addition to DefaultCols)
   _Session: {

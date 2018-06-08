@@ -527,4 +527,40 @@ describe('Parse Role testing', () => {
           });
       });
   });
+
+  it('should be able to create an active role', (done) => {
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('some_active_role', roleACL);
+    role.set('active', true);
+    role.save({}, {useMasterKey : true})
+      .then((savedRole)=>{
+        expect(savedRole.get('active')).toEqual(true);
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((roles) => {
+        expect(roles.length).toEqual(1);
+        const role = roles[0];
+        expect(role.get('active')).toEqual(true);
+        done();
+      });
+  });
+
+  it('should be able to create an inactive role', (done) => {
+    const roleACL = new Parse.ACL();
+    roleACL.setPublicReadAccess(true);
+    const role = new Parse.Role('some_active_role', roleACL);
+    role.set('active', false);
+    role.save({}, {useMasterKey : true})
+      .then((savedRole)=>{
+        expect(savedRole.get('active')).toEqual(false);
+        const query = new Parse.Query('_Role');
+        return query.find({ useMasterKey: true });
+      }).then((roles) => {
+        expect(roles.length).toEqual(1);
+        const role = roles[0];
+        expect(role.get('active')).toEqual(false);
+        done();
+      });
+  });
 });

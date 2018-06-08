@@ -131,6 +131,10 @@ Auth.prototype._loadRoles = function() {
         __type: 'Pointer',
         className: '_User',
         objectId: this.user.id
+      },
+      // By using $ne instead of $eq=true we support earlier parse versions where the active field might be undefined
+      'active': {
+        '$ne' : false
       }
     };
     // First get the role ids this user is directly a member of
@@ -191,6 +195,9 @@ Auth.prototype._getAllRolesNamesForRoleIds = function(roleIDs, names = [], queri
   } else {
     restWhere = { 'roles': { '$in': ins }}
   }
+  // Always make sure roles are active
+  restWhere.active = { '$ne' : false }
+
   const query = new RestQuery(this.config, master(this.config), '_Role', restWhere, {});
   return query.execute().then((response) => {
     var results = response.results;
