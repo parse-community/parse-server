@@ -1093,6 +1093,12 @@ RestWrite.prototype.runDatabaseOperation = function() {
         response.objectId = this.data.objectId;
         response.createdAt = this.data.createdAt;
 
+        // (#4591) Role "enabled" key is generated with on create, and SDKs might not support this change yet.
+        // removing this line will brake RoleTest ("should create an enabled role by default")
+        if(this.className === "_Role" && !this.query){
+          response.enabled = this.data.enabled;
+        }
+
         if (this.responseShouldHaveUsername) {
           response.username = this.data.username;
         }
