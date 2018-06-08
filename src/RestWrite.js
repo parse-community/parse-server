@@ -194,10 +194,10 @@ RestWrite.prototype.setRequiredFieldsIfNeeded = function() {
       if (creatingObject) {
         // Only assign new objectId if we are creating new object
         this.data.objectId = cryptoUtils.newObjectId(this.config.objectIdSize);
-        // On Role, assume is active, and assign 'active' to true
+        // On Role, assume is not disabled, and assign 'enabled' to true
         if(this.className === '_Role'){
-          if(this.data.active === undefined){
-            this.data.active = true;
+          if(this.data.enabled === undefined){
+            this.data.enabled = true;
           }
         }
       }

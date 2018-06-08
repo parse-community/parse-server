@@ -528,46 +528,48 @@ describe('Parse Role testing', () => {
       });
   });
 
-  it('should be able to create an active role (#4591)', (done) => {
+  it('should be able to create an enabled role (#4591)', (done) => {
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
     const role = new Parse.Role('some_active_role', roleACL);
-    role.set('active', true);
+    role.set('enabled', true);
     role.save({}, {useMasterKey : true})
       .then((savedRole)=>{
-        expect(savedRole.get('active')).toEqual(true);
+        expect(savedRole.get('enabled')).toEqual(true);
         const query = new Parse.Query('_Role');
         return query.find({ useMasterKey: true });
       }).then((roles) => {
         expect(roles.length).toEqual(1);
         const role = roles[0];
-        expect(role.get('active')).toEqual(true);
+        expect(role.get('enabled')).toEqual(true);
         done();
       });
   });
 
-  it('should be able to create an inactive role (#4591)', (done) => {
+  it('should be able to create a disabled role (#4591)', (done) => {
     const roleACL = new Parse.ACL();
     roleACL.setPublicReadAccess(true);
     const role = new Parse.Role('some_active_role', roleACL);
-    role.set('active', false);
+    role.set('enabled', false);
     role.save({}, {useMasterKey : true})
       .then((savedRole)=>{
-        expect(savedRole.get('active')).toEqual(false);
+        expect(savedRole.get('enabled')).toEqual(false);
         const query = new Parse.Query('_Role');
         return query.find({ useMasterKey: true });
       }).then((roles) => {
         expect(roles.length).toEqual(1);
         const role = roles[0];
-        expect(role.get('active')).toEqual(false);
+        expect(role.get('enabled')).toEqual(false);
         done();
       });
   });
 
-  it('should properly handle active/inactive role state permissions across multiple role levels (#4591)', (done) => {
+  it('should properly handle enabled/disabled role states permissions across multiple role levels properly (#4591)', (done) => {
     // Owners inherit from Collaborators
     // Collaborators inherit from members
-    // Members doe not inherit from any role
+    // Members does not inherit from any role
+    // Owner -> Collaborator -> member -> [protected objects]
+    // If any role is disabled, the link is broken.
     const owner = new Parse.User();
     const collaborator = new Parse.User();
     const member = new Parse.User();
@@ -578,11 +580,9 @@ describe('Parse Role testing', () => {
     let ownerACL, collaboratorACL, memberACL;
 
     return owner.save({ username: 'owner', password: 'pass' })
+      .then(() => collaborator.save({ username: 'collaborator', password: 'pass' }))
+      .then(() => member.save({ username: 'member', password: 'pass' }))
       .then(() => {
-        return collaborator.save({ username: 'collaborator', password: 'pass' });
-      }).then(() => {
-        return member.save({ username: 'member', password: 'pass' });
-      }).then(() => {
         ownerACL = new Parse.ACL();
         ownerACL.setRoleReadAccess("ownerRole", true);
         ownerACL.setRoleWriteAccess("ownerRole", true);
@@ -602,7 +602,7 @@ describe('Parse Role testing', () => {
         memberACL = new Parse.ACL();
         memberACL.setRoleReadAccess('memberRole', true);
         memberRole = new Parse.Role('memberRole', memberACL);
-        memberRole.set('active', false);
+        memberRole.set('enabled', false); // Disabled!!
         memberRole.getUsers().add(member);
         // collaborators inherit from members
         memberRole.getRoles().add(collaboratorRole);
@@ -613,6 +613,11 @@ describe('Parse Role testing', () => {
         return query.find({ useMasterKey: true });
       }).then((x) => {
         expect(x.length).toEqual(3);
+        x.forEach(role => {
+          if(role.name === "ownerRole") expect(role.get('enabled').toBeEqual(true));
+          if(role.name === "collaboratorRole") expect(role.get('enabled').toBeEqual(true));
+          if(role.name === "memberRole") expect(role.get('enabled').toBeEqual(false));
+        });
 
         const acl = new Parse.ACL();
         acl.setRoleReadAccess("memberRole", true);
@@ -637,7 +642,7 @@ describe('Parse Role testing', () => {
       })
 
       .then(() => {
-        // First level role - members should not be able to edit object when role is inactive
+        // First level role - members should not be able to edit object when their role is disabled
         objectOnlyForMembers.set('hello', 'hello');
         return objectOnlyForMembers.save(null, { sessionToken: member.getSessionToken() });
       }).then(() => {
@@ -649,7 +654,7 @@ describe('Parse Role testing', () => {
       })
 
       .then(() => {
-        // Second level role - collaborators should not be able to edit object when role is inactive
+        // Second level role - collaborators should not be able to edit object when member role is disabled
         objectOnlyForMembers.set('hello', 'hello');
         return objectOnlyForMembers.save(null, { sessionToken: collaborator.getSessionToken() });
       }).then(() => {
@@ -661,8 +666,7 @@ describe('Parse Role testing', () => {
       })
 
       .then(() => {
-        // Third level role - admins should not be able to edit object when role is inactive
-        objectOnlyForMembers.set('hello', 'hello');
+        // Third level role - admins should not be able to edit object when member role is disabled
         return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
       }).then(() => {
         fail('Operation should not have succeeded (Level-2)');
@@ -673,16 +677,74 @@ describe('Parse Role testing', () => {
       })
 
       .then(() => {
+        // Owners should be able to inherit form collaborator role and edit object
+        objectOnlyForCollaborators.set('hello', 'hello');
+        return objectOnlyForCollaborators.save(null, { sessionToken: owner.getSessionToken() });
+      }).then(() => {
+        return Promise.resolve()
+      }, () => {
+        fail('Owners should be able to save collaborator object normally');
+        done()
+      })
+
+      .then(() => {
         // Set members to active and collaborators to inactive
-        // Members should be abel to edit. Collaborators and Owners should not.
+        // Members should be able to edit. Collaborators and Owners should not.
+        memberRole.set('enabled', true);
+        collaboratorRole.set('enabled', false);
+        return memberRole.save({}, {useMasterKey: true}).then(() => collaboratorRole.save({}, {useMasterKey: true}));
+      }).then(() => {
+        // this should succeed
         objectOnlyForMembers.set('hello', 'hello');
+        return objectOnlyForMembers.save(null, { sessionToken: member.getSessionToken() });
+      }, () => {
+        fail('Users in an enabled role should be able to access role secured objects. Enabled roles should grant permissions');
+        done()
+      })
+      .then(() => {
+        expect(objectOnlyForMembers.get('hello')).toEqual('hello');
+        // this should fail, collaborator should not be able to edit, since their role is disabled
+        objectOnlyForMembers.unset('hello');
+        return objectOnlyForMembers.save(null, { sessionToken: collaborator.getSessionToken() });
+      })
+      .then(() => {
+        fail('Operation should not have succeeded. A disabled role should not grant permissions');
+        done();
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+      .then(() => {
+        // this should fail
         return objectOnlyForMembers.save(null, { sessionToken: owner.getSessionToken() });
       }).then(() => {
-        fail('Operation should not have succeeded (Level-2)');
+        fail('Operation should not have succeeded. Owners should not have access to object if collaborator role is disabled');
         done()
       }, (error) => {
         expect(error.code).toEqual(101);
         return Promise.resolve()
       })
+
+      // Extra uneeded check
+      .then(() => {
+        // Check that role tree operate normally in enabled/disabled state.
+        // Collaborators should not be able to edit admin role protected objects.
+        collaboratorRole.set('enabled', true);
+        ownerRole.set('enabled', false);
+        return ownerRole.save({}, {useMasterKey: true}).then(() => collaboratorRole.save({}, {useMasterKey: true}));
+      }).then(() => {
+        objectOnlyForOwners.unset('hello');
+        return objectOnlyForOwners.save(null, { sessionToken: collaborator.getSessionToken() });
+      }).then(() => {
+        fail('This test should fail, roles do not work this way. Child inherits from parent, not the otehr way around');
+        done()
+      }, (error) => {
+        expect(error.code).toEqual(101);
+        return Promise.resolve()
+      })
+
+      .then(() => {
+        done();
+      });
   });
 });
