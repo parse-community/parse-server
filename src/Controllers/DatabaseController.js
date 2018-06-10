@@ -294,6 +294,16 @@ const untransformObjectACL = ({_rperm, _wperm, ...output}) => {
   return output;
 }
 
+/**
+ * When querying, the fieldName may be compound, extract the root fieldName
+ *     `temperature.celsius` becomes `temperature`
+ * @param {string} fieldName that may be a compound field name
+ * @returns {string} the root name of the field
+ */
+const getRootFieldName = (fieldName: string): string => {
+  return fieldName.split('.')[0]
+}
+
 const relationSchema = { fields: { relatedId: { type: 'String' }, owningId: { type: 'String' } } };
 
 class DatabaseController {
@@ -411,8 +421,8 @@ class DatabaseController {
                   if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
-                  fieldName = fieldName.split('.')[0];
-                  if (!SchemaController.fieldNameIsValid(fieldName) && !isSpecialUpdateKey(fieldName)) {
+                  const rootFieldName = getRootFieldName(fieldName);
+                  if (!SchemaController.fieldNameIsValid(rootFieldName) && !isSpecialUpdateKey(rootFieldName)) {
                     throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name for update: ${fieldName}`);
                   }
                 });
@@ -900,7 +910,8 @@ class DatabaseController {
               if (fieldName.match(/^authData\.([a-zA-Z0-9_]+)\.id$/)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Cannot sort by ${fieldName}`);
               }
-              if (!SchemaController.fieldNameIsValid(fieldName)) {
+              const rootFieldName = getRootFieldName(fieldName);
+              if (!SchemaController.fieldNameIsValid(rootFieldName)) {
                 throw new Parse.Error(Parse.Error.INVALID_KEY_NAME, `Invalid field name: ${fieldName}.`);
               }
             });
