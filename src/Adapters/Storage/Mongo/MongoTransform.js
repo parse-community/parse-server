@@ -952,13 +952,11 @@ function transformConstraint(constraint, field) {
         // Get point, convert to geo point if necessary and validate
         let point = centerSphere[0];
         if (point instanceof Array && point.length === 2) {
-          Parse.GeoPoint._validate(point[1], point[0]);
           point = new Parse.GeoPoint(point[1], point[0]);
         } else if (!GeoPointCoder.isValidJSON(point)) {
           throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
-        } else {
-          Parse.GeoPoint._validate(point.latitude, point.longitude);
         }
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
         // Get distance and validate
         const distance = centerSphere[1];
         if(isNaN(distance) || distance < 0) {

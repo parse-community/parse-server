@@ -4063,12 +4063,12 @@ describe('Parse.Query testing', () => {
     jsonQ.where.location = {
       '$geoWithin': {
         '$centerSphere': [
-          [0],
+          [-190,-190],
           1
         ]
       }
     };
     q.withJSON(jsonQ);
-    q.find(expectError(Parse.Error.INVALID_JSON, done));
+    q.find(expectError(undefined, done));
   });
 });

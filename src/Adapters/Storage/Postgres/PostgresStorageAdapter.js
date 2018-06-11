@@ -540,13 +540,14 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
         throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance');
       }
-      // Get point and validate
+      // Get point, convert to geo point if necessary and validate
       let point = centerSphere[0];
       if (point instanceof Array && point.length === 2) {
         point = new Parse.GeoPoint(point[1], point[0]);
-      } else {
-        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      } else if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
       }
+      Parse.GeoPoint._validate(point.latitude, point.longitude);
       // Get distance and validate
       const distance = centerSphere[1];
       if(isNaN(distance) || distance < 0) {
@@ -2008,5 +2009,14 @@ function literalizeRegexPart(s: string) {
       .replace(/^'([^'])/, `''$1`)
   );
 }
+
+var GeoPointCoder = {
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'GeoPoint'
+    );
+  }
+};
 
 export default PostgresStorageAdapter;
