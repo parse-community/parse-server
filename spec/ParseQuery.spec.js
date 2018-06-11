@@ -3985,7 +3985,7 @@ describe('Parse.Query testing', () => {
       })
   });
 
-  it('toJSON works with geoWithin.centerSphere', (done) => {
+  it('withJSON supports geoWithin.centerSphere', (done) => {
     const inbound = new Parse.GeoPoint(1.5, 1.5);
     const onbound = new Parse.GeoPoint(10, 10);
     const outbound = new Parse.GeoPoint(20, 20);
@@ -4028,5 +4028,47 @@ describe('Parse.Query testing', () => {
       fail(error);
       done();
     });
+  });
+
+  it('withJSON with geoWithin.centerSphere fails without parameters', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(Parse.Error.INVALID_JSON, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails without distance', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          [0, 0]
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(Parse.Error.INVALID_JSON, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails with invalid geo point', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          [0],
+          1
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(Parse.Error.INVALID_JSON, done));
   });
 });
