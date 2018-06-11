@@ -3985,4 +3985,31 @@ describe('Parse.Query testing', () => {
       })
   });
 
+  it('toJSON works with geoWithin.centerSphere', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const center = new Parse.GeoPoint(0, 0);
+      const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
+      const q = new Parse.Query(TestObject);
+      const jsonQ = q.toJSON();
+      jsonQ.where.location = {
+        '$geoWithin': {
+          '$centerSphere': [
+            center,
+            distanceInKilometers / 6371.0
+          ]
+        }
+      };
+      q.withJSON(jsonQ);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      done();
+    });
+  });
 });

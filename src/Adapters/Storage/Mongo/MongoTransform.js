@@ -905,44 +905,72 @@ function transformConstraint(constraint, field) {
 
     case '$geoWithin': {
       const polygon = constraint[key]['$polygon'];
-      let points;
-      if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
-        if (!polygon.coordinates || polygon.coordinates.length < 3) {
+      const centerSphere = constraint[key]['$centerSphere'];
+      if (polygon !== undefined) {
+        let points;
+        if (typeof polygon === 'object' && polygon.__type === 'Polygon') {
+          if (!polygon.coordinates || polygon.coordinates.length < 3) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_JSON,
+              'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
+            );
+          }
+          points = polygon.coordinates;
+        } else if (polygon instanceof Array) {
+          if (polygon.length < 3) {
+            throw new Parse.Error(
+              Parse.Error.INVALID_JSON,
+              'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+            );
+          }
+          points = polygon;
+        } else {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            'bad $geoWithin value; Polygon.coordinates should contain at least 3 lon/lat pairs'
+            'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
           );
         }
-        points = polygon.coordinates;
-      } else if (polygon instanceof Array) {
-        if (polygon.length < 3) {
+        points = points.map((point) => {
+          if (point instanceof Array && point.length === 2) {
+            Parse.GeoPoint._validate(point[1], point[0]);
+            return point;
+          }
+          if (!GeoPointCoder.isValidJSON(point)) {
+            throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+          } else {
+            Parse.GeoPoint._validate(point.latitude, point.longitude);
+          }
+          return [point.longitude, point.latitude];
+        });
+        answer[key] = {
+          '$polygon': points
+        };
+      } else if (centerSphere !== undefined) {
+        if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
           throw new Parse.Error(
             Parse.Error.INVALID_JSON,
-            'bad $geoWithin value; $polygon should contain at least 3 GeoPoints'
+            'bad $geoWithin value; $centerSphere should be an array of Parse.Geopoint and distance'
           );
         }
-        points = polygon;
-      } else {
-        throw new Parse.Error(
-          Parse.Error.INVALID_JSON,
-          'bad $geoWithin value; $polygon should be Polygon object or Array of Parse.GeoPoint\'s'
-        );
-      }
-      points = points.map((point) => {
+        const point = centerSphere[0];
         if (point instanceof Array && point.length === 2) {
           Parse.GeoPoint._validate(point[1], point[0]);
-          return point;
-        }
-        if (!GeoPointCoder.isValidJSON(point)) {
-          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value');
+        } else if (!GeoPointCoder.isValidJSON(point)) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
         } else {
           Parse.GeoPoint._validate(point.latitude, point.longitude);
         }
-        return [point.longitude, point.latitude];
-      });
-      answer[key] = {
-        '$polygon': points
-      };
+        const distance = centerSphere[1]
+        if(isNaN(distance) || distance < 0) {
+          throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere distance invalid')
+        }
+        answer[key] = {
+          '$centerSphere': [
+            [point.longitude, point.latitude],
+            distance
+          ]
+        };
+      }
       break;
     }
     case '$geoIntersects': {
