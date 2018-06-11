@@ -3992,9 +3992,9 @@ describe('Parse.Query testing', () => {
     const obj1 = new Parse.Object('TestObject', {location: inbound});
     const obj2 = new Parse.Object('TestObject', {location: onbound});
     const obj3 = new Parse.Object('TestObject', {location: outbound});
+    const center = new Parse.GeoPoint(0, 0);
+    const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
     Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
-      const center = new Parse.GeoPoint(0, 0);
-      const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
       const q = new Parse.Query(TestObject);
       const jsonQ = q.toJSON();
       jsonQ.where.location = {
@@ -4009,6 +4009,23 @@ describe('Parse.Query testing', () => {
       return q.find();
     }).then(results => {
       equal(results.length, 2);
+      const q = new Parse.Query(TestObject);
+      const jsonQ = q.toJSON();
+      jsonQ.where.location = {
+        '$geoWithin': {
+          '$centerSphere': [
+            [0, 0],
+            distanceInKilometers / 6371.0
+          ]
+        }
+      };
+      q.withJSON(jsonQ);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      done();
+    }).catch(error => {
+      fail(error);
       done();
     });
   });
