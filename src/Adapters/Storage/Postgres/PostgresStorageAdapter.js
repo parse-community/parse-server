@@ -1324,7 +1324,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
-        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+        updatePatterns.push(`$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
 
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
@@ -1397,11 +1397,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (sort) {
       const sortCopy: any = sort;
       const sorting = Object.keys(sort).map((key) => {
+        const transformKey = transformDotFieldToComponents(key).join('->');
         // Using $idx pattern gives:  non-integer constant in ORDER BY
         if (sortCopy[key] === 1) {
-          return `"${key}" ASC`;
+          return `${transformKey} ASC`;
         }
-        return `"${key}" DESC`;
+        return `${transformKey} DESC`;
       }).join();
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
