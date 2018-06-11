@@ -535,6 +535,29 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index += 2;
     }
 
+    if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
+      const centerSphere = fieldValue.$geoWithin.$centerSphere;
+      if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance');
+      }
+      // Get point and validate
+      let point = centerSphere[0];
+      if (point instanceof Array && point.length === 2) {
+        point = new Parse.GeoPoint(point[1], point[0]);
+      } else {
+        Parse.GeoPoint._validate(point.latitude, point.longitude);
+      }
+      // Get distance and validate
+      const distance = centerSphere[1];
+      if(isNaN(distance) || distance < 0) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere distance invalid');
+      }
+      const distanceInKM = distance * 6371 * 1000;
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) <= $${index + 3}`);
+      values.push(fieldName, point.longitude, point.latitude, distanceInKM);
+      index += 4;
+    }
+
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
       const polygon = fieldValue.$geoWithin.$polygon;
       let points;
