@@ -373,10 +373,38 @@ describe('matchesQuery', function() {
 
     q = new Parse.Query('Checkin');
     pt.location = new Parse.GeoPoint(40, 40);
-    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.3);
+    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.3, true);
     expect(matchesQuery(pt, q)).toBe(true);
 
-    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.2);
+    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.2, true);
+    expect(matchesQuery(pt, q)).toBe(false);
+  });
+
+  it('matches geoWithin.centerSphere queries', function() {
+    let q = new Parse.Query('Checkin');
+    q.near('location', new Parse.GeoPoint(20, 20));
+    // With no max distance, any GeoPoint is 'near'
+    const pt = {
+      id: new Id('Checkin', 'C1'),
+      location: new Parse.GeoPoint(40, 40)
+    };
+    const ptUndefined = {
+      id: new Id('Checkin', 'C1')
+    };
+    const ptNull = {
+      id: new Id('Checkin', 'C1'),
+      location: null
+    };
+    expect(matchesQuery(pt, q)).toBe(true);
+    expect(matchesQuery(ptUndefined, q)).toBe(false);
+    expect(matchesQuery(ptNull, q)).toBe(false);
+
+    q = new Parse.Query('Checkin');
+    pt.location = new Parse.GeoPoint(40, 40);
+    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.3, false);
+    expect(matchesQuery(pt, q)).toBe(true);
+
+    q.withinRadians('location', new Parse.GeoPoint(30, 30), 0.2, false);
     expect(matchesQuery(pt, q)).toBe(false);
   });
 
