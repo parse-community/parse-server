@@ -4043,18 +4043,34 @@ describe('Parse.Query testing', () => {
     q.find(expectError(Parse.Error.INVALID_JSON, done));
   });
 
-  it('withJSON with geoWithin.centerSphere fails without distance', (done) => {
+  it('withJSON with geoWithin.centerSphere fails with invalid distance', (done) => {
     const q = new Parse.Query(TestObject);
     const jsonQ = q.toJSON();
     jsonQ.where.location = {
       '$geoWithin': {
         '$centerSphere': [
-          [0, 0]
+          [0, 0],
+          'invalid_distance'
         ]
       }
     };
     q.withJSON(jsonQ);
     q.find(expectError(Parse.Error.INVALID_JSON, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails with invalid coordinate', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          [-190,-190],
+          1
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(undefined, done));
   });
 
   it('withJSON with geoWithin.centerSphere fails with invalid geo point', (done) => {
@@ -4063,7 +4079,7 @@ describe('Parse.Query testing', () => {
     jsonQ.where.location = {
       '$geoWithin': {
         '$centerSphere': [
-          [-190,-190],
+          {'longitude': 0, 'dummytude': 0},
           1
         ]
       }
