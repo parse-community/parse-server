@@ -7,6 +7,7 @@
 
 "use strict";
 
+import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
 const request = require('request');
 const passwordCrypto = require('../src/password');
 const Config = require('../src/Config');
@@ -237,6 +238,41 @@ describe('Parse.User testing', () => {
       expect(err.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
       done();
     });
+  });
+
+  it_only_db('mongo')('should let legacy users without ACL login', async() => {
+    const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
+    const adapter = new MongoStorageAdapter({ collectionPrefix: 'test_', uri: databaseURI });
+    await adapter.connect();
+    await adapter.database.dropDatabase();
+    delete adapter.connectionPromise;
+
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'newUser',
+      password: 'password',
+    });
+
+    const collection = await adapter._adaptiveCollection('_User');
+    await collection.insertOne({
+      // the hashed password is 'password' hashed
+      "_hashed_password": "$2b$10$mJ2ca2UbCM9hlojYHZxkQe8pyEXe5YMg0nMdvP4AJBeqlTEZJ6/Uu",
+      "_session_token": "xxx",
+      "email": "xxx@a.b",
+      "username": "oldUser",
+      "emailVerified": true,
+      "_email_verify_token": "yyy",
+    });
+
+    // get the 2 users
+    const users = await collection.find();
+    expect(users.length).toBe(2);
+
+    const aUser = await Parse.User.logIn('oldUser', 'password');
+    expect(aUser).not.toBeUndefined();
+
+    const newUser = await Parse.User.logIn('newUser', 'password');
+    expect(newUser).not.toBeUndefined();
   });
 
   it('should be let masterKey lock user out with authData', (done) => {
