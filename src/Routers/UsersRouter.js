@@ -108,9 +108,6 @@ export class UsersRouter extends ClassesRouter {
 
           delete user.password;
 
-          // Remove hidden properties.
-          UsersRouter.removeHiddenProperties(user);
-
           // Sometimes the authData still has null on that keys
           // https://github.com/parse-community/parse-server/issues/935
           if (user.authData) {
@@ -186,6 +183,9 @@ export class UsersRouter extends ClassesRouter {
           }
         }
 
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
         const {
           sessionData,
           createSession
@@ -210,6 +210,10 @@ export class UsersRouter extends ClassesRouter {
   handleVerifyPassword(req) {
     return this._authenticateUserFromRequest(req)
       .then((user) => {
+
+        // Remove hidden properties.
+        UsersRouter.removeHiddenProperties(user);
+
         return { response: user };
       }).catch((error) => {
         throw error;
