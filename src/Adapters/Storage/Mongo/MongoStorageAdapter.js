@@ -626,8 +626,6 @@ export class MongoStorageAdapter implements StorageAdapter {
       readPreference = ReadPreference.NEAREST;
       break;
     case undefined:
-      // this is to match existing tests, which were failing as mongodb@3.0 don't report readPreference anymore
-      readPreference = ReadPreference.PRIMARY;
       break;
     default:
       throw new Parse.Error(Parse.Error.INVALID_QUERY, 'Not supported read preference.');
