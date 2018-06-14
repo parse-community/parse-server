@@ -744,4 +744,47 @@ describe('Parse.Query Aggregate testing', () => {
       fail(err);
     });
   });
+
+  it_exclude_dbs(['postgres'])('aggregate allow multiple stages', (done) => {
+    const pointer1 = new TestObject({ value: 1});
+    const pointer2 = new TestObject({ value: 2});
+    const pointer3 = new TestObject({ value: 3});
+
+    const obj1 = new TestObject({ pointer: pointer1, name: 'Hello' });
+    const obj2 = new TestObject({ pointer: pointer2, name: 'Hello' });
+    const obj3 = new TestObject({ pointer: pointer3, name: 'World' });
+
+    const options = Object.assign({}, masterKeyOptions, {
+      body: [{
+        match: { name: "Hello" },
+      }, {
+        // Transform className$objectId to objectId and store in new field tempPointer
+        project: {
+          tempPointer: { $substr: [ "$_p_pointer", 11, -1 ] }, // Remove TestObject$
+        },
+      }, {
+        // Left Join, replace objectId stored in tempPointer with an actual object
+        lookup: {
+          from: "test_TestObject",
+          localField: "tempPointer",
+          foreignField: "_id",
+          as: "tempPointer"
+        },
+      }, {
+        // lookup returns an array, Deconstructs an array field to objects
+        unwind: {
+          path: "$tempPointer",
+        },
+      }, {
+        match : { "tempPointer.value" : 2 },
+      }]
+    });
+    Parse.Object.saveAll([pointer1, pointer2, pointer3, obj1, obj2, obj3]).then(() => {
+      return rp.get(Parse.serverURL + '/aggregate/TestObject', options);
+    }).then((resp) => {
+      expect(resp.results.length).toEqual(1);
+      expect(resp.results[0].tempPointer.value).toEqual(2);
+      done();
+    });
+  });
 });

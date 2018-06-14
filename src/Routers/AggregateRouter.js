@@ -7,27 +7,31 @@ import UsersRouter   from './UsersRouter';
 const ALLOWED_KEYS = [
   'where',
   'distinct',
-  'project',
-  'match',
-  'redact',
-  'limit',
-  'skip',
-  'unwind',
-  'group',
-  'sample',
-  'sort',
-  'geoNear',
-  'lookup',
-  'out',
-  'indexStats',
-  'facet',
+  'addFields',
   'bucket',
   'bucketAuto',
-  'sortByCount',
-  'addFields',
-  'replaceRoot',
+  'collStats',
   'count',
+  'currentOp',
+  'facet',
+  'geoNear',
   'graphLookup',
+  'group',
+  'indexStats',
+  'limit',
+  'listLocalSessions',
+  'listSessions',
+  'lookup',
+  'match',
+  'out',
+  'project',
+  'redact',
+  'replaceRoot',
+  'sample',
+  'skip',
+  'sort',
+  'sortByCount',
+  'unwind',
 ];
 
 export class AggregateRouter extends ClassesRouter {
@@ -35,29 +39,19 @@ export class AggregateRouter extends ClassesRouter {
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
     const options = {};
-    const pipeline = [];
+    let pipeline = [];
 
-    for (const key in body) {
-      if (ALLOWED_KEYS.indexOf(key) === -1) {
-        throw new Parse.Error(Parse.Error.INVALID_QUERY, `Invalid parameter for query: ${key}`);
+    if (Array.isArray(body)) {
+      pipeline = body.map((stage) => {
+        const stageName = Object.keys(stage)[0];
+        return this.transformStage(stageName, stage);
+      });
+    } else {
+      const stages = [];
+      for (const stageName in body) {
+        stages.push(this.transformStage(stageName, body));
       }
-      if (key === 'group') {
-        if (body[key].hasOwnProperty('_id')) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_QUERY,
-            `Invalid parameter for query: group. Please use objectId instead of _id`
-          );
-        }
-        if (!body[key].hasOwnProperty('objectId')) {
-          throw new Parse.Error(
-            Parse.Error.INVALID_QUERY,
-            `Invalid parameter for query: group. objectId is required`
-          );
-        }
-        body[key]._id = body[key].objectId;
-        delete body[key].objectId;
-      }
-      pipeline.push({ [`$${key}`]: body[key] });
+      pipeline = stages;
     }
     if (body.distinct) {
       options.distinct = String(body.distinct);
@@ -74,6 +68,32 @@ export class AggregateRouter extends ClassesRouter {
       }
       return { response };
     });
+  }
+
+  transformStage(stageName, stage) {
+    if (ALLOWED_KEYS.indexOf(stageName) === -1) {
+      throw new Parse.Error(
+        Parse.Error.INVALID_QUERY,
+        `Invalid parameter for query: ${stageName}`
+      );
+    }
+    if (stageName === 'group') {
+      if (stage[stageName].hasOwnProperty('_id')) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Invalid parameter for query: group. Please use objectId instead of _id`
+        );
+      }
+      if (!stage[stageName].hasOwnProperty('objectId')) {
+        throw new Parse.Error(
+          Parse.Error.INVALID_QUERY,
+          `Invalid parameter for query: group. objectId is required`
+        );
+      }
+      stage[stageName]._id = stage[stageName].objectId;
+      delete stage[stageName].objectId;
+    }
+    return { [`$${stageName}`]: stage[stageName] };
   }
 
   mountRoutes() {

@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+#
+# Setups parse-server, in an easy fashion
+# Used for running Test Cases against the parse-php-sdk
+#
+
+############
+## Config ##
+############
+
+# app name
+APP_NAME="MyTestApp"
+
+# application id
+APP_ID="MK5KVBqIzhhM5tIwX9hrKnQLLKpHeJ9O0VHS4Fqp"
+#APP_ID="test"
+#APP_ID="integration"
+#APP_ID="app-id-here"
+
+# master key
+MASTER_KEY="G1QPMwxoMOfCNALvY7RrQkk9Z2X2yin7kQkemghg"
+#MASTER_KEY="test"
+#MASTER_KEY="notsosecret"
+#MASTER_KEY="master-key-here"
+
+# rest key
+REST_KEY="VIcqjZWIKDJPsNh4JjqQaCFkFzxH10bjVyaUXKi7"
+#REST_KEY="rest"
+#REST_KEY="rest-api-key-here"
+
+# mongodb database uri
+# DATABASE_URI="postgres://localhost:5432/parse_server_postgres_adapter_test_database"
+#PARSE_SERVER_TEST_DB=postgres PARSE_SERVER_LOG_LEVEL=debug npm test spec/ParseQuery.spec.js
+#PARSE_SERVER_TEST_DB=postgres npm test spec/ParseQuery.spec.js
+DATABASE_URI="mongodb://localhost:27017/parseServerMongoAdapterTestDatabase"
+#DATABASE_URI="mongodb://localhost:27017/integration"
+
+# location of cloud code file (this location)
+CLOUD_CODE_FILE="`pwd`/cloud-code.js"
+
+# parse push configuration (mock and android only)
+PUSH_CONFIG='{"android":{"senderId":"blank-sender-id","apiKey":"not-a-real-api-key"}}'
+
+# email adapter configuration, default is mailgun with nonfunctional keys
+EMAIL_ADAPTER_CONFIG='{"module":"parse-server-simple-mailgun-adapter","options":{"apiKey":"not-a-real-api-key","domain":"example.com","fromAddress":"example@example.com"}}'
+
+# parse server publicly accessible url
+PUBLIC_URL="http://localhost:1337/parse"
+
+# auth data
+AUTH_DATA='{"twitter":{"consumer_key":"not_a_real_consumer_key","consumer_secret":"not_a_real_consumer_secret"},"facebook":{"appIds":"not_a_real_facebook_app_id"}}'
+
+CLASS_NAME='TestObject,User,_User';
+
+
+# Start MongoDB
+
+# space out commands from mongodb-runner
+echo "
+"
+
+# Start ParseServer from the command line, note we are using cloud code as well
+npm run start -- \
+    --appName $APP_NAME\
+    --appId $APP_ID\
+    --masterKey $MASTER_KEY\
+    --restAPIKey $REST_KEY\
+    --databaseURI $DATABASE_URI\
+    --push $PUSH_CONFIG\
+    --emailAdapter $EMAIL_ADAPTER_CONFIG\
+    --publicServerURL $PUBLIC_URL\
+    --auth $AUTH_DATA\
+   	--verbose\
+
+echo "
+...shutting down...
+"
+
+# Stop MongoDB
+
+echo "
+Done!
+"
+
+exit 0
