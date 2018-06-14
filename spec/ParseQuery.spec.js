@@ -3684,6 +3684,75 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it("includeAll", (done) => {
+    const child1 = new TestObject({ foo: 'bar', name: 'al' });
+    const child2 = new TestObject({ foo: 'baz', name: 'flo' });
+    const child3 = new TestObject({ foo: 'bad', name: 'mo' });
+    const parent = new Container({ child1, child2, child3 });
+    Parse.Object.saveAll([parent, child1, child2, child3]).then(() => {
+      const options = Object.assign({}, masterKeyOptions, {
+        body: {
+          where: { objectId: parent.id },
+          includeAll: true,
+        }
+      });
+      return rp.get(Parse.serverURL + "/classes/Container", options);
+    }).then((resp) => {
+      const result = resp.results[0];
+      equal(result.child1.foo, 'bar');
+      equal(result.child2.foo, 'baz');
+      equal(result.child3.foo, 'bad');
+      equal(result.child1.name, 'al');
+      equal(result.child2.name, 'flo');
+      equal(result.child3.name, 'mo');
+      done();
+    });
+  });
+
+  it('select nested keys 2 level includeAll', (done) => {
+    const Foobar = new Parse.Object('Foobar');
+    const BarBaz = new Parse.Object('Barbaz');
+    const Bazoo = new Parse.Object('Bazoo');
+    const Tang = new Parse.Object('Tang');
+
+    Bazoo.set('some', 'thing');
+    Bazoo.set('otherSome', 'value');
+    Bazoo.save().then(() => {
+      BarBaz.set('key', 'value');
+      BarBaz.set('otherKey', 'value');
+      BarBaz.set('bazoo', Bazoo);
+      return BarBaz.save();
+    }).then(() => {
+      Tang.set('clan', 'wu');
+      return Tang.save();
+    }).then(() => {
+      Foobar.set('foo', 'bar');
+      Foobar.set('fizz', 'buzz');
+      Foobar.set('barBaz', BarBaz);
+      Foobar.set('group', Tang);
+      return Foobar.save();
+    }).then((savedFoobar) => {
+      const options = Object.assign({}, masterKeyOptions, {
+        body: {
+          where: { objectId: savedFoobar.id },
+          includeAll: true,
+          keys: 'fizz,barBaz.key,barBaz.bazoo.some',
+        }
+      });
+      return rp.get(Parse.serverURL + "/classes/Foobar", options);
+    }).then((resp) => {
+      const result = resp.results[0];
+      equal(result.group.clan, 'wu');
+      equal(result.foo, undefined);
+      equal(result.fizz, 'buzz');
+      equal(result.barBaz.key, 'value');
+      equal(result.barBaz.otherKey, undefined);
+      equal(result.barBaz.bazoo.some, 'thing');
+      equal(result.barBaz.bazoo.otherSome, undefined);
+      done();
+    })
+  });
+
   it('select nested keys 2 level without include (issue #3185)', function(done) {
     const Foobar = new Parse.Object('Foobar');
     const BarBaz = new Parse.Object('Barbaz');
