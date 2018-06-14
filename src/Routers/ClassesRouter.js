@@ -100,7 +100,7 @@ export class ClassesRouter extends PromiseRouter {
 
   static optionsFromBody(body) {
     const allowConstraints = ['skip', 'limit', 'order', 'count', 'keys',
-      'include', 'redirectClassNameForKey', 'where'];
+      'include', 'includeAll', 'redirectClassNameForKey', 'where'];
 
     for (const key of Object.keys(body)) {
       if (allowConstraints.indexOf(key) === -1) {
@@ -127,6 +127,9 @@ export class ClassesRouter extends PromiseRouter {
     }
     if (body.include) {
       options.include = String(body.include);
+    }
+    if (body.includeAll) {
+      options.includeAll = true;
     }
     return options;
   }
