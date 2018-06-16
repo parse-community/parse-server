@@ -294,11 +294,13 @@ function expectError(errorCode, callback) {
     error: function(obj, e) {
       // Some methods provide 2 parameters.
       e = e || obj;
-      if (!e) {
-        fail('expected a specific error but got a blank error');
-        return;
+      if (errorCode !== undefined) {
+        if (!e) {
+          fail('expected a specific error but got a blank error');
+          return;
+        }
+        expect(e.code).toEqual(errorCode, e.message);
       }
-      expect(e.code).toEqual(errorCode, e.message);
       if (callback) {
         callback(e);
       }
