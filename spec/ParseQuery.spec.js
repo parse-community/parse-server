@@ -3684,8 +3684,8 @@ describe('Parse.Query testing', () => {
     });
   });
 
-  it("includeAll", (done) => {
-    const child1 = new TestObject({ foo: 'bar', name: 'al' });
+  it('includeAll', (done) => {
+    const child1 = new TestObject({ foo: 'bar', name: 'ac' });
     const child2 = new TestObject({ foo: 'baz', name: 'flo' });
     const child3 = new TestObject({ foo: 'bad', name: 'mo' });
     const parent = new Container({ child1, child2, child3 });
@@ -3702,7 +3702,7 @@ describe('Parse.Query testing', () => {
       equal(result.child1.foo, 'bar');
       equal(result.child2.foo, 'baz');
       equal(result.child3.foo, 'bad');
-      equal(result.child1.name, 'al');
+      equal(result.child1.name, 'ac');
       equal(result.child2.name, 'flo');
       equal(result.child3.name, 'mo');
       done();
