@@ -558,6 +558,7 @@ RestQuery.prototype.runCount = function() {
     });
 };
 
+// Augments this.response with all pointers on an object
 RestQuery.prototype.handleIncludeAll = function() {
   if (!this.includeAll) {
     return;
@@ -575,6 +576,7 @@ RestQuery.prototype.handleIncludeAll = function() {
       }
       // Add fields to include, keys, remove dups
       this.include = [...new Set([...this.include, ...includeFields])];
+      // if this.keys not set, then all keys are already included
       if (this.keys) {
         this.keys = [...new Set([...this.keys, ...keyFields])];
       }
