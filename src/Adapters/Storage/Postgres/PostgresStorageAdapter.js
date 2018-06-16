@@ -535,6 +535,30 @@ const buildWhereClause = ({ schema, query, index }): WhereClause => {
       index += 2;
     }
 
+    if (fieldValue.$geoWithin && fieldValue.$geoWithin.$centerSphere) {
+      const centerSphere = fieldValue.$geoWithin.$centerSphere;
+      if (!(centerSphere instanceof Array) || centerSphere.length < 2) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere should be an array of Parse.GeoPoint and distance');
+      }
+      // Get point, convert to geo point if necessary and validate
+      let point = centerSphere[0];
+      if (point instanceof Array && point.length === 2) {
+        point = new Parse.GeoPoint(point[1], point[0]);
+      } else if (!GeoPointCoder.isValidJSON(point)) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere geo point invalid');
+      }
+      Parse.GeoPoint._validate(point.latitude, point.longitude);
+      // Get distance and validate
+      const distance = centerSphere[1];
+      if(isNaN(distance) || distance < 0) {
+        throw new Parse.Error(Parse.Error.INVALID_JSON, 'bad $geoWithin value; $centerSphere distance invalid');
+      }
+      const distanceInKM = distance * 6371 * 1000;
+      patterns.push(`ST_distance_sphere($${index}:name::geometry, POINT($${index + 1}, $${index + 2})::geometry) <= $${index + 3}`);
+      values.push(fieldName, point.longitude, point.latitude, distanceInKM);
+      index += 4;
+    }
+
     if (fieldValue.$geoWithin && fieldValue.$geoWithin.$polygon) {
       const polygon = fieldValue.$geoWithin.$polygon;
       let points;
@@ -1324,7 +1348,7 @@ export class PostgresStorageAdapter implements StorageAdapter {
           return p + ` - '$${index + 1 + i}:value'`;
         }, '');
 
-        updatePatterns.push(`$${index}:name = ( COALESCE($${index}:name, '{}'::jsonb) ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
+        updatePatterns.push(`$${index}:name = ('{}'::jsonb ${deletePatterns} ${incrementPatterns} || $${index + 1 + keysToDelete.length}::jsonb )`);
 
         values.push(fieldName, ...keysToDelete, JSON.stringify(fieldValue));
         index += 2 + keysToDelete.length;
@@ -1397,11 +1421,12 @@ export class PostgresStorageAdapter implements StorageAdapter {
     if (sort) {
       const sortCopy: any = sort;
       const sorting = Object.keys(sort).map((key) => {
+        const transformKey = transformDotFieldToComponents(key).join('->');
         // Using $idx pattern gives:  non-integer constant in ORDER BY
         if (sortCopy[key] === 1) {
-          return `"${key}" ASC`;
+          return `${transformKey} ASC`;
         }
-        return `"${key}" DESC`;
+        return `${transformKey} DESC`;
       }).join();
       sortPattern = sort !== undefined && Object.keys(sort).length > 0 ? `ORDER BY ${sorting}` : '';
     }
@@ -1984,5 +2009,14 @@ function literalizeRegexPart(s: string) {
       .replace(/^'([^'])/, `''$1`)
   );
 }
+
+var GeoPointCoder = {
+  isValidJSON(value) {
+    return (typeof value === 'object' &&
+      value !== null &&
+      value.__type === 'GeoPoint'
+    );
+  }
+};
 
 export default PostgresStorageAdapter;

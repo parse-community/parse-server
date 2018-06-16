@@ -149,7 +149,7 @@ export function getDatabaseController(options: ParseServerOptions, cacheControll
 export function getHooksController(options: ParseServerOptions, databaseController: DatabaseController): HooksController {
   const {
     appId,
-    webhookKey
+    webhookKey,
   } = options;
   return new HooksController(appId, databaseController, webhookKey);
 }
@@ -228,4 +228,3 @@ export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOption
     });
   }
 }
-

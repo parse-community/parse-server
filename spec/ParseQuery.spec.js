@@ -1538,6 +1538,90 @@ describe('Parse.Query testing', () => {
     });
   });
 
+  it('can order on an object string field', function (done) {
+    const testSet = [
+      { sortField: { value: "Z" } },
+      { sortField: { value: "A" } },
+      { sortField: { value: "M" } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
+      .then((result) => {
+        expect(result.get('sortField').value).toBe("Z");
+        return new Parse.Query('Test').addAscending('sortField.value').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value).toBe("A");
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it('can order on an object string field (level 2)', function (done) {
+    const testSet = [
+      { sortField: { value: { field: "Z" } } },
+      { sortField: { value: { field: "A" } } },
+      { sortField: { value: { field: "M" } } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe("Z");
+        return new Parse.Query('Test').addAscending('sortField.value.field').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe("A");
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it('can order on an object number field', function (done) {
+    const testSet = [
+      { sortField: { value: 10 } },
+      { sortField: { value: 1 } },
+      { sortField: { value: 5 } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value').first())
+      .then((result) => {
+        expect(result.get('sortField').value).toBe(10);
+        return new Parse.Query('Test').addAscending('sortField.value').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value).toBe(1);
+        done();
+      })
+      .catch(done.fail);
+  });
+
+  it('can order on an object number field (level 2)', function (done) {
+    const testSet = [
+      { sortField: { value: { field: 10 } } },
+      { sortField: { value: { field: 1 } } },
+      { sortField: { value: { field: 5 } } },
+    ];
+
+    const objects = testSet.map(e => new Parse.Object('Test', e));
+    Parse.Object.saveAll(objects)
+      .then(() => new Parse.Query('Test').addDescending('sortField.value.field').first())
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe(10);
+        return new Parse.Query('Test').addAscending('sortField.value.field').first()
+      })
+      .then((result) => {
+        expect(result.get('sortField').value.field).toBe(1);
+        done();
+      })
+      .catch(done.fail);
+  });
+
   it("order by ascending number then descending string", function(done) {
     const strings = ["a", "b", "c", "d"];
     const makeBoxedNumber = function(num, i) {
@@ -3901,4 +3985,106 @@ describe('Parse.Query testing', () => {
       })
   });
 
+  it('withJSON supports geoWithin.centerSphere', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    const center = new Parse.GeoPoint(0, 0);
+    const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const q = new Parse.Query(TestObject);
+      const jsonQ = q.toJSON();
+      jsonQ.where.location = {
+        '$geoWithin': {
+          '$centerSphere': [
+            center,
+            distanceInKilometers / 6371.0
+          ]
+        }
+      };
+      q.withJSON(jsonQ);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      const q = new Parse.Query(TestObject);
+      const jsonQ = q.toJSON();
+      jsonQ.where.location = {
+        '$geoWithin': {
+          '$centerSphere': [
+            [0, 0],
+            distanceInKilometers / 6371.0
+          ]
+        }
+      };
+      q.withJSON(jsonQ);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      done();
+    }).catch(error => {
+      fail(error);
+      done();
+    });
+  });
+
+  it('withJSON with geoWithin.centerSphere fails without parameters', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(Parse.Error.INVALID_JSON, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails with invalid distance', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          [0, 0],
+          'invalid_distance'
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(Parse.Error.INVALID_JSON, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails with invalid coordinate', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          [-190,-190],
+          1
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(undefined, done));
+  });
+
+  it('withJSON with geoWithin.centerSphere fails with invalid geo point', (done) => {
+    const q = new Parse.Query(TestObject);
+    const jsonQ = q.toJSON();
+    jsonQ.where.location = {
+      '$geoWithin': {
+        '$centerSphere': [
+          {'longitude': 0, 'dummytude': 0},
+          1
+        ]
+      }
+    };
+    q.withJSON(jsonQ);
+    q.find(expectError(undefined, done));
+  });
 });

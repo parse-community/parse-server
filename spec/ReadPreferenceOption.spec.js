@@ -27,11 +27,12 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject') >= 0) {
-            myObjectReadPreference = call.args[2].readPreference.preference;
+            myObjectReadPreference = true;
+            expect(call.args[2].readPreference).toBeUndefined();
           }
         });
 
-        expect(myObjectReadPreference).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference).toBe(true);
 
         done();
       });
@@ -442,18 +443,20 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference2 = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject0') >= 0) {
-            myObjectReadPreference0 = call.args[2].readPreference.preference;
+            myObjectReadPreference0 = true;
+            expect(call.args[2].readPreference).toBeUndefined();
           }
           if (call.args[0].indexOf('MyObject1') >= 0) {
-            myObjectReadPreference1 = call.args[2].readPreference.preference;
+            myObjectReadPreference1 = true;
+            expect(call.args[2].readPreference).toBeUndefined();
           }
           if (call.args[0].indexOf('MyObject2') >= 0) {
             myObjectReadPreference2 = call.args[2].readPreference.preference;
           }
         });
 
-        expect(myObjectReadPreference0).toEqual(ReadPreference.PRIMARY);
-        expect(myObjectReadPreference1).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference0).toBe(true);
+        expect(myObjectReadPreference1).toBe(true);
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();
@@ -555,18 +558,20 @@ describe_only_db('mongo')('Read preference option', () => {
         let myObjectReadPreference2 = null;
         databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
           if (call.args[0].indexOf('MyObject0') >= 0) {
-            myObjectReadPreference0 = call.args[2].readPreference.preference;
+            myObjectReadPreference0 = true;
+            expect(call.args[2].readPreference).toBeUndefined();
           }
           if (call.args[0].indexOf('MyObject1') >= 0) {
-            myObjectReadPreference1 = call.args[2].readPreference.preference;
+            myObjectReadPreference1 = true;
+            expect(call.args[2].readPreference).toBeUndefined();
           }
           if (call.args[0].indexOf('MyObject2') >= 0) {
             myObjectReadPreference2 = call.args[2].readPreference.preference;
           }
         });
 
-        expect(myObjectReadPreference0).toEqual(ReadPreference.PRIMARY);
-        expect(myObjectReadPreference1).toEqual(ReadPreference.PRIMARY);
+        expect(myObjectReadPreference0).toBe(true);
+        expect(myObjectReadPreference1).toBe(true);
         expect(myObjectReadPreference2).toEqual(ReadPreference.SECONDARY);
 
         done();
