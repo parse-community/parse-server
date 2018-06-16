@@ -101,6 +101,38 @@ describe('Parse.User testing', () => {
     });
   });
 
+  fit('user login with include', (done) => {
+    const object = new TestObject();
+    object.set('foo', 'bar');
+    const user = new Parse.User();
+    user.setUsername('asdf');
+    user.setPassword('zxcv');
+    user.set('foobaz', object);
+    user.signUp().then(() => {
+      return rp.post({
+        url: 'http://localhost:8378/1/login',
+        headers: {
+          'X-Parse-Application-Id': Parse.applicationId,
+          'X-Parse-REST-API-Key': 'rest',
+        },
+        json: {
+          _method: 'GET',
+          username: 'asdf',
+          password: 'zxcv',
+          include: 'foobaz',
+        }
+      }).then((res) => {
+        console.log(res);
+        done();
+      }).catch((err) => {
+        console.log(err);
+        done();
+      });
+    });
+  });
+
+  fit('empty', (done) => { done() });
+
   it('user login with non-string username with REST API', (done) => {
     Parse.User.signUp('asdf', 'zxcv', null, {
       success: () => {

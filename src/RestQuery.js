@@ -147,6 +147,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
 // 'results' and 'count'.
 // TODO: consolidate the replaceX functions
 RestQuery.prototype.execute = function(executeOptions) {
+  console.log('executed');
   return Promise.resolve().then(() => {
     return this.buildRestWhere();
   }).then(() => {
@@ -504,6 +505,7 @@ RestQuery.prototype.replaceEquality = function() {
 // Returns a promise for whether it was successful.
 // Populates this.response with an object that only has 'results'.
 RestQuery.prototype.runFind = function(options = {}) {
+  console.log(this.findOptions);
   if (this.findOptions.limit === 0) {
     this.response = {results: []};
     return Promise.resolve();

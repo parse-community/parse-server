@@ -7,6 +7,7 @@ import ClassesRouter from './ClassesRouter';
 import rest from '../rest';
 import Auth from '../Auth';
 import passwordCrypto from '../password';
+import RestQuery from '../RestQuery';
 
 export class UsersRouter extends ClassesRouter {
 
@@ -129,13 +130,14 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleMe(req) {
+    console.log(me);
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
     }
     const sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
       { sessionToken },
-      { include: 'user' }, req.info.clientSDK)
+      { include: 'user,user.foobar' }, req.info.clientSDK)
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
@@ -201,9 +203,18 @@ export class UsersRouter extends ClassesRouter {
         req.config.filesController.expandFilesInObject(req.config, user);
 
         return createSession();
-      })
-      .then(() => {
-        return { response: user };
+      }).then(() => {
+        console.log(user.sessionToken);
+        const query = new RestQuery(req.config, Auth.master(req.config), '_User',
+      { sessionToken: user.sessionToken },
+      { include: 'user,user.foobaz' }, req.info.clientSDK);
+        return query.execute();
+      }).then((resp) => {
+        const newUser = resp.results[0].user;
+        newUser.sessionToken = user.sessionToken;
+        UsersRouter.removeHiddenProperties(newUser);
+        console.log(newUser);
+        return { response: newUser };
       });
   }
 
