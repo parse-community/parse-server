@@ -557,11 +557,10 @@ export class MongoStorageAdapter implements StorageAdapter {
   aggregate(className: string, schema: any, pipeline: any, readPreference: ?string) {
     let isPointerField = false;
     pipeline = pipeline.map((stage) => {
-      if (stage.$group && stage.$group._id && (typeof stage.$group._id === 'string')) {
-        const field = stage.$group._id.substring(1);
-        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+      if (stage.$group) {
+        stage.$group = this._parseAggregateGroupArgs(schema, stage.$group);
+        if (stage.$group._id && (typeof stage.$group._id === 'string') && stage.$group._id.indexOf('$_p_') >= 0) {
           isPointerField = true;
-          stage.$group._id = `$_p_${field}`;
         }
       }
       if (stage.$match) {
@@ -632,8 +631,7 @@ export class MongoStorageAdapter implements StorageAdapter {
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
             //
             rtnval[`_p_${field}`] = pipeline[field];
-          }
-          else {
+          } else {
             rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
         } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
@@ -671,7 +669,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       for (const field in pipeline) {
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
           rtnval[`_p_${field}`] = pipeline[field];
-        }  else {
+        } else {
           rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
 
@@ -687,6 +685,38 @@ export class MongoStorageAdapter implements StorageAdapter {
         }
       }
       return rtnval;
+    }
+    return pipeline;
+  }
+
+  // This function is slightly different than the two above. MongoDB $group aggregate looks like:
+  //     { $group: { _id: <expression>, <field1>: { <accumulator1> : <expression1> }, ... } }
+  // The <expression> could be a column name, prefixed with the '$' character. We'll look for
+  // these <expression> and check to see if it is a 'Pointer' or if it's one of createdAt,
+  // updatedAt or objectId and change it accordingly.
+  _parseAggregateGroupArgs(schema: any, pipeline: any): any {
+    if (Array.isArray(pipeline)) {
+      return pipeline.map((value) => this._parseAggregateGroupArgs(schema, value));
+    }
+    else if (typeof pipeline === 'object') {
+      const rtnval = {};
+      for (const field in pipeline) {
+        rtnval[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
+      }
+      return rtnval;
+    }
+    else if (typeof pipeline === 'string') {
+      const field = pipeline.substring(1);
+      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        return `$_p_${field}`;
+      }
+      if (field === 'objectId') {
+        return '$_id';
+      } else if (field == 'createdAt') {
+        return '$_created_at';
+      } else if (field == 'updatedAt') {
+        return '$_updated_at';
+      }
     }
     return pipeline;
   }
