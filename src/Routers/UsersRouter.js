@@ -130,14 +130,13 @@ export class UsersRouter extends ClassesRouter {
   }
 
   handleMe(req) {
-    console.log(me);
     if (!req.info || !req.info.sessionToken) {
       throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
     }
     const sessionToken = req.info.sessionToken;
     return rest.find(req.config, Auth.master(req.config), '_Session',
       { sessionToken },
-      { include: 'user,user.foobar' }, req.info.clientSDK)
+      { include: 'user' }, req.info.clientSDK)
       .then((response) => {
         if (!response.results ||
           response.results.length == 0 ||
@@ -204,17 +203,26 @@ export class UsersRouter extends ClassesRouter {
 
         return createSession();
       }).then(() => {
-        console.log(user.sessionToken);
-        const query = new RestQuery(req.config, Auth.master(req.config), '_User',
-      { sessionToken: user.sessionToken },
-      { include: 'user,user.foobaz' }, req.info.clientSDK);
-        return query.execute();
-      }).then((resp) => {
-        const newUser = resp.results[0].user;
-        newUser.sessionToken = user.sessionToken;
-        UsersRouter.removeHiddenProperties(newUser);
-        console.log(newUser);
-        return { response: newUser };
+        if (!req.body.include || typeof req.body.include !== 'string') {
+          return Promise.resolve();
+        }
+        const fields = ['user'];
+        const includes = req.body.include.split(',');
+        for (const field of includes) {
+          fields.push(`user.${field}`);
+        }
+        const query = new RestQuery(req.config, Auth.master(req.config), '_Session',
+          { sessionToken: user.sessionToken },
+          { include: fields.join() }, req.info.clientSDK);
+        return query.execute().then((resp) => {
+          const includedUser = resp.results[0].user;
+          includedUser.sessionToken = user.sessionToken;
+          UsersRouter.removeHiddenProperties(includedUser);
+          user = includedUser;
+          return user;
+        });
+      }).then(() => {
+        return { response: user };
       });
   }
 
