@@ -183,9 +183,101 @@ describe('Parse.Query Aggregate testing', () => {
       expect(results[0].objectId.month).toEqual(createdAt.getMonth() + 1);
       expect(results[0].objectId.year).toEqual(createdAt.getUTCFullYear());
       done();
-    }).catch((error) => {
-      console.log(error);
-      console.log('error');
+    });
+  });
+
+  it('group and multiply transform', (done) => {
+    const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
+    const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
+    const pipeline = [{
+      group: {
+        objectId: null,
+        total: { $sum: { $multiply: [ '$quantity', '$price' ] } }
+      }
+    }];
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(1);
+      expect(results[0].total).toEqual(45);
+      done();
+    });
+  });
+
+  it('project and multiply transform', (done) => {
+    const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
+    const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
+    const pipeline = [
+      {
+        match: { quantity: { $exists: true } }
+      },
+      {
+        project: {
+          name: 1,
+          total: { $multiply: [ '$quantity', '$price' ] }
+        }
+      }
+    ];
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      if (results[0].name === 'item a') {
+        expect(results[0].total).toEqual(20);
+        expect(results[1].total).toEqual(25);
+      }
+      else {
+        expect(results[0].total).toEqual(25);
+        expect(results[1].total).toEqual(20);
+      }
+      done();
+    });
+  });
+
+  it('project without objectId transform', (done) => {
+    const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
+    const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
+    const pipeline = [
+      {
+        match: { quantity: { $exists: true } }
+      },
+      {
+        project: {
+          objectId: 0,
+          total: { $multiply: [ '$quantity', '$price' ] }
+        }
+      },
+      {
+        sort: { total: 1 }
+      }
+    ];
+    Parse.Object.saveAll([obj1, obj2]).then(() => {
+      const query = new Parse.Query(TestObject);
+      return query.aggregate(pipeline);
+    }).then((results) => {
+      expect(results.length).toEqual(2);
+      expect(results[0].total).toEqual(20);
+      expect(results[0].objectId).toEqual(undefined);
+      expect(results[1].total).toEqual(25);
+      expect(results[1].objectId).toEqual(undefined);
+      done();
+    });
+  });
+
+  it('project updatedAt only transform', (done) => {
+    const pipeline = [{
+      project: { objectId: 0, updatedAt: 1 }
+    }];
+    const query = new Parse.Query(TestObject);
+    query.aggregate(pipeline).then((results) => {
+      expect(results.length).toEqual(4);
+      for (let i = 0; i < results.length; i++) {
+        const item = results[i];
+        expect(item.hasOwnProperty('updatedAt')).toEqual(true);
+        expect(item.hasOwnProperty('objectId')).toEqual(false);
+      }
       done();
     });
   });

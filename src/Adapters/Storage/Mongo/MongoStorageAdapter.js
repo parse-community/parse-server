@@ -662,6 +662,10 @@ export class MongoStorageAdapter implements StorageAdapter {
   // pipeline.
   _parseAggregateProjectArgs(schema: any, pipeline: any): any {
     if (Array.isArray(pipeline)) {
+      //
+      // For $project aggregations, I don't think they can ever start with an array...so this
+      // might be dead code.
+      //
       return pipeline.map((value) => this._parseAggregateProjectArgs(schema, value));
     }
     else if (typeof pipeline === 'object') {
@@ -710,9 +714,7 @@ export class MongoStorageAdapter implements StorageAdapter {
       if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
         return `$_p_${field}`;
       }
-      if (field === 'objectId') {
-        return '$_id';
-      } else if (field == 'createdAt') {
+      if (field == 'createdAt') {
         return '$_created_at';
       } else if (field == 'updatedAt') {
         return '$_updated_at';
