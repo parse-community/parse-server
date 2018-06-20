@@ -186,7 +186,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('group and multiply transform', (done) => {
+  it_exclude_dbs(['postgres'])('group and multiply transform', (done) => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [{
@@ -205,7 +205,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('project and multiply transform', (done) => {
+  it_exclude_dbs(['postgres'])('project and multiply transform', (done) => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
@@ -236,7 +236,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('project without objectId transform', (done) => {
+  it_exclude_dbs(['postgres'])('project without objectId transform', (done) => {
     const obj1 = new TestObject({ name: 'item a', quantity: 2, price: 10 });
     const obj2 = new TestObject({ name: 'item b', quantity: 5, price: 5 });
     const pipeline = [
