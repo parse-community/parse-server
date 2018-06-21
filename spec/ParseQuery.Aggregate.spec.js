@@ -266,7 +266,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it('project updatedAt only transform', (done) => {
+  it_exclude_dbs(['postgres'])('project updatedAt only transform', (done) => {
     const pipeline = [{
       project: { objectId: 0, updatedAt: 1 }
     }];
