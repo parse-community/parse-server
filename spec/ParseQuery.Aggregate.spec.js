@@ -745,7 +745,7 @@ describe('Parse.Query Aggregate testing', () => {
     });
   });
 
-  it_exclude_dbs(['postgres'])('aggregate allow multiple stages', (done) => {
+  it_exclude_dbs(['postgres'])('aggregate allow multiple of same stage', (done) => {
     const pointer1 = new TestObject({ value: 1});
     const pointer2 = new TestObject({ value: 2});
     const pointer3 = new TestObject({ value: 3});

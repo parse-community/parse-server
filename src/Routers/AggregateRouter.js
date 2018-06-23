@@ -4,9 +4,9 @@ import * as middleware from '../middlewares';
 import Parse         from 'parse/node';
 import UsersRouter   from './UsersRouter';
 
-const ALLOWED_KEYS = [
-  'where',
-  'distinct',
+const BASE_KEYS = ['where', 'distinct'];
+
+const PIPELINE_KEYS = [
   'addFields',
   'bucket',
   'bucketAuto',
@@ -33,6 +33,8 @@ const ALLOWED_KEYS = [
   'sortByCount',
   'unwind',
 ];
+
+const ALLOWED_KEYS = BASE_KEYS.concat(PIPELINE_KEYS);
 
 export class AggregateRouter extends ClassesRouter {
 
