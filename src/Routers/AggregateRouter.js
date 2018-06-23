@@ -34,7 +34,7 @@ const PIPELINE_KEYS = [
   'unwind',
 ];
 
-const ALLOWED_KEYS = BASE_KEYS.concat(PIPELINE_KEYS);
+const ALLOWED_KEYS = [...BASE_KEYS, ...PIPELINE_KEYS];
 
 export class AggregateRouter extends ClassesRouter {
 
