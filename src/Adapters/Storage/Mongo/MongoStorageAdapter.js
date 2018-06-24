@@ -621,37 +621,34 @@ export class MongoStorageAdapter implements StorageAdapter {
   _parseAggregateArgs(schema: any, pipeline: any): any {
     if (Array.isArray(pipeline)) {
       return pipeline.map((value) => this._parseAggregateArgs(schema, value));
-    }
-    else if (typeof pipeline === 'object') {
-      const rtnval = {};
+    } else if (typeof pipeline === 'object') {
+      const returnValue = {};
       for (const field in pipeline) {
         if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
           if (typeof pipeline[field] === 'object') {
-            //
             // Pass objects down to MongoDB...this is more than likely an $exists operator.
-            //
-            rtnval[`_p_${field}`] = pipeline[field];
+            returnValue[`_p_${field}`] = pipeline[field];
           } else {
-            rtnval[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
+            returnValue[`_p_${field}`] = `${schema.fields[field].targetClass}$${pipeline[field]}`;
           }
         } else if (schema.fields[field] && schema.fields[field].type === 'Date') {
-          rtnval[field] = this._convertToDate(pipeline[field]);
+          returnValue[field] = this._convertToDate(pipeline[field]);
         } else {
-          rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
+          returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
         }
 
         if (field === 'objectId') {
-          rtnval['_id'] = rtnval[field];
-          delete rtnval[field];
+          returnValue['_id'] = returnValue[field];
+          delete returnValue[field];
         } else if (field === 'createdAt') {
-          rtnval['_created_at'] = rtnval[field];
-          delete rtnval[field];
+          returnValue['_created_at'] = returnValue[field];
+          delete returnValue[field];
         } else if (field === 'updatedAt') {
-          rtnval['_updated_at'] = rtnval[field];
-          delete rtnval[field];
+          returnValue['_updated_at'] = returnValue[field];
+          delete returnValue[field];
         }
       }
-      return rtnval;
+      return returnValue;
     }
     return pipeline;
   }
@@ -661,36 +658,26 @@ export class MongoStorageAdapter implements StorageAdapter {
   // difference with this function is we are not transforming the values, only the keys of the
   // pipeline.
   _parseAggregateProjectArgs(schema: any, pipeline: any): any {
-    if (Array.isArray(pipeline)) {
-      //
-      // For $project aggregations, I don't think they can ever start with an array...so this
-      // might be dead code.
-      //
-      return pipeline.map((value) => this._parseAggregateProjectArgs(schema, value));
-    }
-    else if (typeof pipeline === 'object') {
-      const rtnval = {};
-      for (const field in pipeline) {
-        if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
-          rtnval[`_p_${field}`] = pipeline[field];
-        } else {
-          rtnval[field] = this._parseAggregateArgs(schema, pipeline[field]);
-        }
-
-        if (field === 'objectId') {
-          rtnval['_id'] = rtnval[field];
-          delete rtnval[field];
-        } else if (field === 'createdAt') {
-          rtnval['_created_at'] = rtnval[field];
-          delete rtnval[field];
-        } else if (field === 'updatedAt') {
-          rtnval['_updated_at'] = rtnval[field];
-          delete rtnval[field];
-        }
+    const returnValue = {};
+    for (const field in pipeline) {
+      if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
+        returnValue[`_p_${field}`] = pipeline[field];
+      } else {
+        returnValue[field] = this._parseAggregateArgs(schema, pipeline[field]);
       }
-      return rtnval;
+
+      if (field === 'objectId') {
+        returnValue['_id'] = returnValue[field];
+        delete returnValue[field];
+      } else if (field === 'createdAt') {
+        returnValue['_created_at'] = returnValue[field];
+        delete returnValue[field];
+      } else if (field === 'updatedAt') {
+        returnValue['_updated_at'] = returnValue[field];
+        delete returnValue[field];
+      }
     }
-    return pipeline;
+    return returnValue;
   }
 
   // This function is slightly different than the two above. MongoDB $group aggregate looks like:
@@ -701,20 +688,17 @@ export class MongoStorageAdapter implements StorageAdapter {
   _parseAggregateGroupArgs(schema: any, pipeline: any): any {
     if (Array.isArray(pipeline)) {
       return pipeline.map((value) => this._parseAggregateGroupArgs(schema, value));
-    }
-    else if (typeof pipeline === 'object') {
-      const rtnval = {};
+    } else if (typeof pipeline === 'object') {
+      const returnValue = {};
       for (const field in pipeline) {
-        rtnval[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
+        returnValue[field] = this._parseAggregateGroupArgs(schema, pipeline[field]);
       }
-      return rtnval;
-    }
-    else if (typeof pipeline === 'string') {
+      return returnValue;
+    } else if (typeof pipeline === 'string') {
       const field = pipeline.substring(1);
       if (schema.fields[field] && schema.fields[field].type === 'Pointer') {
         return `$_p_${field}`;
-      }
-      if (field == 'createdAt') {
+      } else if (field == 'createdAt') {
         return '$_created_at';
       } else if (field == 'updatedAt') {
         return '$_updated_at';
@@ -732,11 +716,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       return new Date(value);
     }
 
-    const rtnval = {}
+    const returnValue = {}
     for (const field in value) {
-      rtnval[field] = this._convertToDate(value[field])
+      returnValue[field] = this._convertToDate(value[field])
     }
-    return rtnval;
+    return returnValue;
   }
 
   _parseReadPreference(readPreference: ?string): ?string {
