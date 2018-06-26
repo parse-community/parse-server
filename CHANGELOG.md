@@ -8,6 +8,14 @@
 
 * Adds support for JS SDK 2.0 job status header
 
+### 2.8.3
+[Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.3...2.8.2)
+
+#### Improvements:
+
+* Removes npm-git scripts as npm supports using git repositories that build, thanks to [Florent Vilmart](https://github.com/flovilmart)
+
+
 ### 2.8.2
 [Full Changelog](https://github.com/parse-community/parse-server/compare/2.8.2...2.8.1)
 
