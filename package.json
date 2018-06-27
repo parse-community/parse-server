@@ -43,7 +43,7 @@
     "uuid": "^3.1.0",
     "winston": "2.4.1",
     "winston-daily-rotate-file": "1.7.2",
-    "ws": "5.2.0"
+    "ws": "5.2.1"
   },
   "devDependencies": {
     "babel-cli": "6.26.0",
@@ -55,7 +55,7 @@
     "bcrypt-nodejs": "0.0.3",
     "cross-env": "5.2.0",
     "deep-diff": "1.0.1",
-    "eslint": "^4.9.0",
+    "eslint": "^5.0.0",
     "eslint-plugin-flowtype": "^2.39.1",
     "flow-bin": "^0.73.0",
     "gaze": "1.1.3",

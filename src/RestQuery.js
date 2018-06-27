@@ -44,6 +44,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
   }
 
   this.doCount = false;
+  this.includeAll = false;
 
   // The format for this.include is not the same as the format for the
   // include option - it's the paths we should include, in order,
@@ -85,6 +86,9 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     }
     case 'count':
       this.doCount = true;
+      break;
+    case 'includeAll':
+      this.includeAll = true;
       break;
     case 'distinct':
     case 'pipeline':
@@ -149,6 +153,8 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
 RestQuery.prototype.execute = function(executeOptions) {
   return Promise.resolve().then(() => {
     return this.buildRestWhere();
+  }).then(() => {
+    return this.handleIncludeAll();
   }).then(() => {
     return this.runFind(executeOptions);
   }).then(() => {
@@ -549,6 +555,31 @@ RestQuery.prototype.runCount = function() {
   return this.config.database.find(this.className, this.restWhere, this.findOptions)
     .then((c) => {
       this.response.count = c;
+    });
+};
+
+// Augments this.response with all pointers on an object
+RestQuery.prototype.handleIncludeAll = function() {
+  if (!this.includeAll) {
+    return;
+  }
+  return this.config.database.loadSchema()
+    .then(schemaController => schemaController.getOneSchema(this.className))
+    .then(schema => {
+      const includeFields = [];
+      const keyFields = [];
+      for (const field in schema.fields) {
+        if (schema.fields[field].type && schema.fields[field].type === 'Pointer') {
+          includeFields.push([field]);
+          keyFields.push(field);
+        }
+      }
+      // Add fields to include, keys, remove dups
+      this.include = [...new Set([...this.include, ...includeFields])];
+      // if this.keys not set, then all keys are already included
+      if (this.keys) {
+        this.keys = [...new Set([...this.keys, ...keyFields])];
+      }
     });
 };
 
