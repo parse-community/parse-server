@@ -39,6 +39,45 @@ describe_only_db('mongo')('Read preference option', () => {
     });
   });
 
+  it('should preserve the read preference set (#4831)', async () => {
+    const { MongoStorageAdapter } = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const adapterOptions = {
+      uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
+      mongoOptions: {
+        readPreference: ReadPreference.NEAREST,
+      }
+    };
+    await reconfigureServer({ databaseAdapter: new MongoStorageAdapter(adapterOptions) });
+
+    const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
+
+    const obj0 = new Parse.Object('MyObject');
+    obj0.set('boolKey', false);
+    const obj1 = new Parse.Object('MyObject');
+    obj1.set('boolKey', true);
+
+    await Parse.Object.saveAll([obj0, obj1])
+    spyOn(databaseAdapter.database.serverConfig, 'cursor').and.callThrough();
+
+    const query = new Parse.Query('MyObject');
+    query.equalTo('boolKey', false);
+
+    const results = await query.find();
+    expect(results.length).toBe(1);
+    expect(results[0].get('boolKey')).toBe(false);
+
+    let myObjectReadPreference = null;
+    databaseAdapter.database.serverConfig.cursor.calls.all().forEach((call) => {
+      if (call.args[0].indexOf('MyObject') >= 0) {
+        myObjectReadPreference = true;
+        expect(call.args[2].readPreference.preference).toBe(ReadPreference.NEAREST);
+      }
+    });
+
+    expect(myObjectReadPreference).toBe(true);
+    console.log('OK!');
+  });
+
   it('should change read preference in the beforeFind trigger', (done) => {
     const databaseAdapter = (Config.get(Parse.applicationId)).database.adapter;
 
