@@ -114,7 +114,7 @@ describe('Parse.GeoPoint testing', () => {
         const query = new Parse.Query(TestObject);
         const point = new Parse.GeoPoint(24, 19);
         query.equalTo('construct', 'line');
-        query.withinMiles('location', point, 10000);
+        query.withinMiles('location', point, 10000, true);
         query.find({
           success: function(results) {
             equal(results.length, 10);
@@ -139,7 +139,7 @@ describe('Parse.GeoPoint testing', () => {
     Parse.Object.saveAll(objects).then(() => {
       const query = new Parse.Query(TestObject);
       const point = new Parse.GeoPoint(1.0, -1.0);
-      query.withinRadians('location', point, 3.14);
+      query.withinRadians('location', point, 3.14, true);
       return query.find();
     }).then((results) => {
       equal(results.length, 3);
@@ -162,7 +162,7 @@ describe('Parse.GeoPoint testing', () => {
     Parse.Object.saveAll(objects, function() {
       const query = new Parse.Query(TestObject);
       const point = new Parse.GeoPoint(1.0, -1.0);
-      query.withinRadians('location', point, 3.14 * 0.5);
+      query.withinRadians('location', point, 3.14 * 0.5, true);
       query.find({
         success: function(results) {
           equal(results.length, 2);
@@ -186,7 +186,7 @@ describe('Parse.GeoPoint testing', () => {
     Parse.Object.saveAll(objects, function() {
       const query = new Parse.Query(TestObject);
       const point = new Parse.GeoPoint(1.0, -1.0);
-      query.withinRadians('location', point, 3.14 * 0.25);
+      query.withinRadians('location', point, 3.14 * 0.25, true);
       query.find({
         success: function(results) {
           equal(results.length, 1);
@@ -218,7 +218,7 @@ describe('Parse.GeoPoint testing', () => {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
       // Honolulu is 4300 km away from SFO on a sphere ;)
-      query.withinKilometers('location', sfo, 4800.0);
+      query.withinKilometers('location', sfo, 4800.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 3);
@@ -232,7 +232,7 @@ describe('Parse.GeoPoint testing', () => {
     makeSomeGeoPoints(function() {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
-      query.withinKilometers('location', sfo, 3700.0);
+      query.withinKilometers('location', sfo, 3700.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 2);
@@ -248,7 +248,7 @@ describe('Parse.GeoPoint testing', () => {
     makeSomeGeoPoints(function() {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
-      query.withinKilometers('location', sfo, 100.0);
+      query.withinKilometers('location', sfo, 100.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 1);
@@ -263,7 +263,7 @@ describe('Parse.GeoPoint testing', () => {
     makeSomeGeoPoints(function() {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
-      query.withinKilometers('location', sfo, 10.0);
+      query.withinKilometers('location', sfo, 10.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 0);
@@ -291,7 +291,7 @@ describe('Parse.GeoPoint testing', () => {
     makeSomeGeoPoints(function() {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
-      query.withinMiles('location', sfo, 2200.0);
+      query.withinMiles('location', sfo, 2200.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 2);
@@ -323,7 +323,7 @@ describe('Parse.GeoPoint testing', () => {
     makeSomeGeoPoints(function() {
       const sfo = new Parse.GeoPoint(37.6189722, -122.3748889);
       const query = new Parse.Query(TestObject);
-      query.withinMiles('location', sfo, 10.0);
+      query.withinMiles('location', sfo, 10.0, true);
       query.find({
         success: function(results) {
           equal(results.length, 0);
@@ -362,6 +362,63 @@ describe('Parse.GeoPoint testing', () => {
       query.withinGeoBox('location', sw, ne);
       return query.find();
     }).then((results) => {
+      equal(results.length, 2);
+      done();
+    });
+  });
+
+  it('works with withinGeo.nearSphere queries in kilometers', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const center = new Parse.GeoPoint(0, 0);
+      const distanceInKilometers = 1569 + 1; // 1569km is the approximate distance between {0, 0} and {10, 10}.
+      const q = new Parse.Query(TestObject);
+      q.withinKilometers('location', center, distanceInKilometers, false);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      done();
+    });
+  });
+
+  it('works with withinGeo.nearSphere queries in miles', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const center = new Parse.GeoPoint(0, 0);
+      const distanceInMiles = 975 + 1; // 975miles is the approximate distance between {0, 0} and {10, 10}.
+      const q = new Parse.Query(TestObject);
+      q.withinMiles('location', center, distanceInMiles, false);
+      return q.find();
+    }).then(results => {
+      equal(results.length, 2);
+      done();
+    });
+  });
+
+  it('works with withinGeo.nearSphere queries in radians', (done) => {
+    const inbound = new Parse.GeoPoint(1.5, 1.5);
+    const onbound = new Parse.GeoPoint(10, 10);
+    const outbound = new Parse.GeoPoint(20, 20);
+    const obj1 = new Parse.Object('TestObject', {location: inbound});
+    const obj2 = new Parse.Object('TestObject', {location: onbound});
+    const obj3 = new Parse.Object('TestObject', {location: outbound});
+    Parse.Object.saveAll([obj1, obj2, obj3]).then(() => {
+      const center = new Parse.GeoPoint(0, 0);
+      const distanceInRadians = 0.246 + 0.001; // 0.246radians is the approximate distance between {0, 0} and {10, 10}.
+      const q = new Parse.Query(TestObject);
+      q.withinRadians('location', center, distanceInRadians, false);
+      return q.find();
+    }).then(results => {
       equal(results.length, 2);
       done();
     });
