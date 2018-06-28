@@ -53,7 +53,7 @@ function del(config, auth, className, objectId) {
       'bad objectId');
   }
 
-  if (className === '_User' && !auth.couldUpdateUserId()) {
+  if (className === '_User' && auth.isUnauthenticated()) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
       'insufficient auth to delete user');
   }
@@ -75,7 +75,7 @@ function del(config, auth, className, objectId) {
             firstResult.className = className;
             if (className === '_Session' && !auth.isMaster) {
               if (!auth.user || firstResult.user.objectId !== auth.user.id) {
-                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+                throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
               }
             }
             var cacheAdapter = config.cacheController;
@@ -155,7 +155,7 @@ function handleSessionMissingError(error, className) {
   // If we're trying to update a user without / with bad session token
   if (className === '_User'
       && error.code === Parse.Error.OBJECT_NOT_FOUND) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'insuffisant auth.');
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'insufficient auth.');
   }
   throw error;
 }

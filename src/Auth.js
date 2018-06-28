@@ -21,14 +21,14 @@ function Auth({ config, isMaster = false, isReadOnly = false, user, installation
 
 // Whether this auth could possibly modify the given user id.
 // It still could be forbidden via ACLs even if this returns true.
-Auth.prototype.couldUpdateUserId = function() {
+Auth.prototype.isUnauthenticated = function() {
   if (this.isMaster) {
-    return true;
+    return false;
   }
   if (this.user) {
-    return true;
+    return false;
   }
-  return false;
+  return true;
 };
 
 // A helper to get a master-level Auth object
@@ -64,7 +64,7 @@ var getAuthForSessionToken = function({ config, sessionToken, installationId } =
     return query.execute().then((response) => {
       var results = response.results;
       if (results.length !== 1 || !results[0]['user']) {
-        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'invalid session token');
+        throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN, 'Invalid session token');
       }
 
       var now = new Date(),

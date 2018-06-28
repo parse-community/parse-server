@@ -30,7 +30,7 @@ function RestQuery(config, auth, className, restWhere = {}, restOptions = {}, cl
     if (this.className == '_Session') {
       if (!this.auth.user) {
         throw new Parse.Error(Parse.Error.INVALID_SESSION_TOKEN,
-          'invalid session token');
+          'Invalid session token');
       }
       this.restWhere = {
         '$and': [this.restWhere, {

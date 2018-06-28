@@ -2444,7 +2444,7 @@ describe('Parse.User testing', () => {
         }, (error, response, body) => {
           expect(error).toBe(null);
           const b = JSON.parse(body);
-          expect(b.error).toBe('invalid session token');
+          expect(b.error).toBe('Invalid session token');
           request.put({
             headers: {
               'X-Parse-Application-Id': 'test',
@@ -2536,7 +2536,7 @@ describe('Parse.User testing', () => {
             expect(error).toBe(null);
             const b = JSON.parse(body);
             expect(b.code).toEqual(209);
-            expect(b.error).toBe('invalid session token');
+            expect(b.error).toBe('Invalid session token');
             done();
           });
         });
@@ -2578,7 +2578,7 @@ describe('Parse.User testing', () => {
         }, (error,response,body) => {
           const b = JSON.parse(body);
           expect(b.code).toEqual(209);
-          expect(b.error).toBe('invalid session token');
+          expect(b.error).toBe('Invalid session token');
           done();
         });
       });
@@ -2615,7 +2615,7 @@ describe('Parse.User testing', () => {
       done();
     }, function(err) {
       expect(err.code).toBe(Parse.Error.INVALID_SESSION_TOKEN);
-      expect(err.message).toBe('invalid session token');
+      expect(err.message).toBe('Invalid session token');
       done();
     });
   });
@@ -2691,7 +2691,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it("invalid session tokens are rejected", (done) => {
+  it("Invalid session tokens are rejected", (done) => {
     Parse.User.signUp("asdf", "zxcv", null, {
       success: function() {
         request.get({
@@ -2704,7 +2704,7 @@ describe('Parse.User testing', () => {
           },
         }, (error, response, body) => {
           expect(body.code).toBe(209);
-          expect(body.error).toBe('invalid session token');
+          expect(body.error).toBe('Invalid session token');
           done();
         })
       }
