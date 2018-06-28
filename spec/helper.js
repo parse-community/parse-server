@@ -114,7 +114,6 @@ if (process.env.PARSE_SERVER_TEST_CACHE === 'redis') {
 }
 
 const openConnections = {};
-
 // Set up a default API server for testing with default configuration.
 let server;
 
