@@ -975,6 +975,25 @@ describe('miscellaneous', function() {
     });
   });
 
+  it('test beforeDelete with locked down ACL', async () => {
+    let called = false;
+    Parse.Cloud.beforeDelete('GameScore', (req, res) => {
+      called = true;
+      res.success();
+    });
+    const object = new Parse.Object('GameScore');
+    object.setACL(new Parse.ACL());
+    await object.save();
+    const objects = await new Parse.Query('GameScore').find();
+    expect(objects.length).toBe(0);
+    try {
+      await object.destroy();
+    } catch(e) {
+      expect(e.code).toBe(Parse.Error.OBJECT_NOT_FOUND);
+    }
+    expect(called).toBe(false);
+  });
+
   it('test cloud function query parameters', (done) => {
     Parse.Cloud.define('echoParams', (req, res) => {
       res.success(req.params);

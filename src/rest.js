@@ -67,7 +67,7 @@ function del(config, auth, className, objectId) {
     const hasTriggers = checkTriggers(className, config, ['beforeDelete', 'afterDelete']);
     const hasLiveQuery = checkLiveQuery(className, config);
     if (hasTriggers || hasLiveQuery || className == '_Session') {
-      return find(config, Auth.master(config), className, {objectId: objectId})
+      return find(config, auth, className, {objectId: objectId})
         .then((response) => {
           if (response && response.results && response.results.length) {
             const firstResult = response.results[0];
