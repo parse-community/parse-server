@@ -525,6 +525,71 @@ describe('Parse.User testing', () => {
     });
   });
 
+  it('never locks himself up', async () => {
+    const user = new Parse.User();
+    await user.signUp({
+      username: 'username',
+      password: 'password'
+    });
+    user.setACL(new Parse.ACL());
+    await user.save();
+    await user.fetch();
+    expect(user.getACL().getReadAccess(user)).toBe(true);
+    expect(user.getACL().getWriteAccess(user)).toBe(true);
+    const publicReadACL = new Parse.ACL();
+    publicReadACL.setPublicReadAccess(true);
+
+    // Create an administrator role with a single admin user
+    const role = new Parse.Role('admin', publicReadACL);
+    const admin = new Parse.User();
+    await admin.signUp({
+      username: 'admin',
+      password: 'admin',
+    });
+    role.getUsers().add(admin);
+    await role.save(null, { useMasterKey: true });
+
+    // Grant the admins write rights on the user
+    const acl = user.getACL();
+    acl.setRoleWriteAccess(role, true);
+    acl.setRoleReadAccess(role, true);
+
+    // Update with the masterKey just to be sure
+    await user.save({ ACL: acl }, { useMasterKey: true });
+
+    // Try to update from admin... should all work fine
+    await user.save({ key: 'fromAdmin'}, { sessionToken: admin.getSessionToken() });
+    await user.fetch();
+    expect(user.toJSON().key).toEqual('fromAdmin');
+
+    // Try to save when logged out (public)
+    let failed = false;
+    try {
+      // Ensure no session token is sent
+      await Parse.User.logOut();
+      await user.save({ key: 'fromPublic'});
+    } catch(e) {
+      failed = true;
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+    }
+    expect({ failed }).toEqual({ failed: true });
+
+    // Try to save with a random user, should fail
+    failed = false;
+    const anyUser = new Parse.User();
+    await anyUser.signUp({
+      username: 'randomUser',
+      password: 'password'
+    });
+    try {
+      await user.save({ key: 'fromAnyUser'});
+    } catch(e) {
+      failed = true;
+      expect(e.code).toBe(Parse.Error.SESSION_MISSING);
+    }
+    expect({ failed }).toEqual({ failed: true });
+  });
+
   it("current user", (done) => {
     const user = new Parse.User();
     user.set("password", "asdf");

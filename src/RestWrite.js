@@ -965,7 +965,7 @@ RestWrite.prototype.runDatabaseOperation = function() {
 
   if (this.className === '_User' &&
       this.query &&
-      !this.auth.couldUpdateUserId(this.query.objectId)) {
+      !this.auth.couldUpdateUserId()) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING, `Cannot modify user ${this.query.objectId}.`);
   }
 

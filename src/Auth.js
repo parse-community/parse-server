@@ -21,11 +21,11 @@ function Auth({ config, isMaster = false, isReadOnly = false, user, installation
 
 // Whether this auth could possibly modify the given user id.
 // It still could be forbidden via ACLs even if this returns true.
-Auth.prototype.couldUpdateUserId = function(userId) {
+Auth.prototype.couldUpdateUserId = function() {
   if (this.isMaster) {
     return true;
   }
-  if (this.user && this.user.id === userId) {
+  if (this.user) {
     return true;
   }
   return false;
