@@ -55,7 +55,7 @@ function del(config, auth, className, objectId) {
 
   if (className === '_User' && auth.isUnauthenticated()) {
     throw new Parse.Error(Parse.Error.SESSION_MISSING,
-      'insufficient auth to delete user');
+      'Insufficient auth to delete user');
   }
 
   enforceRoleSecurity('delete', className, auth);
@@ -155,7 +155,7 @@ function handleSessionMissingError(error, className) {
   // If we're trying to update a user without / with bad session token
   if (className === '_User'
       && error.code === Parse.Error.OBJECT_NOT_FOUND) {
-    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'insufficient auth.');
+    throw new Parse.Error(Parse.Error.SESSION_MISSING, 'Insufficient auth.');
   }
   throw error;
 }
