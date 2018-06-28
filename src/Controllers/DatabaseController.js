@@ -869,7 +869,8 @@ class DatabaseController {
     op,
     distinct,
     pipeline,
-    readPreference
+    readPreference,
+    isWrite,
   }: any = {}): Promise<any> {
     const isMaster = acl === undefined;
     const aclGroup = acl || [];
@@ -930,7 +931,11 @@ class DatabaseController {
                   }
                 }
                 if (!isMaster) {
-                  query = addReadACL(query, aclGroup);
+                  if (isWrite) {
+                    query = addWriteACL(query, aclGroup);
+                  } else {
+                    query = addReadACL(query, aclGroup);
+                  }
                 }
                 validateQuery(query);
                 if (count) {
