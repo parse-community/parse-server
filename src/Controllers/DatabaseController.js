@@ -658,7 +658,7 @@ class DatabaseController {
   deleteEverything() {
     this.schemaPromise = null;
     return Promise.all([
-      this.adapter.deleteAllClasses(),
+      this.adapter.dropDatabase(),
       this.schemaCache.clear()
     ]);
   }
