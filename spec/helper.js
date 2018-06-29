@@ -411,17 +411,25 @@ global.jfail = function(err) {
 
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
-    return xit;
+    return (name, suite) => {
+      return xit(`[${excluded}] ${name}`, suite);
+    };
   } else {
-    return it;
+    return (name, suite) => {
+      return it(`[${excluded}] ${name}`, suite);
+    };
   }
 }
 
 global.it_only_db = db => {
   if (process.env.PARSE_SERVER_TEST_DB === db) {
-    return it;
+    return (name, suite) => {
+      return it(`[${db}] ${name}`, suite);
+    };
   } else {
-    return xit;
+    return (name, suite) => {
+      return xit(`[${db}] ${name}`, suite);
+    };
   }
 };
 
@@ -435,11 +443,17 @@ global.fit_exclude_dbs = excluded => {
 
 global.describe_only_db = db => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
-    return describe;
+    return (name, suite) => {
+      return describe(`[${db}] ${name}`, suite);
+    };
   } else if (!process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
-    return describe;
+    return (name, suite) => {
+      return describe(`[${db}] ${name}`, suite);
+    };
   } else {
-    return () => {};
+    return (name, suite) => {
+      return xdescribe(`[${db}] ${name}`, suite);
+    };
   }
 }
 

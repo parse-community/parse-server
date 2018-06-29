@@ -320,6 +320,11 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
+  dropDatabase() {
+    if (!this.database) { return Promise.resolve(); }
+    return this.database.dropDatabase();
+  }
+
   // Remove the column and all the data. For Relations, the _Join collection is handled
   // specially, this function does not delete _Join columns. It should, however, indicate
   // that the relation fields does not exist anymore. In mongo, this means removing it from
