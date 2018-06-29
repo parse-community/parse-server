@@ -32,6 +32,7 @@ export interface StorageAdapter {
   addFieldIfNotExists(className: string, fieldName: string, type: any): Promise<void>;
   deleteClass(className: string): Promise<void>;
   deleteAllClasses(): Promise<void>;
+  dropDatabase(): Promise<void>;
   deleteFields(className: string, schema: SchemaType, fieldNames: Array<string>): Promise<void>;
   getAllClasses(): Promise<StorageClass[]>;
   getClass(className: string): Promise<StorageClass>;

@@ -7,13 +7,20 @@ import ParseServer from '../src/ParseServer';
 
 describe('Server Url Checks', () => {
 
-  const app = express();
-  app.get('/health', function(req, res){
-    res.json({
-      status: 'ok'
+  let server;
+  beforeAll((done) => {
+    const app = express();
+    app.get('/health', function(req, res){
+      res.json({
+        status: 'ok'
+      });
     });
+    server = app.listen(13376, undefined, done);
   });
-  app.listen(13376);
+
+  afterAll((done) => {
+    server.close(done);
+  });
 
   it('validate good server url', (done) => {
     Parse.serverURL = 'http://localhost:13376';

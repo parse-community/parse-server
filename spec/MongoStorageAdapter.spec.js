@@ -9,7 +9,7 @@ const databaseURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDataba
 describe_only_db('mongo')('MongoStorageAdapter', () => {
   beforeEach(done => {
     new MongoStorageAdapter({ uri: databaseURI })
-      .deleteAllClasses()
+      .dropDatabase()
       .then(done, fail);
   });
 
