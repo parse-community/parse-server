@@ -10,11 +10,19 @@ const port = 12345;
 const hookServerURL = "http://localhost:" + port;
 const AppCache = require('../src/cache').AppCache;
 
-const app = express();
-app.use(bodyParser.json({ 'type': '*/*' }))
-app.listen(12345);
-
 describe('Hooks', () => {
+  let server;
+  let app;
+  beforeAll((done) => {
+    app = express();
+    app.use(bodyParser.json({ 'type': '*/*' }))
+    server = app.listen(12345, undefined, done);
+  });
+
+  afterAll((done) => {
+    server.close(done);
+  });
+
   it("should have no hooks registered", (done) => {
     Parse.Hooks.getFunctions().then((res) => {
       expect(res.constructor).toBe(Array.prototype.constructor);

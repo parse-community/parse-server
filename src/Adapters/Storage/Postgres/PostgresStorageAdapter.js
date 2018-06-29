@@ -959,6 +959,10 @@ export class PostgresStorageAdapter implements StorageAdapter {
       });
   }
 
+  dropDatabase() {
+    return this.deleteAllClasses();
+  }
+
   // Remove the column and all the data. For Relations, the _Join collection is handled
   // specially, this function does not delete _Join columns. It should, however, indicate
   // that the relation fields does not exist anymore. In mongo, this means removing it from

@@ -313,11 +313,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  // Delete all data known to this adapter. Used for testing.
-  deleteAllClasses() {
-    return storageAdapterAllCollections(this)
-      .then(collections => Promise.all(collections.map(collection => collection.drop())))
-      .catch(err => this.handleError(err));
+  dropDatabase() {
+    if (!this.database) { return Promise.resolve(); }
+    return this.database.dropDatabase();
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
