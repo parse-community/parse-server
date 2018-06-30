@@ -412,11 +412,11 @@ global.jfail = function(err) {
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return (name, suite) => {
-      return xit(`[${excluded}] ${name}`, suite);
+      return xit(`[not on ${excluded.join(',')}] ${name}`, suite);
     };
   } else {
     return (name, suite) => {
-      return it(`[${excluded}] ${name}`, suite);
+      return it(`[not on ${excluded.join(',')}] ${name}`, suite);
     };
   }
 }
