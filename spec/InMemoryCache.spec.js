@@ -1,4 +1,4 @@
-const InMemoryCache = require('../src/Adapters/Cache/InMemoryCache').default;
+const InMemoryCache = require('../src/Adapters/Cache/InMemoryCache').InMemoryCache;
 
 
 describe('InMemoryCache', function() {

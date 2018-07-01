@@ -1,5 +1,5 @@
-import log from '../../../logger';
-import _   from 'lodash';
+const log = require('../../../logger');
+const _   = require('lodash');
 var mongodb = require('mongodb');
 var Parse = require('parse/node').Parse;
 

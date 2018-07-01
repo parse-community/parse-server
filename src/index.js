@@ -1,15 +1,15 @@
-import ParseServer          from './ParseServer';
-import S3Adapter            from '@parse/s3-files-adapter'
-import FileSystemAdapter    from '@parse/fs-files-adapter'
-import InMemoryCacheAdapter from './Adapters/Cache/InMemoryCacheAdapter'
-import NullCacheAdapter     from './Adapters/Cache/NullCacheAdapter'
-import RedisCacheAdapter    from './Adapters/Cache/RedisCacheAdapter'
-import LRUCacheAdapter      from './Adapters/Cache/LRUCache.js'
-import * as TestUtils       from './TestUtils';
-import { useExternal }      from './deprecated';
-import { getLogger }        from './logger';
-import { PushWorker }       from './Push/PushWorker';
-import { ParseServerOptions }    from './Options';
+const { ParseServer }       = require('./ParseServer');
+const S3Adapter            = require('@parse/s3-files-adapter');
+const FileSystemAdapter    = require('@parse/fs-files-adapter');
+const { InMemoryCacheAdapter } = require('./Adapters/Cache/InMemoryCacheAdapter');
+const { NullCacheAdapter }     = require('./Adapters/Cache/NullCacheAdapter');
+const { RedisCacheAdapter }    = require('./Adapters/Cache/RedisCacheAdapter');
+const { LRUCacheAdapter }      = require('./Adapters/Cache/LRUCache.js');
+const  TestUtils       = require('./TestUtils');
+const { useExternal }      = require('./deprecated');
+const { getLogger }        = require('./logger');
+const { PushWorker }       = require('./Push/PushWorker');
+const { ParseServerOptions }    = require('./Options');
 
 // Factory function
 const _ParseServer = function(options: ParseServerOptions) {
@@ -26,8 +26,8 @@ Object.defineProperty(module.exports, 'logger', {
   get: getLogger
 });
 
-export default ParseServer;
-export {
+module.exports = {
+  default: ParseServer,
   S3Adapter,
   GCSAdapter,
   FileSystemAdapter,
@@ -37,5 +37,5 @@ export {
   LRUCacheAdapter,
   TestUtils,
   PushWorker,
-  _ParseServer as ParseServer
+  ParseServer: _ParseServer
 };

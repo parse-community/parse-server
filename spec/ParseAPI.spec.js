@@ -647,7 +647,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -694,7 +694,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, function(error) {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -731,7 +731,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -770,7 +770,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -809,7 +809,7 @@ describe('miscellaneous', function() {
       expect(triggerTime).toBe(2);
       done();
     }, error => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -852,7 +852,7 @@ describe('miscellaneous', function() {
           // updatedAt is always set
           expect(body.updatedAt).not.toBeUndefined();
         }catch(e) {
-          jfail(e);
+          done.fail(e);
         }
         done();
       });
@@ -1234,7 +1234,7 @@ describe('miscellaneous', function() {
         done();
       });
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1400,7 +1400,7 @@ describe('miscellaneous', function() {
         });
         done();
       }).catch((e) => {
-        jfail(e);
+        done.fail(e);
         done();
       });
   });
@@ -1548,7 +1548,7 @@ describe('miscellaneous', function() {
       expect(fields.secret).toBeUndefined();
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

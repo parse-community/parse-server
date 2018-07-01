@@ -1,8 +1,8 @@
-import PromiseRouter from '../PromiseRouter';
-import * as middleware from '../middlewares';
-import Parse from 'parse/node';
+const { PromiseRouter } = require('../PromiseRouter');
+const  middleware = require('../middlewares');
+const Parse = require('parse/node');
 
-export class PurgeRouter extends PromiseRouter {
+class PurgeRouter extends PromiseRouter {
 
   handlePurge(req) {
     if (req.auth.isReadOnly) {
@@ -30,4 +30,4 @@ export class PurgeRouter extends PromiseRouter {
   }
 }
 
-export default PurgeRouter;
+module.exports = { PurgeRouter };

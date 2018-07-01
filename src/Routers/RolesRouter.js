@@ -1,7 +1,7 @@
 
-import ClassesRouter from './ClassesRouter';
+const { ClassesRouter } = require('./ClassesRouter');
 
-export class RolesRouter extends ClassesRouter {
+class RolesRouter extends ClassesRouter {
   className() {
     return '_Role';
   }
@@ -15,4 +15,4 @@ export class RolesRouter extends ClassesRouter {
   }
 }
 
-export default RolesRouter;
+module.exports = { RolesRouter };

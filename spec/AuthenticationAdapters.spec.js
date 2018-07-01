@@ -277,7 +277,7 @@ describe('AuthenticationProviders', function() {
       expect(appIdSpy).not.toHaveBeenCalled();
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -296,7 +296,7 @@ describe('AuthenticationProviders', function() {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -315,7 +315,7 @@ describe('AuthenticationProviders', function() {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });

@@ -1,4 +1,4 @@
-import { loadAdapter } from '../Adapters/AdapterLoader';
+const { loadAdapter } = require('../Adapters/AdapterLoader');
 import {
   EventEmitterPubSub
 } from '../Adapters/PubSub/EventEmitterPubSub';

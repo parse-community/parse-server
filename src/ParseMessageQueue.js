@@ -1,4 +1,4 @@
-import { loadAdapter } from './Adapters/AdapterLoader';
+const { loadAdapter } = require('./Adapters/AdapterLoader');
 import {
   EventEmitterMQ
 } from './Adapters/MessageQueue/EventEmitterMQ';

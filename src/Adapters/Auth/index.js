@@ -1,4 +1,4 @@
-import loadAdapter from '../AdapterLoader';
+const { loadAdapter } = require('../AdapterLoader');
 
 const facebook = require('./facebook');
 const facebookaccountkit = require('./facebookaccountkit');

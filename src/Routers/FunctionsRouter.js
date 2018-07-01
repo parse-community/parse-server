@@ -3,11 +3,11 @@
 var Parse = require('parse/node').Parse,
   triggers = require('../triggers');
 
-import PromiseRouter from '../PromiseRouter';
-import { promiseEnforceMasterKeyAccess } from '../middlewares';
-import { jobStatusHandler } from '../StatusHandler';
-import _ from 'lodash';
-import { logger } from '../logger';
+const { PromiseRouter } = require('../PromiseRouter');
+const { promiseEnforceMasterKeyAccess } = require('../middlewares');
+const { jobStatusHandler } = require('../StatusHandler');
+const _ = require('lodash');
+const { logger } = require('../logger');
 
 function parseObject(obj) {
   if (Array.isArray(obj)) {
@@ -29,7 +29,7 @@ function parseParams(params) {
   return _.mapValues(params, parseObject);
 }
 
-export class FunctionsRouter extends PromiseRouter {
+class FunctionsRouter extends PromiseRouter {
 
   mountRoutes() {
     this.route('POST', '/functions/:functionName', FunctionsRouter.handleCloudFunction);
@@ -172,3 +172,5 @@ export class FunctionsRouter extends PromiseRouter {
     }
   }
 }
+
+module.exports = { FunctionsRouter };

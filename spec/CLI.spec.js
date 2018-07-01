@@ -1,7 +1,7 @@
 'use strict';
-import commander from '../src/cli/utils/commander';
-import definitions from '../src/cli/definitions/parse-server';
-import liveQueryDefinitions from '../src/cli/definitions/parse-live-query-server';
+const commander = require('../src/cli/utils/commander');
+const { definitions } = require('../src/cli/definitions/parse-server');
+const { liveQueryDefinitions } = require('../src/cli/definitions/parse-live-query-server');
 
 const testDefinitions = {
   'arg0': 'PROGRAM_ARG_0',

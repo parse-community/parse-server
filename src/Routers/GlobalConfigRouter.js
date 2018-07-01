@@ -1,9 +1,9 @@
 // global_config.js
-import Parse           from 'parse/node';
-import PromiseRouter   from '../PromiseRouter';
-import * as middleware from "../middlewares";
+const Parse           = require('parse/node');
+const { PromiseRouter } = require('../PromiseRouter');
+const  middleware = require("../middlewares");
 
-export class GlobalConfigRouter extends PromiseRouter {
+class GlobalConfigRouter extends PromiseRouter {
   getGlobalConfig(req) {
     return req.config.database.find('_GlobalConfig', { objectId: "1" }, { limit: 1 }).then((results) => {
       if (results.length != 1) {
@@ -34,4 +34,4 @@ export class GlobalConfigRouter extends PromiseRouter {
   }
 }
 
-export default GlobalConfigRouter;
+module.exports = { GlobalConfigRouter };

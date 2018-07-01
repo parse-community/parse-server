@@ -1,6 +1,6 @@
-import definitions from './definitions/parse-live-query-server';
-import runner from './utils/runner';
-import { ParseServer } from '../index';
+const definitions = require('./definitions/parse-live-query-server');
+const runner = require('./utils/runner');
+const { ParseServer } = require('../index');
 
 runner({
   definitions,

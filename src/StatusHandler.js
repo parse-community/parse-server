@@ -1,10 +1,16 @@
-import { md5Hash, newObjectId } from './cryptoUtils';
-import { logger }               from './logger';
-import rest                     from './rest';
-import Auth                     from './Auth';
+const { md5Hash, newObjectId } = require('./cryptoUtils');
+const { logger }               = require('./logger');
+const rest                     = require('./rest');
+const Auth                     = require('./Auth');
 
 const PUSH_STATUS_COLLECTION = '_PushStatus';
 const JOB_STATUS_COLLECTION = '_JobStatus';
+
+module.exports = {
+  jobStatusHandler,
+  pushStatusHandler,
+  flatten,
+};
 
 const incrementOp = function(object = {}, key, amount = 1) {
   if (!object[key]) {
@@ -15,7 +21,7 @@ const incrementOp = function(object = {}, key, amount = 1) {
   return object[key];
 }
 
-export function flatten(array) {
+function flatten(array) {
   var flattened = [];
   for(var i = 0; i < array.length; i++) {
     if(Array.isArray(array[i])) {
@@ -84,7 +90,7 @@ function restStatusHandler(className, config) {
   })
 }
 
-export function jobStatusHandler(config) {
+function jobStatusHandler(config) {
   let jobStatus;
   const objectId = newObjectId(config.objectIdSize);
   const database = config.database;
@@ -137,7 +143,7 @@ export function jobStatusHandler(config) {
   });
 }
 
-export function pushStatusHandler(config, existingObjectId) {
+function pushStatusHandler(config, existingObjectId) {
 
   let pushStatus;
   const database = config.database;

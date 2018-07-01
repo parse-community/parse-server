@@ -10,9 +10,9 @@ based on the parameters passed
 
 // _adapter is private, use Symbol
 var _adapter = Symbol();
-import Config from '../Config';
+const Config = require('../Config');
 
-export class AdaptableController {
+class AdaptableController {
 
   constructor(adapter, appId, options) {
     this.options = options;
@@ -71,4 +71,4 @@ export class AdaptableController {
   }
 }
 
-export default AdaptableController;
+module.exports = { AdaptableController };

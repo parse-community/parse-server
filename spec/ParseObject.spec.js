@@ -605,7 +605,7 @@ describe('Parse.Object testing', () => {
       done();
     }, (error) => {
       on_db('mongo', () => {
-        jfail(error);
+        done.fail(error);
       });
       on_db('postgres', () => {
         expect(error.message).toEqual("Postgres does not support AddUnique operator.");
@@ -642,7 +642,7 @@ describe('Parse.Object testing', () => {
       expect(found).toBe(target.length);
       done();
     }, (error) => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -663,7 +663,7 @@ describe('Parse.Object testing', () => {
       expect(x3.get('stuff')).toEqual([1, {'foo': 'bar'}]);
       done();
     }, (error) => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -1854,7 +1854,7 @@ describe('Parse.Object testing', () => {
       expect(foo["_more"]["_nested"]).toEqual("key");
       done();
     }).fail(err => {
-      jfail(err);
+      done.fail(err);
       fail("should not fail");
       done();
     });
@@ -1913,7 +1913,7 @@ describe('Parse.Object testing', () => {
       expect(res.get("obj").get("obj")).toBe(undefined);
       done();
     }).catch(err => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1946,7 +1946,7 @@ describe('Parse.Object testing', () => {
       expect(array[2].get("key").get("foo")).toEqual("bar");
       done();
     }).catch(err => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -1976,7 +1976,7 @@ describe('Parse.Object testing', () => {
       expect(gameScore.get("score")).toBe(1234);
       done();
     }).catch(err => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });

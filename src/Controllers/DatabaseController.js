@@ -2,19 +2,20 @@
 // A database adapter that works with data exported from the hosted
 // Parse database.
 
-// @flow-disable-next
-import { Parse }              from 'parse/node';
-// @flow-disable-next
-import _                      from 'lodash';
-// @flow-disable-next
-import intersect              from 'intersect';
-// @flow-disable-next
-import deepcopy               from 'deepcopy';
-import logger                 from '../logger';
-import * as SchemaController       from './SchemaController';
 import { StorageAdapter }     from '../Adapters/Storage/StorageAdapter';
 import type { QueryOptions,
   FullQueryOptions }          from '../Adapters/Storage/StorageAdapter';
+
+// @flow-disable-next
+const { Parse }              = require('parse/node');
+// @flow-disable-next
+const _                      = require('lodash');
+// @flow-disable-next
+const intersect              = require('intersect');
+// @flow-disable-next
+const deepcopy               = require('deepcopy');
+const logger                 = require('../logger');
+const  SchemaController       = require('./SchemaController');
 
 function addWriteACL(query, acl) {
   const newQuery = _.cloneDeep(query);
@@ -164,7 +165,7 @@ const filterSensitiveData = (isMaster, aclGroup, className, object) => {
   return object;
 };
 
-import type { LoadSchemaOptions } from './types';
+const { LoadSchemaOptions } = require('./types');
 
 // Runs an update on the database.
 // Returns a promise for an object with the new values for field
@@ -1064,21 +1065,21 @@ class DatabaseController {
     const usernameUniqueness = userClassPromise
       .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['username']))
       .catch(error => {
-        logger.warn('Unable to ensure uniqueness for usernames: ', error);
+        require('../logger').getLogger().warn('Unable to ensure uniqueness for usernames: ', error);
         throw error;
       });
 
     const emailUniqueness = userClassPromise
       .then(() => this.adapter.ensureUniqueness('_User', requiredUserFields, ['email']))
       .catch(error => {
-        logger.warn('Unable to ensure uniqueness for user email addresses: ', error);
+        logger.getLogger().warn('Unable to ensure uniqueness for user email addresses: ', error);
         throw error;
       });
 
     const roleUniqueness = roleClassPromise
       .then(() => this.adapter.ensureUniqueness('_Role', requiredRoleFields, ['name']))
       .catch(error => {
-        logger.warn('Unable to ensure uniqueness for role name: ', error);
+        logger.getLogger().warn('Unable to ensure uniqueness for role name: ', error);
         throw error;
       });
 

@@ -3,7 +3,7 @@ const GridStore = require("mongodb").GridStore;
 
 const GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
 const Config = require("../src/Config");
-const FilesController = require('../src/Controllers/FilesController').default;
+const FilesController = require('../src/Controllers/FilesController').FilesController;
 
 
 // Small additional tests to improve overall coverage

@@ -54,7 +54,7 @@ describe('PushWorker', () => {
       expect(sendCount).toBe(10);
       done();
     }).catch(err => {
-      jfail(err);
+      done.fail(err);
     })
   });
 

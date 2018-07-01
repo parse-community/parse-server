@@ -29,7 +29,7 @@ describe("Password Policy: ", () => {
       return user.signUp();
     }).then(() => {
       Parse.User.requestPasswordReset("user@parse.com").catch((err) => {
-        jfail(err);
+        done.fail(err);
         fail("Reset password request should not fail");
         done();
       });
@@ -52,7 +52,7 @@ describe("Password Policy: ", () => {
         });
       }, 1000);
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -82,7 +82,7 @@ describe("Password Policy: ", () => {
       return user.signUp();
     }).then(() => {
       Parse.User.requestPasswordReset('user@parse.com').catch((err) => {
-        jfail(err);
+        done.fail(err);
         fail("Reset password request should not fail");
         done();
       });
@@ -106,7 +106,7 @@ describe("Password Policy: ", () => {
         });
       }, 1000);
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -258,17 +258,17 @@ describe("Password Policy: ", () => {
           Parse.User.logIn("user1", "1digit").then(function () {
             done();
           }).catch((err) => {
-            jfail(err);
+            done.fail(err);
             fail("Should be able to login");
             done();
           });
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail('logout should have succeeded');
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup should have succeeded as password conforms to the policy.');
         done();
       });
@@ -292,17 +292,17 @@ describe("Password Policy: ", () => {
           Parse.User.logIn("user1", "p@sswrod").then(function () {
             done();
           }).catch((err) => {
-            jfail(err);
+            done.fail(err);
             fail("Should be able to login");
             done();
           });
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail('logout should have succeeded');
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup should have succeeded as password conforms to the policy.');
         done();
       });
@@ -348,17 +348,17 @@ describe("Password Policy: ", () => {
           Parse.User.logIn("user1", "oneUpper").then(function () {
             done();
           }).catch((err) => {
-            jfail(err);
+            done.fail(err);
             fail("Should be able to login");
             done();
           });
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("Logout should have succeeded");
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Should have succeeded as password conforms to the policy.');
         done();
       });
@@ -429,17 +429,17 @@ describe("Password Policy: ", () => {
           Parse.User.logIn("user1", "oneUpper").then(function () {
             done();
           }).catch((err) => {
-            jfail(err);
+            done.fail(err);
             fail("Should be able to login");
             done();
           });
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("logout should have succeeded");
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Should have succeeded as password conforms to the policy.');
         done();
       });
@@ -483,17 +483,17 @@ describe("Password Policy: ", () => {
             Parse.User.logIn("user1", "has2init").then(function () {
               done();
             }).catch((err) => {
-              jfail(err);
+              done.fail(err);
               fail("should login with new password");
               done();
             });
           }).catch((error) => {
-            jfail(error);
+            done.fail(error);
             fail("Failed to POST request password reset");
             done();
           });
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail("Failed to get the reset link");
           done();
         });
@@ -515,12 +515,12 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
-          jfail(err);
+          done.fail(err);
           fail("Reset password request should not fail");
           done();
         });
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         fail("signUp should not fail");
         done();
       });
@@ -564,17 +564,17 @@ describe("Password Policy: ", () => {
             Parse.User.logIn("user1", "has 1 digit").then(function () {
               done();
             }).catch((err) => {
-              jfail(err);
+              done.fail(err);
               fail("should login with old password");
               done();
             });
           }).catch((error) => {
-            jfail(error);
+            done.fail(error);
             fail("Failed to POST request password reset");
             done();
           });
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail("Failed to get the reset link");
           done();
         });
@@ -596,12 +596,12 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
-          jfail(err);
+          done.fail(err);
           fail("Reset password request should not fail");
           done();
         });
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         fail("signUp should not fail");
         done();
       });
@@ -726,18 +726,18 @@ describe("Password Policy: ", () => {
             Parse.User.logIn("user1", "r@nd0m").then(function () {
               done();
             }).catch((err) => {
-              jfail(err);
+              done.fail(err);
               fail("should login with old password");
               done();
             });
 
           }).catch((error) => {
-            jfail(error);
+            done.fail(error);
             fail("Failed to POST request password reset");
             done();
           });
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail("Failed to get the reset link");
           done();
         });
@@ -759,12 +759,12 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
-          jfail(err);
+          done.fail(err);
           fail("Reset password request should not fail");
           done();
         });
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         fail("signUp should not fail");
         done();
       });
@@ -808,17 +808,17 @@ describe("Password Policy: ", () => {
             Parse.User.logIn("user1", "uuser11").then(function () {
               done();
             }).catch(err => {
-              jfail(err);
+              done.fail(err);
               fail("should login with new password");
               done();
             });
 
           }).catch(error => {
-            jfail(error);
+            done.fail(error);
             fail("Failed to POST request password reset");
           });
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("Failed to get the reset link");
         });
       },
@@ -840,13 +840,13 @@ describe("Password Policy: ", () => {
       user.set('email', 'user1@parse.com');
       user.signUp().then(() => {
         Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
-          jfail(err);
+          done.fail(err);
           fail("Reset password request should not fail");
           done();
         });
       });
     }).catch(error => {
-      jfail(error);
+      done.fail(error);
       fail("signUp should not fail");
       done();
     });
@@ -900,12 +900,12 @@ describe("Password Policy: ", () => {
         Parse.User.logIn("user1", "user1").then(() => {
           done();
         }).catch((error) => {
-          jfail(error);
+          done.fail(error);
           fail('Login should have succeeded before password expiry.');
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup failed.');
         done();
       });
@@ -937,7 +937,7 @@ describe("Password Policy: ", () => {
           });
         }, 1000);
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup failed.');
         done();
       });
@@ -976,23 +976,23 @@ describe("Password Policy: ", () => {
                   });
                 }, 2000);
               }).catch(error => {
-                jfail(error);
+                done.fail(error);
                 fail("logout should have succeeded");
                 done();
               });
             }).catch((error) => {
-              jfail(error);
+              done.fail(error);
               fail('Login failed.');
               done();
             });
           });
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("logout should have succeeded");
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup failed.');
         done();
       });
@@ -1037,16 +1037,16 @@ describe("Password Policy: ", () => {
             Parse.User.logIn("user1", "uuser11").then(function () {
               done();
             }).catch(err => {
-              jfail(err);
+              done.fail(err);
               fail("should login with new password");
               done();
             });
           }).catch(error => {
-            jfail(error);
+            done.fail(error);
             fail("Failed to POST request password reset");
           });
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("Failed to get the reset link");
         });
       },
@@ -1074,14 +1074,14 @@ describe("Password Policy: ", () => {
             expect(error.code).toEqual(Parse.Error.OBJECT_NOT_FOUND);
             expect(error.message).toEqual('Your password has expired. Please reset your password.');
             Parse.User.requestPasswordReset('user1@parse.com').catch((err) => {
-              jfail(err);
+              done.fail(err);
               fail("Reset password request should not fail");
               done();
             });
           });
         }, 1000);
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         fail('Signup failed.');
         done();
       });
@@ -1180,7 +1180,7 @@ describe("Password Policy: ", () => {
           done();
           return Promise.resolve();
         }).catch(error => {
-          jfail(error);
+          done.fail(error);
           fail("Repeat password test failed");
           done();
         });
@@ -1205,7 +1205,7 @@ describe("Password Policy: ", () => {
       }).then(() => {
         return Parse.User.requestPasswordReset('user1@parse.com');
       }).catch(error => {
-        jfail(error);
+        done.fail(error);
         fail("SignUp or reset request failed");
         done();
       });

@@ -1,32 +1,32 @@
-import authDataManager          from '../Adapters/Auth';
-import { ParseServerOptions }   from '../Options';
-import { loadAdapter }          from '../Adapters/AdapterLoader';
-import defaults                 from '../defaults';
-import url                      from 'url';
+const authDataManager          = require('../Adapters/Auth');
+const { ParseServerOptions }   = require('../Options');
+const { loadAdapter }          = require('../Adapters/AdapterLoader');
+const defaults                 = require('../defaults');
+const url                      = require('url');
 // Controllers
-import { LoggerController }     from './LoggerController';
-import { FilesController }      from './FilesController';
-import { HooksController }      from './HooksController';
-import { UserController }       from './UserController';
-import { CacheController }      from './CacheController';
-import { LiveQueryController }  from './LiveQueryController';
-import { AnalyticsController }  from './AnalyticsController';
-import { PushController }       from './PushController';
-import { PushQueue }            from '../Push/PushQueue';
-import { PushWorker }           from '../Push/PushWorker';
-import DatabaseController       from './DatabaseController';
-import SchemaCache              from './SchemaCache';
+const { LoggerController }     = require('./LoggerController');
+const { FilesController }      = require('./FilesController');
+const { HooksController }      = require('./HooksController');
+const { UserController }       = require('./UserController');
+const { CacheController }      = require('./CacheController');
+const { LiveQueryController }  = require('./LiveQueryController');
+const { AnalyticsController }  = require('./AnalyticsController');
+const { PushController }       = require('./PushController');
+const { PushQueue }            = require('../Push/PushQueue');
+const { PushWorker }           = require('../Push/PushWorker');
+const DatabaseController       = require('./DatabaseController');
+const { SchemaCache }          = require('./SchemaCache');
 
 // Adapters
-import { GridStoreAdapter }     from '../Adapters/Files/GridStoreAdapter';
-import { WinstonLoggerAdapter } from '../Adapters/Logger/WinstonLoggerAdapter';
-import { InMemoryCacheAdapter } from '../Adapters/Cache/InMemoryCacheAdapter';
-import { AnalyticsAdapter }     from '../Adapters/Analytics/AnalyticsAdapter';
-import MongoStorageAdapter      from '../Adapters/Storage/Mongo/MongoStorageAdapter';
-import PostgresStorageAdapter   from '../Adapters/Storage/Postgres/PostgresStorageAdapter';
-import ParsePushAdapter         from '@parse/push-adapter';
+const { GridStoreAdapter }     = require('../Adapters/Files/GridStoreAdapter');
+const { WinstonLoggerAdapter } = require('../Adapters/Logger/WinstonLoggerAdapter');
+const { InMemoryCacheAdapter } = require('../Adapters/Cache/InMemoryCacheAdapter');
+const { AnalyticsAdapter }     = require('../Adapters/Analytics/AnalyticsAdapter');
+const { MongoStorageAdapter }      = require('../Adapters/Storage/Mongo/MongoStorageAdapter');
+const { PostgresStorageAdapter }   = require('../Adapters/Storage/Postgres/PostgresStorageAdapter');
+const { ParsePushAdapter }         = require('@parse/push-adapter');
 
-export function getControllers(options: ParseServerOptions) {
+function getControllers(options: ParseServerOptions) {
   const loggerController = getLoggerController(options);
   const filesController = getFilesController(options);
   const userController = getUserController(options);
@@ -61,7 +61,11 @@ export function getControllers(options: ParseServerOptions) {
   };
 }
 
-export function getLoggerController(options: ParseServerOptions): LoggerController {
+module.exports = {
+  getControllers,
+}
+
+function getLoggerController(options: ParseServerOptions): LoggerController {
   const {
     appId,
     jsonLogs,
@@ -76,7 +80,7 @@ export function getLoggerController(options: ParseServerOptions): LoggerControll
   return new LoggerController(loggerControllerAdapter, appId, loggerOptions);
 }
 
-export function getFilesController(options: ParseServerOptions): FilesController {
+function getFilesController(options: ParseServerOptions): FilesController {
   const {
     appId,
     databaseURI,
@@ -92,7 +96,7 @@ export function getFilesController(options: ParseServerOptions): FilesController
   return new FilesController(filesControllerAdapter, appId);
 }
 
-export function getUserController(options: ParseServerOptions): UserController {
+function getUserController(options: ParseServerOptions): UserController {
   const {
     appId,
     emailAdapter,
@@ -102,7 +106,7 @@ export function getUserController(options: ParseServerOptions): UserController {
   return new UserController(emailControllerAdapter, appId, { verifyUserEmails });
 }
 
-export function getCacheController(options: ParseServerOptions): CacheController {
+function getCacheController(options: ParseServerOptions): CacheController {
   const {
     appId,
     cacheAdapter,
@@ -113,7 +117,7 @@ export function getCacheController(options: ParseServerOptions): CacheController
   return new CacheController(cacheControllerAdapter, appId);
 }
 
-export function getAnalyticsController(options: ParseServerOptions): AnalyticsController {
+function getAnalyticsController(options: ParseServerOptions): AnalyticsController {
   const {
     analyticsAdapter,
   } = options;
@@ -121,11 +125,11 @@ export function getAnalyticsController(options: ParseServerOptions): AnalyticsCo
   return new AnalyticsController(analyticsControllerAdapter);
 }
 
-export function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
+function getLiveQueryController(options: ParseServerOptions): LiveQueryController {
   return new LiveQueryController(options.liveQuery);
 }
 
-export function getDatabaseController(options: ParseServerOptions, cacheController: CacheController): DatabaseController {
+function getDatabaseController(options: ParseServerOptions, cacheController: CacheController): DatabaseController {
   const {
     databaseURI,
     databaseOptions,
@@ -146,7 +150,7 @@ export function getDatabaseController(options: ParseServerOptions, cacheControll
   return new DatabaseController(databaseAdapter, new SchemaCache(cacheController, schemaCacheTTL, enableSingleSchemaCache));
 }
 
-export function getHooksController(options: ParseServerOptions, databaseController: DatabaseController): HooksController {
+function getHooksController(options: ParseServerOptions, databaseController: DatabaseController): HooksController {
   const {
     appId,
     webhookKey,
@@ -161,7 +165,7 @@ interface PushControlling {
   pushWorker: PushWorker
 }
 
-export function getPushController(options: ParseServerOptions): PushControlling {
+function getPushController(options: ParseServerOptions): PushControlling {
   const {
     scheduledPush,
     push,
@@ -199,7 +203,7 @@ export function getPushController(options: ParseServerOptions): PushControlling 
   }
 }
 
-export function getAuthDataManager(options: ParseServerOptions) {
+function getAuthDataManager(options: ParseServerOptions) {
   const {
     auth,
     enableAnonymousUsers
@@ -207,7 +211,7 @@ export function getAuthDataManager(options: ParseServerOptions) {
   return authDataManager(auth, enableAnonymousUsers)
 }
 
-export function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
+function getDatabaseAdapter(databaseURI, collectionPrefix, databaseOptions) {
   let protocol;
   try {
     const parsedURI = url.parse(databaseURI);

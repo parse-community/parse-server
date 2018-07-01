@@ -11,9 +11,9 @@ var passwordCrypto = require('./password');
 var Parse = require('parse/node');
 var triggers = require('./triggers');
 var ClientSDK = require('./ClientSDK');
-import RestQuery from './RestQuery';
-import _         from 'lodash';
-import logger    from './logger';
+const RestQuery = require('./RestQuery');
+const _         = require('lodash');
+const { logger }    = require('./logger');
 
 // query and data are both provided in REST API format. So data
 // types are encoded by plain old objects.
@@ -1225,5 +1225,5 @@ RestWrite.prototype._updateResponseWithData = function(response, data) {
   return response;
 }
 
-export default RestWrite;
+module.exports = { RestWrite };
 module.exports = RestWrite;

@@ -1,7 +1,7 @@
-import AppCache from './cache';
+const { AppCache } = require('./cache');
 
 //Used by tests
-export function destroyAllDataPermanently() {
+function destroyAllDataPermanently() {
   if (!process.env.TESTING) {
     throw 'Only supported in test environment';
   }
@@ -14,3 +14,5 @@ export function destroyAllDataPermanently() {
     }
   }));
 }
+
+module.exports = { destroyAllDataPermanently };

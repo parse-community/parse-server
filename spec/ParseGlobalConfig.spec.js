@@ -18,7 +18,7 @@ describe('a GlobalConfig', () => {
       query,
       { params: { companies: ['US', 'DK'] } }
     ).then(done, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -35,7 +35,7 @@ describe('a GlobalConfig', () => {
       try {
         expect(response.statusCode).toEqual(200);
         expect(body.params.companies).toEqual(['US', 'DK']);
-      } catch(e) { jfail(e); }
+      } catch(e) { done.fail(e); }
       done();
     });
   });
@@ -124,7 +124,7 @@ describe('a GlobalConfig', () => {
           expect(body.params.companies).toBeUndefined();
           expect(body.params.foo).toBe('bar');
           expect(Object.keys(body.params).length).toBe(1);
-        } catch(e) { jfail(e); }
+        } catch(e) { done.fail(e); }
         done();
       });
     });
@@ -166,7 +166,7 @@ describe('a GlobalConfig', () => {
         done();
       });
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });

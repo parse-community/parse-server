@@ -1,6 +1,6 @@
-import {LRUCache} from './LRUCache';
+const { LRUCache } = require('./LRUCache');
 
-export class InMemoryCacheAdapter {
+class InMemoryCacheAdapter {
 
   constructor(ctx) {
     this.cache = new LRUCache(ctx)
@@ -30,4 +30,4 @@ export class InMemoryCacheAdapter {
   }
 }
 
-export default InMemoryCacheAdapter;
+module.exports = { InMemoryCacheAdapter };

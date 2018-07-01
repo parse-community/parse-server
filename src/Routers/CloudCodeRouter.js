@@ -1,6 +1,6 @@
-import PromiseRouter  from '../PromiseRouter';
-import Parse          from 'parse/node';
-import rest           from '../rest';
+const { PromiseRouter }  = require('../PromiseRouter');
+const Parse          = require('parse/node');
+const rest           = require('../rest');
 const triggers        = require('../triggers');
 const middleware      = require('../middlewares');
 
@@ -18,7 +18,7 @@ function validateJobSchedule(config, job_schedule) {
   }
 }
 
-export class CloudCodeRouter extends PromiseRouter {
+class CloudCodeRouter extends PromiseRouter {
   mountRoutes() {
     this.route('GET', '/cloud_code/jobs', middleware.promiseEnforceMasterKeyAccess, CloudCodeRouter.getJobs);
     this.route('GET', '/cloud_code/jobs/data', middleware.promiseEnforceMasterKeyAccess, CloudCodeRouter.getJobsData);
@@ -74,3 +74,5 @@ export class CloudCodeRouter extends PromiseRouter {
     });
   }
 }
+
+module.exports = { CloudCodeRouter };

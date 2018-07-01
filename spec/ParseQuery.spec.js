@@ -231,7 +231,7 @@ describe('Parse.Query testing', () => {
     }).then(function(){
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     })
   });
@@ -308,12 +308,12 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          jfail(e);
+          done.fail(e);
           done();
         }
       });
     }, (e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });
@@ -383,12 +383,12 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(err) {
-          jfail(err);
+          done.fail(err);
           done();
         },
       });
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -410,7 +410,7 @@ describe('Parse.Query testing', () => {
         }
       });
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -464,7 +464,7 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          jfail(e);
+          done.fail(e);
           done();
         },
       });
@@ -1673,7 +1673,7 @@ describe('Parse.Query testing', () => {
         equal(results[3].get("string"), "b");
         done();
       }, (err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });
@@ -1729,7 +1729,7 @@ describe('Parse.Query testing', () => {
         }));
       },
       (err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });
@@ -1818,7 +1818,7 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(e) {
-          jfail(e);
+          done.fail(e);
           done();
         },
       });
@@ -2041,7 +2041,7 @@ describe('Parse.Query testing', () => {
           done();
         },
         error: function(err) {
-          jfail(err);
+          done.fail(err);
           done();
         }
       });
@@ -2486,7 +2486,7 @@ describe('Parse.Query testing', () => {
       expect(total).toBe(0);
       done()
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail('should not fail');
       done();
     })
@@ -2646,7 +2646,7 @@ describe('Parse.Query testing', () => {
       expect(results.length).toEqual(2);
       done();
     }, (error) => {
-      jfail(error);
+      done.fail(error);
       done();
     });
   });
@@ -3218,7 +3218,7 @@ describe('Parse.Query testing', () => {
       }).then(function() {
         done();
       }, function(err) {
-        jfail(err);
+        done.fail(err);
         done();
       });
     });
@@ -3378,7 +3378,7 @@ describe('Parse.Query testing', () => {
     query.find().then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("should not failt");
       done();
     })
@@ -3414,7 +3414,7 @@ describe('Parse.Query testing', () => {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       fail("should not fail");
       done();
     });
@@ -3482,7 +3482,7 @@ describe('Parse.Query testing', () => {
       }
       done();
     }).fail((err) => {
-      jfail(err);
+      done.fail(err);
       fail('should not fail');
       done();
     })
@@ -3814,7 +3814,7 @@ describe('Parse.Query testing', () => {
       done();
     }).catch((error) => {
       fail('should not fail');
-      jfail(error);
+      done.fail(error);
       done();
     })
   });

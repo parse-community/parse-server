@@ -1,7 +1,7 @@
-import PromiseRouter from '../PromiseRouter';
+const { PromiseRouter } = require('../PromiseRouter');
 var request = require("request");
 var rest = require("../rest");
-import Parse from 'parse/node';
+const Parse = require('parse/node');
 
 // TODO move validation logic in IAPValidationController
 const IAP_SANDBOX_URL = "https://sandbox.itunes.apple.com/verifyReceipt";
@@ -56,7 +56,7 @@ function getFileForProductIdentifier(productIdentifier, req) {
 }
 
 
-export class IAPValidationRouter extends PromiseRouter {
+class IAPValidationRouter extends PromiseRouter {
 
   handleRequest(req) {
     let receipt = req.body.receipt;
@@ -109,3 +109,5 @@ export class IAPValidationRouter extends PromiseRouter {
     this.route("POST","/validate_purchase", this.handleRequest);
   }
 }
+
+module.exports = { IAPValidationRouter };

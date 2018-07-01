@@ -1,4 +1,4 @@
-import logger from '../logger';
+const logger = require('../logger').logger;
 
 const typeMap = new Map([['disconnect', 'close']]);
 const getWS = function() {
@@ -9,7 +9,7 @@ const getWS = function() {
   }
 }
 
-export class ParseWebSocketServer {
+class ParseWebSocketServer {
   server: Object;
 
   constructor(server: any, onConnect: Function, websocketTimeout: number = 10 * 1000) {
@@ -33,7 +33,7 @@ export class ParseWebSocketServer {
   }
 }
 
-export class ParseWebSocket {
+class ParseWebSocket {
   ws: any;
 
   constructor(ws: any) {
@@ -49,3 +49,5 @@ export class ParseWebSocket {
     this.ws.send(message);
   }
 }
+
+module.exports = { ParseWebSocketServer, ParseWebSocket };

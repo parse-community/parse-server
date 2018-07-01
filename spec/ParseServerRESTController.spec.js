@@ -1,5 +1,5 @@
 const ParseServerRESTController = require('../src/ParseServerRESTController').ParseServerRESTController;
-const ParseServer = require('../src/ParseServer').default;
+const ParseServer = require('../src/ParseServer').ParseServer;
 const Parse = require('parse/node').Parse;
 
 let RESTController;
@@ -16,7 +16,7 @@ describe('ParseServerRESTController', () => {
       done();
     }, (err) => {
       console.log(err);
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -26,7 +26,7 @@ describe('ParseServerRESTController', () => {
       expect(res.results.length).toBe(0);
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -52,7 +52,7 @@ describe('ParseServerRESTController', () => {
       expect(res.length).toBe(3);
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -66,7 +66,7 @@ describe('ParseServerRESTController', () => {
       done();
     }).fail((err) => {
       console.log(err);
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -83,7 +83,7 @@ describe('ParseServerRESTController', () => {
       done();
     }).fail((err) => {
       console.log(err);
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -100,14 +100,14 @@ describe('ParseServerRESTController', () => {
       expect(res.results[0].objectId).toEqual(userId);
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
 
   it('ensures no user is created when passing an empty username', (done) => {
     RESTController.request("POST", "/classes/_User", {username: "", password: "world"}).then(() => {
-      jfail(new Error('Success callback should not be called when passing an empty username.'));
+      done.fail(new Error('Success callback should not be called when passing an empty username.'));
       done();
     }, (err) => {
       expect(err.code).toBe(Parse.Error.USERNAME_MISSING);
@@ -118,7 +118,7 @@ describe('ParseServerRESTController', () => {
 
   it('ensures no user is created when passing an empty password', (done) => {
     RESTController.request("POST", "/classes/_User", {username: "hello", password: ""}).then(() => {
-      jfail(new Error('Success callback should not be called when passing an empty password.'));
+      done.fail(new Error('Success callback should not be called when passing an empty password.'));
       done();
     }, (err) => {
       expect(err.code).toBe(Parse.Error.PASSWORD_MISSING);
@@ -148,7 +148,7 @@ describe('ParseServerRESTController', () => {
       expect(sessions[0].get('installationId')).toBe('my-installation');
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

@@ -1,4 +1,4 @@
-import logger from '../logger';
+const logger = require('../logger');
 
 export type FlattenedObjectData = { [attr: string]: any };
 export type QueryData = { [attr: string]: any };
@@ -28,13 +28,13 @@ class Subscription {
   deleteClientSubscription(clientId: number, requestId: number): void {
     const requestIds = this.clientRequestIds.get(clientId);
     if (typeof requestIds === 'undefined') {
-      logger.error('Can not find client %d to delete', clientId);
+      logger.logger.error('Can not find client %d to delete', clientId);
       return;
     }
 
     const index = requestIds.indexOf(requestId);
     if (index < 0) {
-      logger.error('Can not find client %d subscription %d to delete', clientId, requestId);
+      logger.logger.error('Can not find client %d subscription %d to delete', clientId, requestId);
       return;
     }
     requestIds.splice(index, 1);
@@ -49,6 +49,6 @@ class Subscription {
   }
 }
 
-export {
+module.exports = {
   Subscription
 }

@@ -1,10 +1,10 @@
 
-import ClassesRouter from './ClassesRouter';
-import Parse         from 'parse/node';
-import rest          from '../rest';
-import Auth          from '../Auth';
+const { ClassesRouter } = require('./ClassesRouter');
+const Parse         = require('parse/node');
+const rest          = require('../rest');
+const Auth          = require('../Auth');
 
-export class SessionsRouter extends ClassesRouter {
+class SessionsRouter extends ClassesRouter {
 
   className() {
     return '_Session';
@@ -70,4 +70,4 @@ export class SessionsRouter extends ClassesRouter {
   }
 }
 
-export default SessionsRouter;
+module.exports = { SessionsRouter };

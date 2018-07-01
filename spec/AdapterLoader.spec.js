@@ -1,8 +1,8 @@
 
 const loadAdapter = require("../src/Adapters/AdapterLoader").loadAdapter;
-const FilesAdapter = require("@parse/fs-files-adapter").default;
-const S3Adapter = require("@parse/s3-files-adapter").default;
-const ParsePushAdapter = require("@parse/push-adapter").default;
+const FilesAdapter = require("@parse/fs-files-adapter");
+const S3Adapter = require("@parse/s3-files-adapter");
+const ParsePushAdapter = require("@parse/push-adapter").ParsePushAdapter;
 const Config = require('../src/Config');
 
 describe("AdapterLoader", ()=>{

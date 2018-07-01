@@ -3,7 +3,7 @@
   Mail Adapter prototype
   A MailAdapter should implement at least sendMail()
  */
-export class MailAdapter {
+class MailAdapter {
   /*
    * A method for sending mail
    * @param options would have the parameters
@@ -20,4 +20,4 @@ export class MailAdapter {
   // sendPasswordResetEmail({ link, appName, user }) {}
 }
 
-export default MailAdapter;
+module.exports = { MailAdapter };

@@ -1,7 +1,7 @@
 
-const AdaptableController = require("../src/Controllers/AdaptableController").AdaptableController;
-const FilesAdapter = require("../src/Adapters/Files/FilesAdapter").default;
-const FilesController = require("../src/Controllers/FilesController").FilesController;
+const { AdaptableController } = require("../src/Controllers/AdaptableController");
+const { FilesAdapter } = require("../src/Adapters/Files/FilesAdapter");
+const { FilesController } = require("../src/Controllers/FilesController");
 
 const MockController = function(options) {
   AdaptableController.call(this, options);

@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
-import { Command } from 'commander';
-import path from 'path';
+const { Command } = require('commander');
+const path = require('path');
 let _definitions;
 let _reverseDefinitions;
 let _defaults;
@@ -124,5 +124,5 @@ Command.prototype.getOptions = function() {
   }, {});
 };
 
-export default new Command();
+module.exports = new Command();
 /* eslint-enable no-console */

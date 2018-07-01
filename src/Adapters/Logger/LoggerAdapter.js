@@ -8,9 +8,9 @@
 // * query(options, callback) /* optional */
 // Default is WinstonLoggerAdapter.js
 
-export class LoggerAdapter {
+class LoggerAdapter {
   constructor(options) {}
   log(level, message, /* meta */) {}
 }
 
-export default LoggerAdapter;
+module.exports = { LoggerAdapter };

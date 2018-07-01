@@ -1,5 +1,5 @@
-import AdaptableController from './AdaptableController';
-import CacheAdapter        from '../Adapters/Cache/CacheAdapter';
+const { AdaptableController } = require('./AdaptableController');
+const { CacheAdapter }        = require('../Adapters/Cache/CacheAdapter');
 
 const KEY_SEPARATOR_CHAR = ':';
 
@@ -12,7 +12,7 @@ function joinKeys(...keys) {
  *
  * eg "Role" or "Session"
  */
-export class SubCache {
+class SubCache {
   constructor(prefix, cacheController, ttl) {
     this.prefix = prefix;
     this.cache = cacheController;
@@ -40,7 +40,7 @@ export class SubCache {
 }
 
 
-export class CacheController extends AdaptableController {
+class CacheController extends AdaptableController {
 
   constructor(adapter, appId, options = {}) {
     super(adapter, appId, options);
@@ -73,4 +73,4 @@ export class CacheController extends AdaptableController {
   }
 }
 
-export default CacheController;
+module.exports = { CacheController };

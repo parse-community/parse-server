@@ -90,7 +90,7 @@ describe('Parse.Push', () => {
     }).then(() => {
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -111,7 +111,7 @@ describe('Parse.Push', () => {
     }).then(() => {
       done();
     }).catch((err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -140,7 +140,7 @@ describe('Parse.Push', () => {
           done();
         });
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });
@@ -171,12 +171,12 @@ describe('Parse.Push', () => {
             expect(body.results[0].query).toEqual('{"deviceType":"ios"}');
             expect(body.results[0].payload).toEqual('{"badge":"increment","alert":"Hello world!"}');
           } catch(e) {
-            jfail(e);
+            done.fail(e);
           }
           done();
         });
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });
@@ -199,7 +199,7 @@ describe('Parse.Push', () => {
         expect(err.code).toEqual(Parse.Error.PUSH_MISCONFIGURED);
         done();
       }).catch((err) => {
-        jfail(err);
+        done.fail(err);
         done();
       });
   });

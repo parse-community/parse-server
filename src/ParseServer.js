@@ -9,35 +9,35 @@ var batch = require('./batch'),
 
 import { ParseServerOptions,
   LiveQueryServerOptions }      from './Options';
-import defaults                 from './defaults';
-import * as logging             from './logger';
-import Config                   from './Config';
-import PromiseRouter            from './PromiseRouter';
-import requiredParameter        from './requiredParameter';
-import { AnalyticsRouter }      from './Routers/AnalyticsRouter';
-import { ClassesRouter }        from './Routers/ClassesRouter';
-import { FeaturesRouter }       from './Routers/FeaturesRouter';
-import { FilesRouter }          from './Routers/FilesRouter';
-import { FunctionsRouter }      from './Routers/FunctionsRouter';
-import { GlobalConfigRouter }   from './Routers/GlobalConfigRouter';
-import { HooksRouter }          from './Routers/HooksRouter';
-import { IAPValidationRouter }  from './Routers/IAPValidationRouter';
-import { InstallationsRouter }  from './Routers/InstallationsRouter';
-import { LogsRouter }           from './Routers/LogsRouter';
-import { ParseLiveQueryServer } from './LiveQuery/ParseLiveQueryServer';
-import { PublicAPIRouter }      from './Routers/PublicAPIRouter';
-import { PushRouter }           from './Routers/PushRouter';
-import { CloudCodeRouter }      from './Routers/CloudCodeRouter';
-import { RolesRouter }          from './Routers/RolesRouter';
-import { SchemasRouter }        from './Routers/SchemasRouter';
-import { SessionsRouter }       from './Routers/SessionsRouter';
-import { UsersRouter }          from './Routers/UsersRouter';
-import { PurgeRouter }          from './Routers/PurgeRouter';
-import { AudiencesRouter }      from './Routers/AudiencesRouter';
-import { AggregateRouter }      from './Routers/AggregateRouter';
+const defaults                 = require('./defaults');
+const  logging             = require('./logger');
+const Config                   = require('./Config');
+const { PromiseRouter }            = require('./PromiseRouter');
+const requiredParameter        = require('./requiredParameter');
+const { AnalyticsRouter }      = require('./Routers/AnalyticsRouter');
+const { ClassesRouter }        = require('./Routers/ClassesRouter');
+const { FeaturesRouter }       = require('./Routers/FeaturesRouter');
+const { FilesRouter }          = require('./Routers/FilesRouter');
+const { FunctionsRouter }      = require('./Routers/FunctionsRouter');
+const { GlobalConfigRouter }   = require('./Routers/GlobalConfigRouter');
+const { HooksRouter }          = require('./Routers/HooksRouter');
+const { IAPValidationRouter }  = require('./Routers/IAPValidationRouter');
+const { InstallationsRouter }  = require('./Routers/InstallationsRouter');
+const { LogsRouter }           = require('./Routers/LogsRouter');
+const { ParseLiveQueryServer } = require('./LiveQuery/ParseLiveQueryServer');
+const { PublicAPIRouter }      = require('./Routers/PublicAPIRouter');
+const { PushRouter }           = require('./Routers/PushRouter');
+const { CloudCodeRouter }      = require('./Routers/CloudCodeRouter');
+const { RolesRouter }          = require('./Routers/RolesRouter');
+const { SchemasRouter }        = require('./Routers/SchemasRouter');
+const { SessionsRouter }       = require('./Routers/SessionsRouter');
+const { UsersRouter }          = require('./Routers/UsersRouter');
+const { PurgeRouter }          = require('./Routers/PurgeRouter');
+const { AudiencesRouter }      = require('./Routers/AudiencesRouter');
+const { AggregateRouter }      = require('./Routers/AggregateRouter');
 
-import { ParseServerRESTController } from './ParseServerRESTController';
-import * as controllers from './Controllers';
+const { ParseServerRESTController } = require('./ParseServerRESTController');
+const  controllers = require('./Controllers');
 // Mutate the Parse object to add the Cloud Code handlers
 addParseCloud();
 
@@ -343,4 +343,4 @@ function configureListeners(parseServer) {
   process.on('SIGINT', handleShutdown);
 }
 
-export default ParseServer;
+module.exports = { ParseServer };

@@ -1,8 +1,8 @@
-import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
-import * as middleware from '../middlewares';
-import Parse         from 'parse/node';
-import UsersRouter   from './UsersRouter';
+const { ClassesRouter } = require('./ClassesRouter');
+const rest = require('../rest');
+const  middleware = require('../middlewares');
+const Parse         = require('parse/node');
+const { UsersRouter } = require('./UsersRouter');
 
 const BASE_KEYS = ['where', 'distinct'];
 
@@ -36,7 +36,7 @@ const PIPELINE_KEYS = [
 
 const ALLOWED_KEYS = [...BASE_KEYS, ...PIPELINE_KEYS];
 
-export class AggregateRouter extends ClassesRouter {
+class AggregateRouter extends ClassesRouter {
 
   handleFind(req) {
     const body = Object.assign(req.body, ClassesRouter.JSONFromQuery(req.query));
@@ -103,4 +103,4 @@ export class AggregateRouter extends ClassesRouter {
   }
 }
 
-export default AggregateRouter;
+module.exports = { AggregateRouter };

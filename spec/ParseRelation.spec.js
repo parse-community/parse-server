@@ -359,7 +359,7 @@ describe('Parse.Relation testing', () => {
         });
       });
     }).catch(err => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

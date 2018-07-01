@@ -58,7 +58,7 @@ describe('Parse.File testing', () => {
             expect(error).toBe(null);
             expect(body).toEqual('<html></html>\n');
           } catch(e) {
-            jfail(e);
+            done.fail(e);
           }
           done();
         });
@@ -127,7 +127,7 @@ describe('Parse.File testing', () => {
             try {
               expect(response.statusCode).toEqual(404);
             } catch(e) {
-              jfail(e);
+              done.fail(e);
             }
             done();
           });
@@ -501,7 +501,7 @@ describe('Parse.File testing', () => {
       expect(fileAgain.url()).toEqual('http://meep.meep');
       done();
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });
@@ -524,7 +524,7 @@ describe('Parse.File testing', () => {
       );
       done();
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });
@@ -547,7 +547,7 @@ describe('Parse.File testing', () => {
       );
       done();
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });
@@ -567,7 +567,7 @@ describe('Parse.File testing', () => {
       expect(fileAgain.url()).toMatch(/123.txt$/);
       done();
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });
@@ -591,7 +591,7 @@ describe('Parse.File testing', () => {
       expect(fileAgain.url().indexOf('https://mydomain/parse')).toBe(0);
       done();
     }).catch((e) => {
-      jfail(e);
+      done.fail(e);
       done();
     });
   });

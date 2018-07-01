@@ -43,7 +43,7 @@ describe_only_db('mongo')('revocable sessions', () => {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });
@@ -64,7 +64,7 @@ describe_only_db('mongo')('revocable sessions', () => {
     }).then(() => {
       done();
     }, (err) => {
-      jfail(err);
+      done.fail(err);
       done();
     });
   });

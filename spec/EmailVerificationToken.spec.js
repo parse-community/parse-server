@@ -41,10 +41,7 @@ describe("Email Verification Token Expiration: ", () => {
             done();
           });
         }, 1000);
-      }).catch((err) => {
-        jfail(err);
-        done();
-      });
+      }).catch(done.fail);
   });
 
   it('emailVerified should set to false, if the user does not verify their email before the email verify token expires', done => {
@@ -84,13 +81,13 @@ describe("Email Verification Token Expiration: ", () => {
                 done();
               })
               .catch(() => {
-                jfail(error);
+                done.fail(error);
                 done();
               });
           });
         }, 1000);
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -126,7 +123,7 @@ describe("Email Verification Token Expiration: ", () => {
           done();
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -164,12 +161,12 @@ describe("Email Verification Token Expiration: ", () => {
               done();
             })
             .catch((error) => {
-              jfail(error);
+              done.fail(error);
               done();
             });
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -208,12 +205,12 @@ describe("Email Verification Token Expiration: ", () => {
               done();
             })
             .catch((error) => {
-              jfail(error);
+              done.fail(error);
               done();
             });
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -256,7 +253,7 @@ describe("Email Verification Token Expiration: ", () => {
         done();
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -301,16 +298,10 @@ describe("Email Verification Token Expiration: ", () => {
               expect(typeof user._email_verify_token_expires_at).toBe('undefined');
               done();
             })
-            .catch(error => {
-              jfail(error);
-              done();
-            });
+            .catch(done.fail);
         });
       })
-      .catch(error => {
-        jfail(error);
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('clicking on the email verify link by an email VERIFIED user that was setup before enabling the expire email verify token should show email verify email success', done => {
@@ -364,7 +355,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -414,7 +405,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -477,10 +468,7 @@ describe("Email Verification Token Expiration: ", () => {
         expect(sendEmailOptions).toBeDefined();
         done();
       })
-      .catch((error) => {
-        jfail(error);
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('should send a new verification email when a resend is requested and the user is UNVERIFIED', done => {
@@ -553,10 +541,7 @@ describe("Email Verification Token Expiration: ", () => {
         expect(userBeforeRequest._email_verify_token_expires_at).not.toEqual(userAfterRequest.__email_verify_token_expires_at);
         done();
       })
-      .catch(error => {
-        jfail(error);
-        done();
-      });
+      .catch(done.fail);
   });
 
   it('should not send a new verification email when a resend is requested and the user is VERIFIED', done => {
@@ -618,7 +603,7 @@ describe("Email Verification Token Expiration: ", () => {
           });
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -663,7 +648,7 @@ describe("Email Verification Token Expiration: ", () => {
           });
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -707,7 +692,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -751,7 +736,7 @@ describe("Email Verification Token Expiration: ", () => {
         });
       })
       .catch(error => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -789,12 +774,12 @@ describe("Email Verification Token Expiration: ", () => {
             done();
           })
           .catch(error => {
-            jfail(error);
+            done.fail(error);
             done();
           });
 
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });
@@ -848,12 +833,12 @@ describe("Email Verification Token Expiration: ", () => {
               });
             })
             .catch((error) => {
-              jfail(error);
+              done.fail(error);
               done();
             });
         });
       }).catch((error) => {
-        jfail(error);
+        done.fail(error);
         done();
       });
   });

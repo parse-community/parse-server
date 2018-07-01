@@ -1,8 +1,8 @@
-import request from 'request';
-import Parse from 'parse/node';
-import HTTPResponse from './HTTPResponse';
-import querystring from 'querystring';
-import log from '../logger';
+const request = require('request');
+const Parse = require('parse/node');
+const HTTPResponse = require('./HTTPResponse');
+const querystring = require('querystring');
+const log = require('../logger').logger;
 
 var encodeBody = function({body, headers = {}}) {
   if (typeof body !== 'object') {

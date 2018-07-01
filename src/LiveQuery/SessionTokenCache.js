@@ -1,6 +1,6 @@
-import Parse from 'parse/node';
-import LRU from 'lru-cache';
-import logger from '../logger';
+const Parse = require('parse/node');
+const LRU = require('lru-cache');
+const logger = require('../logger').logger;
 
 function userForSessionToken(sessionToken){
   var q = new Parse.Query("_Session");

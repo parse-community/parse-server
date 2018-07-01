@@ -5,10 +5,10 @@
 // themselves use our routing information, without disturbing express
 // components that external developers may be modifying.
 
-import Parse     from 'parse/node';
-import express   from 'express';
-import log       from './logger';
-import {inspect} from 'util';
+const Parse     = require('parse/node');
+const express   = require('express');
+const log       = require('./logger').logger;
+const {inspect} = require('util');
 const Layer = require('express/lib/router/layer');
 
 function validateParameter(key, value) {
@@ -26,7 +26,7 @@ function validateParameter(key, value) {
 }
 
 
-export default class PromiseRouter {
+class PromiseRouter {
   // Each entry should be an object with:
   // path: the path to route, in express format
   // method: the HTTP method that this route handles.
@@ -202,3 +202,5 @@ function maskSensitiveUrl(req) {
   }
   return maskUrl;
 }
+
+module.exports = { PromiseRouter };

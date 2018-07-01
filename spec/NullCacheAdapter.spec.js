@@ -1,4 +1,4 @@
-const NullCacheAdapter = require('../src/Adapters/Cache/NullCacheAdapter').default;
+const NullCacheAdapter = require('../src/Adapters/Cache/NullCacheAdapter').NullCacheAdapter;
 
 describe('NullCacheAdapter', function() {
   const KEY = 'hello';

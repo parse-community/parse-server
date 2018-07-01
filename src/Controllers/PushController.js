@@ -1,11 +1,11 @@
-import { Parse }              from 'parse/node';
-import RestQuery              from '../RestQuery';
-import RestWrite              from '../RestWrite';
-import { master }             from '../Auth';
-import { pushStatusHandler }  from '../StatusHandler';
-import { applyDeviceTokenExists } from '../Push/utils';
+const { Parse }              = require('parse/node');
+const RestQuery              = require('../RestQuery');
+const RestWrite              = require('../RestWrite');
+const { master }             = require('../Auth');
+const { pushStatusHandler }  = require('../StatusHandler');
+const { applyDeviceTokenExists } = require('../Push/utils');
 
-export class PushController {
+class PushController {
 
   sendPush(body = {}, where = {}, config, auth, onPushStatusSaved = () => {}, now = new Date()) {
     if (!config.hasPushSupport) {
@@ -197,4 +197,4 @@ export class PushController {
   }
 }
 
-export default PushController;
+module.exports = { PushController };

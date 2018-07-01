@@ -1,9 +1,9 @@
 // InstallationsRouter.js
 
-import ClassesRouter from './ClassesRouter';
-import rest from '../rest';
+const { ClassesRouter } = require('./ClassesRouter');
+const rest = require('../rest');
 
-export class InstallationsRouter extends ClassesRouter {
+class InstallationsRouter extends ClassesRouter {
   className() {
     return '_Installation';
   }
@@ -27,4 +27,4 @@ export class InstallationsRouter extends ClassesRouter {
   }
 }
 
-export default InstallationsRouter;
+module.exports = { InstallationsRouter };

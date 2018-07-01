@@ -1,5 +1,5 @@
 /*eslint no-unused-vars: "off"*/
-export class CacheAdapter {
+class CacheAdapter {
   /**
    * Get a value in the cache
    * @param key Cache key to get
@@ -26,3 +26,5 @@ export class CacheAdapter {
    */
   clear() {}
 }
+
+module.exports = { CacheAdapter };

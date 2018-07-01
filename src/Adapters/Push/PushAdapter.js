@@ -11,7 +11,7 @@
 // Default is ParsePushAdapter, which uses GCM for
 // android push and APNS for ios push.
 
-export class PushAdapter {
+class PushAdapter {
   send(body: any, installations: any[], pushStatus: any): ?Promise<*> {}
 
   /**
@@ -23,4 +23,4 @@ export class PushAdapter {
   }
 }
 
-export default PushAdapter;
+module.exports = { PushAdapter };
