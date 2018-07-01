@@ -1,11 +1,11 @@
 "use strict"
 // Sets up a Parse API server for testing.
 const SpecReporter = require('jasmine-spec-reporter').SpecReporter;
-
+const supportsColor = require('supports-color');
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(new SpecReporter());
+jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }}));
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -412,11 +412,11 @@ global.jfail = function(err) {
 global.it_exclude_dbs = excluded => {
   if (excluded.indexOf(process.env.PARSE_SERVER_TEST_DB) >= 0) {
     return (name, suite) => {
-      return xit(`[${excluded}] ${name}`, suite);
+      return xit(`[not on ${excluded.join(',')}] ${name}`, suite);
     };
   } else {
     return (name, suite) => {
-      return it(`[${excluded}] ${name}`, suite);
+      return it(`[not on ${excluded.join(',')}] ${name}`, suite);
     };
   }
 }
