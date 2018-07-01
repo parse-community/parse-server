@@ -70,7 +70,7 @@ describe("AdaptableController", ()=>{
     done();
   });
 
-  it("should accept an object adapter", (done) => {
+  it("should accept an prototype based object adapter", (done) => {
     function AGoodAdapter() {}
     AGoodAdapter.prototype.createFile = function() { };
     AGoodAdapter.prototype.deleteFile = function() { };
