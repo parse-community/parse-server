@@ -1,5 +1,5 @@
 const TestObject = Parse.Object.extend('TestObject');
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const rp = require('request-promise');
 const defaultHeaders = {
@@ -314,7 +314,7 @@ describe_only_db('mongo')('Parse.Polygon testing', () => {
   });
 
   it('polygon coordinates reverse input', (done) => {
-    const Config = require('../src/Config');
+    const Config = require('../lib/Config');
     const config = Config.get('test');
 
     // When stored the first point should be the last point

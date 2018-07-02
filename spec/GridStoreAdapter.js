@@ -1,9 +1,9 @@
 const MongoClient = require("mongodb").MongoClient;
 const GridStore = require("mongodb").GridStore;
 
-const GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
-const Config = require("../src/Config");
-const FilesController = require('../src/Controllers/FilesController').default;
+const GridStoreAdapter = require("../lib/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
+const Config = require("../lib/Config");
+const FilesController = require('../lib/Controllers/FilesController').default;
 
 
 // Small additional tests to improve overall coverage

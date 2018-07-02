@@ -1,7 +1,7 @@
 'use strict';
 
-const Config = require('../src/Config');
-const SchemaController = require('../src/Controllers/SchemaController');
+const Config = require('../lib/Config');
+const SchemaController = require('../lib/Controllers/SchemaController');
 const dd = require('deep-diff');
 
 let config;

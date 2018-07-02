@@ -1,5 +1,5 @@
 describe('Auth', () => {
-  const Auth = require('../src/Auth.js').Auth;
+  const Auth = require('../lib/Auth.js').Auth;
 
   describe('getUserRoles', () => {
     let auth;

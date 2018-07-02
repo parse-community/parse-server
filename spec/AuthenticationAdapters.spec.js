@@ -1,13 +1,13 @@
 const request = require('request');
-const Config = require("../src/Config");
-const defaultColumns = require('../src/Controllers/SchemaController').defaultColumns;
-const authenticationLoader = require('../src/Adapters/Auth');
+const Config = require("../lib/Config");
+const defaultColumns = require('../lib/Controllers/SchemaController').defaultColumns;
+const authenticationLoader = require('../lib/Adapters/Auth');
 const path = require('path');
 
 describe('AuthenticationProviders', function() {
   ["facebook", "facebookaccountkit", "github", "instagram", "google", "linkedin", "meetup", "twitter", "janrainengage", "janraincapture", "vkontakte"].map(function(providerName){
     it("Should validate structure of " + providerName, (done) => {
-      const provider = require("../src/Adapters/Auth/" + providerName);
+      const provider = require("../lib/Adapters/Auth/" + providerName);
       jequal(typeof provider.validateAuthData, "function");
       jequal(typeof provider.validateAppId, "function");
       const authDataPromise = provider.validateAuthData({}, {});

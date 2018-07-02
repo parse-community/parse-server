@@ -1,4 +1,4 @@
-const SessionTokenCache = require('../src/LiveQuery/SessionTokenCache').SessionTokenCache;
+const SessionTokenCache = require('../lib/LiveQuery/SessionTokenCache').SessionTokenCache;
 
 describe('SessionTokenCache', function() {
 

@@ -2,7 +2,7 @@
 
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
 const request = require('request');
-const Config = require("../src/Config");
+const Config = require("../lib/Config");
 
 describe("Custom Pages, Email Verification, Password Reset", () => {
   it("should set the custom pages", (done) => {

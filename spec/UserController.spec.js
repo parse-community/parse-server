@@ -1,6 +1,6 @@
-const UserController = require('../src/Controllers/UserController').UserController;
+const UserController = require('../lib/Controllers/UserController').UserController;
 const emailAdapter = require('./MockEmailAdapter')
-const AppCache = require('../src/cache').AppCache;
+const AppCache = require('../lib/cache').AppCache;
 
 describe('UserController', () => {
   const user = {

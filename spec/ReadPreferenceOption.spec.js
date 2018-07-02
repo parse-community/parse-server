@@ -3,7 +3,7 @@
 const Parse = require('parse/node');
 const ReadPreference = require('mongodb').ReadPreference;
 const rp = require('request-promise');
-const Config = require("../src/Config");
+const Config = require("../lib/Config");
 
 describe_only_db('mongo')('Read preference option', () => {
   it('should find in primary by default', (done) => {
@@ -40,7 +40,7 @@ describe_only_db('mongo')('Read preference option', () => {
   });
 
   it('should preserve the read preference set (#4831)', async () => {
-    const { MongoStorageAdapter } = require('../src/Adapters/Storage/Mongo/MongoStorageAdapter');
+    const { MongoStorageAdapter } = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter');
     const adapterOptions = {
       uri: 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase',
       mongoOptions: {

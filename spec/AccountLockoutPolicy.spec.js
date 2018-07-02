@@ -1,6 +1,6 @@
 "use strict";
 
-const Config = require("../src/Config");
+const Config = require("../lib/Config");
 
 const loginWithWrongCredentialsShouldFail = function(username, password) {
   return new Promise((resolve, reject) => {
