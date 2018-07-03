@@ -9,5 +9,6 @@
                 "node": "8"
             }
         }]
-    ]
+    ],
+    "sourceMaps": "inline"
 }
