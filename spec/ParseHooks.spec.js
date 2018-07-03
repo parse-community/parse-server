@@ -336,7 +336,7 @@ describe('Hooks', () => {
     });
   });
 
-  it("should run the function on the test server", (done) => {
+  it("should run the function on the test server (error handling)", (done) => {
 
     app.post("/SomeFunctionError", function(req, res) {
       res.json({error: {code: 1337, error: "hacking that one!"}});
