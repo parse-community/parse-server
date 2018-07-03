@@ -1,8 +1,8 @@
 "use strict";
-const PushController = require('../src/Controllers/PushController').PushController;
-const StatusHandler = require('../src/StatusHandler');
-const Config = require('../src/Config');
-const validatePushType = require('../src/Push/utils').validatePushType;
+const PushController = require('../lib/Controllers/PushController').PushController;
+const StatusHandler = require('../lib/StatusHandler');
+const Config = require('../lib/Config');
+const validatePushType = require('../lib/Push/utils').validatePushType;
 
 const successfulTransmissions = function(body, installations) {
 

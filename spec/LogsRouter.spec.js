@@ -1,9 +1,9 @@
 'use strict';
 
 const request = require('request');
-const LogsRouter = require('../src/Routers/LogsRouter').LogsRouter;
-const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const LogsRouter = require('../lib/Routers/LogsRouter').LogsRouter;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
 
 const loggerController = new LoggerController(new WinstonLoggerAdapter());
 

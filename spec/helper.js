@@ -5,7 +5,7 @@ const supportsColor = require('supports-color');
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }}));
+jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }, spec: { displayDuration: true }}));
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -23,15 +23,15 @@ if (global._babelPolyfill) {
   process.exit(1);
 }
 
-const cache = require('../src/cache').default;
-const ParseServer = require('../src/index').ParseServer;
+const cache = require('../lib/cache').default;
+const ParseServer = require('../lib/index').ParseServer;
 const path = require('path');
-const TestUtils = require('../src/TestUtils');
-const GridStoreAdapter = require('../src/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
+const TestUtils = require('../lib/TestUtils');
+const GridStoreAdapter = require('../lib/Adapters/Files/GridStoreAdapter').GridStoreAdapter;
 const FSAdapter = require('@parse/fs-files-adapter');
-import PostgresStorageAdapter from '../src/Adapters/Storage/Postgres/PostgresStorageAdapter';
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
-const RedisCacheAdapter = require('../src/Adapters/Cache/RedisCacheAdapter').default;
+const PostgresStorageAdapter = require('../lib/Adapters/Storage/Postgres/PostgresStorageAdapter').default;
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
+const RedisCacheAdapter = require('../lib/Adapters/Cache/RedisCacheAdapter').default;
 
 const mongoURI = 'mongodb://localhost:27017/parseServerMongoAdapterTestDatabase';
 const postgresURI = 'postgres://localhost:5432/parse_server_postgres_adapter_test_database';
@@ -422,7 +422,7 @@ global.it_exclude_dbs = excluded => {
 }
 
 global.it_only_db = db => {
-  if (process.env.PARSE_SERVER_TEST_DB === db) {
+  if (process.env.PARSE_SERVER_TEST_DB === db || !process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return (name, suite) => {
       return it(`[${db}] ${name}`, suite);
     };

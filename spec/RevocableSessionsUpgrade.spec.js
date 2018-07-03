@@ -1,4 +1,4 @@
-const Config = require('../src/Config');
+const Config = require('../lib/Config');
 const sessionToken = 'legacySessionToken';
 const rp = require('request-promise');
 const Parse = require('parse/node');

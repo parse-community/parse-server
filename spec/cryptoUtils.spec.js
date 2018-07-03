@@ -1,4 +1,4 @@
-const cryptoUtils = require('../src/cryptoUtils');
+const cryptoUtils = require('../lib/cryptoUtils');
 
 function givesUniqueResults(fn, iterations) {
   const results = {};

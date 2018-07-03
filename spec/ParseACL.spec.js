@@ -1,8 +1,8 @@
 // This is a port of the test suite:
 // hungry/js/test/parse_acl_test.js
-const rest = require('../src/rest');
-const Config = require('../src/Config');
-const auth = require('../src/Auth');
+const rest = require('../lib/rest');
+const Config = require('../lib/Config');
+const auth = require('../lib/Auth');
 
 describe('Parse.ACL', () => {
   it("acl must be valid", (done) => {

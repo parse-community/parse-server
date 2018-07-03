@@ -1,4 +1,4 @@
-const PromiseRouter = require("../src/PromiseRouter").default;
+const PromiseRouter = require("../lib/PromiseRouter").default;
 
 describe("PromiseRouter", () => {
   it("should properly handle rejects", (done) => {

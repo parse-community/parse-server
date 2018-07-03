@@ -1,4 +1,4 @@
-const logging = require('../src/Adapters/Logger/WinstonLogger');
+const logging = require('../lib/Adapters/Logger/WinstonLogger');
 const winston = require('winston');
 
 class TestTransport extends winston.Transport {

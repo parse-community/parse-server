@@ -1,7 +1,7 @@
 'use strict';
-import commander from '../src/cli/utils/commander';
-import definitions from '../src/cli/definitions/parse-server';
-import liveQueryDefinitions from '../src/cli/definitions/parse-live-query-server';
+const commander = require('../lib/cli/utils/commander').default;
+const definitions = require('../lib/cli/definitions/parse-server').default;
+const liveQueryDefinitions = require('../lib/cli/definitions/parse-live-query-server').default;
 
 const testDefinitions = {
   'arg0': 'PROGRAM_ARG_0',
@@ -173,7 +173,7 @@ describe('LiveQuery definitions', () => {
       if (typeof definition.env !== 'undefined') {
         expect(typeof definition.env).toBe('string');
       }
-      expect(typeof definition.help).toBe('string');
+      expect(typeof definition.help).toBe('string', `help for ${key} should be a string`);
       if (typeof definition.required !== 'undefined') {
         expect(typeof definition.required).toBe('boolean');
       }

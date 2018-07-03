@@ -1,8 +1,8 @@
-const LoggerController = require('../src/Controllers/LoggerController').LoggerController;
-const WinstonLoggerAdapter = require('../src/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
-const GridStoreAdapter = require("../src/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
-const Config = require("../src/Config");
-const FilesController = require('../src/Controllers/FilesController').default;
+const LoggerController = require('../lib/Controllers/LoggerController').LoggerController;
+const WinstonLoggerAdapter = require('../lib/Adapters/Logger/WinstonLoggerAdapter').WinstonLoggerAdapter;
+const GridStoreAdapter = require("../lib/Adapters/Files/GridStoreAdapter").GridStoreAdapter;
+const Config = require("../lib/Config");
+const FilesController = require('../lib/Controllers/FilesController').default;
 
 const mockAdapter = {
   createFile: () => {

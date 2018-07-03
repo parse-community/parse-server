@@ -1,5 +1,5 @@
-const Client = require('../src/LiveQuery/Client').Client;
-const ParseWebSocket = require('../src/LiveQuery/ParseWebSocketServer').ParseWebSocket;
+const Client = require('../lib/LiveQuery/Client').Client;
+const ParseWebSocket = require('../lib/LiveQuery/ParseWebSocketServer').ParseWebSocket;
 
 describe('Client', function() {
   it('can be initialized', function() {

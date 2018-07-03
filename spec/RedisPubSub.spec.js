@@ -1,4 +1,4 @@
-const RedisPubSub = require('../src/Adapters/PubSub/RedisPubSub').RedisPubSub;
+const RedisPubSub = require('../lib/Adapters/PubSub/RedisPubSub').RedisPubSub;
 
 describe('RedisPubSub', function() {
 
