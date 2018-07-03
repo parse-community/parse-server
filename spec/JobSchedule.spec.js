@@ -50,11 +50,11 @@ describe('JobSchedule', () => {
     rp.put(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, () => done());
   });
 
-  it('should reject access when not using masterKey (PUT /jobs/id)', (done) => {
+  it('should reject access when not using masterKey (DELETE /jobs/id)', (done) => {
     rp.del(Parse.serverURL + '/cloud_code/jobs/jobId', defaultOptions).then(done.fail, () => done());
   });
 
-  it('should allow access when using masterKey (/jobs)', (done) => {
+  it('should allow access when using masterKey (GET /jobs)', (done) => {
     rp.get(Parse.serverURL + '/cloud_code/jobs', masterKeyOptions).then(done, done.fail);
   });
 

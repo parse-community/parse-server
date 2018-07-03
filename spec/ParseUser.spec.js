@@ -101,7 +101,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('user login with non-string username with REST API', (done) => {
+  it('user login with non-string username with REST API (again)', (done) => {
     Parse.User.signUp('asdf', 'zxcv', null, {
       success: () => {
         return rp.post({
@@ -1888,7 +1888,7 @@ describe('Parse.User testing', () => {
     });
   });
 
-  it('should fail linking with existing', (done) => {
+  it('should fail linking with existing through REST', (done) => {
     const provider = getMockFacebookProvider();
     Parse.User._registerAuthenticationProvider(provider);
     Parse.User._logInWith("facebook", {

@@ -301,7 +301,7 @@ describe('AuthenticationProviders', function() {
     })
   });
 
-  it('properly loads custom adapter module object', (done) => {
+  it('properly loads custom adapter module object (again)', (done) => {
     const authenticationHandler = authenticationLoader({
       customAuthentication: { module: path.resolve('./spec/support/CustomAuthFunction.js'), options: { token: 'valid-token' }}
     });

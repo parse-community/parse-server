@@ -31,6 +31,22 @@ const MongoClient = mongodb.MongoClient;
 const ReadPreference = mongodb.ReadPreference;
 
 const MongoSchemaCollectionName = '_SCHEMA';
+
+const storageAdapterAllCollections = mongoAdapter => {
+  return mongoAdapter.connect()
+    .then(() => mongoAdapter.database.collections())
+    .then(collections => {
+      return collections.filter(collection => {
+        if (collection.namespace.match(/\.system\./)) {
+          return false;
+        }
+        // TODO: If you have one app with a collection prefix that happens to be a prefix of another
+        // apps prefix, this will go very very badly. We should fix that somehow.
+        return (collection.collectionName.indexOf(mongoAdapter._collectionPrefix) == 0);
+      });
+    });
+}
+
 const convertParseSchemaToMongoSchema = ({...schema}) => {
   delete schema.fields._rperm;
   delete schema.fields._wperm;
@@ -297,9 +313,9 @@ export class MongoStorageAdapter implements StorageAdapter {
       .catch(err => this.handleError(err));
   }
 
-  dropDatabase() {
-    if (!this.database) { return Promise.resolve(); }
-    return this.database.dropDatabase();
+  deleteAllClasses(fast: boolean) {
+    return storageAdapterAllCollections(this)
+      .then(collections => Promise.all(collections.map(collection => fast ? collection.remove({}) : collection.drop())));
   }
 
   // Remove the column and all the data. For Relations, the _Join collection is handled
