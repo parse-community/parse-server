@@ -12,7 +12,7 @@ const dropTable = (client, className) => {
 describe_only_db('postgres')('PostgresStorageAdapter', () => {
   const adapter = new PostgresStorageAdapter({ uri: databaseURI })
   beforeEach(() => {
-    return adapter.dropDatabase();
+    return adapter.deleteAllClasses();
   });
 
   it('schemaUpgrade, upgrade the database schema when schema changes', done => {
