@@ -1,5 +1,5 @@
-const middlewares = require('../src/middlewares');
-const AppCache = require('../src/cache').AppCache;
+const middlewares = require('../lib/middlewares');
+const AppCache = require('../lib/cache').AppCache;
 
 describe('middlewares', () => {
 

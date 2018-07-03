@@ -2,11 +2,11 @@
 const request = require('request');
 const parseServerPackage = require('../package.json');
 const MockEmailAdapterWithOptions = require('./MockEmailAdapterWithOptions');
-const ParseServer = require("../src/index");
-const Config = require('../src/Config');
+const ParseServer = require("../lib/index");
+const Config = require('../lib/Config');
 const express = require('express');
 
-import MongoStorageAdapter from '../src/Adapters/Storage/Mongo/MongoStorageAdapter';
+const MongoStorageAdapter = require('../lib/Adapters/Storage/Mongo/MongoStorageAdapter').default;
 
 describe('server', () => {
   it('requires a master key and app id', done => {

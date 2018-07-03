@@ -1,7 +1,7 @@
 "use strict"
 const Parse = require("parse/node");
 const rp = require('request-promise');
-const InMemoryCacheAdapter = require('../src/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
+const InMemoryCacheAdapter = require('../lib/Adapters/Cache/InMemoryCacheAdapter').InMemoryCacheAdapter;
 
 describe('Cloud Code', () => {
   it('can load absolute cloud code file', done => {
