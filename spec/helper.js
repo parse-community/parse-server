@@ -5,7 +5,7 @@ const supportsColor = require('supports-color');
 jasmine.DEFAULT_TIMEOUT_INTERVAL = process.env.PARSE_SERVER_TEST_TIMEOUT || 5000;
 
 jasmine.getEnv().clearReporters();
-jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }}));
+jasmine.getEnv().addReporter(new SpecReporter({ colors: { enabled: supportsColor.stdout }, spec: { displayDuration: true }}));
 
 global.on_db = (db, callback, elseCallback) => {
   if (process.env.PARSE_SERVER_TEST_DB == db) {
@@ -422,7 +422,7 @@ global.it_exclude_dbs = excluded => {
 }
 
 global.it_only_db = db => {
-  if (process.env.PARSE_SERVER_TEST_DB === db) {
+  if (process.env.PARSE_SERVER_TEST_DB === db || !process.env.PARSE_SERVER_TEST_DB && db == 'mongo') {
     return (name, suite) => {
       return it(`[${db}] ${name}`, suite);
     };
