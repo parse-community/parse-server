@@ -1,4 +1,4 @@
-const PushRouter = require('../src/Routers/PushRouter').PushRouter;
+const PushRouter = require('../lib/Routers/PushRouter').PushRouter;
 const request = require('request');
 
 describe('PushRouter', () => {

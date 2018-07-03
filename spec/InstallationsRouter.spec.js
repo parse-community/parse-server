@@ -1,7 +1,7 @@
-const auth = require('../src/Auth');
-const Config = require('../src/Config');
-const rest = require('../src/rest');
-const InstallationsRouter = require('../src/Routers/InstallationsRouter').InstallationsRouter;
+const auth = require('../lib/Auth');
+const Config = require('../lib/Config');
+const rest = require('../lib/rest');
+const InstallationsRouter = require('../lib/Routers/InstallationsRouter').InstallationsRouter;
 
 describe('InstallationsRouter', () => {
   it('uses find condition from request.body', (done) => {

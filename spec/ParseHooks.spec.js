@@ -1,14 +1,14 @@
 "use strict";
 /* global describe, it, expect, fail, Parse */
 const request = require('request');
-const triggers = require('../src/triggers');
-const HooksController = require('../src/Controllers/HooksController').default;
+const triggers = require('../lib/triggers');
+const HooksController = require('../lib/Controllers/HooksController').default;
 const express = require("express");
 const bodyParser = require('body-parser');
 
 const port = 12345;
 const hookServerURL = "http://localhost:" + port;
-const AppCache = require('../src/cache').AppCache;
+const AppCache = require('../lib/cache').AppCache;
 
 describe('Hooks', () => {
   let server;

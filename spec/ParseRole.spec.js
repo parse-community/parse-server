@@ -2,9 +2,9 @@
 
 // Roles are not accessible without the master key, so they are not intended
 // for use by clients.  We can manually test them using the master key.
-const RestQuery = require("../src/RestQuery");
-const Auth = require("../src/Auth").Auth;
-const Config = require("../src/Config");
+const RestQuery = require("../lib/RestQuery");
+const Auth = require("../lib/Auth").Auth;
+const Config = require("../lib/Config");
 
 describe('Parse Role testing', () => {
   it('Do a bunch of basic role testing', done => {

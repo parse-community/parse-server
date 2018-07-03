@@ -1,4 +1,4 @@
-const ParseCloudCodePublisher = require('../src/LiveQuery/ParseCloudCodePublisher').ParseCloudCodePublisher;
+const ParseCloudCodePublisher = require('../lib/LiveQuery/ParseCloudCodePublisher').ParseCloudCodePublisher;
 const Parse = require('parse/node');
 
 describe('ParseCloudCodePublisher', function() {
@@ -14,7 +14,7 @@ describe('ParseCloudCodePublisher', function() {
         on: jasmine.createSpy('on')
       })
     };
-    jasmine.mockLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
+    jasmine.mockLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub', mockParsePubSub);
     done();
   });
 
@@ -22,7 +22,7 @@ describe('ParseCloudCodePublisher', function() {
     const config = {}
     new ParseCloudCodePublisher(config);
 
-    const ParsePubSub = require('../src/LiveQuery/ParsePubSub').ParsePubSub;
+    const ParsePubSub = require('../lib/LiveQuery/ParsePubSub').ParsePubSub;
     expect(ParsePubSub.createPublisher).toHaveBeenCalledWith(config);
   });
 
@@ -64,6 +64,6 @@ describe('ParseCloudCodePublisher', function() {
   });
 
   afterEach(function(){
-    jasmine.restoreLibrary('../src/LiveQuery/ParsePubSub', 'ParsePubSub');
+    jasmine.restoreLibrary('../lib/LiveQuery/ParsePubSub', 'ParsePubSub');
   });
 });

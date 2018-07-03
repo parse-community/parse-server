@@ -1,8 +1,8 @@
-const PushWorker = require('../src').PushWorker;
-const PushUtils = require('../src/Push/utils');
-const Config = require('../src/Config');
-const { pushStatusHandler } = require('../src/StatusHandler');
-const rest = require('../src/rest');
+const PushWorker = require('../lib').PushWorker;
+const PushUtils = require('../lib/Push/utils');
+const Config = require('../lib/Config');
+const { pushStatusHandler } = require('../lib/StatusHandler');
+const rest = require('../lib/rest');
 
 describe('PushWorker', () => {
   it('should run with small batch', (done) => {
@@ -88,6 +88,10 @@ describe('PushWorker', () => {
         }
       });
       expect(locales).toEqual(['fr']);
+    });
+
+    it('should handle empty body data', () => {
+      expect(PushUtils.getLocalesFromPush({})).toEqual([]);
     });
 
     it('transforms body appropriately', () => {
