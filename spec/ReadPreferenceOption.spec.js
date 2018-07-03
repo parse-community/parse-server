@@ -75,7 +75,6 @@ describe_only_db('mongo')('Read preference option', () => {
     });
 
     expect(myObjectReadPreference).toBe(true);
-    console.log('OK!');
   });
 
   it('should change read preference in the beforeFind trigger', (done) => {

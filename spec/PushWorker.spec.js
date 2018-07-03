@@ -90,6 +90,10 @@ describe('PushWorker', () => {
       expect(locales).toEqual(['fr']);
     });
 
+    it('should handle empty body data', () => {
+      expect(PushUtils.getLocalesFromPush({})).toEqual([]);
+    });
+
     it('transforms body appropriately', () => {
       const cleanBody = PushUtils.transformPushBodyForLocale({
         data: {
