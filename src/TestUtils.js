@@ -1,6 +1,9 @@
 import AppCache from './cache';
 
-//Used by tests
+/**
+ * Destroys all data in the database
+ * @param {boolean} fast set to true if it's ok to just drop objects and not indexes.
+ */
 export function destroyAllDataPermanently(fast) {
   if (!process.env.TESTING) {
     throw 'Only supported in test environment';
