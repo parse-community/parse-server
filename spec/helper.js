@@ -172,7 +172,7 @@ beforeEach(done => {
       throw error;
     }
   }
-  TestUtils.destroyAllDataPermanently()
+  TestUtils.destroyAllDataPermanently(true)
     .catch(error => {
     // For tests that connect to their own mongo, there won't be any data to delete.
       if (error.message === 'ns not found' || error.message.startsWith('connect ECONNREFUSED')) {
@@ -196,7 +196,7 @@ afterEach(function(done) {
       fail('There were open connections to the server left after the test finished');
     }
     on_db('postgres', () => {
-      TestUtils.destroyAllDataPermanently().then(done, done);
+      TestUtils.destroyAllDataPermanently(true).then(done, done);
     }, done);
   };
   Parse.Cloud._removeAllHooks();

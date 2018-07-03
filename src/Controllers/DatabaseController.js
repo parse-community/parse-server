@@ -655,10 +655,10 @@ class DatabaseController {
 
   // Won't delete collections in the system namespace
   // Returns a promise.
-  deleteEverything() {
+  deleteEverything(fast: boolean = false) {
     this.schemaPromise = null;
     return Promise.all([
-      this.adapter.dropDatabase(),
+      this.adapter.deleteAllClasses(fast),
       this.schemaCache.clear()
     ]);
   }
